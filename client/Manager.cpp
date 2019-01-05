@@ -1,0 +1,39 @@
+// Manager.cpp: implementation of the CManager class.
+//
+//////////////////////////////////////////////////////////////////////
+
+#include "stdafx.h"
+#include "Manager.h"
+
+//////////////////////////////////////////////////////////////////////
+// Construction/Destruction
+//////////////////////////////////////////////////////////////////////
+
+CManager::CManager(IOCPClient* ClientObject)
+{
+	m_ClientObject = ClientObject;
+	m_ClientObject->setManagerCallBack(this);  
+
+	m_hEventDlgOpen = CreateEvent(NULL,TRUE,FALSE,NULL);
+}
+
+CManager::~CManager()
+{
+	if (m_hEventDlgOpen!=NULL)
+	{
+		CloseHandle(m_hEventDlgOpen);
+		m_hEventDlgOpen = NULL;
+	}
+}
+
+VOID CManager::WaitForDialogOpen()
+{
+	WaitForSingleObject(m_hEventDlgOpen, INFINITE);
+	//必须的Sleep,因为远程窗口从InitDialog中发送COMMAND_NEXT到显示还要一段时间
+	Sleep(150);
+}
+
+VOID CManager::NotifyDialogIsOpen()
+{
+	SetEvent(m_hEventDlgOpen);
+}
