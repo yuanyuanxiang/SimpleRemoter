@@ -1104,7 +1104,7 @@ LRESULT CMy2015RemoteDlg::OnOpenFileManagerDialog(WPARAM wParam, LPARAM lParam)
 	//转到CFileManagerDlg  构造函数
 	CFileManagerDlg	*Dlg = new CFileManagerDlg(this,m_iocpServer, ContextObject);
 	// 设置父窗口为卓面
-	Dlg->Create(IDD_DIALOG_FILE_MANAGER, GetDesktopWindow());    //创建非阻塞的Dlg
+	Dlg->Create(IDD_FILE, GetDesktopWindow());    //创建非阻塞的Dlg
 	Dlg->ShowWindow(SW_SHOW);
 
 	ContextObject->v1   = FILEMANAGER_DLG;

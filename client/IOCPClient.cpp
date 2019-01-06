@@ -59,8 +59,6 @@ IOCPClient::~IOCPClient()
 	while (S_RUN == m_bWorkThread)
 		Sleep(10);
 
-	Sleep(5000);
-
 	DeleteCriticalSection(&m_cs);
 
 	m_bWorkThread = S_END;

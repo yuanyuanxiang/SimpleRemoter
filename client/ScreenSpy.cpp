@@ -5,6 +5,7 @@
 #include "stdafx.h"
 #include "ScreenSpy.h"
 #include "Common.h"
+#include <stdio.h>
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -26,11 +27,19 @@ CScreenSpy::CScreenSpy(ULONG ulbiBitCount)
 	}
 
 	m_hDeskTopWnd = GetDesktopWindow();
-	m_hFullDC = GetDC(m_hDeskTopWnd);   
+	m_hFullDC = GetDC(m_hDeskTopWnd);
 
-	m_hFullMemDC	= CreateCompatibleDC(m_hFullDC); 
-	m_ulFullWidth	= ::GetSystemMetrics(SM_CXSCREEN);    //屏幕的分辨率
-	m_ulFullHeight	= ::GetSystemMetrics(SM_CYSCREEN);	
+	m_hFullMemDC	= CreateCompatibleDC(m_hFullDC);
+	//::GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN)获取屏幕大小不准
+	//例如当屏幕显示比例为125%时，获取到的屏幕大小需要乘以1.25才对
+	DEVMODE devmode;
+	memset(&devmode, 0, sizeof (devmode));	
+	devmode.dmSize = sizeof(DEVMODE);
+	devmode.dmDriverExtra = 0;
+	BOOL Isgetdisplay = EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &devmode);
+	m_ulFullWidth = devmode.dmPelsWidth;
+	m_ulFullHeight = devmode.dmPelsHeight;
+	printf("===> 桌面分辨率大小为：%d x %d\n", m_ulFullWidth, m_ulFullHeight);
 	m_BitmapInfor_Full = ConstructBI(m_ulbiBitCount,m_ulFullWidth, m_ulFullHeight);
 	m_BitmapData_Full = NULL;
 	m_BitmapHandle	= ::CreateDIBSection(m_hFullDC, m_BitmapInfor_Full, 

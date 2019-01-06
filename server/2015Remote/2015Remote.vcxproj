@@ -127,10 +127,10 @@
     <ClInclude Include="BuildDlg.h" />
     <ClInclude Include="CpuUseage.h" />
     <ClInclude Include="EditDialog.h" />
-    <ClInclude Include="FileCompress.h" />
     <ClInclude Include="FileManagerDlg.h" />
     <ClInclude Include="FileTransferModeDlg.h" />
     <ClInclude Include="iniFile.h" />
+    <ClInclude Include="InputDlg.h" />
     <ClInclude Include="IOCPServer.h" />
     <ClInclude Include="RegisterDlg.h" />
     <ClInclude Include="Resource.h" />
@@ -156,10 +156,10 @@
     <ClCompile Include="BuildDlg.cpp" />
     <ClCompile Include="CpuUseage.cpp" />
     <ClCompile Include="EditDialog.cpp" />
-    <ClCompile Include="FileCompress.cpp" />
     <ClCompile Include="FileManagerDlg.cpp" />
     <ClCompile Include="FileTransferModeDlg.cpp" />
     <ClCompile Include="iniFile.cpp" />
+    <ClCompile Include="InputDlg.cpp" />
     <ClCompile Include="IOCPServer.cpp" />
     <ClCompile Include="RegisterDlg.cpp" />
     <ClCompile Include="ScreenSpyDlg.cpp" />

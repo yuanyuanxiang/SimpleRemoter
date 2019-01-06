@@ -1,60 +1,69 @@
-// FileTransferModeDlg.cpp : 实现文件
+// FileTransferModeDlg.cpp : implementation file
 //
 
 #include "stdafx.h"
 #include "2015Remote.h"
 #include "FileTransferModeDlg.h"
-#include "afxdialogex.h"
+
+#ifdef _DEBUG
+#define new DEBUG_NEW
+#undef THIS_FILE
+static char THIS_FILE[] = __FILE__;
+#endif
+
+/////////////////////////////////////////////////////////////////////////////
+// CFileTransferModeDlg dialog
 
 
-// CFileTransferModeDlg 对话框
-
-IMPLEMENT_DYNAMIC(CFileTransferModeDlg, CDialog)
-
-CFileTransferModeDlg::CFileTransferModeDlg(CWnd* pParent)
+CFileTransferModeDlg::CFileTransferModeDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CFileTransferModeDlg::IDD, pParent)
 {
-
+	//{{AFX_DATA_INIT(CFileTransferModeDlg)
+		// NOTE: the ClassWizard will add member initialization here
+	//}}AFX_DATA_INIT
 }
 
-CFileTransferModeDlg::~CFileTransferModeDlg()
-{
-}
 
 void CFileTransferModeDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
+	//{{AFX_DATA_MAP(CFileTransferModeDlg)
+		// NOTE: the ClassWizard will add DDX and DDV calls here
+	//}}AFX_DATA_MAP
 }
 
 
 BEGIN_MESSAGE_MAP(CFileTransferModeDlg, CDialog)
-	ON_CONTROL_RANGE(BN_CLICKED, IDC_OVERWRITE, IDC_JUMP_ALL, OnEndDialog) 
+	//{{AFX_MSG_MAP(CFileTransferModeDlg)
+	ON_CONTROL_RANGE(BN_CLICKED, IDC_OVERWRITE, IDC_CANCEL, OnEndDialog)
+	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
+/////////////////////////////////////////////////////////////////////////////
+// CFileTransferModeDlg message handlers
 
-// CFileTransferModeDlg 消息处理程序
 
-
-VOID CFileTransferModeDlg::OnEndDialog(UINT id)
+void CFileTransferModeDlg::OnEndDialog(UINT id)
 {
 	// TODO: Add your control notification handler code here
 	EndDialog(id);
 }
 
-BOOL CFileTransferModeDlg::OnInitDialog()
+BOOL CFileTransferModeDlg::OnInitDialog() 
 {
 	CDialog::OnInitDialog();
+	
+	// TODO: Add extra initialization here
+	CString	str;
+	str.Format("此文件夹已包含一个名为“%s”的文件", m_strFileName);
 
-	CString	strTips;
-	strTips.Format("衰了 咋办.... \" %s \" ", m_strFileName);
-
-	for (int i = 0; i < strTips.GetLength(); i += 120)
+	for (int i = 0; i < str.GetLength(); i += 120)
 	{
-		strTips.Insert(i, "\n");
+		str.Insert(i, "\n");
 		i += 1;
 	}
 
-	SetDlgItemText(IDC_TIP, strTips);
+	SetDlgItemText(IDC_TIPS, str);
 	return TRUE;  // return TRUE unless you set the focus to a control
-	// 异常: OCX 属性页应返回 FALSE
+	              // EXCEPTION: OCX Property Pages should return FALSE
 }

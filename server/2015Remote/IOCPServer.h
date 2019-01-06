@@ -77,29 +77,29 @@ public:
 	BOOL StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort);
 
 	static DWORD WINAPI ListenThreadProc(LPVOID lParam);
-	BOOL IOCPServer::InitializeIOCP(VOID);
+	BOOL InitializeIOCP(VOID);
 	static DWORD WINAPI WorkThreadProc(LPVOID lParam);
 	ULONG   m_ulWorkThreadCount;
-	VOID IOCPServer::OnAccept();
+	VOID OnAccept();
 	static CRITICAL_SECTION	m_cs;
 
 	/************************************************************************/
 	//上下背景文对象
 	ContextObjectList				m_ContextConnectionList;
 	ContextObjectList               m_ContextFreePoolList;
-	PCONTEXT_OBJECT IOCPServer::AllocateContext();
+	PCONTEXT_OBJECT AllocateContext();
 	VOID RemoveStaleContext(CONTEXT_OBJECT* ContextObject);
-	VOID IOCPServer::MoveContextToFreePoolList(CONTEXT_OBJECT* ContextObject);
+	VOID MoveContextToFreePoolList(CONTEXT_OBJECT* ContextObject);
 
-	VOID IOCPServer::PostRecv(CONTEXT_OBJECT* ContextObject);
+	VOID PostRecv(CONTEXT_OBJECT* ContextObject);
 
 	/************************************************************************/
 	//请求得到完成
-	BOOL IOCPServer::HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWORD dwTrans);
-	BOOL IOCPServer::OnClientInitializing(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans);
-	BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans);  
-	VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer , ULONG ulOriginalLength);
-	BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompressedLength);
+	BOOL HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWORD dwTrans);
+	BOOL OnClientInitializing(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans);
+	BOOL OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans);  
+	VOID OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer , ULONG ulOriginalLength);
+	BOOL OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompressedLength);
 	IOCPServer(void);
 	~IOCPServer(void);
 

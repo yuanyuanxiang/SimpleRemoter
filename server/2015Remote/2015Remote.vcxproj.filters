@@ -165,9 +165,6 @@
     <ClInclude Include="FileTransferModeDlg.h">
       <Filter>远程文件</Filter>
     </ClInclude>
-    <ClInclude Include="FileCompress.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="TalkDlg.h">
       <Filter>即时消息</Filter>
     </ClInclude>
@@ -194,6 +191,9 @@
     </ClInclude>
     <ClInclude Include="Audio.h">
       <Filter>远程音频</Filter>
+    </ClInclude>
+    <ClInclude Include="InputDlg.h">
+      <Filter>远程文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -245,9 +245,6 @@
     <ClCompile Include="SystemDlg.cpp">
       <Filter>远程系统管理</Filter>
     </ClCompile>
-    <ClCompile Include="FileCompress.cpp">
-      <Filter>远程文件</Filter>
-    </ClCompile>
     <ClCompile Include="AudioDlg.cpp">
       <Filter>远程音频</Filter>
     </ClCompile>
@@ -265,6 +262,9 @@
     </ClCompile>
     <ClCompile Include="Audio.cpp">
       <Filter>远程音频</Filter>
+    </ClCompile>
+    <ClCompile Include="InputDlg.cpp">
+      <Filter>远程文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

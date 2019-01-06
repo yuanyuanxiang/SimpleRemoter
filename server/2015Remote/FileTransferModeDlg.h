@@ -1,25 +1,48 @@
+#if !defined(AFX_FILETRANSFERMODEDLG_H__6EE95488_A679_4F78_AF95_B4D0F747455A__INCLUDED_)
+#define AFX_FILETRANSFERMODEDLG_H__6EE95488_A679_4F78_AF95_B4D0F747455A__INCLUDED_
+
+#if _MSC_VER > 1000
 #pragma once
+#endif // _MSC_VER > 1000
+// FileTransferModeDlg.h : header file
+//
 
-
-// CFileTransferModeDlg 对话框
+/////////////////////////////////////////////////////////////////////////////
+// CFileTransferModeDlg dialog
 
 class CFileTransferModeDlg : public CDialog
 {
-	DECLARE_DYNAMIC(CFileTransferModeDlg)
-
+// Construction
 public:
-	CFileTransferModeDlg(CWnd* pParent = NULL);   // 标准构造函数
-	virtual ~CFileTransferModeDlg();
-
 	CString m_strFileName;
+	CFileTransferModeDlg(CWnd* pParent = NULL);   // standard constructor
 
-	// 对话框数据
-	enum { IDD = IDD_DIALOG_TRANSMODE };
+// Dialog Data
+	//{{AFX_DATA(CFileTransferModeDlg)
+	enum { IDD = IDD_TRANSFERMODE_DLG };
+		// NOTE: the ClassWizard will add data members here
+	//}}AFX_DATA
 
+
+// Overrides
+	// ClassWizard generated virtual function overrides
+	//{{AFX_VIRTUAL(CFileTransferModeDlg)
+	protected:
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
+	//}}AFX_VIRTUAL
+
+// Implementation
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
+
+	// Generated message map functions
+	//{{AFX_MSG(CFileTransferModeDlg)
 	afx_msg	void OnEndDialog(UINT id);
-	DECLARE_MESSAGE_MAP()
-public:
 	virtual BOOL OnInitDialog();
+	//}}AFX_MSG
+	DECLARE_MESSAGE_MAP()
 };
+
+//{{AFX_INSERT_LOCATION}}
+// Microsoft Visual C++ will insert additional declarations immediately before the previous line.
+
+#endif // !defined(AFX_FILETRANSFERMODEDLG_H__6EE95488_A679_4F78_AF95_B4D0F747455A__INCLUDED_)

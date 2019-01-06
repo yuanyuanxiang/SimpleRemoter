@@ -107,12 +107,12 @@ BEGIN
         BLOCK "080404b0"
         BEGIN
             VALUE "CompanyName", "FUCK THE UNIVERSE"
-            VALUE "FileDescription", "A DLL"
+            VALUE "FileDescription", "A GHOST"
             VALUE "FileVersion", "1.0.0.1"
             VALUE "InternalName", "ServerDl.dll"
             VALUE "LegalCopyright", "Copyright (C) 2019-2025"
             VALUE "OriginalFilename", "ServerDl.dll"
-            VALUE "ProductName", "A DLL"
+            VALUE "ProductName", "A GHOST"
             VALUE "ProductVersion", "1.0.0.1"
         END
     END

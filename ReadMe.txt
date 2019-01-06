@@ -14,3 +14,13 @@
 2、修复部分内存泄漏问题，改善线程处理逻辑。
 3、修复客户端不停断线重连的缺陷。解决部分内存泄漏缺陷。
 4、解决几处缺陷。【遗留问题】文件管理对话框释放资源导致第2次打开崩溃。
+
+2019.1.6
+
+1、改用EnumDisplaySettings获取屏幕大小，原方法获取屏幕大小不准。
+
+2、将FileManagerDlg、InputDlg、FileTransferModeDlg、TrueColorToolBar还原到gh0st最初版本。
+
+3、新增项目"ghost"，不通过TestRun调用dll，而是直接生成可执行文件。
+
+4、修复开启视频，客户端产生的一处内存泄漏缺陷，m_pCapture需要释放。

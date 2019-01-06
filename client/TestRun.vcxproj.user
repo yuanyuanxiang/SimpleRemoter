@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <RemoteDebuggerCommand>C:\Users\win7\Desktop\Remoter\TestRun.exe</RemoteDebuggerCommand>
+    <RemoteDebuggerWorkingDirectory>C:\Users\win7\Desktop\Remoter</RemoteDebuggerWorkingDirectory>
+    <RemoteDebuggerServerName>192.168.43.2</RemoteDebuggerServerName>
+    <DeploymentDirectory>C:\Users\win7\Desktop\Remoter</DeploymentDirectory>
+    <AdditionalFiles>$(TargetDir)\TestRun.pdb;$(TargetDir)\ServerDll.dll;$(TargetDir)\ServerDll.pdb</AdditionalFiles>
+    <RemoteDebuggerDeployDebugCppRuntime>false</RemoteDebuggerDeployDebugCppRuntime>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
+</Project>

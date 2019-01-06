@@ -31,11 +31,11 @@
 
 class CTrueColorToolBar : public CToolBar
 {
-	// Construction
+// Construction
 public:
 	CTrueColorToolBar();
 
-	// Attributes
+// Attributes
 private:
 	BOOL m_bDropDown;
 
@@ -45,30 +45,37 @@ private:
 		UINT  uMenuID;
 		CWnd* pParent;
 	};
-
+	
 	CArray <stDropDownInfo, stDropDownInfo&> m_lstDropDownButton;
-
-	// Operations
+	
+// Operations
 public:
 	BOOL LoadTrueColorToolBar(int  nBtnWidth,
-		UINT uToolBar,
-		UINT uToolBarHot		= 0,
-		UINT uToolBarDisabled = 0);
+							  UINT uToolBar,
+							  UINT uToolBarHot		= 0,
+							  UINT uToolBarDisabled = 0);
 
 	void AddDropDownButton(CWnd* pParent, UINT uButtonID, UINT uMenuID);
 
 private:
 	BOOL SetTrueColorToolBar(UINT uToolBarType,
-		UINT uToolBar,
-		int  nBtnWidth);
+		                     UINT uToolBar,
+						     int  nBtnWidth);
 
-	// Implementation
+// Overrides
+	// ClassWizard generated virtual function overrides
+	//{{AFX_VIRTUAL(CTrueColorToolBar)
+	//}}AFX_VIRTUAL
+
+// Implementation
 public:
 	virtual ~CTrueColorToolBar();
 
 	// Generated message map functions
 protected:
-	afx_msg void OnToolbarDropDown(NMHDR * pnmh, LRESULT* plRes);
+	//{{AFX_MSG(CTrueColorToolBar)
+	afx_msg void OnToolbarDropDown(NMHDR* pnmh, LRESULT* plRes);
+	//}}AFX_MSG
 
 	DECLARE_MESSAGE_MAP()
 };

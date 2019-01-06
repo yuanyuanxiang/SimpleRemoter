@@ -31,10 +31,11 @@ CCaptureVideo::~CCaptureVideo()
 		m_pVW->put_Owner(NULL);
 	}
 	SAFE_RELEASE(m_pMC);
-	SAFE_RELEASE(m_pVW); 
+	SAFE_RELEASE(m_pVW);
 	SAFE_RELEASE(m_pGB);
 	SAFE_RELEASE(m_pBF);
-	SAFE_RELEASE(m_pGrabber); 
+	SAFE_RELEASE(m_pGrabber);
+	SAFE_RELEASE(m_pCapture);
 
 	CoUninitialize() ; 
 }
@@ -42,91 +43,86 @@ CCaptureVideo::~CCaptureVideo()
 //!!我不懂了
 HRESULT CCaptureVideo::Open(int iDeviceID,int iPress)
 {
-	HRESULT hResult;
-
-	hResult = InitCaptureGraphBuilder();  //
-	if (FAILED(hResult))
+	printf("CCaptureVideo call Open\n");
+	HRESULT hResult = S_OK;
+	do 
 	{
-		return hResult;
-	}
-	if(!BindVideoFilter(iDeviceID, &m_pBF))  //FDo
-		return S_FALSE;
+		hResult = InitCaptureGraphBuilder();
+		if (FAILED(hResult))
+			break;
+		if(!BindVideoFilter(iDeviceID, &m_pBF))
+			break;
 
-	hResult = m_pGB->AddFilter(m_pBF, L"Capture Filter");
+		hResult = m_pGB->AddFilter(m_pBF, L"Capture Filter");
 
-	hResult = CoCreateInstance(CLSID_SampleGrabber, NULL, CLSCTX_INPROC_SERVER, 
-		IID_ISampleGrabber, (void**)&m_pGrabber);   //引脚内存   
-	if(FAILED(hResult))
-	{
-		return hResult;	 
-	}
+		hResult = CoCreateInstance(CLSID_SampleGrabber, NULL, CLSCTX_INPROC_SERVER, 
+			IID_ISampleGrabber, (void**)&m_pGrabber);   //引脚内存   
+		if(FAILED(hResult))
+			break;
 
-	//m_pGrabber 属性设置   1 格式   2 内存缓冲形式
-	CComQIPtr<IBaseFilter, &IID_IBaseFilter> pGrabBase(m_pGrabber);//设置视频格式
-	AM_MEDIA_TYPE mt;    //视频格式
-	ZeroMemory(&mt, sizeof(AM_MEDIA_TYPE));
-	mt.majortype = MEDIATYPE_Video;
-	mt.subtype = MEDIASUBTYPE_RGB24; // MEDIASUBTYPE_RGB24 ; 
+		//m_pGrabber 属性设置   1 格式   2 内存缓冲形式
+		CComQIPtr<IBaseFilter, &IID_IBaseFilter> pGrabBase(m_pGrabber);//设置视频格式
+		AM_MEDIA_TYPE mt;    //视频格式
+		ZeroMemory(&mt, sizeof(AM_MEDIA_TYPE));
+		mt.majortype = MEDIATYPE_Video;
+		mt.subtype = MEDIASUBTYPE_RGB24; // MEDIASUBTYPE_RGB24
 
-	hResult = m_pGrabber->SetMediaType(&mt);
-	if( FAILED( hResult ))
-	{		
-		return hResult;	
-	}
-	hResult = m_pGB->AddFilter( pGrabBase,L"Grabber");
+		hResult = m_pGrabber->SetMediaType(&mt);
+		if(FAILED(hResult))
+			break;
+		
+		hResult = m_pGB->AddFilter(pGrabBase,L"Grabber");
 
-	if( FAILED(hResult))
-	{
-		return hResult;
-	}
+		if(FAILED(hResult))
+			break;
 
-	hResult = m_pCapture->RenderStream(&PIN_CATEGORY_PREVIEW,    //静态
-		&MEDIATYPE_Video,m_pBF,pGrabBase,NULL);	
-	if( FAILED(hResult))
-	{
-		hResult = m_pCapture->RenderStream(&PIN_CATEGORY_CAPTURE,&MEDIATYPE_Video,m_pBF,pGrabBase,NULL);
-		//扑捉	
-	}
-	if( FAILED(hResult))		 
-	{
-		return hResult;			
-	}
-	hResult = m_pGrabber->GetConnectedMediaType(&mt); 
+		hResult = m_pCapture->RenderStream(&PIN_CATEGORY_PREVIEW,    //静态
+			&MEDIATYPE_Video,m_pBF,pGrabBase,NULL);	
+		if(FAILED(hResult))
+		{
+			//扑捉
+			hResult = m_pCapture->RenderStream(&PIN_CATEGORY_CAPTURE,&MEDIATYPE_Video,m_pBF,pGrabBase,NULL);
+			break;
+		}
 
-	if (FAILED( hResult) )
-	{	
-		return hResult;
-	}
+		if(FAILED(hResult))
+			break;	
+		
+		hResult = m_pGrabber->GetConnectedMediaType(&mt); 
 
-	//3  扑捉数据  FDO 一旦有数据就进行 回调函数调用 属于一个类
+		if (FAILED(hResult))
+			break;
 
-	VIDEOINFOHEADER * vih = (VIDEOINFOHEADER*) mt.pbFormat;   
-	//mCB 是个另外一个类 并且全局变量 有个回调
-	mCB.m_ulFullWidth = vih->bmiHeader.biWidth;
-	mCB.m_ulFullHeight = vih->bmiHeader.biHeight;
+		//3  扑捉数据  FDO 一旦有数据就进行 回调函数调用 属于一个类
 
-	FreeMediaType(mt);
+		VIDEOINFOHEADER * vih = (VIDEOINFOHEADER*) mt.pbFormat;   
+		//mCB 是个另外一个类 并且全局变量 有个回调
+		mCB.m_ulFullWidth = vih->bmiHeader.biWidth;
+		mCB.m_ulFullHeight = vih->bmiHeader.biHeight;
 
-	hResult = m_pGrabber->SetBufferSamples( FALSE );  //回调函数
-	hResult = m_pGrabber->SetOneShot( FALSE );
+		FreeMediaType(mt);
 
-	//设置视频捕获回调函数 也就是如果有视频数据时就会调用这个类的BufferCB函数
+		hResult = m_pGrabber->SetBufferSamples( FALSE );  //回调函数
+		hResult = m_pGrabber->SetOneShot( FALSE );
 
-	//返回OnTimer
-	hResult = m_pGrabber->SetCallback(&mCB, 1); 
+		//设置视频捕获回调函数 也就是如果有视频数据时就会调用这个类的BufferCB函数
 
-	m_hWnd = CreateWindow("#32770", 
-		"", WS_POPUP, 0, 0, 0, 0, NULL, NULL, NULL, NULL);
+		//返回OnTimer
+		hResult = m_pGrabber->SetCallback(&mCB, 1); 
 
-	SetupVideoWindow();   //屏蔽窗口
+		m_hWnd = CreateWindow("#32770", "", WS_POPUP, 0, 0, 0, 0, NULL, NULL, NULL, NULL);
 
-	hResult = m_pMC->Run();    //开灯   
+		SetupVideoWindow();   //屏蔽窗口
 
-	if(FAILED(hResult))
-	{
-		return hResult; 
-	}			 	
-	return S_OK;
+		hResult = m_pMC->Run();    //开灯   
+
+		if(FAILED(hResult))
+			break;
+	} while (false);
+
+	printf("CCaptureVideo Open %s\n", FAILED(hResult) ? "failed" : "succeed");
+
+	return hResult;
 }
 
 

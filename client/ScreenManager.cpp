@@ -25,7 +25,7 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n):CManager(ClientO
 	m_bIsWorking = TRUE;
 	m_bIsBlockInput = FALSE;
 
-	m_ScreenSpyObject = new CScreenSpy(16);  
+	m_ScreenSpyObject = new CScreenSpy(16);
 
 	if (m_ScreenSpyObject==NULL)
 	{
