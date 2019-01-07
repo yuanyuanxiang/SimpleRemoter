@@ -39,6 +39,12 @@ int main(int argc, const char *argv[])
 		std::cout<<"²ÎÊı²»×ã.\n";
 		return -1;
 	}
+	HANDLE hMutex = ::CreateMutexA(NULL, TRUE, "ghost.exe");
+	if (ERROR_ALREADY_EXISTS == GetLastError())
+	{
+		CloseHandle(hMutex);
+		return -2;
+	}
 	
 	SetConsoleCtrlHandler(&callback, TRUE);
 	const char *szServerIP = argv[1];
@@ -54,6 +60,7 @@ int main(int argc, const char *argv[])
 	CloseHandle(hThread);
 	status = E_STOP;
 
+	CloseHandle(hMutex);
 	return 0;
 }
 #else

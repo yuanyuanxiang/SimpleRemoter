@@ -9,6 +9,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 #define ALGORITHM_DIFF 1
+#define COPY_ALL 1	// 拷贝全部屏幕，不分块拷贝（added by yuanyuanxiang 2019-1-7）
 #include "CursorInfor.h"
 
 

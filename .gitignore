@@ -60,3 +60,9 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+*.sdf
+server/2015Remote/2015Remote.aps
+*.ipch
+*.aps
+*.suo
+server/2015Remote.VC.db

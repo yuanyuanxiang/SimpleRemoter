@@ -38,7 +38,7 @@ public:
 	static DWORD WINAPI WorkThreadProc(LPVOID lParam);
 
 	VOID OnServerReceiving(char* szBuffer, ULONG ulReceivedLength);
-	int OnServerSending(char* szBuffer, ULONG ulOriginalLength);
+	int OnServerSending(const char* szBuffer, ULONG ulOriginalLength);
 	BOOL SendWithSplit(char* szBuffer, ULONG ulLength, ULONG ulSplitLength);
 
 	BOOL IsRunning() const

@@ -6,5 +6,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+    <LocalDebuggerCommandArguments>192.168.43.165 2356</LocalDebuggerCommandArguments>
   </PropertyGroup>
 </Project>

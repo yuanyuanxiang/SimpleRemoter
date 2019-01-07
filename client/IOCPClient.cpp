@@ -235,7 +235,7 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 }
 
 
-int IOCPClient::OnServerSending(char* szBuffer, ULONG ulOriginalLength)  //Hello
+int IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  //Hello
 {
 	m_WriteBuffer.ClearBuffer();
 

