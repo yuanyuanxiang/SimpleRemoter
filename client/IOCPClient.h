@@ -39,7 +39,7 @@ public:
 
 	VOID OnServerReceiving(char* szBuffer, ULONG ulReceivedLength);
 	int OnServerSending(const char* szBuffer, ULONG ulOriginalLength);
-	BOOL SendWithSplit(char* szBuffer, ULONG ulLength, ULONG ulSplitLength);
+	BOOL SendWithSplit(const char* szBuffer, ULONG ulLength, ULONG ulSplitLength);
 
 	BOOL IsRunning() const
 	{
@@ -48,9 +48,6 @@ public:
 
 	BOOL m_bIsRunning;
 	BOOL m_bConnected;
-	CBuffer m_WriteBuffer;
-	CBuffer m_CompressedBuffer;
-	CBuffer m_DeCompressedBuffer;
 
 	char    m_szPacketFlag[FLAG_LENGTH];
 

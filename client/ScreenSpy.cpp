@@ -39,7 +39,11 @@ CScreenSpy::CScreenSpy(ULONG ulbiBitCount)
 	BOOL Isgetdisplay = EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &devmode);
 	m_ulFullWidth = devmode.dmPelsWidth;
 	m_ulFullHeight = devmode.dmPelsHeight;
-	printf("===> 桌面分辨率大小为：%d x %d\n", m_ulFullWidth, m_ulFullHeight);
+	int w = ::GetSystemMetrics(SM_CXSCREEN), h = ::GetSystemMetrics(SM_CYSCREEN);
+	m_bZoomed = (w != m_ulFullWidth) || (h != m_ulFullHeight);
+	m_wZoom = double(m_ulFullWidth) / w, m_hZoom = double(m_ulFullHeight) / h;
+	printf("=> 桌面缩放比例: %.2f, %.2f\t分辨率：%d x %d\n", m_wZoom, m_hZoom, m_ulFullWidth, m_ulFullHeight);
+	m_wZoom = 1.0/m_wZoom, m_hZoom = 1.0/m_hZoom;
 	m_BitmapInfor_Full = ConstructBI(m_ulbiBitCount,m_ulFullWidth, m_ulFullHeight);
 	m_BitmapData_Full = NULL;
 	m_BitmapHandle	= ::CreateDIBSection(m_hFullDC, m_BitmapInfor_Full, 
@@ -156,7 +160,7 @@ ULONG CScreenSpy::GetFirstScreenLength()
 
 LPVOID CScreenSpy::GetNextScreenData(ULONG* ulNextSendLength)
 {
-	if (ulNextSendLength == NULL || m_RectBuffer == NULL)
+	if (m_RectBuffer == NULL)
 	{
 		return NULL;
 	}
@@ -186,7 +190,8 @@ LPVOID CScreenSpy::GetNextScreenData(ULONG* ulNextSendLength)
 		//两个Bit进行比较如果不一样修改m_lpvFullBits中的返回
 		*ulNextSendLength = m_RectBufferOffset + 
 			CompareBitmap((LPBYTE)m_DiffBitmapData_Full, (LPBYTE)m_BitmapData_Full,
-			m_RectBuffer + m_RectBufferOffset, m_BitmapInfor_Full->bmiHeader.biSizeImage);	
+			m_RectBuffer + m_RectBufferOffset, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+
 		return m_RectBuffer;
 	}
 
@@ -203,6 +208,7 @@ VOID CScreenSpy::WriteRectBuffer(LPBYTE	szBuffer,ULONG ulLength)
 
 VOID CScreenSpy::ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHeight)
 {
+	AUTO_TICK(1);
 #ifdef COPY_ALL
 	BitBlt(hdcDest, 0, 0, ulWidth, ulHeight, hdcSour, 0, 0, m_dwBitBltRop);
 #else
@@ -223,48 +229,36 @@ VOID CScreenSpy::ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHei
 #endif
 }
 
+
 ULONG CScreenSpy::CompareBitmap(LPBYTE CompareSourData, LPBYTE CompareDestData, 
 								LPBYTE szBuffer, DWORD ulCompareLength)
 {
+	AUTO_TICK(1);
 	// Windows规定一个扫描行所占的字节数必须是4的倍数, 所以用DWORD比较
-	LPDWORD	p1, p2;
-	p1 = (LPDWORD)CompareDestData;
-	p2 = (LPDWORD)CompareSourData;
-
+	LPDWORD	p1 = (LPDWORD)CompareDestData, p2 = (LPDWORD)CompareSourData;
 	// 偏移的偏移，不同长度的偏移
-	ULONG ulszBufferOffset = 0, ulv1 = 0, ulv2 = 0;
-	ULONG ulCount = 0; // 数据计数器
-	// p1++实际上是递增了一个DWORD
-	for (int i = 0; i < ulCompareLength; i += 4, p1++, p2++)
+	ULONG ulszBufferOffset = 0, ulv1 = 0, ulv2 = 0, ulCount = 0;
+	for (int i = 0; i < ulCompareLength; i += 4, ++p1, ++p2)
 	{
-		if (*p1 == *p2)  
+		if (*p1 == *p2)
 			continue;
-		// 一个新数据块开始
-		// 写入偏移地址
 
-		*(LPDWORD)(szBuffer + ulszBufferOffset) = i;     
+		*(LPDWORD)(szBuffer + ulszBufferOffset) = i;
 		// 记录数据大小的存放位置
-		ulv1 = ulszBufferOffset + sizeof(int);  //4
-		ulv2 = ulv1 + sizeof(int);    //8
+		ulv1 = ulszBufferOffset + sizeof(int);
+		ulv2 = ulv1 + sizeof(int);
 		ulCount = 0; // 数据计数器归零
 
 		// 更新Dest中的数据
 		*p1 = *p2;
 		*(LPDWORD)(szBuffer + ulv2 + ulCount) = *p2;
 
-		/*
-		[1][2][3][3]          
-		[1][3][2][1]
-
-		[0000][   ][1321]
-		*/
 		ulCount += 4;
 		i += 4, p1++, p2++;	
-		for (int j = i; j < ulCompareLength; j += 4, i += 4, p1++, p2++)
+		for (int j = i; j < ulCompareLength; j += 4, i += 4, ++p1, ++p2)
 		{
 			if (*p1 == *p2)
 				break;
-
 			// 更新Dest中的数据
 			*p1 = *p2;
 			*(LPDWORD)(szBuffer + ulv2 + ulCount) = *p2;
@@ -272,9 +266,8 @@ ULONG CScreenSpy::CompareBitmap(LPBYTE CompareSourData, LPBYTE CompareDestData,
 		}
 		// 写入数据长度
 		*(LPDWORD)(szBuffer + ulv1) = ulCount;
-		ulszBufferOffset = ulv2 + ulCount;	
+		ulszBufferOffset = ulv2 + ulCount;
 	}
 
-	// nOffsetOffset 就是写入的总大小
 	return ulszBufferOffset;
 }

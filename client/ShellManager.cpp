@@ -130,7 +130,7 @@ DWORD WINAPI CShellManager::ReadPipeThread(LPVOID lParam)
 			LocalFree(szTotalBuffer);
 		}
 	}
-	cout<<"ReadPipe线程退出"<<endl;
+	cout<<"ReadPipe线程退出\n";
 	return 0;
 }
 

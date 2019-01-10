@@ -21,5 +21,4 @@ protected:
 	PBYTE	m_Base;
 	PBYTE	m_Ptr;
 	ULONG	m_ulMaxLength;
-	CRITICAL_SECTION  m_cs;
 };

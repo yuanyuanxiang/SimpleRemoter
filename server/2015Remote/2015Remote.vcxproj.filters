@@ -63,7 +63,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ReadMe.txt" />
     <None Include="res\My2015Remote.rc2">
       <Filter>资源文件</Filter>
     </None>
@@ -271,5 +270,8 @@
     <ResourceCompile Include="2015Remote.rc">
       <Filter>资源文件</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\..\ReadMe.txt" />
   </ItemGroup>
 </Project>

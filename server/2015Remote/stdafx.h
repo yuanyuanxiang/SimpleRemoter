@@ -26,10 +26,7 @@
 #include <afxwin.h>         // MFC 核心组件和标准组件
 #include <afxext.h>         // MFC 扩展
 
-
 #include <afxdisp.h>        // MFC 自动化类
-
-
 
 #ifndef _AFX_NO_OLE_SUPPORT
 #include <afxdtctl.h>           // MFC 对 Internet Explorer 4 公共控件的支持
@@ -39,10 +36,6 @@
 #endif // _AFX_NO_AFXCMN_SUPPORT
 
 #include <afxcontrolbars.h>     // 功能区和控件条的 MFC 支持
-
-
-
-
 
 enum
 {
@@ -220,3 +213,25 @@ enum
 
 // 在条件C成立时等待T秒(步长1ms)
 #define WAIT_1(C, T) { timeBeginPeriod(1); WAIT_n(C, T, 1); timeEndPeriod(1); }
+
+// 智能计时器，计算函数的耗时
+class auto_tick
+{
+private:
+	const char *func;
+	int threshold;
+	clock_t tick;
+	__inline clock_t now() const { return clock(); }
+
+public:
+	auto_tick(const char *func_name, int th=5) : func(func_name), threshold(th), tick(now()) { }
+	~auto_tick(){int s(this->time());if(s>threshold)TRACE("[%s]执行时间: [%d]ms.\n", func, s);}
+	__inline int time() const { return now() - tick; }
+};
+
+#ifdef _DEBUG
+// 智能计算当前函数的耗时，超时会打印
+#define AUTO_TICK(thresh) auto_tick(__FUNCTION__, thresh)
+#else
+#define AUTO_TICK(thresh) 
+#endif

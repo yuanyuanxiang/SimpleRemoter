@@ -96,7 +96,7 @@ ULONG CFileManager::SendDiskDriverList()              //获得被控端的磁盘信息
 
 CFileManager::~CFileManager()
 {
-	cout<<"远程文件析构"<<endl;
+	cout<<"远程文件析构\n";
 }
 
 VOID CFileManager::OnReceive(PBYTE szBuffer, ULONG ulLength)

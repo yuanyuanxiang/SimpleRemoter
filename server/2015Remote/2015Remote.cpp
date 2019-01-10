@@ -10,6 +10,42 @@
 #define new DEBUG_NEW
 #endif
 
+// dump相关
+#include <io.h>
+#include <direct.h>
+#include <DbgHelp.h>
+#pragma comment(lib, "Dbghelp.lib")
+
+/** 
+* @brief 程序遇到未知BUG导致终止时调用此函数，不弹框
+* 并且转储dump文件到dump目录.
+*/
+long WINAPI whenbuged(_EXCEPTION_POINTERS *excp)
+{
+	// 获取dump文件夹，若不存在，则创建之
+	char dump[_MAX_PATH], *p = dump;
+	GetModuleFileNameA(NULL, dump, _MAX_PATH);
+	while (*p) ++p;
+	while ('\\' != *p) --p;
+	strcpy(p + 1, "dump");
+	if (_access(dump, 0) == -1)
+		_mkdir(dump);
+	char curTime[64];// 当前dump文件
+	time_t TIME(time(0));
+	strftime(curTime, 64, "\\remote_%Y-%m-%d %H%M%S.dmp", localtime(&TIME));
+	strcat(dump, curTime);
+	HANDLE hFile = ::CreateFileA(dump, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 
+		FILE_ATTRIBUTE_NORMAL, NULL);
+	if(INVALID_HANDLE_VALUE != hFile)
+	{
+		MINIDUMP_EXCEPTION_INFORMATION einfo = {::GetCurrentThreadId(), excp, FALSE};
+		::MiniDumpWriteDump(::GetCurrentProcess(), ::GetCurrentProcessId(),
+			hFile, MiniDumpWithFullMemory, &einfo, NULL, NULL);
+		::CloseHandle(hFile);
+	}
+
+	return EXCEPTION_EXECUTE_HANDLER;
+}
 
 // CMy2015RemoteApp
 
@@ -39,6 +75,8 @@ CMy2015RemoteApp theApp;
 
 BOOL CMy2015RemoteApp::InitInstance()
 {
+	SetUnhandledExceptionFilter(&whenbuged);
+
 	// 如果一个运行在 Windows XP 上的应用程序清单指定要
 	// 使用 ComCtl32.dll 版本 6 或更高版本来启用可视化方式，
 	//则需要 InitCommonControlsEx()。否则，将无法创建窗口。

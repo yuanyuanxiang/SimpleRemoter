@@ -8,7 +8,6 @@ class CScreenSpyDlg : public CDialog
 	DECLARE_DYNAMIC(CScreenSpyDlg)
 
 public:
-	//CScreenSpyDlg(CWnd* pParent = NULL);   // 标准构造函数
 	CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);   
 	virtual ~CScreenSpyDlg();
 
@@ -47,6 +46,22 @@ public:
 	BOOL CScreenSpyDlg::SaveSnapshot(void);
 	// 对话框数据
 	enum { IDD = IDD_DIALOG_SCREEN_SPY };
+
+	BOOL m_bFullScreen;
+
+	WINDOWPLACEMENT m_struOldWndpl;
+
+	void EnterFullScreen();
+	void LeaveFullScreen();
+
+	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg void OnKillFocus(CWnd* pNewWnd);
+	afx_msg void OnSize(UINT nType, int cx, int cy);
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持

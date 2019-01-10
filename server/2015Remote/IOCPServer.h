@@ -30,10 +30,11 @@ typedef struct _CONTEXT_OBJECT
 	WSABUF	 wsaOutBuffer;  
 	char     szBuffer[PACKET_LENGTH];
 	CBuffer				InCompressedBuffer;	        // 接收到的压缩的数据
-	CBuffer				InDeCompressedBuffer;	        // 解压后的数据
+	CBuffer				InDeCompressedBuffer;	    // 解压后的数据
 	CBuffer             OutCompressedBuffer;
 	int				    v1;
 	HANDLE              hDlg;
+	void				*olps;						// OVERLAPPEDPLUS
 
 	VOID InitMember()
 	{
@@ -43,6 +44,7 @@ typedef struct _CONTEXT_OBJECT
 		sClientSocket = INVALID_SOCKET;
 		memset(&wsaInBuf,0,sizeof(WSABUF));
 		memset(&wsaOutBuffer,0,sizeof(WSABUF));
+		olps = NULL;
 	}
 }CONTEXT_OBJECT,*PCONTEXT_OBJECT;
 
@@ -93,6 +95,8 @@ public:
 
 	VOID PostRecv(CONTEXT_OBJECT* ContextObject);
 
+	VOID ExitWorkThread() { EnterCriticalSection(&m_cs); --m_ulWorkThreadCount; LeaveCriticalSection(&m_cs); }
+
 	/************************************************************************/
 	//请求得到完成
 	BOOL HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWORD dwTrans);
@@ -118,7 +122,6 @@ public:
 	~CLock()
 	{
 		Unlock();
-
 	}
 
 	void Unlock()
@@ -145,7 +148,21 @@ public:
 
 	OVERLAPPEDPLUS(IOType ioType)
 	{
+#ifdef _DEBUG
+		char szLog[100];
+		sprintf_s(szLog, "=> [new] OVERLAPPEDPLUS %x by thread [%d].\n", this, GetCurrentThreadId());
+		OutputDebugStringA(szLog);
+#endif
 		ZeroMemory(this, sizeof(OVERLAPPEDPLUS));
 		m_ioType = ioType;
+	}
+
+	~OVERLAPPEDPLUS()
+	{
+#ifdef _DEBUG
+		char szLog[100];
+		sprintf_s(szLog, "=> [delete] OVERLAPPEDPLUS %x by thread [%d].\n", this, GetCurrentThreadId());
+		OutputDebugStringA(szLog);
+#endif
 	}
 };

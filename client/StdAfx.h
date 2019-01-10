@@ -40,3 +40,28 @@
 
 // 在条件C成立时等待T秒(步长1ms)
 #define WAIT_1(C, T) { timeBeginPeriod(1); WAIT_n(C, T, 1); timeEndPeriod(1); }
+
+#include <time.h>
+#include <stdio.h>
+
+// 智能计时器，计算函数的耗时
+class auto_tick
+{
+private:
+	const char *func;
+	int threshold;
+	clock_t tick;
+	__inline clock_t now() const { return clock(); }
+
+public:
+	auto_tick(const char *func_name, int th=5) : func(func_name), threshold(th), tick(now()) { }
+	~auto_tick() {int s(this->time());if(s>threshold)printf("[%s]执行时间: [%d]ms.\n", func, s);}
+	__inline int time() const { return now() - tick; }
+};
+
+#ifdef _DEBUG
+// 智能计算当前函数的耗时，超时会打印
+#define AUTO_TICK(thresh) auto_tick(__FUNCTION__, thresh)
+#else
+#define AUTO_TICK(thresh) 
+#endif

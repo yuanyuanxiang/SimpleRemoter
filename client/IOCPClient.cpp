@@ -24,7 +24,7 @@ IOCPClient::IOCPClient(bool exit_while_disconnect)
 {
 	WSADATA wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
-	
+
 	m_sClientSocket = INVALID_SOCKET;
 	m_hWorkThread   = NULL;
 	m_bWorkThread = S_STOP;
@@ -67,7 +67,7 @@ IOCPClient::~IOCPClient()
 BOOL IOCPClient::ConnectServer(char* szServerIP, unsigned short uPort)
 {
 	m_sClientSocket = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);    //传输层
-	
+
 	if (m_sClientSocket == SOCKET_ERROR)   
 	{ 
 		return FALSE;   
@@ -78,7 +78,7 @@ BOOL IOCPClient::ConnectServer(char* szServerIP, unsigned short uPort)
 	ServerAddr.sin_family	= AF_INET;               //网络层  IP
 	ServerAddr.sin_port	= htons(uPort);	
 	ServerAddr.sin_addr.S_un.S_addr = inet_addr(szServerIP);
-	
+
 	if (connect(m_sClientSocket,(SOCKADDR *)&ServerAddr,sizeof(sockaddr_in)) == SOCKET_ERROR) 
 	{
 		if (m_sClientSocket!=INVALID_SOCKET)
@@ -104,7 +104,7 @@ BOOL IOCPClient::ConnectServer(char* szServerIP, unsigned short uPort)
 	}
 	if (m_hWorkThread == NULL){
 		m_hWorkThread = (HANDLE)CreateThread(NULL, 0, 
-		(LPTHREAD_START_ROUTINE)WorkThreadProc,(LPVOID)this, 0, NULL);
+			(LPTHREAD_START_ROUTINE)WorkThreadProc,(LPVOID)this, 0, NULL);
 		m_bWorkThread = m_hWorkThread ? S_RUN : S_STOP;
 	}
 	std::cout<<"连接服务端成功.\n";
@@ -153,7 +153,7 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 					break;
 			}else{
 				//正确接收就调用OnRead处理,转到OnRead
-				This->OnServerReceiving((char*)szBuffer, iReceivedLength);
+				This->OnServerReceiving(szBuffer, iReceivedLength);
 			}
 		}
 	}
@@ -170,8 +170,9 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 	{
 		assert (ulLength > 0);	
 		//以下接到数据进行解压缩
+		CBuffer m_CompressedBuffer;
 		m_CompressedBuffer.WriteBuffer((LPBYTE)szBuffer, ulLength);
-		
+
 		//检测数据是否大于数据头大小 如果不是那就不是正确的数据
 		while (m_CompressedBuffer.GetBufferLength() > HDR_LENGTH)
 		{
@@ -182,38 +183,38 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 			{
 				throw "Bad Buffer";
 			}
-			
+
 			ULONG ulPackTotalLength = 0;
 			CopyMemory(&ulPackTotalLength, m_CompressedBuffer.GetBuffer(FLAG_LENGTH), 
 				sizeof(ULONG));
-			
+
 			//--- 数据的大小正确判断
 			if (ulPackTotalLength && 
 				(m_CompressedBuffer.GetBufferLength()) >= ulPackTotalLength)
 			{
 				m_CompressedBuffer.ReadBuffer((PBYTE)szPacketFlag, FLAG_LENGTH);//读取各种头部 shine
 
-				m_CompressedBuffer.ReadBuffer((PBYTE) &ulPackTotalLength, sizeof(ULONG));            
-				
-				ULONG ulOriginalLength = 0; 
-				m_CompressedBuffer.ReadBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG)); 
+				m_CompressedBuffer.ReadBuffer((PBYTE) &ulPackTotalLength, sizeof(ULONG));
+
+				ULONG ulOriginalLength = 0;
+				m_CompressedBuffer.ReadBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG));
 
 				//50  
-				ULONG ulCompressedLength = ulPackTotalLength - HDR_LENGTH; 
-				PBYTE CompressedBuffer = new BYTE[ulCompressedLength];              
-                PBYTE DeCompressedBuffer = new BYTE[ulOriginalLength]; 
-				
+				ULONG ulCompressedLength = ulPackTotalLength - HDR_LENGTH;
+				PBYTE CompressedBuffer = new BYTE[ulCompressedLength];
+				PBYTE DeCompressedBuffer = new BYTE[ulOriginalLength];
+
 				m_CompressedBuffer.ReadBuffer(CompressedBuffer, ulCompressedLength);
-	
+
 				int	iRet = uncompress(DeCompressedBuffer, 
 					&ulOriginalLength, CompressedBuffer, ulCompressedLength);
-				
+
 				if (iRet == Z_OK)//如果解压成功
 				{
-					m_DeCompressedBuffer.ClearBuffer();
+					CBuffer m_DeCompressedBuffer;
 					m_DeCompressedBuffer.WriteBuffer(DeCompressedBuffer,
 						ulOriginalLength);
-					
+
 					//解压好的数据和长度传递给对象Manager进行处理 注意这里是用了多态
 					//由于m_pManager中的子类不一样造成调用的OnReceive函数不一样
 					m_Manager->OnReceive((PBYTE)m_DeCompressedBuffer.GetBuffer(0),
@@ -221,82 +222,73 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 				}
 				else
 					throw "Bad Buffer";
-				
+
 				delete [] CompressedBuffer;
 				delete [] DeCompressedBuffer;
 			}
 			else
 				break;
 		}
-	}catch(...)
-	{
-		m_CompressedBuffer.ClearBuffer();
-	}
+	}catch(...) { }
 }
 
 
 int IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  //Hello
 {
-	m_WriteBuffer.ClearBuffer();
-
-	if (ulOriginalLength > 0)
+	assert (ulOriginalLength > 0);
 	{
-		//乘以1.001是以最坏的也就是数据压缩后占用的内存空间和原先一样 +12 
+		//乘以1.001是以最坏的也就是数据压缩后占用的内存空间和原先一样 +12
 		//防止缓冲区溢出//  HelloWorld  10   22
 		//数据压缩 压缩算法 微软提供
 		//nSize   = 436
-		//destLen = 448                             
-		unsigned long	ulCompressedLength = (double)ulOriginalLength * 1.001  + 12;     
-		LPBYTE			CompressedBuffer = new BYTE[ulCompressedLength]; 
-		
-		int	iRet = compress(CompressedBuffer, &ulCompressedLength, (PBYTE)szBuffer, ulOriginalLength);   
+		//destLen = 448
+		unsigned long	ulCompressedLength = (double)ulOriginalLength * 1.001  + 12;
+		LPBYTE			CompressedBuffer = new BYTE[ulCompressedLength];
 
-		if (iRet != Z_OK)  
+		int	iRet = compress(CompressedBuffer, &ulCompressedLength, (PBYTE)szBuffer, ulOriginalLength);
+		if (iRet != Z_OK)
 		{
 			delete [] CompressedBuffer;
 			return FALSE;
 		}
-		
-		ULONG ulPackTotalLength = ulCompressedLength + HDR_LENGTH;    
 
-		m_WriteBuffer.WriteBuffer((PBYTE)m_szPacketFlag, sizeof(m_szPacketFlag));  
-	   	
-		m_WriteBuffer.WriteBuffer((PBYTE) &ulPackTotalLength,sizeof(ULONG));   
+		ULONG ulPackTotalLength = ulCompressedLength + HDR_LENGTH;
+		CBuffer m_WriteBuffer;
+
+		m_WriteBuffer.WriteBuffer((PBYTE)m_szPacketFlag, sizeof(m_szPacketFlag));
+
+		m_WriteBuffer.WriteBuffer((PBYTE) &ulPackTotalLength,sizeof(ULONG));
 		//  5      4
-		//[Shine][ 30 ]	
-
-		m_WriteBuffer.WriteBuffer((PBYTE)&ulOriginalLength, sizeof(ULONG));   	
+		//[Shine][ 30 ]
+		m_WriteBuffer.WriteBuffer((PBYTE)&ulOriginalLength, sizeof(ULONG));
 		//  5      4    4
-		//[Shine][ 30 ][5]	
-	
-		m_WriteBuffer.WriteBuffer(CompressedBuffer,ulCompressedLength); 
-	
+		//[Shine][ 30 ][5]
+		m_WriteBuffer.WriteBuffer(CompressedBuffer,ulCompressedLength);
+
 		delete [] CompressedBuffer;
-		CompressedBuffer = NULL;		
+		CompressedBuffer = NULL;
+		// 分块发送
+		//shine[0035][0010][HelloWorld+12]
+		return SendWithSplit((char*)m_WriteBuffer.GetBuffer(), m_WriteBuffer.GetBufferLength(), 
+			MAX_SEND_BUFFER);
 	}
-	// 分块发送
-	//shine[0035][0010][HelloWorld+12]
-	return SendWithSplit((char*)m_WriteBuffer.GetBuffer(), m_WriteBuffer.GetBufferLength(), 
-		MAX_SEND_BUFFER);
 }
 
 //  5    2   //  2  2  1
-BOOL IOCPClient::SendWithSplit(char* szBuffer, ULONG ulLength, ULONG ulSplitLength)
+BOOL IOCPClient::SendWithSplit(const char* szBuffer, ULONG ulLength, ULONG ulSplitLength)
 {
-	//1025
 	int			 iReturn = 0;   //真正发送了多少
-	const char*  Travel = (char *)szBuffer;
+	const char*  Travel = szBuffer;
 	int			 i = 0;
-	ULONG		 ulSended = 0;
-	ULONG		 ulSendRetry = 15;
+	int			 ulSended = 0;
+	const int	 ulSendRetry = 15;
 	// 依次发送
-     
 	for (i = ulLength; i >= ulSplitLength; i -= ulSplitLength)
 	{
 		int j = 0;
-		for (; j < ulSendRetry; j++)
-		{     			
-			iReturn = send(m_sClientSocket, Travel, ulSplitLength,0);
+		for (; j < ulSendRetry; ++j)
+		{
+			iReturn = send(m_sClientSocket, Travel, ulSplitLength, 0);
 			if (iReturn > 0)
 			{
 				break;
@@ -306,20 +298,18 @@ BOOL IOCPClient::SendWithSplit(char* szBuffer, ULONG ulLength, ULONG ulSplitLeng
 		{
 			return FALSE;
 		}
-		
-		ulSended += iReturn;  
-		Travel += ulSplitLength;   
-		Sleep(15); //过快会引起控制端数据混乱
+
+		ulSended += iReturn;
+		Travel += ulSplitLength;
 	}
 	// 发送最后的部分
 	if (i>0)  //1024
 	{
 		int j = 0;
-		for (; j < ulSendRetry; j++)   //nSendRetry = 15
+		for (; j < ulSendRetry; j++)
 		{
 			iReturn = send(m_sClientSocket, (char*)Travel,i,0);
 
-			Sleep(15);
 			if (iReturn > 0)
 			{
 				break;
@@ -329,16 +319,10 @@ BOOL IOCPClient::SendWithSplit(char* szBuffer, ULONG ulLength, ULONG ulSplitLeng
 		{
 			return FALSE;
 		}
-		ulSended += iReturn;   //0+=1000
+		ulSended += iReturn;
 	}
-	if (ulSended == ulLength)
-	{
-		return TRUE;
-	}
-	else
-	{
-		return FALSE;
-	}
+
+	return (ulSended == ulLength) ? TRUE : FALSE;
 }
 
 

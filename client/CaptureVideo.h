@@ -128,7 +128,7 @@ public:
 		return (BYTE*)m_BitmapData_Full;  
 	}
 
-	STDMETHODIMP SampleCB( double dbSampleTime, IMediaSample * Sample) 
+	STDMETHODIMP SampleCB(double dbSampleTime, IMediaSample * Sample) 
 	{
 		return 0;
 	}

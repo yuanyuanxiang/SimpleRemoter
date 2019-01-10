@@ -46,6 +46,8 @@ public:
 	ULONG CompareBitmap(LPBYTE CompareSourData, LPBYTE CompareDestData, 
 		LPBYTE szBuffer, DWORD ulCompareLength);
 	VOID ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHeight);
+	bool m_bZoomed;			// 屏幕被缩放
+	double m_wZoom, m_hZoom; // 屏幕缩放比例
 };
 
 #endif // !defined(AFX_SCREENSPY_H__5F74528D_9ABD_404E_84D2_06C96A0615F4__INCLUDED_)

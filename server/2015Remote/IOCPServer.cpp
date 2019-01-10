@@ -91,15 +91,19 @@ IOCPServer::~IOCPServer(void)
 
 	while (!m_ContextConnectionList.IsEmpty())
 	{
-		CONTEXT_OBJECT *ContextObject = m_ContextConnectionList.RemoveHead();  
-		delete ContextObject;
+		CONTEXT_OBJECT *ContextObject = m_ContextConnectionList.GetHead();
+		RemoveStaleContext(ContextObject);
 	}
 
 	while (!m_ContextFreePoolList.IsEmpty())
 	{
-		CONTEXT_OBJECT *ContextObject = m_ContextFreePoolList.RemoveHead();  
+		CONTEXT_OBJECT *ContextObject = m_ContextFreePoolList.RemoveHead();
+		SAFE_DELETE(ContextObject->olps);
 		delete ContextObject;
 	}
+
+	while (m_ulWorkThreadCount)
+		Sleep(10);
 
 	DeleteCriticalSection(&m_cs);
 	m_ulWorkThreadCount = 0;
@@ -239,7 +243,7 @@ BOOL IOCPServer::InitializeIOCP(VOID)
 	GetSystemInfo(&SystemInfo);  //获得PC中有几核
 
 	m_ulThreadPoolMin  = 1; 
-	m_ulThreadPoolMax  = 16;
+	m_ulThreadPoolMax  = SystemInfo.dwNumberOfProcessors * 2;
 	m_ulCPULowThreadsHold  = 10; 
 	m_ulCPUHighThreadsHold = 75; 
 	m_cpu.Init();
@@ -247,7 +251,7 @@ BOOL IOCPServer::InitializeIOCP(VOID)
 	ULONG ulWorkThreadCount = m_ulThreadPoolMax;
 
 	HANDLE hWorkThread = NULL;
-	for (int i=0; i<ulWorkThreadCount; i++ )    
+	for (int i=0; i<ulWorkThreadCount; i++)    
 	{
 		hWorkThread = (HANDLE)CreateThread(NULL, //创建工作线程目的是处理投递到完成端口中的任务			
 			0,						
@@ -272,6 +276,8 @@ BOOL IOCPServer::InitializeIOCP(VOID)
 
 DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 {
+	OutputDebugStringA("======> IOCPServer WorkThreadProc begin \n");
+
 	IOCPServer* This = (IOCPServer*)(lParam);
 
 	HANDLE   hCompletionPort = This->m_hCompletionPort;
@@ -304,6 +310,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 		{
 			if (ContextObject && This->m_bTimeToKill == FALSE &&dwTrans==0)
 			{
+				ContextObject->olps = NULL;
 				This->RemoveStaleContext(ContextObject);
 			}
 			SAFE_DELETE(OverlappedPlus);
@@ -314,7 +321,6 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 			//分配一个新的线程到线程到线程池
 			if (ulBusyThread == This->m_ulCurrentThread)      
 			{
-
 				if (ulBusyThread < This->m_ulThreadPoolMax)    
 				{
 					if (ContextObject != NULL)
@@ -369,27 +375,36 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 	InterlockedDecrement(&This->m_ulCurrentThread);
 	InterlockedDecrement(&This->m_ulBusyThread);
 
+	OutputDebugStringA("======> IOCPServer WorkThreadProc end \n");
+
 	return 0;
 }
 
-BOOL IOCPServer::HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWORD dwTrans)   //在工作线程中被调用
-{ 
-	BOOL bRet = FALSE; 
+//在工作线程中被调用
+BOOL IOCPServer::HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWORD dwTrans)
+{
+	AUTO_TICK(5);
 
-	if (IOInitialize == PacketFlags) 
+	BOOL bRet = FALSE;
+
+	switch (PacketFlags)
 	{
+	case IOInitialize:
 		bRet = OnClientInitializing(ContextObject, dwTrans); 
-	}
-
-	if (IORead==PacketFlags)   //WsaResv
-	{
+		break;
+	case IORead:
 		bRet = OnClientReceiving(ContextObject,dwTrans);
+		break;
+	case IOWrite:
+		bRet = OnClientPostSending(ContextObject,dwTrans);
+		break;
+	case IOIdle:
+		OutputDebugStringA("=> HandleIO PacketFlags= IOIdle\n");
+		break;
+	default:
+		break;
 	}
 
-	if (IOWrite==PacketFlags)  //WsaSend
-	{
-		bRet = OnClientPostSending(ContextObject,dwTrans);
-	}
 	return bRet;
 }
 
@@ -409,70 +424,49 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 			RemoveStaleContext(ContextObject);
 			return FALSE;
 		}
-
-		ContextObject->InCompressedBuffer.WriteBuffer((PBYTE)ContextObject->szBuffer,dwTrans);    //将接收到的数据拷贝到我们自己的内存中wsabuff    8192
-
-		while (ContextObject->InCompressedBuffer.GetBufferLength() > HDR_LENGTH)          //查看数据包里的数据
+		//将接收到的数据拷贝到我们自己的内存中wsabuff    8192
+		ContextObject->InCompressedBuffer.WriteBuffer((PBYTE)ContextObject->szBuffer,dwTrans);
+		//查看数据包里的数据
+		while (ContextObject->InCompressedBuffer.GetBufferLength() > HDR_LENGTH)
 		{
-			char szPacketFlag[FLAG_LENGTH]= {0};
-
+			char szPacketFlag[FLAG_LENGTH + 3]= {0}; // 8字节对齐
 			CopyMemory(szPacketFlag, ContextObject->InCompressedBuffer.GetBuffer(),FLAG_LENGTH);
-
 			if (memcmp(m_szPacketFlag, szPacketFlag, FLAG_LENGTH) != 0)
-			{
-				throw "bad Buffer";
-			}
-
+				throw "Bad Buffer";
+			
+			//Shine[50][kdjfkdjfkj]
 			ULONG ulPackTotalLength = 0;
-			CopyMemory(&ulPackTotalLength, ContextObject->InCompressedBuffer.GetBuffer(FLAG_LENGTH), sizeof(ULONG));//Shine[50][kdjfkdjfkj]
-
+			CopyMemory(&ulPackTotalLength, ContextObject->InCompressedBuffer.GetBuffer(FLAG_LENGTH), sizeof(ULONG));
 			//取出数据包的总长
-
 			//50
 			if (ulPackTotalLength && (ContextObject->InCompressedBuffer.GetBufferLength()) >= ulPackTotalLength)  
 			{
-				ULONG ulOriginalLength = 0;  
-				ContextObject->InCompressedBuffer.ReadBuffer((PBYTE)szPacketFlag, FLAG_LENGTH);    
-
-				ContextObject->InCompressedBuffer.ReadBuffer((PBYTE) &ulPackTotalLength, sizeof(ULONG));            
-
-				ContextObject->InCompressedBuffer.ReadBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG)); 
-
-				ULONG ulCompressedLength = ulPackTotalLength - HDR_LENGTH;  //461 - 13      448
-				PBYTE CompressedBuffer = new BYTE[ulCompressedLength];                 //没有解压
-
+				ULONG ulOriginalLength = 0;
+				ContextObject->InCompressedBuffer.ReadBuffer((PBYTE)szPacketFlag, FLAG_LENGTH);
+				ContextObject->InCompressedBuffer.ReadBuffer((PBYTE) &ulPackTotalLength, sizeof(ULONG));
+				ContextObject->InCompressedBuffer.ReadBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG));
+				ULONG ulCompressedLength = ulPackTotalLength - HDR_LENGTH; //461 - 13  448
+				PBYTE CompressedBuffer = new BYTE[ulCompressedLength];  //没有解压
 				PBYTE DeCompressedBuffer = new BYTE[ulOriginalLength];  //解压过的内存  436
-
-				if (CompressedBuffer == NULL || DeCompressedBuffer == NULL)
-				{
-					throw "Bad Allocate";
-				}
-				ContextObject->InCompressedBuffer.ReadBuffer(CompressedBuffer, ulCompressedLength); //从数据包当前将源数据没有解压读取到pData   448
-
-				int	iRet = uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);     //解压数据
-
+				//从数据包当前将源数据没有解压读取到pData   448
+				ContextObject->InCompressedBuffer.ReadBuffer(CompressedBuffer, ulCompressedLength);
+				int	iRet = uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
 				if (iRet == Z_OK)
 				{
 					ContextObject->InDeCompressedBuffer.ClearBuffer();
 					ContextObject->InCompressedBuffer.ClearBuffer();
 					ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
-
 					m_NotifyProc(ContextObject);  //通知窗口
-				}
-				else
-				{
+				}else{
 					throw "Bad Buffer";
 				}
-
 				delete [] CompressedBuffer;
 				delete [] DeCompressedBuffer;
-			}
-			else
-			{
+			}else{
 				break;
 			}
 		}
-		PostRecv(ContextObject);   //投递新的接收数据的请求
+		PostRecv(ContextObject); //投递新的接收数据的请求
 	}catch(...)
 	{
 		ContextObject->InCompressedBuffer.ClearBuffer();
@@ -485,10 +479,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 
 VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength)  
 {
-	if (ContextObject == NULL)
-	{
-		return;
-	}
+	assert (ContextObject);
 
 	try
 	{
@@ -503,28 +494,20 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 				delete [] CompressedBuffer;
 				return;
 			}
-
-			ULONG ulPackTotalLength = ulCompressedLength + HDR_LENGTH;    
-
-			ContextObject->OutCompressedBuffer.WriteBuffer((LPBYTE)m_szPacketFlag,FLAG_LENGTH);  
-
-			ContextObject->OutCompressedBuffer.WriteBuffer((PBYTE)&ulPackTotalLength, sizeof(ULONG));      
-
-			ContextObject->OutCompressedBuffer.WriteBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG));      
-
-			ContextObject->OutCompressedBuffer.WriteBuffer(CompressedBuffer, ulCompressedLength);        
-
+			ULONG ulPackTotalLength = ulCompressedLength + HDR_LENGTH;
+			ContextObject->OutCompressedBuffer.WriteBuffer((LPBYTE)m_szPacketFlag,FLAG_LENGTH);
+			ContextObject->OutCompressedBuffer.WriteBuffer((PBYTE)&ulPackTotalLength, sizeof(ULONG));
+			ContextObject->OutCompressedBuffer.WriteBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG));
+			ContextObject->OutCompressedBuffer.WriteBuffer(CompressedBuffer, ulCompressedLength);
 			delete [] CompressedBuffer;
 		}
 
-		OVERLAPPEDPLUS* OverlappedPlus = new OVERLAPPEDPLUS(IOWrite);   
-
+		OVERLAPPEDPLUS* OverlappedPlus = new OVERLAPPEDPLUS(IOWrite);
 		BOOL bOk = PostQueuedCompletionStatus(m_hCompletionPort, 0, (DWORD)ContextObject, &OverlappedPlus->m_ol);
-		if ( (!bOk && GetLastError() != ERROR_IO_PENDING))  //如果投递失败
+		if ( (!bOk && GetLastError() != ERROR_IO_PENDING) )  //如果投递失败
 		{            
 			RemoveStaleContext(ContextObject);
 			SAFE_DELETE(OverlappedPlus);
-			return;
 		}
 	}catch(...){}
 }
@@ -535,7 +518,7 @@ BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompl
 	{
 		DWORD ulFlags = MSG_PARTIAL;
 
-		ContextObject->OutCompressedBuffer.RemoveComletedBuffer(ulCompletedLength);             //将完成的数据从数据结构中去除
+		ContextObject->OutCompressedBuffer.RemoveComletedBuffer(ulCompletedLength); //将完成的数据从数据结构中去除
 		if (ContextObject->OutCompressedBuffer.GetBufferLength() == 0)
 		{
 			ContextObject->OutCompressedBuffer.ClearBuffer();
@@ -543,14 +526,13 @@ BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompl
 		}
 		else
 		{
-			OVERLAPPEDPLUS * OverlappedPlus = new OVERLAPPEDPLUS(IOWrite);           //数据没有完成  我们继续投递 发送请求
+			OVERLAPPEDPLUS * OverlappedPlus = new OVERLAPPEDPLUS(IOWrite); //数据没有完成  我们继续投递 发送请求
 
 			ContextObject->wsaOutBuffer.buf = (char*)ContextObject->OutCompressedBuffer.GetBuffer();
-			ContextObject->wsaOutBuffer.len = ContextObject->OutCompressedBuffer.GetBufferLength();                 //获得剩余的数据和长度    
-
+			ContextObject->wsaOutBuffer.len = ContextObject->OutCompressedBuffer.GetBufferLength(); 
 			int iOk = WSASend(ContextObject->sClientSocket, &ContextObject->wsaOutBuffer,1,
 				&ContextObject->wsaOutBuffer.len, ulFlags,&OverlappedPlus->m_ol, NULL);
-			if (iOk == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING )
+			if ( iOk == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING )
 			{
 				int a = GetLastError();
 				RemoveStaleContext(ContextObject);
@@ -570,21 +552,12 @@ DWORD IOCPServer::ListenThreadProc(LPVOID lParam)   //监听线程
 	while(1)
 	{
 		if (WaitForSingleObject(This->m_hKillEvent, 100) == WAIT_OBJECT_0)
-		{
-			break;     
-		}
+			break;
 
 		DWORD dwRet;
-		dwRet = WSAWaitForMultipleEvents(1,
-			&This->m_hListenEvent,
-			FALSE,
-			100,
-			FALSE);  
-
+		dwRet = WSAWaitForMultipleEvents(1,&This->m_hListenEvent,FALSE,100,FALSE);  
 		if (dwRet == WSA_WAIT_TIMEOUT)
-		{
 			continue;
-		}
 
 		int iRet = WSAEnumNetworkEvents(This->m_sListenSocket,    
 			//如果事件授信 我们就将该事件转换成一个网络事件 进行 判断
@@ -592,19 +565,14 @@ DWORD IOCPServer::ListenThreadProc(LPVOID lParam)   //监听线程
 			&NetWorkEvents);
 
 		if (iRet == SOCKET_ERROR)
-		{
 			break;
-		}
 
 		if (NetWorkEvents.lNetworkEvents & FD_ACCEPT)
 		{
 			if (NetWorkEvents.iErrorCode[FD_ACCEPT_BIT] == 0)
 			{
-				//如果是一个链接请求我们就进入OnAccept()函数进行处理
 				This->OnAccept(); 
-			}
-			else
-			{
+			}else{
 				break;
 			}
 		}
@@ -618,10 +586,7 @@ void IOCPServer::OnAccept()
 	SOCKADDR_IN	ClientAddr = {0};     
 	SOCKET		sClientSocket = INVALID_SOCKET;
 
-	int			iRet = 0;
-	int			iLen = 0;;
-
-	iLen = sizeof(SOCKADDR_IN);
+	int iLen = sizeof(SOCKADDR_IN);
 	sClientSocket = accept(m_sListenSocket,
 		(sockaddr*)&ClientAddr,
 		&iLen);                     //通过我们的监听套接字来生成一个与之信号通信的套接字
@@ -678,22 +643,21 @@ void IOCPServer::OnAccept()
 
 	//在做服务器时，如果发生客户端网线或断电等非正常断开的现象，如果服务器没有设置SO_KEEPALIVE选项，
 	//则会一直不关闭SOCKET。因为上的的设置是默认两个小时时间太长了所以我们就修正这个值
-
 	CLock cs(m_cs);
 	m_ContextConnectionList.AddTail(ContextObject);     //插入到我们的内存列表中
 
-	OVERLAPPEDPLUS	*OverlappedPlus = new OVERLAPPEDPLUS(IOInitialize);   //注意这里的重叠IO请求是 用户请求上线
+	OVERLAPPEDPLUS	*OverlappedPlus = new OVERLAPPEDPLUS(IOInitialize); //注意这里的重叠IO请求是 用户请求上线
 
 	BOOL bOk = PostQueuedCompletionStatus(m_hCompletionPort, 0, (DWORD)ContextObject, &OverlappedPlus->m_ol); // 工作线程
 	//因为我们接受到了一个用户上线的请求那么我们就将该请求发送给我们的完成端口 让我们的工作线程处理它
 	if ( (!bOk && GetLastError() != ERROR_IO_PENDING))  //如果投递失败
-	{            
+	{
 		RemoveStaleContext(ContextObject);
 		SAFE_DELETE(OverlappedPlus);
 		return;
 	}
 
-	PostRecv(ContextObject);                                         
+	PostRecv(ContextObject);       
 }
 
 VOID IOCPServer::PostRecv(CONTEXT_OBJECT* ContextObject)
@@ -702,13 +666,14 @@ VOID IOCPServer::PostRecv(CONTEXT_OBJECT* ContextObject)
 	// 如果用户的第一个数据包到达也就就是被控端的登陆请求到达我们的工作线程就
 	// 会响应,并调用ProcessIOMessage函数
 	OVERLAPPEDPLUS * OverlappedPlus = new OVERLAPPEDPLUS(IORead);
-	
+	ContextObject->olps = OverlappedPlus;
+
 	DWORD			dwReturn;
 	ULONG			ulFlags = MSG_PARTIAL;
 	int iOk = WSARecv(ContextObject->sClientSocket, &ContextObject->wsaInBuf,
 		1,&dwReturn, &ulFlags,&OverlappedPlus->m_ol, NULL);
 
-	if ( iOk == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING)
+	if (iOk == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING)
 	{
 		int a = GetLastError();
 		RemoveStaleContext(ContextObject);
@@ -722,19 +687,13 @@ PCONTEXT_OBJECT IOCPServer::AllocateContext()
 
 	CLock cs(m_cs);       
 
-	if (m_ContextFreePoolList.IsEmpty()==FALSE)             
-	{
-		ContextObject = m_ContextFreePoolList.RemoveHead();    
-	}
-	else
-	{
-		ContextObject = new CONTEXT_OBJECT;
-	}
+	ContextObject = !m_ContextFreePoolList.IsEmpty() ? m_ContextFreePoolList.RemoveHead() : new CONTEXT_OBJECT;
 
 	if (ContextObject != NULL)
 	{
 		ContextObject->InitMember();
 	}
+
 	return ContextObject;
 }
 
@@ -745,11 +704,11 @@ VOID IOCPServer::RemoveStaleContext(CONTEXT_OBJECT* ContextObject)
 	{
 		m_OfflineProc(ContextObject);
 
-		CancelIo((HANDLE)ContextObject->sClientSocket);  //取消在当前套接字的异步IO   -->PostRecv
+		CancelIo((HANDLE)ContextObject->sClientSocket);  //取消在当前套接字的异步IO -->PostRecv
 		closesocket(ContextObject->sClientSocket);      //关闭套接字
 		ContextObject->sClientSocket = INVALID_SOCKET;
 
-		while (!HasOverlappedIoCompleted((LPOVERLAPPED)ContextObject)) //判断还有没有异步IO请求在当前套接字上
+		while (!HasOverlappedIoCompleted((LPOVERLAPPED)ContextObject))//判断还有没有异步IO请求在当前套接字上
 		{
 			Sleep(0);
 		}

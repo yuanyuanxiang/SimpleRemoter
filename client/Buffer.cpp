@@ -1,18 +1,16 @@
 #include "StdAfx.h"
 #include "Buffer.h"
-
 #include <math.h>
 
 
 #define U_PAGE_ALIGNMENT   3
 #define F_PAGE_ALIGNMENT 3.0
-CBuffer::CBuffer(void)
+
+CBuffer::CBuffer()
 {
 	m_ulMaxLength = 0;
 
 	m_Ptr = m_Base = NULL;
-
-	InitializeCriticalSection(&m_cs);
 }
 
 
@@ -24,8 +22,6 @@ CBuffer::~CBuffer(void)
 		m_Base = NULL;
 	}
 
-	DeleteCriticalSection(&m_cs);
-
 	m_Base = m_Ptr = NULL;
 	m_ulMaxLength = 0;
 }
@@ -34,11 +30,8 @@ CBuffer::~CBuffer(void)
 
 ULONG CBuffer::ReadBuffer(PBYTE Buffer, ULONG ulLength)
 {
-	EnterCriticalSection(&m_cs);
-
 	if (ulLength > GetBufferMaxLength())
 	{
-		LeaveCriticalSection(&m_cs);
 		return 0;
 	}
 	if (ulLength > GetBufferLength())
@@ -56,7 +49,6 @@ ULONG CBuffer::ReadBuffer(PBYTE Buffer, ULONG ulLength)
 
 	DeAllocateBuffer(GetBufferLength());   
 
-	LeaveCriticalSection(&m_cs);
 	return ulLength;
 }
 
@@ -92,18 +84,14 @@ ULONG CBuffer::DeAllocateBuffer(ULONG ulLength)
 
 BOOL CBuffer::WriteBuffer(PBYTE Buffer, ULONG ulLength)
 {
-	EnterCriticalSection(&m_cs);
-
 	if (ReAllocateBuffer(ulLength + GetBufferLength()) == -1)//10 +1   1024
 	{
-		LeaveCriticalSection(&m_cs);
 		return false;
 	}
 
 	CopyMemory(m_Ptr,Buffer,ulLength);//Hello 5
 
 	m_Ptr+=ulLength;
-	LeaveCriticalSection(&m_cs);
 	return TRUE;
 }
 
@@ -140,11 +128,9 @@ ULONG CBuffer::ReAllocateBuffer(ULONG ulLength)
 
 VOID CBuffer::ClearBuffer()
 {
-	EnterCriticalSection(&m_cs);
 	m_Ptr = m_Base;
 
 	DeAllocateBuffer(1024);  
-	LeaveCriticalSection(&m_cs);
 }
 
 

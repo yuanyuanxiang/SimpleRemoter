@@ -173,7 +173,6 @@ DWORD WINAPI CAudio::waveInCallBack(LPVOID lParam)
 			Sleep(1);
 			This->m_nWaveInIndex = 1 - This->m_nWaveInIndex;
 
-
 			//¸üÐÂ»º³å 
 			MMRESULT mmResult = waveInAddBuffer(This->m_hWaveIn, 
 				This->m_InAudioHeader[This->m_nWaveInIndex], sizeof(WAVEHDR));

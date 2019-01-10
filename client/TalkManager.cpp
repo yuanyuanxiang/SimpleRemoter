@@ -37,7 +37,7 @@ CTalkManager::CTalkManager(IOCPClient* ClientObject, int n):CManager(ClientObjec
 
 CTalkManager::~CTalkManager()
 {
-	cout<<"Talk Îö¹¹"<<endl;
+	cout<<"Talk Îö¹¹\n";
 }
 
 VOID CTalkManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
