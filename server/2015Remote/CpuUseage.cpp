@@ -24,7 +24,8 @@ BOOL CCpuUsage::Init()
 	m_pCounterStruct = (PPDHCOUNTERSTRUCT) new PDHCOUNTERSTRUCT;
 
 	//统计感兴趣的系统信息时，必须先将对应的计数器添加进来
-	PDH_STATUS pdh_status = PdhAddCounter(m_hQuery, (LPCSTR)szCounterName, (DWORD) m_pCounterStruct, &(m_pCounterStruct->hCounter));
+	PDH_STATUS pdh_status = PdhAddCounter(m_hQuery, (LPCSTR)szCounterName, 
+		(DWORD) m_pCounterStruct, &(m_pCounterStruct->hCounter));
 	if (ERROR_SUCCESS != pdh_status) 
 	{
 		return FALSE;

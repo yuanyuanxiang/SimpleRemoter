@@ -24,10 +24,7 @@ class CMy2015RemoteDlg : public CDialogEx
 	// 构造
 public:
 	CMy2015RemoteDlg(CWnd* pParent = NULL);	// 标准构造函数
-	~CMy2015RemoteDlg()
-	{
-		DeleteCriticalSection(&m_cs);
-	}
+	~CMy2015RemoteDlg();
 	// 对话框数据
 	enum { IDD = IDD_MY2015REMOTE_DIALOG };
 protected:

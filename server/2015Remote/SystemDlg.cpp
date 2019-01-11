@@ -69,16 +69,16 @@ BOOL CSystemDlg::OnInitDialog()
 	m_ControlList.SetExtendedStyle(LVS_EX_FLATSB | LVS_EX_FULLROWSELECT); 
 	if (m_bHow==TOKEN_PSLIST)      //进程管理初始化列表
 	{
-		m_ControlList.InsertColumn(0, "映像名称", LVCFMT_LEFT, 120);
-		m_ControlList.InsertColumn(1, "PID", LVCFMT_LEFT, 50);
-		m_ControlList.InsertColumn(2, "程序路径", LVCFMT_LEFT, 200);
+		m_ControlList.InsertColumn(0, "映像名称", LVCFMT_LEFT, 180);
+		m_ControlList.InsertColumn(1, "PID", LVCFMT_LEFT, 70);
+		m_ControlList.InsertColumn(2, "程序路径", LVCFMT_LEFT, 320);
 		ShowProcessList();   //由于第一个发送来的消息后面紧跟着进程的数据所以把数据显示到列表当中\0\0
 	}else if (m_bHow==TOKEN_WSLIST)//窗口管理初始化列表
 	{
 		//初始化 窗口管理的列表
-		m_ControlList.InsertColumn(0, "PID", LVCFMT_LEFT, 50);
-		m_ControlList.InsertColumn(1, "窗口名称", LVCFMT_LEFT, 300);
-		m_ControlList.InsertColumn(2, "窗口状态", LVCFMT_LEFT, 300);
+		m_ControlList.InsertColumn(0, "句柄", LVCFMT_LEFT, 80);
+		m_ControlList.InsertColumn(1, "窗口名称", LVCFMT_LEFT, 420);
+		m_ControlList.InsertColumn(2, "窗口状态", LVCFMT_LEFT, 200);
 		ShowWindowsList();
 	}
 
@@ -108,7 +108,7 @@ void CSystemDlg::ShowWindowsList(void)
 		m_ControlList.SetItemData(i, *lpPID);  //(d)   
 		dwOffset += sizeof(DWORD) + lstrlen(szTitle) + 1;
 	}
-	str.Format("窗口名称   窗口个数【%d】", i);   //修改CtrlList 
+	str.Format("窗口名称    窗口个数【%d】", i);   //修改CtrlList 
 	LVCOLUMN lvc;
 	lvc.mask = LVCF_TEXT;
 	lvc.pszText = str.GetBuffer(0);
@@ -253,6 +253,8 @@ void CSystemDlg::OnWlistRefresh()
 {
 	GetWindowsList();
 }
+
+
 void CSystemDlg::GetWindowsList(void)
 {
 	BYTE bToken = COMMAND_WSLIST;

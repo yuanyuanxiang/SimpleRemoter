@@ -34,7 +34,6 @@ BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_SETTINGAPPLY, &CSettingDlg::OnBnClickedButtonSettingapply)
 	ON_EN_CHANGE(IDC_EDIT_PORT, &CSettingDlg::OnEnChangeEditPort)
 	ON_EN_CHANGE(IDC_EDIT_MAX, &CSettingDlg::OnEnChangeEditMax)
-	ON_BN_CLICKED(IDC_BUTTON_MSG, &CSettingDlg::OnBnClickedButtonMsg)
 END_MESSAGE_MAP()
 
 
@@ -60,8 +59,6 @@ BOOL CSettingDlg::OnInitDialog()
 
 void CSettingDlg::OnBnClickedButtonSettingapply()
 {
-	// TODO: 在此添加控件通知处理程序代码
-	//MessageBox("1");
 	UpdateData(TRUE);
 	((CMy2015RemoteApp *)AfxGetApp())->m_iniFile.SetInt("Settings", "ListenPort", m_nListenPort);      
 	//向ini文件中写入值
@@ -98,14 +95,4 @@ void CSettingDlg::OnEnChangeEditMax()
 
 	::ShowWindow(hApplyButton,SW_NORMAL);
 	::EnableWindow(hApplyButton,TRUE);
-}
-
-
-void CSettingDlg::OnBnClickedButtonMsg()
-{
-	// TODO: 在此添加控件通知处理程序代码
-	HWND hFather = NULL;
-
-	hFather = ::FindWindow(NULL,"2015Remote");
-	::SendMessage(hFather,WM_CLOSE,NULL,NULL);
 }

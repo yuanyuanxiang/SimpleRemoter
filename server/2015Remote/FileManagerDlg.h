@@ -70,7 +70,11 @@ public:
 	HICON m_hIcon;
 	CStatusBar m_wndStatusBar;
 	CFileManagerDlg(CWnd* pParent = NULL, CIOCPServer* pIOCPServer = NULL, ClientContext *pContext = NULL);   // standard constructor
-
+	bool m_bIsClosed;
+	~CFileManagerDlg()
+	{
+		if(m_ProgressCtrl) delete m_ProgressCtrl;
+	}
 // Dialog Data
 	//{{AFX_DATA(CFileManagerDlg)
 	enum { IDD = IDD_FILE };

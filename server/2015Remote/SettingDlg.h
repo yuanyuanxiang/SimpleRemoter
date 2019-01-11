@@ -27,5 +27,4 @@ public:
 	afx_msg void OnEnChangeEditPort();
 	afx_msg void OnEnChangeEditMax();
 	CButton m_ApplyButton;
-	afx_msg void OnBnClickedButtonMsg();
 };

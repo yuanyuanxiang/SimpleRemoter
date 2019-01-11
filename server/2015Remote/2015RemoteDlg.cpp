@@ -18,12 +18,16 @@
 #include "RegisterDlg.h"
 #include "ServicesDlg.h"
 #include "VideoDlg.h"
+#include <vector>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
 #define UM_ICONNOTIFY WM_USER+100
+
+std::vector<CFileManagerDlg	*> v_FileDlg;
+
 enum
 {
 	ONLINELIST_IP=0,          //IP的列顺序
@@ -119,6 +123,23 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent /*=NULL*/)
 
 	m_iCount = 0;
 	InitializeCriticalSection(&m_cs);
+}
+
+
+CMy2015RemoteDlg::~CMy2015RemoteDlg()
+{
+	EnterCriticalSection(&m_cs);
+	for (std::vector<CFileManagerDlg *>::iterator iter = v_FileDlg.begin(); 
+		iter != v_FileDlg.end(); ++iter)
+	{
+		CFileManagerDlg *cur = *iter;
+		::SendMessage(cur->GetSafeHwnd(), WM_CLOSE, 0, 0);
+		while (false == cur->m_bIsClosed)
+			Sleep(1);
+		delete cur;
+	}
+	LeaveCriticalSection(&m_cs);
+	DeleteCriticalSection(&m_cs);
 }
 
 void CMy2015RemoteDlg::DoDataExchange(CDataExchange* pDX)
@@ -235,7 +256,7 @@ VOID CMy2015RemoteDlg::CreateNotifyBar()
 	m_Nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;     //托盘所拥有的状态
 	m_Nid.uCallbackMessage = UM_ICONNOTIFY;              //回调消息
 	m_Nid.hIcon = m_hIcon;                               //icon 变量
-	CString strTips ="2015Remote远程协助软件.........";       //气泡提示
+	CString strTips ="禁界: 远程协助软件";       //气泡提示
 	lstrcpyn(m_Nid.szTip, (LPCSTR)strTips, sizeof(m_Nid.szTip) / sizeof(m_Nid.szTip[0]));
 	Shell_NotifyIcon(NIM_ADD, &m_Nid);   //显示托盘
 }
@@ -304,7 +325,7 @@ VOID CMy2015RemoteDlg::InitControl()
 
 	m_CList_Message.SetExtendedStyle(LVS_EX_FULLROWSELECT);
 
-	SetTimer(0,3000,NULL);
+	SetTimer(0,3000,NULL); // 定时检查无用的文件对话框
 }
 
 
@@ -366,6 +387,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	// 将“关于...”菜单项添加到系统菜单中。
+	SetWindowText(_T("Yama"));
 
 	// IDM_ABOUTBOX 必须在系统命令范围内。
 	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
@@ -543,6 +565,22 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 
 void CMy2015RemoteDlg::OnClose()
 {
+	bool bOpened = false;
+	for (std::vector<CFileManagerDlg *>::iterator iter = v_FileDlg.begin(); 
+		iter != v_FileDlg.end(); ++iter)
+	{
+		CFileManagerDlg *cur = *iter;
+		if (!cur->m_bIsClosed){
+			bOpened = true;
+			break;
+		}
+	}
+	if (bOpened)
+	{
+		MessageBox(_T("请先关闭文件管理窗口!"));
+		return;
+	}
+
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	KillTimer(0);
 
@@ -702,9 +740,7 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 //真彩Bar
 VOID CMy2015RemoteDlg::OnAbout()
 {
-	MessageBox("1","1");
-
-	m_ToolBar.SetButtonText(0,"Terminal");     //在位图的下面添加文件
+	MessageBox("Copyleft (c) FTU 2019", "关于");
 }
 
 //托盘Menu
@@ -1095,6 +1131,21 @@ LRESULT CMy2015RemoteDlg::OnOpenFileManagerDialog(WPARAM wParam, LPARAM lParam)
 
 	ContextObject->v1   = FILEMANAGER_DLG;
 	ContextObject->hDlg = Dlg;
+	EnterCriticalSection(&m_cs);
+	for (std::vector<CFileManagerDlg *>::iterator iter = v_FileDlg.begin(); 
+		iter != v_FileDlg.end(); )
+	{
+		CFileManagerDlg *cur = *iter;
+		if (cur->m_bIsClosed)
+		{
+			delete cur;
+			iter = v_FileDlg.erase(iter);
+		}else{
+			++iter;
+		}
+	}
+	v_FileDlg.push_back(Dlg);
+	LeaveCriticalSection(&m_cs);
 
 	return 0;
 }

@@ -32,6 +32,8 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, CIOCPServer* pIOCPServer, Client
 {
 	//{{AFX_DATA_INIT(CFileManagerDlg)
 	//}}AFX_DATA_INIT
+	m_bIsClosed = false;
+	m_ProgressCtrl = NULL;
 	SHFILEINFO	sfi;
 	SHGetFileInfo
 		(
@@ -929,6 +931,8 @@ void CFileManagerDlg::OnClose()
 	closesocket(m_pContext->m_Socket);
 
 	CDialog::OnClose();
+	m_bIsClosed = true;
+	//delete this; //此处释放内存会在第2次崩溃
 }
 
 CString CFileManagerDlg::GetParentDirectory(CString strPath)
