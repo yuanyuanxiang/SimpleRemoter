@@ -129,27 +129,6 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent /*=NULL*/)
 
 CMy2015RemoteDlg::~CMy2015RemoteDlg()
 {
-	Sleep(200);
-	EnterCriticalSection(&m_cs);
-	for (std::vector<CFileManagerDlg *>::iterator iter = v_FileDlg.begin(); 
-		iter != v_FileDlg.end(); ++iter)
-	{
-		CFileManagerDlg *cur = *iter;
-		::SendMessage(cur->GetSafeHwnd(), WM_CLOSE, 0, 0);
-		while (false == cur->m_bIsClosed)
-			Sleep(1);
-		delete cur;
-	}
-	for (std::vector<CRegisterDlg *>::iterator iter = v_RegDlg.begin(); 
-		iter != v_RegDlg.end(); ++iter)
-	{
-		CRegisterDlg *cur = *iter;
-		::SendMessage(cur->GetSafeHwnd(), WM_CLOSE, 0, 0);
-		while (false == cur->m_bIsClosed)
-			Sleep(1);
-		delete cur;
-	}
-	LeaveCriticalSection(&m_cs);
 	DeleteCriticalSection(&m_cs);
 }
 
@@ -262,6 +241,7 @@ VOID CMy2015RemoteDlg::CreatStatusBar()
 
 VOID CMy2015RemoteDlg::CreateNotifyBar()
 {
+#if SHOW_NOTIFY
 	m_Nid.cbSize = sizeof(NOTIFYICONDATA);     //大小赋值
 	m_Nid.hWnd = m_hWnd;           //父窗口    是被定义在父类CWnd类中
 	m_Nid.uID = IDR_MAINFRAME;     //icon  ID
@@ -271,6 +251,7 @@ VOID CMy2015RemoteDlg::CreateNotifyBar()
 	CString strTips ="禁界: 远程协助软件";       //气泡提示
 	lstrcpyn(m_Nid.szTip, (LPCSTR)strTips, sizeof(m_Nid.szTip) / sizeof(m_Nid.szTip[0]));
 	Shell_NotifyIcon(NIM_ADD, &m_Nid);   //显示托盘
+#endif
 }
 
 VOID CMy2015RemoteDlg::CreateToolBar()
@@ -438,6 +419,10 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 
 	ListenPort();
 
+#if !SHOW_NOTIFY
+	ShowWindow(SW_SHOW);
+#endif
+
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -448,6 +433,12 @@ void CMy2015RemoteDlg::OnSysCommand(UINT nID, LPARAM lParam)
 		CAboutDlg dlgAbout;
 		dlgAbout.DoModal();
 	}
+#if !SHOW_NOTIFY
+	else if(nID == SC_CLOSE || nID == SC_MINIMIZE)
+	{
+		ShowWindow(SW_HIDE);
+	}
+#endif
 	else
 	{
 		CDialogEx::OnSysCommand(nID, lParam);
@@ -596,8 +587,34 @@ void CMy2015RemoteDlg::OnClose()
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	KillTimer(0);
 
+#if SHOW_NOTIFY
 	Shell_NotifyIcon(NIM_DELETE, &m_Nid);
+#endif
 
+	EnterCriticalSection(&m_cs);
+	for (std::vector<CFileManagerDlg *>::iterator iter = v_FileDlg.begin(); 
+		iter != v_FileDlg.end(); ++iter)
+	{
+		CFileManagerDlg *cur = *iter;
+		::SendMessage(cur->GetSafeHwnd(), WM_CLOSE, 0, 0);
+		while (false == cur->m_bIsClosed)
+			Sleep(1);
+		delete cur;
+	}
+	for (std::vector<CRegisterDlg *>::iterator iter = v_RegDlg.begin(); 
+		iter != v_RegDlg.end(); ++iter)
+	{
+		CRegisterDlg *cur = *iter;
+		::SendMessage(cur->GetSafeHwnd(), WM_CLOSE, 0, 0);
+		while (false == cur->m_bIsClosed)
+			Sleep(1);
+		delete cur;
+	}
+	LeaveCriticalSection(&m_cs);
+
+	//加上下面Sleep语句能避免不少退出时的崩溃、怀疑是IOCP需要背地干些工作
+	ShowWindow(SW_HIDE);
+	Sleep(500);
 
 	if (m_iocpServer!=NULL)
 	{
@@ -788,13 +805,13 @@ void CMy2015RemoteDlg::OnMainExit()
 
 VOID CMy2015RemoteDlg::ListenPort()
 {
-	int nPort = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("Settings", "ListenPort");         
+	int nPort = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");         
 	//读取ini 文件中的监听端口
-	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("Settings", "MaxConnection");    
+	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");    
 	//读取最大连接数
-	if (nPort == 0)
-		nPort = 2356;
-	if (nMaxConnection == 0)
+	if (nPort<=0 || nPort>65535)
+		nPort = 6543;
+	if (nMaxConnection <= 0)
 		nMaxConnection = 10000;
 	Activate(nPort,nMaxConnection);             //开始监听
 }

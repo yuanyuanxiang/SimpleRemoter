@@ -20,6 +20,7 @@ class CMy2015RemoteApp : public CWinApp
 public:
 	CMy2015RemoteApp();
 	iniFile  m_iniFile;
+	HANDLE m_Mutex;
 // ÷ÿ–¥
 public:
 	virtual BOOL InitInstance();
@@ -27,6 +28,7 @@ public:
 //  µœ÷
 
 	DECLARE_MESSAGE_MAP()
+	virtual int ExitInstance();
 };
 
 extern CMy2015RemoteApp theApp;

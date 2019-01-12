@@ -63,6 +63,7 @@ CMy2015RemoteApp::CMy2015RemoteApp()
 
 	// TODO: 在此处添加构造代码，
 	// 将所有重要的初始化放置在 InitInstance 中
+	m_Mutex = NULL;
 }
 
 
@@ -75,6 +76,14 @@ CMy2015RemoteApp theApp;
 
 BOOL CMy2015RemoteApp::InitInstance()
 {
+	m_Mutex = CreateMutex(NULL, FALSE, "YAMA.EXE");
+	if (ERROR_ALREADY_EXISTS == GetLastError())
+	{
+		CloseHandle(m_Mutex);
+		m_Mutex = NULL;
+		return FALSE;
+	}
+
 	SetUnhandledExceptionFilter(&whenbuged);
 
 	// 如果一个运行在 Windows XP 上的应用程序清单指定要
@@ -127,4 +136,16 @@ BOOL CMy2015RemoteApp::InitInstance()
 	// 由于对话框已关闭，所以将返回 FALSE 以便退出应用程序，
 	//  而不是启动应用程序的消息泵。
 	return FALSE;
+}
+
+
+int CMy2015RemoteApp::ExitInstance()
+{
+	if (m_Mutex)
+	{
+		CloseHandle(m_Mutex);
+		m_Mutex = NULL;
+	}
+
+	return CWinApp::ExitInstance();
 }

@@ -13,6 +13,9 @@
 #define VC_EXTRALEAN            // 从 Windows 头中排除极少使用的资料
 #endif
 
+// 移除对话框中MFC控件的支持，减小静态编译程序的大小
+#define _AFX_NO_MFC_CONTROLS_IN_DIALOGS
+
 // 检测内存泄漏，需安装VLD；否则请注释此行
 #include "vld.h"
 

@@ -44,12 +44,12 @@ BOOL CSettingDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	int nPort = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("Settings", "ListenPort");         
+	int nPort = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");         
 	//读取ini 文件中的监听端口
-	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("Settings", "MaxConnection");    
+	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");    
 
-	m_nListenPort = nPort;
-	m_nMax_Connect  = nMaxConnection;
+	m_nListenPort = (nPort<=0 || nPort>65535) ? 6543 : nPort;
+	m_nMax_Connect  = nMaxConnection<=0 ? 10000 : nMaxConnection;
 
 	UpdateData(FALSE);
 
@@ -60,9 +60,9 @@ BOOL CSettingDlg::OnInitDialog()
 void CSettingDlg::OnBnClickedButtonSettingapply()
 {
 	UpdateData(TRUE);
-	((CMy2015RemoteApp *)AfxGetApp())->m_iniFile.SetInt("Settings", "ListenPort", m_nListenPort);      
+	((CMy2015RemoteApp *)AfxGetApp())->m_iniFile.SetInt("settings", "ghost", m_nListenPort);      
 	//向ini文件中写入值
-	((CMy2015RemoteApp *)AfxGetApp())->m_iniFile.SetInt("Settings", "MaxConnection", m_nMax_Connect);
+	((CMy2015RemoteApp *)AfxGetApp())->m_iniFile.SetInt("settings", "MaxConnection", m_nMax_Connect);
 
 	m_ApplyButton.EnableWindow(FALSE);
 	m_ApplyButton.ShowWindow(SW_HIDE);

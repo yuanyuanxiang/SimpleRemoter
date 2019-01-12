@@ -26,11 +26,11 @@ IOCPServer::IOCPServer(void)
 	m_hListenEvent	      = WSA_INVALID_EVENT;
 	m_hListenThread       = INVALID_HANDLE_VALUE;
 
-	m_ulMaxConnections = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("Settings", "MaxConnection");
+	m_ulMaxConnections = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");
 
-	if (m_ulMaxConnections==0)   
+	if (m_ulMaxConnections<=0)   
 	{
-		m_ulMaxConnections = 100;
+		m_ulMaxConnections = 10000;
 	}
 
 	InitializeCriticalSection(&m_cs);
