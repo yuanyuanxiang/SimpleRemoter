@@ -18,6 +18,7 @@ public:
 	CString       m_strIPAddress;
 	DWORD         m_nTotalRecvBytes;
 	BOOL          m_bIsWorking;
+	BOOL		  m_bThreadRun;
 	HANDLE        m_hWorkThread;
 	CAudio		  m_AudioObject;
 

@@ -54,7 +54,7 @@ public:
 	VOID setManagerCallBack(class CManager* Manager);
 
 	VOID Disconnect();
-	VOID RunEventLoop();
+	VOID RunEventLoop(const BOOL &bCondition);
 	bool IsConnected() const { return m_bConnected; }
 
 public:	

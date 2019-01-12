@@ -92,6 +92,8 @@ CAudioManager::~CAudioManager()
 {
 	m_bIsWorking = FALSE;                            //设定工作状态为假
 	WaitForSingleObject(m_hWorkThread, INFINITE);    //等待 工作线程结束
+	if (m_hWorkThread)
+		CloseHandle(m_hWorkThread);
 
 	if (m_AudioObject!=NULL)
 	{

@@ -8,9 +8,9 @@
 
 #include "IOCPServer.h"
 
-typedef IOCPServer CIOCPServer;
+#define CIOCPServer IOCPServer
 
-typedef CONTEXT_OBJECT ClientContext;
+#define ClientContext CONTEXT_OBJECT
 
 typedef struct 
 {

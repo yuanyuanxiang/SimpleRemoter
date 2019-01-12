@@ -28,7 +28,7 @@ public:
 	static DWORD WINAPI CShellManager::ReadPipeThread(LPVOID lParam);
 
 	HANDLE m_hThreadRead;
-
+	int m_nCmdLength;				// 输入的命令长度
 	HANDLE m_hShellProcessHandle;    //保存Cmd进程的进程句柄和主线程句柄
 	HANDLE m_hShellThreadHandle;
 };

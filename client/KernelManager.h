@@ -15,9 +15,10 @@
 // 线程信息结构体
 struct ThreadInfo
 {
+	BOOL run;
 	HANDLE h;
 	IOCPClient *p;
-	ThreadInfo() : h(NULL), p(NULL){ }
+	ThreadInfo() : run(TRUE), h(NULL), p(NULL){ }
 };
 
 class CKernelManager : public CManager  

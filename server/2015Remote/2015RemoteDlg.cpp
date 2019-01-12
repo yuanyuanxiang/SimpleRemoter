@@ -27,6 +27,7 @@
 #define UM_ICONNOTIFY WM_USER+100
 
 std::vector<CFileManagerDlg	*> v_FileDlg;
+std::vector<CRegisterDlg	*> v_RegDlg;
 
 enum
 {
@@ -128,11 +129,21 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent /*=NULL*/)
 
 CMy2015RemoteDlg::~CMy2015RemoteDlg()
 {
+	Sleep(200);
 	EnterCriticalSection(&m_cs);
 	for (std::vector<CFileManagerDlg *>::iterator iter = v_FileDlg.begin(); 
 		iter != v_FileDlg.end(); ++iter)
 	{
 		CFileManagerDlg *cur = *iter;
+		::SendMessage(cur->GetSafeHwnd(), WM_CLOSE, 0, 0);
+		while (false == cur->m_bIsClosed)
+			Sleep(1);
+		delete cur;
+	}
+	for (std::vector<CRegisterDlg *>::iterator iter = v_RegDlg.begin(); 
+		iter != v_RegDlg.end(); ++iter)
+	{
+		CRegisterDlg *cur = *iter;
 		::SendMessage(cur->GetSafeHwnd(), WM_CLOSE, 0, 0);
 		while (false == cur->m_bIsClosed)
 			Sleep(1);
@@ -187,6 +198,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_OPENSERVICESDIALOG, OnOpenServicesDialog)
 	ON_MESSAGE(WM_OPENREGISTERDIALOG, OnOpenRegisterDialog)
 	ON_MESSAGE(WM_OPENWEBCAMDIALOG, OnOpenVideoDialog)
+	ON_WM_HELPINFO()
 END_MESSAGE_MAP()
 
 
@@ -1088,7 +1100,8 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 		case FILEMANAGER_DLG:
 			{
 				CFileManagerDlg *Dlg = (CFileManagerDlg*)p->hDlg;
-				delete Dlg;
+				::SendMessage(Dlg->GetSafeHwnd(), WM_CLOSE, 0, 0);
+				//delete Dlg; 特殊处理
 				break;
 			}
 		case REGISTER_DLG:
@@ -1243,6 +1256,21 @@ LRESULT CMy2015RemoteDlg::OnOpenRegisterDialog(WPARAM wParam, LPARAM lParam)
 
 	ContextObject->v1   = REGISTER_DLG;
 	ContextObject->hDlg = Dlg;
+	EnterCriticalSection(&m_cs);
+	for (std::vector<CRegisterDlg *>::iterator iter = v_RegDlg.begin(); 
+		iter != v_RegDlg.end(); )
+	{
+		CRegisterDlg *cur = *iter;
+		if (cur->m_bIsClosed)
+		{
+			delete cur;
+			iter = v_RegDlg.erase(iter);
+		}else{
+			++iter;
+		}
+	}
+	v_RegDlg.push_back(Dlg);
+	LeaveCriticalSection(&m_cs);
 
 	return 0;
 }
@@ -1261,4 +1289,22 @@ LRESULT CMy2015RemoteDlg::OnOpenVideoDialog(WPARAM wParam, LPARAM lParam)
 	ContextObject->hDlg = Dlg;
 
 	return 0;
+}
+
+
+BOOL CMy2015RemoteDlg::OnHelpInfo(HELPINFO* pHelpInfo)
+{
+	MessageBox("Copyleft (c) FTU 2019", "关于");
+	return TRUE;
+}
+
+
+BOOL CMy2015RemoteDlg::PreTranslateMessage(MSG* pMsg)
+{
+	if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_RETURN)
+	{
+		return TRUE;
+	}
+
+	return CDialogEx::PreTranslateMessage(pMsg);
 }

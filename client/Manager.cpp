@@ -26,6 +26,17 @@ CManager::~CManager()
 	}
 }
 
+
+int CManager::Send(LPBYTE lpData, UINT nSize)
+{
+	int	nRet = 0;
+	try
+	{
+		nRet = m_ClientObject->OnServerSending((char*)lpData, nSize);
+	}catch(...){};
+	return nRet;
+}
+
 VOID CManager::WaitForDialogOpen()
 {
 	WaitForSingleObject(m_hEventDlgOpen, INFINITE);

@@ -22,6 +22,8 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
+	BOOL m_bIsClosed;   // 即将关闭
+	BOOL m_bIsWorking;// 正在处理注册表
 	CTreeCtrl m_Tree;
 	CImageList	m_ImageListTree;   //树控件上的图标	
 	CListCtrl m_ControlList;

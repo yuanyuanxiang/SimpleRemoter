@@ -114,6 +114,7 @@ BOOL CAudio::InitializeWaveIn()
 	//m_hWaveIn Â¼Òô»ú¾ä±ú
 	if (mmResult != MMSYSERR_NOERROR)
 	{
+		CloseHandle(h);
 		return FALSE;
 	}
 

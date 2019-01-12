@@ -14,7 +14,6 @@ CCaptureVideo::CCaptureVideo()
 {
 	if(FAILED(CoInitialize(NULL)))   
 	{
-
 		return;
 	}
 	m_pCapture = NULL;
@@ -128,9 +127,7 @@ HRESULT CCaptureVideo::Open(int iDeviceID,int iPress)
 
 HRESULT CCaptureVideo::InitCaptureGraphBuilder()
 {
-	HRESULT hResult;
-
-	hResult = CoCreateInstance(CLSID_CaptureGraphBuilder2 , NULL, CLSCTX_INPROC,
+	HRESULT hResult = CoCreateInstance(CLSID_CaptureGraphBuilder2 , NULL, CLSCTX_INPROC,
 		IID_ICaptureGraphBuilder2, (void**)&m_pCapture);   //真实设备
 
 	if (FAILED(hResult))
@@ -146,7 +143,6 @@ HRESULT CCaptureVideo::InitCaptureGraphBuilder()
 		return hResult;
 	}
 	//将过滤绑定到真实设备上面
-
 	m_pCapture->SetFiltergraph(m_pGB);	
 	hResult = m_pGB->QueryInterface(IID_IMediaControl,(LPVOID*)&m_pMC);
 	if (FAILED(hResult))
@@ -154,7 +150,6 @@ HRESULT CCaptureVideo::InitCaptureGraphBuilder()
 		return hResult;
 	}
 
-	//???
 	hResult = m_pGB->QueryInterface(IID_IVideoWindow,(LPVOID*) &m_pVW);
 	if (FAILED(hResult))
 	{
@@ -253,7 +248,7 @@ void CCaptureVideo::ResizeVideoWindow()
 
 void  CCaptureVideo::SendEnd()            //发送结束  设置可以再取数据
 {
-	InterlockedExchange((LPLONG)&mCB.bStact,CMD_CAN_COPY);      //原子自增可以发送        //原子自减  发送完毕 可以copy 
+	InterlockedExchange((LPLONG)&mCB.bStact,CMD_CAN_COPY);
 }
 
 LPBYTE CCaptureVideo::GetDIB(DWORD& dwSize)
@@ -263,7 +258,7 @@ LPBYTE CCaptureVideo::GetDIB(DWORD& dwSize)
 	{
 		if (mCB.bStact==CMD_CAN_SEND)      //这里改变了一下发送的状态
 		{
-			szBuffer = mCB.GetNextScreen(dwSize);     //通过另外一个类的成员函数得到视频数据，我们继续跟进
+			szBuffer = mCB.GetNextScreen(dwSize);//通过另外一个类的成员函数得到视频数据，我们继续跟进
 		}
 	} while (szBuffer==NULL);
 

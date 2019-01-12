@@ -338,9 +338,10 @@ VOID IOCPClient::Disconnect()
 }
 
 
-VOID IOCPClient::RunEventLoop()
+VOID IOCPClient::RunEventLoop(const BOOL &bCondition)
 {
 	OutputDebugStringA("======> RunEventLoop begin\n");
-	while (m_bIsRunning) Sleep(200);
+	while (m_bIsRunning && bCondition)
+		Sleep(200);
 	OutputDebugStringA("======> RunEventLoop end\n");
 }

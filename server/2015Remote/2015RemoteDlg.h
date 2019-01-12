@@ -101,4 +101,6 @@ public:
 	afx_msg LRESULT OnOpenRegisterDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnOpenServicesDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnOpenVideoDialog(WPARAM wParam, LPARAM lParam);
+	afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 };

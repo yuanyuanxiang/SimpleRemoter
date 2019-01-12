@@ -62,8 +62,10 @@ BOOL CSystemDlg::OnInitDialog()
 	sockaddr_in  ClientAddr;
 	memset(&ClientAddr, 0, sizeof(ClientAddr));
 	int iSockAddrLength = sizeof(ClientAddr);
-	BOOL bResult = getpeername(m_ContextObject->sClientSocket, (SOCKADDR*)&ClientAddr, &iSockAddrLength); //得到连接的ip 
-	str.Format("%s - 进程管理", bResult != INVALID_SOCKET ? inet_ntoa(ClientAddr.sin_addr) : "");  
+	BOOL bResult = getpeername(m_ContextObject->sClientSocket, (SOCKADDR*)&ClientAddr, &iSockAddrLength);
+	m_bHow==TOKEN_PSLIST 
+		? str.Format("%s - 进程管理", bResult != INVALID_SOCKET ? inet_ntoa(ClientAddr.sin_addr) : "")
+		:str.Format("%s - 窗口管理", bResult != INVALID_SOCKET ? inet_ntoa(ClientAddr.sin_addr) : "");
 	SetWindowText(str);//设置对话框标题
 
 	m_ControlList.SetExtendedStyle(LVS_EX_FLATSB | LVS_EX_FULLROWSELECT); 

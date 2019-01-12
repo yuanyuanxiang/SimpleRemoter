@@ -17,6 +17,7 @@ CAudioDlg::CAudioDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT *Cont
 {
 	m_hIcon			= LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_AUDIO));  //处理图标
 	m_bIsWorking	= TRUE;
+	m_bThreadRun	= FALSE;
 	m_iocpServer	= IOCPServer;       //为类的成员变量赋值
 	m_ContextObject		= ContextObject;
 	m_hWorkThread  = NULL;
@@ -31,6 +32,9 @@ CAudioDlg::CAudioDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT *Cont
 
 CAudioDlg::~CAudioDlg()
 {
+	m_bIsWorking = FALSE;
+	while (m_bThreadRun)
+		Sleep(50);
 }
 
 void CAudioDlg::DoDataExchange(CDataExchange* pDX)
@@ -64,6 +68,8 @@ BOOL CAudioDlg::OnInitDialog()
 	//启动线程 判断CheckBox
 	m_hWorkThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)WorkThread, (LPVOID)this, 0, NULL);
 
+	m_bThreadRun = m_hWorkThread ? TRUE : FALSE;
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// 异常: OCX 属性页应返回 FALSE
 }
@@ -76,7 +82,7 @@ DWORD  CAudioDlg::WorkThread(LPVOID lParam)
 	{
 		if (!This->m_bSend)
 		{
-			Sleep(1000);
+			Sleep(50);
 			continue;
 		}
 		DWORD	dwBufferSize = 0;
@@ -85,6 +91,8 @@ DWORD  CAudioDlg::WorkThread(LPVOID lParam)
 		if (szBuffer != NULL && dwBufferSize > 0)
 			This->m_iocpServer->OnClientPreSending(This->m_ContextObject, szBuffer, dwBufferSize); //没有消息头
 	}
+	This->m_bThreadRun = FALSE;
+
 	return 0;
 }
 

