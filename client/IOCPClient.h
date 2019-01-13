@@ -55,7 +55,7 @@ public:
 
 	VOID Disconnect();
 	VOID RunEventLoop(const BOOL &bCondition);
-	bool IsConnected() const { return m_bConnected; }
+	bool IsConnected() const { return m_bConnected == TRUE; }
 
 public:	
 	class CManager* m_Manager; 

@@ -592,7 +592,7 @@ void CFileManager::CreateLocalRecvFile(LPBYTE lpBuffer)
 	strcpy(m_strCurrentProcessFileName, (char *)lpBuffer + 8);
 
 	// 保存文件长度
-	m_nCurrentProcessFileLength = (pFileSize->dwSizeHigh * (MAXDWORD + 1)) + pFileSize->dwSizeLow;
+	m_nCurrentProcessFileLength = (pFileSize->dwSizeHigh * (MAXDWORD + long long(1))) + pFileSize->dwSizeLow;
 	
 	// 创建多层目录
 	MakeSureDirectoryPathExists(m_strCurrentProcessFileName);

