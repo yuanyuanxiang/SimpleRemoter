@@ -568,22 +568,6 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 
 void CMy2015RemoteDlg::OnClose()
 {
-	bool bOpened = false;
-	for (std::vector<CFileManagerDlg *>::iterator iter = v_FileDlg.begin(); 
-		iter != v_FileDlg.end(); ++iter)
-	{
-		CFileManagerDlg *cur = *iter;
-		if (!cur->m_bIsClosed){
-			bOpened = true;
-			break;
-		}
-	}
-	if (bOpened)
-	{
-		MessageBox(_T("请先关闭文件管理窗口!"));
-		return;
-	}
-
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	KillTimer(0);
 
@@ -716,7 +700,6 @@ VOID CMy2015RemoteDlg::OnOnlineDesktopManager()
 VOID CMy2015RemoteDlg::OnOnlineFileManager()
 {
 	BYTE	bToken = COMMAND_LIST_DRIVE;  //磁盘卷驱动设备      
-	//向被控端发送消息COMMAND_LIST_DRIVE 在被控端中搜索COMMAND_LIST_DRIVE
 
 	SendSelectedCommand(&bToken, sizeof(BYTE));
 }
@@ -1117,14 +1100,13 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 		case FILEMANAGER_DLG:
 			{
 				CFileManagerDlg *Dlg = (CFileManagerDlg*)p->hDlg;
-				::SendMessage(Dlg->GetSafeHwnd(), WM_CLOSE, 0, 0);
-				//delete Dlg; 特殊处理
+				//delete Dlg; //特殊处理
 				break;
 			}
 		case REGISTER_DLG:
 			{
 				CRegisterDlg *Dlg = (CRegisterDlg*)p->hDlg;
-				delete Dlg;
+				//delete Dlg; //特殊处理
 				break;
 			}
 		}

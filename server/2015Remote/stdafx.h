@@ -16,6 +16,9 @@
 // 移除对话框中MFC控件的支持，减小静态编译程序的大小
 #define _AFX_NO_MFC_CONTROLS_IN_DIALOGS
 
+// 关闭对话框时删除对话框
+#define CLOSE_DELETE_DLG 0
+
 // 检测内存泄漏，需安装VLD；否则请注释此行
 #include "vld.h"
 

@@ -157,12 +157,16 @@ BOOL CScreenSpyDlg::OnInitDialog()
 
 VOID CScreenSpyDlg::OnClose()
 {
+#if CLOSE_DELETE_DLG
 	m_ContextObject->v1 = 0;
+#endif
 	CancelIo((HANDLE)m_ContextObject->sClientSocket);
 	closesocket(m_ContextObject->sClientSocket);
 
 	CDialog::OnClose();
+#if CLOSE_DELETE_DLG
 	delete this;
+#endif
 }
 
 

@@ -157,11 +157,15 @@ void CSystemDlg::ShowProcessList(void)
 void CSystemDlg::OnClose()
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
+#if CLOSE_DELETE_DLG
 	m_ContextObject->v1 = 0;
+#endif
 	CancelIo((HANDLE)m_ContextObject->sClientSocket);
 	closesocket(m_ContextObject->sClientSocket);
 	CDialog::OnClose();
+#if CLOSE_DELETE_DLG
 	delete this;
+#endif
 }
 
 

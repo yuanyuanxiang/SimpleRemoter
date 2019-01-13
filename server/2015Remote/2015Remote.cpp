@@ -32,7 +32,7 @@ long WINAPI whenbuged(_EXCEPTION_POINTERS *excp)
 		_mkdir(dump);
 	char curTime[64];// 当前dump文件
 	time_t TIME(time(0));
-	strftime(curTime, 64, "\\remote_%Y-%m-%d %H%M%S.dmp", localtime(&TIME));
+	strftime(curTime, 64, "\\YAMA_%Y-%m-%d %H%M%S.dmp", localtime(&TIME));
 	strcat(dump, curTime);
 	HANDLE hFile = ::CreateFileA(dump, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 
 		FILE_ATTRIBUTE_NORMAL, NULL);

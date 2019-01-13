@@ -43,10 +43,9 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, CIOCPServer* pIOCPServer, Client
 		sizeof(SHFILEINFO), 
 		SHGFI_ICON | SHGFI_USEFILEATTRIBUTES
 		);
-	m_hIcon = sfi.hIcon;	
-	HIMAGELIST hImageList;
+	m_hIcon = sfi.hIcon;
 	// 加载系统图标列表
-	hImageList = (HIMAGELIST)SHGetFileInfo
+	static HIMAGELIST hImageList_Large = (HIMAGELIST)SHGetFileInfo
 		(
 		NULL,
 		0,
@@ -54,10 +53,11 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, CIOCPServer* pIOCPServer, Client
         sizeof(SHFILEINFO),
 		SHGFI_LARGEICON | SHGFI_SYSICONINDEX
 		);
-	m_pImageList_Large = CImageList::FromHandle(hImageList);
+	static CImageList *pLarge = CImageList::FromHandle(hImageList_Large);
+	m_pImageList_Large = pLarge;
 
 	// 加载系统图标列表
-	hImageList = (HIMAGELIST)SHGetFileInfo
+	static HIMAGELIST hImageList_Small = (HIMAGELIST)SHGetFileInfo
 		(
 		NULL,
 		0,
@@ -65,7 +65,8 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, CIOCPServer* pIOCPServer, Client
         sizeof(SHFILEINFO),
 		SHGFI_SMALLICON | SHGFI_SYSICONINDEX
 		);
-	m_pImageList_Small = CImageList::FromHandle(hImageList);
+	static CImageList *pSmall = CImageList::FromHandle(hImageList_Small);
+	m_pImageList_Small = pSmall;
 
 	// 初始化应该传输的数据包大小为0
 
@@ -878,12 +879,18 @@ void CFileManagerDlg::OnClose()
 {
 	// TODO: Add your message handler code here and/or call default
 	CoUninitialize();
-	m_pContext->m_Dialog = 0;
+
+#if CLOSE_DELETE_DLG
+	m_pContext->v1 = 0;
+#endif
+
 	closesocket(m_pContext->m_Socket);
 
 	CDialog::OnClose();
 	m_bIsClosed = true;
+#if CLOSE_DELETE_DLG
 	//delete this; //此处释放内存会在第2次崩溃
+#endif
 }
 
 CString CFileManagerDlg::GetParentDirectory(CString strPath)
