@@ -51,14 +51,14 @@ public:
 
 	char    m_szPacketFlag[FLAG_LENGTH];
 
-	VOID setManagerCallBack(class CManager* Manager);
+	VOID setManagerCallBack(CManager* Manager);
 
 	VOID Disconnect();
 	VOID RunEventLoop(const BOOL &bCondition);
 	bool IsConnected() const { return m_bConnected == TRUE; }
 
 public:	
-	class CManager* m_Manager; 
+	CManager* m_Manager; 
 	CRITICAL_SECTION m_cs;
 	bool m_exit_while_disconnect;
 };

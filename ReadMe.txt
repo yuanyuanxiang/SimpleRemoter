@@ -79,3 +79,11 @@
 2、修正CFileManagerDlg的构造函数调用SHGetFileInfo和FromHandle方法，解决多次打开崩溃。
 
 3、更新服务端zlib版本为V1.2.11。（与客户端不同，因inflate_fast 崩溃，没有采用汇编）
+
+2019.1.15
+
+1、修复主控端CTalkDlg的内存泄漏问题，被控端即时消息对话框置于顶层。
+
+2、SAFE_DELETE(ContextObject->olps)有崩溃概率。改为主控端退出时先令被控端退出，就没有内存泄漏。
+
+3、开关音频时偶有内存泄漏，waveInCallBack线程不能正常退出。

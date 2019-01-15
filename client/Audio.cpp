@@ -14,6 +14,7 @@ CAudio::CAudio()
 {
 	m_bExit = FALSE;
 	m_hThreadCallBack = false;
+	m_Thread = NULL;
 	m_bIsWaveInUsed = FALSE;
 	m_bIsWaveOutUsed = FALSE;
 	m_nWaveInIndex = 0;
@@ -47,26 +48,7 @@ CAudio::CAudio()
 CAudio::~CAudio()
 {
 	m_bExit = TRUE;
-	if (m_bIsWaveInUsed)
-	{
-		waveInStop(m_hWaveIn);
-		waveInReset(m_hWaveIn);
-		for (int i = 0; i < 2; i++)
-			waveInUnprepareHeader(m_hWaveIn, m_InAudioHeader[i], sizeof(WAVEHDR));
 
-		waveInClose(m_hWaveIn);
-		WAIT (m_hThreadCallBack, 30);
-		if (m_hThreadCallBack)
-			printf("没有成功关闭waveInCallBack.\n");
-	}
-
-	for (int i = 0; i < 2; i++)
-	{
-		delete [] m_InAudioData[i];
-		m_InAudioData[i] = NULL;
-		delete [] m_InAudioHeader[i];
-		m_InAudioHeader[i] = NULL;
-	}
 	if (m_hEventWaveIn)
 	{
 		SetEvent(m_hEventWaveIn);
@@ -78,6 +60,29 @@ CAudio::~CAudio()
 		SetEvent(m_hStartRecord);
 		CloseHandle(m_hStartRecord);
 		m_hStartRecord = NULL;
+	}
+
+	if (m_bIsWaveInUsed)
+	{
+		waveInStop(m_hWaveIn);
+		waveInReset(m_hWaveIn);
+		for (int i = 0; i < 2; i++)
+			waveInUnprepareHeader(m_hWaveIn, m_InAudioHeader[i], sizeof(WAVEHDR));
+
+		waveInClose(m_hWaveIn);
+		WAIT (m_hThreadCallBack, 30);
+		if (m_hThreadCallBack)
+			printf("没有成功关闭waveInCallBack.\n");
+		TerminateThread(m_Thread, -999);
+		m_Thread = NULL;
+	}
+
+	for (int i = 0; i < 2; i++)
+	{
+		delete [] m_InAudioData[i];
+		m_InAudioData[i] = NULL;
+		delete [] m_InAudioHeader[i];
+		m_InAudioHeader[i] = NULL;
 	}
 
 	if (m_bIsWaveOutUsed)
@@ -102,8 +107,7 @@ BOOL CAudio::InitializeWaveIn()
 	MMRESULT	mmResult;  
 	DWORD		dwThreadID = 0;
 
-	HANDLE h = NULL;
-	m_hThreadCallBack = h = CreateThread(NULL, 0, 
+	m_hThreadCallBack = m_Thread = CreateThread(NULL, 0, 
 		(LPTHREAD_START_ROUTINE)waveInCallBack, (LPVOID)this, 
 		CREATE_SUSPENDED, &dwThreadID);
 
@@ -114,7 +118,6 @@ BOOL CAudio::InitializeWaveIn()
 	//m_hWaveIn 录音机句柄
 	if (mmResult != MMSYSERR_NOERROR)
 	{
-		CloseHandle(h);
 		return FALSE;
 	}
 
@@ -130,8 +133,7 @@ BOOL CAudio::InitializeWaveIn()
 
 	waveInAddBuffer(m_hWaveIn, m_InAudioHeader[m_nWaveInIndex], sizeof(WAVEHDR));
 
-	ResumeThread(h);
-	CloseHandle(h);
+	ResumeThread(m_Thread);
 	waveInStart(m_hWaveIn);   //录音
 
 	m_bIsWaveInUsed = TRUE;
@@ -170,10 +172,11 @@ DWORD WINAPI CAudio::waveInCallBack(LPVOID lParam)
 		{
 			SetEvent(This->m_hEventWaveIn);
 			WaitForSingleObject(This->m_hStartRecord, INFINITE);
+			if (This->m_bExit)
+				break;
 
 			Sleep(1);
 			This->m_nWaveInIndex = 1 - This->m_nWaveInIndex;
-
 
 			//更新缓冲 
 			MMRESULT mmResult = waveInAddBuffer(This->m_hWaveIn, 
@@ -194,7 +197,7 @@ DWORD WINAPI CAudio::waveInCallBack(LPVOID lParam)
 	std::cout<<"waveInCallBack end\n";
 	This->m_hThreadCallBack = false;
 
-	return 0;	
+	return 0;
 }
 
 BOOL CAudio::PlayBuffer(LPBYTE szBuffer, DWORD dwBufferSize)

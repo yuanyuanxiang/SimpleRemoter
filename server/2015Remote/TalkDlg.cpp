@@ -41,6 +41,8 @@ BOOL CTalkDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
+	m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDR_MAINFRAME));
+	SetIcon(m_hIcon, FALSE);
 	BYTE bToken = COMMAND_NEXT;  
 	m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, sizeof(BYTE));
 

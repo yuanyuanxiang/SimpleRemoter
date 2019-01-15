@@ -9,14 +9,12 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "IOCPClient.h"
-
-
 class IOCPClient;
 
 class CManager  
 {
 public:
+	bool m_bIsDead; // bye-bye
 	CManager(IOCPClient* ClientObject);
 	virtual ~CManager();
 

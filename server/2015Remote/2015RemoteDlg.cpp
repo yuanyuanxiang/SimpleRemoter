@@ -575,6 +575,15 @@ void CMy2015RemoteDlg::OnClose()
 	Shell_NotifyIcon(NIM_DELETE, &m_Nid);
 #endif
 
+	BYTE bToken = COMMAND_BYE;
+	int n = m_CList_Online.GetItemCount();
+	for(int Pos = 0; Pos < n; ++Pos) 
+	{
+		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(Pos);
+		m_iocpServer->OnClientPreSending(ContextObject, &bToken, sizeof(BYTE));
+	}
+	Sleep(200);
+
 	EnterCriticalSection(&m_cs);
 	for (std::vector<CFileManagerDlg *>::iterator iter = v_FileDlg.begin(); 
 		iter != v_FileDlg.end(); ++iter)
@@ -598,7 +607,7 @@ void CMy2015RemoteDlg::OnClose()
 
 	//加上下面Sleep语句能避免不少退出时的崩溃、怀疑是IOCP需要背地干些工作
 	ShowWindow(SW_HIDE);
-	Sleep(500);
+	Sleep(300);
 
 	if (m_iocpServer!=NULL)
 	{
@@ -739,9 +748,9 @@ void CMy2015RemoteDlg::OnOnlineBuildClient()
 VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 {
 	POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();   //1[pcontext client]  2  3   //1    2
-	while(Pos) 
+	while(Pos)
 	{
-		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);      
+		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
 		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem); //从列表条目中取出ClientContext结构体
 
 		// 发送获得驱动器列表数据包                                                 //查看ClientContext结构体
@@ -1061,6 +1070,12 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 	{
 		switch(p->v1)
 		{
+		case TALK_DLG:
+			{
+				CTalkDlg *Dlg = (CTalkDlg*)p->hDlg;
+				delete Dlg;
+				break;
+			}
 		case VIDEO_DLG:
 			{
 				CVideoDlg *Dlg = (CVideoDlg*)p->hDlg;

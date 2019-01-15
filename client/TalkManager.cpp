@@ -16,7 +16,7 @@ using namespace std;
 #define ID_TIMER_CLOSE_WINDOW	3 
 
 #define WIN_WIDTH		250   
-#define WIN_HEIGHT		250
+#define WIN_HEIGHT		200
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -86,6 +86,9 @@ int CALLBACK CTalkManager::DialogProc(HWND hDlg, unsigned int uMsg,
 VOID CTalkManager::OnInitDialog(HWND hDlg)
 {
 	MoveWindow(hDlg, 0, 0, 0, 0, TRUE);
+
+	static HICON hIcon = LoadIcon(NULL, MAKEINTRESOURCE(IDI_ICON_MAIN));
+	::SendMessage(hDlg, WM_SETICON, (WPARAM)hIcon, (LPARAM)hIcon);
 
 	SetDlgItemText(hDlg,IDC_EDIT_MESSAGE,g_Buffer);
 

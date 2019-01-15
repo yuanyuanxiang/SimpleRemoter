@@ -174,4 +174,9 @@
       <Filter>资源文件</Filter>
     </Media>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="Res\ghost.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+  </ItemGroup>
 </Project>

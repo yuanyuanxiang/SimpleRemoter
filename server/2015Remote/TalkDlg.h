@@ -16,6 +16,7 @@ public:
 	enum { IDD = IDD_DIALOG_TALK };
 	CONTEXT_OBJECT* m_ContextObject;
 	IOCPServer*     m_iocpServer;
+	HICON m_hIcon;
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
 

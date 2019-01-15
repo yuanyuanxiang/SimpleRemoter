@@ -4,6 +4,7 @@
 
 #include "stdafx.h"
 #include "Manager.h"
+#include "IOCPClient.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -11,8 +12,9 @@
 
 CManager::CManager(IOCPClient* ClientObject)
 {
+	m_bIsDead = false;
 	m_ClientObject = ClientObject;
-	m_ClientObject->setManagerCallBack(this);  
+	m_ClientObject->setManagerCallBack(this);
 
 	m_hEventDlgOpen = CreateEvent(NULL,TRUE,FALSE,NULL);
 }

@@ -16,7 +16,7 @@ CKernelManager::CKernelManager(IOCPClient* ClientObject):CManager(ClientObject)
 
 CKernelManager::~CKernelManager()
 {
-	printf("~CKernelManager \n");
+	printf("~CKernelManager begin\n");
 	int i = 0;
 	for (i=0;i<0x1000;i++)
 	{
@@ -30,6 +30,7 @@ CKernelManager::~CKernelManager()
 		}
 	}
 	m_ulThreadCount = 0;
+	printf("~CKernelManager end\n");
 }
 
 VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
@@ -75,6 +76,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			BYTE	bToken = COMMAND_BYE;      //包含头文件 Common.h     
 			m_ClientObject->OnServerSending((char*)&bToken, 1);
+			m_bIsDead = true; //say goodbye
 			OutputDebugStringA("======> Bye bye \n");
 			m_hThread[m_ulThreadCount].p = NULL;
 			delete pNew;

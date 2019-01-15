@@ -26,6 +26,7 @@ public:
 	HWAVEIN   m_hWaveIn;         //设备句柄	
 	DWORD     m_nWaveInIndex;
 	bool    m_hThreadCallBack;
+	HANDLE m_Thread;// waveInCallBack线程
 	static DWORD WINAPI waveInCallBack(LPVOID lParam);   //发送到主控端
 	LPBYTE CAudio::GetRecordBuffer(LPDWORD dwBufferSize);
 	BOOL CAudio::InitializeWaveIn();

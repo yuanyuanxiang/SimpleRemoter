@@ -98,7 +98,8 @@ IOCPServer::~IOCPServer(void)
 	while (!m_ContextFreePoolList.IsEmpty())
 	{
 		CONTEXT_OBJECT *ContextObject = m_ContextFreePoolList.RemoveHead();
-		SAFE_DELETE(ContextObject->olps);
+		// ÏÂÊöÓï¾äÓÐ±ÀÀ£¸ÅÂÊ£¬2019.1.14
+		//SAFE_DELETE(ContextObject->olps);
 		delete ContextObject;
 	}
 

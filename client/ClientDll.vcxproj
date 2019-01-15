@@ -136,6 +136,9 @@
   <ItemGroup>
     <Media Include="Res\msg.wav" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="Res\ghost.ico" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

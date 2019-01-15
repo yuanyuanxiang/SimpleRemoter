@@ -115,7 +115,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 
 	while (!g_bExit)
 	{
-		DWORD dwTickCount = GetTickCount();  
+		DWORD dwTickCount = GetTickCount();
 		if (!ClientObject->ConnectServer(g_szServerIP, g_uPort))
 		{
 			for (int k = 500; !g_bExit && --k; Sleep(10));

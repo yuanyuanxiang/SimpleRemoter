@@ -8,13 +8,15 @@
 #include "zconf.h"
 #include "zlib.h"
 #include <assert.h>
+#include "Manager.h"
+
 using namespace std;
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-VOID IOCPClient::setManagerCallBack(class CManager* Manager)
+VOID IOCPClient::setManagerCallBack(CManager* Manager)
 {
 	m_Manager = Manager;
 }
@@ -22,6 +24,7 @@ VOID IOCPClient::setManagerCallBack(class CManager* Manager)
 
 IOCPClient::IOCPClient(bool exit_while_disconnect)
 {
+	m_Manager = NULL;
 	WSADATA wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
 
@@ -154,6 +157,14 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 			}else{
 				//正确接收就调用OnRead处理,转到OnRead
 				This->OnServerReceiving(szBuffer, iReceivedLength);
+				if (This->m_Manager->m_bIsDead)
+				{
+					printf("****** Recv bye bye ******\n");
+					// 退出客户端
+					extern bool g_bExit;
+					g_bExit = true;
+					break;
+				}
 			}
 		}
 	}
