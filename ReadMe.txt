@@ -95,3 +95,9 @@
 2、采用由Facebook所开发的速度更快的压缩库zstd，提高程序运行效率。
 	参看：https://github.com/facebook/zstd
 
+2019.1.17
+
+1、添加比zstd更快的压缩库（压缩率不如zstd和zlib）lz4 1.8.3，参看
+	https://github.com/lz4/lz4
+
+2、修复被控端屏幕被缩放显示时远程桌面跟踪鼠标的位置不准的问题。

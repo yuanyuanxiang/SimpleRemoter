@@ -162,7 +162,7 @@ VOID CBuffer::ClearBuffer()
 	LeaveCriticalSection(&m_cs);
 }
 
-ULONG CBuffer::GetBufferLength() //获得有效数据长度
+ULONG CBuffer::GetBufferLength() const //获得有效数据长度
 {
 	if (m_Base == NULL)
 		return 0;
@@ -171,12 +171,12 @@ ULONG CBuffer::GetBufferLength() //获得有效数据长度
 }
 
 
-ULONG CBuffer::GetBufferMaxLength()   
+ULONG CBuffer::GetBufferMaxLength() const
 {
 	return m_ulMaxLength;
 }
 
-PBYTE CBuffer::GetBuffer(ULONG ulPos)
+PBYTE CBuffer::GetBuffer(ULONG ulPos) const
 {
 	if (m_Base==NULL)
 	{

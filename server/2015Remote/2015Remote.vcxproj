@@ -105,7 +105,12 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="res\1.cur" />
+    <None Include="res\2.cur" />
     <None Include="res\2015Remote.ico" />
+    <None Include="res\3.cur" />
+    <None Include="res\4.cur" />
+    <None Include="res\arrow.cur" />
     <None Include="res\audio.ico" />
     <None Include="res\bitmap\bmp00001.bmp" />
     <None Include="res\Bitmap\Online.bmp" />
@@ -113,6 +118,7 @@
     <None Include="res\Bitmap\ToolBar_File.bmp" />
     <None Include="res\Bitmap\ToolBar_Main.bmp" />
     <None Include="res\cmdshell.ico" />
+    <None Include="res\cursor5.cur" />
     <None Include="res\Cur\Drag.cur" />
     <None Include="res\Cur\MutiDrag.cur" />
     <None Include="res\dword.ico" />

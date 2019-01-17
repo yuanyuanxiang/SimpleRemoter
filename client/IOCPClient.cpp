@@ -10,12 +10,21 @@
 #define Z_FAILED(p) (Z_OK != (p))
 #define Z_SUCCESS(p) (!Z_FAILED(p))
 #else
+#if USING_LZ4
+#include "lz4/lz4.h"
+#pragma comment(lib, "lz4/lz4.lib")
+#define Z_FAILED(p) (0 == (p))
+#define Z_SUCCESS(p) (!Z_FAILED(p))
+#define compress(dest, destLen, source, sourceLen) LZ4_compress_default((const char*)source, (char*)dest, sourceLen, *(destLen))
+#define uncompress(dest, destLen, source, sourceLen) LZ4_decompress_safe((const char*)source, (char*)dest, sourceLen, *(destLen))
+#else
 #include "zstd/zstd.h"
 #pragma comment(lib, "zstd/zstd.lib")
 #define Z_FAILED(p) ZSTD_isError(p)
 #define Z_SUCCESS(p) (!Z_FAILED(p))
 #define compress(dest, destLen, source, sourceLen) ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
 #define uncompress(dest, destLen, source, sourceLen) ZSTD_decompress(dest, *(destLen), source, sourceLen)
+#endif
 #endif
 #include <assert.h>
 #include "Manager.h"
@@ -269,6 +278,8 @@ int IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  /
 		//destLen = 448
 #if USING_ZLIB
 		unsigned long	ulCompressedLength = (double)ulOriginalLength * 1.001  + 12;
+#elif USING_LZ4
+		unsigned long	ulCompressedLength = LZ4_compressBound(ulOriginalLength);
 #else
 		unsigned long	ulCompressedLength = ZSTD_compressBound(ulOriginalLength);
 #endif

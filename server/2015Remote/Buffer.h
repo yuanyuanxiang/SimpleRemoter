@@ -7,14 +7,14 @@ public:
 	CBuffer(void);
 	~CBuffer(void);
 
-	ULONG GetBufferMaxLength();
+	ULONG GetBufferMaxLength() const;
 	ULONG ReadBuffer(PBYTE Buffer, ULONG ulLength);
-	ULONG GetBufferLength(); //获得有效数据长度;
+	ULONG GetBufferLength() const; //获得有效数据长度;
 	ULONG DeAllocateBuffer(ULONG ulLength);
 	VOID ClearBuffer();
 	ULONG ReAllocateBuffer(ULONG ulLength);
 	BOOL WriteBuffer(PBYTE Buffer, ULONG ulLength);
-	PBYTE GetBuffer(ULONG ulPos=0);
+	PBYTE GetBuffer(ULONG ulPos=0) const;
 	ULONG RemoveComletedBuffer(ULONG ulLength);
 	VOID  ReleaseMember();
 	VOID InitMember();

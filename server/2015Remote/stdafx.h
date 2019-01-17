@@ -5,7 +5,13 @@
 
 #pragma once
 
+// 是否使用ZLIB
 #define USING_ZLIB 0
+
+#if !USING_ZLIB
+// 是否使用LZ4
+#define USING_LZ4 1
+#endif
 
 #ifndef _SECURE_ATL
 #define _SECURE_ATL 1

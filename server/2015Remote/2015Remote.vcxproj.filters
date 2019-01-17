@@ -111,6 +111,24 @@
     <None Include="res\string.ico">
       <Filter>资源文件</Filter>
     </None>
+    <None Include="res\4.cur">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="res\2.cur">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="res\3.cur">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="res\1.cur">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="res\cursor5.cur">
+      <Filter>资源文件</Filter>
+    </None>
+    <None Include="res\arrow.cur">
+      <Filter>资源文件</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="2015Remote.h">

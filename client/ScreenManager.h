@@ -22,7 +22,7 @@ public:
 	HANDLE  m_hWorkThread;
 
 	static DWORD WINAPI WorkThreadProc(LPVOID lParam);
-	VOID SendBitMapInfor();
+	VOID SendBitMapInfo();
 	VOID OnReceive(PBYTE szBuffer, ULONG ulLength);
 
 	CScreenSpy* m_ScreenSpyObject;

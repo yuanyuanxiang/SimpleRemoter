@@ -36,7 +36,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 {
 	CScreenManager *This = (CScreenManager *)lParam;
 
-	This->SendBitMapInfor(); //发送bmp位图结构
+	This->SendBitMapInfo(); //发送bmp位图结构
 
 	// 等控制端对话框打开
 	This->WaitForDialogOpen();   
@@ -45,6 +45,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 	This->SendFirstScreen();
 	const int fps = 12;// 帧率
 	const int sleep = 1000 / fps;// 间隔时间（ms）
+	timeBeginPeriod(1);
 	while (This->m_bIsWorking)
 	{
 		ULONG ulNextSendLength = 0;
@@ -61,13 +62,13 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 			szBuffer = NULL;
 		}
 	}
-
+	timeEndPeriod(1);
 	cout<<"ScreenWorkThread Exit\n";
 
 	return 0;
 }
 
-VOID CScreenManager::SendBitMapInfor()
+VOID CScreenManager::SendBitMapInfo()
 {
 	//这里得到bmp结构的大小
 	ULONG   ulLength = 1 + m_ScreenSpyObject->GetBISize();

