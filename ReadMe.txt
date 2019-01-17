@@ -101,3 +101,5 @@
 	https://github.com/lz4/lz4
 
 2、修复被控端屏幕被缩放显示时远程桌面跟踪鼠标的位置不准的问题。
+
+3、修复语音监听的问题，2个事件CAudio修改为"Manual Reset"。

@@ -19,8 +19,8 @@ CAudio::CAudio()
 	m_bIsWaveOutUsed = FALSE;
 	m_nWaveInIndex = 0;
 	m_nWaveOutIndex		= 0;
-	m_hEventWaveIn = CreateEvent(NULL, TRUE, FALSE, NULL);
-	m_hStartRecord = CreateEvent(NULL, TRUE, FALSE, NULL);
+	m_hEventWaveIn = CreateEvent(NULL, FALSE, FALSE, NULL);
+	m_hStartRecord = CreateEvent(NULL, FALSE, FALSE, NULL);
 	memset(&m_GSMWavefmt, 0, sizeof(GSM610WAVEFORMAT));
 
 	m_GSMWavefmt.wfx.wFormatTag = WAVE_FORMAT_GSM610; 
@@ -197,7 +197,7 @@ DWORD WINAPI CAudio::waveInCallBack(LPVOID lParam)
 	std::cout<<"waveInCallBack end\n";
 	This->m_hThreadCallBack = false;
 
-	return 0;
+	return 0XDEADAAAA;
 }
 
 BOOL CAudio::PlayBuffer(LPBYTE szBuffer, DWORD dwBufferSize)
