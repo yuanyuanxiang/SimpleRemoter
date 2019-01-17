@@ -5,8 +5,18 @@
 #include "stdafx.h"
 #include "IOCPClient.h"
 #include <IOSTREAM>
-#include "zconf.h"
+#if USING_ZLIB
 #include "zlib.h"
+#define Z_FAILED(p) (Z_OK != (p))
+#define Z_SUCCESS(p) (!Z_FAILED(p))
+#else
+#include "zstd/zstd.h"
+#pragma comment(lib, "zstd/zstd.lib")
+#define Z_FAILED(p) ZSTD_isError(p)
+#define Z_SUCCESS(p) (!Z_FAILED(p))
+#define compress(dest, destLen, source, sourceLen) ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
+#define uncompress(dest, destLen, source, sourceLen) ZSTD_decompress(dest, *(destLen), source, sourceLen)
+#endif
 #include <assert.h>
 #include "Manager.h"
 
@@ -32,6 +42,7 @@ IOCPClient::IOCPClient(bool exit_while_disconnect)
 	m_hWorkThread   = NULL;
 	m_bWorkThread = S_STOP;
 
+	memset(m_szPacketFlag, 0, sizeof(m_szPacketFlag));
 	memcpy(m_szPacketFlag,"Shine",FLAG_LENGTH);
 
 	m_bIsRunning = TRUE;
@@ -187,7 +198,7 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 		//检测数据是否大于数据头大小 如果不是那就不是正确的数据
 		while (m_CompressedBuffer.GetBufferLength() > HDR_LENGTH)
 		{
-			char szPacketFlag[FLAG_LENGTH] = {0};
+			char szPacketFlag[FLAG_LENGTH + 3] = {0};
 			CopyMemory(szPacketFlag, m_CompressedBuffer.GetBuffer(),FLAG_LENGTH);
 			//判断数据头
 			if (memcmp(m_szPacketFlag, szPacketFlag, FLAG_LENGTH) != 0)
@@ -220,7 +231,7 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 				int	iRet = uncompress(DeCompressedBuffer, 
 					&ulOriginalLength, CompressedBuffer, ulCompressedLength);
 
-				if (iRet == Z_OK)//如果解压成功
+				if (Z_SUCCESS(iRet))//如果解压成功
 				{
 					CBuffer m_DeCompressedBuffer;
 					m_DeCompressedBuffer.WriteBuffer(DeCompressedBuffer,
@@ -231,8 +242,10 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 					m_Manager->OnReceive((PBYTE)m_DeCompressedBuffer.GetBuffer(0),
 						m_DeCompressedBuffer.GetBufferLength());
 				}
-				else
+				else{
+					printf("[ERROR] uncompress failed \n");
 					throw "Bad Buffer";
+				}
 
 				delete [] CompressedBuffer;
 				delete [] DeCompressedBuffer;
@@ -246,6 +259,7 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 
 int IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  //Hello
 {
+	AUTO_TICK(10);
 	assert (ulOriginalLength > 0);
 	{
 		//乘以1.001是以最坏的也就是数据压缩后占用的内存空间和原先一样 +12
@@ -253,20 +267,28 @@ int IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  /
 		//数据压缩 压缩算法 微软提供
 		//nSize   = 436
 		//destLen = 448
+#if USING_ZLIB
 		unsigned long	ulCompressedLength = (double)ulOriginalLength * 1.001  + 12;
+#else
+		unsigned long	ulCompressedLength = ZSTD_compressBound(ulOriginalLength);
+#endif
 		LPBYTE			CompressedBuffer = new BYTE[ulCompressedLength];
 
 		int	iRet = compress(CompressedBuffer, &ulCompressedLength, (PBYTE)szBuffer, ulOriginalLength);
-		if (iRet != Z_OK)
+		if (Z_FAILED(iRet))
 		{
+			printf("[ERROR] compress failed \n");
 			delete [] CompressedBuffer;
 			return FALSE;
 		}
+#if !USING_ZLIB
+		ulCompressedLength = iRet;
+#endif
 
 		ULONG ulPackTotalLength = ulCompressedLength + HDR_LENGTH;
 		CBuffer m_WriteBuffer;
 
-		m_WriteBuffer.WriteBuffer((PBYTE)m_szPacketFlag, sizeof(m_szPacketFlag));
+		m_WriteBuffer.WriteBuffer((PBYTE)m_szPacketFlag, FLAG_LENGTH);
 
 		m_WriteBuffer.WriteBuffer((PBYTE) &ulPackTotalLength,sizeof(ULONG));
 		//  5      4

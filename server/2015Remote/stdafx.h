@@ -5,6 +5,8 @@
 
 #pragma once
 
+#define USING_ZLIB 0
+
 #ifndef _SECURE_ATL
 #define _SECURE_ATL 1
 #endif

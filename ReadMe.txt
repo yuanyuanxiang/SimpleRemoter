@@ -87,3 +87,11 @@
 2、SAFE_DELETE(ContextObject->olps)有崩溃概率。改为主控端退出时先令被控端退出，就没有内存泄漏。
 
 3、开关音频时偶有内存泄漏，waveInCallBack线程不能正常退出。
+
+2019.1.16
+
+1、智能计时宏AUTO_TICK有问题，不应该用无名的局部变量auto_tick。
+
+2、采用由Facebook所开发的速度更快的压缩库zstd，提高程序运行效率。
+	参看：https://github.com/facebook/zstd
+

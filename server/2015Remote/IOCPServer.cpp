@@ -3,8 +3,18 @@
 #include "2015Remote.h"
 
 #include <iostream>
+#if USING_ZLIB
 #include "zlib.h"
-#include "zconf.h"
+#define Z_FAILED(p) (Z_OK != (p))
+#define Z_SUCCESS(p) (!Z_FAILED(p))
+#else
+#include "zstd/zstd.h"
+#pragma comment(lib, "zstd/zstd.lib")
+#define Z_FAILED(p) ZSTD_isError(p)
+#define Z_SUCCESS(p) (!Z_FAILED(p))
+#define compress(dest, destLen, source, sourceLen) ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
+#define uncompress(dest, destLen, source, sourceLen) ZSTD_decompress(dest, *(destLen), source, sourceLen)
+#endif
 using namespace std;
 
 CRITICAL_SECTION IOCPServer::m_cs = {0};
@@ -452,13 +462,14 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 				//从数据包当前将源数据没有解压读取到pData   448
 				ContextObject->InCompressedBuffer.ReadBuffer(CompressedBuffer, ulCompressedLength);
 				int	iRet = uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
-				if (iRet == Z_OK)
+				if (Z_SUCCESS(iRet))
 				{
 					ContextObject->InDeCompressedBuffer.ClearBuffer();
 					ContextObject->InCompressedBuffer.ClearBuffer();
 					ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
 					m_NotifyProc(ContextObject);  //通知窗口
 				}else{
+					OutputDebugStringA("[ERROR] uncompress failed \n");
 					throw "Bad Buffer";
 				}
 				delete [] CompressedBuffer;
@@ -486,15 +497,23 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 	{
 		if (ulOriginalLength > 0)
 		{
+#if USING_ZLIB
 			unsigned long	ulCompressedLength = (double)ulOriginalLength * 1.001  + 12;
+#else
+			unsigned long	ulCompressedLength = ZSTD_compressBound(ulOriginalLength);
+#endif
 			LPBYTE			CompressedBuffer = new BYTE[ulCompressedLength];
 			int	iRet = compress(CompressedBuffer, &ulCompressedLength, (LPBYTE)szBuffer, ulOriginalLength);
 
-			if (iRet != Z_OK)
+			if (Z_FAILED(iRet))
 			{
+				OutputDebugStringA("[ERROR] compress failed \n");
 				delete [] CompressedBuffer;
 				return;
 			}
+#if !USING_ZLIB
+			ulCompressedLength = iRet;
+#endif
 			ULONG ulPackTotalLength = ulCompressedLength + HDR_LENGTH;
 			ContextObject->OutCompressedBuffer.WriteBuffer((LPBYTE)m_szPacketFlag,FLAG_LENGTH);
 			ContextObject->OutCompressedBuffer.WriteBuffer((PBYTE)&ulPackTotalLength, sizeof(ULONG));

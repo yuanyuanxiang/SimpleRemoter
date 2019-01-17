@@ -49,7 +49,7 @@ public:
 	BOOL m_bIsRunning;
 	BOOL m_bConnected;
 
-	char    m_szPacketFlag[FLAG_LENGTH];
+	char    m_szPacketFlag[FLAG_LENGTH + 3];
 
 	VOID setManagerCallBack(CManager* Manager);
 

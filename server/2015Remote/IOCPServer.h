@@ -148,7 +148,7 @@ public:
 
 	OVERLAPPEDPLUS(IOType ioType)
 	{
-#ifdef _DEBUG
+#if 0
 		char szLog[100];
 		sprintf_s(szLog, "=> [new] OVERLAPPEDPLUS %x by thread [%d].\n", this, GetCurrentThreadId());
 		OutputDebugStringA(szLog);
@@ -159,7 +159,7 @@ public:
 
 	~OVERLAPPEDPLUS()
 	{
-#ifdef _DEBUG
+#if 0
 		char szLog[100];
 		sprintf_s(szLog, "=> [delete] OVERLAPPEDPLUS %x by thread [%d].\n", this, GetCurrentThreadId());
 		OutputDebugStringA(szLog);
