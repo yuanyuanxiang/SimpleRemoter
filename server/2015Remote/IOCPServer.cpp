@@ -271,7 +271,7 @@ BOOL IOCPServer::InitializeIOCP(VOID)
 	ULONG ulWorkThreadCount = m_ulThreadPoolMax;
 
 	HANDLE hWorkThread = NULL;
-	for (int i=0; i<ulWorkThreadCount; i++)    
+	for (int i=0; i<ulWorkThreadCount; ++i)    
 	{
 		hWorkThread = (HANDLE)CreateThread(NULL, //创建工作线程目的是处理投递到完成端口中的任务			
 			0,						

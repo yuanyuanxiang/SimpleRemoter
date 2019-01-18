@@ -98,7 +98,7 @@ void CSystemDlg::ShowWindowsList(void)
 	m_ControlList.DeleteAllItems();
 	CString	str;
 	int i ;
-	for ( i = 0; dwOffset <m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; i++)
+	for ( i = 0; dwOffset <m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; ++i)
 	{
 		LPDWORD	lpPID = LPDWORD(szBuffer + dwOffset);   //窗口句柄
 		szTitle = (char *)szBuffer + dwOffset + sizeof(DWORD);   //窗口标题    
@@ -128,7 +128,7 @@ void CSystemDlg::ShowProcessList(void)
 	m_ControlList.DeleteAllItems();       
 	//遍历发送来的每一个字符别忘了他的数据结构啊 Id+进程名+0+完整名+0
 	int i;
-	for (i = 0; dwOffset < m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; i++)
+	for (i = 0; dwOffset < m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; ++i)
 	{
 		LPDWORD	PID = LPDWORD(szBuffer + dwOffset);        //这里得到进程ID
 		szExeFile = szBuffer + dwOffset + sizeof(DWORD);      //进程名就是ID之后的啦

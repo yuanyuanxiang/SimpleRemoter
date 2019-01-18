@@ -448,7 +448,7 @@ void CFileManagerDlg::FixedLocalFileList(CString directory)
 		);
 
 	// i 为 0 时列目录，i 为 1时列文件
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 2; ++i)
 	{
 		CFileFind	file;
 		BOOL		bContinue;
@@ -1056,7 +1056,7 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen)
 	if (dwBufferLen != 0)
 	{
 		// 
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < 2; ++i)
 		{
 			// 跳过Token，共5字节
 			char *pList = (char *)(pbBuffer + 1);			
@@ -1767,7 +1767,7 @@ void CFileManagerDlg::WriteLocalRecvFile()
 	SetFilePointer(hFile, dwOffsetLow, &dwOffsetHigh, FILE_BEGIN);
 
 	int nRet = 0, i = 0;
-	for (; i < MAX_WRITE_RETRY; i++)
+	for (; i < MAX_WRITE_RETRY; ++i)
 	{
 		// 写入文件
 		nRet = WriteFile
@@ -2337,7 +2337,7 @@ void CFileManagerDlg::OnRclickListLocal(NMHDR* pNMHDR, LRESULT* pResult)
 	if (pListCtrl->GetSelectedCount() == 0)
 	{
 		int	count = pM->GetMenuItemCount();
-		for (int i = 0; i < count; i++)
+		for (int i = 0; i < count; ++i)
 		{
 			pM->EnableMenuItem(i, MF_BYPOSITION | MF_GRAYED);
 		}
@@ -2377,7 +2377,7 @@ void CFileManagerDlg::OnRclickListRemote(NMHDR* pNMHDR, LRESULT* pResult)
 	if (pListCtrl->GetSelectedCount() == 0)
 	{
 		int	count = pM->GetMenuItemCount();
-		for (int i = 0; i < count; i++)
+		for (int i = 0; i < count; ++i)
 		{
 			pM->EnableMenuItem(i, MF_BYPOSITION | MF_GRAYED);
 		}

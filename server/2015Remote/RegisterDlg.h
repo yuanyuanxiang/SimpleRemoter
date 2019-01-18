@@ -39,10 +39,10 @@ public:
 	HTREEITEM	HKCC;
 	HTREEITEM   m_hSelectedItem;
 	BOOL m_isEnable;
-	char CRegisterDlg::GetFatherPath(CString& strFullPath);
-	CString CRegisterDlg::GetFullPath(HTREEITEM hCurrent);
+	char GetFatherPath(CString& strFullPath);
+	CString GetFullPath(HTREEITEM hCurrent);
 	afx_msg void OnTvnSelchangedTree(NMHDR *pNMHDR, LRESULT *pResult);
-	void CRegisterDlg::OnReceiveComplete(void);
-	void CRegisterDlg::AddPath(char* szBuffer);
-	void CRegisterDlg::AddKey(char* szBuffer);
+	void OnReceiveComplete(void);
+	void AddPath(char* szBuffer);
+	void AddKey(char* szBuffer);
 };

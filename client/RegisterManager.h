@@ -18,7 +18,7 @@ public:
 	CRegisterManager(IOCPClient* ClientObject, int n);
 	virtual ~CRegisterManager();
 	VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
-	VOID CRegisterManager::Find(char bToken, char *szPath);
+	VOID Find(char bToken, char *szPath);
 };
 
 #endif // !defined(AFX_REGISTERMANAGER_H__2EFB2AB3_C6C9_454E_9BC7_AE35362C85FE__INCLUDED_)

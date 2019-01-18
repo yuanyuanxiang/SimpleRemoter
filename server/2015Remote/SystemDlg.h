@@ -13,11 +13,11 @@ public:
 	virtual ~CSystemDlg();
 	CONTEXT_OBJECT* m_ContextObject;
 	IOCPServer*     m_iocpServer;
-	VOID CSystemDlg::GetProcessList(void);
-	VOID CSystemDlg::ShowProcessList(void);
-	void CSystemDlg::ShowWindowsList(void);
-	void CSystemDlg::GetWindowsList(void);
-	void CSystemDlg::OnReceiveComplete(void);
+	VOID GetProcessList(void);
+	VOID ShowProcessList(void);
+	void ShowWindowsList(void);
+	void GetWindowsList(void);
+	void OnReceiveComplete(void);
 	BOOL   m_bHow;
 // 对话框数据
 	enum { IDD = IDD_DIALOG_SYSTEM };

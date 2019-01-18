@@ -250,7 +250,7 @@ void CRegisterDlg::AddPath(char* szBuffer)
 	DWORD size =msg.size;
 	int count=msg.count;
 	if(size>0&&count>0){                   //一点保护措施
-		for(int i=0;i<count;i++){
+		for(int i=0;i<count;++i){
 			if (m_bIsClosed)
 				break;
 			char* szKeyName=szBuffer+size*i+msgsize;
@@ -271,7 +271,7 @@ void CRegisterDlg::AddKey(char* szBuffer)
 	REGMSG msg;
 	memcpy((void*)&msg,szBuffer,sizeof(msg));
 	char* szTemp=szBuffer+sizeof(msg);
-	for(int i=0;i<msg.count;i++)
+	for(int i=0;i<msg.count;++i)
 	{
 		if (m_bIsClosed)
 			break;

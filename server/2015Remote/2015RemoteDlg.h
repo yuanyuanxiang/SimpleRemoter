@@ -48,22 +48,22 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 
-	VOID CMy2015RemoteDlg::InitControl();             //初始控件
-	VOID CMy2015RemoteDlg::TestOnline();              //测试函数
-	VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, 
+	VOID InitControl();             //初始控件
+	VOID TestOnline();              //测试函数
+	VOID AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, 
 		CString strCPU, CString strVideo, CString strPing,CONTEXT_OBJECT* ContextObject);
-	VOID CMy2015RemoteDlg::ShowMessage(BOOL bOk, CString strMsg);
-	VOID CMy2015RemoteDlg::CreatStatusBar();
-	VOID CMy2015RemoteDlg::CreateToolBar();
-	VOID CMy2015RemoteDlg::CreateNotifyBar();
-	VOID CMy2015RemoteDlg::CreateSolidMenu();	
-	VOID CMy2015RemoteDlg::ListenPort();
-	VOID CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection);
+	VOID ShowMessage(BOOL bOk, CString strMsg);
+	VOID CreatStatusBar();
+	VOID CreateToolBar();
+	VOID CreateNotifyBar();
+	VOID CreateSolidMenu();	
+	VOID ListenPort();
+	VOID Activate(int nPort,int nMaxConnection);
 
 	static VOID CALLBACK NotifyProc(CONTEXT_OBJECT* ContextObject);
 	static VOID CALLBACK OfflineProc(CONTEXT_OBJECT* ContextObject);
-	static VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject);
-	VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength);
+	static VOID MessageHandle(CONTEXT_OBJECT* ContextObject);
+	VOID SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength);
 	// 显示用户上线信息
 	CListCtrl  m_CList_Online;    
 	CListCtrl  m_CList_Message;

@@ -302,7 +302,7 @@ VOID CMy2015RemoteDlg::InitControl()
 	rect.bottom+=20;
 	MoveWindow(rect);
 
-	for (int i = 0;i<g_Column_Count_Online;i++)
+	for (int i = 0;i<g_Column_Count_Online;++i)
 	{
 		m_CList_Online.InsertColumn(i, g_Column_Data_Online[i].szTitle,LVCFMT_CENTER,g_Column_Data_Online[i].nWidth);
 
@@ -310,7 +310,7 @@ VOID CMy2015RemoteDlg::InitControl()
 	}
 	m_CList_Online.SetExtendedStyle(LVS_EX_FULLROWSELECT);
 
-	for (int i = 0; i < g_Column_Count_Message; i++)
+	for (int i = 0; i < g_Column_Count_Message; ++i)
 	{
 		m_CList_Message.InsertColumn(i, g_Column_Data_Message[i].szTitle,LVCFMT_CENTER,g_Column_Data_Message[i].nWidth);
 		g_Column_Message_Width+=g_Column_Data_Message[i].nWidth;  
@@ -499,7 +499,7 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
 		rc.bottom = cy-160;   //列表的下坐标
 		m_CList_Online.MoveWindow(rc);
 
-		for(int i=0;i<g_Column_Count_Online;i++){           //遍历每一个列
+		for(int i=0;i<g_Column_Count_Online;++i){           //遍历每一个列
 			double Temp=g_Column_Data_Online[i].nWidth;     //得到当前列的宽度   138
 			Temp/=g_Column_Online_Width;                    //看一看当前宽度占总长度的几分之几
 			Temp*=cx;                                       //用原来的长度乘以所占的几分之几得到当前的宽度
@@ -516,7 +516,7 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
 		rc.right  = cx-1;    //列表的右坐标
 		rc.bottom = cy-20;   //列表的下坐标
 		m_CList_Message.MoveWindow(rc);
-		for(int i=0;i<g_Column_Count_Message;i++){           //遍历每一个列
+		for(int i=0;i<g_Column_Count_Message;++i){           //遍历每一个列
 			double Temp=g_Column_Data_Message[i].nWidth;     //得到当前列的宽度
 			Temp/=g_Column_Message_Width;                    //看一看当前宽度占总长度的几分之几
 			Temp*=cx;                                        //用原来的长度乘以所占的几分之几得到当前的宽度
@@ -635,7 +635,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	int	iCount = SubMenu->GetMenuItemCount();
 	if (m_CList_Online.GetSelectedCount() == 0)         //如果没有选中
 	{ 
-		for (int i = 0;i<iCount;i++)
+		for (int i = 0;i<iCount;++i)
 		{
 			SubMenu->EnableMenuItem(i, MF_BYPOSITION | MF_DISABLED | MF_GRAYED);          //菜单全部变灰
 		}
@@ -669,7 +669,7 @@ void CMy2015RemoteDlg::OnOnlineDelete()
 	int iCount = m_CList_Online.GetSelectedCount();
 	int i = 0;
 
-	for (i=0;i<iCount;i++)
+	for (i=0;i<iCount;++i)
 	{
 		POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
 		int iItem = m_CList_Online.GetNextSelectedItem(Pos);

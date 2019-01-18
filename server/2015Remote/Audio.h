@@ -27,8 +27,8 @@ public:
 	DWORD     m_nWaveInIndex;
 	bool    m_hThreadCallBack;
 	static DWORD WINAPI waveInCallBack(LPVOID lParam);   //发送到主控端
-	LPBYTE CAudio::GetRecordBuffer(LPDWORD dwBufferSize);
-	BOOL CAudio::InitializeWaveIn();
+	LPBYTE GetRecordBuffer(LPDWORD dwBufferSize);
+	BOOL InitializeWaveIn();
 	BOOL m_bIsWaveInUsed;
 
 	HWAVEOUT m_hWaveOut;
@@ -37,8 +37,8 @@ public:
 	DWORD    m_nWaveOutIndex;
 	LPWAVEHDR m_OutAudioHeader[2];   //两个头
 	LPBYTE    m_OutAudioData[2];     //两个数据   保持声音的连续
-	BOOL CAudio::PlayBuffer(LPBYTE szBuffer, DWORD dwBufferSize);
-	BOOL CAudio::InitializeWaveOut();
+	BOOL PlayBuffer(LPBYTE szBuffer, DWORD dwBufferSize);
+	BOOL InitializeWaveOut();
 };
 
 #endif // !defined(AFX_AUDIO_H__56854DE7_5FE4_486F_9AFC_CE3726EF7CBC__INCLUDED_)

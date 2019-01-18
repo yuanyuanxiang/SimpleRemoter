@@ -17,15 +17,15 @@ class CSystemManager : public CManager
 public:
 	CSystemManager(IOCPClient* ClientObject,BOOL bHow);
 	virtual ~CSystemManager();
-	LPBYTE CSystemManager::GetProcessList();
-	VOID CSystemManager::SendProcessList();
-	BOOL CSystemManager::DebugPrivilege(const char *szName, BOOL bEnable);
+	LPBYTE GetProcessList();
+	VOID SendProcessList();
+	BOOL DebugPrivilege(const char *szName, BOOL bEnable);
 	VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
-	VOID CSystemManager::KillProcess(LPBYTE szBuffer, UINT ulLength);
-	LPBYTE CSystemManager::GetWindowsList();
-	static BOOL CALLBACK CSystemManager::EnumWindowsProc(HWND hWnd, LPARAM lParam);
-	void CSystemManager::SendWindowsList();
-	void CSystemManager::TestWindow(LPBYTE szBuffer);
+	VOID KillProcess(LPBYTE szBuffer, UINT ulLength);
+	LPBYTE GetWindowsList();
+	static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
+	void SendWindowsList();
+	void TestWindow(LPBYTE szBuffer);
 };
 
 #endif // !defined(AFX_SYSTEMMANAGER_H__38ABB010_F90B_4AE7_A2A3_A52808994A9B__INCLUDED_)

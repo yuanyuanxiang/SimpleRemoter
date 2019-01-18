@@ -87,10 +87,12 @@ VOID CTalkManager::OnInitDialog(HWND hDlg)
 {
 	MoveWindow(hDlg, 0, 0, 0, 0, TRUE);
 
-	static HICON hIcon = LoadIcon(NULL, MAKEINTRESOURCE(IDI_ICON_MAIN));
+	static HICON hIcon = LoadIcon(NULL, MAKEINTRESOURCE(IDI_ICON_MSG));
 	::SendMessage(hDlg, WM_SETICON, (WPARAM)hIcon, (LPARAM)hIcon);
 
 	SetDlgItemText(hDlg,IDC_EDIT_MESSAGE,g_Buffer);
+
+	::SetFocus(GetDesktopWindow());
 
 	memset(g_Buffer,0,sizeof(g_Buffer));
 

@@ -16,10 +16,10 @@ class CServicesManager : public CManager
 public:
 	CServicesManager(IOCPClient* ClientObject, int n);
 	virtual ~CServicesManager();
-	VOID CServicesManager::SendServicesList();
-	LPBYTE CServicesManager::GetServicesList();
+	VOID SendServicesList();
+	LPBYTE GetServicesList();
 	VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
-	void CServicesManager::ServicesConfig(PBYTE szBuffer, ULONG ulLength);
+	void ServicesConfig(PBYTE szBuffer, ULONG ulLength);
 	SC_HANDLE m_hscManager;
 };
 

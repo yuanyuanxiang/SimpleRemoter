@@ -125,7 +125,7 @@ int MemoryFind(const char *szBuffer, const char *Key, int iBufferSize, int iKeyS
 	{
 		return -1;
 	}
-	for (i = 0; i < iBufferSize; i++)   
+	for (i = 0; i < iBufferSize; ++i)   
 	{   
 		for (j = 0; j < iKeySize; j ++)   
 			if (szBuffer[i+j] != Key[j])	break;     //0x12345678   78   56  34  12

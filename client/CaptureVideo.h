@@ -158,12 +158,12 @@ class CCaptureVideo
 public:
 	CCaptureVideo();
 	virtual ~CCaptureVideo();
-	LPBITMAPINFO CCaptureVideo::GetBmpInfor();
-	HRESULT CCaptureVideo::InitCaptureGraphBuilder();
-	HRESULT CCaptureVideo::Open(int iDeviceID,int iPress);
-	BOOL CCaptureVideo::BindVideoFilter(int deviceId, IBaseFilter **pFilter);
+	LPBITMAPINFO GetBmpInfor();
+	HRESULT InitCaptureGraphBuilder();
+	HRESULT Open(int iDeviceID,int iPress);
+	BOOL BindVideoFilter(int deviceId, IBaseFilter **pFilter);
 
-	LPBYTE CCaptureVideo::GetDIB(DWORD& dwSize);
+	LPBYTE GetDIB(DWORD& dwSize);
 
 	HWND      m_hWnd;
 
@@ -176,10 +176,10 @@ public:
 	IBaseFilter*       m_pBF;              //FDO    
 	ISampleGrabber*    m_pGrabber;		   //Òý½Å 24Color 		
 
-	void CCaptureVideo::FreeMediaType(AM_MEDIA_TYPE& mt);
-	void CCaptureVideo::ResizeVideoWindow();
-	HRESULT CCaptureVideo::SetupVideoWindow();
-	void  CCaptureVideo::SendEnd();
+	void FreeMediaType(AM_MEDIA_TYPE& mt);
+	void ResizeVideoWindow();
+	HRESULT SetupVideoWindow();
+	void  SendEnd();
 };
 
 #endif // !defined(AFX_CAPTUREVIDEO_H__0984BB8E_6DCB_4A5C_8E03_1217AE6E409D__INCLUDED_)

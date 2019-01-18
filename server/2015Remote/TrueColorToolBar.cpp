@@ -118,7 +118,7 @@ void CTrueColorToolBar::AddDropDownButton(CWnd* pParent, UINT uButtonID, UINT uM
 void CTrueColorToolBar::OnToolbarDropDown(NMHDR* pnmh, LRESULT *plr)
 {
 	NMTOOLBARA * pnmtb=(NMTOOLBARA *)pnmh;
-	for (int i = 0; i < m_lstDropDownButton.GetSize(); i++) {
+	for (int i = 0; i < m_lstDropDownButton.GetSize(); ++i) {
 		
 		stDropDownInfo DropDownInfo = m_lstDropDownButton.GetAt(i);
 

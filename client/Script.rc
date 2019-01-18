@@ -29,7 +29,7 @@ STYLE DS_SYSMODAL | DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSM
 CAPTION "消息提示"
 FONT 10, "System", 0, 0, 0x0
 BEGIN
-    EDITTEXT        IDC_EDIT_MESSAGE,0,0,180,82,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | NOT WS_BORDER | WS_VSCROLL
+    LTEXT           "Static",IDC_EDIT_MESSAGE,5,5,170,95
 END
 
 
@@ -43,7 +43,6 @@ GUIDELINES DESIGNINFO
 BEGIN
     IDD_DIALOG, DIALOG
     BEGIN
-        BOTTOMMARGIN, 101
     END
 END
 #endif    // APSTUDIO_INVOKED
@@ -88,7 +87,7 @@ IDR_WAVE                WAVE                    "Res\\msg.wav"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,1
+ FILEVERSION 1,0,0,2
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -106,7 +105,7 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "FUCK THE UNIVERSE"
             VALUE "FileDescription", "A GHOST"
-            VALUE "FileVersion", "1.0.0.1"
+            VALUE "FileVersion", "1.0.0.2"
             VALUE "InternalName", "ServerDl.dll"
             VALUE "LegalCopyright", "Copyright (C) 2019-2025"
             VALUE "OriginalFilename", "ServerDl.dll"
@@ -129,6 +128,7 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDI_ICON_MAIN           ICON                    "Res\\ghost.ico"
+IDI_ICON_MSG            ICON                    "Res\\msg.ico"
 #endif    // 中文(简体，中国) resources
 /////////////////////////////////////////////////////////////////////////////
 

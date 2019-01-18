@@ -23,7 +23,7 @@ public:
 	BOOL  m_bIsWorking;
 	HANDLE m_hWorkThread;
 	static DWORD WorkThread(LPVOID lParam);
-	int CAudioManager::SendRecordBuffer();
+	BOOL SendRecordBuffer();
 
 	CAudio*  m_AudioObject;
 };

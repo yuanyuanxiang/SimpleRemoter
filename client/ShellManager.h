@@ -25,7 +25,7 @@ public:
 	virtual ~CShellManager();
 	VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
 
-	static DWORD WINAPI CShellManager::ReadPipeThread(LPVOID lParam);
+	static DWORD WINAPI ReadPipeThread(LPVOID lParam);
 
 	HANDLE m_hThreadRead;
 	int m_nCmdLength;				// 输入的命令长度

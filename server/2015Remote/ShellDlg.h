@@ -13,10 +13,10 @@ public:
 	virtual ~CShellDlg();
 	CONTEXT_OBJECT* m_ContextObject;
 	IOCPServer* m_iocpServer;
-	VOID CShellDlg::OnReceiveComplete();
+	VOID OnReceiveComplete();
 	HICON       m_hIcon;
 	UINT m_nReceiveLength;
-	VOID CShellDlg::AddKeyBoardData(void);
+	VOID AddKeyBoardData(void);
 	UINT m_nCurSel;   //获得当前数据所在位置;
 
 // 对话框数据

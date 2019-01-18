@@ -81,7 +81,7 @@ int CServicesDlg::ShowServicesList(void)
 	m_ControlList.DeleteAllItems();
 
 	int i = 0;
-	for (i = 0; dwOffset < m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; i++)
+	for (i = 0; dwOffset < m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; ++i)
 	{
 		szDisplayName = szBuffer + dwOffset;
 		szServiceName = szDisplayName + lstrlen(szDisplayName) +1;

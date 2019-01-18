@@ -152,11 +152,11 @@ public:
 	LPBITMAPINFO m_BitmapInfor_Full;
 	BYTE*        m_BitmapData_Full;
 	BYTE*        m_BitmapCompressedData_Full;
-	void CVideoDlg::ResetScreen(void);
-	void CVideoDlg::OnReceiveComplete(void);
-	void CVideoDlg::DrawDIB(void);
+	void ResetScreen(void);
+	void OnReceiveComplete(void);
+	void DrawDIB(void);
 
-	void CVideoDlg::InitCodec(DWORD fccHandler);
+	void InitCodec(DWORD fccHandler);
 
 	HDC			m_hDC;
 	HDRAWDIB	m_hDD;

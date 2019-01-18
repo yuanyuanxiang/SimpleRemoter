@@ -178,5 +178,8 @@
     <Image Include="Res\ghost.ico">
       <Filter>资源文件</Filter>
     </Image>
+    <Image Include="Res\msg.ico">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

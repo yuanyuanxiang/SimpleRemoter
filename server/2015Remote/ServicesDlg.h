@@ -14,9 +14,9 @@ public:
 	virtual ~CServicesDlg();
 	CONTEXT_OBJECT* m_ContextObject;
 	IOCPServer*     m_iocpServer;
-	int CServicesDlg::ShowServicesList(void);
-	void CServicesDlg::OnReceiveComplete(void);
-	void CServicesDlg::ServicesConfig(BYTE bCmd);
+	int ShowServicesList(void);
+	void OnReceiveComplete(void);
+	void ServicesConfig(BYTE bCmd);
 // 对话框数据
 	enum { IDD = IDD_DIALOG_SERVICES };
 

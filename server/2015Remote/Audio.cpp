@@ -34,7 +34,7 @@ CAudio::CAudio()
 	m_ulBufferLength = 1000;
 
 	int i = 0;
-	for (i = 0; i < 2; i++)
+	for (i = 0; i < 2; ++i)
 	{
 		m_InAudioData[i] = new BYTE[m_ulBufferLength];
 		m_InAudioHeader[i] =  new WAVEHDR;
@@ -51,7 +51,7 @@ CAudio::~CAudio()
 	{
 		waveInStop(m_hWaveIn);
 		waveInReset(m_hWaveIn);
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < 2; ++i)
 			waveInUnprepareHeader(m_hWaveIn, m_InAudioHeader[i], sizeof(WAVEHDR));
 
 		waveInClose(m_hWaveIn);
@@ -60,7 +60,7 @@ CAudio::~CAudio()
 			printf("没有成功关闭waveInCallBack.\n");
 	}
 
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 2; ++i)
 	{
 		delete [] m_InAudioData[i];
 		m_InAudioData[i] = NULL;
@@ -83,12 +83,12 @@ CAudio::~CAudio()
 	if (m_bIsWaveOutUsed)
 	{
 		waveOutReset(m_hWaveOut);
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < 2; ++i)
 			waveOutUnprepareHeader(m_hWaveOut, m_InAudioHeader[i], sizeof(WAVEHDR));
 		waveOutClose(m_hWaveOut);
 	}
 
-	for (int i = 0; i < 2; i++)
+	for (int i = 0; i < 2; ++i)
 	{
 		delete [] m_OutAudioData[i];
 		m_OutAudioData[i] = NULL;
@@ -118,7 +118,7 @@ BOOL CAudio::InitializeWaveIn()
 	}
 
 	//录音设备 需要的两个缓冲
-	for (int i=0; i<2; i++)
+	for (int i=0; i<2; ++i)
 	{
 		m_InAudioHeader[i]->lpData = (LPSTR)m_InAudioData[i];   //m_lpInAudioData 指针数组
 		m_InAudioHeader[i]->dwBufferLength = m_ulBufferLength;
@@ -214,7 +214,7 @@ BOOL CAudio::InitializeWaveOut()
 	if (!waveOutGetNumDevs())
 		return FALSE;
 	int i;
-	for (i = 0; i < 2; i++)
+	for (i = 0; i < 2; ++i)
 		memset(m_OutAudioData[i], 0, m_ulBufferLength);  //声音数据
 
 	MMRESULT	mmResult;
@@ -222,7 +222,7 @@ BOOL CAudio::InitializeWaveOut()
 	if (mmResult != MMSYSERR_NOERROR)
 		return false;
 
-	for (i = 0; i < 2; i++)
+	for (i = 0; i < 2; ++i)
 	{
 		m_OutAudioHeader[i]->lpData = (LPSTR)m_OutAudioData[i];
 		m_OutAudioHeader[i]->dwBufferLength = m_ulBufferLength;

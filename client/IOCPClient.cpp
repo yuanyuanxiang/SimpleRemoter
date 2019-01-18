@@ -266,7 +266,7 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 }
 
 
-int IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  //Hello
+BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  //Hello
 {
 	AUTO_TICK(10);
 	assert (ulOriginalLength > 0);

