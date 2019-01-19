@@ -10,7 +10,7 @@
 
 #if !USING_ZLIB
 //  «∑Ò π”√LZ4
-#define USING_LZ4 1
+#define USING_LZ4 0
 #endif
 
 #ifndef _SECURE_ATL

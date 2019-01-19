@@ -11,7 +11,7 @@
 
 #if !USING_ZLIB
 // ÊÇ·ñÊ¹ÓÃLZ4
-#define USING_LZ4 1
+#define USING_LZ4 0
 #endif
 
 #if _MSC_VER > 1000

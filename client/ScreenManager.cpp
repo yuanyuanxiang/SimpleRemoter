@@ -43,7 +43,13 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 
 	clock_t last = clock();
 	This->SendFirstScreen();
+#if USING_ZLIB
+	const int fps = 8;// 帧率
+#elif USING_LZ4
 	const int fps = 12;// 帧率
+#else
+	const int fps = 8;// 帧率
+#endif
 	const int sleep = 1000 / fps;// 间隔时间（ms）
 	timeBeginPeriod(1);
 	while (This->m_bIsWorking)

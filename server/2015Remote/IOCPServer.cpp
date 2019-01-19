@@ -479,6 +479,8 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 					m_NotifyProc(ContextObject);  //Í¨Öª´°¿Ú
 				}else{
 					OutputDebugStringA("[ERROR] uncompress failed \n");
+					delete [] CompressedBuffer;
+					delete [] DeCompressedBuffer;
 					throw "Bad Buffer";
 				}
 				delete [] CompressedBuffer;

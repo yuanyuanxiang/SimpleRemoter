@@ -253,6 +253,8 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 				}
 				else{
 					printf("[ERROR] uncompress failed \n");
+					delete [] CompressedBuffer;
+					delete [] DeCompressedBuffer;
 					throw "Bad Buffer";
 				}
 
