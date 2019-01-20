@@ -46,7 +46,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 #if USING_ZLIB
 	const int fps = 8;// 帧率
 #elif USING_LZ4
-	const int fps = 12;// 帧率
+	const int fps = 8;// 帧率
 #else
 	const int fps = 8;// 帧率
 #endif

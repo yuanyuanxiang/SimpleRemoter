@@ -37,7 +37,7 @@ CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJEC
 	GetSystemDirectory(szFullPath, MAX_PATH);
 	lstrcat(szFullPath, "\\shell32.dll");  //图标
 	m_hIcon = ExtractIcon(AfxGetApp()->m_hInstance, szFullPath, 17);
-	m_hCursor = LoadCursor(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDC_ARROW));
+	m_hCursor = LoadCursor(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDC_ARROWS));
 
 	sockaddr_in  ClientAddr;
 	memset(&ClientAddr, 0, sizeof(ClientAddr));
@@ -231,12 +231,13 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(void)
 	}
 
 	// 光标类型发生变化
-	BYTE bOldCursorIndex;
-	memcpy(&bOldCursorIndex, &m_bCursorIndex, sizeof(BYTE));
-	memcpy(&m_bCursorIndex, m_ContextObject->InDeCompressedBuffer.GetBuffer(2+sizeof(POINT)), sizeof(BYTE));
+	BYTE bOldCursorIndex = m_bCursorIndex;
+	m_bCursorIndex = m_ContextObject->InDeCompressedBuffer.GetBuffer(2+sizeof(POINT))[0];
 	if (bOldCursorIndex != m_bCursorIndex)
 	{
 		bChange = TRUE;
+		if (m_bIsCtrl && !m_bIsTraceCursor)//替换指定窗口所属类的WNDCLASSEX结构
+			SetClassLong(m_hWnd, GCL_HCURSOR, (LONG)m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex));
 	}
 
 	// 屏幕是否变化
@@ -298,7 +299,7 @@ void CScreenSpyDlg::OnPaint()
 		m_hFullDC,								
 		m_ClientCursorPos.x  - m_ulHScrollPos, 
 		m_ClientCursorPos.y  - m_ulVScrollPos,
-		m_hCursor,
+		m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex),
 		0,0,										
 		0,										
 		NULL,									
@@ -413,6 +414,8 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
 	case WM_KEYUP:
 	case WM_SYSKEYDOWN:
 	case WM_SYSKEYUP:
+		if (pMsg->wParam == VK_F11 && LeaveFullScreen()) // F11: 退出全屏
+			return true;
 		if (pMsg->wParam != VK_LWIN && pMsg->wParam != VK_RWIN)
 		{
 			MSG	Msg;
@@ -423,9 +426,7 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
 			SendCommand(&Msg);
 		}
 		if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE)
-			return true;
-		if (pMsg->wParam == VK_F11) // 退出全屏
-			LeaveFullScreen();
+			return true;// 屏蔽Enter和ESC关闭对话
 		break;
 	}
 
@@ -647,8 +648,8 @@ void CScreenSpyDlg::EnterFullScreen()
 	}
 }
 
-
-void CScreenSpyDlg::LeaveFullScreen()
+// 全屏退出成功则返回true
+bool CScreenSpyDlg::LeaveFullScreen()
 {
 	if (m_bFullScreen)
 	{
@@ -656,7 +657,9 @@ void CScreenSpyDlg::LeaveFullScreen()
 		CMenu *SysMenu = GetSystemMenu(FALSE);
 		SysMenu->CheckMenuItem(IDM_FULLSCREEN, MF_UNCHECKED); //菜单样式
 		m_bFullScreen = false;
+		return true;
 	}
+	return false;
 }
 
 void CScreenSpyDlg::OnLButtonDown(UINT nFlags, CPoint point)

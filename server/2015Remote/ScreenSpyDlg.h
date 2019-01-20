@@ -1,5 +1,6 @@
 #pragma once
 #include "IOCPServer.h"
+#include "..\..\client\CursorInfo.h"
 
 // CScreenSpyDlg 对话框
 
@@ -34,6 +35,7 @@ public:
 	BYTE m_bCursorIndex;
 	CString  m_strClientIP;
 	BOOL     m_bIsTraceCursor;
+	CCursorInfo	m_CursorInfo; //自定义的一个系统的光标类
 	VOID SendCommand(MSG* Msg);
 
 	VOID UpdateServerClipboard(char *szBuffer,ULONG ulLength);
@@ -53,7 +55,7 @@ public:
 	WINDOWPLACEMENT m_struOldWndpl;
 
 	void EnterFullScreen();
-	void LeaveFullScreen();
+	bool LeaveFullScreen();
 
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
 	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);

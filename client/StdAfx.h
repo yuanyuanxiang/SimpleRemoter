@@ -7,11 +7,11 @@
 #define AFX_STDAFX_H__46CA6496_AAD6_4658_B6E9_D7AEB26CDCD5__INCLUDED_
 
 // 是否使用ZLIB
-#define USING_ZLIB 0
+#define USING_ZLIB 1
 
 #if !USING_ZLIB
 // 是否使用LZ4
-#define USING_LZ4 0
+#define USING_LZ4 1
 #endif
 
 #if _MSC_VER > 1000

@@ -10,7 +10,7 @@
 #endif // _MSC_VER > 1000
 #define ALGORITHM_DIFF 1
 #define COPY_ALL 1	// ¿½±´È«²¿ÆÁÄ»£¬²»·Ö¿é¿½±´£¨added by yuanyuanxiang 2019-1-7£©
-#include "CursorInfor.h"
+#include "CursorInfo.h"
 
 
 class CScreenSpy  
@@ -61,7 +61,7 @@ public:
 		m_RectBufferOffset += ulLength;
 	}
 
-	CCursorInfor m_CursorInfor;
+	CCursorInfo m_CursorInfor;
 	HDC  m_hDiffMemDC;
 	HBITMAP	m_DiffBitmapHandle;
 	PVOID   m_DiffBitmapData_Full;

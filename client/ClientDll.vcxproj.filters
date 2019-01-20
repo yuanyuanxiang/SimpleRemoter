@@ -33,9 +33,6 @@
     <ClCompile Include="Common.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="CursorInfor.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="FileManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
@@ -98,9 +95,6 @@
     <ClInclude Include="Common.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="CursorInfor.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="FileManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -156,6 +150,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="zlib.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CursorInfo.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -6,11 +6,11 @@
 #pragma once
 
 // 是否使用ZLIB
-#define USING_ZLIB 0
+#define USING_ZLIB 1
 
 #if !USING_ZLIB
 // 是否使用LZ4
-#define USING_LZ4 0
+#define USING_LZ4 1
 #endif
 
 #ifndef _SECURE_ATL
@@ -245,7 +245,7 @@ public:
 
 #ifdef _DEBUG
 // 智能计算当前函数的耗时，超时会打印
-#define AUTO_TICK(thresh) auto_tick(__FUNCTION__, thresh)
+#define AUTO_TICK(thresh) auto_tick TICK(__FUNCTION__, thresh)
 #else
 #define AUTO_TICK(thresh) 
 #endif

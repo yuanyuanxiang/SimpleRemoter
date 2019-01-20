@@ -83,7 +83,6 @@
     <ClCompile Include="CaptureVideo.cpp" />
     <ClCompile Include="ClientDll.cpp" />
     <ClCompile Include="Common.cpp" />
-    <ClCompile Include="CursorInfor.cpp" />
     <ClCompile Include="FileManager.cpp" />
     <ClCompile Include="IOCPClient.cpp" />
     <ClCompile Include="KernelManager.cpp" />
@@ -106,7 +105,7 @@
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CaptureVideo.h" />
     <ClInclude Include="Common.h" />
-    <ClInclude Include="CursorInfor.h" />
+    <ClInclude Include="CursorInfo.h" />
     <ClInclude Include="FileManager.h" />
     <ClInclude Include="IOCPClient.h" />
     <ClInclude Include="KernelManager.h" />

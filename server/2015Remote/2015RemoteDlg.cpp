@@ -833,7 +833,7 @@ VOID CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 
 VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 {
-	AUTO_TICK(5);
+	AUTO_TICK(20);
 	MessageHandle(ContextObject);
 }
 
@@ -1142,7 +1142,7 @@ LRESULT CMy2015RemoteDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
 	CScreenSpyDlg	*Dlg = new CScreenSpyDlg(this,m_iocpServer, ContextObject);   //Send  s
 	// 设置父窗口为卓面
 	Dlg->Create(IDD_DIALOG_SCREEN_SPY, GetDesktopWindow());
-	Dlg->ShowWindow(SW_SHOW);
+	Dlg->ShowWindow(SW_SHOWMAXIMIZED);
 
 	ContextObject->v1   = SCREENSPY_DLG;
 	ContextObject->hDlg = Dlg;

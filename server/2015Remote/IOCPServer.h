@@ -72,7 +72,7 @@ public:
 
 	ULONG  m_ulKeepLiveTime;
 
-	char   m_szPacketFlag[FLAG_LENGTH];
+	char   m_szPacketFlag[FLAG_LENGTH + 3];
 
 	typedef void (CALLBACK *pfnNotifyProc)(CONTEXT_OBJECT* ContextObject);
 	typedef void (CALLBACK *pfnOfflineProc)(CONTEXT_OBJECT* ContextObject);

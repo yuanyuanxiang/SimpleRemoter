@@ -69,6 +69,7 @@ IOCPServer::IOCPServer(void)
 
 	m_hKillEvent = NULL;
 
+	memset(m_szPacketFlag, 0, sizeof(m_szPacketFlag));
 	memcpy(m_szPacketFlag,"Shine",FLAG_LENGTH);
 
 	m_NotifyProc = NULL;
@@ -403,7 +404,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 //在工作线程中被调用
 BOOL IOCPServer::HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWORD dwTrans)
 {
-	AUTO_TICK(5);
+	AUTO_TICK(20);
 
 	BOOL bRet = FALSE;
 
@@ -530,7 +531,7 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 			ULONG ulPackTotalLength = ulCompressedLength + HDR_LENGTH;
 			ContextObject->OutCompressedBuffer.WriteBuffer((LPBYTE)m_szPacketFlag,FLAG_LENGTH);
 			ContextObject->OutCompressedBuffer.WriteBuffer((PBYTE)&ulPackTotalLength, sizeof(ULONG));
-			ContextObject->OutCompressedBuffer.WriteBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG));
+			ContextObject->OutCompressedBuffer.WriteBuffer((PBYTE)&ulOriginalLength, sizeof(ULONG));
 			ContextObject->OutCompressedBuffer.WriteBuffer(CompressedBuffer, ulCompressedLength);
 			delete [] CompressedBuffer;
 		}
