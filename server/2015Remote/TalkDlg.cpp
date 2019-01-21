@@ -25,6 +25,7 @@ void CTalkDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_EDIT_TALK, m_EditTalk);
+	m_EditTalk.SetLimitText(2048);
 }
 
 
@@ -63,15 +64,12 @@ void CTalkDlg::OnBnClickedButtonTalk()
 	CString strData;
 	m_EditTalk.GetWindowText(strData);            //EditBox 上获得数据
 
-	char* szBuffer = new char[iLength + 1];		// 2019.1.5 必须加1
-	memset(szBuffer,0,sizeof(char)*iLength);
-
+	char szBuffer[4096] = {0};
 	strcpy(szBuffer,strData.GetBuffer(0));
 
 	m_EditTalk.SetWindowText(NULL);          //EditBox 上的数据清空
 
 	m_iocpServer->OnClientPreSending(m_ContextObject, (LPBYTE)szBuffer, strlen(szBuffer));//将自己内存中的数据发送
-	delete [] szBuffer;
 }
 
 

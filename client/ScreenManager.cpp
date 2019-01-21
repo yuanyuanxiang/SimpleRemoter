@@ -28,6 +28,8 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n):CManager(ClientO
 
 	m_ScreenSpyObject = new CScreenSpy(16);
 
+	szBuffer = new char[4 * m_ScreenSpyObject->m_ulFullWidth * m_ScreenSpyObject->m_ulFullHeight];
+
 	m_hWorkThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)WorkThreadProc,this,0,NULL);
 }
 
@@ -64,8 +66,6 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 				printf("SendScreen Span = %d ms\n", span);
 			last = clock();
 			This->SendNextScreen(szBuffer, ulNextSendLength);
-			delete[] szBuffer;
-			szBuffer = NULL;
 		}
 	}
 	timeEndPeriod(1);
@@ -102,6 +102,11 @@ CScreenManager::~CScreenManager()
 
 	delete[] m_ScreenSpyObject;
 	m_ScreenSpyObject = NULL;
+	if(szBuffer)
+	{
+		delete [] szBuffer;
+		szBuffer = NULL;
+	}
 }
 
 VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
@@ -195,16 +200,12 @@ VOID CScreenManager::SendFirstScreen()
 	}
 
 	ULONG	ulFirstSendLength = 1 + m_ScreenSpyObject->GetFirstScreenLength();
-	LPBYTE	szBuffer = new BYTE[ulFirstSendLength];
 
 	szBuffer[0] = TOKEN_FIRSTSCREEN;
 	memcpy(szBuffer + 1, FirstScreenData, ulFirstSendLength - 1);
 
 	m_ClientObject->OnServerSending((char*)szBuffer, ulFirstSendLength);
-
-	delete [] szBuffer;
-
-	szBuffer = NULL;
+	szBuffer[ulFirstSendLength] = 0;
 }
 
 const char* CScreenManager::GetNextScreen(ULONG &ulNextSendLength)
@@ -218,10 +219,9 @@ const char* CScreenManager::GetNextScreen(ULONG &ulNextSendLength)
 
 	ulNextSendLength += 1;
 
-	char*	szBuffer = new char[ulNextSendLength];
-
 	szBuffer[0] = TOKEN_NEXTSCREEN;
 	memcpy(szBuffer + 1, NextScreenData, ulNextSendLength - 1);
+	szBuffer[ulNextSendLength] = 0;
 
 	return szBuffer;
 }

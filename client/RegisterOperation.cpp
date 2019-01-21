@@ -86,7 +86,6 @@ char* RegisterOperation::FindPath()
 		if(KeyCount>0&&KeySize>1){
 			int Size=sizeof(REGMSG)+1;
 
-			//buf=new char[KeyCnt*KeySize+size+1];
 			DWORD DataSize=KeyCount*KeySize+Size+1;    //[TOKEN_REG_PATH][2 11 ccccc\0][11][11]
 			szBuffer=(char*)LocalAlloc(LPTR, DataSize);
 			ZeroMemory(szBuffer,DataSize);

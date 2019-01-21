@@ -17,6 +17,7 @@ class IOCPClient;
 class CScreenManager : public CManager  
 {
 public:
+	char*	szBuffer;
 	CScreenManager(IOCPClient* ClientObject, int n);
 	virtual ~CScreenManager();
 	HANDLE  m_hWorkThread;
