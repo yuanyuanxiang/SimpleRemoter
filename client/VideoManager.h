@@ -23,7 +23,7 @@ public:
 	HANDLE m_hWorkThread;
 
 	void SendBitMapInfor();
-	void SendNextScreen();
+	BOOL SendNextScreen();
 	static DWORD WorkThread(LPVOID lParam);
 
 	CCaptureVideo  m_CapVideo;
@@ -32,6 +32,7 @@ public:
 
 	DWORD	m_fccHandler;
 	bool    m_bIsCompress;
+	LPBYTE  lpBuffer; // ×¥Í¼»º´æÇø
 
 	CVideoCodec	*m_pVideoCodec;   //Ñ¹ËõÀà
 	void Destroy();

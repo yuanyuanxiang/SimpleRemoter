@@ -33,8 +33,7 @@ CAudio::CAudio()
 
 	m_ulBufferLength = 1000;
 
-	int i = 0;
-	for (i = 0; i < 2; ++i)
+	for (int i = 0; i < 2; ++i)
 	{
 		m_InAudioData[i] = new BYTE[m_ulBufferLength];
 		m_InAudioHeader[i] =  new WAVEHDR;

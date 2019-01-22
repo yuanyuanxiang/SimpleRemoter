@@ -36,7 +36,7 @@ public:
 	LPBITMAPINFO m_BitmapInfor_Full;
 	BYTE*        m_BitmapData_Full;
 	BOOL         bStact; 
-	DWORD        m_dwSize;
+	DWORD        m_dwSize; // 视频图像数据大小
 
 	CSampleGrabberCB()
 	{
@@ -152,6 +152,7 @@ public:
 	}
 };
 
+extern CSampleGrabberCB mCB;
 
 class CCaptureVideo  
 {
@@ -164,6 +165,10 @@ public:
 	BOOL BindVideoFilter(int deviceId, IBaseFilter **pFilter);
 
 	LPBYTE GetDIB(DWORD& dwSize);
+
+	int GetDIBBufSize() const { return mCB.m_dwSize; }
+
+	BOOL		m_bExit;
 
 	HWND      m_hWnd;
 

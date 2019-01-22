@@ -12,18 +12,20 @@ CSampleGrabberCB mCB;
 
 CCaptureVideo::CCaptureVideo()
 {
-	if(FAILED(CoInitialize(NULL)))   
+	if(FAILED(CoInitialize(NULL)))
 	{
 		return;
 	}
 	m_pCapture = NULL;
 	m_pGB = NULL;
 	m_pMC = NULL;
-	m_pVW = NULL;  
+	m_pVW = NULL;
+	m_bExit = FALSE;
 }
 
 CCaptureVideo::~CCaptureVideo()
 {
+	m_bExit = TRUE;
 	if(m_pMC)m_pMC->StopWhenReady();
 	if(m_pVW){
 		m_pVW->put_Visible(OAFALSE);
@@ -55,7 +57,7 @@ HRESULT CCaptureVideo::Open(int iDeviceID,int iPress)
 		hResult = m_pGB->AddFilter(m_pBF, L"Capture Filter");
 
 		hResult = CoCreateInstance(CLSID_SampleGrabber, NULL, CLSCTX_INPROC_SERVER, 
-			IID_ISampleGrabber, (void**)&m_pGrabber);   //引脚内存   
+			IID_ISampleGrabber, (void**)&m_pGrabber);   //引脚内存
 		if(FAILED(hResult))
 			break;
 
@@ -258,10 +260,9 @@ LPBYTE CCaptureVideo::GetDIB(DWORD& dwSize)
 	{
 		if (mCB.bStact==CMD_CAN_SEND)      //这里改变了一下发送的状态
 		{
-			szBuffer = mCB.GetNextScreen(dwSize);//通过另外一个类的成员函数得到视频数据，我们继续跟进
+			szBuffer = mCB.GetNextScreen(dwSize);
 		}
-	} while (szBuffer==NULL);
-
+	} while (szBuffer==NULL && !m_bExit);
 
 	return szBuffer;
 }

@@ -147,10 +147,7 @@ LPBYTE CAudio::GetRecordBuffer(LPDWORD dwBufferSize)
 	{
 		return NULL;
 	}	
-	if (dwBufferSize == NULL)
-	{
-		return NULL;
-	}	
+
 	SetEvent(m_hStartRecord);
 	WaitForSingleObject(m_hEventWaveIn, INFINITE);
 	*dwBufferSize = m_ulBufferLength;

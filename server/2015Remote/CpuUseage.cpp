@@ -12,7 +12,8 @@ CCpuUsage::CCpuUsage()
 CCpuUsage::~CCpuUsage()
 {
 	PdhCloseQuery(m_hQuery);   //¹Ø±Õ¼ÆÊýÆ÷
-	delete m_pCounterStruct;
+	if (m_pCounterStruct)
+		delete m_pCounterStruct;
 }
 
 

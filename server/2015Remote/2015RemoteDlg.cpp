@@ -815,11 +815,6 @@ VOID CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 {
 	m_iocpServer = new IOCPServer;                //动态申请我们的类对象
 
-	if (m_iocpServer==NULL)
-	{
-		return;
-	}
-
 	if (m_iocpServer->StartServer(NotifyProc, OfflineProc, nPort)==FALSE)
 	{
 		OutputDebugStringA("======> StartServer Failed \n");
