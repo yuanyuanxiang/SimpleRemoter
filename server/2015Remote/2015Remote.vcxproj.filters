@@ -305,5 +305,8 @@
     <Image Include="res\Bitmap_5.bmp">
       <Filter>资源文件</Filter>
     </Image>
+    <Image Include="res\webcam.ico">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

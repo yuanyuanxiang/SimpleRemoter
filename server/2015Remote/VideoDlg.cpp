@@ -219,8 +219,11 @@ BOOL CVideoDlg::OnInitDialog()
 		m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, sizeof(BYTE));
 	}
 
-	return TRUE;  // return TRUE unless you set the focus to a control
-	// 异常: OCX 属性页应返回 FALSE
+	m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_CAMERA));
+	SetIcon(m_hIcon, TRUE);
+	SetIcon(m_hIcon, FALSE);
+
+	return TRUE;
 }
 
 void CVideoDlg::OnClose()

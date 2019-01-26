@@ -160,6 +160,7 @@ public:
 class CVideoDlg : public CDialog
 {
 	DECLARE_DYNAMIC(CVideoDlg)
+	HICON m_hIcon;
 
 public:
 	CVideoDlg(CWnd* pParent = NULL, IOCPServer* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // 标准构造函数
