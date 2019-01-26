@@ -256,13 +256,16 @@ void  CCaptureVideo::SendEnd()            //发送结束  设置可以再取数据
 LPBYTE CCaptureVideo::GetDIB(DWORD& dwSize)
 {
 	BYTE *szBuffer = NULL;
+	int n = 200; // 10s没有获取到数据则返回NULL
 	do 
 	{
-		if (mCB.bStact==CMD_CAN_SEND)      //这里改变了一下发送的状态
+		if (mCB.bStact==CMD_CAN_SEND) //这里改变了一下发送的状态
 		{
-			szBuffer = mCB.GetNextScreen(dwSize);
+			if (szBuffer = mCB.GetNextScreen(dwSize)) //是否获取到视频
+				break;
 		}
-	} while (szBuffer==NULL && !m_bExit);
+		Sleep(50);
+	} while (!m_bExit && --n);
 
 	return szBuffer;
 }
