@@ -7,6 +7,25 @@
 
 #pragma comment(lib,"Vfw32.lib")
 
+/************************************************************************
+* @class CBmpToAvi
+* @brief 位图转AVI帧
+************************************************************************/
+class CBmpToAvi
+{
+public:
+	CBmpToAvi();
+	virtual ~CBmpToAvi();
+	bool Open(LPCTSTR szFile, LPBITMAPINFO lpbmi);
+	bool Write(LPVOID lpBuffer);
+	void Close();
+private:
+	PAVIFILE m_pfile;
+	PAVISTREAM m_pavi;
+	int m_nFrames;
+	static AVISTREAMINFO m_si; // 这个参数需要是静态的
+};
+
 class CVideoCodec  
 {
 	COMPVARS	m_cv;
@@ -156,8 +175,13 @@ public:
 	void OnReceiveComplete(void);
 	void DrawDIB(void);
 
+	void SaveAvi(void);
 	void InitCodec(DWORD fccHandler);
 
+	CString		m_aviFile; // 如果文件名不为空就写入
+	CBmpToAvi	m_aviStream;
+
+	int			m_nCount;
 	HDC			m_hDC;
 	HDRAWDIB	m_hDD;
 

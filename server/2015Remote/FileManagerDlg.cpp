@@ -43,7 +43,7 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, CIOCPServer* pIOCPServer, Client
 		sizeof(SHFILEINFO), 
 		SHGFI_ICON | SHGFI_USEFILEATTRIBUTES
 		);
-	m_hIcon = sfi.hIcon;
+	m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_FATHER));
 	// 加载系统图标列表
 	static HIMAGELIST hImageList_Large = (HIMAGELIST)SHGetFileInfo
 		(

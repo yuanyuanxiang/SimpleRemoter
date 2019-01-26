@@ -35,11 +35,12 @@ DWORD CVideoManager::WorkThread(LPVOID lParam)
 	if (This->Initialize())          //转到Initialize
 	{
 		This->m_bIsCompress=true;    //如果初始化成功就设置可以压缩
+		printf("压缩视频进行传输.\n");
 	}
 
 	This->SendBitMapInfor();         //发送bmp位图结构
-	// 等控制端对话框打开
 
+	// 等控制端对话框打开
 	This->WaitForDialogOpen();
 #if USING_ZLIB
 	const int fps = 8;// 帧率
@@ -163,7 +164,21 @@ VOID CVideoManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			NotifyDialogIsOpen();
 			break;
-		}	
+		}
+	case COMMAND_WEBCAM_ENABLECOMPRESS: // 要求启用压缩
+		{
+			// 如果解码器初始化正常，就启动压缩功能
+			if (m_pVideoCodec)
+				InterlockedExchange((LPLONG)&m_bIsCompress, true);
+			printf("压缩视频进行传输.\n");
+			break;
+		}
+	case COMMAND_WEBCAM_DISABLECOMPRESS: // 原始数据传输
+		{
+			InterlockedExchange((LPLONG)&m_bIsCompress, false);
+			printf("不压缩视频进行传输.\n");
+			break;
+		}
 	}
 }
 
