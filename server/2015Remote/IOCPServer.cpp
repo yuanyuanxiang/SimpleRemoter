@@ -332,6 +332,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 			if (ContextObject && This->m_bTimeToKill == FALSE &&dwTrans==0)
 			{
 				ContextObject->olps = NULL;
+				OutputDebugStringA("!!! RemoveStaleContext \n");
 				This->RemoveStaleContext(ContextObject);
 			}
 			SAFE_DELETE(OverlappedPlus);
@@ -539,7 +540,9 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 		OVERLAPPEDPLUS* OverlappedPlus = new OVERLAPPEDPLUS(IOWrite);
 		BOOL bOk = PostQueuedCompletionStatus(m_hCompletionPort, 0, (DWORD)ContextObject, &OverlappedPlus->m_ol);
 		if ( (!bOk && GetLastError() != ERROR_IO_PENDING) )  //如果投递失败
-		{            
+		{
+			int a = GetLastError();
+			OutputDebugStringA("!!! OnClientPreSending 投递消息失败\n");
 			RemoveStaleContext(ContextObject);
 			SAFE_DELETE(OverlappedPlus);
 		}
@@ -569,6 +572,7 @@ BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompl
 			if ( iOk == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING )
 			{
 				int a = GetLastError();
+				OutputDebugStringA("!!! OnClientPostSending 投递消息失败\n");
 				RemoveStaleContext(ContextObject);
 				SAFE_DELETE(OverlappedPlus);
 			}
@@ -686,6 +690,8 @@ void IOCPServer::OnAccept()
 	//因为我们接受到了一个用户上线的请求那么我们就将该请求发送给我们的完成端口 让我们的工作线程处理它
 	if ( (!bOk && GetLastError() != ERROR_IO_PENDING))  //如果投递失败
 	{
+		int a = GetLastError();
+		OutputDebugStringA("!!! OnAccept 投递消息失败\n");
 		RemoveStaleContext(ContextObject);
 		SAFE_DELETE(OverlappedPlus);
 		return;
@@ -710,6 +716,7 @@ VOID IOCPServer::PostRecv(CONTEXT_OBJECT* ContextObject)
 	if (iOk == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING)
 	{
 		int a = GetLastError();
+		OutputDebugStringA("!!! PostRecv 投递消息失败\n");
 		RemoveStaleContext(ContextObject);
 		SAFE_DELETE(OverlappedPlus);
 	}

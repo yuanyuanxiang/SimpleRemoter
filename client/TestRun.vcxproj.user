@@ -7,6 +7,6 @@
     <DeploymentDirectory>C:\VM\Remoter</DeploymentDirectory>
     <AdditionalFiles>$(TargetDir)\TestRun.pdb;$(TargetDir)\ServerDll.dll;$(TargetDir)\ServerDll.pdb</AdditionalFiles>
     <RemoteDebuggerDeployDebugCppRuntime>false</RemoteDebuggerDeployDebugCppRuntime>
-    <DebuggerFlavor>WindowsRemoteDebugger</DebuggerFlavor>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
 </Project>

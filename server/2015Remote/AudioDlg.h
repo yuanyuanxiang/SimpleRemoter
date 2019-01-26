@@ -33,7 +33,8 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
-	BOOL m_bSend;
+	BOOL m_bSend; // 是否发送本地语音到远程
 	virtual BOOL OnInitDialog();
 	afx_msg void OnClose();
+	afx_msg void OnBnClickedCheck();
 };

@@ -44,12 +44,13 @@ VOID  CAudioManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	{
 	case COMMAND_NEXT:
 		{
-			NotifyDialogIsOpen();   
+			if (1 == ulLength)
+				NotifyDialogIsOpen();
 			break;
 		}
 	default:
-		{		
-			m_AudioObject->PlayBuffer(szBuffer, ulLength);      
+		{
+			m_AudioObject->PlayBuffer(szBuffer, ulLength);
 			break;
 		}
 	}
@@ -83,6 +84,7 @@ BOOL CAudioManager::SendRecordBuffer()
 	szPacket[0] = TOKEN_AUDIO_DATA;     //向主控端发送该消息
 	//复制缓冲区
 	memcpy(szPacket + 1, szBuffer, dwBufferSize);
+	szPacket[dwBufferSize] = 0;
 	//发送出去
 	if (dwBufferSize > 0)
 	{

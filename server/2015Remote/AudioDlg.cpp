@@ -46,6 +46,7 @@ void CAudioDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CAudioDlg, CDialog)
 	ON_WM_CLOSE()
+	ON_BN_CLICKED(IDC_CHECK, &CAudioDlg::OnBnClickedCheck)
 END_MESSAGE_MAP()
 
 
@@ -70,6 +71,9 @@ BOOL CAudioDlg::OnInitDialog()
 
 	m_bThreadRun = m_hWorkThread ? TRUE : FALSE;
 
+	// "发送本地语音"会导致崩溃，详见"OnBnClickedCheck"
+	GetDlgItem(IDC_CHECK)->EnableWindow(FALSE);
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// 异常: OCX 属性页应返回 FALSE
 }
@@ -82,7 +86,7 @@ DWORD  CAudioDlg::WorkThread(LPVOID lParam)
 	{
 		if (!This->m_bSend)
 		{
-			Sleep(50);
+			WAIT(This->m_bIsWorking, 1, 50);
 			continue;
 		}
 		DWORD	dwBufferSize = 0;
@@ -101,12 +105,11 @@ void CAudioDlg::OnReceiveComplete(void)
 	m_nTotalRecvBytes += m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1;   //1000+ =1000 1
 	CString	strString;
 	strString.Format("Receive %d KBytes", m_nTotalRecvBytes / 1024);
-	SetDlgItemText(IDC_TIP, strString);
+	SetDlgItemText(IDC_TIPS, strString);
 	switch (m_ContextObject->InDeCompressedBuffer.GetBuffer(0)[0])
 	{
 	case TOKEN_AUDIO_DATA:
 		{
-
 			m_AudioObject.PlayBuffer(m_ContextObject->InDeCompressedBuffer.GetBuffer(1), 
 				m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1);   //播放波形数据
 			break;
@@ -133,4 +136,15 @@ void CAudioDlg::OnClose()
 #if CLOSE_DELETE_DLG
 	delete this;
 #endif
+}
+
+// 处理是否发送本地语音到远程
+void CAudioDlg::OnBnClickedCheck()
+{
+	// @notice 2019.1.26
+	// 如果启用"发送本地语音"，则被控端崩溃在zlib inffas32.asm
+	// 需将主控端zlib拷贝到被控端重新编译
+	// 但是即使这样，主控端在开启"发送本地语音"时容易崩溃
+	// 此现象类似于操作远程桌面时的随机崩溃。原因不明
+	UpdateData(true);
 }
