@@ -232,7 +232,7 @@ VOID CMy2015RemoteDlg::CreatStatusBar()
 
 VOID CMy2015RemoteDlg::CreateNotifyBar()
 {
-#if SHOW_NOTIFY
+#if INDEPENDENT
 	m_Nid.cbSize = sizeof(NOTIFYICONDATA);     //大小赋值
 	m_Nid.hWnd = m_hWnd;           //父窗口    是被定义在父类CWnd类中
 	m_Nid.uID = IDR_MAINFRAME;     //icon  ID
@@ -401,7 +401,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 
 	ListenPort();
 
-#if !SHOW_NOTIFY
+#if !INDEPENDENT
 	ShowWindow(SW_SHOW);
 #endif
 
@@ -415,7 +415,7 @@ void CMy2015RemoteDlg::OnSysCommand(UINT nID, LPARAM lParam)
 		CAboutDlg dlgAbout;
 		dlgAbout.DoModal();
 	}
-#if !SHOW_NOTIFY
+#if !INDEPENDENT
 	else if(nID == SC_CLOSE || nID == SC_MINIMIZE)
 	{
 		ShowWindow(SW_HIDE);
@@ -535,7 +535,7 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 
 void CMy2015RemoteDlg::OnClose()
 {
-#if SHOW_NOTIFY
+#if INDEPENDENT
 	Shell_NotifyIcon(NIM_DELETE, &m_Nid);
 #endif
 
@@ -670,8 +670,13 @@ VOID CMy2015RemoteDlg::OnOnlineDesktopManager()
 
 VOID CMy2015RemoteDlg::OnOnlineFileManager()
 {
+#if INDEPENDENT
 	BYTE	bToken = COMMAND_LIST_DRIVE;    
 	SendSelectedCommand(&bToken, sizeof(BYTE));
+#else
+	if(m_CList_Online.GetFirstSelectedItemPosition())
+		ShowMessage(FALSE, "此功能已暂停使用");
+#endif
 }
 
 VOID CMy2015RemoteDlg::OnOnlineAudioManager()

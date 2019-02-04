@@ -9,8 +9,8 @@
 
 //////////////////////////////////////////////////////////////////////////
 // 以下为特殊需求使用
-// 是否显示托盘
-#define SHOW_NOTIFY 1
+
+#define INDEPENDENT 1
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -70,7 +70,7 @@ public:
 
 	CStatusBar m_StatusBar;          //状态条
 	CTrueColorToolBar m_ToolBar;
-#if SHOW_NOTIFY
+#if INDEPENDENT
 	NOTIFYICONDATA  m_Nid;
 #endif
 	CRITICAL_SECTION m_cs;
