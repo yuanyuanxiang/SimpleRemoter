@@ -54,7 +54,7 @@ BOOL CTalkDlg::OnInitDialog()
 
 void CTalkDlg::OnBnClickedButtonTalk()
 {
-	int iLength = m_EditTalk.GetWindowTextLength();   //EditBox 上获得数据长度
+	int iLength = m_EditTalk.GetWindowTextLength();
 
 	if (!iLength)
 	{
@@ -62,14 +62,14 @@ void CTalkDlg::OnBnClickedButtonTalk()
 	}
 
 	CString strData;
-	m_EditTalk.GetWindowText(strData);            //EditBox 上获得数据
+	m_EditTalk.GetWindowText(strData);
 
 	char szBuffer[4096] = {0};
 	strcpy(szBuffer,strData.GetBuffer(0));
 
-	m_EditTalk.SetWindowText(NULL);          //EditBox 上的数据清空
+	m_EditTalk.SetWindowText(NULL);
 
-	m_iocpServer->OnClientPreSending(m_ContextObject, (LPBYTE)szBuffer, strlen(szBuffer));//将自己内存中的数据发送
+	m_iocpServer->OnClientPreSending(m_ContextObject, (LPBYTE)szBuffer, strlen(szBuffer));
 }
 
 

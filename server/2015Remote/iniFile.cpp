@@ -31,6 +31,20 @@ BOOL iniFile::SetInt(CString MainKey,CString SubKey,int Data)
 	return ::WritePrivateProfileString(MainKey, SubKey,strData,m_IniFilePath);
 }
 
+
+CString iniFile::GetStr(CString MainKey, CString SubKey, CString def)
+{
+	char buf[_MAX_PATH];
+	::GetPrivateProfileString(MainKey, SubKey, def, buf, sizeof(buf), m_IniFilePath);
+	return buf;
+}
+
+
+BOOL iniFile::SetStr(CString MainKey, CString SubKey, CString Data)
+{
+	return ::WritePrivateProfileString(MainKey, SubKey, Data, m_IniFilePath);
+}
+
 iniFile::~iniFile(void)
 {
 }

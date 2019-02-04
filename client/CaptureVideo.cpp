@@ -41,7 +41,6 @@ CCaptureVideo::~CCaptureVideo()
 	CoUninitialize() ; 
 }
 
-//!!Œ“≤ª∂Æ¡À
 HRESULT CCaptureVideo::Open(int iDeviceID,int iPress)
 {
 	printf("CCaptureVideo call Open\n");

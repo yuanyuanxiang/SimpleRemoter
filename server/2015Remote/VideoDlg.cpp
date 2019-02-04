@@ -116,7 +116,7 @@ CVideoDlg::CVideoDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT *Cont
 	m_ContextObject = ContextObject;
 	m_iocpServer = IOCPServer;
 	m_BitmapInfor_Full = NULL;
-	m_pVideoCodec      = NULL;     //这里忘记初始化了    我靠
+	m_pVideoCodec      = NULL;
 	sockaddr_in  ClientAddress;
 	memset(&ClientAddress, 0, sizeof(ClientAddress));
 	int iClientAddressLength = sizeof(ClientAddress);

