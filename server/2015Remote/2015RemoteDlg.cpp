@@ -54,12 +54,12 @@ const int  g_Column_Count_Online  = 7; // 报表的列数
 COLUMNSTRUCT g_Column_Data_Online[g_Column_Count_Online] = 
 {
 	{"IP",				148	},
-	{"端口",			150	},
+	{"端口",			64	},
 	{"计算机名/备注",	160	},
-	{"操作系统",		128	},
+	{"操作系统",		256	},
 	{"CPU",				80	},
-	{"摄像头",			81	},
-	{"PING",			151	},
+	{"摄像头",			72	},
+	{"PING",			100	},
 };
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
@@ -970,30 +970,8 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 		//主机名称
 		strPCName = LoginInfor->szPCName;
 
-		switch (LoginInfor->OsVerInfoEx.dwPlatformId)
-		{
-		case VER_PLATFORM_WIN32_NT:
-			if ( LoginInfor->OsVerInfoEx.dwMajorVersion <= 4 )
-				strOS = "WindowsNT";
-			if ( LoginInfor->OsVerInfoEx.dwMajorVersion == 5 && LoginInfor->OsVerInfoEx.dwMinorVersion == 0 )
-				strOS = "Windows2000";
-			if ( LoginInfor->OsVerInfoEx.dwMajorVersion == 5 && LoginInfor->OsVerInfoEx.dwMinorVersion == 1 )
-				strOS = "WindowsXP";
-			if ( LoginInfor->OsVerInfoEx.dwMajorVersion == 5 && LoginInfor->OsVerInfoEx.dwMinorVersion == 2 )
-				strOS = "Windows2003";
-			if ( LoginInfor->OsVerInfoEx.dwMajorVersion == 6 && LoginInfor->OsVerInfoEx.dwMinorVersion == 0 )
-				strOS = "WindowsVista"; 
-			if ( LoginInfor->OsVerInfoEx.dwMajorVersion == 6 && LoginInfor->OsVerInfoEx.dwMinorVersion == 1 )
-				strOS = "Windows7";
-			if ( LoginInfor->OsVerInfoEx.dwMajorVersion == 6 && LoginInfor->OsVerInfoEx.dwMinorVersion == 2 )
-				strOS = "Windows8";
-			if ( LoginInfor->OsVerInfoEx.dwMajorVersion == 6 && LoginInfor->OsVerInfoEx.dwMinorVersion == 3 )
-				strOS = "Windows8.1";
-			if ( LoginInfor->OsVerInfoEx.dwMajorVersion == 6 && LoginInfor->OsVerInfoEx.dwMinorVersion == 4 )
-				strOS = "Windows10";
-			if ( LoginInfor->OsVerInfoEx.dwMajorVersion == 10 && LoginInfor->OsVerInfoEx.dwMinorVersion == 0 )
-				strOS = "Windows10";
-		}
+		//版本信息
+		strOS = LoginInfor->OsVerInfoEx;
 
 		//CPU
 		strCPU.Format("%dMHz", LoginInfor->dwCPUMHz);
