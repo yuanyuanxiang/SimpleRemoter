@@ -8,6 +8,11 @@
 #include <IOSTREAM>
 using namespace std;
 #include <TLHELP32.H>
+
+#ifndef PSAPI_VERSION
+#define PSAPI_VERSION 1
+#endif
+
 #include <Psapi.h>
 
 #pragma comment(lib,"psapi.lib")
