@@ -14,7 +14,7 @@ class IOCPClient;
 class CManager  
 {
 public:
-	bool m_bIsDead; // bye-bye
+	BOOL m_bIsDead; // 1-被控端退出 2-主控端退出
 	CManager(IOCPClient* ClientObject);
 	virtual ~CManager();
 

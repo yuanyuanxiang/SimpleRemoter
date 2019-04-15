@@ -106,9 +106,9 @@ BEGIN
             VALUE "CompanyName", "FUCK THE UNIVERSE"
             VALUE "FileDescription", "A GHOST"
             VALUE "FileVersion", "1.0.0.5"
-            VALUE "InternalName", "ServerDl.dll"
+            VALUE "InternalName", "ServerDll.dll"
             VALUE "LegalCopyright", "Copyright (C) 2019-2025"
-            VALUE "OriginalFilename", "ServerDl.dll"
+            VALUE "OriginalFilename", "ServerDll.dll"
             VALUE "ProductName", "A GHOST"
             VALUE "ProductVersion", "1.0.0.1"
         END

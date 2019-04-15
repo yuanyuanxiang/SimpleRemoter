@@ -74,10 +74,22 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	case COMMAND_BYE:
 		{
-			BYTE	bToken = COMMAND_BYE;      //包含头文件 Common.h     
+			BYTE	bToken = COMMAND_BYE;// 被控端退出
 			m_ClientObject->OnServerSending((char*)&bToken, 1);
-			m_bIsDead = true; //say goodbye
-			OutputDebugStringA("======> Bye bye \n");
+			m_bIsDead = 1;
+			OutputDebugStringA("======> Client exit \n");
+			m_hThread[m_ulThreadCount].p = NULL;
+			delete pNew;
+			pNew = NULL;
+			break;
+		}
+
+	case SERVER_EXIT:
+		{
+			BYTE	bToken = SERVER_EXIT;// 主控端退出  
+			m_ClientObject->OnServerSending((char*)&bToken, 1);
+			m_bIsDead = 2;
+			OutputDebugStringA("======> Server exit \n");
 			m_hThread[m_ulThreadCount].p = NULL;
 			delete pNew;
 			pNew = NULL;

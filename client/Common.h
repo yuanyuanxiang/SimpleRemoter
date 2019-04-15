@@ -118,7 +118,8 @@ enum
 	COMMAND_REG_FIND,           //注册表 管理标识
 	TOKEN_REG_KEY,
 	TOKEN_REG_PATH,
-	COMMAND_BYE
+	COMMAND_BYE,					// 被控端退出
+	SERVER_EXIT,					// 主控端退出
 };
 
 

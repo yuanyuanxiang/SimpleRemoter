@@ -14,6 +14,13 @@
 
 //////////////////////////////////////////////////////////////////////////
 
+#if INDEPENDENT
+// 是否在退出主控端时也退出客户端
+#define CLIENT_EXIT_WITH_SERVER 0
+#else
+#define CLIENT_EXIT_WITH_SERVER 1
+#endif 
+
 typedef struct  _LOGIN_INFOR
 {	
 	BYTE			bToken;			// 取1，登陆信息
