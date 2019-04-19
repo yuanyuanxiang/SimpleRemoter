@@ -189,3 +189,7 @@ ghost项目采用VS2012 xp模式编译，以便支持在XP系统上运行。
 2019.4.15
 
 明确区分开退出被控端和退出主控端2个消息，只有发送退出被控端消息才会停止Socket客户端。
+
+2019.4.19
+1、TestRun读取配置文件改为setting.ini，配置项为 [settings] localIp 和 ghost。
+2、CAudio的线程waveInCallBack在while循环有一处return，已改为break.

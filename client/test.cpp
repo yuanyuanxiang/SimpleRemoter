@@ -71,7 +71,7 @@ int main(int argc, const char *argv[])
 {
 	if(!SetSelfStart(argv[0], "a_ghost"))
 	{
-		std::cout<<"设置开机自启动失败.\n";
+		std::cout<<"设置开机自启动失败，请用管理员权限运行.\n";
 	}
 	status = 0;
 	SetConsoleCtrlHandler(&callback, TRUE);
@@ -92,11 +92,11 @@ int main(int argc, const char *argv[])
 		int &port = g_ConnectAddress.iPort;
 		if (0 == strlen(ip))
 		{
-			strcpy(p+1, "remote.ini");
-			GetPrivateProfileStringA("remote", "ip", "127.0.0.1", ip, _MAX_PATH, path);
-			port = GetPrivateProfileIntA("remote", "port", 2356, path);
+			strcpy(p+1, "settings.ini");
+			GetPrivateProfileStringA("settings", "localIp", "127.0.0.1", ip, _MAX_PATH, path);
+			port = GetPrivateProfileIntA("settings", "ghost", 2356, path);
 		}
-		printf("[remote] %s:%d\n", ip, port);
+		printf("[server] %s:%d\n", ip, port);
 		do 
 		{
 			run(ip, port);

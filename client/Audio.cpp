@@ -178,7 +178,7 @@ DWORD WINAPI CAudio::waveInCallBack(LPVOID lParam)
 			MMRESULT mmResult = waveInAddBuffer(This->m_hWaveIn, 
 				This->m_InAudioHeader[This->m_nWaveInIndex], sizeof(WAVEHDR));
 			if (mmResult != MMSYSERR_NOERROR)
-				return -1;
+				break;
 		}
 
 		if (Msg.message == MM_WIM_CLOSE)   
