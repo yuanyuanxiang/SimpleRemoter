@@ -193,3 +193,6 @@ ghost项目采用VS2012 xp模式编译，以便支持在XP系统上运行。
 2019.4.19
 1、TestRun读取配置文件改为setting.ini，配置项为 [settings] localIp 和 ghost。
 2、CAudio的线程waveInCallBack在while循环有一处return，已改为break.
+
+2019.4.20
+TestRun在写入开机自启动项时先提升权限，以防止因权限不足而写注册表失败。

