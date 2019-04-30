@@ -2,10 +2,10 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>192.168.104.250 2356</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>127.0.0.1 2356</LocalDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerCommandArguments>192.168.104.250 2356</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>127.0.0.1 2356</LocalDebuggerCommandArguments>
   </PropertyGroup>
 </Project>
