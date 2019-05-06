@@ -199,3 +199,6 @@ TestRun在写入开机自启动项时先提升权限，以防止因权限不足�
 
 2019.4.30
 升级全部项目采用Visual Studio Community 2015编译。
+
+2019.5.6
+当TestRun、ClientDemo运行时若未成功加载ServerDll.dll，则给出提示。

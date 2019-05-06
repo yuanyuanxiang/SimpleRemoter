@@ -130,6 +130,10 @@ int main(int argc, const char *argv[])
 		while(bStop && !bStop() && 1 == status)
 			Sleep(20);
 	}
+	else {
+		printf("º”‘ÿ∂ØÃ¨¡¥Ω”ø‚\"ServerDll.dll\" ß∞‹.\n");
+		Sleep(3000);
+	}
 	status = 0;
 	return -1;
 }
