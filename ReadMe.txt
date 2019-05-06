@@ -202,3 +202,4 @@ TestRun在写入开机自启动项时先提升权限，以防止因权限不足�
 
 2019.5.6
 当TestRun、ClientDemo运行时若未成功加载ServerDll.dll，则给出提示。
+所有项目均采用平台工具集"Visual Studio 2012 - Windows XP (v110_xp)"，以支持在XP上运行。
