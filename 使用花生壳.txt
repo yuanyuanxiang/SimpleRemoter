@@ -1,0 +1,13 @@
+1、启动Yama监控服务端，记住内网IP和监听端口Port.
+
+2、在花生壳内网穿透添加端口映射，将内网IP和监听端口Port映射到花生壳域名host及花生壳端口port.
+
+3、在Yama生成客户端页面，输入host和port生成监控客户端.
+
+4、将ClientDemo部署到需要被监控的电脑上运行，即可开始远程监控.
+
+参考资料
+
+花生壳（内网穿透）服务做远程桌面登录：https://service.oray.com/question/1824.html
+
+2019-5-7 

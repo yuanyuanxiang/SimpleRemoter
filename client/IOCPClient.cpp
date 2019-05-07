@@ -87,6 +87,13 @@ IOCPClient::~IOCPClient()
 	m_bWorkThread = S_END;
 }
 
+// 从域名获取IP地址
+inline string GetIPAddress(const char *hostName)
+{
+	struct hostent *host = gethostbyname(hostName);
+	return host ? inet_ntoa(*(struct in_addr*)host->h_addr_list[0]) : "";
+}
+
 BOOL IOCPClient::ConnectServer(char* szServerIP, unsigned short uPort)
 {
 	m_sClientSocket = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);    //传输层
@@ -100,7 +107,10 @@ BOOL IOCPClient::ConnectServer(char* szServerIP, unsigned short uPort)
 	sockaddr_in	ServerAddr;
 	ServerAddr.sin_family	= AF_INET;               //网络层  IP
 	ServerAddr.sin_port	= htons(uPort);	
-	ServerAddr.sin_addr.S_un.S_addr = inet_addr(szServerIP);
+	// 若szServerIP非数字开头，则认为是域名，需进行IP转换
+	string server = ('0' <= szServerIP[0] && szServerIP[0] <= '9') 
+		? szServerIP : GetIPAddress(szServerIP);
+	ServerAddr.sin_addr.S_un.S_addr = inet_addr(server.c_str());
 
 	if (connect(m_sClientSocket,(SOCKADDR *)&ServerAddr,sizeof(sockaddr_in)) == SOCKET_ERROR) 
 	{
