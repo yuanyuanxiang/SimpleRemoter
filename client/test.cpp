@@ -116,8 +116,8 @@ int main(int argc, const char *argv[])
 		if (0 == strlen(ip))
 		{
 			strcpy(p+1, "settings.ini");
-			GetPrivateProfileStringA("settings", "localIp", "127.0.0.1", ip, _MAX_PATH, path);
-			port = GetPrivateProfileIntA("settings", "ghost", 2356, path);
+			GetPrivateProfileStringA("settings", "localIp", "yuanyuanxiang.oicp.net", ip, _MAX_PATH, path);
+			port = GetPrivateProfileIntA("settings", "ghost", 19141, path);
 		}
 		printf("[server] %s:%d\n", ip, port);
 		do 
