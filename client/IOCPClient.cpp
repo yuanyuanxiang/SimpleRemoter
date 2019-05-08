@@ -91,6 +91,11 @@ IOCPClient::~IOCPClient()
 inline string GetIPAddress(const char *hostName)
 {
 	struct hostent *host = gethostbyname(hostName);
+#ifdef _DEBUG
+	printf("此域名的IP类型为: %s.\n", host->h_addrtype == AF_INET ? "IPV4" : "IPV6");
+	for (int i = 0; host->h_addr_list[i]; ++i)
+		printf("获取的第%d个IP: %s\n", i+1, inet_ntoa(*(struct in_addr*)host->h_addr_list[i]));
+#endif
 	return host ? inet_ntoa(*(struct in_addr*)host->h_addr_list[0]) : "";
 }
 

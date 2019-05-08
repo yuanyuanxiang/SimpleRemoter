@@ -186,10 +186,15 @@ void CMy2015RemoteDlg::OnIconNotify(WPARAM wParam, LPARAM lParam)
 {
 	switch ((UINT)lParam)
 	{
-	case WM_LBUTTONDOWN: 
-	case WM_LBUTTONDBLCLK: 
+	case WM_LBUTTONDOWN:
 		{
-			ShowWindow(IsWindowVisible() ? SW_HIDE : SW_SHOW);
+			if (IsIconic())
+			{
+				ShowWindow(SW_NORMAL);
+				break;
+			}
+			ShowWindow(IsWindowVisible() ? SW_HIDE : SW_SHOWNORMAL);
+			SetForegroundWindow();
 			break;
 		}
 	case WM_RBUTTONDOWN:
