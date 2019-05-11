@@ -53,6 +53,8 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 	const int fps = 8;// 帧率
 #endif
 	const int sleep = 1000 / fps;// 间隔时间（ms）
+	int c1 = 0, c2 = 0, s0 = sleep;
+	const int frames = fps;	// 每秒调整屏幕发送速度
 	timeBeginPeriod(1);
 	while (This->m_bIsWorking)
 	{
@@ -60,10 +62,28 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 		const char*	szBuffer = This->GetNextScreen(ulNextSendLength);
 		if (szBuffer)
 		{
-			int span = sleep-(clock() - last);
+			int span = s0-(clock() - last);
 			Sleep(span > 0 ? span : 1);
 			if (span < 0)
-				printf("SendScreen Span = %d ms\n", span);
+			{
+				c2 = 0;
+				if (frames == ++c1) {
+					s0 = (s0 <= sleep*4) ? s0*2 : s0;
+					c1 = 0;
+#ifdef _DEBUG
+					printf("[+]SendScreen Span= %dms, s0= %d\n", span, s0);
+#endif
+				}
+			} else {
+				c1 = 0;
+				if (frames == ++c2) {
+					s0 = (s0 >= sleep/4) ? s0/2 : s0;
+					c2 = 0;
+#ifdef _DEBUG
+					printf("[-]SendScreen Span= %dms, s0= %d\n", span, s0);
+#endif
+				}
+			}
 			last = clock();
 			This->SendNextScreen(szBuffer, ulNextSendLength);
 		}

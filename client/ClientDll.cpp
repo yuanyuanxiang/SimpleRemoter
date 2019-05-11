@@ -60,7 +60,7 @@ int main(int argc, const char *argv[])
 	SetConsoleCtrlHandler(&callback, TRUE);
 	const char *szServerIP = argv[1];
 	int uPort = atoi(argv[2]);
-	printf("[remote] %s:%d\n", szServerIP, uPort);
+	printf("[server] %s:%d\n", szServerIP, uPort);
 
 	memcpy(g_szServerIP,szServerIP,strlen(szServerIP));
 	g_uPort = uPort;

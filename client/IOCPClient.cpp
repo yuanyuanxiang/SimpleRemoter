@@ -285,7 +285,7 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 
 BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  //Hello
 {
-	AUTO_TICK(10);
+	AUTO_TICK(50);
 	assert (ulOriginalLength > 0);
 	{
 		//乘以1.001是以最坏的也就是数据压缩后占用的内存空间和原先一样 +12
