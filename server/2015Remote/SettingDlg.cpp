@@ -96,3 +96,11 @@ void CSettingDlg::OnEnChangeEditMax()
 	::ShowWindow(hApplyButton,SW_NORMAL);
 	::EnableWindow(hApplyButton,TRUE);
 }
+
+
+void CSettingDlg::OnOK()
+{
+	OnBnClickedButtonSettingapply();
+
+	CDialog::OnOK();
+}
