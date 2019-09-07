@@ -5,6 +5,9 @@
 
 #pragma once
 
+// 使用压缩算法，算法需要和clien的stdafx.h匹配
+#define USING_COMPRESS 1
+
 // 是否使用ZLIB
 #define USING_ZLIB 1
 
@@ -234,19 +237,25 @@ class auto_tick
 {
 private:
 	const char *func;
-	int threshold;
+	int span;
 	clock_t tick;
 	__inline clock_t now() const { return clock(); }
+	__inline int time() const { return now() - tick; }
 
 public:
-	auto_tick(const char *func_name, int th=5) : func(func_name), threshold(th), tick(now()) { }
-	~auto_tick(){int s(this->time());if(s>threshold)TRACE("[%s]执行时间: [%d]ms.\n", func, s);}
-	__inline int time() const { return now() - tick; }
+	auto_tick(const char *func_name, int th = 5) : func(func_name), span(th), tick(now()) { }
+	~auto_tick() { stop(); }
+
+	__inline void stop() {
+		if (span != 0) { int s(this->time()); if (s > span)TRACE("[%s]执行时间: [%d]ms.\n", func, s); span = 0; }
+	}
 };
 
 #ifdef _DEBUG
 // 智能计算当前函数的耗时，超时会打印
 #define AUTO_TICK(thresh) auto_tick TICK(__FUNCTION__, thresh)
+#define STOP_TICK TICK.stop()
 #else
 #define AUTO_TICK(thresh) 
+#define STOP_TICK 
 #endif

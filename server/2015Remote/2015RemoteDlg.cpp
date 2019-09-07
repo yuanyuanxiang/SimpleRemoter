@@ -410,6 +410,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	ShowWindow(SW_SHOW);
 #endif
 
+	timeBeginPeriod(1);
+
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -583,6 +585,7 @@ void CMy2015RemoteDlg::OnClose()
 		delete m_iocpServer;
 		m_iocpServer = NULL;
 	}
+	timeEndPeriod(1);
 	CDialogEx::OnClose();
 }
 

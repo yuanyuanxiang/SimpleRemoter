@@ -14,22 +14,8 @@
 CScreenSpy::CScreenSpy(ULONG ulbiBitCount)
 {
 	m_bAlgorithm = ALGORITHM_DIFF;
-	m_dwBitBltRop = SRCCOPY;
-	m_BitmapInfor_Full = NULL;
-	switch (ulbiBitCount)
-	{
-	case 16:
-	case 32:
-		m_ulbiBitCount = ulbiBitCount;
-		break;
-	default:
-		m_ulbiBitCount = 16;
-	}
+	m_ulbiBitCount = (ulbiBitCount == 16 || ulbiBitCount == 32) ? ulbiBitCount : 16;
 
-	m_hDeskTopWnd = GetDesktopWindow();
-	m_hFullDC = GetDC(m_hDeskTopWnd);
-
-	m_hFullMemDC	= CreateCompatibleDC(m_hFullDC);
 	//::GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN)获取屏幕大小不准
 	//例如当屏幕显示比例为125%时，获取到的屏幕大小需要乘以1.25才对
 	DEVMODE devmode;
@@ -44,29 +30,50 @@ CScreenSpy::CScreenSpy(ULONG ulbiBitCount)
 	m_wZoom = double(m_ulFullWidth) / w, m_hZoom = double(m_ulFullHeight) / h;
 	printf("=> 桌面缩放比例: %.2f, %.2f\t分辨率：%d x %d\n", m_wZoom, m_hZoom, m_ulFullWidth, m_ulFullHeight);
 	m_wZoom = 1.0/m_wZoom, m_hZoom = 1.0/m_hZoom;
-	m_BitmapInfor_Full = ConstructBI(m_ulbiBitCount,m_ulFullWidth, m_ulFullHeight);
+
+	m_BitmapInfor_Full = new BITMAPINFO();
+	memset(m_BitmapInfor_Full, 0, sizeof(BITMAPINFO));
+	BITMAPINFOHEADER* BitmapInforHeader = &(m_BitmapInfor_Full->bmiHeader);
+	BitmapInforHeader->biSize = sizeof(BITMAPINFOHEADER);
+	BitmapInforHeader->biWidth = m_ulFullWidth; //1080
+	BitmapInforHeader->biHeight = m_ulFullHeight; //1920
+	BitmapInforHeader->biPlanes = 1;
+	BitmapInforHeader->biBitCount = ulbiBitCount; //通常为32
+	BitmapInforHeader->biCompression = BI_RGB;
+	BitmapInforHeader->biSizeImage =
+		((BitmapInforHeader->biWidth * BitmapInforHeader->biBitCount + 31) / 32) * 4 * BitmapInforHeader->biHeight;
+
+	m_hDeskTopWnd = GetDesktopWindow();
+	m_hFullDC = GetDC(m_hDeskTopWnd);
+
 	m_BitmapData_Full = NULL;
-	m_BitmapHandle	= ::CreateDIBSection(m_hFullDC, m_BitmapInfor_Full, 
-		DIB_RGB_COLORS, &m_BitmapData_Full, NULL, NULL);
+	m_hFullMemDC = CreateCompatibleDC(m_hFullDC);
+	m_BitmapHandle	= ::CreateDIBSection(m_hFullDC, m_BitmapInfor_Full, DIB_RGB_COLORS, &m_BitmapData_Full, NULL, NULL);
 	::SelectObject(m_hFullMemDC, m_BitmapHandle);
 
-	m_RectBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage * 2];
+	m_DiffBitmapData_Full = NULL;
+	m_hDiffMemDC	= CreateCompatibleDC(m_hFullDC); 
+	m_DiffBitmapHandle	= ::CreateDIBSection(m_hFullDC, m_BitmapInfor_Full, DIB_RGB_COLORS, &m_DiffBitmapData_Full, NULL, NULL);
+	::SelectObject(m_hDiffMemDC, m_DiffBitmapHandle);
 
 	m_RectBufferOffset = 0;
-
-	m_hDiffMemDC	= CreateCompatibleDC(m_hFullDC); 
-	m_DiffBitmapHandle	= ::CreateDIBSection(m_hFullDC, m_BitmapInfor_Full, 
-		DIB_RGB_COLORS, &m_DiffBitmapData_Full, NULL, NULL);
-	::SelectObject(m_hDiffMemDC, m_DiffBitmapHandle);
+	m_RectBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage * 2];
 }
 
 
 CScreenSpy::~CScreenSpy()
 {
-	ReleaseDC(m_hDeskTopWnd, m_hFullDC);   //GetDC
+	if (m_BitmapInfor_Full != NULL)
+	{
+		delete m_BitmapInfor_Full;
+		m_BitmapInfor_Full = NULL;
+	}
+
+	ReleaseDC(m_hDeskTopWnd, m_hFullDC);
+
 	if (m_hFullMemDC!=NULL)
 	{
-		DeleteDC(m_hFullMemDC);                //Create匹配内存DC
+		DeleteDC(m_hFullMemDC);
 
 		::DeleteObject(m_BitmapHandle);
 		if (m_BitmapData_Full!=NULL)
@@ -79,19 +86,13 @@ CScreenSpy::~CScreenSpy()
 
 	if (m_hDiffMemDC!=NULL)
 	{
-		DeleteDC(m_hDiffMemDC);                //Create匹配内存DC
+		DeleteDC(m_hDiffMemDC);
 
 		::DeleteObject(m_DiffBitmapHandle);
 		if (m_DiffBitmapData_Full!=NULL)
 		{
 			m_DiffBitmapData_Full = NULL;
 		}
-	}
-
-	if (m_BitmapInfor_Full!=NULL)
-	{
-		delete[] m_BitmapInfor_Full;
-		m_BitmapInfor_Full = NULL;
 	}
 
 	if (m_RectBuffer)
@@ -103,38 +104,10 @@ CScreenSpy::~CScreenSpy()
 	m_RectBufferOffset = 0;
 }
 
-LPBITMAPINFO CScreenSpy::ConstructBI(ULONG ulbiBitCount, 
-									 ULONG ulFullWidth, ULONG ulFullHeight)
-{
-	int	ColorNum = ulbiBitCount <= 8 ? 1 << ulbiBitCount : 0;
-	ULONG ulBitmapLength  = sizeof(BITMAPINFOHEADER) + (ColorNum * sizeof(RGBQUAD));   //BITMAPINFOHEADER +　调色板的个数
-	BITMAPINFO	*BitmapInfor = (BITMAPINFO *) new BYTE[ulBitmapLength]; //[][]
-
-	BITMAPINFOHEADER* BitmapInforHeader = &(BitmapInfor->bmiHeader);
-
-	BitmapInforHeader->biSize = sizeof(BITMAPINFOHEADER);//pi si 
-	BitmapInforHeader->biWidth = ulFullWidth; //1080
-	BitmapInforHeader->biHeight = ulFullHeight; //1920
-	BitmapInforHeader->biPlanes = 1;
-	BitmapInforHeader->biBitCount = ulbiBitCount; //32
-	BitmapInforHeader->biCompression = BI_RGB;
-	BitmapInforHeader->biXPelsPerMeter = 0;
-	BitmapInforHeader->biYPelsPerMeter = 0;
-	BitmapInforHeader->biClrUsed = 0;
-	BitmapInforHeader->biClrImportant = 0;
-	BitmapInforHeader->biSizeImage = 
-		((BitmapInforHeader->biWidth * BitmapInforHeader->biBitCount + 31)/32)*4* BitmapInforHeader->biHeight;
-
-	// 16位和以后的没有颜色表，直接返回
-
-	return BitmapInfor;
-}
-
 LPVOID CScreenSpy::GetFirstScreenData()
 {
 	//用于从原设备中复制位图到目标设备
-	::BitBlt(m_hFullMemDC, 0, 0, 
-		m_ulFullWidth, m_ulFullHeight, m_hFullDC, 0, 0, m_dwBitBltRop);
+	::BitBlt(m_hFullMemDC, 0, 0, m_ulFullWidth, m_ulFullHeight, m_hFullDC, 0, 0, SRCCOPY);
 
 	return m_BitmapData_Full;  //内存
 }
@@ -156,6 +129,7 @@ LPVOID CScreenSpy::GetNextScreenData(ULONG* ulNextSendLength)
 	WriteRectBuffer((LPBYTE)&CursorPos, sizeof(POINT));
 
 	// 写入当前光标类型
+	static CCursorInfo m_CursorInfor;
 	BYTE	bCursorIndex = m_CursorInfor.getCurrentCursorIndex();
 	WriteRectBuffer(&bCursorIndex, sizeof(BYTE));
 
@@ -163,12 +137,10 @@ LPVOID CScreenSpy::GetNextScreenData(ULONG* ulNextSendLength)
 	if (m_bAlgorithm == ALGORITHM_DIFF)
 	{
 		// 分段扫描全屏幕  将新的位图放入到m_hDiffMemDC中
-		ScanScreen(m_hDiffMemDC, m_hFullDC, m_BitmapInfor_Full->bmiHeader.biWidth,
-			m_BitmapInfor_Full->bmiHeader.biHeight);
+		ScanScreen(m_hDiffMemDC, m_hFullDC, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
 
 		//两个Bit进行比较如果不一样修改m_lpvFullBits中的返回
-		*ulNextSendLength = m_RectBufferOffset + 
-			CompareBitmap((LPBYTE)m_DiffBitmapData_Full, (LPBYTE)m_BitmapData_Full,
+		*ulNextSendLength = m_RectBufferOffset + CompareBitmap((LPBYTE)m_DiffBitmapData_Full, (LPBYTE)m_BitmapData_Full, 
 			m_RectBuffer + m_RectBufferOffset, m_BitmapInfor_Full->bmiHeader.biSizeImage);
 
 		return m_RectBuffer;
@@ -182,7 +154,7 @@ VOID CScreenSpy::ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHei
 {
 	AUTO_TICK(70);
 #if COPY_ALL
-	BitBlt(hdcDest, 0, 0, ulWidth, ulHeight, hdcSour, 0, 0, m_dwBitBltRop);
+	BitBlt(hdcDest, 0, 0, ulWidth, ulHeight, hdcSour, 0, 0, SRCCOPY);
 #else
 	const ULONG	ulJumpLine = 50;
 	const ULONG	ulJumpSleep = ulJumpLine / 10; 
@@ -195,15 +167,14 @@ VOID CScreenSpy::ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHei
 			ulToJump = ulJumpLine; 
 		else
 			ulToJump = ulv1;
-		BitBlt(hdcDest, 0, i, ulWidth, ulToJump, hdcSour,0, i, m_dwBitBltRop);
+		BitBlt(hdcDest, 0, i, ulWidth, ulToJump, hdcSour,0, i, SRCCOPY);
 		Sleep(ulJumpSleep);
 	}
 #endif
 }
 
 
-ULONG CScreenSpy::CompareBitmap(LPBYTE CompareSourData, LPBYTE CompareDestData, 
-								LPBYTE szBuffer, DWORD ulCompareLength)
+ULONG CScreenSpy::CompareBitmap(LPBYTE CompareSourData, LPBYTE CompareDestData, LPBYTE szBuffer, DWORD ulCompareLength)
 {
 	AUTO_TICK(20);
 	// Windows规定一个扫描行所占的字节数必须是4的倍数, 所以用DWORD比较

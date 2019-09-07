@@ -312,20 +312,20 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 
 	InterlockedIncrement(&This->m_ulCurrentThread);      
 	InterlockedIncrement(&This->m_ulBusyThread);         
-
+	timeBeginPeriod(1);
 	while (This->m_bTimeToKill==FALSE)
 	{
-		InterlockedDecrement(&This->m_ulBusyThread);  
+		AUTO_TICK(40);
+		InterlockedDecrement(&This->m_ulBusyThread);
+		// GetQueuedCompletionStatus耗时比较长，导致客户端发送数据的速率提高不了
 		BOOL bOk = GetQueuedCompletionStatus(
 			hCompletionPort,
 			&dwTrans,
 			(LPDWORD)&ContextObject,
-			&Overlapped,INFINITE);  
-
-		DWORD dwIOError = GetLastError();   
-
+			&Overlapped, INFINITE);
+		STOP_TICK;
+		DWORD dwIOError = GetLastError();
 		OverlappedPlus = CONTAINING_RECORD(Overlapped, OVERLAPPEDPLUS, m_ol);
-
 		ulBusyThread = InterlockedIncrement(&This->m_ulBusyThread); //1 1
 		if ( !bOk && dwIOError != WAIT_TIMEOUT )   //当对方的套机制发生了关闭                    
 		{
@@ -391,6 +391,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 
 		SAFE_DELETE(OverlappedPlus);
 	}
+	timeEndPeriod(1);
 	SAFE_DELETE(OverlappedPlus);
 
 	InterlockedDecrement(&This->m_ulWorkThreadCount);
@@ -469,10 +470,15 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 				ContextObject->InCompressedBuffer.ReadBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG));
 				ULONG ulCompressedLength = ulPackTotalLength - HDR_LENGTH; //461 - 13  448
 				PBYTE CompressedBuffer = new BYTE[ulCompressedLength];  //没有解压
-				PBYTE DeCompressedBuffer = new BYTE[ulOriginalLength];  //解压过的内存  436
 				//从数据包当前将源数据没有解压读取到pData   448
 				ContextObject->InCompressedBuffer.ReadBuffer(CompressedBuffer, ulCompressedLength);
+#if USING_COMPRESS
+				PBYTE DeCompressedBuffer = new BYTE[ulOriginalLength];  //解压过的内存  436
 				int	iRet = uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
+#else
+				PBYTE DeCompressedBuffer = CompressedBuffer;
+				int iRet = 0;
+#endif
 				if (Z_SUCCESS(iRet))
 				{
 					ContextObject->InDeCompressedBuffer.ClearBuffer();
@@ -482,11 +488,15 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 				}else{
 					OutputDebugStringA("[ERROR] uncompress failed \n");
 					delete [] CompressedBuffer;
+#if USING_COMPRESS // 释放内存
 					delete [] DeCompressedBuffer;
+#endif
 					throw "Bad Buffer";
 				}
 				delete [] CompressedBuffer;
+#if USING_COMPRESS // 释放内存
 				delete [] DeCompressedBuffer;
+#endif
 			}else{
 				break;
 			}
