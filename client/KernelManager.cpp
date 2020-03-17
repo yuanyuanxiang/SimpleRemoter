@@ -20,7 +20,7 @@ CKernelManager::~CKernelManager()
 	int i = 0;
 	for (i=0;i<0x1000;++i)
 	{
-		if (m_hThread->h!=0)
+		if (m_hThread[i].h!=0)
 		{
 			CloseHandle(m_hThread[i].h);
 			m_hThread[i].h = NULL;
