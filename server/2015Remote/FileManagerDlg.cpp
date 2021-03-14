@@ -1422,7 +1422,7 @@ void CFileManagerDlg::OnRemoteCopy()
 {
 	m_bIsUpload = false;
 	// 禁用文件管理窗口
-	EnableControl(FALSE);
+	EnableControl(TRUE);
 
 	// TODO: Add your command handler code here
 	// 如果Drag的，找到Drop到了哪个文件夹

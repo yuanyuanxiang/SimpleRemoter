@@ -542,6 +542,7 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 
 void CMy2015RemoteDlg::OnClose()
 {
+	ShowWindow(SW_HIDE);
 #if INDEPENDENT
 	Shell_NotifyIcon(NIM_DELETE, &m_Nid);
 #endif
@@ -556,6 +557,7 @@ void CMy2015RemoteDlg::OnClose()
 	Sleep(200);
 
 	EnterCriticalSection(&m_cs);
+	/*
 	for (std::vector<CFileManagerDlg *>::iterator iter = v_FileDlg.begin(); 
 		iter != v_FileDlg.end(); ++iter)
 	{
@@ -565,6 +567,7 @@ void CMy2015RemoteDlg::OnClose()
 			Sleep(1);
 		delete cur;
 	}
+	*/
 	for (std::vector<CRegisterDlg *>::iterator iter = v_RegDlg.begin(); 
 		iter != v_RegDlg.end(); ++iter)
 	{
@@ -577,7 +580,6 @@ void CMy2015RemoteDlg::OnClose()
 	LeaveCriticalSection(&m_cs);
 
 	//加上下面Sleep语句能避免不少退出时的崩溃、怀疑是IOCP需要背地干些工作
-	ShowWindow(SW_HIDE);
 	Sleep(300);
 
 	if (m_iocpServer!=NULL)
@@ -1072,7 +1074,7 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 		case FILEMANAGER_DLG:
 			{
 				CFileManagerDlg *Dlg = (CFileManagerDlg*)p->hDlg;
-				//delete Dlg; //特殊处理
+				delete Dlg;
 				break;
 			}
 		case REGISTER_DLG:
@@ -1118,6 +1120,7 @@ LRESULT CMy2015RemoteDlg::OnOpenFileManagerDialog(WPARAM wParam, LPARAM lParam)
 	ContextObject->v1   = FILEMANAGER_DLG;
 	ContextObject->hDlg = Dlg;
 	EnterCriticalSection(&m_cs);
+	/*
 	for (std::vector<CFileManagerDlg *>::iterator iter = v_FileDlg.begin(); 
 		iter != v_FileDlg.end(); )
 	{
@@ -1131,6 +1134,7 @@ LRESULT CMy2015RemoteDlg::OnOpenFileManagerDialog(WPARAM wParam, LPARAM lParam)
 		}
 	}
 	v_FileDlg.push_back(Dlg);
+	*/
 	LeaveCriticalSection(&m_cs);
 
 	return 0;

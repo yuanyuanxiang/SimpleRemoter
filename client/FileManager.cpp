@@ -26,7 +26,7 @@ CFileManager::~CFileManager()
 	m_UploadList.clear();
 }
 
-void CFileManager::OnReceive(LPBYTE lpBuffer, UINT nSize)
+void CFileManager::OnReceive(PBYTE lpBuffer, UINT nSize)
 {
 	switch (lpBuffer[0])
 	{

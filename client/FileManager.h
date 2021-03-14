@@ -28,7 +28,7 @@ typedef struct
 class CFileManager : public CManager
 {
 public:
-	void OnReceive(LPBYTE lpBuffer, UINT nSize);
+	void OnReceive(PBYTE lpBuffer, UINT nSize);
 	UINT SendDriveList();
 	CFileManager(CClientSocket *pClient, int h = 0);
 	virtual ~CFileManager();
