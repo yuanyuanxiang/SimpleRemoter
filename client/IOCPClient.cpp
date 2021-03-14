@@ -192,7 +192,7 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 			}else{
 				//正确接收就调用OnRead处理,转到OnRead
 				This->OnServerReceiving(szBuffer, iReceivedLength);
-				if (This->m_Manager->m_bIsDead)
+				if (This->m_Manager!=NULL && This->m_Manager->m_bIsDead)
 				{
 					printf("****** Recv bye bye ******\n");
 					// 不论是否退出客户端和主控端，都退出客户端

@@ -140,7 +140,8 @@ IOCPServer::~IOCPServer(void)
 	WSACleanup();
 }
 
-BOOL IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort)
+// 返回错误码0代表成功，否则代表错误信息.
+UINT IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort)
 {
 	m_NotifyProc = NotifyProc;
 	m_OfflineProc = OffProc;
@@ -148,14 +149,14 @@ BOOL IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
 
 	if (m_hKillEvent==NULL)
 	{
-		return FALSE;
+		return 1;
 	}
 
 	m_sListenSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);     //创建监听套接字
 
 	if (m_sListenSocket == INVALID_SOCKET)
 	{
-		return FALSE;
+		return 2;
 	}
 
 	m_hListenEvent = WSACreateEvent();           
@@ -165,7 +166,7 @@ BOOL IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
 		closesocket(m_sListenSocket);
 
 		m_sListenSocket = INVALID_SOCKET;
-		return FALSE;
+		return 3;
 	}
 
 	int iRet = WSAEventSelect(m_sListenSocket,	//将监听套接字与事件进行关联并授予FD_ACCEPT的属性
@@ -174,6 +175,7 @@ BOOL IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
 
 	if (iRet == SOCKET_ERROR)
 	{
+		int a = GetLastError();
 		closesocket(m_sListenSocket);
 
 		m_sListenSocket = INVALID_SOCKET;
@@ -181,7 +183,7 @@ BOOL IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
 
 		m_hListenEvent = WSA_INVALID_EVENT;
 
-		return FALSE;
+		return a;
 	}
 
 	SOCKADDR_IN	ServerAddr;		
@@ -204,13 +206,14 @@ BOOL IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
 
 		m_hListenEvent = WSA_INVALID_EVENT;
 
-		return FALSE;
+		return a;
 	}
 
 	iRet = listen(m_sListenSocket, SOMAXCONN);
 
 	if (iRet == SOCKET_ERROR)
 	{
+		int a = GetLastError();
 		closesocket(m_sListenSocket);
 
 		m_sListenSocket = INVALID_SOCKET;
@@ -218,7 +221,7 @@ BOOL IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
 
 		m_hListenEvent = WSA_INVALID_EVENT;
 
-		return FALSE;
+		return a;
 	}
 
 	m_hListenThread =
@@ -230,18 +233,19 @@ BOOL IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
 		NULL);	
 	if (m_hListenThread==INVALID_HANDLE_VALUE)
 	{
+		int a = GetLastError();
 		closesocket(m_sListenSocket);
 
 		m_sListenSocket = INVALID_SOCKET;
 		WSACloseEvent(m_hListenEvent);
 
 		m_hListenEvent = WSA_INVALID_EVENT;
-		return FALSE;
+		return a;
 	}
 
 	//启动工作线程  1  2
 	InitializeIOCP();
-	return TRUE;
+	return 0;
 }
 
 
@@ -385,7 +389,9 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 
 					ContextObject = NULL;
 				}
-				catch (...) {}
+				catch (...) {
+					OutputDebugStringA("This->HandleIO catched an error!!!");
+				}
 			}
 		}
 

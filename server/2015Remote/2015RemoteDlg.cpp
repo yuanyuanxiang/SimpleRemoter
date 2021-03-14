@@ -787,10 +787,13 @@ VOID CMy2015RemoteDlg::ListenPort()
 VOID CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 {
 	m_iocpServer = new IOCPServer;                //动态申请我们的类对象
-
-	if (m_iocpServer->StartServer(NotifyProc, OfflineProc, nPort)==FALSE)
+	UINT ret = 0;
+	if ( (ret=m_iocpServer->StartServer(NotifyProc, OfflineProc, nPort)) !=0 )
 	{
 		OutputDebugStringA("======> StartServer Failed \n");
+		char code[32];
+		sprintf_s(code, "%d", ret);
+		MessageBox("调用函数StartServer失败! 错误代码:"+CString(code));
 	}
 
 	CString strTemp;

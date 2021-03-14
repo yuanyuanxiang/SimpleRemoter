@@ -76,7 +76,7 @@ public:
 
 	typedef void (CALLBACK *pfnNotifyProc)(CONTEXT_OBJECT* ContextObject);
 	typedef void (CALLBACK *pfnOfflineProc)(CONTEXT_OBJECT* ContextObject);
-	BOOL StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort);
+	UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort);
 
 	static DWORD WINAPI ListenThreadProc(LPVOID lParam);
 	BOOL InitializeIOCP(VOID);

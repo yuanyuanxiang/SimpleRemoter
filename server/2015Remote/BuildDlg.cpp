@@ -77,7 +77,7 @@ void CBuildDlg::OnBnClickedOk()
 		strFile = path; //得到当前未处理文件名
 		if (_access(path, 0) == -1)
 		{
-			MessageBox("\"TestRun.exe\"不存在!");
+			MessageBox(CString(path)+"\r\n进程模板\"TestRun.exe\"不存在!");
 			return CDialog::OnOK();
 		}
 		
@@ -101,7 +101,7 @@ void CBuildDlg::OnBnClickedOk()
 		File.Write(szBuffer,dwFileSize);
 		File.Close();
 		delete[] szBuffer;
-		MessageBox("生成成功!");
+		MessageBox("生成成功!文件位于:\r\n"+ strSeverFile);
 	}
 	catch (CMemoryException* e)
 	{
