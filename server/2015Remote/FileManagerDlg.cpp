@@ -160,6 +160,7 @@ BEGIN_MESSAGE_MAP(CFileManagerDlg, CDialog)
 	ON_COMMAND(IDM_REMOTE_OPEN_HIDE, OnRemoteOpenHide)
 	ON_NOTIFY(NM_RCLICK, IDC_LIST_LOCAL, OnRclickListLocal)
 	ON_NOTIFY(NM_RCLICK, IDC_LIST_REMOTE, OnRclickListRemote)
+	ON_MESSAGE(WM_MY_MESSAGE, OnMyMessage)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -1110,14 +1111,17 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen)
 
 void CFileManagerDlg::ShowMessage(char *lpFmt, ...)
 {
-	char buff[1024];
+	char *buff = new char[1024];
     va_list    arglist;
     va_start( arglist, lpFmt );
 	
-	memset(buff, 0, sizeof(buff));
+	memset(buff, 0, 1024);
 
 	vsprintf(buff, lpFmt, arglist);
-	m_wndStatusBar.SetPaneText(0, buff);
+	// fix: 多线程操作控件引发崩溃的问题
+	// m_wndStatusBar.SetPaneText(0, buff);
+	// msg 第1个参数为缓存大小,第2个参数为缓存指针
+	SendMessage(WM_MY_MESSAGE, 1024, (LPARAM)buff);
     va_end( arglist );
 }
 

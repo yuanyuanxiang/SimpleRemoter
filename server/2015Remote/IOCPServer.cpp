@@ -521,7 +521,17 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength)  
 {
 	assert (ContextObject);
-
+	// 输出服务端所发送的命令
+	if (ulOriginalLength < 100) {
+		char buf[100] = { 0 };
+		if (ulOriginalLength == 1){
+			sprintf_s(buf, "command %d", int(szBuffer[0]));
+		}
+		else {
+			memcpy(buf, szBuffer, ulOriginalLength);
+		}
+		OutputDebugStringA("[COMMAND] Send: " + CString(buf) + "\r\n");
+	}
 	try
 	{
 		if (ulOriginalLength > 0)
