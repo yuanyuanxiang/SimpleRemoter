@@ -20,6 +20,8 @@ CCaptureVideo::CCaptureVideo()
 	m_pGB = NULL;
 	m_pMC = NULL;
 	m_pVW = NULL;
+	m_pBF = NULL;
+	m_pGrabber = NULL;
 	m_bExit = FALSE;
 }
 
