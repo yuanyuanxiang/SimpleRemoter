@@ -279,7 +279,9 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 			else
 				break;
 		}
-	}catch(...) { }
+	}catch(...) { 
+		printf("[ERROR] OnServerReceiving catch an error \n");
+	}
 }
 
 

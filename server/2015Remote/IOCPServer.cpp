@@ -510,6 +510,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 		PostRecv(ContextObject); //投递新的接收数据的请求
 	}catch(...)
 	{
+		OutputDebugStringA("[ERROR] OnClientReceiving catch an error \n");
 		ContextObject->InCompressedBuffer.ClearBuffer();
 		ContextObject->InDeCompressedBuffer.ClearBuffer();
 
@@ -572,7 +573,9 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 			RemoveStaleContext(ContextObject);
 			SAFE_DELETE(OverlappedPlus);
 		}
-	}catch(...){}
+	}catch(...){
+		OutputDebugStringA("[ERROR] OnClientPreSending catch an error \n");
+	}
 }
 
 BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompletedLength)   
@@ -603,7 +606,9 @@ BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompl
 				SAFE_DELETE(OverlappedPlus);
 			}
 		}
-	}catch(...){}
+	}catch(...){
+		OutputDebugStringA("[ERROR] OnClientPostSending catch an error \n");
+	}
 
 	return FALSE;			
 }

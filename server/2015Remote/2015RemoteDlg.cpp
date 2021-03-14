@@ -998,7 +998,9 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 
 		AddList(strIP,strAddr,strPCName,strOS,strCPU,strVideo,strPing,ContextObject);
 		return S_OK;
-	}catch(...){}
+	}catch(...){
+		OutputDebugStringA("[ERROR] OnUserToOnlineList catch an error \n");
+	}
 	return -1;
 }
 
