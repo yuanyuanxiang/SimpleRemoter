@@ -1,6 +1,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <iostream>
+#include <corecrt_io.h>
 
 typedef void (*StopRun)();
 
@@ -90,6 +91,11 @@ BOOL CALLBACK callback(DWORD CtrlType)
 	return TRUE;
 }
 
+// @brief 首先读取settings.ini配置文件，获取IP和端口.
+// [settings] 
+// localIp=XXX
+// ghost=6688
+// 如果配置文件不存在就从命令行中获取IP和端口.
 int main(int argc, const char *argv[])
 {
 	if(!SetSelfStart(argv[0], "a_ghost"))
@@ -116,8 +122,14 @@ int main(int argc, const char *argv[])
 		if (0 == strlen(ip))
 		{
 			strcpy(p+1, "settings.ini");
-			GetPrivateProfileStringA("settings", "localIp", "yuanyuanxiang.oicp.net", ip, _MAX_PATH, path);
-			port = GetPrivateProfileIntA("settings", "ghost", 19141, path);
+			if (_access(path, 0) == -1){
+				ip = argc > 1 ? argv[1] : "127.0.0.1";
+				port = argc > 2 ? atoi(argv[2]) : 19141;
+			}
+			else {
+				GetPrivateProfileStringA("settings", "localIp", "yuanyuanxiang.oicp.net", ip, _MAX_PATH, path);
+				port = GetPrivateProfileIntA("settings", "ghost", 19141, path);
+			}
 		}
 		printf("[server] %s:%d\n", ip, port);
 		do 
