@@ -31,6 +31,11 @@
 #define CLOSE_DELETE_DLG 0
 
 // 检测内存泄漏，需安装VLD；否则请注释此行
+// 如果安装了VLD, 请将安装路径添加到环境变量: 名称为"VLDPATH", 路径为"D:\Program Files (x86)\Visual Leak Detector"
+// 请根据实际安装目录填写VLDPATH. 或者手动编辑每个项目文件的头文件目录和库目录. 有关下载VLD库的信息请参考下面链接.
+// VS2017以前版本的VLD: https://kinddragon.github.io/vld
+// VS2019使用的VLD（支持以往的VS版本, 推荐）: https://github.com/oneiric/vld/releases/tag/v2.7.0
+// 如果要将受控端程序放到其他机器上面运行, 请使用Release模式生成的程序, 以解除对VLD的依赖; 否则你需要将VLD相关文件一同拷贝.
 #include "vld.h"
 
 #include "targetver.h"

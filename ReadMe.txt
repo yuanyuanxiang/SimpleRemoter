@@ -219,3 +219,9 @@ TestRun在写入开机自启动项时先提升权限，以防止因权限不足�
 
 2021.3.14
 修复了若干个问题。
+
+2024.9.6
+1.新增"2019Remote.sln"支持使用Visual Studio 2019编译项目。
+2.增加了使用VLD的操作方法，详见"server\2015Remote\stdafx.h"。
+注意：自VS2019开始，不支持XP系统了（微软已经声明这个变更）。如果有需要在XP系统进行监控的需求，推荐使用"2015Remote.sln"。
+如果使用VS2015编译，需将WindowsTargetPlatformVersion修改为8.1，将PlatformToolset修改为v140_xp。
