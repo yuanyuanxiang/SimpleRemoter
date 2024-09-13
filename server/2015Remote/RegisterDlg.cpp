@@ -289,12 +289,13 @@ void CRegisterDlg::AddKey(char* szBuffer)
 		}
 		if(Type==MREG_DWORD)
 		{
-			char ValueDate[256];
+			// 对注册表 REG_DWORD 类型的处理
+			char ValueDate[256] = {0};
 			DWORD d=(DWORD)szValueDate;
 			memcpy((void*)&d,szValueDate,sizeof(DWORD));
 			CString strValue;
 			strValue.Format("0x%x",d);
-			sprintf(ValueDate,"  (%wd)",d);
+			sprintf(ValueDate,"  (%d)",d);
 			strValue+=" ";
 			strValue+=ValueDate;
 			int iItem=m_ControlList.InsertItem(0,szValueName,1);
@@ -303,8 +304,9 @@ void CRegisterDlg::AddKey(char* szBuffer)
 		}
 		if(Type==MREG_BINARY)
 		{
-			char ValueDate[256];
-			sprintf(ValueDate,"%wd",szValueDate);
+			// 对注册表 REG_BINARY 类型的处理
+			char ValueDate[256] = {0};
+			sprintf(ValueDate,"%s",szValueDate);
 
 			int iItem=m_ControlList.InsertItem(0,szValueName,1);
 			m_ControlList.SetItemText(iItem,1,"REG_BINARY");	
