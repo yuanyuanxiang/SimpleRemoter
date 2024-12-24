@@ -18,7 +18,7 @@ CKernelManager::~CKernelManager()
 {
 	printf("~CKernelManager begin\n");
 	int i = 0;
-	for (i=0;i<0x1000;++i)
+	for (i=0;i<MAX_THREADNUM;++i)
 	{
 		if (m_hThread[i].h!=0)
 		{
@@ -33,10 +33,33 @@ CKernelManager::~CKernelManager()
 	printf("~CKernelManager end\n");
 }
 
+// 获取可用的线程下标
+UINT CKernelManager::GetAvailableIndex() {
+	if (m_ulThreadCount < MAX_THREADNUM) {
+		return m_ulThreadCount;
+	}
+
+	for (int i = 0; i < MAX_THREADNUM; ++i)
+	{
+		if (m_hThread[i].p == NULL) {
+			return i;
+		}
+	}
+	return -1;
+}
+
 VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 {
-	IOCPClient *pNew = szBuffer[0] == COMMAND_BYE ? NULL : new IOCPClient(true);
-	m_hThread[m_ulThreadCount].p = pNew;
+	bool isExit = szBuffer[0] == COMMAND_BYE || szBuffer[0] == SERVER_EXIT;
+	if ((m_ulThreadCount = GetAvailableIndex()) == -1) {
+		if (!isExit) {
+			printf("CKernelManager: The number of threads exceeds the limit.\n");
+			return;
+		}
+	}
+	else if (!isExit){
+		m_hThread[m_ulThreadCount].p = new IOCPClient(true);
+	}
 
 	switch(szBuffer[0])
 	{
@@ -78,9 +101,6 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			m_ClientObject->OnServerSending((char*)&bToken, 1);
 			m_bIsDead = 1;
 			OutputDebugStringA("======> Client exit \n");
-			m_hThread[m_ulThreadCount].p = NULL;
-			delete pNew;
-			pNew = NULL;
 			break;
 		}
 
@@ -90,9 +110,6 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			m_ClientObject->OnServerSending((char*)&bToken, 1);
 			m_bIsDead = 2;
 			OutputDebugStringA("======> Server exit \n");
-			m_hThread[m_ulThreadCount].p = NULL;
-			delete pNew;
-			pNew = NULL;
 			break;
 		}
 
@@ -147,9 +164,10 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	default:
 		{
 			OutputDebugStringA("======> Error operator\n");
-			m_hThread[m_ulThreadCount].p = NULL;
-			delete pNew;
-			pNew = NULL;
+			if (m_ulThreadCount != -1) {
+				delete m_hThread[m_ulThreadCount].p;
+				m_hThread[m_ulThreadCount].p = NULL;
+			}
 			break;
 		}
 	}
