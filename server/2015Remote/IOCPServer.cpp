@@ -459,13 +459,13 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 		while (ContextObject->InCompressedBuffer.GetBufferLength() > HDR_LENGTH)
 		{
 			char szPacketFlag[FLAG_LENGTH + 3]= {0}; // 8字节对齐
-			CopyMemory(szPacketFlag, ContextObject->InCompressedBuffer.GetBuffer(),FLAG_LENGTH);
+			ContextObject->InCompressedBuffer.CopyBuffer(szPacketFlag, FLAG_LENGTH, 0);
 			if (memcmp(m_szPacketFlag, szPacketFlag, FLAG_LENGTH) != 0)
 				throw "Bad Buffer";
 			
 			//Shine[50][kdjfkdjfkj]
 			ULONG ulPackTotalLength = 0;
-			CopyMemory(&ulPackTotalLength, ContextObject->InCompressedBuffer.GetBuffer(FLAG_LENGTH), sizeof(ULONG));
+			ContextObject->InCompressedBuffer.CopyBuffer(&ulPackTotalLength, sizeof(ULONG), FLAG_LENGTH);
 			//取出数据包的总长
 			//50
 			if (ulPackTotalLength && (ContextObject->InCompressedBuffer.GetBufferLength()) >= ulPackTotalLength)  
@@ -584,7 +584,7 @@ BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompl
 	{
 		DWORD ulFlags = MSG_PARTIAL;
 
-		ContextObject->OutCompressedBuffer.RemoveComletedBuffer(ulCompletedLength); //将完成的数据从数据结构中去除
+		ContextObject->OutCompressedBuffer.RemoveCompletedBuffer(ulCompletedLength); //将完成的数据从数据结构中去除
 		if (ContextObject->OutCompressedBuffer.GetBufferLength() == 0)
 		{
 			ContextObject->OutCompressedBuffer.ClearBuffer();
@@ -594,7 +594,7 @@ BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompl
 		{
 			OVERLAPPEDPLUS * OverlappedPlus = new OVERLAPPEDPLUS(IOWrite); //数据没有完成  我们继续投递 发送请求
 
-			ContextObject->wsaOutBuffer.buf = (char*)ContextObject->OutCompressedBuffer.GetBuffer();
+			ContextObject->wsaOutBuffer.buf = (char*)ContextObject->OutCompressedBuffer.GetBuffer(0);
 			ContextObject->wsaOutBuffer.len = ContextObject->OutCompressedBuffer.GetBufferLength(); 
 			int iOk = WSASend(ContextObject->sClientSocket, &ContextObject->wsaOutBuffer,1,
 				&ContextObject->wsaOutBuffer.len, ulFlags,&OverlappedPlus->m_ol, NULL);

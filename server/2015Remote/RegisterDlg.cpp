@@ -214,16 +214,18 @@ char CRegisterDlg::GetFatherPath(CString& strFullPath)
 void CRegisterDlg::OnReceiveComplete(void)
 {
 	m_bIsWorking = TRUE;
-	switch (m_ContextObject->InDeCompressedBuffer.GetBuffer(0)[0])
+	switch (m_ContextObject->InDeCompressedBuffer.GetBYTE(0))
 	{
 	case TOKEN_REG_PATH:
 		{
-			AddPath((char*)(m_ContextObject->InDeCompressedBuffer.GetBuffer(1)));
+			Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(1);
+			AddPath(tmp.c_str());
 			break;
 		}
 	case TOKEN_REG_KEY:
 		{
-			AddKey((char*)(m_ContextObject->InDeCompressedBuffer.GetBuffer(1)));
+			Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(1);
+			AddKey(tmp.c_str());
 			break;
 		}
 	default:

@@ -83,7 +83,8 @@ VOID CShellDlg::AddKeyBoardData(void)
 	//Hello>dir
 	//Shit\0
 	m_ContextObject->InDeCompressedBuffer.WriteBuffer((LPBYTE)"", 1);           //从被控制端来的数据我们要加上一个\0
-	CString strResult = (char*)m_ContextObject->InDeCompressedBuffer.GetBuffer(0);    //获得所有的数据 包括 \0
+	Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(0);
+	CString strResult = tmp.c_str();    //获得所有的数据 包括 \0
 
 	//替换掉原来的换行符  可能cmd 的换行同w32下的编辑控件的换行符不一致   所有的回车换行   
 	strResult.Replace("\n", "\r\n");

@@ -139,8 +139,7 @@ void CVideoDlg::ResetScreen(void)
 
 	int	iBitMapInforSize = m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1;  
 	m_BitmapInfor_Full	= (LPBITMAPINFO) new BYTE[iBitMapInforSize];
-	memcpy(m_BitmapInfor_Full, m_ContextObject->InDeCompressedBuffer.GetBuffer(1), iBitMapInforSize); 
-
+	m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapInfor_Full, iBitMapInforSize, 1);
 	m_BitmapData_Full	= new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage];
 	m_BitmapCompressedData_Full	= new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage];
 }
@@ -249,7 +248,7 @@ void CVideoDlg::OnReceiveComplete(void)
 {
 	++m_nCount;
 
-	switch (m_ContextObject->InDeCompressedBuffer.GetBuffer(0)[0])
+	switch (m_ContextObject->InDeCompressedBuffer.GetBYTE(0))
 	{
 	case TOKEN_WEBCAM_DIB:
 		{
@@ -270,7 +269,8 @@ void CVideoDlg::DrawDIB(void)
 
 	const int nHeadLen = 1 + 1 + 4;       
 
-	LPBYTE	szBuffer = m_ContextObject->InDeCompressedBuffer.GetBuffer();
+	Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(0);
+	LPBYTE	szBuffer = tmp.Buf();
 	UINT	ulBufferLen = m_ContextObject->InDeCompressedBuffer.GetBufferLength();
 	if (szBuffer[1] == 0) // 没有经过H263压缩的原始数据，不需要解码
 	{

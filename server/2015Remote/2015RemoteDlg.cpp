@@ -393,7 +393,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-
+	isClosed = FALSE;
 	g_2015RemoteDlg = this;
 	CreateToolBar();
 	InitControl();
@@ -542,6 +542,7 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 
 void CMy2015RemoteDlg::OnClose()
 {
+	isClosed = TRUE;
 	ShowWindow(SW_HIDE);
 #if INDEPENDENT
 	Shell_NotifyIcon(NIM_DELETE, &m_Nid);
@@ -888,7 +889,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		return;
 	}
 
-	switch (ContextObject->InDeCompressedBuffer.GetBuffer(0)[0])
+	switch (ContextObject->InDeCompressedBuffer.GetBYTE(0))
 	{
 	case COMMAND_BYE:
 		{
@@ -956,7 +957,7 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 	CString strIP,  strAddr,  strPCName, strOS, strCPU, strVideo, strPing;
 	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam; //注意这里的  ClientContext  正是发送数据时从列表里取出的数据
 
-	if (ContextObject == NULL)
+	if (ContextObject == NULL || isClosed)
 	{
 		return -1;
 	}
@@ -970,7 +971,8 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 			return -1;
 		}
 
-		LOGIN_INFOR*	LoginInfor = (LOGIN_INFOR*)ContextObject->InDeCompressedBuffer.GetBuffer();
+		LOGIN_INFOR* LoginInfor = new LOGIN_INFOR;
+		ContextObject->InDeCompressedBuffer.CopyBuffer((LPBYTE)LoginInfor, sizeof(LOGIN_INFOR), 0);
 
 		sockaddr_in  ClientAddr;
 		memset(&ClientAddr, 0, sizeof(ClientAddr));
@@ -997,6 +999,7 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 		strAddr.Format("%d", nSocket);
 
 		AddList(strIP,strAddr,strPCName,strOS,strCPU,strVideo,strPing,ContextObject);
+		delete LoginInfor;
 		return S_OK;
 	}catch(...){
 		OutputDebugStringA("[ERROR] OnUserToOnlineList catch an error \n");
