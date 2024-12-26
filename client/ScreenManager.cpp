@@ -103,7 +103,8 @@ VOID CScreenManager::SendBitMapInfo()
 	const ULONG   ulLength = 1 + sizeof(BITMAPINFOHEADER);
 	LPBYTE	szBuffer = (LPBYTE)VirtualAlloc(NULL, 
 		ulLength, MEM_COMMIT, PAGE_READWRITE);
-
+	if (szBuffer == NULL)
+		return;
 	szBuffer[0] = TOKEN_BITMAPINFO;
 	//这里将bmp位图结构发送出去
 	memcpy(szBuffer + 1, m_ScreenSpyObject->GetBIData(), ulLength - 1);
@@ -180,6 +181,8 @@ VOID CScreenManager::UpdateClientClipboard(char *szBuffer, ULONG ulLength)
 	if (hGlobal != NULL) { 
 
 		LPTSTR szClipboardVirtualAddress = (LPTSTR) GlobalLock(hGlobal); 
+		if (szClipboardVirtualAddress == NULL)
+			return;
 		memcpy(szClipboardVirtualAddress, szBuffer, ulLength); 
 		GlobalUnlock(hGlobal);         
 		SetClipboardData(CF_TEXT, hGlobal);

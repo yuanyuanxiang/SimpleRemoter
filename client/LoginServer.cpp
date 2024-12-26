@@ -17,8 +17,16 @@ std::string getSystemName()
 	//先判断是否为win8.1或win10
 	typedef void(__stdcall*NTPROC)(DWORD*, DWORD*, DWORD*);
 	HINSTANCE hinst = LoadLibrary("ntdll.dll");
+	if (hinst == NULL)
+	{
+		return vname;
+	}
 	DWORD dwMajor, dwMinor, dwBuildNumber;
 	NTPROC proc = (NTPROC)GetProcAddress(hinst, "RtlGetNtVersionNumbers"); 
+	if (proc==NULL)
+	{
+		return vname;
+	}
 	proc(&dwMajor, &dwMinor, &dwBuildNumber); 
 	if (dwMajor == 6 && dwMinor == 3)	//win 8.1
 	{

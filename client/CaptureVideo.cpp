@@ -12,10 +12,6 @@ CSampleGrabberCB mCB;
 
 CCaptureVideo::CCaptureVideo()
 {
-	if(FAILED(CoInitialize(NULL)))
-	{
-		return;
-	}
 	m_pCapture = NULL;
 	m_pGB = NULL;
 	m_pMC = NULL;
@@ -23,6 +19,11 @@ CCaptureVideo::CCaptureVideo()
 	m_pBF = NULL;
 	m_pGrabber = NULL;
 	m_bExit = FALSE;
+	m_hWnd = NULL;
+	if (FAILED(CoInitialize(NULL)))
+	{
+		return;
+	}
 }
 
 CCaptureVideo::~CCaptureVideo()

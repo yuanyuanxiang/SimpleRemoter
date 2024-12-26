@@ -87,8 +87,10 @@ CAudio::~CAudio()
 	if (m_bIsWaveOutUsed)
 	{
 		waveOutReset(m_hWaveOut);
-		for (int i = 0; i < 2; ++i)
-			waveOutUnprepareHeader(m_hWaveOut, m_InAudioHeader[i], sizeof(WAVEHDR));
+		for (int i = 0; i < 2; ++i) {
+			if (m_InAudioHeader[i])
+				waveOutUnprepareHeader(m_hWaveOut, m_InAudioHeader[i], sizeof(WAVEHDR));
+		}
 		waveOutClose(m_hWaveOut);
 	}
 
@@ -131,8 +133,10 @@ BOOL CAudio::InitializeWaveIn()
 	}
 
 	waveInAddBuffer(m_hWaveIn, m_InAudioHeader[m_nWaveInIndex], sizeof(WAVEHDR));
-
-	ResumeThread(m_Thread);
+	if (m_Thread!=NULL)
+	{
+		ResumeThread(m_Thread);
+	}
 	waveInStart(m_hWaveIn);   //Â¼Òô
 
 	m_bIsWaveInUsed = TRUE;

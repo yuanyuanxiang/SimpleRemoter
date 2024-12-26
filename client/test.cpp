@@ -119,17 +119,13 @@ int main(int argc, const char *argv[])
 	{
 		char *ip = g_ConnectAddress.szServerIP;
 		int &port = g_ConnectAddress.iPort;
-		if (0 == strlen(ip))
-		{
-			strcpy(p+1, "settings.ini");
-			if (_access(path, 0) == -1){
-				ip = argc > 1 ? argv[1] : "127.0.0.1";
-				port = argc > 2 ? atoi(argv[2]) : 19141;
-			}
-			else {
-				GetPrivateProfileStringA("settings", "localIp", "yuanyuanxiang.oicp.net", ip, _MAX_PATH, path);
-				port = GetPrivateProfileIntA("settings", "ghost", 19141, path);
-			}
+		strcpy(p + 1, "settings.ini");
+		if (_access(path, 0) == -1) { // 文件不存在: 优先从参数中取值，其次是从g_ConnectAddress取值.
+			ip = argc > 1 ? argv[1] :(strlen(ip)==0 ? "127.0.0.1" : ip);
+			port = argc > 2 ? atoi(argv[2]) : (port==0 ? 6543: port);
+		} else {
+			GetPrivateProfileStringA("settings", "localIp", g_ConnectAddress.szServerIP, ip, _MAX_PATH, path);
+			port = GetPrivateProfileIntA("settings", "ghost", g_ConnectAddress.iPort, path);
 		}
 		printf("[server] %s:%d\n", ip, port);
 		do 

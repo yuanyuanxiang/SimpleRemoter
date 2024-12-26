@@ -46,6 +46,10 @@ public:
 		return m_bIsRunning;
 	}
 
+	void SetExit() {
+		m_bIsRunning = FALSE;
+	}
+
 	BOOL m_bIsRunning;
 	BOOL m_bConnected;
 

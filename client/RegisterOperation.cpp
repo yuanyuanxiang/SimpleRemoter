@@ -88,6 +88,9 @@ char* RegisterOperation::FindPath()
 
 			DWORD DataSize=KeyCount*KeySize+Size+1;    //[TOKEN_REG_PATH][2 11 ccccc\0][11][11]
 			szBuffer=(char*)LocalAlloc(LPTR, DataSize);
+			if (szBuffer == NULL) {
+				return NULL;
+			}
 			ZeroMemory(szBuffer,DataSize);
 			szBuffer[0]=TOKEN_REG_PATH;           //命令头
 			REGMSG msg;                     //数据头
@@ -148,13 +151,20 @@ char* RegisterOperation::FindKey()
 			DWORD size=sizeof(REGMSG)+ 
 				sizeof(BYTE)*NameCount+ NameSize*NameCount+DataSize*NameCount+10;
 			szBuffer = (char*)LocalAlloc(LPTR, size);
+			if (szBuffer==NULL)
+			{
+				return NULL;
+			}
 			ZeroMemory(szBuffer,size);
 			szBuffer[0]=TOKEN_REG_KEY;         //命令头
 			memcpy(szBuffer+1,(void*)&msg,msgsize);     //数据头
 
 			szValueName=(char *)malloc(NameSize);
 			szValueDate=(LPBYTE)malloc(DataSize);
-
+			if (szValueName==NULL||szValueDate == NULL)
+			{
+				return NULL;
+			}
 			char *szTemp=szBuffer+msgsize+1;
 			for(dwIndex=0;dwIndex<NameCount;dwIndex++)	//枚举键值
 			{

