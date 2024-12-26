@@ -71,7 +71,8 @@ BOOL CServicesDlg::OnInitDialog()
 
 int CServicesDlg::ShowServicesList(void)
 {
-	char	*szBuffer = (char *)(m_ContextObject->InDeCompressedBuffer.GetBuffer(1));
+	Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(1);
+	char	*szBuffer = tmp.c_str();
 	char	*szDisplayName;
 	char	*szServiceName;
 	char	*szRunWay;
@@ -169,7 +170,7 @@ void CServicesDlg::OnNMRClickList(NMHDR *pNMHDR, LRESULT *pResult)
 
 void CServicesDlg::OnReceiveComplete(void)
 {
-	switch (m_ContextObject->InDeCompressedBuffer.GetBuffer(0)[0])
+	switch (m_ContextObject->InDeCompressedBuffer.GetBYTE(0))
 	{
 	case TOKEN_SERVERLIST:
 		ShowServicesList();

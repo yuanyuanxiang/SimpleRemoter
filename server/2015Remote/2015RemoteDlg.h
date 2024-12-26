@@ -81,8 +81,8 @@ public:
 	NOTIFYICONDATA  m_Nid;
 #endif
 	CRITICAL_SECTION m_cs;
+	BOOL       isClosed;
 
-	UINT       m_iCount;
 	CBitmap m_bmOnline[2];
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();

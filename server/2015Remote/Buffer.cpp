@@ -6,6 +6,7 @@
 
 #define U_PAGE_ALIGNMENT   3
 #define F_PAGE_ALIGNMENT 3.0
+
 CBuffer::CBuffer(void)
 {
 	m_ulMaxLength = 0;
@@ -30,25 +31,29 @@ CBuffer::~CBuffer(void)
 }
 
 
-ULONG CBuffer::RemoveComletedBuffer(ULONG ulLength)
+ULONG CBuffer::RemoveCompletedBuffer(ULONG ulLength)
 {
-	if (ulLength >GetBufferMaxLength())   //如果传进的长度比内存的长度还大
+	EnterCriticalSection(&m_cs);
+
+	if (ulLength > m_ulMaxLength)   //如果传进的长度比内存的长度还大
 	{
+		LeaveCriticalSection(&m_cs);
 		return 0;
 	}
-	if (ulLength >GetBufferLength())  //如果传进的长度 比有效的数据长度还大
+	if (ulLength > ((ULONG)m_Ptr - (ULONG)m_Base))  //如果传进的长度 比有效的数据长度还大
 	{
-		ulLength = GetBufferLength();
+		ulLength = (ULONG)m_Ptr - (ULONG)m_Base;
 	}
 
 	if (ulLength)
 	{
-		MoveMemory(m_Base,m_Base+ulLength,GetBufferMaxLength() - ulLength);   //数组前移  [Shinexxxx??]
+		MoveMemory(m_Base,m_Base+ulLength, m_ulMaxLength - ulLength);   //数组前移  [Shinexxxx??]
 
 		m_Ptr -= ulLength;
 	}
 
-	DeAllocateBuffer(GetBufferLength());   
+	DeAllocateBuffer((ULONG)m_Ptr - (ULONG)m_Base);
+	LeaveCriticalSection(&m_cs);
 
 	return ulLength;
 }
@@ -57,44 +62,46 @@ ULONG CBuffer::ReadBuffer(PBYTE Buffer, ULONG ulLength)
 {
 	EnterCriticalSection(&m_cs);
 
-	if (ulLength > GetBufferMaxLength())
+	if (ulLength > m_ulMaxLength)
 	{
 		LeaveCriticalSection(&m_cs);
 		return 0;
 	}
-	if (ulLength > GetBufferLength())
+
+	if (ulLength > ((ULONG)m_Ptr - (ULONG)m_Base))
 	{
-		ulLength = GetBufferLength();
+		ulLength = (ULONG)m_Ptr - (ULONG)m_Base;
 	}
 
 	if (ulLength)
 	{
 		CopyMemory(Buffer,m_Base,ulLength);  
 
-		MoveMemory(m_Base,m_Base+ulLength,GetBufferMaxLength() - ulLength);
+		MoveMemory(m_Base,m_Base+ulLength, m_ulMaxLength - ulLength);
 		m_Ptr -= ulLength;
 	}
 
-	DeAllocateBuffer(GetBufferLength());   
+	DeAllocateBuffer((ULONG)m_Ptr - (ULONG)m_Base);
 
 	LeaveCriticalSection(&m_cs);
 	return ulLength;
 }
 
+// 私有: 无需加锁
 ULONG CBuffer::DeAllocateBuffer(ULONG ulLength)        
 {
-	if (ulLength < GetBufferLength())     
+	if (ulLength < ((ULONG)m_Ptr - (ULONG)m_Base))     
 		return 0;
 
 	ULONG ulNewMaxLength = (ULONG)ceil(ulLength / F_PAGE_ALIGNMENT) * U_PAGE_ALIGNMENT;  
 
-	if (GetBufferMaxLength() <= ulNewMaxLength) 
+	if (m_ulMaxLength <= ulNewMaxLength)
 	{
 		return 0;
 	}
 	PBYTE NewBase = (PBYTE) VirtualAlloc(NULL,ulNewMaxLength,MEM_COMMIT,PAGE_READWRITE);
 
-	ULONG ulv1 = GetBufferLength();  //算原先内存的有效长度
+	ULONG ulv1 = (ULONG)m_Ptr - (ULONG)m_Base;  //算原先内存的有效长度
 	CopyMemory(NewBase,m_Base,ulv1);
 
 	VirtualFree(m_Base,0,MEM_RELEASE);
@@ -113,7 +120,7 @@ BOOL CBuffer::WriteBuffer(PBYTE Buffer, ULONG ulLength)
 {
 	EnterCriticalSection(&m_cs);
 
-	if (ReAllocateBuffer(ulLength + GetBufferLength()) == -1)//10 +1   1024
+	if (ReAllocateBuffer(ulLength + ((ULONG)m_Ptr - (ULONG)m_Base)) == -1)//10 +1   1024
 	{
 		LeaveCriticalSection(&m_cs);
 		return false;
@@ -126,9 +133,10 @@ BOOL CBuffer::WriteBuffer(PBYTE Buffer, ULONG ulLength)
 	return TRUE;
 }
 
+// 私有: 无需加锁
 ULONG CBuffer::ReAllocateBuffer(ULONG ulLength)
 {
-	if (ulLength < GetBufferMaxLength())   
+	if (ulLength < m_ulMaxLength)
 		return 0;
 
 	ULONG  ulNewMaxLength = (ULONG)ceil(ulLength / F_PAGE_ALIGNMENT) * U_PAGE_ALIGNMENT;  
@@ -138,7 +146,9 @@ ULONG CBuffer::ReAllocateBuffer(ULONG ulLength)
 		return -1; 
 	}
 
-	ULONG ulv1 = GetBufferLength();   //原先的有效数据长度  
+
+	ULONG ulv1 = (ULONG)m_Ptr - (ULONG)m_Base; //原先的有效数据长度
+ 
 	CopyMemory(NewBase,m_Base,ulv1);
 
 	if (m_Base)
@@ -162,29 +172,75 @@ VOID CBuffer::ClearBuffer()
 	LeaveCriticalSection(&m_cs);
 }
 
-ULONG CBuffer::GetBufferLength() const //获得有效数据长度
+ULONG CBuffer::GetBufferLength() // 获得有效数据长度
 {
+	EnterCriticalSection(&m_cs);
 	if (m_Base == NULL)
+	{
+		LeaveCriticalSection(&m_cs);
 		return 0;
+	}
+	ULONG len = (ULONG)m_Ptr - (ULONG)m_Base;
+	LeaveCriticalSection(&m_cs);
 
-	return (ULONG)m_Ptr - (ULONG)m_Base;
+	return len;
 }
 
-
-ULONG CBuffer::GetBufferMaxLength() const
+// 此函数不是多线程安全的. 只在远程桌面使用了.
+LPBYTE CBuffer::GetBuffer(ULONG ulPos)
 {
-	return m_ulMaxLength;
+	EnterCriticalSection(&m_cs);
+	if (m_Base==NULL || ulPos >= ((ULONG)m_Ptr - (ULONG)m_Base))
+	{
+		LeaveCriticalSection(&m_cs);
+		return NULL;
+	}
+	LPBYTE result = m_Base + ulPos;
+	LeaveCriticalSection(&m_cs);
+
+	return result;
 }
 
-PBYTE CBuffer::GetBuffer(ULONG ulPos) const
+// 此函数是多线程安全的. 获取缓存，得到Buffer对象.
+Buffer CBuffer::GetMyBuffer(ULONG ulPos)
 {
-	if (m_Base==NULL)
+	EnterCriticalSection(&m_cs);
+	ULONG len = (ULONG)m_Ptr - (ULONG)m_Base;
+	if (m_Base == NULL || ulPos >= len)
 	{
+		LeaveCriticalSection(&m_cs);
+		return Buffer();
+	}
+	Buffer result = Buffer(m_Base+ulPos, len - ulPos);
+	LeaveCriticalSection(&m_cs);
+
+	return result;
+}
+
+// 此函数是多线程安全的. 获取缓存指定位置处的数值.
+BYTE CBuffer::GetBYTE(ULONG ulPos) {
+	EnterCriticalSection(&m_cs);
+	if (m_Base == NULL || ulPos >= ((ULONG)m_Ptr - (ULONG)m_Base))
+	{
+		LeaveCriticalSection(&m_cs);
 		return NULL;
 	}
-	if (ulPos>=GetBufferLength())
+	BYTE p = *(m_Base + ulPos);
+	LeaveCriticalSection(&m_cs);
+
+	return p;
+}
+
+// 此函数是多线程安全的. 将缓存拷贝至目标内存中.
+BOOL CBuffer::CopyBuffer(PVOID pDst, ULONG nLen, ULONG ulPos) {
+	EnterCriticalSection(&m_cs);
+	ULONG len = (ULONG)m_Ptr - (ULONG)m_Base;
+	if (m_Base == NULL || len - ulPos < nLen)
 	{
-		return NULL;
+		LeaveCriticalSection(&m_cs);
+		return FALSE;
 	}
-	return m_Base+ulPos;
+	memcpy(pDst, m_Base+ulPos, nLen);
+	LeaveCriticalSection(&m_cs);
+	return TRUE;
 }

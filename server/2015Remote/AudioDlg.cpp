@@ -106,12 +106,12 @@ void CAudioDlg::OnReceiveComplete(void)
 	CString	strString;
 	strString.Format("Receive %d KBytes", m_nTotalRecvBytes / 1024);
 	SetDlgItemText(IDC_TIPS, strString);
-	switch (m_ContextObject->InDeCompressedBuffer.GetBuffer(0)[0])
+	switch (m_ContextObject->InDeCompressedBuffer.GetBYTE(0))
 	{
 	case TOKEN_AUDIO_DATA:
 		{
-			m_AudioObject.PlayBuffer(m_ContextObject->InDeCompressedBuffer.GetBuffer(1), 
-				m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1);   //播放波形数据
+			Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(1);
+			m_AudioObject.PlayBuffer(tmp.Buf(), tmp.length());   //播放波形数据
 			break;
 		}
 

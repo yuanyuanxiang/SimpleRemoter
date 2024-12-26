@@ -225,3 +225,9 @@ TestRun在写入开机自启动项时先提升权限，以防止因权限不足�
 2.增加了使用VLD的操作方法，详见"server\2015Remote\stdafx.h"。
 注意：自VS2019开始，不支持XP系统了（微软已经声明这个变更）。如果有需要在XP系统进行监控的需求，推荐使用"2015Remote.sln"。
 如果使用VS2015编译，需将WindowsTargetPlatformVersion修改为8.1，将PlatformToolset修改为v140_xp。
+
+2024.12.26
+解决主控程序概率性崩溃的问题，增强主控程序运行的稳定性。本人未进行广泛测试，不保证彻底根治，但稳定性有明显改观。
+fix: client threads number excceeding bug
+fix: #19 the CBuffer causing server crash
+fix: showing the wrong host quantity in status bar
