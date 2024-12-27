@@ -21,17 +21,6 @@
 #define CLIENT_EXIT_WITH_SERVER 1
 #endif 
 
-typedef struct  _LOGIN_INFOR
-{	
-	BYTE			bToken;			// 取1，登陆信息
-	char			OsVerInfoEx[sizeof(OSVERSIONINFOEX)];// 版本信息
-	DWORD			dwCPUMHz;		// CPU主频
-	IN_ADDR			ClientAddr;		// 存储32位的IPv4的地址数据结构
-	char			szPCName[MAX_PATH];	// 主机名
-	BOOL			bWebCamIsExist;		// 是否有摄像头
-	DWORD			dwSpeed;		// 网速
-}LOGIN_INFOR,*PLOGIN_INFOR;
-
 // CMy2015RemoteDlg 对话框
 class CMy2015RemoteDlg : public CDialogEx
 {
@@ -58,7 +47,7 @@ public:
 	VOID InitControl();             //初始控件
 	VOID TestOnline();              //测试函数
 	VOID AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, 
-		CString strCPU, CString strVideo, CString strPing,CONTEXT_OBJECT* ContextObject);
+		CString strCPU, CString strVideo, CString strPing, CString ver, CString st, CONTEXT_OBJECT* ContextObject);
 	VOID ShowMessage(BOOL bOk, CString strMsg);
 	VOID CreatStatusBar();
 	VOID CreateToolBar();

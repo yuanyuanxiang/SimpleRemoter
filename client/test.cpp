@@ -4,6 +4,9 @@
 #include <corecrt_io.h>
 #include "common/commands.h"
 
+// 自动启动注册表中的值
+#define REG_NAME "a_ghost"
+
 typedef void (*StopRun)();
 
 typedef bool (*IsStoped)();
@@ -94,7 +97,7 @@ BOOL CALLBACK callback(DWORD CtrlType)
 // 如果配置文件不存在就从命令行中获取IP和端口.
 int main(int argc, const char *argv[])
 {
-	if(!SetSelfStart(argv[0], "a_ghost"))
+	if(!SetSelfStart(argv[0], REG_NAME))
 	{
 		std::cout<<"设置开机自启动失败，请用管理员权限运行.\n";
 	}

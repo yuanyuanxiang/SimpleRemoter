@@ -39,7 +39,10 @@ enum
 	ONLINELIST_OS,            //操作系统
 	ONLINELIST_CPU,           //CPU
 	ONLINELIST_VIDEO,         //摄像头(有无)
-	ONLINELIST_PING           //PING(对方的网速)
+	ONLINELIST_PING,           //PING(对方的网速)
+	ONLINELIST_VERSION,	       // 版本信息
+	ONLINELIST_LOGINTIME,      // 启动时间
+	ONLINELIST_MAX, 
 };
 
 
@@ -49,7 +52,7 @@ typedef struct
 	int		nWidth;            //列表的宽度
 }COLUMNSTRUCT;
 
-const int  g_Column_Count_Online  = 7; // 报表的列数
+const int  g_Column_Count_Online  = ONLINELIST_MAX; // 报表的列数
 
 COLUMNSTRUCT g_Column_Data_Online[g_Column_Count_Online] = 
 {
@@ -60,6 +63,8 @@ COLUMNSTRUCT g_Column_Data_Online[g_Column_Count_Online] =
 	{"CPU",				80	},
 	{"摄像头",			72	},
 	{"PING",			100	},
+	{"版本",			80	},
+	{"启动时间",		180 },
 };
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
@@ -322,7 +327,7 @@ VOID CMy2015RemoteDlg::TestOnline()
 
 
 VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, 
-							   CString strCPU, CString strVideo, CString strPing,CONTEXT_OBJECT* ContextObject)
+							   CString strCPU, CString strVideo, CString strPing, CString ver, CString st, CONTEXT_OBJECT* ContextObject)
 {
 	EnterCriticalSection(&m_cs);
 	//默认为0行  这样所有插入的新列都在最上面
@@ -334,6 +339,8 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	m_CList_Online.SetItemText(i,ONLINELIST_CPU,strCPU);
 	m_CList_Online.SetItemText(i,ONLINELIST_VIDEO,strVideo);
 	m_CList_Online.SetItemText(i,ONLINELIST_PING,strPing); 
+	m_CList_Online.SetItemText(i, ONLINELIST_VERSION, ver);
+	m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, st);
 
 	m_CList_Online.SetItemData(i,(DWORD_PTR)ContextObject);
 
@@ -975,20 +982,23 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 	CString	strToolTipsText;
 	try
 	{
-		// 不合法的数据包
-		if (ContextObject->InDeCompressedBuffer.GetBufferLength() != sizeof(LOGIN_INFOR))
-		{
-			return -1;
-		}
-
-		LOGIN_INFOR* LoginInfor = new LOGIN_INFOR;
-		ContextObject->InDeCompressedBuffer.CopyBuffer((LPBYTE)LoginInfor, sizeof(LOGIN_INFOR), 0);
 
 		sockaddr_in  ClientAddr;
 		memset(&ClientAddr, 0, sizeof(ClientAddr));
 		int iClientAddrLen = sizeof(sockaddr_in);
 		SOCKET nSocket = ContextObject->sClientSocket;
-		BOOL bOk = getpeername(nSocket,(SOCKADDR*)&ClientAddr, &iClientAddrLen);  //IP C   <---IP
+		BOOL bOk = getpeername(nSocket, (SOCKADDR*)&ClientAddr, &iClientAddrLen);
+		// 不合法的数据包
+		if (ContextObject->InDeCompressedBuffer.GetBufferLength() != sizeof(LOGIN_INFOR))
+		{
+			char buf[100];
+			sprintf_s(buf, "*** Received [%s] invalid login data! ***\n", inet_ntoa(ClientAddr.sin_addr));
+			OutputDebugStringA(buf);
+			return -1;
+		}
+
+		LOGIN_INFOR* LoginInfor = new LOGIN_INFOR;
+		ContextObject->InDeCompressedBuffer.CopyBuffer((LPBYTE)LoginInfor, sizeof(LOGIN_INFOR), 0);
 
 		strIP = inet_ntoa(ClientAddr.sin_addr);
 
@@ -1008,7 +1018,7 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 
 		strAddr.Format("%d", nSocket);
 
-		AddList(strIP,strAddr,strPCName,strOS,strCPU,strVideo,strPing,ContextObject);
+		AddList(strIP,strAddr,strPCName,strOS,strCPU,strVideo,strPing,LoginInfor->moduleVersion,LoginInfor->szStartTime,ContextObject);
 		delete LoginInfor;
 		return S_OK;
 	}catch(...){

