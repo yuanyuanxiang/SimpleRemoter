@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <corecrt_io.h>
+#include "common/commands.h"
 
 typedef void (*StopRun)();
 
@@ -18,12 +19,7 @@ IsStoped bExit = NULL;
 
 BOOL status = 0;
 
-struct CONNECT_ADDRESS
-{
-	DWORD dwFlag;
-	char  szServerIP[MAX_PATH];
-	int   iPort;
-}g_ConnectAddress={0x1234567,"",0};
+CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN,"",0 };
 
 //Ã·…˝»®œﬁ
 void DebugPrivilege()

