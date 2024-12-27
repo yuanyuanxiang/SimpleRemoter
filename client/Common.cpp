@@ -31,9 +31,10 @@ HANDLE _CreateThread (LPSECURITY_ATTRIBUTES  SecurityAttributes,
 	hThread = (HANDLE)CreateThread(SecurityAttributes, 
 		dwStackSize,(LPTHREAD_START_ROUTINE)ThreadProc, &ThreadArgList, 
 		dwCreationFlags, (LPDWORD)ThreadId);	
-
-	WaitForSingleObject(ThreadArgList.hEvent, INFINITE);
-	CloseHandle(ThreadArgList.hEvent);
+	if (ThreadArgList.hEvent != NULL) {
+		WaitForSingleObject(ThreadArgList.hEvent, INFINITE);
+		CloseHandle(ThreadArgList.hEvent);
+	}
 
 	return hThread;
 }

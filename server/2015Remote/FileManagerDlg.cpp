@@ -170,7 +170,7 @@ END_MESSAGE_MAP()
 
 int	GetIconIndex(LPCTSTR lpFileName, DWORD dwFileAttributes)
 {
-	SHFILEINFO	sfi;
+	SHFILEINFO	sfi = {};
 	if (dwFileAttributes == INVALID_FILE_ATTRIBUTES)
 		dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
 	else
@@ -359,7 +359,7 @@ void CFileManagerDlg::FixedLocalDriveList()
 		m_list_local.SetItemData(nItem, 1);
 		if (lstrlen(FileSystem) == 0)
 		{
-			SHFILEINFO	sfi;
+			SHFILEINFO	sfi = {};
 			SHGetFileInfo(pDrive, FILE_ATTRIBUTE_NORMAL, &sfi,sizeof(SHFILEINFO), SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES);
 			m_list_local.SetItemText(nItem, 1, sfi.szTypeName);
 		}
@@ -467,7 +467,7 @@ void CFileManagerDlg::FixedLocalFileList(CString directory)
 			int nItem = m_list_local.InsertItem(nItemIndex++, file.GetFileName(), 
 				GetIconIndex(file.GetFileName(), GetFileAttributes(file.GetFilePath())));
 			m_list_local.SetItemData(nItem,	file.IsDirectory());
-			SHFILEINFO	sfi;
+			SHFILEINFO	sfi = {};
 			SHGetFileInfo(file.GetFileName(), FILE_ATTRIBUTE_NORMAL, &sfi,sizeof(SHFILEINFO), SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES);   
 			m_list_local.SetItemText(nItem, 2, sfi.szTypeName);
 
@@ -1045,7 +1045,7 @@ void CFileManagerDlg::OnDblclkListRemote(NMHDR* pNMHDR, LRESULT* pResult)
 void CFileManagerDlg::FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen)
 {
 	// ÷ÿ–¬…Ë÷√ImageList
-	SHFILEINFO	sfi;
+	SHFILEINFO	sfi = {};
 	HIMAGELIST hImageListLarge = (HIMAGELIST)SHGetFileInfo(NULL, 0, &sfi,sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_LARGEICON);
 	HIMAGELIST hImageListSmall = (HIMAGELIST)SHGetFileInfo(NULL, 0, &sfi,sizeof(SHFILEINFO), SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
 	ListView_SetImageList(m_list_remote.m_hWnd, hImageListLarge, LVSIL_NORMAL);
@@ -1097,7 +1097,7 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen)
 				{
 					nItem = m_list_remote.InsertItem(nItemIndex++, pszFileName, GetIconIndex(pszFileName, nType));
 					m_list_remote.SetItemData(nItem, nType == FILE_ATTRIBUTE_DIRECTORY);
-					SHFILEINFO	sfi;
+					SHFILEINFO	sfi = {};
 					SHGetFileInfo(pszFileName, FILE_ATTRIBUTE_NORMAL | nType, &sfi,sizeof(SHFILEINFO), SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES);   
 					m_list_remote.SetItemText(nItem, 2, sfi.szTypeName);
 				}

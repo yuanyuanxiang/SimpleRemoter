@@ -1655,7 +1655,7 @@ public:
     BYTE Green;
     BYTE Red;
     BYTE Alpha;
-    DXBASESAMPLE() {}
+    DXBASESAMPLE():Blue(0), Green(0), Red(0), Alpha(0) {}
     DXBASESAMPLE(const BYTE alpha, const BYTE red, const BYTE green, const BYTE blue) :
         Alpha(alpha),
         Red(red),

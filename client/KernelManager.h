@@ -12,7 +12,7 @@
 #include "Manager.h"
 #include <vector>
 
-#define MAX_THREADNUM 0x1000
+#define MAX_THREADNUM 0x1000>>2
 
 // 线程信息结构体, 包含3个成员: 运行状态(run)、句柄(h)和通讯客户端(p).
 struct ThreadInfo

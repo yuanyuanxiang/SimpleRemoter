@@ -55,11 +55,11 @@ DWORD CVideoManager::WorkThread(LPVOID lParam)
 	while (This->m_bIsWorking)
 	{
 		// 限制速度
-		int span = sleep-(GetTickCount() - dwLastScreen);
+		int span = sleep-(GetTickCount64() - dwLastScreen);
 		Sleep(span > 0 ? span : 1);
 		if (span < 0)
 			printf("SendScreen Span = %d ms\n", span);
-		dwLastScreen = GetTickCount();
+		dwLastScreen = GetTickCount64();
 		if(FALSE == This->SendNextScreen())
 			break;
 	}

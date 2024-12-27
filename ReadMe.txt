@@ -231,3 +231,8 @@ TestRun在写入开机自启动项时先提升权限，以防止因权限不足�
 fix: client threads number excceeding bug
 fix: #19 the CBuffer causing server crash
 fix: showing the wrong host quantity in status bar
+
+2024.12.27
+solve some issues according to code analysis result
+reorg: Move commands to common/commands.h
+此次提交的重点是将重复代码移动到公共目录，减少代码的冗余。

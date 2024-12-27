@@ -96,7 +96,9 @@ inline string GetIPAddress(const char *hostName)
 	for (int i = 0; host->h_addr_list[i]; ++i)
 		printf("获取的第%d个IP: %s\n", i+1, inet_ntoa(*(struct in_addr*)host->h_addr_list[i]));
 #endif
-	return host ? inet_ntoa(*(struct in_addr*)host->h_addr_list[0]) : "";
+	if (host == NULL || host->h_addr_list == NULL)
+		return "";
+	return host->h_addr_list[0] ? inet_ntoa(*(struct in_addr*)host->h_addr_list[0]) : "";
 }
 
 BOOL IOCPClient::ConnectServer(char* szServerIP, unsigned short uPort)
@@ -153,7 +155,7 @@ BOOL IOCPClient::ConnectServer(char* szServerIP, unsigned short uPort)
 DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 {
 	IOCPClient* This = (IOCPClient*)lParam;
-	char szBuffer[MAX_RECV_BUFFER] = {0};
+	char* szBuffer = new char[MAX_RECV_BUFFER];
 	fd_set fd;
 	const struct timeval tm = { 2, 0 };
 
@@ -180,9 +182,9 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 		}
 		else if (iRet > 0)
 		{
-			memset(szBuffer, 0, sizeof(szBuffer));
-			int iReceivedLength = recv(This->m_sClientSocket,
-				szBuffer,sizeof(szBuffer), 0); //接收主控端发来的数据
+			memset(szBuffer, 0, MAX_RECV_BUFFER);
+			int iReceivedLength = recv(This->m_sClientSocket, 
+				szBuffer, MAX_RECV_BUFFER, 0); //接收主控端发来的数据
 			if (iReceivedLength <= 0)
 			{
 				int a = GetLastError();
@@ -205,6 +207,7 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 	}
 	This->m_bWorkThread = S_STOP;
 	This->m_bIsRunning = FALSE;
+	delete[] szBuffer;
 
 	return 0xDEAD;
 }

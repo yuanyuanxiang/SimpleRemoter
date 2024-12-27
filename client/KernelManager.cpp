@@ -164,6 +164,9 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	default:
 		{
 			OutputDebugStringA("======> Error operator\n");
+			char buffer[256] = {};
+			strncpy(buffer, (const char*)(szBuffer+1), sizeof(buffer));
+			printf("!!! Unknown command: %s\n", buffer);
 			if (m_ulThreadCount != -1) {
 				delete m_hThread[m_ulThreadCount].p;
 				m_hThread[m_ulThreadCount].p = NULL;

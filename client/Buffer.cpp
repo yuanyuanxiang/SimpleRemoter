@@ -66,7 +66,8 @@ ULONG CBuffer::DeAllocateBuffer(ULONG ulLength)
 		return 0;
 	}
 	PBYTE NewBase = (PBYTE) VirtualAlloc(NULL,ulNewMaxLength,MEM_COMMIT,PAGE_READWRITE);
-
+	if (NewBase == NULL)
+		return 0;
 	ULONG ulv1 = GetBufferLength();  //算原先内存的有效长度
 	CopyMemory(NewBase,m_Base,ulv1);
 
