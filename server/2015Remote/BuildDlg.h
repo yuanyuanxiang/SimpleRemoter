@@ -22,4 +22,6 @@ public:
 	CString m_strIP;
 	CString m_strPort;
 	afx_msg void OnBnClickedOk();
+	virtual BOOL OnInitDialog();
+	CComboBox m_ComboExe;
 };

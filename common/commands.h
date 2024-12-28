@@ -9,6 +9,8 @@
 
 #define FLAG_FINDEN 0x1234567
 
+#define FLAG_GHOST	0x7654321
+
 // 当程序功能明显发生变化时，应该更新这个值，以便对被控程序进行区分
 #define DLL_VERSION "20241228"		// DLL版本
 
@@ -84,6 +86,7 @@ enum
 	COMMAND_SERVICES,				// 服务管理
 	COMMAND_REGEDIT,
 	COMMAND_TALK,					// 即时消息验证
+	COMMAND_UPDATE = 53,			// 客户端升级
 
 	// 服务端发出的标识
 	TOKEN_AUTH = 100,				// 要求验证
@@ -139,6 +142,16 @@ typedef struct CONNECT_ADDRESS
 	unsigned long	dwFlag;
 	char			szServerIP[_MAX_PATH];
 	int				iPort;
+	const char* ServerIP()const {
+		return szServerIP;
+	}
+	int ServerPort()const {
+		return iPort;
+	}
+	void SetServer(const char* ip, int port) {
+		strcpy_s(szServerIP, ip);
+		iPort = port;
+	}
 } CONNECT_ADDRESS ;
 
 // 服务上线后发送的计算机信息

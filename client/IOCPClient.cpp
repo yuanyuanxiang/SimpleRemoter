@@ -101,7 +101,7 @@ inline string GetIPAddress(const char *hostName)
 	return host->h_addr_list[0] ? inet_ntoa(*(struct in_addr*)host->h_addr_list[0]) : "";
 }
 
-BOOL IOCPClient::ConnectServer(char* szServerIP, unsigned short uPort)
+BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 {
 	m_sClientSocket = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);    //´«Êä²ã
 

@@ -72,13 +72,14 @@ public:
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 
-	CBitmap m_bmOnline[2];
+	CBitmap m_bmOnline[3];
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnOnlineMessage();
 	afx_msg void OnOnlineDelete();
+	afx_msg void OnOnlineUpdate();
 	afx_msg void OnAbout();
 	afx_msg void OnIconNotify(WPARAM wParam,LPARAM lParam);
 	afx_msg void OnNotifyShow();
