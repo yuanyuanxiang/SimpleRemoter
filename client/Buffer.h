@@ -8,12 +8,11 @@ public:
 	CBuffer(void);
 	~CBuffer(void);
 
-	ULONG GetBufferMaxLength() const;
 	ULONG ReadBuffer(PBYTE Buffer, ULONG ulLength);
 	ULONG GetBufferLength() const; //获得有效数据长度
-	ULONG DeAllocateBuffer(ULONG ulLength);
+	VOID DeAllocateBuffer(ULONG ulLength);
 	VOID ClearBuffer();
-	ULONG ReAllocateBuffer(ULONG ulLength);
+	BOOL ReAllocateBuffer(ULONG ulLength);
 	BOOL WriteBuffer(PBYTE Buffer, ULONG ulLength);
 	PBYTE GetBuffer(ULONG ulPos=0) const;
 

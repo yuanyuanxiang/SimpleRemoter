@@ -30,11 +30,11 @@ public:
 	IOCPClient(bool exit_while_disconnect = false);
 	virtual ~IOCPClient();
 	SOCKET   m_sClientSocket;
-
+	CBuffer	 m_CompressedBuffer;
 	BOOL	 m_bWorkThread;
 	HANDLE   m_hWorkThread;
 	
-	BOOL ConnectServer(char* szServerIP, unsigned short uPort);
+	BOOL ConnectServer(const char* szServerIP, unsigned short uPort);
 	static DWORD WINAPI WorkThreadProc(LPVOID lParam);
 
 	VOID OnServerReceiving(char* szBuffer, ULONG ulReceivedLength);

@@ -21,17 +21,6 @@
 #define CLIENT_EXIT_WITH_SERVER 1
 #endif 
 
-typedef struct  _LOGIN_INFOR
-{	
-	BYTE			bToken;			// 取1，登陆信息
-	char			OsVerInfoEx[sizeof(OSVERSIONINFOEX)];// 版本信息
-	DWORD			dwCPUMHz;		// CPU主频
-	IN_ADDR			ClientAddr;		// 存储32位的IPv4的地址数据结构
-	char			szPCName[MAX_PATH];	// 主机名
-	BOOL			bWebCamIsExist;		// 是否有摄像头
-	DWORD			dwSpeed;		// 网速
-}LOGIN_INFOR,*PLOGIN_INFOR;
-
 // CMy2015RemoteDlg 对话框
 class CMy2015RemoteDlg : public CDialogEx
 {
@@ -58,7 +47,7 @@ public:
 	VOID InitControl();             //初始控件
 	VOID TestOnline();              //测试函数
 	VOID AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, 
-		CString strCPU, CString strVideo, CString strPing,CONTEXT_OBJECT* ContextObject);
+		CString strCPU, CString strVideo, CString strPing, CString ver, CString st, CONTEXT_OBJECT* ContextObject);
 	VOID ShowMessage(BOOL bOk, CString strMsg);
 	VOID CreatStatusBar();
 	VOID CreateToolBar();
@@ -83,13 +72,14 @@ public:
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 
-	CBitmap m_bmOnline[2];
+	CBitmap m_bmOnline[3];
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnOnlineMessage();
 	afx_msg void OnOnlineDelete();
+	afx_msg void OnOnlineUpdate();
 	afx_msg void OnAbout();
 	afx_msg void OnIconNotify(WPARAM wParam,LPARAM lParam);
 	afx_msg void OnNotifyShow();

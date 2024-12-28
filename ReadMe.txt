@@ -236,3 +236,9 @@ fix: showing the wrong host quantity in status bar
 solve some issues according to code analysis result
 reorg: Move commands to common/commands.h
 此次提交的重点是将重复代码移动到公共目录，减少代码的冗余。
+
+2024.12.28
+1.修改了注册指令内容，新生成的主控程序和被控程序不能和以往的程序混用!! 预留了字段，以便未来之需。
+2.解决客户端接收大数据包的问题! 主控程序增加显示被控端版本信息，以便实现针对老版本在线更新(仅限基于TestRun的服务)的能力。
+在主控程序上面增加了显示被控端启动时间的功能，以便掌握被控端程序的稳定性。
+3.完善生成服务程序的功能。

