@@ -30,101 +30,99 @@ CBuffer::~CBuffer(void)
 
 ULONG CBuffer::ReadBuffer(PBYTE Buffer, ULONG ulLength)
 {
-	if (ulLength > GetBufferMaxLength())
+	if (ulLength > m_ulMaxLength)
 	{
 		return 0;
 	}
-	if (ulLength > GetBufferLength())
+	ULONG len = (ULONG)m_Ptr - (ULONG)m_Base;
+	if (ulLength > len)
 	{
-		ulLength = GetBufferLength();
+		ulLength = len;
 	}
 
 	if (ulLength)
 	{
 		CopyMemory(Buffer,m_Base,ulLength);  
 
-		MoveMemory(m_Base,m_Base+ulLength,GetBufferMaxLength() - ulLength);
+		MoveMemory(m_Base,m_Base+ulLength, m_ulMaxLength - ulLength);
 		m_Ptr -= ulLength;
 	}
 
-	DeAllocateBuffer(GetBufferLength());   
+	DeAllocateBuffer((ULONG)m_Ptr - (ULONG)m_Base);
 
 	return ulLength;
 }
 
 
-
-ULONG CBuffer::DeAllocateBuffer(ULONG ulLength)        
+// 重新分配内存大小
+VOID CBuffer::DeAllocateBuffer(ULONG ulLength)        
 {
-	if (ulLength < GetBufferLength())     
-		return 0;
+	int len = (ULONG)m_Ptr - (ULONG)m_Base;
+	if (ulLength < len)
+		return;
 
 	ULONG ulNewMaxLength = (ULONG)ceil(ulLength / F_PAGE_ALIGNMENT) * U_PAGE_ALIGNMENT;  
 
-	if (GetBufferMaxLength() <= ulNewMaxLength) 
+	if (m_ulMaxLength <= ulNewMaxLength)
 	{
-		return 0;
+		return;
 	}
 	PBYTE NewBase = (PBYTE) VirtualAlloc(NULL,ulNewMaxLength,MEM_COMMIT,PAGE_READWRITE);
 	if (NewBase == NULL)
-		return 0;
-	ULONG ulv1 = GetBufferLength();  //算原先内存的有效长度
-	CopyMemory(NewBase,m_Base,ulv1);
+		return;
+
+	CopyMemory(NewBase,m_Base,len);
 
 	VirtualFree(m_Base,0,MEM_RELEASE);
 
 	m_Base = NewBase;
 
-	m_Ptr = m_Base + ulv1;
+	m_Ptr = m_Base + len;
 
 	m_ulMaxLength = ulNewMaxLength;
-
-	return m_ulMaxLength;
 }
 
 
 BOOL CBuffer::WriteBuffer(PBYTE Buffer, ULONG ulLength)
 {
-	if (ReAllocateBuffer(ulLength + GetBufferLength()) == -1)//10 +1   1024
+	if (ReAllocateBuffer(ulLength + ((ULONG)m_Ptr - (ULONG)m_Base)) == FALSE)
 	{
-		return false;
+		return FALSE;
 	}
 
-	CopyMemory(m_Ptr,Buffer,ulLength);//Hello 5
-
+	CopyMemory(m_Ptr, Buffer, ulLength);
 	m_Ptr+=ulLength;
+
 	return TRUE;
 }
 
 
-
-ULONG CBuffer::ReAllocateBuffer(ULONG ulLength)
+// 当缓存长度不足时重新分配
+BOOL CBuffer::ReAllocateBuffer(ULONG ulLength)
 {
-	if (ulLength < GetBufferMaxLength())   
-		return 0;
+	if (ulLength < m_ulMaxLength)
+		return TRUE;
 
 	ULONG  ulNewMaxLength = (ULONG)ceil(ulLength / F_PAGE_ALIGNMENT) * U_PAGE_ALIGNMENT;  
 	PBYTE  NewBase  = (PBYTE) VirtualAlloc(NULL,ulNewMaxLength,MEM_COMMIT,PAGE_READWRITE);
 	if (NewBase == NULL)
 	{
-		return -1; 
+		return FALSE; 
 	}
 
-	ULONG ulv1 = GetBufferLength();   //原先的有效数据长度  
-	CopyMemory(NewBase,m_Base,ulv1);
+	ULONG len = (ULONG)m_Ptr - (ULONG)m_Base;
+	CopyMemory(NewBase, m_Base, len);
 
 	if (m_Base)
 	{
 		VirtualFree(m_Base,0,MEM_RELEASE);
 	}
 	m_Base = NewBase;
-	m_Ptr = m_Base + ulv1; //1024
+	m_Ptr = m_Base + len;
+	m_ulMaxLength = ulNewMaxLength;
 
-	m_ulMaxLength = ulNewMaxLength;  //2048
-
-	return m_ulMaxLength;
+	return TRUE;
 }
-
 
 
 VOID CBuffer::ClearBuffer()
@@ -136,27 +134,15 @@ VOID CBuffer::ClearBuffer()
 
 
 
-ULONG CBuffer::GetBufferLength() const //获得有效数据长度
+ULONG CBuffer::GetBufferLength() const 
 {
-	if (m_Base == NULL)
-		return 0;
-
 	return (ULONG)m_Ptr - (ULONG)m_Base;
 }
 
 
-ULONG CBuffer::GetBufferMaxLength() const
-{
-	return m_ulMaxLength;
-}
-
 PBYTE CBuffer::GetBuffer(ULONG ulPos) const
 {
-	if (m_Base==NULL)
-	{
-		return NULL;
-	}
-	if (ulPos>=GetBufferLength())
+	if (m_Base==NULL || ulPos>=((ULONG)m_Ptr - (ULONG)m_Base))
 	{
 		return NULL;
 	}

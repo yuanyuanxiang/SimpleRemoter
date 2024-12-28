@@ -219,14 +219,14 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 	{
 		assert (ulLength > 0);	
 		//以下接到数据进行解压缩
-		CBuffer m_CompressedBuffer;
 		m_CompressedBuffer.WriteBuffer((LPBYTE)szBuffer, ulLength);
 
 		//检测数据是否大于数据头大小 如果不是那就不是正确的数据
 		while (m_CompressedBuffer.GetBufferLength() > HDR_LENGTH)
 		{
 			char szPacketFlag[FLAG_LENGTH + 3] = {0};
-			CopyMemory(szPacketFlag, m_CompressedBuffer.GetBuffer(),FLAG_LENGTH);
+			LPBYTE src = m_CompressedBuffer.GetBuffer();
+			CopyMemory(szPacketFlag, src, FLAG_LENGTH);
 			//判断数据头
 			if (memcmp(m_szPacketFlag, szPacketFlag, FLAG_LENGTH) != 0)
 			{
@@ -238,8 +238,8 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 				sizeof(ULONG));
 
 			//--- 数据的大小正确判断
-			if (ulPackTotalLength && 
-				(m_CompressedBuffer.GetBufferLength()) >= ulPackTotalLength)
+			ULONG len = m_CompressedBuffer.GetBufferLength();
+			if (ulPackTotalLength && len >= ulPackTotalLength)
 			{
 				m_CompressedBuffer.ReadBuffer((PBYTE)szPacketFlag, FLAG_LENGTH);//读取各种头部 shine
 
@@ -270,7 +270,7 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 						m_DeCompressedBuffer.GetBufferLength());
 				}
 				else{
-					printf("[ERROR] uncompress failed \n");
+					printf("[ERROR] uncompress fail: dstLen %d, srcLen %d\n", ulOriginalLength, ulCompressedLength);
 					delete [] CompressedBuffer;
 					delete [] DeCompressedBuffer;
 					throw "Bad Buffer";
@@ -278,11 +278,17 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 
 				delete [] CompressedBuffer;
 				delete [] DeCompressedBuffer;
+#if _DEBUG
+				printf("[INFO] uncompress succeed data len: %d expect: %d\n", len, ulPackTotalLength);
+#endif
 			}
-			else
+			else {
+				printf("[WARNING] OnServerReceiving incomplete data: %d expect: %d\n", len, ulPackTotalLength);
 				break;
+			}
 		}
 	}catch(...) { 
+		m_CompressedBuffer.ClearBuffer();
 		printf("[ERROR] OnServerReceiving catch an error \n");
 	}
 }

@@ -30,7 +30,7 @@ public:
 	IOCPClient(bool exit_while_disconnect = false);
 	virtual ~IOCPClient();
 	SOCKET   m_sClientSocket;
-
+	CBuffer	 m_CompressedBuffer;
 	BOOL	 m_bWorkThread;
 	HANDLE   m_hWorkThread;
 	
