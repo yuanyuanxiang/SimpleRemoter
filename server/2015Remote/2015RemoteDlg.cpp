@@ -42,6 +42,7 @@ enum
 	ONLINELIST_PING,           //PING(对方的网速)
 	ONLINELIST_VERSION,	       // 版本信息
 	ONLINELIST_LOGINTIME,      // 启动时间
+	ONLINELIST_CLIENTTYPE,		// 客户端类型
 	ONLINELIST_MAX, 
 };
 
@@ -64,7 +65,8 @@ COLUMNSTRUCT g_Column_Data_Online[g_Column_Count_Online] =
 	{"摄像头",			72	},
 	{"PING",			100	},
 	{"版本",			80	},
-	{"启动时间",		180 },
+	{"启动时间",		150 },
+	{"类型",			50 },
 };
 
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
@@ -329,7 +331,7 @@ VOID CMy2015RemoteDlg::TestOnline()
 
 
 VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, 
-							   CString strCPU, CString strVideo, CString strPing, CString ver, CString st, CONTEXT_OBJECT* ContextObject)
+							   CString strCPU, CString strVideo, CString strPing, CString ver, CString st, CString tp, CONTEXT_OBJECT* ContextObject)
 {
 	EnterCriticalSection(&m_cs);
 	//默认为0行  这样所有插入的新列都在最上面
@@ -343,6 +345,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	m_CList_Online.SetItemText(i,ONLINELIST_PING,strPing); 
 	m_CList_Online.SetItemText(i, ONLINELIST_VERSION, ver);
 	m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, st);
+	m_CList_Online.SetItemText(i, ONLINELIST_CLIENTTYPE, tp.IsEmpty()?"DLL":tp);
 
 	m_CList_Online.SetItemData(i,(DWORD_PTR)ContextObject);
 
@@ -1070,8 +1073,8 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 		strVideo = LoginInfor->bWebCamIsExist ? "有" : "无";
 
 		strAddr.Format("%d", nSocket);
-
-		AddList(strIP,strAddr,strPCName,strOS,strCPU,strVideo,strPing,LoginInfor->moduleVersion,LoginInfor->szStartTime,ContextObject);
+		AddList(strIP,strAddr,strPCName,strOS,strCPU,strVideo,strPing,LoginInfor->moduleVersion,LoginInfor->szStartTime, 
+			LoginInfor->szReserved,ContextObject);
 		delete LoginInfor;
 		return S_OK;
 	}catch(...){

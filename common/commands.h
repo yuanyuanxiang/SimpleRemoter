@@ -7,12 +7,14 @@
 #define _MAX_PATH 260
 #endif
 
+// 以下2个数字需全局唯一，否则在生成服务时会出问题
+
 #define FLAG_FINDEN 0x1234567
 
 #define FLAG_GHOST	0x7654321
 
 // 当程序功能明显发生变化时，应该更新这个值，以便对被控程序进行区分
-#define DLL_VERSION "20241228"		// DLL版本
+#define DLL_VERSION "20241229"		// DLL版本
 
 // 命令枚举列表
 enum
@@ -136,21 +138,40 @@ enum
 	SERVER_EXIT,					// 主控端退出
 };
 
+#define CLIENT_TYPE_DLL			0	// 客户端代码以DLL运行
+#define CLIENT_TYPE_ONE			1	// 客户端代码以单个EXE运行
+
 // 所连接的主控程序信息
 typedef struct CONNECT_ADDRESS
 {
+public:
 	unsigned long	dwFlag;
 	char			szServerIP[_MAX_PATH];
 	int				iPort;
+	int				iType;
+
+public:
+	void SetType(int typ) {
+		iType = typ;
+	}
+	const unsigned long & Flag() const {
+		return dwFlag;
+	}
 	const char* ServerIP()const {
 		return szServerIP;
 	}
 	int ServerPort()const {
 		return iPort;
 	}
+	int ClientType()const {
+		return iType;
+	}
 	void SetServer(const char* ip, int port) {
 		strcpy_s(szServerIP, ip);
 		iPort = port;
+	}
+	bool IsValid()const {
+		return strlen(szServerIP) != 0 && iPort > 0;
 	}
 } CONNECT_ADDRESS ;
 

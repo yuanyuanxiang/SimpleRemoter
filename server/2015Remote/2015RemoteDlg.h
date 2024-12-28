@@ -47,7 +47,7 @@ public:
 	VOID InitControl();             //³õÊ¼¿Ø¼þ
 	VOID TestOnline();              //²âÊÔº¯Êý
 	VOID AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, 
-		CString strCPU, CString strVideo, CString strPing, CString ver, CString st, CONTEXT_OBJECT* ContextObject);
+		CString strCPU, CString strVideo, CString strPing, CString ver, CString st, CString tp, CONTEXT_OBJECT* ContextObject);
 	VOID ShowMessage(BOOL bOk, CString strMsg);
 	VOID CreatStatusBar();
 	VOID CreateToolBar();

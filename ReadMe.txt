@@ -242,3 +242,16 @@ reorg: Move commands to common/commands.h
 2.解决客户端接收大数据包的问题! 主控程序增加显示被控端版本信息，以便实现针对老版本在线更新(仅限基于TestRun的服务)的能力。
 在主控程序上面增加了显示被控端启动时间的功能，以便掌握被控端程序的稳定性。
 3.完善生成服务程序的功能。
+
+2024.12.29
+增加显示被控程序"类型"的功能：如果被控程序为单个EXE则显示为"EXE"，如果被控程序为EXE调用动态库形式，则显示为"DLL".
+当前，只有类型为DLL的服务支持在线升级。本次提交借机对前一个更新中的"预留字段"进行了验证。
+
+
+
+
+
+
+QQ：962914132
+联系方式：[Telegram](https://t.me/doge_grandfather) [Email](mailto:yuanyuanxiang163@gmail.com) [LinkedIn](https://www.linkedin.com/in/wishyuanqi)
+问题报告：请提交 [Issues](https://github.com/yuanyuanxiang/SimpleRemoter/issues) 欢迎提交 [Merge requests](https://github.com/yuanyuanxiang/SimpleRemoter/pulls)

