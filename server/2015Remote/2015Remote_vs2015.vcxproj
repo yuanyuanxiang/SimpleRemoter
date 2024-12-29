@@ -197,7 +197,7 @@
     <ResourceCompile Include="2015Remote.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="..\..\ReadMe.txt" />
+    <Text Include="..\..\ReadMe.md" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\Bitmap_4.bmp" />
