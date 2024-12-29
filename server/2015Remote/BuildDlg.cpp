@@ -54,7 +54,21 @@ void CBuildDlg::OnBnClickedOk()
 	DWORD dwFileSize;
 	UpdateData(TRUE);
 	int index = m_ComboExe.GetCurSel();
-	CString file = index == 0 ? "TestRun.exe" : (index == 1 ? "ghost.exe" : "");
+	CString file;
+	switch (index)
+	{
+	case CLIENT_TYPE_DLL:
+		file = "TestRun.exe";
+		break;
+	case CLIENT_TYPE_ONE:
+		file = "ghost.exe";
+		break;
+	case CLIENT_TYPE_MODULE:
+		file = "ServerDll.dll";
+		break;
+	default:
+		break;
+	}
 	if (file.IsEmpty())
 	{
 		MessageBox("无效输入参数, 请重新生成服务!");
@@ -107,7 +121,13 @@ void CBuildDlg::OnBnClickedOk()
 		}
 		memcpy(szBuffer+iOffset,&g_ConnectAddress,sizeof(g_ConnectAddress));
 		//保存到文件
-		strcpy(p+1, "ClientDemo.exe");
+		if (index == CLIENT_TYPE_MODULE)
+		{
+			strcpy(p + 1, "ClientDemo.dll");
+		}
+		else {
+			strcpy(p + 1, "ClientDemo.exe");
+		}
 		strSeverFile = path;
 		DeleteFileA(path);
 		BOOL r=File.Open(strSeverFile,CFile::typeBinary|CFile::modeCreate|CFile::modeWrite);
@@ -157,8 +177,9 @@ BOOL CBuildDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	// TODO:  在此添加额外的初始化
-	m_ComboExe.InsertString(0, "TestRun.exe");
-	m_ComboExe.InsertString(1, "ghost.exe");
+	m_ComboExe.InsertString(CLIENT_TYPE_DLL, "TestRun.exe");
+	m_ComboExe.InsertString(CLIENT_TYPE_ONE, "ghost.exe");
+	m_ComboExe.InsertString(CLIENT_TYPE_MODULE, "ServerDll.dll");
 	m_ComboExe.SetCurSel(0);
 
 	return TRUE;  // return TRUE unless you set the focus to a control

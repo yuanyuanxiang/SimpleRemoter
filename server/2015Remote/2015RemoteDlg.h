@@ -53,8 +53,8 @@ public:
 	VOID CreateToolBar();
 	VOID CreateNotifyBar();
 	VOID CreateSolidMenu();	
-	VOID ListenPort();
-	VOID Activate(int nPort,int nMaxConnection);
+	BOOL ListenPort();
+	BOOL Activate(int nPort,int nMaxConnection);
 
 	static VOID CALLBACK NotifyProc(CONTEXT_OBJECT* ContextObject);
 	static VOID CALLBACK OfflineProc(CONTEXT_OBJECT* ContextObject);
@@ -75,6 +75,7 @@ public:
 	CBitmap m_bmOnline[3];
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();
+			void Release();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnOnlineMessage();

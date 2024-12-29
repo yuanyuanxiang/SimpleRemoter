@@ -38,6 +38,12 @@
 // VS2017以前版本的VLD: https://kinddragon.github.io/vld
 // VS2019使用的VLD（支持以往的VS版本, 推荐）: https://github.com/oneiric/vld/releases/tag/v2.7.0
 // 如果要将受控端程序放到其他机器上面运行, 请使用Release模式生成的程序, 以解除对VLD的依赖; 否则你需要将VLD相关文件一同拷贝.
+// 对于VLD提示内容泄露，但是追踪不了函数调用堆栈的情况，请启用使用符号服务器自动下载。这可能引起调试程序的时候变慢。
+// 确保你的调试工具（如 Visual Studio 或 WinDbg）配置了符号服务器。
+// 符号服务器会自动下载缺失的符号文件，包括 dbghelp.pdb，并将其缓存到本地符号路径。
+// 配置符号服务器（以 Visual Studio 为例）：在 Visual Studio 中，打开 调试 > 选项 > 符号。
+// 勾选 Microsoft Symbol Servers. 指定符号缓存目录，例如 "C:\Symbols"。
+// 调试时，缺失的符号（如 dbghelp.pdb）会自动下载到缓存目录。
 #include "vld.h"
 
 #include "targetver.h"

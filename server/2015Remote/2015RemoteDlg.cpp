@@ -198,10 +198,10 @@ void CMy2015RemoteDlg::OnIconNotify(WPARAM wParam, LPARAM lParam)
 		{
 			if (IsIconic())
 			{
-				ShowWindow(SW_NORMAL);
+				ShowWindow(SW_SHOW);
 				break;
 			}
-			ShowWindow(IsWindowVisible() ? SW_HIDE : SW_SHOWNORMAL);
+			ShowWindow(IsWindowVisible() ? SW_HIDE : SW_SHOW);
 			SetForegroundWindow();
 			break;
 		}
@@ -431,7 +431,10 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 
 	CreateSolidMenu();
 
-	ListenPort();
+	if (!ListenPort()) {
+		OnCancel();
+		return FALSE;
+	}
 
 #if !INDEPENDENT
 	ShowWindow(SW_SHOW);
@@ -571,6 +574,13 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 
 void CMy2015RemoteDlg::OnClose()
 {
+	// 隐藏窗口而不是关闭
+	ShowWindow(SW_HIDE);
+	OutputDebugStringA("======> Hide\n");
+}
+
+void CMy2015RemoteDlg::Release(){
+	OutputDebugStringA("======> Release\n");
 	isClosed = TRUE;
 	ShowWindow(SW_HIDE);
 #if INDEPENDENT
@@ -620,7 +630,6 @@ void CMy2015RemoteDlg::OnClose()
 		m_iocpServer = NULL;
 	}
 	timeEndPeriod(1);
-	CDialogEx::OnClose();
 }
 
 
@@ -836,13 +845,15 @@ VOID CMy2015RemoteDlg::OnAbout()
 //托盘Menu
 void CMy2015RemoteDlg::OnNotifyShow()
 {
-	ShowWindow(SW_SHOW);
+	BOOL v=	IsWindowVisible();
+	ShowWindow(v? SW_HIDE : SW_SHOW);
 }
 
 
 void CMy2015RemoteDlg::OnNotifyExit()
 {
-	SendMessage(WM_CLOSE);
+	Release();
+	CDialogEx::OnOK(); // 关闭对话框
 }
 
 
@@ -857,11 +868,11 @@ void CMy2015RemoteDlg::OnMainSet()
 
 void CMy2015RemoteDlg::OnMainExit()
 {
-	// TODO: 在此添加命令处理程序代码
-	SendMessage(WM_CLOSE);
+	Release();
+	CDialogEx::OnOK(); // 关闭对话框
 }
 
-VOID CMy2015RemoteDlg::ListenPort()
+BOOL CMy2015RemoteDlg::ListenPort()
 {
 	int nPort = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");
 	//读取ini 文件中的监听端口
@@ -871,11 +882,11 @@ VOID CMy2015RemoteDlg::ListenPort()
 		nPort = 6543;
 	if (nMaxConnection <= 0)
 		nMaxConnection = 10000;
-	Activate(nPort,nMaxConnection);             //开始监听
+	return Activate(nPort,nMaxConnection);             //开始监听
 }
 
 
-VOID CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
+BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 {
 	m_iocpServer = new IOCPServer;                //动态申请我们的类对象
 	UINT ret = 0;
@@ -885,11 +896,15 @@ VOID CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 		char code[32];
 		sprintf_s(code, "%d", ret);
 		MessageBox("调用函数StartServer失败! 错误代码:"+CString(code));
+		delete m_iocpServer;
+		m_iocpServer = NULL;
+		return FALSE;
 	}
 
 	CString strTemp;
 	strTemp.Format("监听端口: %d成功", nPort);
 	ShowMessage(true,strTemp);
+	return TRUE;
 }
 
 

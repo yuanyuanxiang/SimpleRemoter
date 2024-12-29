@@ -140,6 +140,7 @@ enum
 
 #define CLIENT_TYPE_DLL			0	// 客户端代码以DLL运行
 #define CLIENT_TYPE_ONE			1	// 客户端代码以单个EXE运行
+#define CLIENT_TYPE_MODULE		2	// DLL需由外部程序调用
 
 // 所连接的主控程序信息
 typedef struct CONNECT_ADDRESS
