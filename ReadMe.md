@@ -1,12 +1,64 @@
-﻿[简介]
+﻿# 项目简介
 
-基于gh0st的远程控制器：实现了终端管理、进程管理、窗口管理、桌面管理、文件管理、语音管理、视频管理、服务管理、注册表管理等功能。
+**原始来源：** [zibility](https://github.com/zibility/Remote)
 
-来源：https://github.com/zibility/Remote
+**功能概述：** 基于gh0st的远程控制器：实现了终端管理、进程管理、窗口管理、桌面管理、文件管理、语音管理、视频管理、服务管理、注册表管理等功能。
 
-日期：2019.1.1
+**起始日期**：2019.1.1
 
-[更新日志]
+## 主控程序
+主控程序为**YAMA.exe**是Server端，Release发布版本在单台电脑只能运行一个示例。
+下面展示主控程序运行界面，所有功能均可用，程序运行稳定。
+某些功能要求受控程序以管理员权限运行。
+
+![主界面](./images/Yama.png)
+
+主界面以列表形式展示连接到本机的受控程序。
+选中某个主机以便进行远程控制。
+
+![终端管理](./images/Console.png)
+
+终端管理打开命令行窗口，可以执行远程命令。
+
+![进程管理](./images/Process.png)
+
+进程管理显示受控机器上面正在运行的进程，可对进程进行启停操作。
+
+![窗口管理](./images/Window.png)
+
+窗口管理显示受控机器上面打开的窗口或程序，可对其进行操作。
+
+![桌面管理](./images/Remote.png)
+
+桌面管理即"远程桌面"，控制远程机器。
+
+![文件管理](./images/FileManage.png)
+
+文件管理即在本机和受控机器之间传输文件。
+
+![语音管理](./images/Voice.png)
+
+语音管理即监听受控机器的声音，需受控机器有声音输入设备。
+
+![视频管理](./images/Video.png)
+
+视频管理即打印受控机器的摄像头，需受控机器有摄像头。
+
+![服务管理](./images/Service.png)
+
+服务管理即打开受控机器上面的服务列表。
+
+![注册表管理](./images/Register.png)
+
+注册表管理即打开受控机器上面的注册表。
+
+## 受控程序
+![主界面](./images/TestRun.png)
+
+受控程序是Client端，分为2种运行形式（"类型"）：单个程序 **（1）** ghost.exe和 **（2）** TestRun.exe+ServerDll.dll形式。
+（1）单个程序运行时，不依赖其他动态链接库，而第（2）种情况运行时，由EXE程序调用核心动态链接库。
+
+# 更新日志
 
 2019.1.5
 
@@ -251,7 +303,12 @@ reorg: Move commands to common/commands.h
 
 
 
+# 沟通反馈
 
 QQ：962914132
-联系方式：[Telegram](https://t.me/doge_grandfather) [Email](mailto:yuanyuanxiang163@gmail.com) [LinkedIn](https://www.linkedin.com/in/wishyuanqi)
-问题报告：请提交 [Issues](https://github.com/yuanyuanxiang/SimpleRemoter/issues) 欢迎提交 [Merge requests](https://github.com/yuanyuanxiang/SimpleRemoter/pulls)
+
+联系方式： [Telegram](https://t.me/doge_grandfather), [Email](mailto:yuanyuanxiang163@gmail.com), [LinkedIn](https://www.linkedin.com/in/wishyuanqi)
+
+问题报告： [Issues](https://github.com/yuanyuanxiang/SimpleRemoter/issues) 
+
+欢迎提交： [Merge requests](https://github.com/yuanyuanxiang/SimpleRemoter/pulls)

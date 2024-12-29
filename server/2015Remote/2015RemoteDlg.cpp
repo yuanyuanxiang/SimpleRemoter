@@ -329,11 +329,26 @@ VOID CMy2015RemoteDlg::TestOnline()
 	ShowMessage(true,"软件初始化成功...");
 }
 
+bool IsExitItem(CListCtrl &list, DWORD_PTR data){
+	for (int i=0,n=list.GetItemCount();i<n;i++)
+	{
+		DWORD_PTR v = list.GetItemData(i);
+		if (v == data) {
+			return true;
+		}
+	}
+	return false;
+}
 
 VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, 
 							   CString strCPU, CString strVideo, CString strPing, CString ver, CString st, CString tp, CONTEXT_OBJECT* ContextObject)
 {
 	EnterCriticalSection(&m_cs);
+	if (IsExitItem(m_CList_Online, (DWORD)ContextObject)) {
+		LeaveCriticalSection(&m_cs);
+		OutputDebugStringA(CString("===> '") + strIP + CString("' already exist!!\n"));
+		return;
+	}
 	//默认为0行  这样所有插入的新列都在最上面
 	int i = m_CList_Online.InsertItem(m_CList_Online.GetItemCount(),strIP);
 
