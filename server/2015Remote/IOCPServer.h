@@ -138,6 +138,7 @@ protected:
 	CRITICAL_SECTION*	m_cs;
 };
 
+#define TRACK_OVERLAPPEDPLUS 0
 
 class OVERLAPPEDPLUS   
 {
@@ -148,9 +149,9 @@ public:
 
 	OVERLAPPEDPLUS(IOType ioType)
 	{
-#if 0
+#if TRACK_OVERLAPPEDPLUS
 		char szLog[100];
-		sprintf_s(szLog, "=> [new] OVERLAPPEDPLUS %x by thread [%d].\n", this, GetCurrentThreadId());
+		sprintf_s(szLog, "=> [new] OVERLAPPEDPLUS %p by thread [%d].\n", this, GetCurrentThreadId());
 		OutputDebugStringA(szLog);
 #endif
 		ZeroMemory(this, sizeof(OVERLAPPEDPLUS));
@@ -159,9 +160,9 @@ public:
 
 	~OVERLAPPEDPLUS()
 	{
-#if 0
+#if TRACK_OVERLAPPEDPLUS
 		char szLog[100];
-		sprintf_s(szLog, "=> [delete] OVERLAPPEDPLUS %x by thread [%d].\n", this, GetCurrentThreadId());
+		sprintf_s(szLog, "=> [delete] OVERLAPPEDPLUS %p by thread [%d].\n", this, GetCurrentThreadId());
 		OutputDebugStringA(szLog);
 #endif
 	}

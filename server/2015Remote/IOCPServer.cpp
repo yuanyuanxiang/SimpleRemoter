@@ -3,6 +3,7 @@
 #include "2015Remote.h"
 
 #include <iostream>
+
 #if USING_ZLIB
 #include "zlib.h"
 #define Z_FAILED(p) (Z_OK != (p))
@@ -113,6 +114,7 @@ IOCPServer::~IOCPServer(void)
 	{
 		CONTEXT_OBJECT *ContextObject = m_ContextConnectionList.GetHead();
 		RemoveStaleContext(ContextObject);
+		SAFE_DELETE(ContextObject->olps);
 	}
 
 	while (!m_ContextFreePoolList.IsEmpty())
