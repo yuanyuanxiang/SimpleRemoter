@@ -104,6 +104,7 @@ public:
 	BOOL OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans);  
 	VOID OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer , ULONG ulOriginalLength);
 	BOOL OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompressedLength);
+	void UpdateMaxConnection(int maxConn);
 	IOCPServer(void);
 	~IOCPServer(void);
 

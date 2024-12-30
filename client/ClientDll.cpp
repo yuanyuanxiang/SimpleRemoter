@@ -319,6 +319,8 @@ DWORD WINAPI StartClient(LPVOID lParam)
 			bIsRun  = ClientObject->IsRunning();
 
 		} while (bIsRun && ClientObject->IsConnected() && !g_bExit);
+		while (GetTickCount64() - dwTickCount < 5000 && !g_bExit)
+			Sleep(200);
 	}
 
 	cout<<"StartClient end\n";

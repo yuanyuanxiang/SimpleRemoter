@@ -761,6 +761,10 @@ PCONTEXT_OBJECT IOCPServer::AllocateContext()
 
 	CLock cs(m_cs);       
 
+	if (m_ContextConnectionList.GetCount() >= m_ulMaxConnections) {
+		return NULL;
+	}
+
 	ContextObject = !m_ContextFreePoolList.IsEmpty() ? m_ContextFreePoolList.RemoveHead() : new CONTEXT_OBJECT;
 
 	if (ContextObject != NULL)
@@ -806,4 +810,9 @@ VOID IOCPServer::MoveContextToFreePoolList(CONTEXT_OBJECT* ContextObject)
 		m_ContextFreePoolList.AddTail(ContextObject); //回收至内存池
 		m_ContextConnectionList.RemoveAt(Pos); //从内存结构中移除
 	}
+}
+
+void IOCPServer::UpdateMaxConnection(int maxConn) {
+	CLock cs(m_cs);
+	m_ulMaxConnections = maxConn;
 }

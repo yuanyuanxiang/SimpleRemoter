@@ -860,9 +860,14 @@ void CMy2015RemoteDlg::OnNotifyExit()
 //¹ÌÌ¬²Ëµ¥
 void CMy2015RemoteDlg::OnMainSet()
 {
+	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");
 	CSettingDlg  Dlg;
 
 	Dlg.DoModal();   //Ä£Ì¬ ×èÈû
+	if (nMaxConnection != Dlg.m_nMax_Connect)
+	{
+		m_iocpServer->UpdateMaxConnection(Dlg.m_nMax_Connect);
+	}
 }
 
 

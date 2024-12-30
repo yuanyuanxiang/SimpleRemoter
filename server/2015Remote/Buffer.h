@@ -19,7 +19,7 @@ public:
 		return buf;
 	}
 	~Buffer() {
-		(*ref)--;
+		DelRef();
 		if (*ref == 0) {
 			if (buf!=NULL)
 			{
@@ -48,6 +48,7 @@ public:
 		buf = o.buf;
 		len = o.len;
 		ref = o.ref;
+		return *this;
 	}
 	char* c_str() const {
 		return (char*)buf;
