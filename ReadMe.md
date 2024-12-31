@@ -301,6 +301,8 @@ reorg: Move commands to common/commands.h
 
 在动态链接库中增加导出函数Run，以便通过rundll32.exe调用动态链接库。这种形式也是支持在线对DLL进行升级的。
 
+2024.12.31
+生成服务时增加加密选项，当前支持XOR加密。配合使用解密程序来加载加密后的服务。
 
 
 # 沟通反馈

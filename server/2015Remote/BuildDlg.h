@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Buffer.h"
+
 
 // CBuildDlg ¶Ô»°¿ò
 
@@ -23,5 +25,7 @@ public:
 	CString m_strPort;
 	afx_msg void OnBnClickedOk();
 	virtual BOOL OnInitDialog();
+	Buffer Encrypt(BYTE* buffer, int len, int method);
 	CComboBox m_ComboExe;
+	CComboBox m_ComboEncrypt;
 };
