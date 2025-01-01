@@ -17,6 +17,8 @@
 // 当程序功能明显发生变化时，应该更新这个值，以便对被控程序进行区分
 #define DLL_VERSION "20241229"		// DLL版本
 
+#define TALK_DLG_MAXLEN 1024		// 最大输入字符长度
+
 // 命令枚举列表
 enum
 {

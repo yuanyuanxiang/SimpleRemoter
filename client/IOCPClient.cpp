@@ -266,8 +266,9 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 
 					//解压好的数据和长度传递给对象Manager进行处理 注意这里是用了多态
 					//由于m_pManager中的子类不一样造成调用的OnReceive函数不一样
-					m_Manager->OnReceive((PBYTE)m_DeCompressedBuffer.GetBuffer(0),
-						m_DeCompressedBuffer.GetBufferLength());
+					if (m_Manager)
+						m_Manager->OnReceive((PBYTE)m_DeCompressedBuffer.GetBuffer(0),
+							m_DeCompressedBuffer.GetBufferLength());
 				}
 				else{
 					printf("[ERROR] uncompress fail: dstLen %d, srcLen %d\n", ulOriginalLength, ulCompressedLength);

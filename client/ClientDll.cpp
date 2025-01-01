@@ -133,6 +133,14 @@ int main(int argc, const char *argv[])
 	}
 	printf("[server] %s:%d\n", g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort());
 
+	// 获取当前模块的句柄（HINSTANCE） 
+	g_hInstance = GetModuleHandle(NULL); 
+	if (g_hInstance != NULL) {
+		std::cout << "HINSTANCE: " << g_hInstance << std::endl;
+	} else {
+		std::cerr << "Failed to get HINSTANCE" << std::endl;
+	}
+
 	do{
 		g_bExit = 0;
 		HANDLE hThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)StartClient,NULL,0,NULL);

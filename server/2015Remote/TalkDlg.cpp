@@ -25,7 +25,7 @@ void CTalkDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_EDIT_TALK, m_EditTalk);
-	m_EditTalk.SetLimitText(2048);
+	m_EditTalk.SetLimitText(TALK_DLG_MAXLEN);
 }
 
 
