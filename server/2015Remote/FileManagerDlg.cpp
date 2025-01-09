@@ -2193,6 +2193,7 @@ void CFileManagerDlg::OnRemoteNewfolder()
 		lpBuffer[0] = COMMAND_CREATE_FOLDER;
 		memcpy(lpBuffer + 1, file.GetBuffer(0), nPacketSize - 1);
 		m_iocpServer->Send(m_pContext, lpBuffer, nPacketSize);
+		LocalFree(lpBuffer);
 	}
 }
 
@@ -2328,7 +2329,7 @@ void CFileManagerDlg::OnRemoteOpenShow()
 	lpPacket[0] = COMMAND_OPEN_FILE_SHOW;
 	memcpy(lpPacket + 1, str.GetBuffer(0), nPacketLength - 1);
 	m_iocpServer->Send(m_pContext, lpPacket, nPacketLength);
-	delete [] lpPacket;	
+	LocalFree(lpPacket);
 }
 
 void CFileManagerDlg::OnRemoteOpenHide() 
@@ -2342,7 +2343,7 @@ void CFileManagerDlg::OnRemoteOpenHide()
 	lpPacket[0] = COMMAND_OPEN_FILE_HIDE;
 	memcpy(lpPacket + 1, str.GetBuffer(0), nPacketLength - 1);
 	m_iocpServer->Send(m_pContext, lpPacket, nPacketLength);
-	delete [] lpPacket;
+	LocalFree(lpPacket);
 }
 
 void CFileManagerDlg::OnRclickListLocal(NMHDR* pNMHDR, LRESULT* pResult) 

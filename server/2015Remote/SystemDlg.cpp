@@ -215,8 +215,10 @@ void CSystemDlg::OnPlistKill()
 	{
 		str.Format("%s确实\n想终止该项进程吗?", szTips);
 	}
-	if (::MessageBox(m_hWnd, str, "进程结束警告", MB_YESNO|MB_ICONQUESTION) == IDNO)
+	if (::MessageBox(m_hWnd, str, "进程结束警告", MB_YESNO | MB_ICONQUESTION) == IDNO) {
+		LocalFree(szBuffer);
 		return;
+	}
 
 	DWORD	dwOffset = 1;
 	POSITION Pos = ListCtrl->GetFirstSelectedItemPosition(); 
