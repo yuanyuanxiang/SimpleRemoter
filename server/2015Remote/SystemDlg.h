@@ -29,6 +29,12 @@ protected:
 public:
 	CListCtrl m_ControlList;
 	virtual BOOL OnInitDialog();
+
+	void DeleteAllItems();
+	void SortByColumn(int nColumn);
+	afx_msg VOID OnHdnItemclickList(NMHDR* pNMHDR, LRESULT* pResult);
+	static int CALLBACK CompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
+
 	afx_msg void OnClose();
 	afx_msg void OnNMRClickListSystem(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnPlistKill();

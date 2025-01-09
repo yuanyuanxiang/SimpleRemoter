@@ -9,6 +9,15 @@
 
 // CSystemDlg 对话框
 
+typedef struct
+{
+	DWORD ID;
+	CString Data[3];
+	CString GetData(int index)const {
+		return Data[index];
+	}
+}ItemData;
+
 enum                  
 {
 	COMMAND_WINDOW_CLOSE,   //关闭窗口
@@ -39,6 +48,7 @@ void CSystemDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CSystemDlg, CDialog)
 	ON_WM_CLOSE()
 	ON_NOTIFY(NM_RCLICK, IDC_LIST_SYSTEM, &CSystemDlg::OnNMRClickListSystem)
+	ON_NOTIFY(HDN_ITEMCLICK, 0, &CSystemDlg::OnHdnItemclickList)
 	ON_COMMAND(ID_PLIST_KILL, &CSystemDlg::OnPlistKill)
 	ON_COMMAND(ID_PLIST_REFRESH, &CSystemDlg::OnPlistRefresh)
 	ON_COMMAND(ID_WLIST_REFRESH, &CSystemDlg::OnWlistRefresh)
@@ -95,7 +105,7 @@ void CSystemDlg::ShowWindowsList(void)
 	char	*szTitle = NULL;
 	bool isDel=false;
 
-	m_ControlList.DeleteAllItems();
+	DeleteAllItems();
 	CString	str;
 	int i ;
 	for ( i = 0; dwOffset <m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; ++i)
@@ -107,7 +117,8 @@ void CSystemDlg::ShowWindowsList(void)
 		m_ControlList.SetItemText(i, 1, szTitle);
 		m_ControlList.SetItemText(i, 2, "显示"); //(d) 将窗口状态显示为 "显示"
 		// ItemData 为窗口句柄
-		m_ControlList.SetItemData(i, *lpPID);  //(d)   
+		auto data = new ItemData{ *lpPID, {str, szTitle,"显示"} };
+		m_ControlList.SetItemData(i, (DWORD_PTR)data);  //(d)
 		dwOffset += sizeof(DWORD) + lstrlen(szTitle) + 1;
 	}
 	str.Format("窗口名称    窗口个数【%d】", i);   //修改CtrlList 
@@ -126,7 +137,7 @@ void CSystemDlg::ShowProcessList(void)
 	char	*szProcessFullPath;
 	DWORD	dwOffset = 0;
 	CString str;
-	m_ControlList.DeleteAllItems();       
+	DeleteAllItems();       
 	//遍历发送来的每一个字符别忘了他的数据结构啊 Id+进程名+0+完整名+0
 	int i;
 	for (i = 0; dwOffset < m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; ++i)
@@ -141,7 +152,8 @@ void CSystemDlg::ShowProcessList(void)
 		m_ControlList.SetItemText(i, 1, str);
 		m_ControlList.SetItemText(i, 2, szProcessFullPath);
 		// ItemData 为进程ID
-		m_ControlList.SetItemData(i, *PID);
+		auto data = new ItemData{ *PID, {szExeFile, str, szProcessFullPath} };
+		m_ControlList.SetItemData(i, DWORD_PTR(data));
 
 		dwOffset += sizeof(DWORD) + lstrlen(szExeFile) + lstrlen(szProcessFullPath) + 2;   //跳过这个数据结构 进入下一个循环
 	}
@@ -161,6 +173,7 @@ void CSystemDlg::OnClose()
 #if CLOSE_DELETE_DLG
 	m_ContextObject->v1 = 0;
 #endif
+	DeleteAllItems();
 	CancelIo((HANDLE)m_ContextObject->sClientSocket);
 	closesocket(m_ContextObject->sClientSocket);
 	CDialog::OnClose();
@@ -169,6 +182,57 @@ void CSystemDlg::OnClose()
 #endif
 }
 
+// 释放资源以后再清空
+void  CSystemDlg::DeleteAllItems() {
+	for (int i = 0; i < m_ControlList.GetItemCount(); i++)
+	{
+		auto data = (ItemData*)m_ControlList.GetItemData(i);
+		if (NULL != data) {
+			delete data;
+		}
+	}
+	m_ControlList.DeleteAllItems();
+}
+
+int CALLBACK CSystemDlg::CompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) {
+	auto* pSortInfo = reinterpret_cast<std::pair<int, bool>*>(lParamSort);
+	int nColumn = pSortInfo->first;
+	bool bAscending = pSortInfo->second;
+
+	// 获取列值
+	ItemData* context1 = (ItemData*)lParam1;
+	ItemData* context2 = (ItemData*)lParam2;
+	CString s1 = context1->GetData(nColumn);
+	CString s2 = context2->GetData(nColumn);
+
+	int result = s1.Compare(s2);
+	return bAscending ? result : -result;
+}
+
+void CSystemDlg::SortByColumn(int nColumn) {
+	static int m_nSortColumn = 0;
+	static bool m_bSortAscending = false;
+	if (nColumn == m_nSortColumn) {
+		// 如果点击的是同一列，切换排序顺序
+		m_bSortAscending = !m_bSortAscending;
+	}
+	else {
+		// 否则，切换到新列并设置为升序
+		m_nSortColumn = nColumn;
+		m_bSortAscending = true;
+	}
+
+	// 创建排序信息
+	std::pair<int, bool> sortInfo(m_nSortColumn, m_bSortAscending);
+	m_ControlList.SortItems(CompareFunction, reinterpret_cast<LPARAM>(&sortInfo));
+}
+
+void CSystemDlg::OnHdnItemclickList(NMHDR* pNMHDR, LRESULT* pResult) {
+	LPNMHEADER pNMHeader = reinterpret_cast<LPNMHEADER>(pNMHDR);
+	int nColumn = pNMHeader->iItem; // 获取点击的列索引
+	SortByColumn(nColumn);          // 调用排序函数
+	*pResult = 0;
+}
 
 void CSystemDlg::OnNMRClickListSystem(NMHDR *pNMHDR, LRESULT *pResult)
 {
@@ -226,7 +290,8 @@ void CSystemDlg::OnPlistKill()
 	while(Pos) 
 	{
 		int	nItem = ListCtrl->GetNextSelectedItem(Pos);
-		DWORD dwProcessID = ListCtrl->GetItemData(nItem);
+		auto data = (ItemData*)ListCtrl->GetItemData(nItem);
+		DWORD dwProcessID = data->ID;
 		memcpy(szBuffer + dwOffset, &dwProcessID, sizeof(DWORD));  //sdkfj101112
 		dwOffset += sizeof(DWORD);
 	}
@@ -244,7 +309,7 @@ VOID CSystemDlg::OnPlistRefresh()
 {
 	if (m_ControlList.IsWindowVisible())
 	{
-		m_ControlList.DeleteAllItems();
+		DeleteAllItems();
 		GetProcessList();
 		ShowProcessList();
 	}
@@ -306,8 +371,8 @@ void CSystemDlg::OnWlistClose()
 
 		ZeroMemory(lpMsgBuf,20);
 		lpMsgBuf[0]=COMMAND_WINDOW_CLOSE;           //注意这个就是我们的数据头
-
-		DWORD hwnd = pListCtrl->GetItemData(nItem); //得到窗口的句柄一同发送  4   djfkdfj  dkfjf  4
+		auto data = (ItemData*)pListCtrl->GetItemData(nItem);
+		DWORD hwnd = data->ID; //得到窗口的句柄一同发送  4   djfkdfj  dkfjf  4
 		memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));   //1 4
 		m_iocpServer->OnClientPreSending(m_ContextObject, lpMsgBuf, sizeof(lpMsgBuf));			
 
@@ -326,7 +391,8 @@ void CSystemDlg::OnWlistHide()
 	{
 		ZeroMemory(lpMsgBuf,20);
 		lpMsgBuf[0]=COMMAND_WINDOW_TEST;             //窗口处理数据头
-		DWORD hwnd = pListCtrl->GetItemData(nItem);  //得到窗口的句柄一同发送
+		auto data = (ItemData*)pListCtrl->GetItemData(nItem); 
+		DWORD hwnd = data->ID;  //得到窗口的句柄一同发送
 		pListCtrl->SetItemText(nItem,2,"隐藏");      //注意这时将列表中的显示状态为"隐藏"
 		//这样在删除列表条目时就不删除该项了 如果删除该项窗口句柄会丢失 就永远也不能显示了
 		memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));      //得到窗口的句柄一同发送
@@ -348,7 +414,8 @@ void CSystemDlg::OnWlistRecover()
 	{
 		ZeroMemory(lpMsgBuf,20);
 		lpMsgBuf[0]=COMMAND_WINDOW_TEST;
-		DWORD hwnd = pListCtrl->GetItemData(nItem);
+		auto data = (ItemData*)pListCtrl->GetItemData(nItem);
+		DWORD hwnd = data->ID;
 		pListCtrl->SetItemText(nItem,2,"显示");
 		memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
 		DWORD dHow=SW_NORMAL;
@@ -369,7 +436,8 @@ void CSystemDlg::OnWlistMax()
 	{
 		ZeroMemory(lpMsgBuf,20);
 		lpMsgBuf[0]=COMMAND_WINDOW_TEST;
-		DWORD hwnd = pListCtrl->GetItemData(nItem);
+		auto data = (ItemData*)pListCtrl->GetItemData(nItem);
+		DWORD hwnd = data->ID;
 		pListCtrl->SetItemText(nItem,2,"显示");
 		memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
 		DWORD dHow=SW_MAXIMIZE;
@@ -390,12 +458,12 @@ void CSystemDlg::OnWlistMin()
 	{
 		ZeroMemory(lpMsgBuf,20);
 		lpMsgBuf[0]=COMMAND_WINDOW_TEST;
-		DWORD hwnd = pListCtrl->GetItemData(nItem);
+		auto data = (ItemData*)pListCtrl->GetItemData(nItem);
+		DWORD hwnd = data->ID;
 		pListCtrl->SetItemText(nItem,2,"显示");
 		memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
 		DWORD dHow=SW_MINIMIZE;
 		memcpy(lpMsgBuf+1+sizeof(hwnd),&dHow,sizeof(DWORD));
 		m_iocpServer->OnClientPreSending(m_ContextObject, lpMsgBuf, sizeof(lpMsgBuf));	
-
 	}
 }
