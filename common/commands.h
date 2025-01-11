@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vcruntime_string.h>
-#include <string.h>
+#include <string>
 #include <vector>
 
 #ifndef _MAX_PATH

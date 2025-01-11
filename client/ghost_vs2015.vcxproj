@@ -43,12 +43,12 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IntDir>$(Configuration)\ghost</IntDir>
-    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(IncludePath)</IncludePath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(IncludePath)</IncludePath>
     <LibraryPath>$(WindowsSDK_LibraryPath_x86);$(VLDPATH)\lib\Win32\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IntDir>$(Configuration)\ghost</IntDir>
-    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(IncludePath)</IncludePath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(IncludePath)</IncludePath>
     <LibraryPath>$(WindowsSDK_LibraryPath_x86);$(VLDPATH)\lib\Win32\;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

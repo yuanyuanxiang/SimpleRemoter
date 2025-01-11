@@ -81,13 +81,14 @@ END
 
 IDR_WAVE                WAVE                    "Res\\msg.wav"
 
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // Version
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,5
+ FILEVERSION 1,0,0,6
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -105,7 +106,7 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "FUCK THE UNIVERSE"
             VALUE "FileDescription", "A GHOST"
-            VALUE "FileVersion", "1.0.0.5"
+            VALUE "FileVersion", "1.0.0.6"
             VALUE "InternalName", "ServerDll.dll"
             VALUE "LegalCopyright", "Copyright (C) 2019-2025"
             VALUE "OriginalFilename", "ServerDll.dll"
@@ -128,7 +129,9 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDI_ICON_MAIN           ICON                    "Res\\ghost.ico"
+
 IDI_ICON_MSG            ICON                    "Res\\msg.ico"
+
 #endif    // 中文(简体，中国) resources
 /////////////////////////////////////////////////////////////////////////////
 

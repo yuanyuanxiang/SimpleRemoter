@@ -42,13 +42,13 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(IncludePath)</IncludePath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(IncludePath)</IncludePath>
     <LibraryPath>$(WindowsSDK_LibraryPath_x86);$(VLDPATH)\lib\Win32\;$(LibraryPath)</LibraryPath>
     <IntDir>$(Configuration)\dll</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LibraryPath>$(WindowsSDK_LibraryPath_x86);$(VLDPATH)\lib\Win32\;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(IncludePath)</IncludePath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(IncludePath)</IncludePath>
     <IntDir>$(Configuration)\dll</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">

@@ -839,7 +839,7 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 //真彩Bar
 VOID CMy2015RemoteDlg::OnAbout()
 {
-	MessageBox("Copyleft (c) FTU 2019", "关于");
+	MessageBox("Copyleft (c) FTU 2025", "关于");
 }
 
 //托盘Menu
@@ -1386,7 +1386,7 @@ LRESULT CMy2015RemoteDlg::OnOpenVideoDialog(WPARAM wParam, LPARAM lParam)
 
 BOOL CMy2015RemoteDlg::OnHelpInfo(HELPINFO* pHelpInfo)
 {
-	MessageBox("Copyleft (c) FTU 2019", "关于");
+	MessageBox("Copyleft (c) FTU 2025", "关于");
 	return TRUE;
 }
 
