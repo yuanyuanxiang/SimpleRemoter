@@ -11,6 +11,14 @@
 
 IMPLEMENT_DYNAMIC(CServicesDlg, CDialog)
 
+// ItemData1 不要和ItemData同名了，同名的话调试会有问题
+typedef  struct  ItemData1
+{
+	CString Data[5];
+	CString GetData(int index) const {
+		return  this ? Data[index] : "";
+	}
+} ItemData1;
 
 CServicesDlg::CServicesDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT *ContextObject)
 	: CDialog(CServicesDlg::IDD, pParent)
@@ -39,6 +47,7 @@ BEGIN_MESSAGE_MAP(CServicesDlg, CDialog)
 	ON_COMMAND(ID_SERVICES_START, &CServicesDlg::OnServicesStart)
 	ON_COMMAND(ID_SERVICES_REFLASH, &CServicesDlg::OnServicesReflash)
 	ON_NOTIFY(NM_RCLICK, IDC_LIST, &CServicesDlg::OnNMRClickList)
+	ON_NOTIFY(HDN_ITEMCLICK, 0, &CServicesDlg::OnHdnItemclickList)
 END_MESSAGE_MAP()
 
 
@@ -79,7 +88,7 @@ int CServicesDlg::ShowServicesList(void)
 	char	*szAutoRun;
 	char	*szFilePath;
 	DWORD	dwOffset = 0;
-	m_ControlList.DeleteAllItems();
+	DeleteAllItems();
 
 	int i = 0;
 	for (i = 0; dwOffset < m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; ++i)
@@ -95,7 +104,8 @@ int CServicesDlg::ShowServicesList(void)
 		m_ControlList.SetItemText(i, 2, szAutoRun);		
 		m_ControlList.SetItemText(i, 3, szRunWay);
 		m_ControlList.SetItemText(i, 4, szFilePath );
-
+		auto data = new ItemData1{ szServiceName, szDisplayName, szAutoRun, szRunWay, szFilePath };
+		m_ControlList.SetItemData(i, (DWORD_PTR)data);
 		dwOffset += lstrlen(szDisplayName) + lstrlen(szServiceName) + lstrlen(szFilePath) + lstrlen(szRunWay)
 			+ lstrlen(szAutoRun) +5;
 	}
@@ -114,6 +124,7 @@ void CServicesDlg::OnClose()
 #if CLOSE_DELETE_DLG
 	m_ContextObject->v1 = 0;
 #endif
+	DeleteAllItems();
 	CancelIo((HANDLE)m_ContextObject->sClientSocket);
 	closesocket(m_ContextObject->sClientSocket);
 	CDialog::OnClose();
@@ -153,6 +164,57 @@ void CServicesDlg::OnServicesReflash()
 	m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, 1);	
 }
 
+// 释放资源以后再清空
+void  CServicesDlg::DeleteAllItems() {
+	for (int i = 0; i < m_ControlList.GetItemCount(); i++)
+	{
+		auto data = (ItemData1*)m_ControlList.GetItemData(i);
+		if (NULL != data) {
+			delete data;
+		}
+	}
+	m_ControlList.DeleteAllItems();
+}
+
+int CALLBACK CServicesDlg::CompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) {
+	auto* pSortInfo = reinterpret_cast<std::pair<int, bool>*>(lParamSort);
+	int nColumn = pSortInfo->first;
+	bool bAscending = pSortInfo->second;
+
+	// 获取列值
+	ItemData1* context1 = (ItemData1*)lParam1;
+	ItemData1* context2 = (ItemData1*)lParam2;
+	CString s1 = context1->GetData(nColumn);
+	CString s2 = context2->GetData(nColumn);
+
+	int result = s1 > s2 ? 1 : -1;
+	return bAscending ? result : -result;
+}
+
+void CServicesDlg::SortByColumn(int nColumn) {
+	static int m_nSortColumn = 0;
+	static bool m_bSortAscending = false;
+	if (nColumn == m_nSortColumn) {
+		// 如果点击的是同一列，切换排序顺序
+		m_bSortAscending = !m_bSortAscending;
+	}
+	else {
+		// 否则，切换到新列并设置为升序
+		m_nSortColumn = nColumn;
+		m_bSortAscending = true;
+	}
+
+	// 创建排序信息
+	std::pair<int, bool> sortInfo(m_nSortColumn, m_bSortAscending);
+	m_ControlList.SortItems(CompareFunction, reinterpret_cast<LPARAM>(&sortInfo));
+}
+
+void CServicesDlg::OnHdnItemclickList(NMHDR* pNMHDR, LRESULT* pResult) {
+	LPNMHEADER pNMHeader = reinterpret_cast<LPNMHEADER>(pNMHDR);
+	int nColumn = pNMHeader->iItem; // 获取点击的列索引
+	SortByColumn(nColumn);          // 调用排序函数
+	*pResult = 0;
+}
 
 void CServicesDlg::OnNMRClickList(NMHDR *pNMHDR, LRESULT *pResult)
 {
