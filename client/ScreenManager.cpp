@@ -124,7 +124,7 @@ CScreenManager::~CScreenManager()
 		CloseHandle(m_hWorkThread);
 	}
 
-	delete[] m_ScreenSpyObject;
+	delete m_ScreenSpyObject;
 	m_ScreenSpyObject = NULL;
 	if(szBuffer)
 	{
