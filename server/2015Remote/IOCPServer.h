@@ -53,6 +53,9 @@ typedef struct _CONTEXT_OBJECT
 			sClientInfo[i] = s[i];
 		}
 	}
+	CString GetClientData(int index) const{
+		return sClientInfo[index];
+	}
 }CONTEXT_OBJECT,*PCONTEXT_OBJECT;
 
 typedef CList<PCONTEXT_OBJECT> ContextObjectList;

@@ -43,6 +43,9 @@ protected:
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
 public:
+	void SortByColumn(int nColumn);
+	afx_msg VOID OnHdnItemclickList(NMHDR* pNMHDR, LRESULT* pResult);
+	static int CALLBACK CompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 
 	VOID InitControl();             //³õÊ¼¿Ø¼þ
 	VOID TestOnline();              //²âÊÔº¯Êý

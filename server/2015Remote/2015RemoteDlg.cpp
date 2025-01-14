@@ -154,6 +154,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_WM_TIMER()
 	ON_WM_CLOSE()
 	ON_NOTIFY(NM_RCLICK, IDC_ONLINE, &CMy2015RemoteDlg::OnNMRClickOnline)
+	ON_NOTIFY(HDN_ITEMCLICK, 0, &CMy2015RemoteDlg::OnHdnItemclickList)
 	ON_COMMAND(ID_ONLINE_MESSAGE, &CMy2015RemoteDlg::OnOnlineMessage)
 	ON_COMMAND(ID_ONLINE_DELETE, &CMy2015RemoteDlg::OnOnlineDelete)
 	ON_COMMAND(ID_ONLINE_UPDATE, &CMy2015RemoteDlg::OnOnlineUpdate)
@@ -631,6 +632,48 @@ void CMy2015RemoteDlg::Release(){
 		m_iocpServer = NULL;
 	}
 	timeEndPeriod(1);
+}
+
+int CALLBACK CMy2015RemoteDlg::CompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) {
+	auto* pSortInfo = reinterpret_cast<std::pair<int, bool>*>(lParamSort);
+	int nColumn = pSortInfo->first;
+	bool bAscending = pSortInfo->second;
+
+	// 获取列值
+	CONTEXT_OBJECT* context1 = (CONTEXT_OBJECT*)lParam1;
+	CONTEXT_OBJECT* context2 = (CONTEXT_OBJECT*)lParam2;
+	CString s1 = context1->GetClientData(nColumn);
+	CString s2 = context2->GetClientData(nColumn);
+
+	int result = s1 > s2 ? 1 : -1;
+	return bAscending ? result : -result;
+}
+
+void CMy2015RemoteDlg::SortByColumn(int nColumn) {
+	static int m_nSortColumn = 0;
+	static bool m_bSortAscending = false;
+	if (nColumn == m_nSortColumn) {
+		// 如果点击的是同一列，切换排序顺序
+		m_bSortAscending = !m_bSortAscending;
+	}
+	else {
+		// 否则，切换到新列并设置为升序
+		m_nSortColumn = nColumn;
+		m_bSortAscending = true;
+	}
+
+	// 创建排序信息
+	std::pair<int, bool> sortInfo(m_nSortColumn, m_bSortAscending);
+	EnterCriticalSection(&m_cs);
+	m_CList_Online.SortItems(CompareFunction, reinterpret_cast<LPARAM>(&sortInfo));
+	LeaveCriticalSection(&m_cs);
+}
+
+void CMy2015RemoteDlg::OnHdnItemclickList(NMHDR* pNMHDR, LRESULT* pResult) {
+	LPNMHEADER pNMHeader = reinterpret_cast<LPNMHEADER>(pNMHDR);
+	int nColumn = pNMHeader->iItem; // 获取点击的列索引
+	SortByColumn(nColumn);          // 调用排序函数
+	*pResult = 0;
 }
 
 
