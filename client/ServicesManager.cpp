@@ -56,7 +56,7 @@ LPBYTE CServicesManager::GetServicesList()
 	DWORD    dwServicesCount = 0; 
 	DWORD    dwResumeHandle = 0; 
 	EnumServicesStatus(m_hscManager,
-		SERVICE_TYPE_ALL,    //CTL_FIX
+		SERVICE_WIN32,    //CTL_FIX
 		SERVICE_STATE_ALL,
 		(LPENUM_SERVICE_STATUS)ServicesStatus, 
 		64 * 1024, 
