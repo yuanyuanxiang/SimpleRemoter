@@ -136,10 +136,10 @@
     <None Include="res\string.ico" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\client\Audio.h" />
     <ClInclude Include="..\..\common\commands.h" />
     <ClInclude Include="2015Remote.h" />
     <ClInclude Include="2015RemoteDlg.h" />
-    <ClInclude Include="Audio.h" />
     <ClInclude Include="AudioDlg.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="BuildDlg.h" />
@@ -166,9 +166,9 @@
     <ClInclude Include="zlib.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\client\Audio.cpp" />
     <ClCompile Include="2015Remote.cpp" />
     <ClCompile Include="2015RemoteDlg.cpp" />
-    <ClCompile Include="Audio.cpp" />
     <ClCompile Include="AudioDlg.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="BuildDlg.cpp" />

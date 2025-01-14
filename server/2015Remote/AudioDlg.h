@@ -1,7 +1,7 @@
 #pragma once
 
 #include "IOCPServer.h"
-#include "Audio.h"
+#include "../../client/Audio.h"
 
 // CAudioDlg ¶Ô»°¿ò
 
