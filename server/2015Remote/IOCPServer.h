@@ -25,6 +25,7 @@ enum IOType
 
 typedef struct _CONTEXT_OBJECT 
 {
+	CString  sClientInfo[10];
 	SOCKET   sClientSocket;
 	WSABUF   wsaInBuf;
 	WSABUF	 wsaOutBuffer;  
@@ -45,6 +46,12 @@ typedef struct _CONTEXT_OBJECT
 		memset(&wsaInBuf,0,sizeof(WSABUF));
 		memset(&wsaOutBuffer,0,sizeof(WSABUF));
 		olps = NULL;
+	}
+	VOID SetClientInfo(CString s[10]){
+		for (int i=0; i<sizeof(sClientInfo)/sizeof(CString);i++)
+		{
+			sClientInfo[i] = s[i];
+		}
 	}
 }CONTEXT_OBJECT,*PCONTEXT_OBJECT;
 

