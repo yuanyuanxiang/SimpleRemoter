@@ -497,8 +497,8 @@ VOID CScreenSpyDlg::UpdateServerClipboard(char *szBuffer,ULONG ulLength)
 		char*  szClipboardVirtualAddress  = (LPTSTR) GlobalLock(hGlobal); 
 		memcpy(szClipboardVirtualAddress,szBuffer,ulLength); 
 		GlobalUnlock(hGlobal);         
-		SetClipboardData(CF_TEXT, hGlobal); 
-		GlobalFree(hGlobal);
+		if(NULL==SetClipboardData(CF_TEXT, hGlobal))
+			GlobalFree(hGlobal);
 	}
 	CloseClipboard();
 }

@@ -185,8 +185,8 @@ VOID CScreenManager::UpdateClientClipboard(char *szBuffer, ULONG ulLength)
 			return;
 		memcpy(szClipboardVirtualAddress, szBuffer, ulLength); 
 		GlobalUnlock(hGlobal);         
-		SetClipboardData(CF_TEXT, hGlobal);
-		GlobalFree(hGlobal);
+		if(NULL==SetClipboardData(CF_TEXT, hGlobal))
+			GlobalFree(hGlobal);
 	}
 	CloseClipboard();
 }
