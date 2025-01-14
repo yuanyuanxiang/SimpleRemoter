@@ -13,11 +13,58 @@
 #include <strmif.h>
 #include <CONTROL.H>
 #include <ATLBASE.H>
-#include <qedit.h>
 #include <amvideo.h>
 #include <DShow.h>
 
 #pragma comment(lib,"Strmiids.lib")
+
+EXTERN_C const IID IID_ISampleGrabberCB;
+
+EXTERN_C const CLSID CLSID_SampleGrabber;
+
+EXTERN_C const IID IID_ISampleGrabber;
+
+struct ISampleGrabberCB : public IUnknown
+{
+public:
+	virtual HRESULT STDMETHODCALLTYPE SampleCB(
+		double SampleTime,
+		IMediaSample * pSample) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE BufferCB(
+		double SampleTime,
+		BYTE* pBuffer,
+		long BufferLen) = 0;
+
+};
+
+struct ISampleGrabber : public IUnknown
+{
+public:
+	virtual HRESULT STDMETHODCALLTYPE SetOneShot(
+		BOOL OneShot) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE SetMediaType(
+		const AM_MEDIA_TYPE* pType) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE GetConnectedMediaType(
+		AM_MEDIA_TYPE* pType) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE SetBufferSamples(
+		BOOL BufferThem) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE GetCurrentBuffer(
+		/* [out][in] */ long* pBufferSize,
+		/* [out] */ long* pBuffer) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE GetCurrentSample(
+		/* [retval][out] */ IMediaSample** ppSample) = 0;
+
+	virtual HRESULT STDMETHODCALLTYPE SetCallback(
+		ISampleGrabberCB* pCallback,
+		long WhichMethodToCallback) = 0;
+
+};
 
 enum{
 	CMD_CAN_COPY,
