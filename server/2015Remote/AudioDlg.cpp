@@ -71,8 +71,7 @@ BOOL CAudioDlg::OnInitDialog()
 
 	m_bThreadRun = m_hWorkThread ? TRUE : FALSE;
 
-	// "发送本地语音"会导致崩溃，详见"OnBnClickedCheck"
-	GetDlgItem(IDC_CHECK)->EnableWindow(FALSE);
+	GetDlgItem(IDC_CHECK)->EnableWindow(TRUE);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// 异常: OCX 属性页应返回 FALSE
@@ -141,10 +140,5 @@ void CAudioDlg::OnClose()
 // 处理是否发送本地语音到远程
 void CAudioDlg::OnBnClickedCheck()
 {
-	// @notice 2019.1.26
-	// 如果启用"发送本地语音"，则被控端崩溃在zlib inffas32.asm
-	// 需将主控端zlib拷贝到被控端重新编译
-	// 但是即使这样，主控端在开启"发送本地语音"时容易崩溃
-	// 此现象类似于操作远程桌面时的随机崩溃。原因不明
 	UpdateData(true);
 }
