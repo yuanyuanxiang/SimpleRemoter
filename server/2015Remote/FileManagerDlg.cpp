@@ -1382,7 +1382,7 @@ bool CFileManagerDlg::FixedUploadDirectory(LPCTSTR lpPathName)
 		{ 
 			CString file;
 			file.Format("%s%s%s", lpPathName, lpszSlash, wfd.cFileName); 
-			//printf("send file %s\n",strFile);
+			//Mprintf("send file %s\n",strFile);
 			m_Remote_Upload_Job.AddTail(file);
 			// 对文件进行操作 
 		} 

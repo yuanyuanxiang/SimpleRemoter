@@ -71,7 +71,7 @@ CAudio::~CAudio()
 		waveInClose(m_hWaveIn);
 		WAIT (m_hThreadCallBack, 30);
 		if (m_hThreadCallBack)
-			printf("没有成功关闭waveInCallBack.\n");
+			Mprintf("没有成功关闭waveInCallBack.\n");
 		TerminateThread(m_Thread, -999);
 		m_Thread = NULL;
 	}
@@ -194,7 +194,7 @@ DWORD WINAPI CAudio::waveInCallBack(LPVOID lParam)
 		DispatchMessage(&Msg);
 	}
 
-	std::cout<<"waveInCallBack end\n";
+	Mprintf("waveInCallBack end\n");
 	This->m_hThreadCallBack = false;
 
 	return 0XDEADAAAA;

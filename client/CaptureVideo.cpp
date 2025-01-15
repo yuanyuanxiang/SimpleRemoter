@@ -46,7 +46,7 @@ CCaptureVideo::~CCaptureVideo()
 
 HRESULT CCaptureVideo::Open(int iDeviceID,int iPress)
 {
-	printf("CCaptureVideo call Open\n");
+	Mprintf("CCaptureVideo call Open\n");
 	HRESULT hResult = S_OK;
 	do 
 	{
@@ -123,7 +123,7 @@ HRESULT CCaptureVideo::Open(int iDeviceID,int iPress)
 			break;
 	} while (false);
 
-	printf("CCaptureVideo Open %s\n", FAILED(hResult) ? "failed" : "succeed");
+	Mprintf("CCaptureVideo Open %s\n", FAILED(hResult) ? "failed" : "succeed");
 
 	return hResult;
 }

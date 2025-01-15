@@ -135,7 +135,7 @@ LPBYTE CSystemManager::GetProcessList()
 
 CSystemManager::~CSystemManager()
 {
-	cout<<"系统析构\n";
+	Mprintf("系统析构\n");
 }
 
 BOOL CSystemManager::DebugPrivilege(const char *szName, BOOL bEnable)

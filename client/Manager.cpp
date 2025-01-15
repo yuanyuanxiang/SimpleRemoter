@@ -36,7 +36,7 @@ int CManager::Send(LPBYTE lpData, UINT nSize)
 	{
 		nRet = m_ClientObject->OnServerSending((char*)lpData, nSize);
 	}catch(...){
-		printf("[ERROR] CManager::Send catch an error \n");
+		Mprintf("[ERROR] CManager::Send catch an error \n");
 	};
 	return nRet;
 }

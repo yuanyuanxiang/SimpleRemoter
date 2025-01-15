@@ -92,9 +92,9 @@ inline string GetIPAddress(const char *hostName)
 {
 	struct hostent *host = gethostbyname(hostName);
 #ifdef _DEBUG
-	printf("此域名的IP类型为: %s.\n", host->h_addrtype == AF_INET ? "IPV4" : "IPV6");
+	Mprintf("此域名的IP类型为: %s.\n", host->h_addrtype == AF_INET ? "IPV4" : "IPV6");
 	for (int i = 0; host->h_addr_list[i]; ++i)
-		printf("获取的第%d个IP: %s\n", i+1, inet_ntoa(*(struct in_addr*)host->h_addr_list[i]));
+		Mprintf("获取的第%d个IP: %s\n", i+1, inet_ntoa(*(struct in_addr*)host->h_addr_list[i]));
 #endif
 	if (host == NULL || host->h_addr_list == NULL)
 		return "";
@@ -147,7 +147,7 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 			(LPTHREAD_START_ROUTINE)WorkThreadProc,(LPVOID)this, 0, NULL);
 		m_bWorkThread = m_hWorkThread ? S_RUN : S_STOP;
 	}
-	std::cout<<"连接服务端成功.\n";
+	Mprintf("连接服务端成功.\n");
 	m_bConnected = TRUE;
 	return TRUE;
 }
@@ -174,7 +174,7 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 			if (iRet == 0) Sleep(50);
 			else
 			{
-				printf("[select] return %d, GetLastError= %d. \n", iRet, WSAGetLastError());
+				Mprintf("[select] return %d, GetLastError= %d. \n", iRet, WSAGetLastError());
 				This->Disconnect(); //接收错误处理
 				if(This->m_exit_while_disconnect)
 					break;
@@ -196,7 +196,7 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 				This->OnServerReceiving(szBuffer, iReceivedLength);
 				if (This->m_Manager!=NULL && This->m_Manager->m_bIsDead)
 				{
-					printf("****** Recv bye bye ******\n");
+					Mprintf("****** Recv bye bye ******\n");
 					// 不论是否退出客户端和主控端，都退出客户端
 					extern BOOL g_bExit;
 					g_bExit = This->m_Manager->m_bIsDead;
@@ -271,7 +271,7 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 							m_DeCompressedBuffer.GetBufferLength());
 				}
 				else{
-					printf("[ERROR] uncompress fail: dstLen %d, srcLen %d\n", ulOriginalLength, ulCompressedLength);
+					Mprintf("[ERROR] uncompress fail: dstLen %d, srcLen %d\n", ulOriginalLength, ulCompressedLength);
 					delete [] CompressedBuffer;
 					delete [] DeCompressedBuffer;
 					throw "Bad Buffer";
@@ -280,17 +280,17 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 				delete [] CompressedBuffer;
 				delete [] DeCompressedBuffer;
 #if _DEBUG
-				printf("[INFO] uncompress succeed data len: %d expect: %d\n", len, ulPackTotalLength);
+				// Mprintf("[INFO] uncompress succeed data len: %d expect: %d\n", len, ulPackTotalLength);
 #endif
 			}
 			else {
-				printf("[WARNING] OnServerReceiving incomplete data: %d expect: %d\n", len, ulPackTotalLength);
+				Mprintf("[WARNING] OnServerReceiving incomplete data: %d expect: %d\n", len, ulPackTotalLength);
 				break;
 			}
 		}
 	}catch(...) { 
 		m_CompressedBuffer.ClearBuffer();
-		printf("[ERROR] OnServerReceiving catch an error \n");
+		Mprintf("[ERROR] OnServerReceiving catch an error \n");
 	}
 }
 
@@ -320,7 +320,7 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  
 		int	iRet = compress(CompressedBuffer, &ulCompressedLength, (PBYTE)szBuffer, ulOriginalLength);
 		if (Z_FAILED(iRet))
 		{
-			printf("[ERROR] compress failed \n");
+			Mprintf("[ERROR] compress failed \n");
 			delete [] CompressedBuffer;
 			return FALSE;
 		}
@@ -412,7 +412,7 @@ BOOL IOCPClient::SendWithSplit(const char* szBuffer, ULONG ulLength, ULONG ulSpl
 
 VOID IOCPClient::Disconnect() 
 {
-	std::cout<<"断开和服务端的连接.\n";
+	Mprintf("断开和服务端的连接.\n");
 
 	CancelIo((HANDLE)m_sClientSocket);
 	closesocket(m_sClientSocket);	

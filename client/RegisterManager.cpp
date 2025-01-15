@@ -19,7 +19,7 @@ CRegisterManager::CRegisterManager(IOCPClient* ClientObject, int n):CManager(Cli
 
 CRegisterManager::~CRegisterManager()
 {
-	cout<<"CRegisterManager Îö¹¹\n";
+	Mprintf("CRegisterManager Îö¹¹\n");
 }
 
 VOID  CRegisterManager::OnReceive(PBYTE szBuffer, ULONG ulLength)

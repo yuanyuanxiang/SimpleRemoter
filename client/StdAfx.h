@@ -10,16 +10,22 @@
 #define USING_COMPRESS 1
 
 // 是否使用ZLIB
-#define USING_ZLIB 1
+#define USING_ZLIB 0
 
 #if !USING_ZLIB
 // 是否使用LZ4
-#define USING_LZ4 1
+#define USING_LZ4 0
 #endif
 
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000
+
+#ifdef _DEBUG
+#define Mprintf(format, ...) printf(format, ##__VA_ARGS__)
+#else
+#define Mprintf(format, ...) 
+#endif
 
 // 检测内存泄漏，需安装VLD；否则请注释此行
 #include "vld.h"
@@ -70,7 +76,7 @@ public:
 	~auto_tick() { stop(); }
 
 	__inline void stop() {
-		if (span != 0) { int s(this->time()); if (s > span)printf("[%s]执行时间: [%d]ms.\n", func, s); span = 0; }
+		if (span != 0) { int s(this->time()); if (s > span)Mprintf("[%s]执行时间: [%d]ms.\n", func, s); span = 0; }
 	}
 };
 

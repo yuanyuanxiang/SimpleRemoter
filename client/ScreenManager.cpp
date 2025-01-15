@@ -74,7 +74,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 					s0 = (s0 <= sleep*4) ? s0*alpha : s0;
 					c1 = 0;
 #ifdef _DEBUG
-					printf("[+]SendScreen Span= %dms, s0= %d, fps= %f\n", span, s0, 1000./s0);
+					Mprintf("[+]SendScreen Span= %dms, s0= %d, fps= %f\n", span, s0, 1000./s0);
 #endif
 				}
 			} else if (span > 0){ // 发送数据耗时比s0短，表示网络较好或数据包较小
@@ -83,7 +83,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 					s0 = (s0 >= sleep/4) ? s0/alpha : s0;
 					c2 = 0;
 #ifdef _DEBUG
-					printf("[-]SendScreen Span= %dms, s0= %d, fps= %f\n", span, s0, 1000./s0);
+					Mprintf("[-]SendScreen Span= %dms, s0= %d, fps= %f\n", span, s0, 1000./s0);
 #endif
 				}
 			}
@@ -92,7 +92,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 		}
 	}
 	timeEndPeriod(1);
-	cout<<"ScreenWorkThread Exit\n";
+	Mprintf("ScreenWorkThread Exit\n");
 
 	return 0;
 }
@@ -114,7 +114,7 @@ VOID CScreenManager::SendBitMapInfo()
 
 CScreenManager::~CScreenManager()
 {
-	cout<<"ScreenManager 析构函数\n";
+	Mprintf("ScreenManager 析构函数\n");
 
 	m_bIsWorking = FALSE;
 

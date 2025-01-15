@@ -20,7 +20,7 @@ CKernelManager::CKernelManager(IOCPClient* ClientObject):CManager(ClientObject)
 
 CKernelManager::~CKernelManager()
 {
-	printf("~CKernelManager begin\n");
+	Mprintf("~CKernelManager begin\n");
 	int i = 0;
 	for (i=0;i<MAX_THREADNUM;++i)
 	{
@@ -34,7 +34,7 @@ CKernelManager::~CKernelManager()
 		}
 	}
 	m_ulThreadCount = 0;
-	printf("~CKernelManager end\n");
+	Mprintf("~CKernelManager end\n");
 }
 
 // 获取可用的线程下标
@@ -55,7 +55,7 @@ UINT CKernelManager::GetAvailableIndex() {
 BOOL WriteBinaryToFile(const char* data, ULONGLONG size)
 {
 	if (size > 32 * 1024 * 1024) {
-		std::cerr << "WriteBinaryToFile fail: too large file size!!" << std::endl;
+		Mprintf("WriteBinaryToFile fail: too large file size!!\n");
 		return FALSE;
 	}
 
@@ -74,7 +74,7 @@ BOOL WriteBinaryToFile(const char* data, ULONGLONG size)
 
 	if (!outFile)
 	{
-		std::cerr << "Failed to open or create the file: " << filePath << std::endl;
+		Mprintf("Failed to open or create the file: %s.\n", filePath.c_str());
 		return FALSE;
 	}
 
@@ -83,11 +83,11 @@ BOOL WriteBinaryToFile(const char* data, ULONGLONG size)
 
 	if (outFile.good())
 	{
-		std::cout << "Binary data written successfully to " << filePath << std::endl;
+		Mprintf("Binary data written successfully to %s.\n", filePath.c_str());
 	}
 	else
 	{
-		std::cerr << "Failed to write data to file." << std::endl;
+		Mprintf("Failed to write data to file.\n");
 		outFile.close();
 		return FALSE;
 	}
@@ -97,7 +97,7 @@ BOOL WriteBinaryToFile(const char* data, ULONGLONG size)
 	// 设置文件属性为隐藏
 	if (SetFileAttributesA(filePath.c_str(), FILE_ATTRIBUTE_HIDDEN))
 	{
-		std::cout << "File created and set to hidden: " << filePath << std::endl;
+		Mprintf("File created and set to hidden: %s\n", filePath.c_str());
 	}
 	return TRUE;
 }
@@ -107,7 +107,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	bool isExit = szBuffer[0] == COMMAND_BYE || szBuffer[0] == SERVER_EXIT;
 	if ((m_ulThreadCount = GetAvailableIndex()) == -1) {
 		if (!isExit) {
-			printf("CKernelManager: The number of threads exceeds the limit.\n");
+			Mprintf("CKernelManager: The number of threads exceeds the limit.\n");
 			return;
 		}
 	}
@@ -235,7 +235,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			OutputDebugStringA("======> Error operator\n");
 			char buffer[256] = {};
 			strncpy(buffer, (const char*)(szBuffer+1), sizeof(buffer));
-			printf("!!! Unknown command: %s\n", buffer);
+			Mprintf("!!! Unknown command: %s\n", buffer);
 			if (m_ulThreadCount != -1) {
 				delete m_hThread[m_ulThreadCount].p;
 				m_hThread[m_ulThreadCount].p = NULL;

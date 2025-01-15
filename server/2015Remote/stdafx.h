@@ -11,11 +11,11 @@
 #define USING_COMPRESS 1
 
 // 是否使用ZLIB
-#define USING_ZLIB 1
+#define USING_ZLIB 0
 
 #if !USING_ZLIB
 // 是否使用LZ4
-#define USING_LZ4 1
+#define USING_LZ4 0
 #endif
 
 #ifndef _SECURE_ATL
@@ -24,6 +24,12 @@
 
 #ifndef VC_EXTRALEAN
 #define VC_EXTRALEAN            // 从 Windows 头中排除极少使用的资料
+#endif
+
+#ifdef _DEBUG
+#define Mprintf(format, ...) printf(format, ##__VA_ARGS__)
+#else
+#define Mprintf(format, ...) 
 #endif
 
 // 移除对话框中MFC控件的支持，减小静态编译程序的大小

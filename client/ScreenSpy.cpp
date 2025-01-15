@@ -28,7 +28,7 @@ CScreenSpy::CScreenSpy(ULONG ulbiBitCount)
 	int w = ::GetSystemMetrics(SM_CXSCREEN), h = ::GetSystemMetrics(SM_CYSCREEN);
 	m_bZoomed = (w != m_ulFullWidth) || (h != m_ulFullHeight);
 	m_wZoom = double(m_ulFullWidth) / w, m_hZoom = double(m_ulFullHeight) / h;
-	printf("=> 桌面缩放比例: %.2f, %.2f\t分辨率：%d x %d\n", m_wZoom, m_hZoom, m_ulFullWidth, m_ulFullHeight);
+	Mprintf("=> 桌面缩放比例: %.2f, %.2f\t分辨率：%d x %d\n", m_wZoom, m_hZoom, m_ulFullWidth, m_ulFullHeight);
 	m_wZoom = 1.0/m_wZoom, m_hZoom = 1.0/m_hZoom;
 
 	m_BitmapInfor_Full = new BITMAPINFO();

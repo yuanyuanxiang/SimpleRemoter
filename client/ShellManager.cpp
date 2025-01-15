@@ -126,7 +126,7 @@ DWORD WINAPI CShellManager::ReadPipeThread(LPVOID lParam)
 			ReadFile(This->m_hReadPipeHandle, 
 				szTotalBuffer, dwTotal, &dwReturn, NULL);
 #ifdef _DEBUG
-			printf("===> Input length= %d \n", This->m_nCmdLength);
+			Mprintf("===> Input length= %d \n", This->m_nCmdLength);
 #endif
 			const char *pStart = (char*)szTotalBuffer + This->m_nCmdLength;
 			int length = int(dwReturn) - This->m_nCmdLength;
@@ -136,7 +136,7 @@ DWORD WINAPI CShellManager::ReadPipeThread(LPVOID lParam)
 			LocalFree(szTotalBuffer);
 		}
 	}
-	cout<<"ReadPipe线程退出\n";
+	Mprintf("ReadPipe线程退出\n");
 	return 0;
 }
 
