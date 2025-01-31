@@ -68,6 +68,7 @@ public:
 	ULONG GetBufferLength(); // 获得有效数据长度
 	VOID ClearBuffer();
 	BOOL WriteBuffer(PBYTE Buffer, ULONG ulLength);
+	BOOL Write(PBYTE Buffer, ULONG ulLength) { return WriteBuffer(Buffer, ulLength); }
 	LPBYTE GetBuffer(ULONG ulPos);
 	Buffer GetMyBuffer(ULONG ulPos);
 	BYTE GetBYTE(ULONG ulPos);

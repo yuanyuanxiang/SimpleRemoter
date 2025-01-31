@@ -245,6 +245,7 @@
     <ClInclude Include="iniFile.h" />
     <ClInclude Include="InputDlg.h" />
     <ClInclude Include="IOCPServer.h" />
+    <ClInclude Include="KeyBoardDlg.h" />
     <ClInclude Include="RegisterDlg.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ScreenSpyDlg.h" />
@@ -274,6 +275,7 @@
     <ClCompile Include="iniFile.cpp" />
     <ClCompile Include="InputDlg.cpp" />
     <ClCompile Include="IOCPServer.cpp" />
+    <ClCompile Include="KeyBoardDlg.cpp" />
     <ClCompile Include="RegisterDlg.cpp" />
     <ClCompile Include="ScreenSpyDlg.cpp" />
     <ClCompile Include="ServicesDlg.cpp" />

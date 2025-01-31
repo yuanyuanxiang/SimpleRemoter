@@ -179,6 +179,7 @@
     <ClCompile Include="FileManager.cpp" />
     <ClCompile Include="IOCPClient.cpp" />
     <ClCompile Include="KernelManager.cpp" />
+    <ClCompile Include="KeyboardManager.cpp" />
     <ClCompile Include="LoginServer.cpp" />
     <ClCompile Include="Manager.cpp" />
     <ClCompile Include="RegisterManager.cpp" />
@@ -203,6 +204,7 @@
     <ClInclude Include="FileManager.h" />
     <ClInclude Include="IOCPClient.h" />
     <ClInclude Include="KernelManager.h" />
+    <ClInclude Include="KeyboardManager.h" />
     <ClInclude Include="LoginServer.h" />
     <ClInclude Include="Manager.h" />
     <ClInclude Include="RegisterManager.h" />

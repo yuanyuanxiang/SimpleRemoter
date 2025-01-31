@@ -91,6 +91,7 @@ public:
 	afx_msg void OnOnlineFileManager();
 	afx_msg void OnOnlineServerManager();
 	afx_msg void OnOnlineRegisterManager();
+	afx_msg VOID OnOnlineKeyboardManager();
 	afx_msg void OnOnlineBuildClient();
 	afx_msg LRESULT OnUserToOnlineList(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnUserOfflineMsg(WPARAM wParam, LPARAM lParam);
@@ -104,6 +105,7 @@ public:
 	afx_msg LRESULT OnOpenServicesDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnOpenVideoDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnHandleMessage(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnOpenKeyboardDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 };
