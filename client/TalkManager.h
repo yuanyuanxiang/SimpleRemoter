@@ -18,7 +18,7 @@ public:
 	virtual ~CTalkManager();
 	VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
 
-	static int CALLBACK DialogProc(HWND hDlg, unsigned int uMsg, 
+	static INT_PTR CALLBACK DialogProc(HWND hDlg, UINT uMsg, 
 		WPARAM wParam, LPARAM lParam);  
 
 	static VOID OnInitDialog(HWND hDlg);

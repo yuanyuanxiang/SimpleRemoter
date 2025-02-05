@@ -62,7 +62,7 @@ VOID CTalkManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	}
 }
 
-int CALLBACK CTalkManager::DialogProc(HWND hDlg, unsigned int uMsg,
+INT_PTR CALLBACK CTalkManager::DialogProc(HWND hDlg, UINT uMsg,
 									  WPARAM wParam, LPARAM lParam)
 {
 	switch(uMsg)

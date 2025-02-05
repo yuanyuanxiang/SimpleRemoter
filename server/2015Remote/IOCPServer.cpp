@@ -327,7 +327,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 		BOOL bOk = GetQueuedCompletionStatus(
 			hCompletionPort,
 			&dwTrans,
-			(LPDWORD)&ContextObject,
+			(PULONG_PTR)&ContextObject,
 			&Overlapped, INFINITE);
 		STOP_TICK;
 		DWORD dwIOError = GetLastError();

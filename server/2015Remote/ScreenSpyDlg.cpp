@@ -6,6 +6,7 @@
 #include "ScreenSpyDlg.h"
 #include "afxdialogex.h"
 #include <imm.h>
+#include <WinUser.h>
 
 
 // CScreenSpyDlg 对话框
@@ -238,7 +239,11 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(void)
 	{
 		bChange = TRUE;
 		if (m_bIsCtrl && !m_bIsTraceCursor)//替换指定窗口所属类的WNDCLASSEX结构
-			SetClassLong(m_hWnd, GCL_HCURSOR, (LONG)m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex));
+#ifdef _WIN64
+			SetClassLongPtrA(m_hWnd, GCLP_HCURSOR, (ULONG_PTR)m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex));
+#else
+			SetClassLongA(m_hWnd, GCL_HCURSOR, (LONG)m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex));
+#endif
 	}
 
 	// 屏幕是否变化
@@ -247,26 +252,13 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(void)
 		bChange = TRUE;
 	}
 
-	//lodsd指令从ESI指向的内存位置4个字节内容放入EAX中并且下移4
-	//movsb指令字节传送数据，通过SI和DI这两个寄存器控制字符串的源地址和目标地址
-	//m_rectBuffer [0002 esi0002 esi000A 000C]     [][]edi[][][][][][][][][][][][][][][][][]
-	__asm
-	{
-		mov ebx, [NextScreenLength]   //ebx 16  
-		mov esi, [NextScreenData]  
-		jmp	CopyEnd
-CopyNextBlock:
-		mov edi, [FirstScreenData]
-		lodsd	            // 把lpNextScreen的第一个双字节，放到eax中,就是DIB中改变区域的偏移
-			add edi, eax	// lpFirstScreen偏移eax	
-			lodsd           // 把lpNextScreen的下一个双字节，放到eax中, 就是改变区域的大小
-			mov ecx, eax
-			sub ebx, 8      // ebx 减去 两个dword
-			sub ebx, ecx    // ebx 减去DIB数据的大小
-			rep movsb
-CopyEnd:
-		cmp ebx, 0 // 是否写入完毕
-			jnz CopyNextBlock
+	BYTE algorithm = m_ContextObject->InDeCompressedBuffer.GetBYTE(1);
+	LPBYTE dst = (LPBYTE)FirstScreenData, p = (LPBYTE)NextScreenData;
+	for (LPBYTE end = p + NextScreenLength; p < end; ) {
+		ULONG ulCount = *(LPDWORD(p + sizeof(ULONG)));
+		memcpy(dst + *(LPDWORD)p, p + 2 * sizeof(ULONG), ulCount);
+		
+		p += 2 * sizeof(ULONG) + ulCount;
 	}
 
 	if (bChange)

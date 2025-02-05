@@ -768,7 +768,7 @@ BOOL CFileManagerDlg::PreTranslateMessage(MSG* pMsg)
 	return CDialog::PreTranslateMessage(pMsg);
 }
 
-void CFileManagerDlg::OnTimer(UINT nIDEvent) 
+void CFileManagerDlg::OnTimer(UINT_PTR nIDEvent) 
 {
 	// TODO: Add your message handler code here and/or call default
 	m_ProgressCtrl->StepIt();
