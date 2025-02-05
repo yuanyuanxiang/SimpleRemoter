@@ -1175,7 +1175,7 @@ BOOL CFileManagerDlg::OnToolTipNotify(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
 	TCHAR szFullText[256];
 
 	CString strTipText;
-	UINT nID = pNMHDR->idFrom;
+	UINT_PTR nID = pNMHDR->idFrom;
 
 	//如果idFrom是一个子窗口，则得到其ID。
 

@@ -85,7 +85,7 @@ DWORD  CAudioDlg::WorkThread(LPVOID lParam)
 	{
 		if (!This->m_bSend)
 		{
-			WAIT(This->m_bIsWorking, 1, 50);
+			WAIT_n(This->m_bIsWorking, 1, 50);
 			continue;
 		}
 		DWORD	dwBufferSize = 0;

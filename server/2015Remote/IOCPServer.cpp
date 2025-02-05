@@ -18,7 +18,11 @@
 #define uncompress(dest, destLen, source, sourceLen) LZ4_decompress_safe((const char*)source, (char*)dest, sourceLen, *(destLen))
 #else
 #include "zstd/zstd.h"
+#ifdef _WIN64
+#pragma comment(lib, "zstd/zstd_x64.lib")
+#else
 #pragma comment(lib, "zstd/zstd.lib")
+#endif
 #define Z_FAILED(p) ZSTD_isError(p)
 #define Z_SUCCESS(p) (!Z_FAILED(p))
 #define compress(dest, destLen, source, sourceLen) ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
@@ -482,7 +486,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 				ContextObject->InCompressedBuffer.ReadBuffer(CompressedBuffer, ulCompressedLength);
 #if USING_COMPRESS
 				PBYTE DeCompressedBuffer = new BYTE[ulOriginalLength];  //解压过的内存  436
-				int	iRet = uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
+				size_t	iRet = uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
 #else
 				PBYTE DeCompressedBuffer = CompressedBuffer;
 				int iRet = 0;
@@ -521,7 +525,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 	return TRUE;
 }
 
-VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength)  
+VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength)
 {
 	assert (ContextObject);
 	// 输出服务端所发送的命令
@@ -547,7 +551,7 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 			unsigned long	ulCompressedLength = ZSTD_compressBound(ulOriginalLength);
 #endif
 			LPBYTE			CompressedBuffer = new BYTE[ulCompressedLength];
-			int	iRet = compress(CompressedBuffer, &ulCompressedLength, (LPBYTE)szBuffer, ulOriginalLength);
+			size_t	iRet = compress(CompressedBuffer, &ulCompressedLength, (LPBYTE)szBuffer, ulOriginalLength);
 
 			if (Z_FAILED(iRet))
 			{
@@ -567,7 +571,7 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 		}
 
 		OVERLAPPEDPLUS* OverlappedPlus = new OVERLAPPEDPLUS(IOWrite);
-		BOOL bOk = PostQueuedCompletionStatus(m_hCompletionPort, 0, (DWORD)ContextObject, &OverlappedPlus->m_ol);
+		BOOL bOk = PostQueuedCompletionStatus(m_hCompletionPort, 0, (ULONG_PTR)ContextObject, &OverlappedPlus->m_ol);
 		if ( (!bOk && GetLastError() != ERROR_IO_PENDING) )  //如果投递失败
 		{
 			int a = GetLastError();
@@ -681,7 +685,7 @@ void IOCPServer::OnAccept()
 	ContextObject->wsaInBuf.buf = (char*)ContextObject->szBuffer;
 	ContextObject->wsaInBuf.len = sizeof(ContextObject->szBuffer);
 
-	HANDLE Handle = CreateIoCompletionPort((HANDLE)sClientSocket, m_hCompletionPort, (DWORD)ContextObject, 0);
+	HANDLE Handle = CreateIoCompletionPort((HANDLE)sClientSocket, m_hCompletionPort, (ULONG_PTR)ContextObject, 0);
 
 	if (Handle!=m_hCompletionPort)
 	{
@@ -719,7 +723,7 @@ void IOCPServer::OnAccept()
 
 	OVERLAPPEDPLUS	*OverlappedPlus = new OVERLAPPEDPLUS(IOInitialize); //注意这里的重叠IO请求是 用户请求上线
 
-	BOOL bOk = PostQueuedCompletionStatus(m_hCompletionPort, 0, (DWORD)ContextObject, &OverlappedPlus->m_ol); // 工作线程
+	BOOL bOk = PostQueuedCompletionStatus(m_hCompletionPort, 0, (ULONG_PTR)ContextObject, &OverlappedPlus->m_ol); // 工作线程
 	//因为我们接受到了一个用户上线的请求那么我们就将该请求发送给我们的完成端口 让我们的工作线程处理它
 	if ( (!bOk && GetLastError() != ERROR_IO_PENDING))  //如果投递失败
 	{

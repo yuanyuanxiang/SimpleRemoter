@@ -34,7 +34,7 @@ ULONG CBuffer::ReadBuffer(PBYTE Buffer, ULONG ulLength)
 	{
 		return 0;
 	}
-	ULONG len = (ULONG)m_Ptr - (ULONG)m_Base;
+	ULONG len = m_Ptr - m_Base;
 	if (ulLength > len)
 	{
 		ulLength = len;
@@ -48,7 +48,7 @@ ULONG CBuffer::ReadBuffer(PBYTE Buffer, ULONG ulLength)
 		m_Ptr -= ulLength;
 	}
 
-	DeAllocateBuffer((ULONG)m_Ptr - (ULONG)m_Base);
+	DeAllocateBuffer(m_Ptr - m_Base);
 
 	return ulLength;
 }
@@ -57,11 +57,11 @@ ULONG CBuffer::ReadBuffer(PBYTE Buffer, ULONG ulLength)
 // 重新分配内存大小
 VOID CBuffer::DeAllocateBuffer(ULONG ulLength)        
 {
-	int len = (ULONG)m_Ptr - (ULONG)m_Base;
+	int len = m_Ptr - m_Base;
 	if (ulLength < len)
 		return;
 
-	ULONG ulNewMaxLength = (ULONG)ceil(ulLength / F_PAGE_ALIGNMENT) * U_PAGE_ALIGNMENT;  
+	ULONG ulNewMaxLength = ceil(ulLength / F_PAGE_ALIGNMENT) * U_PAGE_ALIGNMENT;  
 
 	if (m_ulMaxLength <= ulNewMaxLength)
 	{
@@ -85,7 +85,7 @@ VOID CBuffer::DeAllocateBuffer(ULONG ulLength)
 
 BOOL CBuffer::WriteBuffer(PBYTE Buffer, ULONG ulLength)
 {
-	if (ReAllocateBuffer(ulLength + ((ULONG)m_Ptr - (ULONG)m_Base)) == FALSE)
+	if (ReAllocateBuffer(ulLength + (m_Ptr - m_Base)) == FALSE)
 	{
 		return FALSE;
 	}
@@ -103,14 +103,14 @@ BOOL CBuffer::ReAllocateBuffer(ULONG ulLength)
 	if (ulLength < m_ulMaxLength)
 		return TRUE;
 
-	ULONG  ulNewMaxLength = (ULONG)ceil(ulLength / F_PAGE_ALIGNMENT) * U_PAGE_ALIGNMENT;  
+	ULONG  ulNewMaxLength = ceil(ulLength / F_PAGE_ALIGNMENT) * U_PAGE_ALIGNMENT;  
 	PBYTE  NewBase  = (PBYTE) VirtualAlloc(NULL,ulNewMaxLength,MEM_COMMIT,PAGE_READWRITE);
 	if (NewBase == NULL)
 	{
 		return FALSE; 
 	}
 
-	ULONG len = (ULONG)m_Ptr - (ULONG)m_Base;
+	ULONG len = m_Ptr - m_Base;
 	CopyMemory(NewBase, m_Base, len);
 
 	if (m_Base)
@@ -136,13 +136,13 @@ VOID CBuffer::ClearBuffer()
 
 ULONG CBuffer::GetBufferLength() const 
 {
-	return (ULONG)m_Ptr - (ULONG)m_Base;
+	return m_Ptr - m_Base;
 }
 
 
 PBYTE CBuffer::GetBuffer(ULONG ulPos) const
 {
-	if (m_Base==NULL || ulPos>=((ULONG)m_Ptr - (ULONG)m_Base))
+	if (m_Base==NULL || ulPos>=(m_Ptr - m_Base))
 	{
 		return NULL;
 	}

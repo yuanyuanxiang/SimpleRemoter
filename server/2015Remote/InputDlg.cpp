@@ -132,7 +132,7 @@ WORD* CDlgTemplateBuilder::AddText(WORD* buf, LPCTSTR text)
 // Create string dialog. If no icon specified, use IDI_QUESTION. Note that
 // the order in which the controls are added is the TAB order.
 //
-BOOL CInputDialog::Init(LPCTSTR caption, LPCTSTR prompt, CWnd* pParent, WORD nIDIcon)
+BOOL CInputDialog::Init(LPCTSTR caption, LPCTSTR prompt, CWnd* pParent, INT_PTR nIDIcon)
 {
 	const int CXDIALOG  = 200;					 // dialog width
 	const int DLGMARGIN = 7;					 // margins all around
@@ -155,7 +155,7 @@ BOOL CInputDialog::Init(LPCTSTR caption, LPCTSTR prompt, CWnd* pParent, WORD nID
 
 	// create icon if needed
 	if (nIDIcon) {
-		if (nIDIcon >= (WORD)IDI_APPLICATION) {
+		if (nIDIcon >= (INT_PTR)IDI_APPLICATION) {
 			// if using a system icon, I load it here and set it in OnInitDialog
 			// because can't specify system icon in template, only icons from
 			// application resource file.

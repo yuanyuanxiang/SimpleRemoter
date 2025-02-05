@@ -293,8 +293,8 @@ void CRegisterDlg::AddKey(char* szBuffer)
 		{
 			// 对注册表 REG_DWORD 类型的处理
 			char ValueDate[256] = {0};
-			DWORD d=(DWORD)szValueDate;
-			memcpy((void*)&d,szValueDate,sizeof(DWORD));
+			INT_PTR d=(INT_PTR)szValueDate;
+			memcpy((void*)&d,szValueDate,sizeof(INT_PTR));
 			CString strValue;
 			strValue.Format("0x%x",d);
 			sprintf(ValueDate,"  (%d)",d);

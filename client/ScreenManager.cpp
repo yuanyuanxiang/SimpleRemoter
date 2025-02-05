@@ -201,7 +201,7 @@ VOID CScreenManager::SendClientClipboard()
 		::CloseClipboard();
 		return;
 	}
-	int	  iPacketLength = GlobalSize(hGlobal) + 1;
+	size_t	  iPacketLength = GlobalSize(hGlobal) + 1;
 	char*   szClipboardVirtualAddress = (LPSTR) GlobalLock(hGlobal); //Ëø¶¨ 
 	LPBYTE	szBuffer = new BYTE[iPacketLength];
 

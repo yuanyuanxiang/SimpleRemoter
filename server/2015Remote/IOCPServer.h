@@ -112,7 +112,7 @@ public:
 	BOOL HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWORD dwTrans);
 	BOOL OnClientInitializing(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans);
 	BOOL OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans);  
-	VOID OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer , ULONG ulOriginalLength);
+	VOID OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer , size_t ulOriginalLength);
 	BOOL OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompressedLength);
 	void UpdateMaxConnection(int maxConn);
 	IOCPServer(void);

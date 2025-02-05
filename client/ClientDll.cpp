@@ -309,7 +309,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 	g_bThreadExit = false;
 	while (!g_bExit)
 	{
-		DWORD dwTickCount = GetTickCount64();
+		ULONGLONG dwTickCount = GetTickCount64();
 		if (!ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort()))
 		{
 			for (int k = 500; !g_bExit && --k; Sleep(10));

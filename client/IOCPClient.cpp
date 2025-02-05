@@ -19,7 +19,11 @@
 #define uncompress(dest, destLen, source, sourceLen) LZ4_decompress_safe((const char*)source, (char*)dest, sourceLen, *(destLen))
 #else
 #include "zstd/zstd.h"
+#ifdef _WIN64
+#pragma comment(lib, "zstd/zstd_x64.lib")
+#else
 #pragma comment(lib, "zstd/zstd.lib")
+#endif
 #define Z_FAILED(p) ZSTD_isError(p)
 #define Z_SUCCESS(p) (!Z_FAILED(p))
 #define compress(dest, destLen, source, sourceLen) ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
@@ -255,7 +259,7 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 
 				m_CompressedBuffer.ReadBuffer(CompressedBuffer, ulCompressedLength);
 
-				int	iRet = uncompress(DeCompressedBuffer, 
+				size_t	iRet = uncompress(DeCompressedBuffer, 
 					&ulOriginalLength, CompressedBuffer, ulCompressedLength);
 
 				if (Z_SUCCESS(iRet))//如果解压成功

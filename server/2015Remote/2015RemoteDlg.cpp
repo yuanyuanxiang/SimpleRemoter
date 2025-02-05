@@ -345,7 +345,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 							   CString strCPU, CString strVideo, CString strPing, CString ver, CString st, CString tp, CONTEXT_OBJECT* ContextObject)
 {
 	EnterCriticalSection(&m_cs);
-	if (IsExitItem(m_CList_Online, (DWORD)ContextObject)) {
+	if (IsExitItem(m_CList_Online, (ULONG_PTR)ContextObject)) {
 		LeaveCriticalSection(&m_cs);
 		OutputDebugStringA(CString("===> '") + strIP + CString("' already exist!!\n"));
 		return;
@@ -978,7 +978,7 @@ VOID CALLBACK CMy2015RemoteDlg::OfflineProc(CONTEXT_OBJECT* ContextObject)
 {
 	dlgInfo* dlg = ContextObject->v1 > 0 ? new dlgInfo(ContextObject->hDlg, ContextObject->v1) : NULL;
 
-	int nSocket = ContextObject->sClientSocket;
+	SOCKET nSocket = ContextObject->sClientSocket;
 
 	g_2015RemoteDlg->PostMessage(WM_USEROFFLINEMSG, (WPARAM)dlg, (LPARAM)nSocket);
 

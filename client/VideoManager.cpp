@@ -30,7 +30,7 @@ CVideoManager::CVideoManager(IOCPClient* ClientObject, int n) : CManager(ClientO
 DWORD CVideoManager::WorkThread(LPVOID lParam)
 {
 	CVideoManager *This = (CVideoManager *)lParam;
-	static DWORD	dwLastScreen = GetTickCount();
+	static ULONGLONG	dwLastScreen = GetTickCount64();
 
 	if (This->Initialize())          //×ªµ½Initialize
 	{
