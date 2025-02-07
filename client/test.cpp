@@ -167,7 +167,13 @@ BOOL Run(const char* argv1, int argv2) {
 	stop = hDll ? StopRun(GetProcAddress(hDll, "StopRun")) : NULL;
 	bStop = hDll ? IsStoped(GetProcAddress(hDll, "IsStoped")) : NULL;
 	bExit = hDll ? IsExit(GetProcAddress(hDll, "IsExit")) : NULL;
-	if (run)
+	if (NULL == run) {
+		if (hDll) FreeLibrary(hDll);
+		Mprintf("加载动态链接库\"ServerDll.dll\"失败. 错误代码: %d\n", GetLastError());
+		Sleep(3000);
+		return FALSE;
+	}
+	do 
 	{
 		char ip[_MAX_PATH];
 		strcpy_s(ip, g_ConnectAddress.ServerIP());
@@ -194,16 +200,12 @@ BOOL Run(const char* argv1, int argv2) {
 		if (bExit) {
 			result = bExit();
 		}
-		if (!FreeLibrary(hDll)) {
-			Mprintf("释放动态链接库\"ServerDll.dll\"失败. 错误代码: %d\n", GetLastError());
-		}
-		else {
-			Mprintf("释放动态链接库\"ServerDll.dll\"成功!\n");
-		}
+	} while (result == 2);
+	if (!FreeLibrary(hDll)) {
+		Mprintf("释放动态链接库\"ServerDll.dll\"失败. 错误代码: %d\n", GetLastError());
 	}
 	else {
-		Mprintf("加载动态链接库\"ServerDll.dll\"失败. 错误代码: %d\n", GetLastError());
-		Sleep(3000);
+		Mprintf("释放动态链接库\"ServerDll.dll\"成功!\n");
 	}
 	return result;
 }

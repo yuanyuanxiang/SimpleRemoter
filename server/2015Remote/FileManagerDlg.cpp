@@ -26,10 +26,19 @@ typedef struct {
 /////////////////////////////////////////////////////////////////////////////
 // CFileManagerDlg dialog
 
+float GetScreenScalingFactor() {
+	HDC hdc = GetDC(NULL); // 获取屏幕设备上下文
+	int dpiX = GetDeviceCaps(hdc, LOGPIXELSX); // 获取水平 DPI
+	ReleaseDC(NULL, hdc);
+
+	// 缩放比例 = DPI / 标准 DPI（96）
+	return dpiX / 96.0f;
+}
 
 CFileManagerDlg::CFileManagerDlg(CWnd* pParent, CIOCPServer* pIOCPServer, ClientContext *pContext)
 	: CDialog(CFileManagerDlg::IDD, pParent)
 {
+	m_fScalingFactor = GetScreenScalingFactor();
 	//{{AFX_DATA_INIT(CFileManagerDlg)
 	//}}AFX_DATA_INIT
 	m_bIsClosed = false;
@@ -245,9 +254,7 @@ BOOL CFileManagerDlg::OnInitDialog()
 	m_wndToolBar_Remote.AddDropDownButton(this, IDT_REMOTE_VIEW, IDR_REMOTE_VIEW);
 
 	//显示工具栏
-	m_wndToolBar_Local.MoveWindow(268, 0, rect.right - 268, 48);
-	m_wndToolBar_Remote.MoveWindow(268, rect.bottom / 2 - 10, rect.right - 268, 48);
-
+	UpdateWindowsPos();
 
 	// 设置标题
 	CString str;
@@ -305,15 +312,24 @@ void CFileManagerDlg::OnSize(UINT nType, int cx, int cy)
 	m_wndStatusBar.GetItemRect(1, &rect);
 	m_ProgressCtrl->MoveWindow(&rect);
 	
+	UpdateWindowsPos();
+}
+
+void CFileManagerDlg::UpdateWindowsPos() {
+	RECT rect;
+	GetClientRect(&rect);
+	int cx = rect.right - rect.left;
+	int cy = rect.bottom - rect.top;
 	GetDlgItem(IDC_LIST_LOCAL)->MoveWindow(0, 36, cx, (cy - 100) / 2);
 	GetDlgItem(IDC_LIST_REMOTE)->MoveWindow(0, (cy / 2) + 28, cx, (cy - 100) / 2);
-	GetDlgItem(IDC_STATIC_REMOTE)->MoveWindow(20, cy / 2, 25, 20);
-	GetDlgItem(IDC_REMOTE_PATH)->MoveWindow(53, (cy / 2) - 4 , 210, 12);
+	GetDlgItem(IDC_STATIC_LOCAL)->MoveWindow(10, 10, 25 * m_fScalingFactor, 20);
+	GetDlgItem(IDC_STATIC_REMOTE)->MoveWindow(10, cy / 2, 25 * m_fScalingFactor, 20);
+	GetDlgItem(IDC_LOCAL_PATH)->MoveWindow(56, 5, 210, 12);
+	GetDlgItem(IDC_REMOTE_PATH)->MoveWindow(56, (cy / 2) - 4, 210, 12);
 
-	GetClientRect(&rect);
 	//显示工具栏
-	m_wndToolBar_Local.MoveWindow(268, 0, rect.right - 268, 48);
-	m_wndToolBar_Remote.MoveWindow(268, rect.bottom / 2 - 10, rect.right - 268, 48);
+	m_wndToolBar_Local.MoveWindow(268, 0, (rect.right - 268), 48);
+	m_wndToolBar_Remote.MoveWindow(268, (rect.bottom / 2 - 10), (rect.right - 268), 48);
 }
 
 void CFileManagerDlg::FixedLocalDriveList()

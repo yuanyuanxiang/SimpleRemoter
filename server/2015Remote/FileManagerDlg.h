@@ -75,6 +75,7 @@ public:
 	BOOL SendDownloadJob();
 	BOOL SendUploadJob();
 	BOOL SendDeleteJob();
+	void UpdateWindowsPos();
 
 	strList m_Remote_Download_Job;
 	strList m_Remote_Upload_Job;
@@ -213,6 +214,7 @@ private:
 	void EndLocalUploadFile();
 	bool DeleteDirectory(LPCTSTR lpszDirectory);
 	void EnableControl(BOOL bEnable = TRUE);
+	float m_fScalingFactor;
 };
 
 //{{AFX_INSERT_LOCATION}}
