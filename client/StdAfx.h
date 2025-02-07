@@ -15,6 +15,12 @@
 #if !USING_ZLIB
 // ÊÇ·ñÊ¹ÓÃLZ4
 #define USING_LZ4 0
+
+#if !USING_LZ4
+#define USING_ZSTD 1
+#define USING_CTX 1
+#endif
+
 #endif
 
 #if _MSC_VER > 1000

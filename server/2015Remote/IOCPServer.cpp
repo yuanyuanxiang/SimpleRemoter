@@ -25,8 +25,14 @@
 #endif
 #define Z_FAILED(p) ZSTD_isError(p)
 #define Z_SUCCESS(p) (!Z_FAILED(p))
+#define ZSTD_CLEVEL 5
+#if USING_CTX
+#define compress(dest, destLen, source, sourceLen) ZSTD_compress2(m_Cctx, dest, *(destLen), source, sourceLen)
+#define uncompress(dest, destLen, source, sourceLen) ZSTD_decompressDCtx(m_Dctx, dest, *(destLen), source, sourceLen)
+#else
 #define compress(dest, destLen, source, sourceLen) ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
 #define uncompress(dest, destLen, source, sourceLen) ZSTD_decompress(dest, *(destLen), source, sourceLen)
+#endif
 #endif
 #endif
 using namespace std;
@@ -79,6 +85,11 @@ IOCPServer::IOCPServer(void)
 
 	m_NotifyProc = NULL;
 	m_OfflineProc = NULL;
+#if USING_CTX
+	m_Cctx = ZSTD_createCCtx();
+	m_Dctx = ZSTD_createDCtx();
+	ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_compressionLevel, ZSTD_CLEVEL);
+#endif
 }
 
 
@@ -142,6 +153,11 @@ IOCPServer::~IOCPServer(void)
 	m_ulCurrentThread = 0;
 	m_ulBusyThread = 0;
 	m_ulKeepLiveTime = 0;
+
+#if USING_CTX
+	ZSTD_freeCCtx(m_Cctx);
+	ZSTD_freeDCtx(m_Dctx);
+#endif
 
 	WSACleanup();
 }

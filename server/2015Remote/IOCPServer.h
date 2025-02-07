@@ -4,6 +4,9 @@
 #pragma comment(lib,"ws2_32.lib")
 #include "CpuUseage.h"
 #include "Buffer.h"
+#if USING_CTX
+#include "zstd/zstd.h"
+#endif
 
 #include <Mstcpip.h>
 #define PACKET_LENGTH   0x2000
@@ -77,6 +80,11 @@ public:
 	ULONG m_ulCPUHighThreadsHold;
 	ULONG m_ulCurrentThread;
 	ULONG m_ulBusyThread;
+
+#if USING_CTX
+	ZSTD_CCtx* m_Cctx; // 压缩上下文
+	ZSTD_DCtx* m_Dctx; // 解压上下文
+#endif
 
 	CCpuUsage m_cpu;
 

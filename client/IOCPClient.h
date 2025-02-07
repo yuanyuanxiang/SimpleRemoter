@@ -15,6 +15,10 @@
 #include "Buffer.h"
 #include "Manager.h"
 
+#if USING_CTX
+#include "zstd/zstd.h"
+#endif
+
 #pragma comment(lib,"ws2_32.lib")
 
 #define MAX_RECV_BUFFER  1024*32
@@ -33,7 +37,10 @@ public:
 	CBuffer	 m_CompressedBuffer;
 	BOOL	 m_bWorkThread;
 	HANDLE   m_hWorkThread;
-	
+#if USING_CTX
+	ZSTD_CCtx* m_Cctx; // 压缩上下文
+	ZSTD_DCtx* m_Dctx; // 解压上下文
+#endif
 	BOOL ConnectServer(const char* szServerIP, unsigned short uPort);
 	static DWORD WINAPI WorkThreadProc(LPVOID lParam);
 

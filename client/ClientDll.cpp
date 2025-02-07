@@ -288,14 +288,18 @@ extern "C" __declspec(dllexport) void Run(HWND hwnd, HINSTANCE hinst, LPSTR lpsz
 		return;
 	}
 	
-	do
-	{
+	do {
 		TestRun((char*)result[0].c_str(), atoi(result[1].c_str()));
 		while (!IsStoped())
 			Sleep(20);
-	} while (!IsExit());
-	if (IsExit() == 1)
-		return;
+		if (g_bExit == 1)
+			return;
+		else if (g_bExit == 2)
+			continue;
+		else // 3
+			break;
+	} while (true);
+
 	sprintf_s(message, "%s:%d", g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort());
 	RunNewDll(message);
 }

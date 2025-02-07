@@ -26,8 +26,14 @@
 #endif
 #define Z_FAILED(p) ZSTD_isError(p)
 #define Z_SUCCESS(p) (!Z_FAILED(p))
+#define ZSTD_CLEVEL 5
+#if USING_CTX
+#define compress(dest, destLen, source, sourceLen) ZSTD_compress2(m_Cctx, dest, *(destLen), source, sourceLen)
+#define uncompress(dest, destLen, source, sourceLen) ZSTD_decompressDCtx(m_Dctx, dest, *(destLen), source, sourceLen)
+#else
 #define compress(dest, destLen, source, sourceLen) ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
 #define uncompress(dest, destLen, source, sourceLen) ZSTD_decompress(dest, *(destLen), source, sourceLen)
+#endif
 #endif
 #endif
 #include <assert.h>
@@ -63,6 +69,11 @@ IOCPClient::IOCPClient(bool exit_while_disconnect)
 
 	InitializeCriticalSection(&m_cs);
 	m_exit_while_disconnect = exit_while_disconnect;
+#if USING_CTX
+	m_Cctx = ZSTD_createCCtx();
+	m_Dctx = ZSTD_createDCtx();
+	ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_compressionLevel, ZSTD_CLEVEL);
+#endif
 }
 
 IOCPClient::~IOCPClient()
@@ -89,6 +100,10 @@ IOCPClient::~IOCPClient()
 	DeleteCriticalSection(&m_cs);
 
 	m_bWorkThread = S_END;
+#if USING_CTX
+	ZSTD_freeCCtx(m_Cctx);
+	ZSTD_freeDCtx(m_Dctx);
+#endif
 }
 
 // 从域名获取IP地址
