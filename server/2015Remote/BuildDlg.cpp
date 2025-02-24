@@ -187,6 +187,7 @@ BOOL CBuildDlg::OnInitDialog()
 	m_ComboEncrypt.InsertString(0, "无");
 	m_ComboEncrypt.InsertString(1, "XOR");
 	m_ComboEncrypt.SetCurSel(0);
+	m_ComboEncrypt.EnableWindow(FALSE);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // 异常: OCX 属性页应返回 FALSE

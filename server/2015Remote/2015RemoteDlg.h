@@ -10,16 +10,8 @@
 //////////////////////////////////////////////////////////////////////////
 // 以下为特殊需求使用
 
-#define INDEPENDENT 1
-
-//////////////////////////////////////////////////////////////////////////
-
-#if INDEPENDENT
 // 是否在退出主控端时也退出客户端
 #define CLIENT_EXIT_WITH_SERVER 0
-#else
-#define CLIENT_EXIT_WITH_SERVER 1
-#endif 
 
 // CMy2015RemoteDlg 对话框
 class CMy2015RemoteDlg : public CDialogEx
@@ -61,7 +53,7 @@ public:
 
 	static VOID CALLBACK NotifyProc(CONTEXT_OBJECT* ContextObject);
 	static VOID CALLBACK OfflineProc(CONTEXT_OBJECT* ContextObject);
-	static VOID MessageHandle(CONTEXT_OBJECT* ContextObject);
+	VOID MessageHandle(CONTEXT_OBJECT* ContextObject);
 	VOID SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength);
 	// 显示用户上线信息
 	CListCtrl  m_CList_Online;    
@@ -69,9 +61,9 @@ public:
 
 	CStatusBar m_StatusBar;          //状态条
 	CTrueColorToolBar m_ToolBar;
-#if INDEPENDENT
+
 	NOTIFYICONDATA  m_Nid;
-#endif
+
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 
@@ -111,6 +103,7 @@ public:
 	afx_msg LRESULT OnOpenRegisterDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnOpenServicesDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnOpenVideoDialog(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnHandleMessage(WPARAM wParam, LPARAM lParam);
 	afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 };

