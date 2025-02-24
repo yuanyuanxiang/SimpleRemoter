@@ -18,7 +18,7 @@
 #define USING_LZ4 0
 #if !USING_LZ4
 #define USING_ZSTD 1
-#define USING_CTX 1
+#define USING_CTX 0
 #endif
 #endif
 
