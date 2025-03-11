@@ -18,6 +18,8 @@
 #define	NC_RECEIVE				0x0004
 #define NC_RECEIVE_COMPLETE		0x0005 // 完整接收
 
+std::string GetRemoteIP(SOCKET sock);
+
 enum IOType 
 {
 	IOInitialize,
@@ -121,6 +123,9 @@ public:
 	BOOL OnClientInitializing(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans);
 	BOOL OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans);  
 	VOID OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer , size_t ulOriginalLength);
+	VOID Send(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) {
+		OnClientPreSending(ContextObject, szBuffer, ulOriginalLength);
+	}
 	BOOL OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompressedLength);
 	void UpdateMaxConnection(int maxConn);
 	IOCPServer(void);
@@ -186,3 +191,10 @@ public:
 #endif
 	}
 };
+
+typedef IOCPServer CIOCPServer;
+
+typedef CONTEXT_OBJECT ClientContext;
+
+#define m_Socket sClientSocket
+#define m_DeCompressionBuffer InDeCompressedBuffer
