@@ -23,7 +23,7 @@ public:
 	PVOID   m_BitmapData_Full;
 	LPBITMAPINFO m_BitmapInfor_Full;
 	VOID DrawFirstScreen(void);
-	VOID DrawNextScreenDiff(void);
+	VOID DrawNextScreenDiff(bool keyFrame);
 	BOOL         m_bIsFirst;
 	ULONG m_ulHScrollPos;
 	ULONG m_ulVScrollPos;
@@ -45,6 +45,7 @@ public:
 	LPBYTE m_szData;
 	BOOL  m_bSend;
 	ULONG m_ulMsgCount;
+	int m_FrameID;
 
 	BOOL SaveSnapshot(void);
 	// 对话框数据

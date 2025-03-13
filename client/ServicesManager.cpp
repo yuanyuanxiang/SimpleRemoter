@@ -10,7 +10,7 @@
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CServicesManager::CServicesManager(IOCPClient* ClientObject, int n):CManager(ClientObject)
+CServicesManager::CServicesManager(IOCPClient* ClientObject, int n, void* user):CManager(ClientObject)
 {
 	SendServicesList();
 }

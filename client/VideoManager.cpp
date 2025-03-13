@@ -11,7 +11,7 @@
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CVideoManager::CVideoManager(IOCPClient* ClientObject, int n) : CManager(ClientObject)
+CVideoManager::CVideoManager(IOCPClient* ClientObject, int n, void* user) : CManager(ClientObject)
 {
 	m_bIsWorking = TRUE;
 

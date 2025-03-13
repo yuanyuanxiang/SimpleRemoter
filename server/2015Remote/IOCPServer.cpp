@@ -6,7 +6,7 @@
 #include <ws2tcpip.h>
 
 #if USING_ZLIB
-#include "zlib.h"
+#include "zlib/zlib.h"
 #define Z_FAILED(p) (Z_OK != (p))
 #define Z_SUCCESS(p) (!Z_FAILED(p))
 #else
@@ -359,7 +359,6 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 	timeBeginPeriod(1);
 	while (This->m_bTimeToKill==FALSE)
 	{
-		AUTO_TICK(40);
 		InterlockedDecrement(&This->m_ulBusyThread);
 		// GetQueuedCompletionStatus耗时比较长，导致客户端发送数据的速率提高不了
 		BOOL bOk = GetQueuedCompletionStatus(
@@ -367,7 +366,6 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 			&dwTrans,
 			(PULONG_PTR)&ContextObject,
 			&Overlapped, INFINITE);
-		STOP_TICK;
 		DWORD dwIOError = GetLastError();
 		OverlappedPlus = CONTAINING_RECORD(Overlapped, OVERLAPPEDPLUS, m_ol);
 		ulBusyThread = InterlockedIncrement(&This->m_ulBusyThread); //1 1
@@ -500,20 +498,23 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 		{
 			char szPacketFlag[FLAG_LENGTH + 3]= {0}; // 8字节对齐
 			ContextObject->InCompressedBuffer.CopyBuffer(szPacketFlag, FLAG_LENGTH, 0);
-			if (memcmp(m_szPacketFlag, szPacketFlag, FLAG_LENGTH) != 0)
-				throw "Bad Buffer";
+			if (memcmp(m_szPacketFlag, szPacketFlag, FLAG_LENGTH) != 0) {
+				ContextObject->InCompressedBuffer.ClearBuffer();
+				break;
+			}
 			
 			//Shine[50][kdjfkdjfkj]
 			ULONG ulPackTotalLength = 0;
 			ContextObject->InCompressedBuffer.CopyBuffer(&ulPackTotalLength, sizeof(ULONG), FLAG_LENGTH);
-			//取出数据包的总长
-			//50
-			if (ulPackTotalLength && (ContextObject->InCompressedBuffer.GetBufferLength()) >= ulPackTotalLength)  
+			//取出数据包的总长：5字节标识+4字节数据包总长度+4字节原始数据长度
+			int bufLen = ContextObject->InCompressedBuffer.GetBufferLength();
+			if (ulPackTotalLength && bufLen >= ulPackTotalLength)
 			{
 				ULONG ulOriginalLength = 0;
 				ContextObject->InCompressedBuffer.ReadBuffer((PBYTE)szPacketFlag, FLAG_LENGTH);
 				ContextObject->InCompressedBuffer.ReadBuffer((PBYTE) &ulPackTotalLength, sizeof(ULONG));
 				ContextObject->InCompressedBuffer.ReadBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG));
+				// TRACE("ulPackTotalLength: %d, ulOriginalLength: %d\n", ulPackTotalLength, ulOriginalLength);
 				ULONG ulCompressedLength = ulPackTotalLength - HDR_LENGTH; //461 - 13  448
 				PBYTE CompressedBuffer = new BYTE[ulCompressedLength];  //没有解压
 				//从数据包当前将源数据没有解压读取到pData   448
@@ -528,7 +529,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 				if (Z_SUCCESS(iRet))
 				{
 					ContextObject->InDeCompressedBuffer.ClearBuffer();
-					ContextObject->InCompressedBuffer.ClearBuffer();
+					//ContextObject->InCompressedBuffer.ClearBuffer();
 					ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
 					m_NotifyProc(ContextObject);  //通知窗口
 				}else{
@@ -547,15 +548,14 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 				break;
 			}
 		}
-		PostRecv(ContextObject); //投递新的接收数据的请求
 	}catch(...)
 	{
 		OutputDebugStringA("[ERROR] OnClientReceiving catch an error \n");
 		ContextObject->InCompressedBuffer.ClearBuffer();
 		ContextObject->InDeCompressedBuffer.ClearBuffer();
-
-		PostRecv(ContextObject);
 	}
+	PostRecv(ContextObject); //投递新的接收数据的请求
+
 	return TRUE;
 }
 
@@ -563,7 +563,7 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 {
 	assert (ContextObject);
 	// 输出服务端所发送的命令
-	if (ulOriginalLength < 100) {
+	if (ulOriginalLength < 100 && szBuffer[0] != COMMAND_SCREEN_CONTROL) {
 		char buf[100] = { 0 };
 		if (ulOriginalLength == 1){
 			sprintf_s(buf, "command %d", int(szBuffer[0]));

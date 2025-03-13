@@ -15,7 +15,7 @@ using namespace std;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CAudioManager::CAudioManager(IOCPClient* ClientObject, int n):CManager(ClientObject)
+CAudioManager::CAudioManager(IOCPClient* ClientObject, int n, void* user):CManager(ClientObject)
 {
 	Mprintf("new CAudioManager %p\n", this);
 

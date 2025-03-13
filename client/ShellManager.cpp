@@ -14,7 +14,7 @@ using namespace std;
 
 BOOL bStarting = TRUE;
 
-CShellManager::CShellManager(IOCPClient* ClientObject, int n):CManager(ClientObject)
+CShellManager::CShellManager(IOCPClient* ClientObject, int n, void* user):CManager(ClientObject)
 {
 	m_nCmdLength = 0;
 	bStarting = TRUE;

@@ -28,4 +28,6 @@ public:
 	afx_msg void OnEnChangeEditMax();
 	CButton m_ApplyButton;
 	virtual void OnOK();
+	CComboBox m_ComboScreenCapture;
+	CString m_sScreenCapture;
 };

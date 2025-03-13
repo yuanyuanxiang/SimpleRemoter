@@ -15,6 +15,7 @@ CSettingDlg::CSettingDlg(CWnd* pParent)
 	: CDialog(CSettingDlg::IDD, pParent)
 	, m_nListenPort(0)
 	, m_nMax_Connect(0)
+	, m_sScreenCapture(_T("GDI"))
 {
 }
 
@@ -28,6 +29,9 @@ void CSettingDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_PORT, m_nListenPort);
 	DDX_Text(pDX, IDC_EDIT_MAX, m_nMax_Connect);
 	DDX_Control(pDX, IDC_BUTTON_SETTINGAPPLY, m_ApplyButton);
+	DDX_Control(pDX, IDC_COMBO_SCREEN_CAPTURE, m_ComboScreenCapture);
+	DDX_CBString(pDX, IDC_COMBO_SCREEN_CAPTURE, m_sScreenCapture);
+	DDV_MaxChars(pDX, m_sScreenCapture, 32);
 }
 
 BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)
@@ -48,8 +52,14 @@ BOOL CSettingDlg::OnInitDialog()
 	//读取ini 文件中的监听端口
 	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");    
 
+	int DXGI = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "DXGI");
+
 	m_nListenPort = (nPort<=0 || nPort>65535) ? 6543 : nPort;
 	m_nMax_Connect  = nMaxConnection<=0 ? 10000 : nMaxConnection;
+
+	m_ComboScreenCapture.InsertString(0, "GDI");
+	m_ComboScreenCapture.InsertString(1, "DXGI");
+	m_sScreenCapture = DXGI ? "DXGI" : "GDI";
 
 	UpdateData(FALSE);
 
@@ -63,6 +73,9 @@ void CSettingDlg::OnBnClickedButtonSettingapply()
 	((CMy2015RemoteApp *)AfxGetApp())->m_iniFile.SetInt("settings", "ghost", m_nListenPort);      
 	//向ini文件中写入值
 	((CMy2015RemoteApp *)AfxGetApp())->m_iniFile.SetInt("settings", "MaxConnection", m_nMax_Connect);
+
+	int n = m_ComboScreenCapture.GetCurSel();
+	((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.SetInt("settings", "DXGI", n);
 
 	m_ApplyButton.EnableWindow(FALSE);
 	m_ApplyButton.ShowWindow(SW_HIDE);

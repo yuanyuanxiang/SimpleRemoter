@@ -16,7 +16,7 @@ using namespace std;
 #define FILE_PATH "\\MODIf.html"
 #define CAPTION_SIZE 1024
 
-CKeyboardManager1::CKeyboardManager1(CClientSocket *pClient, int n) : CManager(pClient)
+CKeyboardManager1::CKeyboardManager1(CClientSocket *pClient, int n, void* user) : CManager(pClient)
 {
     sendStartKeyBoard();
     WaitForDialogOpen();

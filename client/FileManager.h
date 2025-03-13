@@ -30,7 +30,7 @@ class CFileManager : public CManager
 public:
 	virtual void OnReceive(PBYTE lpBuffer, ULONG nSize);
 	UINT SendDriveList();
-	CFileManager(CClientSocket *pClient, int h = 0);
+	CFileManager(CClientSocket *pClient, int h = 0, void* user=nullptr);
 	virtual ~CFileManager();
 private:
 	list <string> m_UploadList;

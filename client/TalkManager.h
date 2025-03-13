@@ -14,7 +14,7 @@
 class CTalkManager : public CManager  
 {
 public:
-	CTalkManager(IOCPClient* ClientObject, int n);
+	CTalkManager(IOCPClient* ClientObject, int n, void* user = nullptr);
 	virtual ~CTalkManager();
 	VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
 
