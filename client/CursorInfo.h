@@ -9,6 +9,9 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#define ALGORITHM_GRAY 0
+#define ALGORITHM_DIFF 1
+
 #define MAX_CURSOR_TYPE	16
 
 class CCursorInfo

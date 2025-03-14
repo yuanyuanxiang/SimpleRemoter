@@ -14,7 +14,7 @@
 class CServicesManager : public CManager  
 {
 public:
-	CServicesManager(IOCPClient* ClientObject, int n);
+	CServicesManager(IOCPClient* ClientObject, int n, void* user = nullptr);
 	virtual ~CServicesManager();
 	VOID SendServicesList();
 	LPBYTE GetServicesList();

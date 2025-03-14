@@ -1,8 +1,8 @@
 #pragma once
 
-#include <vcruntime_string.h>
 #include <string>
 #include <vector>
+#include <time.h>
 
 #ifndef _MAX_PATH
 #define _MAX_PATH 260
@@ -133,6 +133,7 @@ enum
 	COMMAND_SERVICECONFIG,          // 服务端发出的标识
 	TOKEN_TALK_START,				// 即时消息开始
 	TOKEN_TALKCMPLT,				// 即时消息可重发
+	TOKEN_KEYFRAME,					// 关键帧
 	TOKEN_REGEDIT = 200,            // 注册表
 	COMMAND_REG_FIND,				// 注册表 管理标识
 	TOKEN_REG_KEY,
@@ -208,4 +209,35 @@ inline void xor_encrypt_decrypt(unsigned char *data, int len, const std::vector<
 			data[i] ^= key;
 		}
 	}
+}
+
+#ifdef _DEBUG
+// 为了解决远程桌面屏幕花屏问题而定义的宏，仅调试时使用，正式版本没有
+#define SCREENYSPY_IMPROVE 0
+#define SCREENSPY_WRITE 0
+#endif
+
+// 将内存中的位图写入文件
+inline bool WriteBitmap(LPBITMAPINFO bmpInfo, const void* bmpData, const std::string& filePrefix, int index = -1) {
+	char path[_MAX_PATH];
+	if (filePrefix.size() >= 4 && filePrefix.substr(filePrefix.size() - 4) == ".bmp") {
+		strcpy_s(path, filePrefix.c_str());
+	}
+	else {
+		sprintf_s(path, ".\\bmp\\%s_%d.bmp", filePrefix.c_str(), index == -1 ? clock() : index);
+	}
+	FILE* File = fopen(path, "wb");
+	if (File) {
+		BITMAPFILEHEADER fileHeader = { 0 };
+		fileHeader.bfType = 0x4D42; // "BM"
+		fileHeader.bfSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) + bmpInfo->bmiHeader.biSizeImage;
+		fileHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+
+		fwrite(&fileHeader, 1, sizeof(BITMAPFILEHEADER), File);
+		fwrite(&bmpInfo->bmiHeader, 1, sizeof(BITMAPINFOHEADER), File);
+		fwrite(bmpData, 1, bmpInfo->bmiHeader.biSizeImage, File);
+		fclose(File);
+		return true;
+	}
+	return false;
 }

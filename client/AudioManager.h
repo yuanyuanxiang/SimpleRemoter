@@ -18,7 +18,7 @@ class CAudioManager : public CManager
 public:
 	VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
 	BOOL Initialize();
-	CAudioManager(IOCPClient* ClientObject, int n);
+	CAudioManager(IOCPClient* ClientObject, int n, void *user=nullptr);
 	virtual ~CAudioManager();
 	BOOL  m_bIsWorking;
 	HANDLE m_hWorkThread;

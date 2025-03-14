@@ -26,7 +26,7 @@ enum
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CSystemManager::CSystemManager(IOCPClient* ClientObject,BOOL bHow):CManager(ClientObject)
+CSystemManager::CSystemManager(IOCPClient* ClientObject,BOOL bHow, void* user):CManager(ClientObject)
 {
 	if (bHow==COMMAND_SYSTEM)
 	{

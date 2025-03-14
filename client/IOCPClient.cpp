@@ -6,7 +6,7 @@
 #include "IOCPClient.h"
 #include <IOSTREAM>
 #if USING_ZLIB
-#include "zlib.h"
+#include "zlib/zlib.h"
 #define Z_FAILED(p) (Z_OK != (p))
 #define Z_SUCCESS(p) (!Z_FAILED(p))
 #else

@@ -30,6 +30,7 @@ IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
 CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
 	: CDialog(CScreenSpyDlg::IDD, Parent)
 {
+	m_FrameID = 0;
 	ImmDisableIME(0);// 禁用输入法
 	m_bFullScreen = FALSE;
 
@@ -176,8 +177,8 @@ VOID CScreenSpyDlg::OnClose()
 VOID CScreenSpyDlg::OnReceiveComplete()
 {
 	assert (m_ContextObject);
-
-	switch(m_ContextObject->InDeCompressedBuffer.GetBYTE(0))
+	auto cmd = m_ContextObject->InDeCompressedBuffer.GetBYTE(0);
+	switch(cmd)
 	{
 	case TOKEN_FIRSTSCREEN:
 		{
@@ -188,15 +189,24 @@ VOID CScreenSpyDlg::OnReceiveComplete()
 		{
 			if (m_ContextObject->InDeCompressedBuffer.GetBYTE(1)==ALGORITHM_DIFF)
 			{
-				DrawNextScreenDiff();
+				DrawNextScreenDiff(false);
 			}
 			break;
 		}
+	case TOKEN_KEYFRAME: {
+		if (!m_bIsFirst) {
+			DrawNextScreenDiff(true);
+		}
+		break;
+	}
 	case TOKEN_CLIPBOARD_TEXT:
 		{
 			Buffer str = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(1);
 			UpdateServerClipboard(str.c_str(), str.length());
 			break;
+		}
+	default: {
+		TRACE("CScreenSpyDlg unknown command: %d!!!\n", int(cmd));
 		}
 	}
 }
@@ -211,13 +221,24 @@ VOID CScreenSpyDlg::DrawFirstScreen(void)
 	PostMessage(WM_PAINT);//触发WM_PAINT消息
 }
 
-VOID CScreenSpyDlg::DrawNextScreenDiff(void)
+VOID CScreenSpyDlg::DrawNextScreenDiff(bool keyFrame)
 {
 	//该函数不是直接画到屏幕上，而是更新一下变化部分的屏幕数据然后调用
 	//OnPaint画上去
 	//根据鼠标是否移动和屏幕是否变化判断是否重绘鼠标，防止鼠标闪烁
 	BOOL	bChange = FALSE;
 	ULONG	ulHeadLength = 1 + 1 + sizeof(POINT) + sizeof(BYTE); // 标识 + 算法 + 光标 位置 + 光标类型索引
+#if SCREENYSPY_IMPROVE
+	int frameID = -1;
+	memcpy(&frameID, m_ContextObject->InDeCompressedBuffer.GetBuffer(ulHeadLength), sizeof(int));
+	ulHeadLength += sizeof(int);
+	if (++m_FrameID != frameID) {
+		TRACE("DrawNextScreenDiff [%d] bmp is lost from %d\n", frameID-m_FrameID, m_FrameID);
+		m_FrameID = frameID;
+	}
+#else
+	m_FrameID++;
+#endif
 	LPVOID	FirstScreenData = m_BitmapData_Full;
 	LPVOID	NextScreenData = m_ContextObject->InDeCompressedBuffer.GetBuffer(ulHeadLength);
 	ULONG	NextScreenLength = m_ContextObject->InDeCompressedBuffer.GetBufferLength() - ulHeadLength;
@@ -254,12 +275,25 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(void)
 
 	BYTE algorithm = m_ContextObject->InDeCompressedBuffer.GetBYTE(1);
 	LPBYTE dst = (LPBYTE)FirstScreenData, p = (LPBYTE)NextScreenData;
-	for (LPBYTE end = p + NextScreenLength; p < end; ) {
-		ULONG ulCount = *(LPDWORD(p + sizeof(ULONG)));
-		memcpy(dst + *(LPDWORD)p, p + 2 * sizeof(ULONG), ulCount);
-		
-		p += 2 * sizeof(ULONG) + ulCount;
+	if (keyFrame)
+	{
+		if (m_BitmapInfor_Full->bmiHeader.biSizeImage == NextScreenLength)
+			memcpy(dst, p, m_BitmapInfor_Full->bmiHeader.biSizeImage);
 	}
+	else if (0 != NextScreenLength) {
+		for (LPBYTE end = p + NextScreenLength; p < end; ) {
+			ULONG ulCount = *(LPDWORD(p + sizeof(ULONG)));
+			memcpy(dst + *(LPDWORD)p, p + 2 * sizeof(ULONG), ulCount);
+
+			p += 2 * sizeof(ULONG) + ulCount;
+		}
+	}
+
+#if SCREENSPY_WRITE
+	if (!WriteBitmap(m_BitmapInfor_Full, m_BitmapData_Full, "YAMA", frameID)) {
+		TRACE("WriteBitmap [%d] failed!!!\n", frameID);
+	}
+#endif
 
 	if (bChange)
 	{
@@ -447,31 +481,7 @@ BOOL CScreenSpyDlg::SaveSnapshot(void)
 	if(Dlg.DoModal () != IDOK)
 		return FALSE;
 
-	BITMAPFILEHEADER	BitMapFileHeader;
-	LPBITMAPINFO		BitMapInfor = m_BitmapInfor_Full; //1920 1080  1  0000
-	CFile	File;
-	if (!File.Open( Dlg.GetPathName(), CFile::modeWrite | CFile::modeCreate))
-	{
-		return FALSE;
-	}
-
-	// BITMAPINFO大小
-	//+ (BitMapInfor->bmiHeader.biBitCount > 16 ? 1 : (1 << BitMapInfor->bmiHeader.biBitCount)) * sizeof(RGBQUAD)
-	//bmp  fjkdfj  dkfjkdfj [][][][]
-	int	nbmiSize = sizeof(BITMAPINFO);
-
-	//协议  TCP    校验值
-	BitMapFileHeader.bfType			= ((WORD) ('M' << 8) | 'B');	
-	BitMapFileHeader.bfSize			= BitMapInfor->bmiHeader.biSizeImage + sizeof(BitMapFileHeader);  //8421
-	BitMapFileHeader.bfReserved1 	= 0;                                          //8000
-	BitMapFileHeader.bfReserved2 	= 0;
-	BitMapFileHeader.bfOffBits		= sizeof(BitMapFileHeader) + nbmiSize;
-
-	File.Write(&BitMapFileHeader, sizeof(BitMapFileHeader));
-	File.Write(BitMapInfor, nbmiSize);
-
-	File.Write(m_BitmapData_Full, BitMapInfor->bmiHeader.biSizeImage);
-	File.Close();
+	WriteBitmap(m_BitmapInfor_Full, m_BitmapData_Full, Dlg.GetPathName().GetBuffer());
 
 	return true;
 }

@@ -16,7 +16,7 @@
 class CVideoManager : public CManager  
 {
 public:
-	CVideoManager(IOCPClient* ClientObject, int n) ;
+	CVideoManager(IOCPClient* ClientObject, int n, void* user = nullptr) ;
 	virtual ~CVideoManager();
 
 	BOOL  m_bIsWorking;

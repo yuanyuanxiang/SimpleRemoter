@@ -56,7 +56,7 @@ template <class Manager, int n> DWORD WINAPI LoopManager(LPVOID lParam)
 	IOCPClient	*ClientObject = pInfo->p;
 	if (ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort()))
 	{
-		Manager	m(ClientObject, n);
+		Manager	m(ClientObject, n, pInfo->user);
 		ClientObject->RunEventLoop(pInfo->run);
 	}
 	delete ClientObject;

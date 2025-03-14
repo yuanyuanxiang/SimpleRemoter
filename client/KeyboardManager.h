@@ -14,7 +14,7 @@
 class CKeyboardManager1 : public CManager
 {
 public:
-    CKeyboardManager1(CClientSocket *pClient, int n=0);
+    CKeyboardManager1(CClientSocket *pClient, int n=0, void* user = nullptr);
     virtual ~CKeyboardManager1();
     virtual void OnReceive(LPBYTE lpBuffer, ULONG nSize);
     static DWORD WINAPI KeyLogger(LPVOID lparam);
