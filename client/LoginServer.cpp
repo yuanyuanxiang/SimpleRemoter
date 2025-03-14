@@ -5,6 +5,24 @@
 #include <iostream>
 #include <iomanip>
 #include <ctime>
+#include <NTSecAPI.h>
+
+// by ChatGPT
+bool IsWindows11() {
+	typedef NTSTATUS(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+	RTL_OSVERSIONINFOW rovi = { 0 };
+	rovi.dwOSVersionInfoSize = sizeof(rovi);
+
+	HMODULE hMod = GetModuleHandleW(L"ntdll.dll");
+	if (hMod) {
+		RtlGetVersionPtr rtlGetVersion = (RtlGetVersionPtr)GetProcAddress(hMod, "RtlGetVersion");
+		if (rtlGetVersion) {
+			rtlGetVersion(&rovi);
+			return (rovi.dwMajorVersion == 10 && rovi.dwMinorVersion == 0 && rovi.dwBuildNumber >= 22000);
+		}
+	}
+	return false;
+}
 
 /************************************************************************
 --------------------- 
@@ -22,6 +40,11 @@ std::string getSystemName()
 	HINSTANCE hinst = LoadLibrary("ntdll.dll");
 	if (hinst == NULL)
 	{
+		return vname;
+	}
+	if (IsWindows11()) {
+		vname = "Windows 11";
+		printf_s("此电脑的版本为:%s\n", vname.c_str());
 		return vname;
 	}
 	DWORD dwMajor, dwMinor, dwBuildNumber;
