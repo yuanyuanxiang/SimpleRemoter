@@ -28,6 +28,12 @@ enum IOType
 	IOIdle
 };
 
+enum {
+	COMPRESS_UNKNOWN		= -2,			// 未知压缩算法
+	COMPRESS_ZLIB			= -1,			// 以前版本使用的压缩方法
+	COMPRESS_ZSTD			= 0,			// 当前使用的压缩方法
+};
+
 typedef struct _CONTEXT_OBJECT 
 {
 	CString  sClientInfo[10];
@@ -41,6 +47,7 @@ typedef struct _CONTEXT_OBJECT
 	int				    v1;
 	HANDLE              hDlg;
 	void				*olps;						// OVERLAPPEDPLUS
+	int					CompressMethod;				// 压缩算法
 
 	VOID InitMember()
 	{
@@ -51,6 +58,7 @@ typedef struct _CONTEXT_OBJECT
 		memset(&wsaInBuf,0,sizeof(WSABUF));
 		memset(&wsaOutBuffer,0,sizeof(WSABUF));
 		olps = NULL;
+		CompressMethod = COMPRESS_ZSTD;
 	}
 	VOID SetClientInfo(CString s[10]){
 		for (int i=0; i<sizeof(sClientInfo)/sizeof(CString);i++)

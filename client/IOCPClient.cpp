@@ -326,7 +326,6 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  
 		//数据压缩 压缩算法 微软提供
 		//nSize   = 436
 		//destLen = 448
-#if USING_COMPRESS
 #if USING_ZLIB
 		unsigned long	ulCompressedLength = (double)ulOriginalLength * 1.001  + 12;
 #elif USING_LZ4
@@ -346,11 +345,6 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  
 #if !USING_ZLIB
 		ulCompressedLength = iRet;
 #endif
-
-#else // 不压缩
-		unsigned long ulCompressedLength = ulOriginalLength;
-		LPBYTE CompressedBuffer = (LPBYTE)szBuffer;
-#endif
 		ULONG ulPackTotalLength = ulCompressedLength + HDR_LENGTH;
 		CBuffer m_WriteBuffer;
 
@@ -364,10 +358,8 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  
 		//[Shine][ 30 ][5]
 		m_WriteBuffer.WriteBuffer(CompressedBuffer,ulCompressedLength);
 
-#if USING_COMPRESS // 使用压缩算法，需要释放申请的内存
 		delete [] CompressedBuffer;
 		CompressedBuffer = NULL;
-#endif
 
 		// 分块发送
 		//shine[0035][0010][HelloWorld+12]

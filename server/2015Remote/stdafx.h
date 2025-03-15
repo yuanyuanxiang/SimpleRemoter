@@ -5,19 +5,11 @@
 
 #pragma once
 
-// 使用压缩算法，算法需要和clien的stdafx.h匹配
-#define USING_COMPRESS 1
-
-// 是否使用ZLIB
-#define USING_ZLIB 0
-
-#if !USING_ZLIB
 // 是否使用LZ4
 #define USING_LZ4 0
 #if !USING_LZ4
 #define USING_ZSTD 1
 #define USING_CTX 0
-#endif
 #endif
 
 #ifndef _SECURE_ATL
@@ -161,5 +153,8 @@ public:
 #define AUTO_TICK(thresh) 
 #define STOP_TICK 
 #endif
+
+#define SAFE_DELETE(p) if(p){ delete (p); (p) = NULL; }
+#define SAFE_DELETE_ARRAY(p) if(p){ delete[] (p); (p) = NULL; }
 
 #include "common/commands.h"
