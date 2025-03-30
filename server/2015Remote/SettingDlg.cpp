@@ -5,6 +5,7 @@
 #include "2015Remote.h"
 #include "SettingDlg.h"
 #include "afxdialogex.h"
+#include "client/CursorInfo.h"
 
 
 // CSettingDlg ¶Ô»°¿ò
@@ -16,6 +17,7 @@ CSettingDlg::CSettingDlg(CWnd* pParent)
 	, m_nListenPort(0)
 	, m_nMax_Connect(0)
 	, m_sScreenCapture(_T("GDI"))
+	, m_sScreenCompress(_T("ÆÁÄ»²îÒìËã·¨"))
 {
 }
 
@@ -32,6 +34,8 @@ void CSettingDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO_SCREEN_CAPTURE, m_ComboScreenCapture);
 	DDX_CBString(pDX, IDC_COMBO_SCREEN_CAPTURE, m_sScreenCapture);
 	DDV_MaxChars(pDX, m_sScreenCapture, 32);
+	DDX_Control(pDX, IDC_COMBO_SCREEN_COMPRESS, m_ComboScreenCompress);
+	DDX_CBString(pDX, IDC_COMBO_SCREEN_COMPRESS, m_sScreenCompress);
 }
 
 BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)
@@ -54,8 +58,29 @@ BOOL CSettingDlg::OnInitDialog()
 
 	int DXGI = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "DXGI");
 
+	CString algo = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "ScreenCompress", "");
+
 	m_nListenPort = (nPort<=0 || nPort>65535) ? 6543 : nPort;
 	m_nMax_Connect  = nMaxConnection<=0 ? 10000 : nMaxConnection;
+
+	int n = algo.IsEmpty() ? ALGORITHM_DIFF : atoi(algo.GetString());
+	switch (n)
+	{
+	case ALGORITHM_GRAY:
+		m_sScreenCompress = "»Ò¶ÈÍ¼Ïñ´«Êä";
+		break;
+	case ALGORITHM_DIFF:
+		m_sScreenCompress = "ÆÁÄ»²îÒìËã·¨";
+		break;
+	case ALGORITHM_H264:
+		m_sScreenCompress = "H264Ñ¹ËõËã·¨";
+		break;
+	default:
+		break;
+	}
+	m_ComboScreenCompress.InsertString(ALGORITHM_GRAY, "»Ò¶ÈÍ¼Ïñ´«Êä");
+	m_ComboScreenCompress.InsertString(ALGORITHM_DIFF, "ÆÁÄ»²îÒìËã·¨");
+	m_ComboScreenCompress.InsertString(ALGORITHM_H264, "H264Ñ¹ËõËã·¨");
 
 	m_ComboScreenCapture.InsertString(0, "GDI");
 	m_ComboScreenCapture.InsertString(1, "DXGI");
@@ -76,6 +101,9 @@ void CSettingDlg::OnBnClickedButtonSettingapply()
 
 	int n = m_ComboScreenCapture.GetCurSel();
 	((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.SetInt("settings", "DXGI", n);
+
+	n = m_ComboScreenCompress.GetCurSel();
+	((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.SetInt("settings", "ScreenCompress", n);
 
 	m_ApplyButton.EnableWindow(FALSE);
 	m_ApplyButton.ShowWindow(SW_HIDE);

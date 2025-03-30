@@ -45,8 +45,20 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 	m_bIsWorking = TRUE;
 	m_bIsBlockInput = FALSE;
 
-	bool DXGI = user;
-	m_ScreenSpyObject = (DXGI && IsWindows8orHigher()) ? (ScreenCapture*) new ScreenCapturerDXGI() : new CScreenSpy(32);
+	bool DXGI = false;
+	BYTE algo = ALGORITHM_DIFF;
+	if (!(user == NULL || (int)user == 1)) {
+		UserParam* param = (UserParam*)user;
+		if (param) {
+			DXGI = param->buffer[0];
+			algo = param->length > 1 ? param->buffer[1] : algo;
+			delete param;
+		}
+	} else {
+		DXGI = user;
+	}
+	Mprintf("CScreenManager: DXGI %s Algorithm: %d\n", DXGI ? "On":"Off", int(algo));
+	m_ScreenSpyObject = (DXGI && IsWindows8orHigher()) ? (ScreenCapture*) new ScreenCapturerDXGI(algo) : new CScreenSpy(32, algo);
 
 	m_hWorkThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)WorkThreadProc,this,0,NULL);
 }

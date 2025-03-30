@@ -1,5 +1,5 @@
 #pragma once
-
+#include "StdAfx.h"
 #include "IOCPClient.h"
 #include "common/commands.h"
 
@@ -10,6 +10,13 @@ typedef struct _THREAD_ARG_LIST
 	bool	bInteractive; // 是否支持交互桌面  ??
 	HANDLE	hEvent;
 }THREAD_ARG_LIST, *LPTHREAD_ARG_LIST;
+
+typedef struct UserParam
+{
+	BYTE* buffer;
+	int length;
+	~UserParam() { SAFE_DELETE_ARRAY(buffer); }
+}UserParam;
 
 HANDLE _CreateThread (LPSECURITY_ATTRIBUTES  SecurityAttributes,   //安全属性
 					  SIZE_T dwStackSize,                         //线程栈的大小  0                     

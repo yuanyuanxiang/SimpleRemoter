@@ -13,6 +13,7 @@
 #include <condition_variable>
 #include <functional>
 #include <future>
+#include "X264Encoder.h"
 
 
 class ThreadPool {
@@ -103,11 +104,12 @@ public:
 	int              m_FrameID;          // 帧序号
 	int              m_GOP;              // 关键帧间隔
 	bool		     m_SendKeyFrame;	 // 发送关键帧
+	CX264Encoder	 *m_encoder;		 // 编码器
 
-	ScreenCapture() : m_ThreadPool(nullptr), m_FirstBuffer(nullptr), m_RectBuffer(nullptr),
-		m_BitmapInfor_Full(nullptr), m_bAlgorithm(ALGORITHM_DIFF),
+	ScreenCapture(BYTE algo = ALGORITHM_DIFF) : m_ThreadPool(nullptr), m_FirstBuffer(nullptr), m_RectBuffer(nullptr),
+		m_BitmapInfor_Full(nullptr), m_bAlgorithm(algo),
 		m_ulFullWidth(0), m_ulFullHeight(0), m_bZoomed(false), m_wZoom(1), m_hZoom(1), 
-		m_FrameID(0), m_GOP(DEFAULT_GOP), m_SendKeyFrame(false){
+		m_FrameID(0), m_GOP(DEFAULT_GOP), m_SendKeyFrame(false), m_encoder(nullptr){
 
 		m_BlockNum = 8;
 		m_ThreadPool = new ThreadPool(m_BlockNum);
@@ -126,6 +128,14 @@ public:
 		m_wZoom = double(m_ulFullWidth) / w, m_hZoom = double(m_ulFullHeight) / h;
 		Mprintf("=> 桌面缩放比例: %.2f, %.2f\t分辨率：%d x %d\n", m_wZoom, m_hZoom, m_ulFullWidth, m_ulFullHeight);
 		m_wZoom = 1.0 / m_wZoom, m_hZoom = 1.0 / m_hZoom;
+
+		if (ALGORITHM_H264 == m_bAlgorithm)
+		{
+			m_encoder = new CX264Encoder();
+			if (!m_encoder->open(m_ulFullWidth, m_ulFullHeight, 20, m_ulFullWidth * m_ulFullHeight / 1266)) {
+				Mprintf("Open x264encoder failed!!!\n");
+			}
+		}
 
 		m_BlockBuffers = new LPBYTE[m_BlockNum];
 		m_BlockSizes = new ULONG[m_BlockNum];
@@ -147,6 +157,7 @@ public:
 		SAFE_DELETE_ARRAY(m_BlockSizes);
 
 		SAFE_DELETE(m_ThreadPool);
+		SAFE_DELETE(m_encoder);
 	}
 
 public:
@@ -240,6 +251,12 @@ public:
 		return m_BitmapInfor_Full->bmiHeader.biSizeImage;
 	}
 
+	void ToGray(LPBYTE dst, LPBYTE src, int biSizeImage) {
+		for (ULONG i = 0; i < biSizeImage; i += 4, dst += 4, src += 4) {
+			dst[0] = dst[1] = dst[2] = (306 * src[2] + 601 * src[0] + 117 * src[1]) >> 10;
+		}
+	}
+
 	// 算法+光标位置+光标类型
 	LPBYTE GetNextScreenData(ULONG* ulNextSendLength) {
 		BYTE algo = m_bAlgorithm;
@@ -266,7 +283,9 @@ public:
 		// 分段扫描全屏幕  将新的位图放入到m_hDiffMemDC中
 		LPBYTE nextData = ScanNextScreen();
 		if (nullptr == nextData) {
-			return nullptr;
+			// 扫描下一帧失败也需要发送光标信息到控制端
+			*ulNextSendLength = 1 + offset;
+			return m_RectBuffer;
 		}
 
 #if SCREENYSPY_IMPROVE
@@ -281,22 +300,57 @@ public:
 
 		if (keyFrame)
 		{
-			*ulNextSendLength = 1 + offset + m_BitmapInfor_Full->bmiHeader.biSizeImage;
-			if (algo != ALGORITHM_GRAY)
+			switch (algo)
 			{
+			case ALGORITHM_DIFF: {
+				*ulNextSendLength = 1 + offset + m_BitmapInfor_Full->bmiHeader.biSizeImage;
 				memcpy(data + offset, nextData, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+				break;
 			}
-			else
-			{
-				LPBYTE	dst = data + offset, src = nextData;
-				for (ULONG i = 0; i < m_BitmapInfor_Full->bmiHeader.biSizeImage; i += 4, dst += 4, src += 4) {
-					dst[0] = dst[1] = dst[2] = (306 * src[2] + 601 * src[0] + 117 * src[1]) >> 10;
+			case ALGORITHM_GRAY: {
+				*ulNextSendLength = 1 + offset + m_BitmapInfor_Full->bmiHeader.biSizeImage;
+				ToGray(data + offset, nextData, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+				break;
+			}
+			case ALGORITHM_H264: {
+				uint8_t* encoded_data = nullptr;
+				uint32_t  encoded_size = 0;
+				int err = m_encoder->encode(nextData, 32, 4*m_BitmapInfor_Full->bmiHeader.biWidth, 
+					m_ulFullWidth, m_ulFullHeight, &encoded_data, &encoded_size);
+				if (err) {
+					return nullptr;
 				}
+				*ulNextSendLength = 1 + offset + encoded_size;
+				memcpy(data + offset, encoded_data, encoded_size);
+				break;
+			}
+			default:
+				break;
 			}
 			memcpy(GetFirstBuffer(), nextData, m_BitmapInfor_Full->bmiHeader.biSizeImage);
 		}
 		else {
-			*ulNextSendLength = 1 + offset + MultiCompareBitmap(nextData, GetFirstBuffer(), data + offset, GetBMPSize(), algo);
+			switch (algo)
+			{
+			case ALGORITHM_DIFF: case ALGORITHM_GRAY: {
+				*ulNextSendLength = 1 + offset + MultiCompareBitmap(nextData, GetFirstBuffer(), data + offset, GetBMPSize(), algo);
+				break;
+			}
+			case ALGORITHM_H264: {
+				uint8_t* encoded_data = nullptr;
+				uint32_t  encoded_size = 0;
+				int err = m_encoder->encode(nextData, 32, 4 * m_BitmapInfor_Full->bmiHeader.biWidth,
+					m_ulFullWidth, m_ulFullHeight, &encoded_data, &encoded_size);
+				if (err) {
+					return nullptr;
+				}
+				*ulNextSendLength = 1 + offset + encoded_size;
+				memcpy(data + offset, encoded_data, encoded_size);
+				break;
+			}
+			default:
+				break;
+			}
 		}
 
 		return m_RectBuffer;

@@ -22,7 +22,7 @@ private:
 	BYTE* m_NextBuffer = nullptr;
 
 public:
-	ScreenCapturerDXGI(int gop = DEFAULT_GOP) : ScreenCapture() {
+	ScreenCapturerDXGI(BYTE algo, int gop = DEFAULT_GOP) : ScreenCapture(algo) {
 		m_GOP = gop;
 		InitDXGI();
 		Mprintf("Capture screen with DXGI: GOP= %d\n", m_GOP);
@@ -111,7 +111,9 @@ public:
 		int ret = CaptureFrame(m_FirstBuffer, ulFirstScreenLength, 1);
 		if (ret)
 			return nullptr;
-		
+		if (m_bAlgorithm == ALGORITHM_GRAY) {
+			ToGray(1 + m_RectBuffer, 1 + m_RectBuffer, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+		}
 		m_FirstBuffer[0] = TOKEN_FIRSTSCREEN;
 		return m_FirstBuffer;
 	}
