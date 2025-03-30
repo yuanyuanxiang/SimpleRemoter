@@ -30,6 +30,22 @@ IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
 CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
 	: CDialog(CScreenSpyDlg::IDD, Parent)
 {
+#ifndef _WIN64
+	m_pCodec = nullptr;
+	m_pCodecContext = nullptr;
+	memset(&m_AVPacket, 0, sizeof(AVPacket));
+	memset(&m_AVFrame, 0, sizeof(AVFrame));
+
+	//创建解码器.
+	bool succeed = false;
+	m_pCodec = avcodec_find_decoder(AV_CODEC_ID_H264);
+	if (m_pCodec) {
+		m_pCodecContext = avcodec_alloc_context3(m_pCodec);
+		if (m_pCodecContext) {
+			succeed = (0 == avcodec_open2(m_pCodecContext, m_pCodec, 0));
+		}
+	}
+#endif
 	m_FrameID = 0;
 	ImmDisableIME(0);// 禁用输入法
 	m_bFullScreen = FALSE;
@@ -86,6 +102,17 @@ CScreenSpyDlg::~CScreenSpyDlg()
 	{
 		m_BitmapData_Full = NULL;
 	}
+#ifndef _WIN64
+	if (m_pCodecContext)
+	{
+		avcodec_free_context(&m_pCodecContext);
+		m_pCodecContext = 0;
+	}
+
+	m_pCodec = 0;
+	// AVFrame需要清除
+	av_frame_unref(&m_AVFrame);
+#endif
 }
 
 void CScreenSpyDlg::DoDataExchange(CDataExchange* pDX)
@@ -187,10 +214,7 @@ VOID CScreenSpyDlg::OnReceiveComplete()
 		}
 	case TOKEN_NEXTSCREEN:
 		{
-			if (m_ContextObject->InDeCompressedBuffer.GetBYTE(1)==ALGORITHM_DIFF)
-			{
-				DrawNextScreenDiff(false);
-			}
+			DrawNextScreenDiff(false);
 			break;
 		}
 	case TOKEN_KEYFRAME: {
@@ -277,15 +301,52 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(bool keyFrame)
 	LPBYTE dst = (LPBYTE)FirstScreenData, p = (LPBYTE)NextScreenData;
 	if (keyFrame)
 	{
-		if (m_BitmapInfor_Full->bmiHeader.biSizeImage == NextScreenLength)
-			memcpy(dst, p, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+		switch (algorithm)
+		{
+		case ALGORITHM_DIFF: case ALGORITHM_GRAY: {
+			if (m_BitmapInfor_Full->bmiHeader.biSizeImage == NextScreenLength)
+				memcpy(dst, p, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+			break;
+		}
+		case ALGORITHM_H264: {
+			break;
+		}
+		default:
+			break;
+		}
 	}
 	else if (0 != NextScreenLength) {
-		for (LPBYTE end = p + NextScreenLength; p < end; ) {
-			ULONG ulCount = *(LPDWORD(p + sizeof(ULONG)));
-			memcpy(dst + *(LPDWORD)p, p + 2 * sizeof(ULONG), ulCount);
+		switch (algorithm)
+		{
+		case ALGORITHM_DIFF: {
+			for (LPBYTE end = p + NextScreenLength; p < end; ) {
+				ULONG ulCount = *(LPDWORD(p + sizeof(ULONG)));
+				memcpy(dst + *(LPDWORD)p, p + 2 * sizeof(ULONG), ulCount);
 
-			p += 2 * sizeof(ULONG) + ulCount;
+				p += 2 * sizeof(ULONG) + ulCount;
+			}
+			break;
+		}
+		case ALGORITHM_GRAY: {
+			for (LPBYTE end = p + NextScreenLength; p < end; ) {
+				ULONG ulCount = *(LPDWORD(p + sizeof(ULONG)));
+				LPBYTE p1 = dst + *(LPDWORD)p, p2 = p + 2 * sizeof(ULONG);
+				for (int i = 0; i < ulCount; ++i, p1 += 4)
+					memset(p1, *p2++, sizeof(DWORD));
+
+				p += 2 * sizeof(ULONG) + ulCount;
+			}
+			break;
+		}
+		case ALGORITHM_H264: {
+			if (Decode((LPBYTE)NextScreenData, NextScreenLength))
+			{
+				bChange = TRUE;
+			}
+			break;
+		}
+		default:
+			break;
 		}
 	}
 
@@ -301,6 +362,51 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(bool keyFrame)
 	}
 }
 
+
+bool CScreenSpyDlg::Decode(LPBYTE Buffer, int size) {
+#ifndef _WIN64
+	// 解码数据.
+	av_init_packet(&m_AVPacket);
+
+	m_AVPacket.data = (uint8_t*)Buffer;
+	m_AVPacket.size = size;
+
+	int err = avcodec_send_packet(m_pCodecContext, &m_AVPacket);
+	if (!err)
+	{
+		err = avcodec_receive_frame(m_pCodecContext, &m_AVFrame);
+		if (err == AVERROR(EAGAIN)) {
+			Mprintf("avcodec_receive_frame error: EAGAIN\n");
+			return false;
+		}
+
+		// 解码数据前会清除m_AVFrame的内容.
+		if (!err)
+		{
+			LPVOID Image[2] = { 0 };
+			LPVOID CursorInfo[2] = { 0 };
+			//成功.
+			//I420 ---> ARGB.
+			//WaitForSingleObject(m_hMutex,INFINITE);
+
+			libyuv::I420ToARGB(
+				m_AVFrame.data[0], m_AVFrame.linesize[0],
+				m_AVFrame.data[1], m_AVFrame.linesize[1],
+				m_AVFrame.data[2], m_AVFrame.linesize[2],
+				(uint8_t*)m_BitmapData_Full,
+				m_BitmapInfor_Full->bmiHeader.biWidth*4,
+				m_BitmapInfor_Full->bmiHeader.biWidth,
+				m_BitmapInfor_Full->bmiHeader.biHeight);
+			return true;
+		}
+		Mprintf("avcodec_receive_frame failed with error: %d\n", err);
+	}
+	else {
+		Mprintf("avcodec_send_packet failed with error: %d\n", err);
+	}
+#endif
+	return false;
+}
 
 void CScreenSpyDlg::OnPaint()
 {
@@ -622,31 +728,25 @@ void CScreenSpyDlg::EnterFullScreen()
 {
 	if (!m_bFullScreen)
 	{
-		//get current system resolution
-		int g_iCurScreenWidth = GetSystemMetrics(SM_CXSCREEN);
-		int g_iCurScreenHeight = GetSystemMetrics(SM_CYSCREEN);
+		// 1. 获取屏幕分辨率
+		int screenWidth = GetSystemMetrics(SM_CXSCREEN);
+		int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
-		//for full screen while backplay
+		// 2. 记录当前窗口状态
 		GetWindowPlacement(&m_struOldWndpl);
 
-		CRect rectWholeDlg;//entire client(including title bar)
-		CRect rectClient;//client area(not including title bar)
-		CRect rectFullScreen;
-		GetWindowRect(&rectWholeDlg);
-		RepositionBars(0, 0xffff, AFX_IDW_PANE_FIRST, reposQuery, &rectClient);
-		ClientToScreen(&rectClient);
+		// 3. 修改窗口样式，移除标题栏、边框
+		LONG lStyle = GetWindowLong(m_hWnd, GWL_STYLE);
+		lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_BORDER);
+		SetWindowLong(m_hWnd, GWL_STYLE, lStyle);
 
-		rectFullScreen.left = rectWholeDlg.left-rectClient.left;
-		rectFullScreen.top = rectWholeDlg.top-rectClient.top;
-		rectFullScreen.right = rectWholeDlg.right+g_iCurScreenWidth - rectClient.right;
-		rectFullScreen.bottom = rectWholeDlg.bottom+g_iCurScreenHeight - rectClient.bottom;
-		//enter into full screen;
-		WINDOWPLACEMENT struWndpl;
-		struWndpl.length = sizeof(WINDOWPLACEMENT);
-		struWndpl.flags = 0;
-		struWndpl.showCmd = SW_SHOWNORMAL;
-		struWndpl.rcNormalPosition = rectFullScreen;
-		SetWindowPlacement(&struWndpl);
+		// 4. 隐藏滚动条
+		ShowScrollBar(SB_BOTH, FALSE);  // 隐藏水平和垂直滚动条
+
+		// 5. 重新调整窗口大小并更新
+		SetWindowPos(&CWnd::wndTop, 0, 0, screenWidth, screenHeight, SWP_NOZORDER | SWP_FRAMECHANGED);
+
+		// 6. 标记全屏模式
 		m_bFullScreen = true;
 	}
 }
@@ -656,10 +756,24 @@ bool CScreenSpyDlg::LeaveFullScreen()
 {
 	if (m_bFullScreen)
 	{
+		// 1. 恢复窗口样式
+		LONG lStyle = GetWindowLong(m_hWnd, GWL_STYLE);
+		lStyle |= (WS_CAPTION | WS_THICKFRAME | WS_BORDER);
+		SetWindowLong(m_hWnd, GWL_STYLE, lStyle);
+
+		// 2. 恢复窗口大小
 		SetWindowPlacement(&m_struOldWndpl);
-		CMenu *SysMenu = GetSystemMenu(FALSE);
-		SysMenu->CheckMenuItem(IDM_FULLSCREEN, MF_UNCHECKED); //菜单样式
+		SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
+
+		// 3. 显示滚动条
+		ShowScrollBar(SB_BOTH, TRUE);  // 显示水平和垂直滚动条
+
+		// 4. 标记退出全屏
 		m_bFullScreen = false;
+
+		CMenu* SysMenu = GetSystemMenu(FALSE);
+		SysMenu->CheckMenuItem(IDM_FULLSCREEN, MF_UNCHECKED); //菜单样式
+
 		return true;
 	}
 	return false;

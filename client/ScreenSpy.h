@@ -31,7 +31,7 @@ private:
 	ULONG            m_RectBufferOffset; // »º´æÇøÎ»ÒÆ
 
 public:
-	CScreenSpy(ULONG ulbiBitCount, int gop = DEFAULT_GOP);
+	CScreenSpy(ULONG ulbiBitCount, BYTE algo, int gop = DEFAULT_GOP);
 
 	virtual ~CScreenSpy();
 

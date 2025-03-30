@@ -781,7 +781,8 @@ VOID CMy2015RemoteDlg::OnOnlineWindowManager()
 VOID CMy2015RemoteDlg::OnOnlineDesktopManager()
 {
 	int n = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "DXGI");
-	BYTE	bToken[2] = { COMMAND_SCREEN_SPY, n };
+	CString algo = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "ScreenCompress", "");
+	BYTE	bToken[32] = { COMMAND_SCREEN_SPY, n, algo.IsEmpty() ? ALGORITHM_DIFF : atoi(algo.GetString())};
 	SendSelectedCommand(bToken, sizeof(bToken));
 }
 
@@ -854,7 +855,8 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 //真彩Bar
 VOID CMy2015RemoteDlg::OnAbout()
 {
-	MessageBox("Copyleft (c) FTU 2025", "关于");
+	MessageBox("Copyleft (c) FTU 2025" + CString("\n编译日期: ") + __DATE__ + 
+		CString(sizeof(void*)==8 ? " (x64)" : " (x86)"), "关于");
 }
 
 //托盘Menu

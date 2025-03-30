@@ -70,23 +70,23 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(SolutionDir)compress\libyuv;$(IncludePath)</IncludePath>
     <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
     <IntDir>$(Configuration)\dll</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(SolutionDir)compress\libyuv;$(IncludePath)</IncludePath>
     <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
     <IntDir>$(Platform)\$(Configuration)\dll</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
-    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(SolutionDir)compress\libyuv;$(IncludePath)</IncludePath>
     <IntDir>$(Configuration)\dll</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
-    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(SolutionDir)compress\libyuv;$(IncludePath)</IncludePath>
     <IntDir>$(Platform)\$(Configuration)\dll</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -102,7 +102,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>zlib\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <IgnoreSpecificDefaultLibraries>libcmt.lib</IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>libcmt.lib;msvcrt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -138,6 +138,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>zlib\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions> /SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
+      <IgnoreSpecificDefaultLibraries>msvcrt.lib</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -182,6 +183,7 @@
     <ClCompile Include="SystemManager.cpp" />
     <ClCompile Include="TalkManager.cpp" />
     <ClCompile Include="VideoManager.cpp" />
+    <ClCompile Include="X264Encoder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\common\commands.h" />
@@ -211,6 +213,7 @@
     <ClInclude Include="TalkManager.h" />
     <ClInclude Include="VideoCodec.h" />
     <ClInclude Include="VideoManager.h" />
+    <ClInclude Include="X264Encoder.h" />
     <ClInclude Include="zconf.h" />
     <ClInclude Include="zlib.h" />
   </ItemGroup>

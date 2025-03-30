@@ -30,4 +30,6 @@ public:
 	virtual void OnOK();
 	CComboBox m_ComboScreenCapture;
 	CString m_sScreenCapture;
+	CComboBox m_ComboScreenCompress;
+	CString m_sScreenCompress;
 };

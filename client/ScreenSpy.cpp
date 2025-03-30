@@ -11,10 +11,9 @@
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CScreenSpy::CScreenSpy(ULONG ulbiBitCount, int gop) : ScreenCapture()
+CScreenSpy::CScreenSpy(ULONG ulbiBitCount, BYTE algo, int gop) : ScreenCapture(algo)
 {
 	m_GOP = gop;
-	m_bAlgorithm = ALGORITHM_DIFF;
 	int m_ulbiBitCount = (ulbiBitCount == 16 || ulbiBitCount == 32) ? ulbiBitCount : 16;
 
 	m_BitmapInfor_Full = new BITMAPINFO();
@@ -98,6 +97,9 @@ LPBYTE CScreenSpy::GetFirstScreenData(ULONG* ulFirstScreenLength)
 
 	m_RectBuffer[0] = TOKEN_FIRSTSCREEN;
 	memcpy(1 + m_RectBuffer, m_BitmapData_Full, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+	if (m_bAlgorithm == ALGORITHM_GRAY) {
+		ToGray(1 + m_RectBuffer, 1 + m_RectBuffer, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+	}
 	*ulFirstScreenLength = m_BitmapInfor_Full->bmiHeader.biSizeImage;
 
 	return m_RectBuffer;  //ÄÚ´æ

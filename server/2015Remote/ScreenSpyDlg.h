@@ -2,6 +2,29 @@
 #include "IOCPServer.h"
 #include "..\..\client\CursorInfo.h"
 
+extern "C"
+{
+#include "libavcodec\avcodec.h"
+#include "libavutil\avutil.h"
+#include "libyuv\libyuv.h"
+}
+
+#ifndef _WIN64
+// https://github.com/Terodee/FFMpeg-windows-static-build/releases
+#pragma comment(lib,"libavcodec.lib")
+#pragma comment(lib,"libavutil.lib")
+#pragma comment(lib,"libswresample.lib")
+
+#pragma comment(lib,"libyuv/libyuv.lib")
+#else
+// 缺少`FFMPEG`静态库，暂时无法编译64位程序!
+#endif
+
+#pragma comment(lib, "Mfplat.lib")
+#pragma comment(lib, "Mfuuid.lib")
+#pragma comment(lib, "Bcrypt.lib")
+#pragma comment(lib, "Strmiids.lib")
+
 // CScreenSpyDlg 对话框
 
 class CScreenSpyDlg : public CDialog
@@ -55,6 +78,14 @@ public:
 
 	WINDOWPLACEMENT m_struOldWndpl;
 
+#ifndef _WIN64
+	AVCodec*			m_pCodec;
+	AVCodecContext*		m_pCodecContext;
+	AVPacket			m_AVPacket;
+	AVFrame				m_AVFrame;
+#endif
+
+	bool Decode(LPBYTE Buffer, int size);
 	void EnterFullScreen();
 	bool LeaveFullScreen();
 
