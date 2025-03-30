@@ -163,7 +163,7 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 	}
 	if (m_hWorkThread == NULL){
 		m_hWorkThread = (HANDLE)CreateThread(NULL, 0, 
-			(LPTHREAD_START_ROUTINE)WorkThreadProc,(LPVOID)this, 0, NULL);
+			WorkThreadProc,(LPVOID)this, 0, NULL);
 		m_bWorkThread = m_hWorkThread ? S_RUN : S_STOP;
 	}
 	Mprintf("连接服务端成功.\n");

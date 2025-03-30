@@ -67,7 +67,7 @@ BOOL CAudioDlg::OnInitDialog()
 	m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, sizeof(BYTE));
 
 	//Æô¶¯Ïß³Ì ÅÐ¶ÏCheckBox
-	m_hWorkThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)WorkThread, (LPVOID)this, 0, NULL);
+	m_hWorkThread = CreateThread(NULL, 0, WorkThread, (LPVOID)this, 0, NULL);
 
 	m_bThreadRun = m_hWorkThread ? TRUE : FALSE;
 

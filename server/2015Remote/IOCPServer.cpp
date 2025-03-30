@@ -261,7 +261,7 @@ UINT IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
 	m_hListenThread =
 		(HANDLE)CreateThread(NULL,			
 		0,					
-		(LPTHREAD_START_ROUTINE)ListenThreadProc, 
+		ListenThreadProc, 
 		(void*)this,	      //向Thread回调函数传入this 方便我们的线程回调访问类中的成员    
 		0,					
 		NULL);	
@@ -314,7 +314,7 @@ BOOL IOCPServer::InitializeIOCP(VOID)
 	{
 		hWorkThread = (HANDLE)CreateThread(NULL, //创建工作线程目的是处理投递到完成端口中的任务			
 			0,						
-			(LPTHREAD_START_ROUTINE)WorkThreadProc,     		
+			WorkThreadProc,     		
 			(void*)this,			
 			0,						
 			NULL);			
@@ -385,7 +385,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 					{
 						HANDLE hThread = (HANDLE)CreateThread(NULL,				
 							0,				
-							(LPTHREAD_START_ROUTINE)WorkThreadProc,  
+							WorkThreadProc,  
 							(void*)This,	    
 							0,					
 							NULL);

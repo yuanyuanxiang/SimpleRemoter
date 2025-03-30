@@ -16,14 +16,7 @@ typedef struct UserParam
 	BYTE* buffer;
 	int length;
 	~UserParam() { SAFE_DELETE_ARRAY(buffer); }
-}UserParam;
-
-HANDLE _CreateThread (LPSECURITY_ATTRIBUTES  SecurityAttributes,   //安全属性
-					  SIZE_T dwStackSize,                         //线程栈的大小  0                     
-					  LPTHREAD_START_ROUTINE StartAddress,      //线程函数回调入口 MyMain
-					  LPVOID lParam,                         //char* strHost  IP                 
-					  DWORD  dwCreationFlags,                      //0  4
-					  LPDWORD ThreadId, bool bInteractive=FALSE);  
+}UserParam; 
 
 DWORD WINAPI ThreadProc(LPVOID lParam);
 

@@ -16,30 +16,6 @@
 
 extern CONNECT_ADDRESS g_SETTINGS;
 
-HANDLE _CreateThread (LPSECURITY_ATTRIBUTES  SecurityAttributes,   
-					  SIZE_T dwStackSize,                                           
-					  LPTHREAD_START_ROUTINE StartAddress,      
-					  LPVOID lParam,                                          
-					  DWORD  dwCreationFlags,                     
-					  LPDWORD ThreadId, bool bInteractive)  
-{
-	HANDLE	hThread = INVALID_HANDLE_VALUE;
-	THREAD_ARG_LIST	ThreadArgList = {0};
-	ThreadArgList.StartAddress = StartAddress;
-	ThreadArgList.lParam = (void *)lParam;   //IP
-	ThreadArgList.bInteractive = bInteractive;       //??
-	ThreadArgList.hEvent = CreateEvent(NULL,FALSE,FALSE,NULL);
-	hThread = (HANDLE)CreateThread(SecurityAttributes, 
-		dwStackSize,(LPTHREAD_START_ROUTINE)ThreadProc, &ThreadArgList, 
-		dwCreationFlags, (LPDWORD)ThreadId);	
-	if (ThreadArgList.hEvent != NULL) {
-		WaitForSingleObject(ThreadArgList.hEvent, INFINITE);
-		CloseHandle(ThreadArgList.hEvent);
-	}
-
-	return hThread;
-}
-
 DWORD WINAPI ThreadProc(LPVOID lParam)
 {
 	THREAD_ARG_LIST	ThreadArgList = {0};

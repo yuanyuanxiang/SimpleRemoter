@@ -22,7 +22,7 @@ public:
 	virtual ~CAudioManager();
 	BOOL  m_bIsWorking;
 	HANDLE m_hWorkThread;
-	static DWORD WorkThread(LPVOID lParam);
+	static DWORD WINAPI WorkThread(LPVOID lParam);
 	BOOL SendRecordBuffer();
 
 	CAudio*  m_AudioObject;

@@ -109,7 +109,7 @@ BOOL CAudio::InitializeWaveIn()
 	DWORD		dwThreadID = 0;
 
 	m_hThreadCallBack = m_Thread = CreateThread(NULL, 0, 
-		(LPTHREAD_START_ROUTINE)waveInCallBack, (LPVOID)this, 
+		waveInCallBack, (LPVOID)this, 
 		CREATE_SUSPENDED, &dwThreadID);
 
 	//打开录音设备COM  1 指定声音规格  2 支持通过线程回调 换缓冲

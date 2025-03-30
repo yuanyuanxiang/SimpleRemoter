@@ -22,8 +22,7 @@ CVideoManager::CVideoManager(IOCPClient* ClientObject, int n, void* user) : CMan
 	m_CapVideo.Open(0,0);  // ¿ªÆô
 	lpBuffer = NULL;
 
-	m_hWorkThread = CreateThread(NULL, 0, 
-		(LPTHREAD_START_ROUTINE)WorkThread, this, 0, NULL);
+	m_hWorkThread = CreateThread(NULL, 0, WorkThread, this, 0, NULL);
 }
 
 

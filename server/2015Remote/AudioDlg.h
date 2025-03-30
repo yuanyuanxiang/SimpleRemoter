@@ -22,7 +22,7 @@ public:
 	HANDLE        m_hWorkThread;
 	CAudio		  m_AudioObject;
 
-	static DWORD  CAudioDlg::WorkThread(LPVOID lParam);
+	static DWORD WINAPI WorkThread(LPVOID lParam);
 
 	void CAudioDlg::OnReceiveComplete(void);
 // 对话框数据

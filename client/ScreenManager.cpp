@@ -60,7 +60,7 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 	Mprintf("CScreenManager: DXGI %s Algorithm: %d\n", DXGI ? "On":"Off", int(algo));
 	m_ScreenSpyObject = (DXGI && IsWindows8orHigher()) ? (ScreenCapture*) new ScreenCapturerDXGI(algo) : new CScreenSpy(32, algo);
 
-	m_hWorkThread = CreateThread(NULL,0,(LPTHREAD_START_ROUTINE)WorkThreadProc,this,0,NULL);
+	m_hWorkThread = CreateThread(NULL,0, WorkThreadProc,this,0,NULL);
 }
 
 
