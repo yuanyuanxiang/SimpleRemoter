@@ -556,9 +556,9 @@ void CFileManagerDlg::OnBegindragListLocal(NMHDR* pNMHDR, LRESULT* pResult)
 	//We will call delete later (in LButtonUp) to clean this up
 	
    	if(m_list_local.GetSelectedCount() > 1) //more than 1 item in list is selected
-   		m_hCursor = AfxGetApp()->LoadCursor(IDC_MUTI_DRAG);
+   		m_hCursor = AfxGetApp()->LoadCursor(IDC_CURSOR_MDRAG);
    	else
-   		m_hCursor = AfxGetApp()->LoadCursor(IDC_DRAG);
+   		m_hCursor = AfxGetApp()->LoadCursor(IDC_CURSOR_DRAG);
 	
 	ASSERT(m_hCursor); //make sure it was created
 	//// Change the cursor to the drag image
@@ -588,9 +588,9 @@ void CFileManagerDlg::OnBegindragListRemote(NMHDR* pNMHDR, LRESULT* pResult)
 	//We will call delete later (in LButtonUp) to clean this up
 	
    	if(m_list_remote.GetSelectedCount() > 1) //more than 1 item in list is selected
-		m_hCursor = AfxGetApp()->LoadCursor(IDC_MUTI_DRAG);
+		m_hCursor = AfxGetApp()->LoadCursor(IDC_CURSOR_MDRAG);
    	else
-		m_hCursor = AfxGetApp()->LoadCursor(IDC_DRAG);
+		m_hCursor = AfxGetApp()->LoadCursor(IDC_CURSOR_DRAG);
 	
 	ASSERT(m_hCursor); //make sure it was created
 	//// Change the cursor to the drag image
