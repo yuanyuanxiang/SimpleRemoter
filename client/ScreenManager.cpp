@@ -273,17 +273,24 @@ VOID CScreenManager::SendNextScreen(const char* szBuffer, ULONG ulNextSendLength
 
 VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
 {
-	// 数据包不合法
-	if (ulLength % sizeof(MSG) != 0)
-		return;
+	int msgSize = sizeof(MSG64);
+	if (ulLength % 28 == 0)         // 32位控制端发过来的消息
+		msgSize = 28;
+	else if (ulLength % 48 == 0)    // 64位控制端发过来的消息
+		msgSize = 48;
+	else return;                    // 数据包不合法
 
 	// 命令个数
-	ULONG	ulMsgCount = ulLength / sizeof(MSG);
+	ULONG	ulMsgCount = ulLength / msgSize;
 
 	// 处理多个命令
-	for (int i = 0; i < ulMsgCount; ++i)
+	BYTE* ptr = szBuffer;
+	MSG32 msg32;
+	MSG64 msg64;
+	for (int i = 0; i < ulMsgCount; ++i, ptr += msgSize)
 	{
-		MSG	*Msg = (MSG *)(szBuffer + i * sizeof(MSG));
+		MSG64* Msg = msgSize == 48 ? (MSG64*)ptr :
+			(MSG64*)msg64.Create(msg32.Create(ptr, msgSize));
 		switch (Msg->message)
 		{
 		case WM_LBUTTONDOWN:

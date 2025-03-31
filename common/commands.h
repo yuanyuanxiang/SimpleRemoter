@@ -241,3 +241,86 @@ inline bool WriteBitmap(LPBITMAPINFO bmpInfo, const void* bmpData, const std::st
 	}
 	return false;
 }
+
+#ifdef _WIN32
+#ifdef _WINDOWS
+#include <afxwin.h>
+#else
+#define WIN32_LEAN_AND_MEAN 
+#include <windows.h>
+#endif
+class MSG32 { // 自定义控制消息(32位)
+public:
+	uint32_t            hwnd;
+	uint32_t            message;
+	uint32_t            wParam;
+	uint32_t            lParam;
+	uint32_t            time;
+	POINT               pt;
+
+	MSG32(const void* buffer, int size) {
+		if (size == sizeof(MSG32)) {
+			memcpy(this, buffer, sizeof(MSG32));
+		}
+		else {
+			memset(this, 0, sizeof(MSG32));
+		}
+	}
+
+	MSG32() {
+		memset(this, 0, sizeof(MSG32));
+	}
+
+	MSG32* Create(const void* buffer, int size) {
+		if (size == sizeof(MSG32)) {
+			memcpy(this, buffer, sizeof(MSG32));
+		}
+		else {
+			memset(this, 0, sizeof(MSG32));
+		}
+		return this;
+	}
+};
+
+// Windows 自定义的消息MSG在32位和64位系统下大小不同，导致跨平台架构远程控制异常
+// 需要使用自定义的消息(统一采用64位windows 的MSG定义)
+class MSG64 { // 自定义控制消息(64位)
+public:
+	uint64_t            hwnd;
+	uint64_t            message;
+	uint64_t            wParam;
+	uint64_t            lParam;
+	uint64_t            time;
+	POINT               pt;
+
+	MSG64(const MSG& msg) :hwnd((uint64_t)msg.hwnd), message(msg.message), wParam(msg.wParam),
+		lParam(msg.lParam), time(msg.time), pt(msg.pt) {}
+
+	MSG64(const MSG32& msg) :hwnd((uint64_t)msg.hwnd), message(msg.message), wParam(msg.wParam),
+		lParam(msg.lParam), time(msg.time), pt(msg.pt) {}
+
+	MSG64(const void* buffer, int size) {
+		if (size == sizeof(MSG64)) {
+			memcpy(this, buffer, sizeof(MSG64));
+		}
+		else {
+			memset(this, 0, sizeof(MSG64));
+		}
+	}
+
+	MSG64() {
+		memset(this, 0, sizeof(MSG64));
+	}
+
+	MSG64* Create(const MSG32* msg32) {
+		hwnd = msg32->hwnd;
+		message = msg32->message;
+		wParam = msg32->wParam;
+		lParam = msg32->lParam;
+		time = msg32->time;
+		pt = msg32->pt;
+		return this;
+	}
+};
+
+#endif

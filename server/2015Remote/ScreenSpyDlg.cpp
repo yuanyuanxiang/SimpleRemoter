@@ -535,8 +535,7 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
 	case WM_MBUTTONUP:
 	case WM_MOUSEWHEEL:
 		{
-			MSG	Msg;
-			memcpy(&Msg, pMsg, sizeof(MSG));
+			MSG64 Msg(*pMsg);
 			Msg.lParam = MAKEDWORD(HIWORD(pMsg->lParam) + m_ulVScrollPos, LOWORD(pMsg->lParam) + m_ulHScrollPos);
 			Msg.pt.x += m_ulHScrollPos;
 			Msg.pt.y += m_ulVScrollPos;
@@ -551,8 +550,7 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
 			return TRUE;
 		if (pMsg->wParam != VK_LWIN && pMsg->wParam != VK_RWIN)
 		{
-			MSG	Msg;
-			memcpy(&Msg, pMsg, sizeof(MSG));
+			MSG64 Msg(*pMsg);
 			Msg.lParam = MAKEDWORD(HIWORD(pMsg->lParam) + m_ulVScrollPos, LOWORD(pMsg->lParam) + m_ulHScrollPos);
 			Msg.pt.x += m_ulHScrollPos;
 			Msg.pt.y += m_ulVScrollPos;
@@ -567,15 +565,15 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
 }
 
 
-VOID CScreenSpyDlg::SendCommand(MSG* Msg)
+VOID CScreenSpyDlg::SendCommand(const MSG64* Msg)
 {
 	if (!m_bIsCtrl)
 		return;
 
-	const int length = sizeof(MSG) + 1;
+	const int length = sizeof(MSG64) + 1;
 	BYTE szData[length + 3];
 	szData[0] = COMMAND_SCREEN_CONTROL;
-	memcpy(szData + 1, Msg, sizeof(MSG));
+	memcpy(szData + 1, Msg, sizeof(MSG64));
 	szData[length] = 0;
 	m_iocpServer->OnClientPreSending(m_ContextObject, szData, length);
 }
