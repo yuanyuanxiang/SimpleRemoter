@@ -59,7 +59,7 @@ public:
 	CString  m_strClientIP;
 	BOOL     m_bIsTraceCursor;
 	CCursorInfo	m_CursorInfo; //自定义的一个系统的光标类
-	VOID SendCommand(MSG* Msg);
+	VOID SendCommand(const MSG64* Msg);
 
 	VOID UpdateServerClipboard(char *szBuffer,ULONG ulLength);
 	VOID SendServerClipboard(void);
