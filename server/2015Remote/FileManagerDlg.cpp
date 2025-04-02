@@ -2180,8 +2180,8 @@ void CFileManagerDlg::OnLocalNewfolder()
 		return;
 	// TODO: Add your command handler code here
 
-	CInputDialog	dlg;
-	dlg.Init(_T("新建目录"), _T("请输入目录名称:"), this);
+	CInputDialog	dlg(this);
+	dlg.Init(_T("新建目录"), _T("请输入目录名称:"));
 
 	if (dlg.DoModal() == IDOK && dlg.m_str.GetLength())
 	{
@@ -2197,8 +2197,8 @@ void CFileManagerDlg::OnRemoteNewfolder()
 		return;
 	// TODO: Add your command handler code here
 	// TODO: Add your command handler code here
-	CInputDialog	dlg;
-	dlg.Init(_T("新建目录"), _T("请输入目录名称:"), this);
+	CInputDialog	dlg(this);
+	dlg.Init(_T("新建目录"), _T("请输入目录名称:"));
 
 	if (dlg.DoModal() == IDOK && dlg.m_str.GetLength())
 	{
