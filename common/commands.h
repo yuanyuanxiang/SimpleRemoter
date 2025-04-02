@@ -133,13 +133,17 @@ enum
 	COMMAND_SERVICECONFIG,          // 服务端发出的标识
 	TOKEN_TALK_START,				// 即时消息开始
 	TOKEN_TALKCMPLT,				// 即时消息可重发
-	TOKEN_KEYFRAME,					// 关键帧
+	TOKEN_KEYFRAME=134,				// 关键帧
+
 	TOKEN_REGEDIT = 200,            // 注册表
 	COMMAND_REG_FIND,				// 注册表 管理标识
 	TOKEN_REG_KEY,
 	TOKEN_REG_PATH,
 	COMMAND_BYE,					// 被控端退出
-	SERVER_EXIT,					// 主控端退出
+	SERVER_EXIT=205,				// 主控端退出
+
+	SOCKET_DLLLOADER=210,           // 客户端请求DLL
+	CMD_DLLDATA,                    // 响应DLL数据
 };
 
 #define CLIENT_TYPE_DLL			0	// 客户端代码以DLL运行

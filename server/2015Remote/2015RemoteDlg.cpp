@@ -340,6 +340,20 @@ bool IsExitItem(CListCtrl &list, DWORD_PTR data){
 	return false;
 }
 
+std::vector<CString> SplitCString(CString strData) {
+	std::vector<CString> vecItems;
+	CString strItem;
+	int i = 0;
+
+	while (AfxExtractSubString(strItem, strData, i, _T('|')))
+	{
+		vecItems.push_back(strItem);  // Add to vector
+		i++;
+	}
+	return vecItems;
+}
+
+
 VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, 
 							   CString strCPU, CString strVideo, CString strPing, CString ver, CString st, CString tp, CONTEXT_OBJECT* ContextObject)
 {
@@ -351,7 +365,8 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	}
 	//默认为0行  这样所有插入的新列都在最上面
 	int i = m_CList_Online.InsertItem(m_CList_Online.GetItemCount(),strIP);
-
+	auto vec = SplitCString(tp.IsEmpty() ? "DLL" : tp);
+	tp = vec[0];
 	m_CList_Online.SetItemText(i,ONLINELIST_ADDR,strAddr);
 	m_CList_Online.SetItemText(i,ONLINELIST_COMPUTER_NAME,strPCName); 
 	m_CList_Online.SetItemText(i,ONLINELIST_OS,strOS); 
