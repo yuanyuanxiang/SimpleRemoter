@@ -14,6 +14,14 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestRun", "client\TestRun_v
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ServerDll", "client\ClientDll_vs2015.vcxproj", "{BEBAF888-532D-40D3-A8DD-DDAAF69F49AA}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{70702583-26EE-47E0-9847-4D58F9449F4C}"
+	ProjectSection(SolutionItems) = preProject
+		history.md = history.md
+		ReadMe.md = ReadMe.md
+		使用方法.txt = 使用方法.txt
+		使用花生壳.txt = 使用花生壳.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
