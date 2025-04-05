@@ -20,6 +20,132 @@
 
 std::string GetRemoteIP(SOCKET sock);
 
+// Encoder interface. The default encoder will do nothing.
+class Encoder {
+public:
+	virtual ~Encoder(){}
+	// Encode data before compress.
+	virtual void Encode(unsigned char* data, int len) const{}
+	// Decode data after uncompress.
+	virtual void Decode(unsigned char* data, int len) const{}
+};
+
+// XOR Encoder implementation.
+class XOREncoder : public Encoder {
+private:
+	std::vector<char> Keys;
+
+public:
+	XOREncoder(const std::vector<char>& keys = {0}) : Keys(keys){}
+
+	virtual void Encode(unsigned char* data, int len) const {
+		XOR(data, len, Keys);
+	}
+
+	virtual void Decode(unsigned char* data, int len) const {
+		static std::vector<char> reversed(Keys.rbegin(), Keys.rend());
+		XOR(data, len, reversed);
+	}
+
+protected:
+	void XOR(unsigned char* data, int len, const std::vector<char> &keys) const {
+		for (char key : keys) {
+			for (int i = 0; i < len; ++i) {
+				data[i] ^= key;
+			}
+		}
+	}
+};
+
+enum {
+	PARSER_FAILED = -1,			// 解析失败
+	PARSER_NEEDMORE = 0,		// 需要更多数据
+};
+
+typedef struct PR {
+	int Result;
+	bool IsFailed() const {
+		return PARSER_FAILED == Result;
+	}
+	bool IsNeedMore() const {
+		return PARSER_NEEDMORE == Result;
+	}
+}PR;
+
+struct CONTEXT_OBJECT;
+
+// Header parser: parse the data to make sure it's from a supported client.
+class HeaderParser {
+	friend struct CONTEXT_OBJECT;
+protected:
+	HeaderParser() {
+		memset(this, 0, sizeof(HeaderParser));
+	}
+	virtual ~HeaderParser() {
+		Reset();
+	}
+	PR Parse(CBuffer& buf) {
+		const int MinimumCount = 8;
+		if (buf.GetBufferLength() < MinimumCount) {
+			return PR{ PARSER_NEEDMORE };
+		}
+		char szPacketFlag[32] = { 0 };
+		buf.CopyBuffer(szPacketFlag, MinimumCount, 0);
+		if (m_bParsed) { // Check if the header has been parsed.
+			return memcmp(m_szPacketFlag, szPacketFlag, m_nCompareLen) == 0 ? PR{ m_nFlagLen } : PR{ PARSER_FAILED };
+		}
+		// More version may be added in the future.
+		const char version0[] = "Shine", version1[] = "<<FUCK>>";
+		if (memcmp(version0, szPacketFlag, sizeof(version0) - 1) == 0) {
+			memcpy(m_szPacketFlag, version0, sizeof(version0) - 1);
+			m_nCompareLen = strlen(m_szPacketFlag);
+			m_nFlagLen = m_nCompareLen;
+			m_nHeaderLen = m_nFlagLen + 8;
+			m_bParsed = TRUE;
+			m_Encoder = new Encoder();
+		}
+		else if (memcmp(version1, szPacketFlag, sizeof(version1) - 1) == 0) {
+			memcpy(m_szPacketFlag, version1, sizeof(version1) - 1);
+			m_nCompareLen = strlen(m_szPacketFlag);
+			m_nFlagLen = m_nCompareLen + 3;
+			m_nHeaderLen = m_nFlagLen + 8;
+			m_bParsed = TRUE;
+			m_Encoder = new XOREncoder();
+		}
+		else {
+			return PR{ PARSER_FAILED };
+		}
+		return PR{ m_nFlagLen };
+	}
+	HeaderParser& Reset() {
+		SAFE_DELETE(m_Encoder);
+		memset(this, 0, sizeof(HeaderParser));
+		return *this;
+	}
+	BOOL IsParsed() const {
+		return m_bParsed;
+	}
+	int GetFlagLen() const {
+		return m_nFlagLen;
+	}
+	int GetHeaderLen() const {
+		return m_nHeaderLen;
+	}
+	const char* GetFlag() const {
+		return m_szPacketFlag;
+	}
+	Encoder* GetEncoder() const {
+		return m_Encoder;
+	}
+private:
+	BOOL				m_bParsed;					// 数据包是否可以解析
+	int					m_nHeaderLen;				// 数据包的头长度
+	int					m_nCompareLen;				// 比对字节数
+	int					m_nFlagLen;					// 标识长度
+	char				m_szPacketFlag[32];			// 对比信息
+	Encoder*			m_Encoder;					// 编码器
+};
+
 enum IOType 
 {
 	IOInitialize,
@@ -34,7 +160,7 @@ enum {
 	COMPRESS_ZSTD			= 0,			// 当前使用的压缩方法
 };
 
-typedef struct _CONTEXT_OBJECT 
+typedef struct CONTEXT_OBJECT 
 {
 	CString  sClientInfo[10];
 	SOCKET   sClientSocket;
@@ -48,6 +174,7 @@ typedef struct _CONTEXT_OBJECT
 	HANDLE              hDlg;
 	void				*olps;						// OVERLAPPEDPLUS
 	int					CompressMethod;				// 压缩算法
+	HeaderParser		Parser;						// 解析数据协议
 
 	VOID InitMember()
 	{
@@ -59,6 +186,7 @@ typedef struct _CONTEXT_OBJECT
 		memset(&wsaOutBuffer,0,sizeof(WSABUF));
 		olps = NULL;
 		CompressMethod = COMPRESS_ZSTD;
+		Parser.Reset();
 	}
 	VOID SetClientInfo(CString s[10]){
 		for (int i=0; i<sizeof(sClientInfo)/sizeof(CString);i++)
@@ -68,6 +196,43 @@ typedef struct _CONTEXT_OBJECT
 	}
 	CString GetClientData(int index) const{
 		return sClientInfo[index];
+	}
+	// Write compressed buffer.
+	void WriteBuffer(LPBYTE data, ULONG dataLen, ULONG originLen) {
+		if (Parser.IsParsed()) {
+			ULONG totalLen = dataLen + Parser.GetHeaderLen();
+			OutCompressedBuffer.WriteBuffer((LPBYTE)Parser.GetFlag(), Parser.GetFlagLen());
+			OutCompressedBuffer.WriteBuffer((PBYTE)&totalLen, sizeof(ULONG));
+			OutCompressedBuffer.WriteBuffer((PBYTE)&originLen, sizeof(ULONG));
+			OutCompressedBuffer.WriteBuffer(data, dataLen);
+		}
+	}
+	// Read compressed buffer.
+	PBYTE ReadBuffer(ULONG &dataLen, ULONG &originLen) {
+		if (Parser.IsParsed()) {
+			ULONG totalLen = 0;
+			char szPacketFlag[32] = {};
+			InCompressedBuffer.ReadBuffer((PBYTE)szPacketFlag, Parser.GetFlagLen());
+			InCompressedBuffer.ReadBuffer((PBYTE)&totalLen, sizeof(ULONG));
+			InCompressedBuffer.ReadBuffer((PBYTE)&originLen, sizeof(ULONG));
+			dataLen = totalLen - Parser.GetHeaderLen();
+			PBYTE CompressedBuffer = new BYTE[dataLen];
+			InCompressedBuffer.ReadBuffer(CompressedBuffer, dataLen);
+			return CompressedBuffer;
+		}
+		return nullptr;
+	}
+	// Parse the data to make sure it's from a supported client. The length of `Header Flag` will be returned.
+	PR Parse(CBuffer& buf) {
+		return Parser.Parse(buf);
+	}
+	// Encode data before compress.
+	void Encode(PBYTE data, int len) const {
+		Parser.GetEncoder()->Encode((unsigned char*)data, len);
+	}
+	// Decode data after uncompress.
+	void Decode(PBYTE data, int len) const {
+		Parser.GetEncoder()->Decode((unsigned char*)data, len);
 	}
 }CONTEXT_OBJECT,*PCONTEXT_OBJECT;
 
@@ -99,8 +264,6 @@ public:
 	CCpuUsage m_cpu;
 
 	ULONG  m_ulKeepLiveTime;
-
-	char   m_szPacketFlag[FLAG_LENGTH + 3];
 
 	typedef void (CALLBACK *pfnNotifyProc)(CONTEXT_OBJECT* ContextObject);
 	typedef void (CALLBACK *pfnOfflineProc)(CONTEXT_OBJECT* ContextObject);
