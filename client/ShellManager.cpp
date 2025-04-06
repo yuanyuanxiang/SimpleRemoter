@@ -6,18 +6,15 @@
 #include "ShellManager.h"
 #include "Common.h"
 #include <IOSTREAM>
-using namespace std;
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-BOOL bStarting = TRUE;
-
 CShellManager::CShellManager(IOCPClient* ClientObject, int n, void* user):CManager(ClientObject)
 {
 	m_nCmdLength = 0;
-	bStarting = TRUE;
+	m_bStarting = TRUE;
 	m_hThreadRead = NULL;
 	m_hShellProcessHandle   = NULL;    //保存Cmd进程的进程句柄和主线程句柄
 	m_hShellThreadHandle	= NULL;
@@ -109,7 +106,7 @@ DWORD WINAPI CShellManager::ReadPipeThread(LPVOID lParam)
 	char	szBuffer[1024] = {0};
 	DWORD	dwTotal = 0;
 	CShellManager *This = (CShellManager*)lParam;
-	while (bStarting)
+	while (This->m_bStarting)
 	{
 		Sleep(100);
 		//这里检测是否有数据  数据的大小是多少
@@ -160,7 +157,7 @@ VOID CShellManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 CShellManager::~CShellManager()
 {
-	bStarting = FALSE;
+	m_bStarting = FALSE;
 
 	TerminateProcess(m_hShellProcessHandle, 0);   //结束我们自己创建的Cmd进程
 	TerminateThread(m_hShellThreadHandle, 0);     //结束我们自己创建的Cmd线程

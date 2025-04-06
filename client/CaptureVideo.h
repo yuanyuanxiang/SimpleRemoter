@@ -199,8 +199,6 @@ public:
 	}
 };
 
-extern CSampleGrabberCB mCB;
-
 class CCaptureVideo  
 {
 public:
@@ -219,6 +217,7 @@ public:
 
 	HWND      m_hWnd;
 
+	static CSampleGrabberCB mCB;
 	IGraphBuilder *    m_pGB;   //通过该值可以访问 FCDO   Filter Control Device Object
 	ICaptureGraphBuilder2* m_pCapture;   //通过该值可以访问 真实CDO
 

@@ -1,6 +1,6 @@
 #pragma once
-#include <Windows.h>
 
+#include "../common/commands.h"
 
 class CBuffer
 {

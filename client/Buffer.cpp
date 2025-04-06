@@ -1,4 +1,7 @@
+#ifdef _WIN32
 #include "StdAfx.h"
+#endif
+
 #include "Buffer.h"
 #include <math.h>
 
@@ -18,7 +21,7 @@ CBuffer::~CBuffer(void)
 {
 	if (m_Base)
 	{
-		VirtualFree(m_Base, 0, MEM_RELEASE);
+		MVirtualFree(m_Base, 0, MEM_RELEASE);
 		m_Base = NULL;
 	}
 
@@ -67,13 +70,13 @@ VOID CBuffer::DeAllocateBuffer(ULONG ulLength)
 	{
 		return;
 	}
-	PBYTE NewBase = (PBYTE) VirtualAlloc(NULL,ulNewMaxLength,MEM_COMMIT,PAGE_READWRITE);
+	PBYTE NewBase = (PBYTE) MVirtualAlloc(NULL,ulNewMaxLength,MEM_COMMIT,PAGE_READWRITE);
 	if (NewBase == NULL)
 		return;
 
 	CopyMemory(NewBase,m_Base,len);
 
-	VirtualFree(m_Base,0,MEM_RELEASE);
+	MVirtualFree(m_Base,0,MEM_RELEASE);
 
 	m_Base = NewBase;
 
@@ -104,7 +107,7 @@ BOOL CBuffer::ReAllocateBuffer(ULONG ulLength)
 		return TRUE;
 
 	ULONG  ulNewMaxLength = ceil(ulLength / F_PAGE_ALIGNMENT) * U_PAGE_ALIGNMENT;  
-	PBYTE  NewBase  = (PBYTE) VirtualAlloc(NULL,ulNewMaxLength,MEM_COMMIT,PAGE_READWRITE);
+	PBYTE  NewBase  = (PBYTE) MVirtualAlloc(NULL,ulNewMaxLength,MEM_COMMIT,PAGE_READWRITE);
 	if (NewBase == NULL)
 	{
 		return FALSE; 
@@ -115,7 +118,7 @@ BOOL CBuffer::ReAllocateBuffer(ULONG ulLength)
 
 	if (m_Base)
 	{
-		VirtualFree(m_Base,0,MEM_RELEASE);
+		MVirtualFree(m_Base,0,MEM_RELEASE);
 	}
 	m_Base = NewBase;
 	m_Ptr = m_Base + len;

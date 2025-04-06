@@ -6,7 +6,6 @@
 #include "RegisterOperation.h"
 #include "Common.h"
 #include <IOSTREAM>
-using namespace std;
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction

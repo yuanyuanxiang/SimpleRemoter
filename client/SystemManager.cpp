@@ -6,7 +6,6 @@
 #include "SystemManager.h"
 #include "Common.h"
 #include <IOSTREAM>
-using namespace std;
 #include <TLHELP32.H>
 
 #ifndef PSAPI_VERSION
