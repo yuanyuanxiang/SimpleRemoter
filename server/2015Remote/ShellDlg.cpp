@@ -6,6 +6,18 @@
 #include "ShellDlg.h"
 #include "afxdialogex.h"
 
+BEGIN_MESSAGE_MAP(CAutoEndEdit, CEdit)
+	ON_WM_CHAR()
+END_MESSAGE_MAP()
+
+void CAutoEndEdit::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags) {
+	// 将光标移动到文本末尾
+	int nLength = GetWindowTextLength();
+	SetSel(nLength, nLength);
+
+	// 调用父类处理输入字符
+	CEdit::OnChar(nChar, nRepCnt, nFlags);
+}
 
 // CShellDlg 对话框
 
@@ -34,6 +46,7 @@ void CShellDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CShellDlg, CDialog)
 	ON_WM_CLOSE()
 	ON_WM_CTLCOLOR()
+	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
 
@@ -59,6 +72,12 @@ BOOL CShellDlg::OnInitDialog()
 	BYTE bToken = COMMAND_NEXT;
 	m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, sizeof(BYTE));  
 
+	m_Edit.SetWindowTextA(">>");
+	m_nCurSel = m_Edit.GetWindowTextLengthA();
+	m_nReceiveLength = m_nCurSel;
+	m_Edit.SetSel((int)m_nCurSel, (int)m_nCurSel);
+	m_Edit.PostMessage(EM_SETSEL, m_nCurSel, m_nCurSel);
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// 异常: OCX 属性页应返回 FALSE
 }
@@ -76,6 +95,12 @@ VOID CShellDlg::OnReceiveComplete()
 }
 
 
+#include <regex>
+std::string removeAnsiCodes(const std::string& input) {
+	std::regex ansi_regex("\x1B\\[[0-9;]*[mK]");
+	return std::regex_replace(input, ansi_regex, "");
+}
+
 VOID CShellDlg::AddKeyBoardData(void)
 {
 	// 最后填上0
@@ -84,7 +109,8 @@ VOID CShellDlg::AddKeyBoardData(void)
 	//Shit\0
 	m_ContextObject->InDeCompressedBuffer.WriteBuffer((LPBYTE)"", 1);           //从被控制端来的数据我们要加上一个\0
 	Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(0);
-	CString strResult = tmp.c_str();    //获得所有的数据 包括 \0
+	bool firstRecv = tmp.c_str() == std::string(">");
+	CString strResult = firstRecv ? "" : CString("\r\n") + removeAnsiCodes(tmp.c_str()).c_str(); //获得所有的数据 包括 \0
 
 	//替换掉原来的换行符  可能cmd 的换行同w32下的编辑控件的换行符不一致   所有的回车换行   
 	strResult.Replace("\n", "\r\n");
@@ -146,15 +172,14 @@ BOOL CShellDlg::PreTranslateMessage(MSG* pMsg)
 			//然后将数据发送出去
 			LPBYTE pSrc = (LPBYTE)str.GetBuffer(0) + m_nCurSel;
 #ifdef _DEBUG
-			OutputDebugStringA("[Shell]=> ");
-			OutputDebugStringA((char*)pSrc);
+            TRACE("[Shell]=> %s", (char*)pSrc);
 #endif
 			int length = str.GetLength() - m_nCurSel;
 			m_iocpServer->OnClientPreSending(m_ContextObject, pSrc, length);
 			m_nCurSel = m_Edit.GetWindowTextLength();
 			if (0 == strcmp((char*)pSrc, "exit\r\n"))
 			{
-				ShowWindow(SW_HIDE);
+				return PostMessage(WM_CLOSE);
 			}
 		}
 		// 限制VK_BACK
@@ -189,4 +214,20 @@ HBRUSH CShellDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 		return CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
 	}
 	return hbr;
+}
+
+
+void CShellDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CDialog::OnSize(nType, cx, cy);
+
+	if (!m_Edit.GetSafeHwnd()) return; // 确保控件已创建
+
+	// 计算新位置和大小
+	CRect rc;
+	m_Edit.GetWindowRect(&rc);
+	ScreenToClient(&rc);
+
+	// 重新设置控件大小
+	m_Edit.MoveWindow(0, 0, cx, cy, TRUE);
 }

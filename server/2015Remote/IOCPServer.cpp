@@ -34,8 +34,6 @@
 #endif
 #endif
 
-using namespace std;
-
 CRITICAL_SECTION IOCPServer::m_cs = {0};
 
 // 根据 socket 获取客户端IP地址.

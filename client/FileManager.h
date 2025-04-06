@@ -12,7 +12,6 @@ typedef IOCPClient CClientSocket;
 #include <string>
 
 #include "Manager.h"
-using namespace std;
 
 #if _MSC_VER > 1000
 #pragma once
@@ -33,7 +32,7 @@ public:
 	CFileManager(CClientSocket *pClient, int h = 0, void* user=nullptr);
 	virtual ~CFileManager();
 private:
-	list <string> m_UploadList;
+	std::list <std::string> m_UploadList;
 	UINT m_nTransferMode;
 	char m_strCurrentProcessFileName[MAX_PATH]; // 当前正在处理的文件
 	__int64 m_nCurrentProcessFileLength; // 当前正在处理的文件的长度

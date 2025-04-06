@@ -2,6 +2,14 @@
 #include "IOCPServer.h"
 #include "afxwin.h"
 
+// 无论光标位置在哪，新输入的文字总是出现在文本末尾
+class CAutoEndEdit : public CEdit {
+public:
+	afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
+	DECLARE_MESSAGE_MAP()
+};
+
+
 // CShellDlg 对话框
 
 class CShellDlg : public CDialog
@@ -29,7 +37,8 @@ protected:
 public:
 	virtual BOOL OnInitDialog();
 	afx_msg void OnClose();
-	CEdit m_Edit;
+	CAutoEndEdit m_Edit;
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
+	afx_msg void OnSize(UINT nType, int cx, int cy);
 };

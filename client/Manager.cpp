@@ -121,11 +121,10 @@ BOOL SelectDesktop(TCHAR* name)
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CManager::CManager(IOCPClient* ClientObject)
+CManager::CManager(IOCPClient* ClientObject) : g_bExit(ClientObject->g_bExit)
 {
-	m_bIsDead = false;
 	m_ClientObject = ClientObject;
-	m_ClientObject->setManagerCallBack(this);
+	m_ClientObject->setManagerCallBack(this, IOCPManager::DataProcess);
 
 	m_hEventDlgOpen = CreateEvent(NULL,TRUE,FALSE,NULL);
 }

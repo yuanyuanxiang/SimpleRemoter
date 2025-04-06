@@ -214,8 +214,6 @@
     <ClInclude Include="VideoCodec.h" />
     <ClInclude Include="VideoManager.h" />
     <ClInclude Include="X264Encoder.h" />
-    <ClInclude Include="zconf.h" />
-    <ClInclude Include="zlib.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Script.rc" />

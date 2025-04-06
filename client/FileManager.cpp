@@ -3,6 +3,7 @@
 //////////////////////////////////////////////////////////////////////
 
 #include "FileManager.h"
+#include <shellapi.h>
 
 typedef struct 
 {
@@ -503,7 +504,7 @@ UINT CFileManager::SendFileData(LPBYTE lpBuffer)
 // 传送下一个文件
 void CFileManager::UploadNext()
 {
-	list <string>::iterator it = m_UploadList.begin();
+	std::list <std::string>::iterator it = m_UploadList.begin();
 	// 删除一个任务
 	m_UploadList.erase(it);
 	// 还有上传任务
@@ -540,7 +541,7 @@ bool CFileManager::UploadToRemote(LPBYTE lpBuffer)
 		m_UploadList.push_back((char *)lpBuffer);
 	}
 
-	list <string>::iterator it = m_UploadList.begin();
+	std::list <std::string>::iterator it = m_UploadList.begin();
 	// 发送第一个文件
 	SendFileSize((*it).c_str());
 
