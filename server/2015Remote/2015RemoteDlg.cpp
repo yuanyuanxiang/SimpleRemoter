@@ -1041,6 +1041,13 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 {
 	switch (ContextObject->InDeCompressedBuffer.GetBYTE(0))
 	{
+	case SOCKET_DLLLOADER: {// 请求DLL
+		BYTE cmd[32] = { COMMAND_BYE };
+		const char reason[] = "请求不支持, 主控命令其退出!";
+		memcpy(cmd + 1, reason, sizeof(reason));
+		m_iocpServer->Send(ContextObject, cmd, sizeof(cmd));
+		break;
+	}
 	case COMMAND_BYE:
 		{
 			CancelIo((HANDLE)ContextObject->sClientSocket);
