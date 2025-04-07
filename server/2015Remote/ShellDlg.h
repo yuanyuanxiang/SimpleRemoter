@@ -25,7 +25,7 @@ public:
 	HICON       m_hIcon;
 	UINT m_nReceiveLength;
 	VOID AddKeyBoardData(void);
-	UINT m_nCurSel;   //获得当前数据所在位置;
+	int m_nCurSel;   //获得当前数据所在位置;
 
 // 对话框数据
 	enum { IDD = IDD_DIALOG_SHELL };
