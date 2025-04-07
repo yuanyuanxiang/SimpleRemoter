@@ -40,64 +40,76 @@ public:
 		// 1. 创建 D3D11 设备
 		D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, nullptr, 0, D3D11_SDK_VERSION, &d3dDevice, nullptr, &d3dContext);
 
-		// 2. 获取 DXGI 设备
-		IDXGIDevice* dxgiDevice = nullptr;
-		d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
-
-		// 3. 获取 DXGI 适配器
+		IDXGIDevice * dxgiDevice = nullptr;
 		IDXGIAdapter* dxgiAdapter = nullptr;
-		dxgiDevice->GetAdapter(&dxgiAdapter);
-
-		// 4. 获取 DXGI 输出（屏幕）
 		IDXGIOutput* dxgiOutput = nullptr;
-		dxgiAdapter->EnumOutputs(0, &dxgiOutput);
-
-		// 5. 获取 DXGI 输出 1
 		IDXGIOutput1* dxgiOutput1 = nullptr;
-		dxgiOutput->QueryInterface(__uuidof(IDXGIOutput1), (void**)&dxgiOutput1);
 
-		// 6. 创建 Desktop Duplication
-		dxgiOutput1->DuplicateOutput(d3dDevice, &deskDupl);
+		do {
+			// 2. 获取 DXGI 设备
+			d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
+			if(!dxgiDevice)break;
 
-		// 7. 获取屏幕大小
-		DXGI_OUTDUPL_DESC duplDesc;
-		deskDupl->GetDesc(&duplDesc);
-		m_ulFullWidth = duplDesc.ModeDesc.Width;
-		m_ulFullHeight = duplDesc.ModeDesc.Height;
+			// 3. 获取 DXGI 适配器
+			dxgiDevice->GetAdapter(&dxgiAdapter);
+			if (!dxgiAdapter)break;
 
-		// 8. 创建 CPU 访问纹理
-		D3D11_TEXTURE2D_DESC desc = {};
-		desc.Width = m_ulFullWidth;
-		desc.Height = m_ulFullHeight;
-		desc.MipLevels = 1;
-		desc.ArraySize = 1;
-		desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-		desc.SampleDesc.Count = 1;
-		desc.Usage = D3D11_USAGE_STAGING;
-		desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-		d3dDevice->CreateTexture2D(&desc, NULL, &cpuTexture);
+			// 4. 获取 DXGI 输出（屏幕）
+			dxgiAdapter->EnumOutputs(0, &dxgiOutput);
+			if (!dxgiOutput)break;
 
-		// 9. 初始化 BITMAPINFO
-		m_BitmapInfor_Full = (BITMAPINFO*)new char[sizeof(BITMAPINFO)];
-		memset(m_BitmapInfor_Full, 0, sizeof(BITMAPINFO));
-		m_BitmapInfor_Full->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-		m_BitmapInfor_Full->bmiHeader.biWidth = m_ulFullWidth;
-		m_BitmapInfor_Full->bmiHeader.biHeight = m_ulFullHeight;
-		m_BitmapInfor_Full->bmiHeader.biPlanes = 1;
-		m_BitmapInfor_Full->bmiHeader.biBitCount = 32;
-		m_BitmapInfor_Full->bmiHeader.biCompression = BI_RGB;
-		m_BitmapInfor_Full->bmiHeader.biSizeImage = m_ulFullWidth * m_ulFullHeight * 4;
+			// 5. 获取 DXGI 输出 1
+			dxgiOutput->QueryInterface(__uuidof(IDXGIOutput1), (void**)&dxgiOutput1);
+			if (!dxgiOutput1)break;
 
-		// 10. 分配屏幕缓冲区
-		m_FirstBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage + 1];
-		m_NextBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage + 1];
-		m_RectBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage * 2 + 12];
+			// 6. 创建 Desktop Duplication
+			dxgiOutput1->DuplicateOutput(d3dDevice, &deskDupl);
+			if (!deskDupl)break;
+
+			// 7. 获取屏幕大小
+			DXGI_OUTDUPL_DESC duplDesc;
+			deskDupl->GetDesc(&duplDesc);
+			m_ulFullWidth = duplDesc.ModeDesc.Width;
+			m_ulFullHeight = duplDesc.ModeDesc.Height;
+
+			// 8. 创建 CPU 访问纹理
+			D3D11_TEXTURE2D_DESC desc = {};
+			desc.Width = m_ulFullWidth;
+			desc.Height = m_ulFullHeight;
+			desc.MipLevels = 1;
+			desc.ArraySize = 1;
+			desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+			desc.SampleDesc.Count = 1;
+			desc.Usage = D3D11_USAGE_STAGING;
+			desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+			d3dDevice->CreateTexture2D(&desc, NULL, &cpuTexture);
+
+			// 9. 初始化 BITMAPINFO
+			m_BitmapInfor_Full = (BITMAPINFO*)new char[sizeof(BITMAPINFO)];
+			memset(m_BitmapInfor_Full, 0, sizeof(BITMAPINFO));
+			m_BitmapInfor_Full->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+			m_BitmapInfor_Full->bmiHeader.biWidth = m_ulFullWidth;
+			m_BitmapInfor_Full->bmiHeader.biHeight = m_ulFullHeight;
+			m_BitmapInfor_Full->bmiHeader.biPlanes = 1;
+			m_BitmapInfor_Full->bmiHeader.biBitCount = 32;
+			m_BitmapInfor_Full->bmiHeader.biCompression = BI_RGB;
+			m_BitmapInfor_Full->bmiHeader.biSizeImage = m_ulFullWidth * m_ulFullHeight * 4;
+
+			// 10. 分配屏幕缓冲区
+			m_FirstBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage + 1];
+			m_NextBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage + 1];
+			m_RectBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage * 2 + 12];
+		} while (false);
 
 		// 释放 DXGI 资源
-		dxgiOutput1->Release();
-		dxgiOutput->Release();
-		dxgiAdapter->Release();
-		dxgiDevice->Release();
+		if (dxgiOutput1) dxgiOutput1->Release();
+		if (dxgiOutput) dxgiOutput->Release();
+		if (dxgiAdapter) dxgiAdapter->Release();
+		if (dxgiDevice) dxgiDevice->Release();
+	}
+
+	bool IsInitSucceed() const {
+		return cpuTexture;
 	}
 
 	void CleanupDXGI() {

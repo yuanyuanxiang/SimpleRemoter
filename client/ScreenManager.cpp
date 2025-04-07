@@ -57,7 +57,22 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 		DXGI = user;
 	}
 	Mprintf("CScreenManager: DXGI %s Algorithm: %d\n", DXGI ? "On":"Off", int(algo));
-	m_ScreenSpyObject = (DXGI && IsWindows8orHigher()) ? (ScreenCapture*) new ScreenCapturerDXGI(algo) : new CScreenSpy(32, algo);
+	if ((DXGI && IsWindows8orHigher()))
+	{
+		auto s = new ScreenCapturerDXGI(algo);
+		if (s->IsInitSucceed()) {
+			m_ScreenSpyObject = s;
+		}
+		else {
+			SAFE_DELETE(s);
+			m_ScreenSpyObject = new CScreenSpy(32, algo);
+			Mprintf("CScreenManager: DXGI SPY init failed!!! Using GDI instead.\n");
+		}
+	}
+	else
+	{
+		m_ScreenSpyObject = new CScreenSpy(32, algo);
+	}
 
 	m_hWorkThread = CreateThread(NULL,0, WorkThreadProc,this,0,NULL);
 }
