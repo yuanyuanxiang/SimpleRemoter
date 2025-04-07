@@ -638,7 +638,7 @@ BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompl
 			ContextObject->wsaOutBuffer.buf = (char*)ContextObject->OutCompressedBuffer.GetBuffer(0);
 			ContextObject->wsaOutBuffer.len = ContextObject->OutCompressedBuffer.GetBufferLength(); 
 			int iOk = WSASend(ContextObject->sClientSocket, &ContextObject->wsaOutBuffer,1,
-				&ContextObject->wsaOutBuffer.len, ulFlags,&OverlappedPlus->m_ol, NULL);
+				NULL, ulFlags,&OverlappedPlus->m_ol, NULL);
 			if ( iOk == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING )
 			{
 				int a = GetLastError();
