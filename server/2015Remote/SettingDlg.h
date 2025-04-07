@@ -32,4 +32,8 @@ public:
 	CString m_sScreenCapture;
 	CComboBox m_ComboScreenCompress;
 	CString m_sScreenCompress;
+	CEdit m_EditReportInterval;
+	int m_nReportInterval;
+	CComboBox m_ComboSoftwareDetect;
+	CString m_sSoftwareDetect;
 };

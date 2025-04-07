@@ -64,6 +64,8 @@ CMy2015RemoteApp::CMy2015RemoteApp()
 	// TODO: 在此处添加构造代码，
 	// 将所有重要的初始化放置在 InitInstance 中
 	m_Mutex = NULL;
+
+	m_iocpServer = new IOCPServer();
 }
 
 
@@ -113,7 +115,7 @@ BOOL CMy2015RemoteApp::InitInstance()
 	// 例如修改为公司或组织名
 	SetRegistryKey(_T("Remoter"));
 
-	CMy2015RemoteDlg dlg;
+	CMy2015RemoteDlg dlg(m_iocpServer);
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();
 	if (nResponse == IDOK)
@@ -146,6 +148,11 @@ int CMy2015RemoteApp::ExitInstance()
 		CloseHandle(m_Mutex);
 		m_Mutex = NULL;
 	}
-
+	if (m_iocpServer != NULL)
+	{
+		m_iocpServer->Destroy();
+		delete m_iocpServer;
+		m_iocpServer = NULL;
+	}
 	return CWinApp::ExitInstance();
 }

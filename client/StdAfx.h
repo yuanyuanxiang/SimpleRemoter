@@ -99,3 +99,28 @@ public:
 #ifndef SAFE_DELETE_ARRAY
 #define SAFE_DELETE_ARRAY(p) if(NULL !=(p)){ delete[] (p);(p) = NULL;}
 #endif
+
+class CLock
+{
+private:
+	CRITICAL_SECTION m_cs;
+public:
+	CLock()
+	{
+		InitializeCriticalSection(&m_cs);
+	}
+	~CLock()
+	{
+		DeleteCriticalSection(&m_cs);
+	}
+
+	void Unlock()
+	{
+		LeaveCriticalSection(&m_cs);
+	}
+
+	void Lock()
+	{
+		EnterCriticalSection(&m_cs);
+	}
+};

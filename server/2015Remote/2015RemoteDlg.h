@@ -18,7 +18,7 @@ class CMy2015RemoteDlg : public CDialogEx
 {
 	// 构造
 public:
-	CMy2015RemoteDlg(CWnd* pParent = NULL);	// 标准构造函数
+	CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent = NULL);	// 标准构造函数
 	~CMy2015RemoteDlg();
 	// 对话框数据
 	enum { IDD = IDD_MY2015REMOTE_DIALOG };
@@ -50,7 +50,9 @@ public:
 	VOID CreateSolidMenu();	
 	BOOL ListenPort();
 	BOOL Activate(int nPort,int nMaxConnection);
-
+	void UpdateActiveWindow(CONTEXT_OBJECT* ctx);
+	void SendMasterSettings(CONTEXT_OBJECT* ctx);
+	MasterSettings m_settings;
 	static VOID CALLBACK NotifyProc(CONTEXT_OBJECT* ContextObject);
 	static VOID CALLBACK OfflineProc(CONTEXT_OBJECT* ContextObject);
 	VOID MessageHandle(CONTEXT_OBJECT* ContextObject);
@@ -63,7 +65,8 @@ public:
 	CTrueColorToolBar m_ToolBar;
 
 	NOTIFYICONDATA  m_Nid;
-
+	HANDLE m_hExit;
+	IOCPServer* m_iocpServer;
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 

