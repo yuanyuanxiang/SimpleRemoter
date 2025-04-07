@@ -89,6 +89,18 @@ Release v1.0.7, mainly fix or add new feature:
 - Improve remote control efficiency and support more bitmap compressing method;
 - Some code reorganization.
 
+**2025.04.12**
+
+Since v1.0.7 released in April 5:
+
+- Improvement: Make sure that the input command is always at the end of `Shelldlg`, and build a **simple Linux client**;
+- Fix bugs: #62, #74, #75 ;
+- Change the flag 0x1234567 to a more readable string; and improve building service and allow chosing other files to build;
+- Showing the user's activities and monitoring specified software;
+- Clean up global variables and make it easy to create multiple clients in one program, which is useful for testing the master's capacity;
+- Implement loading DLL in memory, make it easy to update client program;
+
+
 # 沟通反馈
 
 QQ：962914132

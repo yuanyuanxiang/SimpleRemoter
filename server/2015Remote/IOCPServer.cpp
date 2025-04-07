@@ -34,7 +34,6 @@
 #endif
 #endif
 
-CRITICAL_SECTION IOCPServer::m_cs = {0};
 
 // 根据 socket 获取客户端IP地址.
 std::string GetRemoteIP(SOCKET sock) {
@@ -64,7 +63,7 @@ IOCPServer::IOCPServer(void)
 	m_hCompletionPort = NULL;
 	m_sListenSocket   = INVALID_SOCKET;
 	m_hListenEvent	      = WSA_INVALID_EVENT;
-	m_hListenThread       = INVALID_HANDLE_VALUE;
+	m_hListenThread       = NULL;
 
 	m_ulMaxConnections = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");
 
@@ -99,38 +98,41 @@ IOCPServer::IOCPServer(void)
 #endif
 }
 
-
-IOCPServer::~IOCPServer(void)
-{
+void IOCPServer::Destroy() {
 	m_bTimeToKill = TRUE;
 
-	Sleep(10);
-	SetEvent(m_hKillEvent);
-
-	Sleep(10);
-
-	if (m_hKillEvent!=NULL)
+	if (m_hKillEvent != NULL)
 	{
+		SetEvent(m_hKillEvent);
 		CloseHandle(m_hKillEvent);
+		m_hKillEvent = NULL;
 	}
 
-	if (m_sListenSocket!=INVALID_SOCKET)
+	if (m_sListenSocket != INVALID_SOCKET)
 	{
 		closesocket(m_sListenSocket);
 		m_sListenSocket = INVALID_SOCKET;
 	}
 
-	if (m_hCompletionPort!=INVALID_HANDLE_VALUE)
+	if (m_hCompletionPort != INVALID_HANDLE_VALUE)
 	{
 		CloseHandle(m_hCompletionPort);
 		m_hCompletionPort = INVALID_HANDLE_VALUE;
 	}
 
-	if (m_hListenEvent!=WSA_INVALID_EVENT)
+	if (m_hListenEvent != WSA_INVALID_EVENT)
 	{
 		CloseHandle(m_hListenEvent);
 		m_hListenEvent = WSA_INVALID_EVENT;
 	}
+}
+
+
+IOCPServer::~IOCPServer(void)
+{
+	Destroy();
+	while (m_ulWorkThreadCount || m_hListenThread)
+		Sleep(10);
 
 	while (!m_ContextConnectionList.IsEmpty())
 	{
@@ -146,9 +148,6 @@ IOCPServer::~IOCPServer(void)
 		//SAFE_DELETE(ContextObject->olps);
 		delete ContextObject;
 	}
-
-	while (m_ulWorkThreadCount)
-		Sleep(10);
 
 	DeleteCriticalSection(&m_cs);
 	m_ulWorkThreadCount = 0;
@@ -260,7 +259,7 @@ UINT IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
 		(void*)this,	      //向Thread回调函数传入this 方便我们的线程回调访问类中的成员    
 		0,					
 		NULL);	
-	if (m_hListenThread==INVALID_HANDLE_VALUE)
+	if (m_hListenThread==NULL)
 	{
 		int a = GetLastError();
 		closesocket(m_sListenSocket);
@@ -319,7 +318,7 @@ BOOL IOCPServer::InitializeIOCP(VOID)
 			return FALSE;
 		}
 
-		m_ulWorkThreadCount++;
+		AddWorkThread(1);
 
 		CloseHandle(hWorkThread);
 	}
@@ -385,7 +384,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 							0,					
 							NULL);
 
-						InterlockedIncrement(&This->m_ulWorkThreadCount);
+						This->AddWorkThread(hThread ? 1:0);
 
 						CloseHandle(hThread);
 					}
@@ -406,7 +405,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 			}
 		}
 
-		if (!bError)  
+		if (!bError && !This->m_bTimeToKill)
 		{
 			if(bOk && OverlappedPlus!=NULL && ContextObject!=NULL) 
 			{
@@ -427,10 +426,12 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 	timeEndPeriod(1);
 	SAFE_DELETE(OverlappedPlus);
 
-	InterlockedDecrement(&This->m_ulWorkThreadCount);
 	InterlockedDecrement(&This->m_ulCurrentThread);
 	InterlockedDecrement(&This->m_ulBusyThread);
-
+	int n= This->AddWorkThread(-1);
+	if (n == 0) {
+		Mprintf("======> IOCPServer All WorkThreadProc done\n");
+	}
 	OutputDebugStringA("======> IOCPServer WorkThreadProc end \n");
 
 	return 0;
@@ -439,8 +440,6 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 //在工作线程中被调用
 BOOL IOCPServer::HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWORD dwTrans)
 {
-	AUTO_TICK(20);
-
 	BOOL bRet = FALSE;
 
 	switch (PacketFlags)
@@ -472,7 +471,6 @@ BOOL IOCPServer::OnClientInitializing(PCONTEXT_OBJECT  ContextObject, DWORD dwTr
 
 BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans)
 {
-	CLock cs(m_cs);
 	try
 	{
 		if (dwTrans == 0)    //对方关闭了套接字
@@ -560,7 +558,7 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 {
 	assert (ContextObject);
 	// 输出服务端所发送的命令
-	if (ulOriginalLength < 100 && szBuffer[0] != COMMAND_SCREEN_CONTROL) {
+	if (ulOriginalLength < 100 && szBuffer[0] != COMMAND_SCREEN_CONTROL && szBuffer[0] != CMD_HEARTBEAT_ACK) {
 		char buf[100] = { 0 };
 		if (ulOriginalLength == 1){
 			sprintf_s(buf, "command %d", int(szBuffer[0]));
@@ -659,7 +657,7 @@ DWORD IOCPServer::ListenThreadProc(LPVOID lParam)   //监听线程
 	IOCPServer* This = (IOCPServer*)(lParam);
 	WSANETWORKEVENTS NetWorkEvents;
 
-	while(1)
+	while(!This->m_bTimeToKill)
 	{
 		if (WaitForSingleObject(This->m_hKillEvent, 100) == WAIT_OBJECT_0)
 			break;
@@ -686,8 +684,8 @@ DWORD IOCPServer::ListenThreadProc(LPVOID lParam)   //监听线程
 				break;
 			}
 		}
-	} 
-
+	}
+	This->m_hListenThread = NULL;
 	return 0;
 }
 
@@ -753,8 +751,9 @@ void IOCPServer::OnAccept()
 
 	//在做服务器时，如果发生客户端网线或断电等非正常断开的现象，如果服务器没有设置SO_KEEPALIVE选项，
 	//则会一直不关闭SOCKET。因为上的的设置是默认两个小时时间太长了所以我们就修正这个值
-	CLock cs(m_cs);
+	EnterCriticalSection(&m_cs);
 	m_ContextConnectionList.AddTail(ContextObject);     //插入到我们的内存列表中
+	LeaveCriticalSection(&m_cs);
 
 	OVERLAPPEDPLUS	*OverlappedPlus = new OVERLAPPEDPLUS(IOInitialize); //注意这里的重叠IO请求是 用户请求上线
 
@@ -816,8 +815,10 @@ PCONTEXT_OBJECT IOCPServer::AllocateContext()
 
 VOID IOCPServer::RemoveStaleContext(CONTEXT_OBJECT* ContextObject)
 {
-	CLock cs(m_cs);
-	if (m_ContextConnectionList.Find(ContextObject))    //在内存中查找该用户的上下文数据结构
+	EnterCriticalSection(&m_cs);
+	auto find = m_ContextConnectionList.Find(ContextObject);
+	LeaveCriticalSection(&m_cs);
+	if (find)    //在内存中查找该用户的上下文数据结构
 	{
 		m_OfflineProc(ContextObject);
 

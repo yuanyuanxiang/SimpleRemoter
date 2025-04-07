@@ -5,6 +5,6 @@
 
 #pragma comment(lib,"Vfw32.lib")
 
-int SendLoginInfo(IOCPClient* ClientObject,DWORD dwSpeed, int nType);
+LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, int nType);
 DWORD CPUClockMHz();
 BOOL WebCamIsExist();

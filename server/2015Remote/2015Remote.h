@@ -10,6 +10,7 @@
 
 #include "resource.h"		// 主符号
 #include "iniFile.h"
+#include "IOCPServer.h"
 
 // CMy2015RemoteApp:
 // 有关此类的实现，请参阅 2015Remote.cpp
@@ -21,6 +22,7 @@ public:
 	CMy2015RemoteApp();
 	iniFile  m_iniFile;
 	HANDLE m_Mutex;
+	IOCPServer* m_iocpServer;
 // 重写
 public:
 	virtual BOOL InitInstance();
