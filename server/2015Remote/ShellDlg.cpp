@@ -6,6 +6,8 @@
 #include "ShellDlg.h"
 #include "afxdialogex.h"
 
+#define EDIT_MAXLENGTH 30000
+
 BEGIN_MESSAGE_MAP(CAutoEndEdit, CEdit)
 	ON_WM_CHAR()
 END_MESSAGE_MAP()
@@ -77,6 +79,7 @@ BOOL CShellDlg::OnInitDialog()
 	m_nReceiveLength = m_nCurSel;
 	m_Edit.SetSel((int)m_nCurSel, (int)m_nCurSel);
 	m_Edit.PostMessage(EM_SETSEL, m_nCurSel, m_nCurSel);
+	m_Edit.SetLimitText(EDIT_MAXLENGTH);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// 异常: OCX 属性页应返回 FALSE
@@ -115,6 +118,17 @@ VOID CShellDlg::AddKeyBoardData(void)
 	//替换掉原来的换行符  可能cmd 的换行同w32下的编辑控件的换行符不一致   所有的回车换行   
 	strResult.Replace("\n", "\r\n");
 
+	if (strResult.GetLength() + m_Edit.GetWindowTextLength() >= EDIT_MAXLENGTH)
+	{
+		CString text;
+		m_Edit.GetWindowTextA(text);
+		auto n = EDIT_MAXLENGTH - strResult.GetLength() - 5; // 留5个字符输入clear清屏
+		if (n < 0) {
+			strResult = strResult.Right(strResult.GetLength() + n);
+		}
+		m_Edit.SetWindowTextA(text.Right(max(n, 0)));
+	}
+
 	//得到当前窗口的字符个数
 	int	iLength = m_Edit.GetWindowTextLength();    //kdfjdjfdir
 	//hello                                    
@@ -151,6 +165,24 @@ void CShellDlg::OnClose()
 }
 
 
+CString ExtractAfterLastNewline(const CString& str)
+{
+	int nPos = str.ReverseFind(_T('\n'));
+	if (nPos != -1)
+	{
+		return str.Mid(nPos + 1);
+	}
+
+	nPos = str.ReverseFind(_T('\r'));
+	if (nPos != -1)
+	{
+		return str.Mid(nPos + 1);
+	}
+
+	return str;
+}
+
+
 BOOL CShellDlg::PreTranslateMessage(MSG* pMsg)
 {
 	if (pMsg->message == WM_KEYDOWN)
@@ -174,13 +206,20 @@ BOOL CShellDlg::PreTranslateMessage(MSG* pMsg)
 #ifdef _DEBUG
             TRACE("[Shell]=> %s", (char*)pSrc);
 #endif
+			if (0 == strcmp((char*)pSrc, "exit\r\n")) { // 退出终端
+				return PostMessage(WM_CLOSE);
+			}
+			else if (0 == strcmp((char*)pSrc, "clear\r\n")) { // 清理终端
+				str = ExtractAfterLastNewline(str.Left(str.GetLength() - 7));
+				m_Edit.SetWindowTextA(str);
+				m_nCurSel = m_Edit.GetWindowTextLength();
+				m_nReceiveLength = m_nCurSel;
+				m_Edit.SetSel(m_nCurSel, m_nCurSel);
+				return TRUE;
+			}
 			int length = str.GetLength() - m_nCurSel;
 			m_iocpServer->OnClientPreSending(m_ContextObject, pSrc, length);
 			m_nCurSel = m_Edit.GetWindowTextLength();
-			if (0 == strcmp((char*)pSrc, "exit\r\n"))
-			{
-				return PostMessage(WM_CLOSE);
-			}
 		}
 		// 限制VK_BACK
 		if (pMsg->wParam == VK_BACK && pMsg->hwnd == m_Edit.m_hWnd)
