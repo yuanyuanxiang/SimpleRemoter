@@ -21,7 +21,7 @@
 #endif
 
 #ifdef _DEBUG
-#define Mprintf(format, ...) printf(format, ##__VA_ARGS__)
+#define Mprintf(format, ...) TRACE(format, ##__VA_ARGS__)
 #else
 #define Mprintf(format, ...) 
 #endif
