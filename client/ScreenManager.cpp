@@ -44,7 +44,7 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 	m_bIsWorking = TRUE;
 	m_bIsBlockInput = FALSE;
 
-	bool DXGI = false;
+	int DXGI = 0;
 	BYTE algo = ALGORITHM_DIFF;
 	if (!(user == NULL || (int)user == 1)) {
 		UserParam* param = (UserParam*)user;
@@ -54,10 +54,10 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 			delete param;
 		}
 	} else {
-		DXGI = user;
+		DXGI = (int)user;
 	}
-	Mprintf("CScreenManager: DXGI %s Algorithm: %d\n", DXGI ? "On":"Off", int(algo));
-	if ((DXGI && IsWindows8orHigher()))
+	Mprintf("CScreenManager: Type %d Algorithm: %d\n", DXGI, int(algo));
+	if ((1==DXGI && IsWindows8orHigher()))
 	{
 		auto s = new ScreenCapturerDXGI(algo);
 		if (s->IsInitSucceed()) {

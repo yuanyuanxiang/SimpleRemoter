@@ -7,7 +7,6 @@
 #include "afxdialogex.h"
 #include "client/CursorInfo.h"
 
-
 // CSettingDlg 对话框
 
 IMPLEMENT_DYNAMIC(CSettingDlg, CDialog)
@@ -18,6 +17,8 @@ CSettingDlg::CSettingDlg(CWnd* pParent)
 	, m_nMax_Connect(0)
 	, m_sScreenCapture(_T("GDI"))
 	, m_sScreenCompress(_T("屏幕差异算法"))
+	, m_nReportInterval(5)
+	, m_sSoftwareDetect(_T("摄像头"))
 {
 }
 
@@ -36,6 +37,12 @@ void CSettingDlg::DoDataExchange(CDataExchange* pDX)
 	DDV_MaxChars(pDX, m_sScreenCapture, 32);
 	DDX_Control(pDX, IDC_COMBO_SCREEN_COMPRESS, m_ComboScreenCompress);
 	DDX_CBString(pDX, IDC_COMBO_SCREEN_COMPRESS, m_sScreenCompress);
+	DDX_Control(pDX, IDC_EDIT_REPORTINTERVAL, m_EditReportInterval);
+	DDX_Text(pDX, IDC_EDIT_REPORTINTERVAL, m_nReportInterval);
+	DDV_MinMaxInt(pDX, m_nReportInterval, 0, 3600);
+	DDX_Control(pDX, IDC_COMBO_SOFTWAREDETECT, m_ComboSoftwareDetect);
+	DDX_CBString(pDX, IDC_COMBO_SOFTWAREDETECT, m_sSoftwareDetect);
+	DDV_MaxChars(pDX, m_sSoftwareDetect, 256);
 }
 
 BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)
@@ -84,7 +91,26 @@ BOOL CSettingDlg::OnInitDialog()
 
 	m_ComboScreenCapture.InsertString(0, "GDI");
 	m_ComboScreenCapture.InsertString(1, "DXGI");
-	m_sScreenCapture = DXGI ? "DXGI" : "GDI";
+	m_ComboScreenCapture.InsertString(2, "VIRTUAL");
+	m_sScreenCapture = DXGI==1 ? "DXGI" : (DXGI == 2 ? "VIRTUAL" : "GDI");
+
+	m_ComboSoftwareDetect.InsertString(SOFTWARE_CAMERA, "摄像头");
+	m_ComboSoftwareDetect.InsertString(SOFTWARE_TELEGRAM, "电报");
+	auto str = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "ReportInterval", "5");
+	m_nReportInterval = atoi(str.GetBuffer());
+	n = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "SoftwareDetect");
+	switch (n)
+	{
+	case SOFTWARE_CAMERA:
+		m_sSoftwareDetect = "摄像头";
+		break;
+	case SOFTWARE_TELEGRAM:
+		m_sSoftwareDetect = "电报";
+		break;
+	default:
+		m_sSoftwareDetect = "摄像头";
+		break;
+	}
 
 	UpdateData(FALSE);
 
@@ -104,6 +130,10 @@ void CSettingDlg::OnBnClickedButtonSettingapply()
 
 	n = m_ComboScreenCompress.GetCurSel();
 	((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.SetInt("settings", "ScreenCompress", n);
+
+	((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.SetInt("settings", "ReportInterval", m_nReportInterval);
+	n = m_ComboSoftwareDetect.GetCurSel();
+	((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.SetInt("settings", "SoftwareDetect", n);
 
 	m_ApplyButton.EnableWindow(FALSE);
 	m_ApplyButton.ShowWindow(SW_HIDE);

