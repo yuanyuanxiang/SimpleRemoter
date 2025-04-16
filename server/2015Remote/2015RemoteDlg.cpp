@@ -21,6 +21,8 @@
 #include <vector>
 #include "KeyBoardDlg.h"
 #include "InputDlg.h"
+#include "CPasswordDlg.h"
+#include "pwd_gen.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -899,15 +901,177 @@ VOID CMy2015RemoteDlg::OnOnlineKeyboardManager()
 	SendSelectedCommand(&bToken, sizeof(BYTE));
 }
 
+std::vector<std::string> splitString(const std::string& str, char delimiter) {
+	std::vector<std::string> result;
+	std::stringstream ss(str);
+	std::string item;
+
+	while (std::getline(ss, item, delimiter)) {
+		result.push_back(item);
+	}
+	return result;
+}
+
+std::string joinString(const std::vector<std::string>& tokens, char delimiter) {
+	std::ostringstream oss;
+
+	for (size_t i = 0; i < tokens.size(); ++i) {
+		oss << tokens[i];
+		if (i != tokens.size() - 1) {  // 在最后一个元素后不添加分隔符
+			oss << delimiter;
+		}
+	}
+
+	return oss.str();
+}
+
+#define REG_SETTINGS "Software\\YAMA\\Settings"
+
+// 写入字符串配置（多字节版）
+bool WriteAppSettingA(const std::string& keyName, const std::string& value) {
+	HKEY hKey;
+
+	LONG result = RegCreateKeyExA(
+		HKEY_CURRENT_USER,
+		REG_SETTINGS,
+		0,
+		NULL,
+		0,
+		KEY_WRITE,
+		NULL,
+		&hKey,
+		NULL
+	);
+
+	if (result != ERROR_SUCCESS) {
+		Mprintf("无法创建或打开注册表键，错误码: %d\n", result);
+		return false;
+	}
+
+	result = RegSetValueExA(
+		hKey,
+		keyName.c_str(),
+		0,
+		REG_SZ,
+		reinterpret_cast<const BYTE*>(value.c_str()),
+		static_cast<DWORD>(value.length() + 1)
+	);
+
+	RegCloseKey(hKey);
+	return result == ERROR_SUCCESS;
+}
+
+// 读取字符串配置（多字节版）
+bool ReadAppSettingA(const std::string& keyName, std::string& outValue) {
+	HKEY hKey;
+
+	LONG result = RegOpenKeyExA(
+		HKEY_CURRENT_USER,
+		REG_SETTINGS,
+		0,
+		KEY_READ,
+		&hKey
+	);
+
+	if (result != ERROR_SUCCESS) {
+		return false;
+	}
+
+	char buffer[256];
+	DWORD bufferSize = sizeof(buffer);
+	DWORD type = 0;
+
+	result = RegQueryValueExA(
+		hKey,
+		keyName.c_str(),
+		nullptr,
+		&type,
+		reinterpret_cast<LPBYTE>(buffer),
+		&bufferSize
+	);
+
+	RegCloseKey(hKey);
+
+	if (result == ERROR_SUCCESS && type == REG_SZ) {
+		outValue = buffer;
+		return true;
+	}
+
+	return false;
+}
+
+// 这个函数用来控制试用的次数，并不严谨；如果编译源码，则可以视情况自己去掉，采用其他更严密的授权方法
+int CanBuildClient() {
+	std::string freeTrail;
+	auto b = ReadAppSettingA("free_trial", freeTrail);
+	if (!b || freeTrail.empty())
+		freeTrail = "10";
+	return atoi(freeTrail.c_str());
+}
+
+bool UpdateFreeTrial(int n) {
+	return WriteAppSettingA("free_trial", std::to_string(n));
+}
+
 void CMy2015RemoteDlg::OnOnlineBuildClient()
 {
+	auto n = CanBuildClient();
+	if (n<=0) {
+		auto THIS_APP = (CMy2015RemoteApp*)AfxGetApp();
+		auto settings = "settings", pwdKey = "Password";
+		// 验证口令
+		CPasswordDlg dlg;
+		std::string hardwareID = getHardwareID();
+		std::string hashedID = hashSHA256(hardwareID);
+		std::string deviceID = getFixedLengthID(hashedID);
+		CString pwd = THIS_APP->m_iniFile.GetStr(settings, pwdKey, "");
+
+		dlg.m_sDeviceID = deviceID.c_str();
+		dlg.m_sPassword = pwd;
+		if (pwd.IsEmpty() && IDOK != dlg.DoModal() || dlg.m_sPassword.IsEmpty())
+			return;
+
+		// 密码形式：20250209 - 20350209: SHA256
+		auto v = splitString(dlg.m_sPassword.GetBuffer(), '-');
+		if (v.size() != 6)
+		{
+			THIS_APP->m_iniFile.SetStr(settings, pwdKey, "");
+			MessageBox("格式错误，请重新申请口令!", "提示", MB_ICONINFORMATION);
+			return;
+		}
+		std::vector<std::string> subvector(v.begin() + 2, v.end());
+		std::string password = v[0] + " - " + v[1] + ": " + PWD_HASH256;
+		std::string finalKey = deriveKey(password, deviceID);
+		std::string hash256 = joinString(subvector, '-');
+		std::string fixedKey = getFixedLengthID(finalKey);
+		if (hash256 != fixedKey) {
+			THIS_APP->m_iniFile.SetStr(settings, pwdKey, "");
+			if (pwd.IsEmpty() || (IDOK != dlg.DoModal() || hash256 != fixedKey)) {
+				if (!dlg.m_sPassword.IsEmpty())
+					MessageBox("口令错误, 无法生成服务端!", "提示", MB_ICONWARNING);
+				return;
+			}
+		}
+		// 判断是否过期
+		auto pekingTime = ToPekingTime(nullptr);
+		char curDate[9];
+		std::strftime(curDate, sizeof(curDate), "%Y%m%d", &pekingTime);
+		if (curDate < v[0] || curDate > v[1]) {
+			THIS_APP->m_iniFile.SetStr(settings, pwdKey, "");
+			MessageBox("口令过期，请重新申请口令!", "提示", MB_ICONINFORMATION);
+			return;
+		}
+		if (dlg.m_sPassword != pwd)
+			THIS_APP->m_iniFile.SetStr(settings, pwdKey, dlg.m_sPassword);
+	}
 	// TODO: 在此添加命令处理程序代码
 	CBuildDlg Dlg;
 	Dlg.m_strIP = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "localIp", "");
-	CString Port;
-	Port.Format("%d", ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost"));
-	Dlg.m_strPort = Port;
-	Dlg.DoModal();
+	int Port = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");
+	Dlg.m_strPort = Port <= 0 ? "6543" : std::to_string(Port).c_str();
+	if (IDOK == Dlg.DoModal() && n > 0) {
+		UpdateFreeTrial(n - 1);
+	}
 }
 
 
