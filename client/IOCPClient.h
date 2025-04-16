@@ -61,7 +61,7 @@ public:
 class IOCPClient  
 {
 public:
-	IOCPClient(BOOL& bExit, bool exit_while_disconnect = false);
+	IOCPClient(State& bExit, bool exit_while_disconnect = false);
 	virtual ~IOCPClient();
 	SOCKET   m_sClientSocket;
 	CBuffer	 m_CompressedBuffer;
@@ -107,7 +107,7 @@ public:
 	bool IsConnected() const { return m_bConnected == TRUE; }
 
 public:	
-	BOOL& g_bExit;					// 全局状态量
+	State& g_bExit;					// 全局状态量
 	void* m_Manager;				// 用户数据
 	DataProcessCB m_DataProcess;	// 处理用户数据
 

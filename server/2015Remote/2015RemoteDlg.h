@@ -79,7 +79,7 @@ public:
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 
-	CBitmap m_bmOnline[3];
+	CBitmap m_bmOnline[4];
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();
 			void Release();
@@ -120,4 +120,5 @@ public:
 	afx_msg LRESULT OnOpenKeyboardDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
+	afx_msg void OnOnlineShare();
 };
