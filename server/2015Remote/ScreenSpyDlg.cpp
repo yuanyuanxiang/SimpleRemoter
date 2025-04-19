@@ -27,10 +27,13 @@ IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
 
 #define ALGORITHM_DIFF 1
 
+extern "C" void* x265_api_get_192() { return nullptr; }
+
+extern "C" char* __imp_strtok(char* str, const char* delim) { return strtok(str, delim); }
+
 CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
 	: CDialog(CScreenSpyDlg::IDD, Parent)
 {
-#ifndef _WIN64
 	m_pCodec = nullptr;
 	m_pCodecContext = nullptr;
 	memset(&m_AVPacket, 0, sizeof(AVPacket));
@@ -45,7 +48,6 @@ CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJEC
 			succeed = (0 == avcodec_open2(m_pCodecContext, m_pCodec, 0));
 		}
 	}
-#endif
 	m_FrameID = 0;
 	ImmDisableIME(0);// 禁用输入法
 	m_bFullScreen = FALSE;
@@ -102,7 +104,6 @@ CScreenSpyDlg::~CScreenSpyDlg()
 	{
 		m_BitmapData_Full = NULL;
 	}
-#ifndef _WIN64
 	if (m_pCodecContext)
 	{
 		avcodec_free_context(&m_pCodecContext);
@@ -112,7 +113,6 @@ CScreenSpyDlg::~CScreenSpyDlg()
 	m_pCodec = 0;
 	// AVFrame需要清除
 	av_frame_unref(&m_AVFrame);
-#endif
 }
 
 void CScreenSpyDlg::DoDataExchange(CDataExchange* pDX)
@@ -364,7 +364,6 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(bool keyFrame)
 
 
 bool CScreenSpyDlg::Decode(LPBYTE Buffer, int size) {
-#ifndef _WIN64
 	// 解码数据.
 	av_init_packet(&m_AVPacket);
 
@@ -404,7 +403,6 @@ bool CScreenSpyDlg::Decode(LPBYTE Buffer, int size) {
 	else {
 		Mprintf("avcodec_send_packet failed with error: %d\n", err);
 	}
-#endif
 	return false;
 }
 

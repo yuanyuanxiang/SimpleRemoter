@@ -17,7 +17,18 @@ extern "C"
 
 #pragma comment(lib,"libyuv/libyuv.lib")
 #else
-// 缺少`FFMPEG`静态库，暂时无法编译64位程序!
+#pragma comment(lib,"x264/libx264_x64.lib")
+#pragma comment(lib,"libyuv/libyuv_x64.lib")
+// https://github.com/ShiftMediaProject/FFmpeg
+#ifdef _DEBUG
+#pragma comment(lib,"libavcodec_x64d.lib")
+#pragma comment(lib,"libavutil_x64d.lib")
+#pragma comment(lib,"libswresample_x64d.lib")
+#else
+#pragma comment(lib,"libavcodec_x64.lib")
+#pragma comment(lib,"libavutil_x64.lib")
+#pragma comment(lib,"libswresample_x64.lib")
+#endif
 #endif
 
 #pragma comment(lib, "Mfplat.lib")
@@ -78,12 +89,10 @@ public:
 
 	WINDOWPLACEMENT m_struOldWndpl;
 
-#ifndef _WIN64
 	AVCodec*			m_pCodec;
 	AVCodecContext*		m_pCodecContext;
 	AVPacket			m_AVPacket;
 	AVFrame				m_AVFrame;
-#endif
 
 	bool Decode(LPBYTE Buffer, int size);
 	void EnterFullScreen();
