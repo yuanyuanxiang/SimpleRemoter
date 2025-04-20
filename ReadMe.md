@@ -7,6 +7,8 @@
 
 根据本人空闲情况，此项目会不定期更新。若您想对该项目了解更多技术细节，喜欢讨论软件的各方面，学习和交流请通过适当的方式联系。
 
+此程序仅限于学习和技术交流用途，使用者本人需对自己使用该软件产生的结果进行负责。
+
 **起始日期**：2019.1.1
 
 ## 主控程序
@@ -21,7 +23,7 @@
 
 ![终端管理](./images/Console.jpg)
 
-终端管理打开命令行窗口，可以执行远程命令。
+终端管理打开命令行窗口，可以执行远程命令。有一个[极简版本](./linux/main.cpp)，已经支持Linux客户端，供Linux开发者研究使用。
 
 ![进程管理](./images/Process.jpg)
 
@@ -57,11 +59,34 @@
 
 注册表管理即打开受控机器上面的注册表。
 
+## Linux 客户端
+
+![LinuxClient](./images/LinuxClient.png)
+
+在[v1.0.8](./Releases/v1.0.8/ghost)目录下实现了一个Linux端受控程序，当前只支持远程终端窗口。
+
+![BuildDlg](./images/BuildDlg.jpg)
+
+请在Linux环境编译得到客户端，然后在生成服务端对话框，选择该文件，填写上线地址生成Linux端程序。
+
+## 关于授权
+
+![AuthDlg](./images/AuthDlg.jpg)
+
+![PasswordGen](./images/PasswordGen.jpg)
+
+当前对生成服务功能进行了限制，需要取得口令方可操作。给新编译的程序14天试用期，过期之后生成服务端需要申请"序列号"；
+如果要对其他功能乃至整个程序启动授权逻辑，或者屏蔽该授权逻辑，请参考`OnOnlineBuildClient`函数。
+序列号包含授权日期范围，确保一机一码；授权逻辑会检测计算机日期未被篡改。
+
 ## 受控程序
 ![主界面](./images/TestRun.jpg)
 
 受控程序是Client端，分为2种运行形式（"类型"）：单个程序 **（1）** ghost.exe和 **（2）** TestRun.exe+ServerDll.dll形式。
 （1）单个程序运行时，不依赖其他动态链接库，而第（2）种情况运行时，由EXE程序调用核心动态链接库。
+
+注意：自[v1.0.8](https://github.com/yuanyuanxiang/SimpleRemoter/releases/tag/v1.0.0.8)起，
+`TestRun.exe`将采取内存加载DLL运行方式，向主控程序请求DLL并在内存中执行，这有利于代码的热更新。
 
 # 更新日志
 
@@ -100,6 +125,14 @@ Since v1.0.7 released in April 5:
 - Clean up global variables and make it easy to create multiple clients in one program, which is useful for testing the master's capacity;
 - Implement loading DLL in memory, make it easy to update client program;
 
+**2025.04.21**
+
+Release v1.0.8:
+
+- Support to share online host with other masters;
+- Implement service-generated authorization capability, and add a serial number generation menu;
+- Add `HPSocket` libraries which may be used in the future, and add static ffmpeg libraries to build Win64 master;
+- Implement a memory DLL runner: the `TestRun` program request DLL from master and execute in memory.
 
 # 沟通反馈
 
