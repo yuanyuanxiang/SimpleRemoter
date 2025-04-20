@@ -154,9 +154,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="MemoryModule.c" />
     <ClCompile Include="test.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="MemoryModule.h" />
     <ClInclude Include="resource1.h" />
   </ItemGroup>
   <ItemGroup>

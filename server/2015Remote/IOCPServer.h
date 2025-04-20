@@ -72,6 +72,13 @@ typedef struct PR {
 	}
 }PR;
 
+enum {
+	COMPRESS_UNKNOWN = -2,			// 未知压缩算法
+	COMPRESS_ZLIB = -1,				// 以前版本使用的压缩方法
+	COMPRESS_ZSTD = 0,				// 当前使用的压缩方法
+	COMPRESS_NONE = 1,				// 没有压缩
+};
+
 struct CONTEXT_OBJECT;
 
 // Header parser: parse the data to make sure it's from a supported client.
@@ -84,7 +91,7 @@ protected:
 	virtual ~HeaderParser() {
 		Reset();
 	}
-	PR Parse(CBuffer& buf) {
+	PR Parse(CBuffer& buf, int &compressMethod) {
 		const int MinimumCount = 8;
 		if (buf.GetBufferLength() < MinimumCount) {
 			return PR{ PARSER_NEEDMORE };
@@ -95,7 +102,7 @@ protected:
 			return memcmp(m_szPacketFlag, szPacketFlag, m_nCompareLen) == 0 ? PR{ m_nFlagLen } : PR{ PARSER_FAILED };
 		}
 		// More version may be added in the future.
-		const char version0[] = "Shine", version1[] = "<<FUCK>>";
+		const char version0[] = "Shine", version1[] = "<<FUCK>>", version2[] = "Hello?";
 		if (memcmp(version0, szPacketFlag, sizeof(version0) - 1) == 0) {
 			memcpy(m_szPacketFlag, version0, sizeof(version0) - 1);
 			m_nCompareLen = strlen(m_szPacketFlag);
@@ -111,6 +118,15 @@ protected:
 			m_nHeaderLen = m_nFlagLen + 8;
 			m_bParsed = TRUE;
 			m_Encoder = new XOREncoder();
+		}
+		else if (memcmp(version2, szPacketFlag, sizeof(version2) - 1) == 0) {
+			memcpy(m_szPacketFlag, version2, sizeof(version2) - 1);
+			m_nCompareLen = strlen(m_szPacketFlag);
+			m_nFlagLen = 8;
+			m_nHeaderLen = m_nFlagLen + 8;
+			m_bParsed = TRUE;
+			compressMethod = COMPRESS_NONE;
+			m_Encoder = new Encoder();
 		}
 		else {
 			return PR{ PARSER_FAILED };
@@ -152,12 +168,6 @@ enum IOType
 	IORead,
 	IOWrite,   
 	IOIdle
-};
-
-enum {
-	COMPRESS_UNKNOWN		= -2,			// 未知压缩算法
-	COMPRESS_ZLIB			= -1,			// 以前版本使用的压缩方法
-	COMPRESS_ZSTD			= 0,			// 当前使用的压缩方法
 };
 
 typedef struct CONTEXT_OBJECT 
@@ -224,7 +234,7 @@ typedef struct CONTEXT_OBJECT
 	}
 	// Parse the data to make sure it's from a supported client. The length of `Header Flag` will be returned.
 	PR Parse(CBuffer& buf) {
-		return Parser.Parse(buf);
+		return Parser.Parse(buf, CompressMethod);
 	}
 	// Encode data before compress.
 	void Encode(PBYTE data, int len) const {

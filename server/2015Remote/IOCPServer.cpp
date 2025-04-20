@@ -506,6 +506,14 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 					delete[] CompressedBuffer;
 					throw "Unknown method";
 				}
+				else if (ContextObject->CompressMethod == COMPRESS_NONE) {
+					ContextObject->InDeCompressedBuffer.ClearBuffer();
+					ContextObject->InDeCompressedBuffer.WriteBuffer(CompressedBuffer, ulOriginalLength);
+					ContextObject->Decode(CompressedBuffer, ulOriginalLength);
+					m_NotifyProc(ContextObject);
+					SAFE_DELETE_ARRAY(CompressedBuffer);
+					break;
+				}
 				bool usingZstd = ContextObject->CompressMethod == COMPRESS_ZSTD, zlibFailed = false;
 				PBYTE DeCompressedBuffer = new BYTE[ulOriginalLength];  //解压过的内存
 				size_t	iRet = usingZstd ?
@@ -570,11 +578,16 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 	}
 	try
 	{
-		if (ulOriginalLength > 0)
+		do
 		{
+			if (ulOriginalLength <= 0) return;
 			if (ContextObject->CompressMethod == COMPRESS_UNKNOWN) {
 				OutputDebugStringA("[ERROR] UNKNOWN compress method \n");
 				return;
+			}
+			else if (ContextObject->CompressMethod == COMPRESS_NONE) {
+				ContextObject->WriteBuffer(szBuffer, ulOriginalLength, ulOriginalLength);
+				break;
 			}
 			bool usingZstd = ContextObject->CompressMethod == COMPRESS_ZSTD;
 #if USING_LZ4
@@ -601,7 +614,7 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 
 			ContextObject->WriteBuffer(CompressedBuffer, ulCompressedLength, ulOriginalLength);
 			delete [] CompressedBuffer;
-		}
+		}while (false);
 
 		OVERLAPPEDPLUS* OverlappedPlus = new OVERLAPPEDPLUS(IOWrite);
 		BOOL bOk = PostQueuedCompletionStatus(m_hCompletionPort, 0, (ULONG_PTR)ContextObject, &OverlappedPlus->m_ol);
