@@ -80,6 +80,7 @@ public:
 	BOOL       isClosed;
 
 	CBitmap m_bmOnline[4];
+	bool CheckValid();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();
 			void Release();
@@ -121,4 +122,5 @@ public:
 	afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	afx_msg void OnOnlineShare();
+	afx_msg void OnToolAuth();
 };

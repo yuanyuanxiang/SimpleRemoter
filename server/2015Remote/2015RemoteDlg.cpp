@@ -23,6 +23,7 @@
 #include "InputDlg.h"
 #include "CPasswordDlg.h"
 #include "pwd_gen.h"
+#include "DateVerify.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -196,6 +197,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_OPENKEYBOARDDIALOG, OnOpenKeyboardDialog)
 	ON_WM_HELPINFO()
 	ON_COMMAND(ID_ONLINE_SHARE, &CMy2015RemoteDlg::OnOnlineShare)
+	ON_COMMAND(ID_TOOL_AUTH, &CMy2015RemoteDlg::OnToolAuth)
 END_MESSAGE_MAP()
 
 
@@ -925,98 +927,16 @@ std::string joinString(const std::vector<std::string>& tokens, char delimiter) {
 	return oss.str();
 }
 
-#define REG_SETTINGS "Software\\YAMA\\Settings"
 
-// 写入字符串配置（多字节版）
-bool WriteAppSettingA(const std::string& keyName, const std::string& value) {
-	HKEY hKey;
+bool CMy2015RemoteDlg::CheckValid() {
+	DateVerify verify;
+#ifdef _DEBUG
+	BOOL isTrail = verify.isTrail(0);
+#else
+	BOOL isTrail = verify.isTrail(14);
+#endif
 
-	LONG result = RegCreateKeyExA(
-		HKEY_CURRENT_USER,
-		REG_SETTINGS,
-		0,
-		NULL,
-		0,
-		KEY_WRITE,
-		NULL,
-		&hKey,
-		NULL
-	);
-
-	if (result != ERROR_SUCCESS) {
-		Mprintf("无法创建或打开注册表键，错误码: %d\n", result);
-		return false;
-	}
-
-	result = RegSetValueExA(
-		hKey,
-		keyName.c_str(),
-		0,
-		REG_SZ,
-		reinterpret_cast<const BYTE*>(value.c_str()),
-		static_cast<DWORD>(value.length() + 1)
-	);
-
-	RegCloseKey(hKey);
-	return result == ERROR_SUCCESS;
-}
-
-// 读取字符串配置（多字节版）
-bool ReadAppSettingA(const std::string& keyName, std::string& outValue) {
-	HKEY hKey;
-
-	LONG result = RegOpenKeyExA(
-		HKEY_CURRENT_USER,
-		REG_SETTINGS,
-		0,
-		KEY_READ,
-		&hKey
-	);
-
-	if (result != ERROR_SUCCESS) {
-		return false;
-	}
-
-	char buffer[256];
-	DWORD bufferSize = sizeof(buffer);
-	DWORD type = 0;
-
-	result = RegQueryValueExA(
-		hKey,
-		keyName.c_str(),
-		nullptr,
-		&type,
-		reinterpret_cast<LPBYTE>(buffer),
-		&bufferSize
-	);
-
-	RegCloseKey(hKey);
-
-	if (result == ERROR_SUCCESS && type == REG_SZ) {
-		outValue = buffer;
-		return true;
-	}
-
-	return false;
-}
-
-// 这个函数用来控制试用的次数，并不严谨；如果编译源码，则可以视情况自己去掉，采用其他更严密的授权方法
-int CanBuildClient() {
-	std::string freeTrail;
-	auto b = ReadAppSettingA("free_trial", freeTrail);
-	if (!b || freeTrail.empty())
-		freeTrail = "10";
-	return atoi(freeTrail.c_str());
-}
-
-bool UpdateFreeTrial(int n) {
-	return WriteAppSettingA("free_trial", std::to_string(n));
-}
-
-void CMy2015RemoteDlg::OnOnlineBuildClient()
-{
-	auto n = CanBuildClient();
-	if (n<=0) {
+	if (!isTrail) {
 		auto THIS_APP = (CMy2015RemoteApp*)AfxGetApp();
 		auto settings = "settings", pwdKey = "Password";
 		// 验证口令
@@ -1029,7 +949,7 @@ void CMy2015RemoteDlg::OnOnlineBuildClient()
 		dlg.m_sDeviceID = deviceID.c_str();
 		dlg.m_sPassword = pwd;
 		if (pwd.IsEmpty() && IDOK != dlg.DoModal() || dlg.m_sPassword.IsEmpty())
-			return;
+			return false;
 
 		// 密码形式：20250209 - 20350209: SHA256
 		auto v = splitString(dlg.m_sPassword.GetBuffer(), '-');
@@ -1037,7 +957,7 @@ void CMy2015RemoteDlg::OnOnlineBuildClient()
 		{
 			THIS_APP->m_iniFile.SetStr(settings, pwdKey, "");
 			MessageBox("格式错误，请重新申请口令!", "提示", MB_ICONINFORMATION);
-			return;
+			return false;
 		}
 		std::vector<std::string> subvector(v.begin() + 2, v.end());
 		std::string password = v[0] + " - " + v[1] + ": " + PWD_HASH256;
@@ -1049,7 +969,7 @@ void CMy2015RemoteDlg::OnOnlineBuildClient()
 			if (pwd.IsEmpty() || (IDOK != dlg.DoModal() || hash256 != fixedKey)) {
 				if (!dlg.m_sPassword.IsEmpty())
 					MessageBox("口令错误, 无法生成服务端!", "提示", MB_ICONWARNING);
-				return;
+				return false;
 			}
 		}
 		// 判断是否过期
@@ -1059,19 +979,30 @@ void CMy2015RemoteDlg::OnOnlineBuildClient()
 		if (curDate < v[0] || curDate > v[1]) {
 			THIS_APP->m_iniFile.SetStr(settings, pwdKey, "");
 			MessageBox("口令过期，请重新申请口令!", "提示", MB_ICONINFORMATION);
-			return;
+			return false;
 		}
 		if (dlg.m_sPassword != pwd)
 			THIS_APP->m_iniFile.SetStr(settings, pwdKey, dlg.m_sPassword);
 	}
+	return true;
+}
+
+void CMy2015RemoteDlg::OnOnlineBuildClient()
+{
+	// 给新编译的程序14天试用期，过期之后生成服务端需要申请"序列号"；
+	// 如果要对其他功能乃至整个程序启动授权逻辑，将下述if语句添加到相应地方即可。
+	// 序列号包含授权日期范围，确保一机一码；授权逻辑会检测计算机日期未被篡改!
+	// 注释下面 if 语句可以屏蔽该授权逻辑.
+	// 2025/04/20 
+	if (!CheckValid())
+		return;
+
 	// TODO: 在此添加命令处理程序代码
 	CBuildDlg Dlg;
 	Dlg.m_strIP = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "localIp", "");
 	int Port = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");
 	Dlg.m_strPort = Port <= 0 ? "6543" : std::to_string(Port).c_str();
-	if (IDOK == Dlg.DoModal() && n > 0) {
-		UpdateFreeTrial(n - 1);
-	}
+	Dlg.DoModal();
 }
 
 
@@ -1805,4 +1736,16 @@ void CMy2015RemoteDlg::OnOnlineShare()
 	bToken[1] = SHARE_TYPE_YAMA;
 	memcpy(bToken + 2, dlg.m_str, dlg.m_str.GetLength());
 	SendSelectedCommand(bToken, sizeof(bToken));
+}
+
+
+void CMy2015RemoteDlg::OnToolAuth()
+{
+	CPwdGenDlg dlg;
+	std::string hardwareID = getHardwareID();
+	std::string hashedID = hashSHA256(hardwareID);
+	std::string deviceID = getFixedLengthID(hashedID);
+	dlg.m_sDeviceID = deviceID.c_str();
+
+	dlg.DoModal();
 }
