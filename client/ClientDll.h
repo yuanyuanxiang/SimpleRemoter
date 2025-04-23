@@ -39,6 +39,7 @@ typedef struct ClientApp
 		g_Connection = new CONNECT_ADDRESS(*conn);
 		m_bIsRunning = run;
 		m_bShared = shared;
+		g_bThreadExit = TRUE;
 	}
 	~ClientApp() {
 		SAFE_DELETE(g_Connection);
@@ -61,6 +62,22 @@ typedef struct ClientApp
 	static void Wait() {
 		while (GetCount())
 			Sleep(50);
+	}
+	bool IsThreadRun() {
+		m_Locker.Lock();
+		BOOL n = g_bThreadExit;
+		m_Locker.Unlock();
+		return FALSE == n;
+	}
+	void SetThreadRun(BOOL run = TRUE) {
+		m_Locker.Lock();
+		g_bThreadExit = !run;
+		m_Locker.Unlock();
+	}
+	void SetProcessState(State state = S_CLIENT_NORMAL) {
+		m_Locker.Lock();
+		g_bExit = state;
+		m_Locker.Unlock();
 	}
 }ClientApp;
 

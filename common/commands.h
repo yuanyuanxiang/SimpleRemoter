@@ -297,11 +297,16 @@ public:
 	int ClientType()const {
 		return iType;
 	}
-	void SetServer(const char* ip, int port) {
-		if (ip && strlen(ip) && port > 0) {
-			strcpy_s(szServerIP, ip);
-			sprintf_s(szPort, "%d", port);
-		}
+	// return true if modified
+	bool SetServer(const char* ip, int port, bool e = false) {
+		if (ip == NULL || strlen(ip) <= 0 || port <= 0)
+			return false;
+		bool modified = bEncrypt != e || strcmp(ServerIP(), ip) != 0 || port != ServerPort();
+		bEncrypt = e;
+		strcpy_s(szServerIP, ip);
+		sprintf_s(szPort, "%d", port);
+
+		return modified;
 	}
 	bool IsValid()const {
 		return strlen(szServerIP) != 0 && atoi(szPort) > 0;

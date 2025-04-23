@@ -154,12 +154,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Loader.cpp" />
     <ClCompile Include="MemoryModule.c" />
     <ClCompile Include="test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="MemoryModule.h" />
     <ClInclude Include="resource1.h" />
+    <ClInclude Include="ShellcodeInj.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="TestRun.rc" />
