@@ -489,12 +489,13 @@ DWORD WINAPI StartClient(LPVOID lParam)
 			for (int k = 500; app.m_bIsRunning(&app) && --k; Sleep(10));
 			continue;
 		}
+		SAFE_DELETE(Manager);
+		Manager = new CKernelManager(&settings, ClientObject, app.g_hInstance);
+
 		//准备第一波数据
 		LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings.ClientType());
 		ClientObject->SendLoginInfo(login);
 
-		SAFE_DELETE(Manager);
-		Manager = new CKernelManager(&settings, ClientObject, app.g_hInstance);
 		do 
 		{
 			Manager->SendHeartbeat();

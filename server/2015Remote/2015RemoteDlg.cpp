@@ -30,7 +30,7 @@
 #endif
 
 #define UM_ICONNOTIFY WM_USER+100
-
+#define TIMER_CHECK 1
 
 enum
 {
@@ -512,6 +512,11 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	lvColumn.pszText = (char*)str.data();
 	m_CList_Online.SetColumn(ONLINELIST_VIDEO, &lvColumn);
 	timeBeginPeriod(1);
+#ifdef _DEBUG
+	SetTimer(TIMER_CHECK, 60 * 1000, NULL);
+#else
+	SetTimer(TIMER_CHECK, 600 * 1000, NULL);
+#endif
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -634,6 +639,14 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
 
 void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 {
+	if (nIDEvent == TIMER_CHECK)
+	{
+		if (!CheckValid()) 
+		{
+			KillTimer(nIDEvent);
+			return OnMainExit();
+		}
+	}
 }
 
 
