@@ -336,7 +336,7 @@ extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 extern "C" __declspec(dllexport) void StopRun() { g_MyApp.g_bExit = S_CLIENT_EXIT; }
 
 // 是否成功停止
-extern "C" __declspec(dllexport) bool IsStoped() { return g_MyApp.g_bThreadExit; }
+extern "C" __declspec(dllexport) bool IsStoped() { return g_MyApp.g_bThreadExit && ClientApp::GetCount() == 0; }
 
 // 是否退出客户端
 extern "C" __declspec(dllexport) BOOL IsExit() { return g_MyApp.g_bExit; }

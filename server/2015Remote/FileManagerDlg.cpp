@@ -947,18 +947,18 @@ void CFileManagerDlg::OnReceiveComplete()
 		}
 		catch (CMemoryException* e)
 		{
-			OutputDebugStringA("[ERROR] CMemoryException\n");
+			Mprintf("[ERROR] CMemoryException\n");
 		}
 		catch (CFileException* e)
 		{
-			OutputDebugStringA("[ERROR] CFileException\n");
+			Mprintf("[ERROR] CFileException\n");
 		}
 		catch (CException* e)
 		{
-			OutputDebugStringA("[ERROR] CException\n");
+			Mprintf("[ERROR] CException\n");
 		}
 		catch (...) {
-			OutputDebugStringA("[ERROR] Other exception\n");
+			Mprintf("[ERROR] Other exception\n");
 		}
 		break;
 	case TOKEN_FILE_SIZE: // 传输文件时的第一个数据包，文件大小，及文件名

@@ -370,7 +370,7 @@ public:
 #if TRACK_OVERLAPPEDPLUS
 		char szLog[100];
 		sprintf_s(szLog, "=> [new] OVERLAPPEDPLUS %p by thread [%d].\n", this, GetCurrentThreadId());
-		OutputDebugStringA(szLog);
+		Mprintf(szLog);
 #endif
 		ZeroMemory(this, sizeof(OVERLAPPEDPLUS));
 		m_ioType = ioType;
@@ -381,7 +381,7 @@ public:
 #if TRACK_OVERLAPPEDPLUS
 		char szLog[100];
 		sprintf_s(szLog, "=> [delete] OVERLAPPEDPLUS %p by thread [%d].\n", this, GetCurrentThreadId());
-		OutputDebugStringA(szLog);
+		Mprintf(szLog);
 #endif
 	}
 };

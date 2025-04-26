@@ -329,7 +329,7 @@ BOOL IOCPServer::InitializeIOCP(VOID)
 
 DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 {
-	OutputDebugStringA("======> IOCPServer WorkThreadProc begin \n");
+	Mprintf("======> IOCPServer WorkThreadProc begin \n");
 
 	IOCPServer* This = (IOCPServer*)(lParam);
 
@@ -362,7 +362,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 			if (ContextObject && This->m_bTimeToKill == FALSE &&dwTrans==0)
 			{
 				ContextObject->olps = NULL;
-				OutputDebugStringA("!!! RemoveStaleContext \n");
+				Mprintf("!!! RemoveStaleContext \n");
 				This->RemoveStaleContext(ContextObject);
 			}
 			SAFE_DELETE(OverlappedPlus);
@@ -416,7 +416,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 					ContextObject = NULL;
 				}
 				catch (...) {
-					OutputDebugStringA("This->HandleIO catched an error!!!");
+					Mprintf("This->HandleIO catched an error!!!");
 				}
 			}
 		}
@@ -432,7 +432,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 	if (n == 0) {
 		Mprintf("======> IOCPServer All WorkThreadProc done\n");
 	}
-	OutputDebugStringA("======> IOCPServer WorkThreadProc end \n");
+	Mprintf("======> IOCPServer WorkThreadProc end \n");
 
 	return 0;
 }
@@ -454,7 +454,7 @@ BOOL IOCPServer::HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWOR
 		bRet = OnClientPostSending(ContextObject,dwTrans);
 		break;
 	case IOIdle:
-		OutputDebugStringA("=> HandleIO PacketFlags= IOIdle\n");
+		Mprintf("=> HandleIO PacketFlags= IOIdle\n");
 		break;
 	default:
 		break;
@@ -512,7 +512,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 					ContextObject->Decode(CompressedBuffer, ulOriginalLength);
 					m_NotifyProc(ContextObject);
 					SAFE_DELETE_ARRAY(CompressedBuffer);
-					break;
+					continue;
 				}
 				bool usingZstd = ContextObject->CompressMethod == COMPRESS_ZSTD, zlibFailed = false;
 				PBYTE DeCompressedBuffer = new BYTE[ulOriginalLength];  //解压过的内存
@@ -522,7 +522,6 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 				if (usingZstd ? C_SUCCESS(iRet) : (S_OK==iRet))
 				{
 					ContextObject->InDeCompressedBuffer.ClearBuffer();
-					//ContextObject->InCompressedBuffer.ClearBuffer();
 					ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
 					ContextObject->Decode(DeCompressedBuffer, ulOriginalLength);
 					m_NotifyProc(ContextObject);  //通知窗口
@@ -544,7 +543,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 				delete [] CompressedBuffer;
 				delete [] DeCompressedBuffer;
 				if (zlibFailed) {
-					OutputDebugStringA("[ERROR] ZLIB uncompress failed \n");
+					Mprintf("[ERROR] ZLIB uncompress failed \n");
 					throw "Bad Buffer";
 				}
 			}else{
@@ -553,7 +552,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 		}
 	}catch(...)
 	{
-		OutputDebugStringA("[ERROR] OnClientReceiving catch an error \n");
+		Mprintf("[ERROR] OnClientReceiving catch an error \n");
 		ContextObject->InCompressedBuffer.ClearBuffer();
 		ContextObject->InDeCompressedBuffer.ClearBuffer();
 	}
@@ -574,7 +573,7 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 		else {
 			memcpy(buf, szBuffer, ulOriginalLength);
 		}
-		OutputDebugStringA("[COMMAND] Send: " + CString(buf) + "\r\n");
+		Mprintf("[COMMAND] Send: " + CString(buf) + "\r\n");
 	}
 	try
 	{
@@ -582,7 +581,7 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 		{
 			if (ulOriginalLength <= 0) return;
 			if (ContextObject->CompressMethod == COMPRESS_UNKNOWN) {
-				OutputDebugStringA("[ERROR] UNKNOWN compress method \n");
+				Mprintf("[ERROR] UNKNOWN compress method \n");
 				return;
 			}
 			else if (ContextObject->CompressMethod == COMPRESS_NONE) {
@@ -596,7 +595,8 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 			unsigned long	ulCompressedLength = usingZstd ? 
 				ZSTD_compressBound(ulOriginalLength) : (double)ulOriginalLength * 1.001 + 12;
 #endif
-			LPBYTE			CompressedBuffer = new BYTE[ulCompressedLength];
+			BYTE			buf[1024];
+			LPBYTE			CompressedBuffer = ulCompressedLength>1024 ? new BYTE[ulCompressedLength]:buf;
 			Buffer tmp(szBuffer, ulOriginalLength); szBuffer = tmp.Buf();
 			ContextObject->Encode(szBuffer, ulOriginalLength);
 			size_t	iRet = usingZstd ?
@@ -605,15 +605,15 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 
 			if (usingZstd ? C_FAILED(iRet) : (S_OK != iRet))
 			{
-				OutputDebugStringA("[ERROR] compress failed \n");
-				delete [] CompressedBuffer;
+				Mprintf("[ERROR] compress failed \n");
+				if (CompressedBuffer != buf) delete [] CompressedBuffer;
 				return;
 			}
 
 			ulCompressedLength =  usingZstd ? iRet : ulCompressedLength;
 
 			ContextObject->WriteBuffer(CompressedBuffer, ulCompressedLength, ulOriginalLength);
-			delete [] CompressedBuffer;
+			if (CompressedBuffer != buf) delete [] CompressedBuffer;
 		}while (false);
 
 		OVERLAPPEDPLUS* OverlappedPlus = new OVERLAPPEDPLUS(IOWrite);
@@ -621,12 +621,12 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 		if ( (!bOk && GetLastError() != ERROR_IO_PENDING) )  //如果投递失败
 		{
 			int a = GetLastError();
-			OutputDebugStringA("!!! OnClientPreSending 投递消息失败\n");
+			Mprintf("!!! OnClientPreSending 投递消息失败\n");
 			RemoveStaleContext(ContextObject);
 			SAFE_DELETE(OverlappedPlus);
 		}
 	}catch(...){
-		OutputDebugStringA("[ERROR] OnClientPreSending catch an error \n");
+		Mprintf("[ERROR] OnClientPreSending catch an error \n");
 	}
 }
 
@@ -653,13 +653,13 @@ BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompl
 			if ( iOk == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING )
 			{
 				int a = GetLastError();
-				OutputDebugStringA("!!! OnClientPostSending 投递消息失败\n");
+				Mprintf("!!! OnClientPostSending 投递消息失败\n");
 				RemoveStaleContext(ContextObject);
 				SAFE_DELETE(OverlappedPlus);
 			}
 		}
 	}catch(...){
-		OutputDebugStringA("[ERROR] OnClientPostSending catch an error \n");
+		Mprintf("[ERROR] OnClientPostSending catch an error \n");
 	}
 
 	return FALSE;			
@@ -775,7 +775,7 @@ void IOCPServer::OnAccept()
 	if ( (!bOk && GetLastError() != ERROR_IO_PENDING))  //如果投递失败
 	{
 		int a = GetLastError();
-		OutputDebugStringA("!!! OnAccept 投递消息失败\n");
+		Mprintf("!!! OnAccept 投递消息失败\n");
 		RemoveStaleContext(ContextObject);
 		SAFE_DELETE(OverlappedPlus);
 		return;
@@ -800,7 +800,7 @@ VOID IOCPServer::PostRecv(CONTEXT_OBJECT* ContextObject)
 	if (iOk == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING)
 	{
 		int a = GetLastError();
-		OutputDebugStringA("!!! PostRecv 投递消息失败\n");
+		Mprintf("!!! PostRecv 投递消息失败\n");
 		RemoveStaleContext(ContextObject);
 		SAFE_DELETE(OverlappedPlus);
 	}

@@ -308,7 +308,7 @@ void CVideoDlg::InitCodec(DWORD fccHandler)
 	m_pVideoCodec = new CVideoCodec;
 	if (!m_pVideoCodec->InitCompressor(m_BitmapInfor_Full, fccHandler))
 	{
-		OutputDebugStringA("======> InitCompressor failed \n");
+		Mprintf("======> InitCompressor failed \n");
 		delete m_pVideoCodec;
 		// 置NULL, 发送时判断是否为NULL来判断是否压缩
 		m_pVideoCodec = NULL;

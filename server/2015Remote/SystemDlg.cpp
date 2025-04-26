@@ -9,7 +9,7 @@
 
 // CSystemDlg ¶Ô»°¿ò
 
-typedef struct
+typedef struct ItemData
 {
 	DWORD ID;
 	CString Data[3];

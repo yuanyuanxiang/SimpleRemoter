@@ -371,7 +371,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	EnterCriticalSection(&m_cs);
 	if (IsExitItem(m_CList_Online, (ULONG_PTR)ContextObject)) {
 		LeaveCriticalSection(&m_cs);
-		OutputDebugStringA(CString("===> '") + strIP + CString("' already exist!!\n"));
+		Mprintf(CString("===> '") + strIP + CString("' already exist!!\n"));
 		return;
 	}
 	//默认为0行  这样所有插入的新列都在最上面
@@ -641,11 +641,11 @@ void CMy2015RemoteDlg::OnClose()
 {
 	// 隐藏窗口而不是关闭
 	ShowWindow(SW_HIDE);
-	OutputDebugStringA("======> Hide\n");
+	Mprintf("======> Hide\n");
 }
 
 void CMy2015RemoteDlg::Release(){
-	OutputDebugStringA("======> Release\n");
+	Mprintf("======> Release\n");
 	isClosed = TRUE;
 	ShowWindow(SW_HIDE);
 
@@ -1101,7 +1101,7 @@ BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 	UINT ret = 0;
 	if ( (ret=m_iocpServer->StartServer(NotifyProc, OfflineProc, nPort)) !=0 )
 	{
-		OutputDebugStringA("======> StartServer Failed \n");
+		Mprintf("======> StartServer Failed \n");
 		char code[32];
 		sprintf_s(code, "%d", ret);
 		MessageBox("调用函数StartServer失败! 错误代码:"+CString(code));
@@ -1339,7 +1339,7 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 		{
 			char buf[100];
 			sprintf_s(buf, "*** Received [%s] invalid login data! ***\n", inet_ntoa(ClientAddr.sin_addr));
-			OutputDebugStringA(buf);
+			Mprintf(buf);
 			return -1;
 		}
 
@@ -1368,7 +1368,7 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 		delete LoginInfor;
 		return S_OK;
 	}catch(...){
-		OutputDebugStringA("[ERROR] OnUserToOnlineList catch an error \n");
+		Mprintf("[ERROR] OnUserToOnlineList catch an error \n");
 	}
 	return -1;
 }
@@ -1376,7 +1376,7 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 
 LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 {
-	OutputDebugStringA("======> OnUserOfflineMsg\n");
+	Mprintf("======> OnUserOfflineMsg\n");
 	CString ip, port;
 	port.Format("%d", lParam);
 	EnterCriticalSection(&m_cs);
