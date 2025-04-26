@@ -424,7 +424,7 @@ PerformBaseRelocation(PMEMORYMODULE module, ptrdiff_t delta)
 #endif
 
             default:
-                //printf("Unknown relocation: %d\n", type);
+                // Mprintf("Unknown relocation: %d\n", type);
                 break;
             }
         }
@@ -1180,7 +1180,7 @@ BOOL MemoryModuleTestsuite() {
         const uintptr_t* tests = AlignValueDownTests[idx];
         uintptr_t value = AlignValueDown(tests[0], tests[1]);
         if (value != tests[2]) {
-            printf("AlignValueDown failed for 0x%" PRIxPTR "/0x%" PRIxPTR ": expected 0x%" PRIxPTR ", got 0x%" PRIxPTR "\n",
+            Mprintf("AlignValueDown failed for 0x%" PRIxPTR "/0x%" PRIxPTR ": expected 0x%" PRIxPTR ", got 0x%" PRIxPTR "\n",
                 tests[0], tests[1], tests[2], value);
             success = FALSE;
         }
@@ -1189,13 +1189,13 @@ BOOL MemoryModuleTestsuite() {
         const uintptr_t* tests = AlignValueUpTests[idx];
         uintptr_t value = AlignValueUp(tests[0], tests[1]);
         if (value != tests[2]) {
-            printf("AlignValueUp failed for 0x%" PRIxPTR "/0x%" PRIxPTR ": expected 0x%" PRIxPTR ", got 0x%" PRIxPTR "\n",
+            Mprintf("AlignValueUp failed for 0x%" PRIxPTR "/0x%" PRIxPTR ": expected 0x%" PRIxPTR ", got 0x%" PRIxPTR "\n",
                 tests[0], tests[1], tests[2], value);
             success = FALSE;
         }
     }
     if (success) {
-        printf("OK\n");
+        Mprintf("OK\n");
     }
     return success;
 }

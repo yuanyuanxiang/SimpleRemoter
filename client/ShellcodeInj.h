@@ -89,7 +89,7 @@ private:
 			PROCESS_CREATE_THREAD | PROCESS_QUERY_INFORMATION | PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ,
 			FALSE, pid);
 		if (!hProcess) {
-			std::cout << "OpenProcess failed. PID: " << pid << std::endl;
+			Mprintf("OpenProcess failed. PID: %d\n", pid);
 			return nullptr;
 		}
 
@@ -97,14 +97,14 @@ private:
 		BOOL targetIs64Bit = FALSE;
 		BOOL success = IsProcess64Bit(hProcess, targetIs64Bit);
 		if (!success) {
-			std::cout << "Get architecture failed " << std::endl;
+			Mprintf("Get architecture failed \n");
 			CloseHandle(hProcess);
 			return nullptr;
 		}
 		const BOOL selfIs64Bit = sizeof(void*) == 8;
 		if (selfIs64Bit != targetIs64Bit) {
-			std::cout << "[Unable inject] Injector is " << (selfIs64Bit ? "64bit" : "32bit")
-				<< ", Target process is " << (targetIs64Bit ? "64bit" : "32bit") << std::endl;
+			Mprintf("[Unable inject] Injector is %s, Target process is %s\n",
+				(selfIs64Bit ? "64bit" : "32bit"), (targetIs64Bit ? "64bit" : "32bit"));
 			CloseHandle(hProcess);
 			return nullptr;
 		}
@@ -139,20 +139,20 @@ private:
 		LPBYTE shellcode = NULL;
 		int len = 0;
 		if (!MakeShellcode(shellcode, len, (LPBYTE)pDllBuffer, dllSize)) {
-			std::cout << "MakeShellcode failed " << std::endl;
+			Mprintf("MakeShellcode failed \n");
 			CloseHandle(hProcess);
 			return false;
 		}
 
 		LPVOID remoteBuffer = VirtualAllocEx(hProcess, nullptr, len, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 		if (!remoteBuffer) {
-			std::cout << "VirtualAllocEx failed " << std::endl;
+			Mprintf("VirtualAllocEx failed \n");
 			CloseHandle(hProcess);
 			return false;
 		}
 
 		if (!WriteProcessMemory(hProcess, remoteBuffer, shellcode, len, nullptr)) {
-			std::cout << "WriteProcessMemory failed " << std::endl;
+			Mprintf("WriteProcessMemory failed \n");
 			VirtualFreeEx(hProcess, remoteBuffer, 0, MEM_RELEASE);
 			CloseHandle(hProcess);
 			delete[] shellcode;
@@ -165,7 +165,7 @@ private:
 
 		HANDLE hThread = CreateRemoteThread(hProcess, nullptr, 0, entry, remoteBuffer, 0, nullptr);
 		if (!hThread) {
-			std::cout << "CreateRemoteThread failed " << std::endl;
+			Mprintf("CreateRemoteThread failed \n");
 			VirtualFreeEx(hProcess, remoteBuffer, 0, MEM_RELEASE);
 			CloseHandle(hProcess);
 			return false;
@@ -173,7 +173,7 @@ private:
 
 		WaitForSingleObject(hThread, INFINITE);
 
-		std::cout << "Finish injecting to PID: " << pid << std::endl;
+		Mprintf("Finish injecting to PID: %d\n", pid);
 
 		VirtualFreeEx(hProcess, remoteBuffer, 0, MEM_RELEASE);
 		CloseHandle(hThread);

