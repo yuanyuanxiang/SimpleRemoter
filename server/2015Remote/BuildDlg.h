@@ -27,7 +27,8 @@ public:
 	virtual BOOL OnInitDialog();
 	Buffer Encrypt(BYTE* buffer, int len, int method);
 	CComboBox m_ComboExe;
-	CComboBox m_ComboEncrypt;
+
 	afx_msg void OnCbnSelchangeComboExe();
 	CStatic m_OtherItem;
+	CComboBox m_ComboBits;
 };

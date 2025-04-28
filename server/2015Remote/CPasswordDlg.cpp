@@ -11,12 +11,24 @@
 
 IMPLEMENT_DYNAMIC(CPasswordDlg, CDialogEx)
 
+// 主控程序唯一标识
+char g_MasterID[100] = { PWD_HASH256 };
+
+std::string GetPwdHash(){
+	return g_MasterID;
+}
+
+std::string GetMasterId() {
+	static auto id = std::string(g_MasterID).substr(0, 16);
+	return id;
+}
+
 CPasswordDlg::CPasswordDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_DIALOG_PASSWORD, pParent)
 	, m_sDeviceID(_T(""))
 	, m_sPassword(_T(""))
 {
-
+	m_hIcon = nullptr;
 }
 
 CPasswordDlg::~CPasswordDlg()
@@ -101,7 +113,7 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
 	UpdateData(TRUE);
 	if (m_sUserPwd.IsEmpty())return;
 	std::string pwdHash = hashSHA256(m_sUserPwd.GetString());
-	if (pwdHash != PWD_HASH256) {
+	if (pwdHash != GetPwdHash()) {
 		Mprintf("hashSHA256 [%s]: %s\n", m_sUserPwd, pwdHash.c_str());
 		MessageBoxA("您输入的密码不正确，无法生成口令!", "提示", MB_OK | MB_ICONWARNING);
 		return;
@@ -109,7 +121,7 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
 	CString strBeginDate = m_StartTm.Format("%Y%m%d");
 	CString strEndDate = m_ExpireTm.Format("%Y%m%d");
 	// 密码形式：20250209 - 20350209: SHA256
-	std::string password = std::string(strBeginDate.GetString()) + " - " + strEndDate.GetBuffer() + ": " + PWD_HASH256;
+	std::string password = std::string(strBeginDate.GetString()) + " - " + strEndDate.GetBuffer() + ": " + GetPwdHash();
 	std::string finalKey = deriveKey(password, m_sDeviceID.GetString());
 	std::string fixedKey = strBeginDate.GetString() + std::string("-") + strEndDate.GetBuffer() + std::string("-") +
 		getFixedLengthID(finalKey);

@@ -37,7 +37,8 @@
 ![桌面管理](./images/RemoteSet.jpg)
 
 桌面管理即"远程桌面"，控制远程机器。可以通过菜单设置远程桌面的参数：
-屏幕截图方法支持GDI或DXGI，图像压缩方法支持灰度图像传输、屏幕差异算法和H264压缩。虚拟桌面尚未开发，但也是能支持的。
+屏幕截图方法支持GDI或DXGI，图像压缩方法支持灰度图像传输、屏幕差异算法和H264压缩。
+另外，支持上报活动窗口和检测指定软件。
 
 ![文件管理](./images/FileManage.jpg)
 
@@ -75,9 +76,9 @@
 
 ![PasswordGen](./images/PasswordGen.jpg)
 
-当前对生成服务功能进行了限制，需要取得口令方可操作。给新编译的程序14天试用期，过期之后生成服务端需要申请"序列号"；
+当前对生成服务功能进行了限制，需要取得口令方可操作。给新编译的程序14天试用期，过期之后生成服务端需要凭借"序列号"申请口令；
 如果要对其他功能乃至整个程序启动授权逻辑，或者屏蔽该授权逻辑，请参考`OnOnlineBuildClient`函数。
-序列号包含授权日期范围，确保一机一码；授权逻辑会检测计算机日期未被篡改。
+“口令”包含授权日期范围，确保一机一码；授权逻辑会检测计算机日期未被篡改。生成口令需使用密码。
 
 ## 受控程序
 ![主界面](./images/TestRun.jpg)
@@ -133,6 +134,14 @@ Release v1.0.8:
 - Implement service-generated authorization capability, and add a serial number generation menu;
 - Add `HPSocket` libraries which may be used in the future, and add static ffmpeg libraries to build Win64 master;
 - Implement a memory DLL runner: the `TestRun` program request DLL from master and execute in memory.
+
+**2025.04.30**
+
+Release v1.0.9：
+
+- Update client building feature / All in one; The master will only accept the clients built by itself.
+- Improve authorization feature.
+
 
 # 沟通反馈
 

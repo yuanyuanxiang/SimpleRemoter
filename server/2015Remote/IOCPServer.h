@@ -185,6 +185,7 @@ typedef struct CONTEXT_OBJECT
 	void				*olps;						// OVERLAPPEDPLUS
 	int					CompressMethod;				// 压缩算法
 	HeaderParser		Parser;						// 解析数据协议
+	BOOL 				bLogin;						// 是否 login
 
 	VOID InitMember()
 	{
@@ -197,6 +198,7 @@ typedef struct CONTEXT_OBJECT
 		olps = NULL;
 		CompressMethod = COMPRESS_ZSTD;
 		Parser.Reset();
+		bLogin = FALSE;
 	}
 	VOID SetClientInfo(CString s[10]){
 		for (int i=0; i<sizeof(sClientInfo)/sizeof(CString);i++)
