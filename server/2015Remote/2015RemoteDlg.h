@@ -78,7 +78,7 @@ public:
 	IOCPServer* m_iocpServer;
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
-
+	CMenu	   m_MainMenu;
 	CBitmap m_bmOnline[4];
 	bool CheckValid();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
@@ -123,4 +123,5 @@ public:
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	afx_msg void OnOnlineShare();
 	afx_msg void OnToolAuth();
+	afx_msg void OnToolGenMaster();
 };

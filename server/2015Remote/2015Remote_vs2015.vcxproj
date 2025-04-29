@@ -101,12 +101,14 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>zlib\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <OutputFile>$(SolutionDir)Bin\$(TargetName)_x86d$(TargetExt)</OutputFile>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -128,12 +130,14 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>zlib\zlib_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <OutputFile>$(SolutionDir)Bin\$(TargetName)_x64d$(TargetExt)</OutputFile>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -156,6 +160,7 @@
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <StringPooling>true</StringPooling>
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -164,6 +169,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>zlib\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions> /SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
+      <OutputFile>$(SolutionDir)Bin\$(TargetName)_x86$(TargetExt)</OutputFile>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -187,6 +193,7 @@
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <StringPooling>true</StringPooling>
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -195,6 +202,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>zlib\zlib_x64.lib</AdditionalDependencies>
       <AdditionalOptions> /SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
+      <OutputFile>$(SolutionDir)Bin\$(TargetName)_x64$(TargetExt)</OutputFile>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -207,8 +215,12 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="..\..\Release\ghost.exe" />
     <None Include="..\..\Release\ServerDll.dll" />
+    <None Include="..\..\Release\TestRun.exe" />
+    <None Include="..\..\x64\Release\ghost.exe" />
     <None Include="..\..\x64\Release\ServerDll.dll" />
+    <None Include="..\..\x64\Release\TestRun.exe" />
     <None Include="res\1.cur" />
     <None Include="res\2.cur" />
     <None Include="res\2015Remote.ico" />
