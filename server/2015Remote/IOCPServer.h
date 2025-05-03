@@ -4,6 +4,9 @@
 #pragma comment(lib,"ws2_32.lib")
 #include "CpuUseage.h"
 #include "Buffer.h"
+#define XXH_INLINE_ALL
+#include "xxhash.h"
+
 #if USING_CTX
 #include "zstd/zstd.h"
 #endif
@@ -19,6 +22,25 @@
 #define NC_RECEIVE_COMPLETE		0x0005 // 完整接收
 
 std::string GetRemoteIP(SOCKET sock);
+
+
+enum
+{
+	ONLINELIST_IP = 0,          // IP的列顺序
+	ONLINELIST_ADDR,            // 地址
+	ONLINELIST_LOCATION,        // 地理位置
+	ONLINELIST_COMPUTER_NAME,   // 计算机名/备注
+	ONLINELIST_OS,              // 操作系统
+	ONLINELIST_CPU,             // CPU
+	ONLINELIST_VIDEO,           // 摄像头(有无)
+	ONLINELIST_PING,            // PING(对方的网速)
+	ONLINELIST_VERSION,	        // 版本信息
+	ONLINELIST_INSTALLTIME,     // 安装时间
+	ONLINELIST_LOGINTIME,       // 活动窗口
+	ONLINELIST_CLIENTTYPE,		// 客户端类型
+	ONLINELIST_PATH,			// 文件路径
+	ONLINELIST_MAX,
+};
 
 // Encoder interface. The default encoder will do nothing.
 class Encoder {
@@ -172,7 +194,7 @@ enum IOType
 
 typedef struct CONTEXT_OBJECT 
 {
-	CString  sClientInfo[10];
+	CString  sClientInfo[ONLINELIST_MAX];
 	SOCKET   sClientSocket;
 	WSABUF   wsaInBuf;
 	WSABUF	 wsaOutBuffer;  
@@ -185,23 +207,30 @@ typedef struct CONTEXT_OBJECT
 	void				*olps;						// OVERLAPPEDPLUS
 	int					CompressMethod;				// 压缩算法
 	HeaderParser		Parser;						// 解析数据协议
+	uint64_t			ID;							// 唯一标识
+
+	BOOL				m_bProxyConnected;			// 代理是否连接
 	BOOL 				bLogin;						// 是否 login
 
 	VOID InitMember()
 	{
-		memset(szBuffer,0,sizeof(char)*PACKET_LENGTH);
+		memset(szBuffer, 0, sizeof(char) * PACKET_LENGTH);
 		v1 = 0;
 		hDlg = NULL;
 		sClientSocket = INVALID_SOCKET;
-		memset(&wsaInBuf,0,sizeof(WSABUF));
-		memset(&wsaOutBuffer,0,sizeof(WSABUF));
+		memset(&wsaInBuf, 0, sizeof(WSABUF));
+		memset(&wsaOutBuffer, 0, sizeof(WSABUF));
 		olps = NULL;
+		for (int i = 0; i < ONLINELIST_MAX; i++) {
+			sClientInfo[i].Empty();
+		}
 		CompressMethod = COMPRESS_ZSTD;
 		Parser.Reset();
 		bLogin = FALSE;
+		m_bProxyConnected = FALSE;
 	}
-	VOID SetClientInfo(CString s[10]){
-		for (int i=0; i<sizeof(sClientInfo)/sizeof(CString);i++)
+	VOID SetClientInfo(const CString(&s)[ONLINELIST_MAX]){
+		for (int i = 0; i < ONLINELIST_MAX; i++)
 		{
 			sClientInfo[i] = s[i];
 		}
@@ -252,6 +281,17 @@ typedef struct CONTEXT_OBJECT
 		int s = getpeername(sClientSocket, (SOCKADDR*)&ClientAddr, &ulClientAddrLen);
 		return s != INVALID_SOCKET ? inet_ntoa(ClientAddr.sin_addr) : "";
 	}
+	static uint64_t CalculateID(const CString(&data)[ONLINELIST_MAX]) {
+		int idx[] = { ONLINELIST_IP, ONLINELIST_COMPUTER_NAME, ONLINELIST_OS, ONLINELIST_CPU, ONLINELIST_PATH, };
+		CString s;
+		for (int i = 0; i < 5; i++) {
+			s += data[idx[i]] + "|";
+		}
+		s.Delete(s.GetLength() - 1);
+		return XXH64(s.GetString(), s.GetLength(), 0);
+	}
+	uint64_t GetID() const { return ID; }
+	void SetID(uint64_t id) { ID = id; }
 }CONTEXT_OBJECT,*PCONTEXT_OBJECT;
 
 typedef CList<PCONTEXT_OBJECT> ContextObjectList;
@@ -326,36 +366,52 @@ public:
 	IOCPServer(void);
 	~IOCPServer(void);
 	void Destroy();
-
+	void Disconnect(CONTEXT_OBJECT *ctx){}
 	pfnNotifyProc m_NotifyProc;
 	pfnOfflineProc m_OfflineProc;
 };
 
+typedef IOCPServer ISocketBase;
+
 class CLock     
 {
 public:
-	CLock(CRITICAL_SECTION& cs)
+	CLock(CRITICAL_SECTION& cs) : m_cs(&cs)
 	{
-		m_cs = &cs;
 		Lock();
+	}
+	CLock() : m_cs(nullptr)
+	{
+		InitializeCriticalSection(&i_cs);
 	}
 	~CLock()
 	{
-		Unlock();
+		m_cs ? Unlock() : DeleteCriticalSection(&i_cs);
 	}
 
 	void Unlock()
 	{
-		LeaveCriticalSection(m_cs);
+		LeaveCriticalSection(m_cs ? m_cs : &i_cs);
 	}
 
 	void Lock()
 	{
-		EnterCriticalSection(m_cs);
+		EnterCriticalSection(m_cs ? m_cs : &i_cs);
+	}
+
+	void unlock()
+	{
+		LeaveCriticalSection(m_cs ? m_cs : &i_cs);
+	}
+
+	void lock()
+	{
+		EnterCriticalSection(m_cs ? m_cs : &i_cs);
 	}
 
 protected:
-	CRITICAL_SECTION*	m_cs;
+	CRITICAL_SECTION*	m_cs; // 外部锁
+	CRITICAL_SECTION	i_cs; // 内部锁
 };
 
 #define TRACK_OVERLAPPEDPLUS 0

