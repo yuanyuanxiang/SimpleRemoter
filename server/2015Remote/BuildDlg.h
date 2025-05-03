@@ -2,6 +2,7 @@
 
 #include "Buffer.h"
 
+LPBYTE ReadResource(int resourceId, DWORD& dwSize);
 
 // CBuildDlg ¶Ô»°¿ò
 

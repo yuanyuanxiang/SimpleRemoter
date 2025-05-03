@@ -75,21 +75,21 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)compress;$(SolutionDir);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)compress;$(SolutionDir);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)compress;$(SolutionDir);$(LibraryPath)</LibraryPath>
     <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)compress;$(SolutionDir);$(LibraryPath)</LibraryPath>
     <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -243,6 +243,7 @@
     <None Include="res\My2015Remote.rc2" />
     <None Include="res\pc.ico" />
     <None Include="res\string.ico" />
+    <None Include="res\upx.exe" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />

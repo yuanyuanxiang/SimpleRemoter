@@ -265,8 +265,7 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 	}
 	if (m_hWorkThread == NULL){
 #ifdef _WIN32
-		m_hWorkThread = (HANDLE)CreateThread(NULL, 0, 
-			WorkThreadProc,(LPVOID)this, 0, NULL);
+		m_hWorkThread = (HANDLE)CreateThread(NULL, 0, WorkThreadProc,(LPVOID)this, 0, NULL);
 		m_bWorkThread = m_hWorkThread ? S_RUN : S_STOP;
 #else
 		pthread_t id = 0;
@@ -284,6 +283,7 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 	char* szBuffer = new char[MAX_RECV_BUFFER];
 	fd_set fd;
 	struct timeval tm = { 2, 0 };
+	This->m_CompressedBuffer.ClearBuffer();
 
 	while (This->IsRunning()) // 没有退出，就一直陷在这个循环中
 	{
@@ -306,22 +306,23 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 			{
 				Mprintf("[select] return %d, GetLastError= %d. \n", iRet, WSAGetLastError());
 				This->Disconnect(); //接收错误处理
+				This->m_CompressedBuffer.ClearBuffer();
 				if(This->m_exit_while_disconnect)
 					break;
 			}
 		}
 		else if (iRet > 0)
 		{
-			memset(szBuffer, 0, MAX_RECV_BUFFER);
-			int iReceivedLength = recv(This->m_sClientSocket, 
-				szBuffer, MAX_RECV_BUFFER, 0); //接收主控端发来的数据
+			int iReceivedLength = recv(This->m_sClientSocket, szBuffer, MAX_RECV_BUFFER-1, 0);
 			if (iReceivedLength <= 0)
 			{
 				int a = WSAGetLastError();
 				This->Disconnect(); //接收错误处理
+				This->m_CompressedBuffer.ClearBuffer();
 				if(This->m_exit_while_disconnect)
 					break;
 			}else{
+				szBuffer[iReceivedLength] = 0;
 				//正确接收就调用OnRead处理,转到OnRead
 				This->OnServerReceiving(szBuffer, iReceivedLength);
 			}
@@ -513,6 +514,9 @@ BOOL IOCPClient::SendWithSplit(const char* szBuffer, ULONG ulLength, ULONG ulSpl
 
 VOID IOCPClient::Disconnect() 
 {
+	if (m_sClientSocket == INVALID_SOCKET)
+		return;
+
 	Mprintf("断开和服务端的连接.\n");
 
 	CancelIo((HANDLE)m_sClientSocket);

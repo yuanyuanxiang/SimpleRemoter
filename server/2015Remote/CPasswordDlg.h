@@ -14,6 +14,10 @@ std::string GetPwdHash();
 
 std::string GetMasterId();
 
+bool IsPwdHashValid(const char* pwdHash = nullptr);
+
+bool WritePwdHash(char* target, const std::string& pwdHash);
+
 class CPasswordDlg : public CDialogEx
 {
 	DECLARE_DYNAMIC(CPasswordDlg)
