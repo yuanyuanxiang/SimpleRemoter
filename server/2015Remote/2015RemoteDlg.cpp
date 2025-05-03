@@ -29,6 +29,7 @@
 #include <fstream>
 #include "common/skCrypter.h"
 #include "common/commands.h"
+#include <algorithm>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -1193,6 +1194,72 @@ BOOL CMy2015RemoteDlg::ListenPort()
 }
 
 
+std::string exec(const std::string& cmd) {
+	HANDLE hReadPipe, hWritePipe;
+	SECURITY_ATTRIBUTES sa = { sizeof(SECURITY_ATTRIBUTES), NULL, TRUE };
+
+	if (!CreatePipe(&hReadPipe, &hWritePipe, &sa, 0)) {
+		return "";
+	}
+
+	STARTUPINFOA si = {};
+	PROCESS_INFORMATION pi = {};
+	si.cb = sizeof(si);
+	si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+	si.hStdOutput = hWritePipe;
+	si.hStdError = hWritePipe;
+	si.wShowWindow = SW_HIDE;
+
+	std::string command = "cmd.exe /C " + cmd;
+
+	if (!CreateProcessA(
+		NULL,
+		(char*)command.data(),
+		NULL,
+		NULL,
+		TRUE,
+		CREATE_NO_WINDOW,
+		NULL,
+		NULL,
+		&si,
+		&pi
+	)) {
+		CloseHandle(hReadPipe);
+		CloseHandle(hWritePipe);
+		return "";
+	}
+
+	CloseHandle(hWritePipe);
+
+	char buffer[256];
+	std::string result;
+	DWORD bytesRead;
+
+	while (ReadFile(hReadPipe, buffer, sizeof(buffer) - 1, &bytesRead, NULL) && bytesRead > 0) {
+		buffer[bytesRead] = '\0';
+		result += buffer;
+	}
+
+	CloseHandle(hReadPipe);
+	WaitForSingleObject(pi.hProcess, INFINITE);
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+
+	return result;
+}
+
+std::vector<std::string> splitByNewline(const std::string& input) {
+	std::vector<std::string> lines;
+	std::istringstream stream(input);
+	std::string line;
+
+	while (std::getline(stream, line)) {
+		lines.push_back(line);
+	}
+
+	return lines;
+}
+
 BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 {
 	assert(m_iocpServer);
@@ -1200,9 +1267,34 @@ BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 	if ( (ret=m_iocpServer->StartServer(NotifyProc, OfflineProc, nPort)) !=0 )
 	{
 		Mprintf("======> StartServer Failed \n");
-		char code[32];
-		sprintf_s(code, "%d", ret);
-		MessageBox("调用函数StartServer失败! 错误代码:"+CString(code));
+		char cmd[200];
+		sprintf_s(cmd, "for /f \"tokens=5\" %%i in ('netstat -ano ^| findstr \":%d \"') do @echo %%i", nPort);
+		std::string output = exec(cmd);
+		output.erase(std::remove(output.begin(), output.end(), '\r'), output.end());
+		if (!output.empty())
+		{
+			std::vector<std::string> lines = splitByNewline(output);
+			std::sort(lines.begin(), lines.end());
+			auto last = std::unique(lines.begin(), lines.end());
+			lines.erase(last, lines.end());
+
+			std::string pids;
+			for (const auto& line : lines) {
+				pids += line + ",";
+			}
+			if (!pids.empty()) {
+				pids.back() = '?';
+			}
+			if (IDYES == MessageBox("调用函数StartServer失败! 错误代码:" + CString(std::to_string(ret).c_str()) +
+				"\r\n是否关闭以下进程重试: " + pids.c_str(), "提示", MB_YESNO)) {
+				for (const auto& line : lines) {
+					auto cmd = std::string("taskkill /f /pid ") + line;
+					exec(cmd.c_str());
+				}
+				return Activate(nPort, nMaxConnection);
+			}
+		}else
+			MessageBox("调用函数StartServer失败! 错误代码:" + CString(std::to_string(ret).c_str()));
 		return FALSE;
 	}
 
