@@ -31,6 +31,10 @@
 #define new DEBUG_NEW
 #endif
 
+#ifndef GET_FILEPATH
+#define GET_FILEPATH(dir,file) [](char*d,const char*f){char*p=d;while(*p)++p;while('\\'!=*p&&p!=d)--p;strcpy(p+1,f);return d;}(dir,file)
+#endif
+
 #define UM_ICONNOTIFY WM_USER+100
 #define TIMER_CHECK 1
 
@@ -197,6 +201,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_OPENWEBCAMDIALOG, OnOpenVideoDialog)
 	ON_MESSAGE(WM_HANDLEMESSAGE, OnHandleMessage)
 	ON_MESSAGE(WM_OPENKEYBOARDDIALOG, OnOpenKeyboardDialog)
+	ON_MESSAGE(WM_UPXTASKRESULT, UPXProcResult)
 	ON_WM_HELPINFO()
 	ON_COMMAND(ID_ONLINE_SHARE, &CMy2015RemoteDlg::OnOnlineShare)
 	ON_COMMAND(ID_TOOL_AUTH, &CMy2015RemoteDlg::OnToolAuth)
@@ -466,6 +471,11 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
+	if (!IsPwdHashValid()) {
+		MessageBox("此程序为非法的应用程序，无法正常运行!", "错误", MB_ICONERROR);
+		OnMainExit();
+		return FALSE;
+	}
 	// 将“关于...”菜单项添加到系统菜单中。
 	SetWindowText(_T("Yama"));
 
@@ -1794,14 +1804,7 @@ void CMy2015RemoteDlg::OnToolAuth()
 }
 
 
-char* ReadCurrentExecutable(size_t& outSize) {
-	// 获取当前程序路径
-	char path[MAX_PATH];
-	DWORD len = GetModuleFileNameA(NULL, path, MAX_PATH);
-	if (len == 0 || len == MAX_PATH) {
-		return nullptr;
-	}
-
+char* ReadFileToBuffer(const std::string &path, size_t& outSize) {
 	// 打开文件
 	std::ifstream file(path, std::ios::binary | std::ios::ate); // ate = 跳到末尾获得大小
 	if (!file) {
@@ -1823,6 +1826,134 @@ char* ReadCurrentExecutable(size_t& outSize) {
 	return buffer;
 }
 
+//////////////////////////////////////////////////////////////////////////
+// UPX 
+
+BOOL WriteBinaryToFile(const char* path, const char* data, ULONGLONG size)
+{
+	// 打开文件，以二进制模式写入
+	std::string filePath = path;
+	std::ofstream outFile(filePath, std::ios::binary);
+
+	if (!outFile)
+	{
+		Mprintf("Failed to open or create the file: %s.\n", filePath.c_str());
+		return FALSE;
+	}
+
+	// 写入二进制数据
+	outFile.write(data, size);
+
+	if (outFile.good())
+	{
+		Mprintf("Binary data written successfully to %s.\n", filePath.c_str());
+	}
+	else
+	{
+		Mprintf("Failed to write data to file.\n");
+		outFile.close();
+		return FALSE;
+	}
+
+	// 关闭文件
+	outFile.close();
+
+	return TRUE;
+}
+
+int run_upx(const std::string& upx, const std::string &file, bool isCompress) {
+	STARTUPINFOA si = { sizeof(si) };
+	si.dwFlags |= STARTF_USESHOWWINDOW;
+	si.wShowWindow = SW_HIDE;
+
+	PROCESS_INFORMATION pi;
+	std::string cmd = isCompress ? "\" --best \"" : "\" -d \"";
+	std::string cmdLine = "\"" + upx + cmd + file + "\"";
+
+	BOOL success = CreateProcessA(
+		NULL,
+		&cmdLine[0],  // 注意必须是非 const char*
+		NULL, NULL, FALSE,
+		0, NULL, NULL, &si, &pi
+	);
+
+	if (!success) {
+		Mprintf("Failed to run UPX. Error: %d\n", GetLastError());
+		return -1;
+	}
+
+	WaitForSingleObject(pi.hProcess, INFINITE);
+
+	DWORD exitCode;
+	GetExitCodeProcess(pi.hProcess, &exitCode);
+
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+
+	return static_cast<int>(exitCode);
+}
+
+// 解压UPX对当前应用程序进行操作
+bool UPXUncompressFile(std::string& upx, std::string &file) {
+	DWORD dwSize = 0;
+	LPBYTE data = ReadResource(IDR_BINARY_UPX, dwSize);
+	if (!data)
+		return false;
+
+	char path[MAX_PATH];
+	DWORD len = GetModuleFileNameA(NULL, path, MAX_PATH);
+	std::string curExe = path;
+	GET_FILEPATH(path, "upx.exe");
+	upx = path;
+
+	BOOL r = WriteBinaryToFile(path, (char*)data, dwSize);
+	SAFE_DELETE_ARRAY(data);
+	if (r)
+	{
+		file = curExe + ".tmp";
+		if (!CopyFile(curExe.c_str(), file.c_str(), FALSE)) {
+			Mprintf("Failed to copy file. Error: %d\n", GetLastError());
+			return false;
+		}
+		int result = run_upx(path, file, false);
+		Mprintf("UPX decompression %s!\n", result ? "failed" : "successful");
+		return 0 == result;
+	}
+	return false;
+}
+
+struct UpxTaskArgs {
+	HWND hwnd; // 主窗口句柄
+	std::string upx;
+	std::string file;
+	bool isCompress;
+};
+
+DWORD WINAPI UpxThreadProc(LPVOID lpParam) {
+	UpxTaskArgs* args = (UpxTaskArgs*)lpParam;
+	int result = run_upx(args->upx, args->file, args->isCompress);
+
+	// 向主线程发送完成消息，wParam可传结果
+	PostMessageA(args->hwnd, WM_UPXTASKRESULT, (WPARAM)result, 0);
+
+	DeleteFile(args->upx.c_str());
+	delete args;
+
+	return 0;
+}
+
+void run_upx_async(HWND hwnd, const std::string& upx, const std::string& file, bool isCompress) {
+	UpxTaskArgs* args = new UpxTaskArgs{ hwnd, upx, file, isCompress };
+	CloseHandle(CreateThread(NULL, 0, UpxThreadProc, args, 0, NULL));
+}
+
+LRESULT CMy2015RemoteDlg::UPXProcResult(WPARAM wParam, LPARAM lParam) {
+	int exitCode = static_cast<int>(wParam);
+	ShowMessage(exitCode == 0, "UPX 处理完成");
+	return S_OK;
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 void CMy2015RemoteDlg::OnToolGenMaster()
 {
@@ -1841,19 +1972,42 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 	if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty())
 		return;
 	size_t size = 0;
-	char* curEXE = ReadCurrentExecutable(size);
+	char path[MAX_PATH];
+	DWORD len = GetModuleFileNameA(NULL, path, MAX_PATH);
+	if (len == 0 || len == MAX_PATH) {
+		return;
+	}
+	char* curEXE = ReadFileToBuffer(path, size);
 	if (curEXE == nullptr) {
 		MessageBox("读取文件失败! 请稍后再次尝试。", "错误", MB_ICONWARNING);
 		return;
 	}
 	std::string pwdHash = hashSHA256(dlg.m_str.GetString());
 	int iOffset = MemoryFind(curEXE, masterHash.c_str(), size, masterHash.length());
-	if (iOffset == -1) {
-		MessageBox("操作文件失败! 请稍后再次尝试。", "错误", MB_ICONWARNING);
+	std::string upx;
+	if (iOffset == -1)
+	{
+		SAFE_DELETE_ARRAY(curEXE);
+		std::string tmp;
+		if (!UPXUncompressFile(upx, tmp) || nullptr == (curEXE = ReadFileToBuffer(tmp.c_str(), size))) {
+			MessageBox("操作文件失败! 请稍后再次尝试。", "错误", MB_ICONWARNING);
+			if (!upx.empty()) DeleteFile(upx.c_str());
+			if (!tmp.empty()) DeleteFile(tmp.c_str());
+			return;
+		}
+		DeleteFile(tmp.c_str());
+		iOffset = MemoryFind(curEXE, masterHash.c_str(), size, masterHash.length());
+		if (iOffset == -1) {
+			SAFE_DELETE_ARRAY(curEXE);
+			MessageBox("操作文件失败! 请稍后再次尝试。", "错误", MB_ICONWARNING);
+			return;
+		}
+	}
+	if (!WritePwdHash(curEXE + iOffset, pwdHash)) {
+		MessageBox("写入哈希失败! 无法生成主控。", "错误", MB_ICONWARNING);
 		SAFE_DELETE_ARRAY(curEXE);
 		return;
 	}
-	memcpy(curEXE + iOffset, pwdHash.c_str(), pwdHash.length());
 	CComPtr<IShellFolder> spDesktop;
 	HRESULT hr = SHGetDesktopFolder(&spDesktop);
 	if (FAILED(hr)) {
@@ -1885,8 +2039,12 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 		}
 		File.Write(curEXE, size);
 		File.Close();
-
-		MessageBox("生成成功! 文件位于:\r\n" + name, "提示", MB_ICONINFORMATION);
+		if (!upx.empty())
+		{
+			run_upx_async(GetSafeHwnd(), upx, name.GetString(), true);
+			MessageBox("正在UPX压缩，请关注信息提示。\r\n文件位于: " + name, "提示", MB_ICONINFORMATION);
+		}else
+			MessageBox("生成成功! 文件位于:\r\n" + name, "提示", MB_ICONINFORMATION);
 	}
 	SAFE_DELETE_ARRAY(curEXE);
 }

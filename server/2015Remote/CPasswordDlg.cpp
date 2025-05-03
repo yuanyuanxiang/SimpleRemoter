@@ -6,6 +6,7 @@
 #include "afxdialogex.h"
 #include "pwd_gen.h"
 #include "2015Remote.h"
+#include "common/skCrypter.h"
 
 // CPasswordDlg 对话框
 
@@ -15,12 +16,52 @@ IMPLEMENT_DYNAMIC(CPasswordDlg, CDialogEx)
 char g_MasterID[100] = { PWD_HASH256 };
 
 std::string GetPwdHash(){
-	return g_MasterID;
+	static auto id = std::string(g_MasterID).substr(0, 64);
+	return id;
 }
 
 std::string GetMasterId() {
 	static auto id = std::string(g_MasterID).substr(0, 16);
 	return id;
+}
+
+extern "C" void shrink64to32(const char* input64, char* output32);  // output32 必须至少 33 字节
+
+extern "C" void shrink32to4(const char* input32, char* output4);    // output4 必须至少 5 字节
+
+#ifdef _WIN64
+#pragma comment(lib, "lib/shrink_x64.lib")
+#else
+#pragma comment(lib, "lib/shrink.lib")
+#endif
+
+bool WritePwdHash(char* target, const std::string & pwdHash) {
+	char output32[33], output4[5];
+	shrink64to32(pwdHash.c_str(), output32);
+	shrink32to4(output32, output4);
+	if (output32[0] == 0 || output4[0] == 0)
+		return false;
+	memcpy(target, pwdHash.c_str(), pwdHash.length());
+	memcpy(target + 64, output32, 32);
+	memcpy(target + 96, output4, 4);
+#ifdef _DEBUG
+	ASSERT(IsPwdHashValid(target));
+#endif
+	return true;
+}
+
+bool IsPwdHashValid(const char* hash) {
+	const char* ptr = hash ? hash : g_MasterID;
+	if (ptr == std::string(skCrypt(MASTER_HASH)))
+		return true;
+	std::string pwdHash(ptr, 64), s1(ptr +64, 32), s2(ptr +96, 4);
+	char output32[33], output4[5];
+	shrink64to32(pwdHash.c_str(), output32);
+	shrink32to4(output32, output4);
+	if (memcmp(output32, s1.c_str(), 32) || memcmp(output4, s2.c_str(), 4))
+		return false;
+
+	return true;
 }
 
 CPasswordDlg::CPasswordDlg(CWnd* pParent /*=nullptr*/)
