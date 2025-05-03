@@ -71,22 +71,22 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IntDir>$(Configuration)\ghost</IntDir>
-    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir)proxy;$(SolutionDir)common</IncludePath>
+    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir)proxy;$(SolutionDir)common</IncludePath>
+    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(LibraryPath)</LibraryPath>
     <IntDir>$(Platform)\$(Configuration)\ghost</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IntDir>$(Configuration)\ghost</IntDir>
-    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir)proxy;$(SolutionDir)common</IncludePath>
+    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
+    <IncludePath>./d3d;$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir)proxy;$(SolutionDir)common</IncludePath>
+    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(LibraryPath)</LibraryPath>
     <IntDir>$(Platform)\$(Configuration)\ghost</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -183,6 +183,7 @@
     <ClCompile Include="KeyboardManager.cpp" />
     <ClCompile Include="LoginServer.cpp" />
     <ClCompile Include="Manager.cpp" />
+    <ClCompile Include="proxy\ProxyManager.cpp" />
     <ClCompile Include="RegisterManager.cpp" />
     <ClCompile Include="RegisterOperation.cpp" />
     <ClCompile Include="ScreenManager.cpp" />
@@ -196,12 +197,10 @@
     <ClCompile Include="X264Encoder.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\common\commands.h" />
     <ClInclude Include="Audio.h" />
     <ClInclude Include="AudioManager.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CaptureVideo.h" />
-    <ClInclude Include="ClientDll.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="CursorInfo.h" />
     <ClInclude Include="FileManager.h" />
@@ -210,6 +209,7 @@
     <ClInclude Include="KeyboardManager.h" />
     <ClInclude Include="LoginServer.h" />
     <ClInclude Include="Manager.h" />
+    <ClInclude Include="proxy\ProxyManager.h" />
     <ClInclude Include="RegisterManager.h" />
     <ClInclude Include="RegisterOperation.h" />
     <ClInclude Include="resource.h" />

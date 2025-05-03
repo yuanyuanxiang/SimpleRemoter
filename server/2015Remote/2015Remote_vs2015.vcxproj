@@ -74,34 +74,33 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)compress;$(SolutionDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir);$(SolutionDir)common;$(IncludePath)</IncludePath>
+    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(SolutionDir);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)compress;$(SolutionDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir);$(SolutionDir)common;$(IncludePath)</IncludePath>
+    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(SolutionDir);$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)compress;$(SolutionDir);$(LibraryPath)</LibraryPath>
-    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
+    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(SolutionDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir);$(SolutionDir)common;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)compress;$(SolutionDir);$(LibraryPath)</LibraryPath>
-    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
+    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(SolutionDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir);$(SolutionDir)common;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -126,11 +125,10 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -155,12 +153,11 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <StringPooling>true</StringPooling>
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -188,12 +185,11 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <StringPooling>true</StringPooling>
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <LanguageStandard>Default</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -215,12 +211,8 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="..\..\Release\ghost.exe" />
     <None Include="..\..\Release\ServerDll.dll" />
-    <None Include="..\..\Release\TestRun.exe" />
-    <None Include="..\..\x64\Release\ghost.exe" />
     <None Include="..\..\x64\Release\ServerDll.dll" />
-    <None Include="..\..\x64\Release\TestRun.exe" />
     <None Include="res\1.cur" />
     <None Include="res\2.cur" />
     <None Include="res\2015Remote.ico" />
@@ -247,7 +239,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
-    <ClInclude Include="..\..\common\commands.h" />
     <ClInclude Include="2015Remote.h" />
     <ClInclude Include="2015RemoteDlg.h" />
     <ClInclude Include="AudioDlg.h" />
@@ -255,6 +246,7 @@
     <ClInclude Include="BuildDlg.h" />
     <ClInclude Include="CPasswordDlg.h" />
     <ClInclude Include="CpuUseage.h" />
+    <ClInclude Include="DateVerify.h" />
     <ClInclude Include="EditDialog.h" />
     <ClInclude Include="FileManagerDlg.h" />
     <ClInclude Include="FileTransferModeDlg.h" />
@@ -262,6 +254,12 @@
     <ClInclude Include="InputDlg.h" />
     <ClInclude Include="IOCPServer.h" />
     <ClInclude Include="KeyBoardDlg.h" />
+    <ClInclude Include="parse_ip.h" />
+    <ClInclude Include="proxy\HPSocket.h" />
+    <ClInclude Include="proxy\HPTypeDef.h" />
+    <ClInclude Include="proxy\ProxyConnectServer.h" />
+    <ClInclude Include="proxy\ProxyMapDlg.h" />
+    <ClInclude Include="proxy\SocketInterface.h" />
     <ClInclude Include="pwd_gen.h" />
     <ClInclude Include="RegisterDlg.h" />
     <ClInclude Include="Resource.h" />
@@ -294,6 +292,9 @@
     <ClCompile Include="InputDlg.cpp" />
     <ClCompile Include="IOCPServer.cpp" />
     <ClCompile Include="KeyBoardDlg.cpp" />
+    <ClCompile Include="parse_ip.cpp" />
+    <ClCompile Include="proxy\ProxyConnectServer.cpp" />
+    <ClCompile Include="proxy\ProxyMapDlg.cpp" />
     <ClCompile Include="pwd_gen.cpp" />
     <ClCompile Include="RegisterDlg.cpp" />
     <ClCompile Include="ScreenSpyDlg.cpp" />
@@ -318,12 +319,16 @@
     <Text Include="..\..\ReadMe.md" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="res\Bitmap\note.bmp" />
+    <Image Include="res\Bitmap\proxy.bmp" />
     <Image Include="res\Bitmap\Share.bmp" />
     <Image Include="res\Bitmap_4.bmp" />
     <Image Include="res\Bitmap_5.bmp" />
     <Image Include="res\delete.bmp" />
     <Image Include="res\keyboard.ico" />
     <Image Include="res\password.ico" />
+    <Image Include="res\proxifler.ico" />
+    <Image Include="res\proxy.ico" />
     <Image Include="res\toolbar1.bmp" />
     <Image Include="res\toolbar2.bmp" />
     <Image Include="res\update.bmp" />

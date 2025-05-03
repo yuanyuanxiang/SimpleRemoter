@@ -68,22 +68,22 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
+    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter;$(IncludePath)</IncludePath>
     <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
     <IntDir>$(Configuration)\test</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
+    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter;$(IncludePath)</IncludePath>
     <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
     <IntDir>$(Platform)\$(Configuration)\test</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
+    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter;$(IncludePath)</IncludePath>
     <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
     <IntDir>$(Configuration)\test</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)compress;$(IncludePath)</IncludePath>
+    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter;$(IncludePath)</IncludePath>
     <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)compress;$(LibraryPath)</LibraryPath>
     <IntDir>$(Platform)\$(Configuration)\test</IntDir>
   </PropertyGroup>
@@ -161,7 +161,6 @@
   <ItemGroup>
     <ClInclude Include="MemoryModule.h" />
     <ClInclude Include="resource1.h" />
-    <ClInclude Include="ShellcodeInj.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="TestRun.rc" />
