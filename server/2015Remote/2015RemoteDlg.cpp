@@ -247,6 +247,8 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_TOOL_GEN_MASTER, &CMy2015RemoteDlg::OnToolGenMaster)
 	ON_COMMAND(ID_MAIN_PROXY, &CMy2015RemoteDlg::OnMainProxy)
 	ON_COMMAND(ID_ONLINE_HOSTNOTE, &CMy2015RemoteDlg::OnOnlineHostnote)
+	ON_COMMAND(ID_HELP_IMPORTANT, &CMy2015RemoteDlg::OnHelpImportant)
+	ON_COMMAND(ID_HELP_FEEDBACK, &CMy2015RemoteDlg::OnHelpFeedback)
 END_MESSAGE_MAP()
 
 
@@ -371,14 +373,14 @@ VOID CMy2015RemoteDlg::InitControl()
 	GetWindowRect(&rect);
 	rect.bottom+=20;
 	MoveWindow(rect);
-
+	auto style = LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER | LVS_EX_HEADERDRAGDROP | LVS_EX_LABELTIP;
 	for (int i = 0;i<g_Column_Count_Online;++i)
 	{
 		m_CList_Online.InsertColumn(i, g_Column_Data_Online[i].szTitle,LVCFMT_CENTER,g_Column_Data_Online[i].nWidth);
 
 		g_Column_Online_Width+=g_Column_Data_Online[i].nWidth; 
 	}
-	m_CList_Online.SetExtendedStyle(LVS_EX_FULLROWSELECT);
+	m_CList_Online.SetExtendedStyle(style);
 
 	for (int i = 0; i < g_Column_Count_Message; ++i)
 	{
@@ -386,7 +388,7 @@ VOID CMy2015RemoteDlg::InitControl()
 		g_Column_Message_Width+=g_Column_Data_Message[i].nWidth;  
 	}
 
-	m_CList_Message.SetExtendedStyle(LVS_EX_FULLROWSELECT);
+	m_CList_Message.SetExtendedStyle(style);
 }
 
 
@@ -2273,4 +2275,21 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 			MessageBox("生成成功! 文件位于:\r\n" + name, "提示", MB_ICONINFORMATION);
 	}
 	SAFE_DELETE_ARRAY(curEXE);
+}
+
+
+void CMy2015RemoteDlg::OnHelpImportant()
+{
+	const char* msg = 
+		"本软件以“现状”提供，不附带任何保证。使用本软件的风险由用户自行承担。"
+		"我们不对任何因使用本软件而引发的非法或恶意用途负责。用户应遵守相关法律"
+		"法规，并负责任地使用本软件。开发者对任何因使用本软件产生的损害不承担责任。";
+	MessageBox(msg, "免责声明", MB_ICONINFORMATION);
+}
+
+
+void CMy2015RemoteDlg::OnHelpFeedback()
+{
+	CString url = _T("https://github.com/yuanyuanxiang/SimpleRemoter/issues/new");
+	ShellExecute(NULL, _T("open"), url, NULL, NULL, SW_SHOWNORMAL);
 }

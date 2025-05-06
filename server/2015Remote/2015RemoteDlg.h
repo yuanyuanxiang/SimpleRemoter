@@ -220,4 +220,6 @@ public:
 	afx_msg void OnToolGenMaster();
 	afx_msg void OnMainProxy();
 	afx_msg void OnOnlineHostnote();
+	afx_msg void OnHelpImportant();
+	afx_msg void OnHelpFeedback();
 };
