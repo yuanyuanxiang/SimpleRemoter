@@ -8,9 +8,6 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ghost", "client\ghost_vs2015.vcxproj", "{3F756E52-23C2-4EE4-A184-37CF788D50A7}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestRun", "client\TestRun_vs2015.vcxproj", "{B5D7F0E5-E735-4B17-91AE-866CE7E6ABD3}"
-	ProjectSection(ProjectDependencies) = postProject
-		{BEBAF888-532D-40D3-A8DD-DDAAF69F49AA} = {BEBAF888-532D-40D3-A8DD-DDAAF69F49AA}
-	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ServerDll", "client\ClientDll_vs2015.vcxproj", "{BEBAF888-532D-40D3-A8DD-DDAAF69F49AA}"
 EndProject

