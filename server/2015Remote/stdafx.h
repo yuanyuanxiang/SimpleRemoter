@@ -20,12 +20,6 @@
 #define VC_EXTRALEAN            // 从 Windows 头中排除极少使用的资料
 #endif
 
-#ifdef _DEBUG
-#define Mprintf(format, ...) TRACE(format, ##__VA_ARGS__)
-#else
-#define Mprintf(format, ...) 
-#endif
-
 // 移除对话框中MFC控件的支持，减小静态编译程序的大小
 #define _AFX_NO_MFC_CONTROLS_IN_DIALOGS
 
@@ -117,47 +111,9 @@ enum
 #include <MMSystem.h>
 #pragma comment(lib, "winmm.lib")
 
-// 高精度的睡眠函数
-#define Sleep_m(ms) { timeBeginPeriod(1); Sleep(ms); timeEndPeriod(1); }
-
-// 以步长n毫秒在条件C下等待T秒(n是步长，必须能整除1000)
-#define WAIT_n(C, T, n) {assert(!(1000%(n)));int s=(1000*(T))/(n);do{Sleep(n);}while((C)&&(--s));}
-
-// 在条件C成立时等待T秒(步长10ms)
-#define WAIT(C, T) { timeBeginPeriod(1); WAIT_n(C, T, 10); timeEndPeriod(1); }
-
-// 在条件C成立时等待T秒(步长1ms)
-#define WAIT_1(C, T) { timeBeginPeriod(1); WAIT_n(C, T, 1); timeEndPeriod(1); }
-
-// 智能计时器，计算函数的耗时
-class auto_tick
-{
-private:
-	const char *func;
-	int span;
-	clock_t tick;
-	__inline clock_t now() const { return clock(); }
-	__inline int time() const { return now() - tick; }
-
-public:
-	auto_tick(const char *func_name, int th = 5) : func(func_name), span(th), tick(now()) { }
-	~auto_tick() { stop(); }
-
-	__inline void stop() {
-		if (span != 0) { int s(this->time()); if (s > span)TRACE("[%s]执行时间: [%d]ms.\n", func, s); span = 0; }
-	}
-};
-
-#ifdef _DEBUG
-// 智能计算当前函数的耗时，超时会打印
-#define AUTO_TICK(thresh) auto_tick TICK(__FUNCTION__, thresh)
-#define STOP_TICK TICK.stop()
-#else
-#define AUTO_TICK(thresh) 
-#define STOP_TICK 
-#endif
-
 #define SAFE_DELETE(p) if(p){ delete (p); (p) = NULL; }
 #define SAFE_DELETE_ARRAY(p) if(p){ delete[] (p); (p) = NULL; }
 
+#include "common/logger.h"
+#include "common/locker.h"
 #include "common/commands.h"
