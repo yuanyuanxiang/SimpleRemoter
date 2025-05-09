@@ -16,4 +16,7 @@
     <LocalDebuggerCommand>$(SolutionDir)Bin\$(TargetName)_x64d$(TargetExt)</LocalDebuggerCommand>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup>
+    <RESOURCE_FILE>2015Remote.rc</RESOURCE_FILE>
+  </PropertyGroup>
 </Project>

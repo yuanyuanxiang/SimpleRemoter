@@ -211,8 +211,12 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="..\..\Release\ghost.exe" />
     <None Include="..\..\Release\ServerDll.dll" />
+    <None Include="..\..\Release\TestRun.exe" />
+    <None Include="..\..\x64\Release\ghost.exe" />
     <None Include="..\..\x64\Release\ServerDll.dll" />
+    <None Include="..\..\x64\Release\TestRun.exe" />
     <None Include="res\1.cur" />
     <None Include="res\2.cur" />
     <None Include="res\2015Remote.ico" />

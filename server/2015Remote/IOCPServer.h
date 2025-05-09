@@ -373,47 +373,6 @@ public:
 
 typedef IOCPServer ISocketBase;
 
-class CLock     
-{
-public:
-	CLock(CRITICAL_SECTION& cs) : m_cs(&cs)
-	{
-		Lock();
-	}
-	CLock() : m_cs(nullptr)
-	{
-		InitializeCriticalSection(&i_cs);
-	}
-	~CLock()
-	{
-		m_cs ? Unlock() : DeleteCriticalSection(&i_cs);
-	}
-
-	void Unlock()
-	{
-		LeaveCriticalSection(m_cs ? m_cs : &i_cs);
-	}
-
-	void Lock()
-	{
-		EnterCriticalSection(m_cs ? m_cs : &i_cs);
-	}
-
-	void unlock()
-	{
-		LeaveCriticalSection(m_cs ? m_cs : &i_cs);
-	}
-
-	void lock()
-	{
-		EnterCriticalSection(m_cs ? m_cs : &i_cs);
-	}
-
-protected:
-	CRITICAL_SECTION*	m_cs; // 外部锁
-	CRITICAL_SECTION	i_cs; // 内部锁
-};
-
 #define TRACK_OVERLAPPEDPLUS 0
 
 class OVERLAPPEDPLUS   
