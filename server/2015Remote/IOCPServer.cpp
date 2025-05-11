@@ -508,8 +508,8 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 				}
 				else if (ContextObject->CompressMethod == COMPRESS_NONE) {
 					ContextObject->InDeCompressedBuffer.ClearBuffer();
-					ContextObject->InDeCompressedBuffer.WriteBuffer(CompressedBuffer, ulOriginalLength);
 					ContextObject->Decode(CompressedBuffer, ulOriginalLength);
+					ContextObject->InDeCompressedBuffer.WriteBuffer(CompressedBuffer, ulOriginalLength);
 					m_NotifyProc(ContextObject);
 					SAFE_DELETE_ARRAY(CompressedBuffer);
 					continue;
@@ -522,16 +522,16 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 				if (usingZstd ? C_SUCCESS(iRet) : (S_OK==iRet))
 				{
 					ContextObject->InDeCompressedBuffer.ClearBuffer();
-					ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
 					ContextObject->Decode(DeCompressedBuffer, ulOriginalLength);
+					ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
 					m_NotifyProc(ContextObject);  //通知窗口
 				}else if (usingZstd){
 					// 尝试用zlib解压缩
 					if (Z_OK == uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength)) {
 						ContextObject->CompressMethod = COMPRESS_ZLIB;
 						ContextObject->InDeCompressedBuffer.ClearBuffer();
-						ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
 						ContextObject->Decode(DeCompressedBuffer, ulOriginalLength);
+						ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
 						m_NotifyProc(ContextObject);
 					} else {
 						zlibFailed = true;
