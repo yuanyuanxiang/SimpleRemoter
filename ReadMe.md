@@ -2,17 +2,21 @@
 
 **原始来源：** [zibility](https://github.com/zibility/Remote)
 
-**功能概述：** 基于gh0st的远程控制器：实现了终端管理、进程管理、窗口管理、桌面管理、文件管理、语音管理、视频管理、服务管理、注册表管理等功能。
+**功能概述：** 基于gh0st的远程控制器：实现了终端管理、进程管理、窗口管理、桌面管理、文件管理、语音管理、视频管理、服务管理、
+注册表管理、键盘记录、SOCKS代理等功能。
 如果您热爱研究控制程序，喜欢本项目，请您对该项目添加星标。Fork、Watch此项目，提交Issues，发起Pull Request都是受欢迎的。
 
-根据本人空闲情况，此项目会不定期更新。若您想对该项目了解更多技术细节，喜欢讨论软件的各方面，学习和交流请通过适当的方式联系。
-
-此程序仅限于学习和技术交流用途，使用者本人需对自己使用该软件产生的结果进行负责。
+<span style="color:#FF5722; font-weight:bold;">*此程序仅限于学习和技术交流用途，使用者本人需对自己使用该软件产生的结果进行负责。* </span>
 
 **起始日期**：2019.1.1
 
+## 免责声明
+
+本软件以“现状”提供，不附带任何保证。使用本软件的风险由用户自行承担。我们不对任何因使用本软件而引发的非法或恶意用途负责。
+用户应遵守相关法律法规，并负责任地使用本软件。开发者对任何因使用本软件产生的损害不承担责任。
+
 ## 主控程序
-主控程序为**YAMA.exe**是Server端，Release发布版本在单台电脑只能运行一个示例。
+主控程序为**YAMA.exe**是Server端，基于IOCP通讯，支持上万主机同时在线，Release发布版本在单台电脑只能运行一个示例。
 下面展示主控程序运行界面，所有功能均可用，程序运行稳定。
 某些功能要求受控程序以管理员权限运行。
 
@@ -76,8 +80,9 @@
 
 ![PasswordGen](./images/PasswordGen.jpg)
 
-当前对生成服务功能进行了限制，需要取得口令方可操作。给新编译的程序14天试用期，过期之后生成服务端需要凭借"序列号"申请口令；
-如果要对其他功能乃至整个程序启动授权逻辑，或者屏蔽该授权逻辑，请参考`OnOnlineBuildClient`函数。
+自v1.0.8起，操作主控程序需要获得授权。给新编译的程序14天试用期，过期之后生成服务端需要凭借"序列号"申请口令；
+如果要屏蔽该授权逻辑，请参考`OnOnlineBuildClient`函数，重新编译程序，参看：
+[#91](https://github.com/yuanyuanxiang/SimpleRemoter/issues/91)。
 “口令”包含授权日期范围，确保一机一码；授权逻辑会检测计算机日期未被篡改。生成口令需使用密码。
 
 ## 受控程序
@@ -143,6 +148,13 @@ Release v1.0.9：
 - Improve authorization feature.
 
 
+# 其他项目
+
+- [HoldingHands](https://github.com/yuanyuanxiang/HoldingHands)：此远控程序界面为全英文，采用不同的架构设计。
+- [BGW RAT](https://github.com/yuanyuanxiang/BGW_RAT): 一款功能全面的远程控制程序，即大灰狼9.5.
+- [Gh0st](https://github.com/yuanyuanxiang/Gh0st): 也是一款基于Gh0st的远程控制程序。
+
+
 # 沟通反馈
 
 QQ：962914132
@@ -153,6 +165,5 @@ QQ：962914132
 
 欢迎提交： [Merge requests](https://github.com/yuanyuanxiang/SimpleRemoter/pulls)
 
-赞助方式 / Sponsor：
-
-![Sponsor](https://github.com/yuanyuanxiang/yuanyuanxiang/blob/main/images/QR_Codes.jpg)
+赞助方式 / Sponsor：该项目的研究出自技术学习和兴趣爱好，本人视业余情况不定期更新项目。
+**如果该项目对你有益，请通过赞助图标对本项目进行支持。**
