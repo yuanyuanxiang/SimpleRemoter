@@ -6,6 +6,8 @@
 注册表管理、键盘记录、SOCKS代理等功能。
 如果您热爱研究控制程序，喜欢本项目，请您对该项目添加星标。Fork、Watch此项目，提交Issues，发起Pull Request都是受欢迎的。
 
+[![Star History Chart](https://api.star-history.com/svg?repos=yuanyuanxiang/SimpleRemoter&type=Date)](https://star-history.com/#yuanyuanxiang/SimpleRemoter&Date)
+
 <span style="color:#FF5722; font-weight:bold;">*此程序仅限于学习和技术交流用途，使用者本人需对自己使用该软件产生的结果进行负责。* </span>
 
 **起始日期**：2019.1.1
