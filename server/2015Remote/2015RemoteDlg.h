@@ -150,8 +150,9 @@ public:
 	BOOL Activate(int nPort,int nMaxConnection);
 	void UpdateActiveWindow(CONTEXT_OBJECT* ctx);
 	void SendMasterSettings(CONTEXT_OBJECT* ctx);
-	VOID SendServerDll(CONTEXT_OBJECT* ContextObject, bool is64Bit);
+	VOID SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, bool is64Bit);
 	Buffer* m_ServerDLL[PAYLOAD_MAXTYPE];
+	Buffer* m_ServerBin[PAYLOAD_MAXTYPE];
 	MasterSettings m_settings;
 	static VOID CALLBACK NotifyProc(CONTEXT_OBJECT* ContextObject);
 	static VOID CALLBACK OfflineProc(CONTEXT_OBJECT* ContextObject);
