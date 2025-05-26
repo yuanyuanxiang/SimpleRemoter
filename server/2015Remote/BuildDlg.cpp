@@ -151,6 +151,7 @@ void CBuildDlg::OnBnClickedOk()
 		SAFE_DELETE_ARRAY(szBuffer);
 		return;
 	}
+	g_ConnectAddress.Encrypt();
 	try
 	{
 		// 更新标识

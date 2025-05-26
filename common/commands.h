@@ -58,8 +58,7 @@ typedef void* LPVOID, * HANDLE;
 #define CancelIo(p) close(reinterpret_cast<intptr_t>(p))
 #endif
 
-#include <string>
-#include <vector>
+#include "ip_enc.h"
 #include <time.h>
 #include <unordered_map>
 
@@ -352,10 +351,16 @@ public:
 	int FlagLen() const {
 		return strlen(szFlag);
 	}
-	const char* ServerIP()const {
+	const char* ServerIP(){
+		if (bEncrypt) {
+			Decrypt();
+		}
 		return szServerIP;
 	}
-	int ServerPort()const {
+	int ServerPort() {
+		if (bEncrypt) {
+			Decrypt();
+		}
 		return atoi(szPort);
 	}
 	int ClientType()const {
@@ -372,8 +377,24 @@ public:
 
 		return modified;
 	}
-	bool IsValid()const {
-		return strlen(szServerIP) != 0 && atoi(szPort) > 0;
+	void Encrypt() {
+		if (!bEncrypt){
+			bEncrypt = true;
+			StreamCipher cipher(0x12345678);
+			cipher.process((uint8_t*)szServerIP, sizeof(szServerIP));
+			cipher.process((uint8_t*)szPort, sizeof(szPort));
+		}
+	}
+	void Decrypt() {
+		if (bEncrypt) {
+			bEncrypt = false;
+			StreamCipher cipher(0x12345678);
+			cipher.process((uint8_t*)szServerIP, sizeof(szServerIP));
+			cipher.process((uint8_t*)szPort, sizeof(szPort));
+		}
+	}
+	bool IsValid() {
+		return strlen(ServerIP()) != 0 && ServerPort() > 0;
 	}
 	int Size() const {
 		return sizeof(CONNECT_ADDRESS);
