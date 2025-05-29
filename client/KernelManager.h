@@ -72,17 +72,6 @@ private:
 	}
 };
 
-// 线程信息结构体, 包含3个成员: 运行状态(run)、句柄(h)和通讯客户端(p).
-struct ThreadInfo
-{
-	BOOL run;
-	HANDLE h;
-	IOCPClient *p;
-	void* user;
-	CONNECT_ADDRESS* conn;
-	ThreadInfo() : run(TRUE), h(NULL), p(NULL), user(nullptr), conn(nullptr){ }
-};
-
 class CKernelManager : public CManager  
 {
 public:

