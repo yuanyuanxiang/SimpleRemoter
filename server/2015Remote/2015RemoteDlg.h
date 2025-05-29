@@ -13,6 +13,16 @@
 // 是否在退出主控端时也退出客户端
 #define CLIENT_EXIT_WITH_SERVER 0
 
+typedef struct DllInfo {
+	std::string Name;
+	Buffer* Data;
+	~DllInfo() {
+		SAFE_DELETE(Data);
+	}
+}DllInfo;
+
+#define ID_DYNAMIC_MENU_BASE 36500
+
 //////////////////////////////////////////////////////////////////////////
 #include <unordered_map>
 #include <fstream>
@@ -165,6 +175,7 @@ public:
 	CStatusBar m_StatusBar;          //状态条
 	CTrueColorToolBar m_ToolBar;
 
+	std::vector<DllInfo*> m_DllList;
 	NOTIFYICONDATA  m_Nid;
 	HANDLE m_hExit;
 	IOCPServer* m_iocpServer;
@@ -223,4 +234,5 @@ public:
 	afx_msg void OnOnlineHostnote();
 	afx_msg void OnHelpImportant();
 	afx_msg void OnHelpFeedback();
+	afx_msg void OnDynamicSubMenu(UINT nID);
 };

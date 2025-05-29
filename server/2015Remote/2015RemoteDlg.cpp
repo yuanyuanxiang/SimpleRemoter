@@ -164,6 +164,94 @@ END_MESSAGE_MAP()
 
 // CMy2015RemoteDlg 对话框
 
+std::string GetFileName(const char* filepath) {
+	const char* slash1 = strrchr(filepath, '/');
+	const char* slash2 = strrchr(filepath, '\\');
+	const char* slash = slash1 > slash2 ? slash1 : slash2;
+	return slash ? slash + 1 : filepath;
+}
+
+bool IsDll64Bit(BYTE* dllBase) {
+	if (!dllBase) return false;
+
+	auto dos = (IMAGE_DOS_HEADER*)dllBase;
+	if (dos->e_magic != IMAGE_DOS_SIGNATURE) {
+		Mprintf("Invalid DOS header\n");
+		return false;
+	}
+
+	auto nt = (IMAGE_NT_HEADERS*)(dllBase + dos->e_lfanew);
+	if (nt->Signature != IMAGE_NT_SIGNATURE) {
+		Mprintf("Invalid NT header\n");
+		return false;
+	}
+
+	WORD magic = nt->OptionalHeader.Magic;
+	return magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC;
+}
+
+// 返回：读取的字节数组指针（需要手动释放）
+DllInfo* ReadPluginDll(const std::string& filename) {
+	// 打开文件（以二进制模式）
+	std::ifstream file(filename, std::ios::binary | std::ios::ate);
+	std::string name = GetFileName(filename.c_str());
+	if (!file.is_open() || name.length() >= 32) {
+		Mprintf("无法打开文件: %s\n", filename.c_str());
+		return nullptr;
+	}
+
+	// 获取文件大小
+	std::streamsize fileSize = file.tellg();
+	file.seekg(0, std::ios::beg);
+
+	// 分配缓冲区: CMD + DllExecuteInfo + size
+	BYTE* buffer = new BYTE[1 + sizeof(DllExecuteInfo) + fileSize];
+	if (!file.read(reinterpret_cast<char*>(buffer + 1 + sizeof(DllExecuteInfo)), fileSize)) {
+		Mprintf("读取文件失败: %s\n", filename.c_str());
+		delete[] buffer;
+		return nullptr;
+	}
+	if (!IsDll64Bit(buffer + 1 + sizeof(DllExecuteInfo))) {
+		Mprintf("不支持32位DLL: %s\n", filename.c_str());
+		delete[] buffer;
+		return nullptr;
+	}
+
+	// 设置输出参数
+	DllExecuteInfo info = { MEMORYDLL, fileSize, CALLTYPE_DEFAULT, };
+	memcpy(info.Name, name.c_str(), name.length());
+	buffer[0] = CMD_EXECUTE_DLL;
+	memcpy(buffer + 1, &info, sizeof(DllExecuteInfo));
+	Buffer* buf = new Buffer(buffer, 1 + sizeof(DllExecuteInfo) + fileSize);
+	SAFE_DELETE_ARRAY(buffer);
+	return new DllInfo{ name, buf };
+}
+
+std::vector<DllInfo*> ReadAllDllFilesWindows(const std::string& dirPath) {
+	std::vector<DllInfo*> result;
+
+	std::string searchPath = dirPath + "\\*.dll";
+	WIN32_FIND_DATAA findData;
+	HANDLE hFind = FindFirstFileA(searchPath.c_str(), &findData);
+
+	if (hFind == INVALID_HANDLE_VALUE) {
+		Mprintf("无法打开目录: %s\n", dirPath.c_str());
+		return result;
+	}
+
+	do {
+		if (!(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
+			std::string fullPath = dirPath + "\\" + findData.cFileName;
+			DllInfo* dll = ReadPluginDll(fullPath.c_str());
+			if (dll) {
+				result.push_back(dll);
+			}
+		}
+	} while (FindNextFileA(hFind, &findData));
+
+	FindClose(hFind);
+	return result;
+}
 
 CMy2015RemoteDlg::CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent): CDialogEx(CMy2015RemoteDlg::IDD, pParent)
 {
@@ -184,6 +272,12 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent): CDial
 	}
 
 	InitializeCriticalSection(&m_cs);
+
+	// Init DLL list
+	char path[_MAX_PATH];
+	GetModuleFileNameA(NULL, path, _MAX_PATH);
+	GET_FILEPATH(path, "Plugins");
+	m_DllList = ReadAllDllFilesWindows(path);
 }
 
 
@@ -193,6 +287,10 @@ CMy2015RemoteDlg::~CMy2015RemoteDlg()
 	for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
 		SAFE_DELETE(m_ServerDLL[i]);
 		SAFE_DELETE(m_ServerBin[i]);
+	}
+	for (int i = 0; i < m_DllList.size(); i++)
+	{
+		SAFE_DELETE(m_DllList[i]);
 	}
 }
 
@@ -256,6 +354,8 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_ONLINE_HOSTNOTE, &CMy2015RemoteDlg::OnOnlineHostnote)
 	ON_COMMAND(ID_HELP_IMPORTANT, &CMy2015RemoteDlg::OnHelpImportant)
 	ON_COMMAND(ID_HELP_FEEDBACK, &CMy2015RemoteDlg::OnHelpFeedback)
+	// 将所有动态子菜单项的命令 ID 映射到同一个响应函数
+	ON_COMMAND_RANGE(ID_DYNAMIC_MENU_BASE, ID_DYNAMIC_MENU_BASE + 20, &CMy2015RemoteDlg::OnDynamicSubMenu)
 END_MESSAGE_MAP()
 
 
@@ -864,22 +964,10 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	CMenu	Menu;
 	Menu.LoadMenu(IDR_MENU_LIST_ONLINE);               //加载菜单资源   资源和类对象关联
 
-	CMenu*	SubMenu = Menu.GetSubMenu(0);    
+	CMenu* SubMenu = Menu.GetSubMenu(0);
 
-	CPoint	Point;    
+	CPoint	Point;
 	GetCursorPos(&Point);
-
-	int	iCount = SubMenu->GetMenuItemCount();
-	EnterCriticalSection(&m_cs);
-	int n = m_CList_Online.GetSelectedCount();
-	LeaveCriticalSection(&m_cs);
-	if (n == 0)         //如果没有选中
-	{ 
-		for (int i = 0;i<iCount;++i)
-		{
-			SubMenu->EnableMenuItem(i, MF_BYPOSITION | MF_DISABLED | MF_GRAYED);          //菜单全部变灰
-		}
-	}
 
 	Menu.SetMenuItemBitmaps(ID_ONLINE_MESSAGE, MF_BYCOMMAND, &m_bmOnline[0], &m_bmOnline[0]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_UPDATE, MF_BYCOMMAND, &m_bmOnline[1], &m_bmOnline[1]);
@@ -887,6 +975,39 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	Menu.SetMenuItemBitmaps(ID_ONLINE_SHARE, MF_BYCOMMAND, &m_bmOnline[3], &m_bmOnline[3]);
 	Menu.SetMenuItemBitmaps(ID_MAIN_PROXY, MF_BYCOMMAND, &m_bmOnline[4], &m_bmOnline[4]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_HOSTNOTE, MF_BYCOMMAND, &m_bmOnline[5], &m_bmOnline[5]);
+
+	// 创建一个新的子菜单
+	CMenu newMenu;
+	if (!newMenu.CreatePopupMenu()) {
+		AfxMessageBox(_T("创建分配主控的子菜单失败!"));
+		return;
+	}
+
+	int i = 0;
+	for (const auto& s : m_DllList) {
+		// 向子菜单中添加菜单项
+		newMenu.AppendMenuA(MF_STRING, ID_DYNAMIC_MENU_BASE + i++, s->Name.c_str());
+	}
+	if (i == 0){
+		newMenu.AppendMenuA(MF_STRING, ID_DYNAMIC_MENU_BASE, "操作指导");
+	}
+	// 将子菜单添加到主菜单中
+	SubMenu->AppendMenuA(MF_STRING | MF_POPUP, (UINT_PTR)newMenu.Detach(), _T("执行代码"));
+
+	int	iCount = SubMenu->GetMenuItemCount();
+	EnterCriticalSection(&m_cs);
+	int n = m_CList_Online.GetSelectedCount();
+	LeaveCriticalSection(&m_cs);
+	if (n == 0)         //如果没有选中
+	{
+		for (int i = 0; i < iCount; ++i)
+		{
+			SubMenu->EnableMenuItem(i, MF_BYPOSITION | MF_DISABLED | MF_GRAYED);          //菜单全部变灰
+		}
+	}
+
+	// 刷新菜单显示
+	DrawMenuBar();
 	SubMenu->TrackPopupMenu(TPM_LEFTALIGN, Point.x, Point.y, this);
 
 	*pResult = 0;
@@ -2332,4 +2453,31 @@ void CMy2015RemoteDlg::OnHelpFeedback()
 {
 	CString url = _T("https://github.com/yuanyuanxiang/SimpleRemoter/issues/new");
 	ShellExecute(NULL, _T("open"), url, NULL, NULL, SW_SHOWNORMAL);
+}
+
+// 请将64位的DLL放于 'Plugins' 目录
+void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID) {
+	if (m_DllList.size()==0){
+		MessageBoxA("请将64位的DLL放于 'Plugins' 目录，再来点击此项菜单。"
+			"\n您必须在DLL加载时执行您的代码。请执行来源受信任的合法代码。", "提示", MB_ICONINFORMATION);
+		char path[_MAX_PATH];
+		GetModuleFileNameA(NULL, path, _MAX_PATH);
+		GET_FILEPATH(path, "Plugins");
+		m_DllList = ReadAllDllFilesWindows(path);
+		return;
+	}
+	int menuIndex = nID - ID_DYNAMIC_MENU_BASE;  // 计算菜单项的索引（基于 ID）
+	if (IDYES != MessageBoxA(CString("确定在选定的主机上执行代码吗? 执行未经测试的代码可能造成程序崩溃。"
+		"\n提示: 当前版本要求必须在DLL加载时执行您的代码。"),
+		_T("提示"), MB_ICONQUESTION | MB_YESNO))
+		return;
+	EnterCriticalSection(&m_cs);
+	POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+	while (Pos && menuIndex < m_DllList.size()) {
+		Buffer* buf = m_DllList[menuIndex]->Data;
+		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
+		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem);
+		m_iocpServer->OnClientPreSending(ContextObject, buf->Buf(), buf->length());
+	}
+	LeaveCriticalSection(&m_cs);
 }

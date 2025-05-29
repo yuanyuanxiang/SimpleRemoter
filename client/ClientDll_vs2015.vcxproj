@@ -173,6 +173,7 @@
     <ClCompile Include="KeyboardManager.cpp" />
     <ClCompile Include="LoginServer.cpp" />
     <ClCompile Include="Manager.cpp" />
+    <ClCompile Include="MemoryModule.c" />
     <ClCompile Include="proxy\ProxyManager.cpp" />
     <ClCompile Include="RegisterManager.cpp" />
     <ClCompile Include="RegisterOperation.cpp" />
@@ -199,6 +200,7 @@
     <ClInclude Include="KeyboardManager.h" />
     <ClInclude Include="LoginServer.h" />
     <ClInclude Include="Manager.h" />
+    <ClInclude Include="MemoryModule.h" />
     <ClInclude Include="proxy\ProxyManager.h" />
     <ClInclude Include="RegisterManager.h" />
     <ClInclude Include="RegisterOperation.h" />
