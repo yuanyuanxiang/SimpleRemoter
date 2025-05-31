@@ -91,25 +91,31 @@ public:
 	LPBYTE*		     m_BlockBuffers;	 // 分块缓存
 	ULONG*			 m_BlockSizes;       // 分块差异像素数
 	int				 m_BlockNum;         // 分块个数
+	int				 m_SendQuality;		 // 发送质量
 
 	LPBITMAPINFO     m_BitmapInfor_Full; // BMP信息
 	BYTE             m_bAlgorithm;       // 屏幕差异算法
 
+	ULONG			 m_iScreenX;		 // 起始x坐标
+	ULONG			 m_iScreenY;		 // 起始y坐标
 	ULONG            m_ulFullWidth;      // 屏幕宽
 	ULONG            m_ulFullHeight;     // 屏幕高
 	bool             m_bZoomed;          // 屏幕被缩放
 	double           m_wZoom;            // 屏幕横向缩放比
 	double           m_hZoom;            // 屏幕纵向缩放比
 
+	int			     m_biBitCount;		 // 每像素比特数
 	int              m_FrameID;          // 帧序号
 	int              m_GOP;              // 关键帧间隔
 	bool		     m_SendKeyFrame;	 // 发送关键帧
 	CX264Encoder	 *m_encoder;		 // 编码器
 
-	ScreenCapture(BYTE algo = ALGORITHM_DIFF) : m_ThreadPool(nullptr), m_FirstBuffer(nullptr), m_RectBuffer(nullptr),
-		m_BitmapInfor_Full(nullptr), m_bAlgorithm(algo),
-		m_ulFullWidth(0), m_ulFullHeight(0), m_bZoomed(false), m_wZoom(1), m_hZoom(1), 
-		m_FrameID(0), m_GOP(DEFAULT_GOP), m_SendKeyFrame(false), m_encoder(nullptr){
+	ScreenCapture(int n = 32, BYTE algo = ALGORITHM_DIFF) : 
+		m_ThreadPool(nullptr), m_FirstBuffer(nullptr), m_RectBuffer(nullptr),
+		m_BitmapInfor_Full(nullptr), m_bAlgorithm(ALGORITHM_DIFF), m_SendQuality(100),
+		m_ulFullWidth(0), m_ulFullHeight(0), m_bZoomed(false), m_wZoom(1), m_hZoom(1),
+		m_FrameID(0), m_GOP(DEFAULT_GOP), m_iScreenX(0), m_iScreenY(0), m_biBitCount(n),
+		m_SendKeyFrame(false), m_encoder(nullptr) {
 
 		m_BlockNum = 8;
 		m_ThreadPool = new ThreadPool(m_BlockNum);
@@ -158,6 +164,21 @@ public:
 
 		SAFE_DELETE(m_ThreadPool);
 		SAFE_DELETE(m_encoder);
+	}
+
+	virtual int SendQuality(int quality) {
+		int old = m_SendQuality;
+		m_SendQuality = quality;
+		return old;
+	}
+
+	virtual RECT GetScreenRect() const {
+		RECT rect;
+		rect.left = m_iScreenX;
+		rect.top = m_iScreenY;
+		rect.right = m_ulFullWidth;
+		rect.bottom = m_ulFullHeight;
+		return rect;
 	}
 
 public:
@@ -257,8 +278,22 @@ public:
 		}
 	}
 
+	virtual LPBITMAPINFO ConstructBitmapInfo(int biBitCount, int biWidth, int biHeight)
+	{
+		assert(biBitCount == 32);
+		BITMAPINFO* bmpInfo = (BITMAPINFO*) new BYTE[sizeof(BITMAPINFO)]();
+		bmpInfo->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+		bmpInfo->bmiHeader.biWidth = biWidth;
+		bmpInfo->bmiHeader.biHeight = biHeight;
+		bmpInfo->bmiHeader.biPlanes = 1;
+		bmpInfo->bmiHeader.biBitCount = 32;
+		bmpInfo->bmiHeader.biCompression = BI_RGB;
+		bmpInfo->bmiHeader.biSizeImage = biWidth * biHeight * 4;
+		return bmpInfo;
+	}
+
 	// 算法+光标位置+光标类型
-	LPBYTE GetNextScreenData(ULONG* ulNextSendLength) {
+	virtual LPBYTE GetNextScreenData(ULONG* ulNextSendLength) {
 		BYTE algo = m_bAlgorithm;
 		int frameID = m_FrameID + 1;
 		bool keyFrame = (frameID % m_GOP == 0);

