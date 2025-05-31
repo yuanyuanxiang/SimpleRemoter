@@ -9,6 +9,12 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+enum {
+	USING_GDI = 0,
+	USING_DXGI = 1,
+	USING_VIRTUAL = 2,
+};
+
 #define ALGORITHM_GRAY 0
 #define ALGORITHM_DIFF 1
 #define ALGORITHM_H264 2

