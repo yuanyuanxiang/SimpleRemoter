@@ -3,8 +3,9 @@
 **原始来源：** [zibility](https://github.com/zibility/Remote)
 
 **功能概述：** 基于gh0st的远程控制器：实现了终端管理、进程管理、窗口管理、桌面管理、文件管理、语音管理、视频管理、服务管理、
-注册表管理、键盘记录、SOCKS代理等功能。
+注册表管理、键盘记录、SOCKS代理、虚拟桌面和执行代码等功能。
 如果您热爱研究控制程序，喜欢本项目，请您对该项目添加星标。Fork、Watch此项目，提交Issues，发起Pull Request都是受欢迎的。
+作者视业余空闲情况，将对所提问题进行修复。
 
 [![Star History Chart](https://api.star-history.com/svg?repos=yuanyuanxiang/SimpleRemoter&type=Date)](https://star-history.com/#yuanyuanxiang/SimpleRemoter&Date)
 
@@ -18,14 +19,14 @@
 用户应遵守相关法律法规，并负责任地使用本软件。开发者对任何因使用本软件产生的损害不承担责任。
 
 ## 主控程序
-主控程序为**YAMA.exe**是Server端，基于IOCP通讯，支持上万主机同时在线，Release发布版本在单台电脑只能运行一个示例。
+主控程序为**YAMA.exe**是Server端，基于IOCP通讯，支持上万主机同时在线，Release发布版本在单台电脑只能运行一个实例。
 下面展示主控程序运行界面，所有功能均可用，程序运行稳定。
 某些功能要求受控程序以管理员权限运行。
 
 ![主界面](./images/Yama.jpg)
 
 主界面以列表形式展示连接到本机的受控程序。
-选中某个主机以便进行远程控制。
+选中某个主机以便进行远程控制，例如修改备注、代理映射、执行代码等。
 
 ![终端管理](./images/Console.jpg)
 
@@ -33,17 +34,18 @@
 
 ![进程管理](./images/Process.jpg)
 
-进程管理显示受控机器上面正在运行的进程，可对进程进行启停操作。
+进程管理显示受控机器上面正在运行的进程，可对普通进程进行启停操作（无法操作高权限进程）。
 
 ![窗口管理](./images/Window.jpg)
 
-窗口管理显示受控机器上面打开的窗口或程序，可对其进行操作。
+窗口管理显示受控机器上面打开的窗口或程序，可对其进行操作，隐藏或显示窗口。
 
 ![桌面管理](./images/Remote.jpg)
 ![桌面管理](./images/RemoteSet.jpg)
 
 桌面管理即"远程桌面"，控制远程机器。可以通过菜单设置远程桌面的参数：
-屏幕截图方法支持GDI或DXGI，图像压缩方法支持灰度图像传输、屏幕差异算法和H264压缩。
+屏幕截图方法支持GDI、DXGI或VIRTUAL，图像压缩方法支持灰度图像传输、屏幕差异算法和H264压缩。
+值得一提的是，VIRTUAL即虚拟桌面，可以在被控计算机后台运行远程桌面程序，对操作的流畅度进行了优化。
 另外，支持上报活动窗口和检测指定软件。
 
 ![文件管理](./images/FileManage.jpg)
@@ -52,19 +54,19 @@
 
 ![语音管理](./images/Voice.jpg)
 
-语音管理即监听受控机器的声音，需受控机器有声音输入设备。
+语音管理即监听受控机器的声音，也可以向受控计算机发送语音，需受控机器有音频设备。
 
 ![视频管理](./images/Video.jpg)
 
-视频管理即打印受控机器的摄像头，需受控机器有摄像头。
+视频管理即打开受控机器的摄像头。在设置中默认勾选了检测摄像头，主机列表会显示是否有摄像头。
 
 ![服务管理](./images/Service.jpg)
 
-服务管理即打开受控机器上面的服务列表。
+服务管理即打开受控机器上面的服务列表，如果有权限，亦可对服务进行启动、停止等操作。
 
 ![注册表管理](./images/Register.jpg)
 
-注册表管理即打开受控机器上面的注册表。
+注册表管理即打开受控机器上面的注册表，只能查看注册表，不支持修改。
 
 ## Linux 客户端
 
@@ -149,6 +151,18 @@ Release v1.0.9：
 - Update client building feature / All in one; The master will only accept the clients built by itself.
 - Improve authorization feature.
 
+**2025.06.01**
+
+Release v1.1.0:
+
+* fix: IOCPClient clear buffer when disconnect
+* Implement SOCKS proxy feature
+* Add menus and modify list style, add log
+* feature: Add a C program to execute shell code
+* feature: Encrypt for server address
+* feat: Support virtual remote desktop monitoring
+* feature: Add command to execute DLL
+
 
 # 其他项目
 
@@ -169,3 +183,5 @@ QQ：962914132
 
 赞助方式 / Sponsor：该项目的研究出自技术学习和兴趣爱好，本人视业余情况不定期更新项目。
 **如果该项目对你有益，请通过赞助图标对本项目进行支持。**
+如果你希望采用其他方式（如微信、支付宝）对本项目进行赞助，请点击
+[这里](https://github.com/yuanyuanxiang/yuanyuanxiang/blob/main/images/QR_Codes.jpg)。
