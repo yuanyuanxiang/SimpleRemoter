@@ -165,6 +165,10 @@ void CBuildDlg::OnBnClickedOk()
 
 			CONNECT_ADDRESS* dst = (CONNECT_ADDRESS*)(ptr + iOffset);
 			auto result = strlen(dst->szBuildDate) ? compareDates(dst->szBuildDate, g_ConnectAddress.szBuildDate) : -1;
+			if (result > 0) {
+				MessageBox("客户端版本比主控程序更高, 无法生成!\r\n" + file, "提示", MB_ICONWARNING);
+				return;
+			}
 			if (result != -2 && result <= 0)// 客户端版本不能不大于主控端
 			{
 				bFind = true;
