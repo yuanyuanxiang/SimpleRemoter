@@ -182,7 +182,7 @@ public:
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 	CMenu	   m_MainMenu;
-	CBitmap m_bmOnline[6];
+	CBitmap m_bmOnline[10];
 	bool CheckValid();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();
@@ -235,4 +235,8 @@ public:
 	afx_msg void OnHelpImportant();
 	afx_msg void OnHelpFeedback();
 	afx_msg void OnDynamicSubMenu(UINT nID);
+	afx_msg void OnOnlineVirtualDesktop();
+	afx_msg void OnOnlineGrayDesktop();
+	afx_msg void OnOnlineRemoteDesktop();
+	afx_msg void OnOnlineH264Desktop();
 };

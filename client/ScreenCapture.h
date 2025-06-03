@@ -112,7 +112,7 @@ public:
 
 	ScreenCapture(int n = 32, BYTE algo = ALGORITHM_DIFF) : 
 		m_ThreadPool(nullptr), m_FirstBuffer(nullptr), m_RectBuffer(nullptr),
-		m_BitmapInfor_Full(nullptr), m_bAlgorithm(ALGORITHM_DIFF), m_SendQuality(100),
+		m_BitmapInfor_Full(nullptr), m_bAlgorithm(algo), m_SendQuality(100),
 		m_ulFullWidth(0), m_ulFullHeight(0), m_bZoomed(false), m_wZoom(1), m_hZoom(1),
 		m_FrameID(0), m_GOP(DEFAULT_GOP), m_iScreenX(0), m_iScreenY(0), m_biBitCount(n),
 		m_SendKeyFrame(false), m_encoder(nullptr) {
