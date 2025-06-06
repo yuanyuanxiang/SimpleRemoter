@@ -124,7 +124,7 @@ protected:
 			return memcmp(m_szPacketFlag, szPacketFlag, m_nCompareLen) == 0 ? PR{ m_nFlagLen } : PR{ PARSER_FAILED };
 		}
 		// More version may be added in the future.
-		const char version0[] = "Shine", version1[] = "<<FUCK>>", version2[] = "Hello?";
+		const char version0[] = "Shine", version1[] = "<<FUCK>>", version2[] = "Hello?", version3[] = "HELL";
 		if (memcmp(version0, szPacketFlag, sizeof(version0) - 1) == 0) {
 			memcpy(m_szPacketFlag, version0, sizeof(version0) - 1);
 			m_nCompareLen = strlen(m_szPacketFlag);
@@ -148,6 +148,14 @@ protected:
 			m_nHeaderLen = m_nFlagLen + 8;
 			m_bParsed = TRUE;
 			compressMethod = COMPRESS_NONE;
+			m_Encoder = new Encoder();
+		}
+		else if (memcmp(version3, szPacketFlag, sizeof(version3) - 1) == 0) {
+			memcpy(m_szPacketFlag, version3, sizeof(version3) - 1);
+			m_nCompareLen = strlen(m_szPacketFlag);
+			m_nFlagLen = 8;
+			m_nHeaderLen = m_nFlagLen + 8;
+			m_bParsed = TRUE;
 			m_Encoder = new Encoder();
 		}
 		else {

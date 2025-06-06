@@ -18,11 +18,6 @@ typedef struct ItemData
 	}
 }ItemData;
 
-enum                  
-{
-	COMMAND_WINDOW_CLOSE,   //关闭窗口
-	COMMAND_WINDOW_TEST,    //操作窗口
-};
 IMPLEMENT_DYNAMIC(CSystemDlg, CDialog)
 
 	CSystemDlg::CSystemDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT *ContextObject)
@@ -370,7 +365,7 @@ void CSystemDlg::OnWlistClose()
 	{
 
 		ZeroMemory(lpMsgBuf,20);
-		lpMsgBuf[0]=COMMAND_WINDOW_CLOSE;           //注意这个就是我们的数据头
+		lpMsgBuf[0]=CMD_WINDOW_CLOSE;           //注意这个就是我们的数据头
 		auto data = (ItemData*)pListCtrl->GetItemData(nItem);
 		DWORD hwnd = data->ID; //得到窗口的句柄一同发送  4   djfkdfj  dkfjf  4
 		memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));   //1 4
@@ -390,7 +385,7 @@ void CSystemDlg::OnWlistHide()
 	if (nItem>=0)
 	{
 		ZeroMemory(lpMsgBuf,20);
-		lpMsgBuf[0]=COMMAND_WINDOW_TEST;             //窗口处理数据头
+		lpMsgBuf[0]=CMD_WINDOW_TEST;             //窗口处理数据头
 		auto data = (ItemData*)pListCtrl->GetItemData(nItem); 
 		DWORD hwnd = data->ID;  //得到窗口的句柄一同发送
 		pListCtrl->SetItemText(nItem,2,"隐藏");      //注意这时将列表中的显示状态为"隐藏"
@@ -413,7 +408,7 @@ void CSystemDlg::OnWlistRecover()
 	if (nItem>=0)
 	{
 		ZeroMemory(lpMsgBuf,20);
-		lpMsgBuf[0]=COMMAND_WINDOW_TEST;
+		lpMsgBuf[0]=CMD_WINDOW_TEST;
 		auto data = (ItemData*)pListCtrl->GetItemData(nItem);
 		DWORD hwnd = data->ID;
 		pListCtrl->SetItemText(nItem,2,"显示");
@@ -435,7 +430,7 @@ void CSystemDlg::OnWlistMax()
 	if (nItem>=0)
 	{
 		ZeroMemory(lpMsgBuf,20);
-		lpMsgBuf[0]=COMMAND_WINDOW_TEST;
+		lpMsgBuf[0]=CMD_WINDOW_TEST;
 		auto data = (ItemData*)pListCtrl->GetItemData(nItem);
 		DWORD hwnd = data->ID;
 		pListCtrl->SetItemText(nItem,2,"显示");
@@ -457,7 +452,7 @@ void CSystemDlg::OnWlistMin()
 	if (nItem>=0)
 	{
 		ZeroMemory(lpMsgBuf,20);
-		lpMsgBuf[0]=COMMAND_WINDOW_TEST;
+		lpMsgBuf[0]=CMD_WINDOW_TEST;
 		auto data = (ItemData*)pListCtrl->GetItemData(nItem);
 		DWORD hwnd = data->ID;
 		pListCtrl->SetItemText(nItem,2,"显示");
