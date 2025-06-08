@@ -234,7 +234,6 @@ BOOL CFileManagerDlg::OnInitDialog()
 	// 添加下拉按钮
 	m_wndToolBar_Local.AddDropDownButton(this, IDT_LOCAL_VIEW, IDR_LOCAL_VIEW);
 
-
     if (!m_wndToolBar_Remote.Create(this, WS_CHILD |
         WS_VISIBLE | CBRS_ALIGN_ANY | CBRS_TOOLTIPS | CBRS_FLYBY, ID_REMOTE_TOOLBAR) 
 		||!m_wndToolBar_Remote.LoadToolBar(IDR_TOOLBAR2))
@@ -284,6 +283,8 @@ BOOL CFileManagerDlg::OnInitDialog()
     m_ProgressCtrl->SetRange(0, 100);           //设置进度条范围
     m_ProgressCtrl->SetPos(20);                 //设置进度条当前位置
 	
+	m_list_local.ModifyStyle(FALSE, LVS_REPORT);
+	m_list_remote.ModifyStyle(FALSE, LVS_REPORT);
 	FixedLocalDriveList();
 	FixedRemoteDriveList();
 	/////////////////////////////////////////////

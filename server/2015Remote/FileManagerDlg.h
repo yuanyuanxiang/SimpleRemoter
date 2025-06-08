@@ -6,6 +6,7 @@
 #endif // _MSC_VER > 1000
 
 #include "IOCPServer.h"
+#include "SortListCtrl.h"
 
 #define CIOCPServer IOCPServer
 
@@ -120,8 +121,8 @@ public:
 	enum { IDD = IDD_FILE };
 	CComboBox	m_Remote_Directory_ComboBox;
 	CComboBox	m_Local_Directory_ComboBox;
-	CListCtrl	m_list_remote;
-	CListCtrl	m_list_local;
+	CSortListCtrl	m_list_remote;
+	CSortListCtrl	m_list_local;
 	//}}AFX_DATA
 
 
