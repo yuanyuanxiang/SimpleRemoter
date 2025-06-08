@@ -34,6 +34,13 @@
 #endif
 #endif
 
+// 根据 socket 获取客户端IP地址.
+std::string GetPeerName(SOCKET sock) {
+	sockaddr_in  ClientAddr = {};
+	int ulClientAddrLen = sizeof(sockaddr_in);
+	int s = getpeername(sock, (SOCKADDR*)&ClientAddr, &ulClientAddrLen);
+	return s != INVALID_SOCKET ? inet_ntoa(ClientAddr.sin_addr) : "";
+}
 
 // 根据 socket 获取客户端IP地址.
 std::string GetRemoteIP(SOCKET sock) {
@@ -585,6 +592,7 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 				return;
 			}
 			else if (ContextObject->CompressMethod == COMPRESS_NONE) {
+				Buffer tmp(szBuffer, ulOriginalLength); szBuffer = tmp.Buf();
 				ContextObject->WriteBuffer(szBuffer, ulOriginalLength, ulOriginalLength);
 				break;
 			}
@@ -717,7 +725,7 @@ void IOCPServer::OnAccept()
 	}
 
 	//我们在这里为每一个到达的信号维护了一个与之关联的数据结构这里简称为用户的上下背景文
-	PCONTEXT_OBJECT ContextObject = AllocateContext();   // Context
+	PCONTEXT_OBJECT ContextObject = AllocateContext(sClientSocket);   // Context
 
 	if (ContextObject == NULL)
 	{
@@ -806,7 +814,7 @@ VOID IOCPServer::PostRecv(CONTEXT_OBJECT* ContextObject)
 	}
 }
 
-PCONTEXT_OBJECT IOCPServer::AllocateContext()
+PCONTEXT_OBJECT IOCPServer::AllocateContext(SOCKET s)
 {
 	PCONTEXT_OBJECT ContextObject = NULL;
 
@@ -820,7 +828,7 @@ PCONTEXT_OBJECT IOCPServer::AllocateContext()
 
 	if (ContextObject != NULL)
 	{
-		ContextObject->InitMember();
+		ContextObject->InitMember(s);
 	}
 
 	return ContextObject;

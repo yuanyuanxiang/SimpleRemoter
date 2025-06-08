@@ -17,6 +17,7 @@ public:
 	CBmpToAvi();
 	virtual ~CBmpToAvi();
 	bool Open(LPCTSTR szFile, LPBITMAPINFO lpbmi);
+	bool Open(HWND m_hWnd, LPCTSTR szFile, LPBITMAPINFO lpbmi, BOOL bIsWebCam = FALSE) { return FALSE; }
 	bool Write(LPVOID lpBuffer);
 	void Close();
 private:

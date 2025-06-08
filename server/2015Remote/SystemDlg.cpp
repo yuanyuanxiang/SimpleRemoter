@@ -408,7 +408,7 @@ void CSystemDlg::OnWlistRecover()
 	if (nItem>=0)
 	{
 		ZeroMemory(lpMsgBuf,20);
-		lpMsgBuf[0]=CMD_WINDOW_TEST;
+		lpMsgBuf[0]= CMD_WINDOW_TEST;
 		auto data = (ItemData*)pListCtrl->GetItemData(nItem);
 		DWORD hwnd = data->ID;
 		pListCtrl->SetItemText(nItem,2,"œ‘ æ");
@@ -430,7 +430,7 @@ void CSystemDlg::OnWlistMax()
 	if (nItem>=0)
 	{
 		ZeroMemory(lpMsgBuf,20);
-		lpMsgBuf[0]=CMD_WINDOW_TEST;
+		lpMsgBuf[0]= CMD_WINDOW_TEST;
 		auto data = (ItemData*)pListCtrl->GetItemData(nItem);
 		DWORD hwnd = data->ID;
 		pListCtrl->SetItemText(nItem,2,"œ‘ æ");
@@ -452,7 +452,7 @@ void CSystemDlg::OnWlistMin()
 	if (nItem>=0)
 	{
 		ZeroMemory(lpMsgBuf,20);
-		lpMsgBuf[0]=CMD_WINDOW_TEST;
+		lpMsgBuf[0]= CMD_WINDOW_TEST;
 		auto data = (ItemData*)pListCtrl->GetItemData(nItem);
 		DWORD hwnd = data->ID;
 		pListCtrl->SetItemText(nItem,2,"œ‘ æ");

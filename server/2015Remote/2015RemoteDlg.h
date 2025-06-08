@@ -222,7 +222,8 @@ public:
 	afx_msg LRESULT OnOpenVideoDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnHandleMessage(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnOpenKeyboardDialog(WPARAM wParam, LPARAM lParam);
-
+	afx_msg LRESULT OnOpenHideScreenDialog(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnOpenMachineManagerDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnOpenProxyDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT UPXProcResult(WPARAM wParam, LPARAM lParam);
 	afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);

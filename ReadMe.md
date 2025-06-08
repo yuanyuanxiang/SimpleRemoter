@@ -1,4 +1,10 @@
-﻿# 项目简介
+﻿# 🌐 语言 | Language
+
+**[🇨🇳 中文](./ReadMe.md) | [🇺🇸 English](./ReadMe_EN.md)**
+
+---
+
+# 项目简介
 
 **原始来源：** [zibility](https://github.com/zibility/Remote)
 
@@ -98,6 +104,8 @@
 注意：自[v1.0.8](https://github.com/yuanyuanxiang/SimpleRemoter/releases/tag/v1.0.0.8)起，
 `TestRun.exe`将采取内存加载DLL运行方式，向主控程序请求DLL并在内存中执行，这有利于代码的热更新。
 
+---
+
 # 更新日志
 
 2025年以前的变更记录参看：[history](./history.md)
@@ -116,53 +124,54 @@
 
 **2025.04.05**
 
-Release v1.0.7, mainly fix or add new feature:
- 
-- Update third-party libraries and switch zlib to zstd, old version v1.0.6 is compatible;
-- Support compile with Win64;
-- Fix buges and make the program more stable;
-- Improve remote control efficiency and support more bitmap compressing method;
-- Some code reorganization.
+发布 v1.0.7，主要修复或新增以下功能：
+
+- 更新第三方库，将压缩算法从 zlib 更换为 zstd，旧版本 v1.0.6 仍兼容；
+- 支持编译为 Win64；
+- 修复若干 Bug，提高程序稳定性；
+- 提升远程控制效率，新增更多位图压缩方式；
+- 对部分代码结构进行了重构。
 
 **2025.04.12**
 
-Since v1.0.7 released in April 5:
+自 v1.0.7 于 4 月 5 日发布以来：
 
-- Improvement: Make sure that the input command is always at the end of `Shelldlg`, and build a **simple Linux client**;
-- Fix bugs: #62, #74, #75 ;
-- Change the flag 0x1234567 to a more readable string; and improve building service and allow chosing other files to build;
-- Showing the user's activities and monitoring specified software;
-- Clean up global variables and make it easy to create multiple clients in one program, which is useful for testing the master's capacity;
-- Implement loading DLL in memory, make it easy to update client program;
+- 功能改进：确保 `Shelldlg` 输入命令始终定位在末尾，并构建了一个**简易的 Linux 客户端**；
+- 修复 Bug：#62、#74、#75；
+- 将原标志位 0x1234567 更改为更具可读性的字符串；改进构建服务功能，允许选择其他文件进行构建；
+- 增加展示用户活动和监控指定软件的功能；
+- 清理全局变量，使得一个程序中可以轻松创建多个客户端，便于测试主控端的负载能力；
+- 实现内存加载 DLL，便于客户端程序热更新。
 
 **2025.04.21**
 
-Release v1.0.8:
+发布 v1.0.8：
 
-- Support to share online host with other masters;
-- Implement service-generated authorization capability, and add a serial number generation menu;
-- Add `HPSocket` libraries which may be used in the future, and add static ffmpeg libraries to build Win64 master;
-- Implement a memory DLL runner: the `TestRun` program request DLL from master and execute in memory.
+- 支持与其他主控共享在线主机；
+- 实现服务端生成授权的能力，增加序列号生成菜单；
+- 引入 `HPSocket` 库，为未来使用做准备，并引入静态 ffmpeg 库以支持构建 Win64 主控端；
+- 实现内存中运行 DLL：`TestRun` 程序从主控请求 DLL 并在内存中执行。
 
 **2025.04.30**
 
-Release v1.0.9：
+发布 v1.0.9：
 
-- Update client building feature / All in one; The master will only accept the clients built by itself.
-- Improve authorization feature.
+- 更新客户端构建功能 / 一体化生成；主控仅接受由自身构建的客户端连接；
+- 优化授权功能。
 
 **2025.06.01**
 
-Release v1.1.0:
+发布 v1.1.0：
 
-* fix: IOCPClient clear buffer when disconnect
-* Implement SOCKS proxy feature
-* Add menus and modify list style, add log
-* feature: Add a C program to execute shell code
-* feature: Encrypt for server address
-* feat: Support virtual remote desktop monitoring
-* feature: Add command to execute DLL
+- 修复：IOCPClient 断开连接时清空缓冲区；
+- 实现 SOCKS 代理功能；
+- 增加菜单项，修改列表样式，添加日志记录；
+- 新增功能：增加一个用于执行 Shellcode 的 C 程序；
+- 新增功能：对服务器地址进行加密；
+- 新增特性：支持虚拟远程桌面监控；
+- 新增命令：支持执行代码（64位 DLL）。
 
+---
 
 # 其他项目
 
@@ -170,6 +179,7 @@ Release v1.1.0:
 - [BGW RAT](https://github.com/yuanyuanxiang/BGW_RAT): 一款功能全面的远程控制程序，即大灰狼9.5.
 - [Gh0st](https://github.com/yuanyuanxiang/Gh0st): 也是一款基于Gh0st的远程控制程序。
 
+---
 
 # 沟通反馈
 

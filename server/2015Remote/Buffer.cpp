@@ -47,7 +47,7 @@ ULONG CBuffer::RemoveCompletedBuffer(ULONG ulLength)
 
 	if (ulLength)
 	{
-		MoveMemory(m_Base,m_Base+ulLength, m_ulMaxLength - ulLength);   //Êý×éÇ°ÒÆ  [Shinexxxx??]
+		MoveMemory(m_Base,m_Base+ulLength, m_ulMaxLength - ulLength);
 
 		m_Ptr -= ulLength;
 	}
@@ -126,7 +126,7 @@ BOOL CBuffer::WriteBuffer(PBYTE Buffer, ULONG ulLength)
 		return false;
 	}
 
-	CopyMemory(m_Ptr,Buffer,ulLength);//Hello 5
+	CopyMemory(m_Ptr,Buffer,ulLength);
 
 	m_Ptr+=ulLength;
 	LeaveCriticalSection(&m_cs);
