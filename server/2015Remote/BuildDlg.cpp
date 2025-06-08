@@ -144,7 +144,7 @@ void CBuildDlg::OnBnClickedOk()
 		return;
 	}
 	//////////上线信息//////////////////////
-	CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "", typ, false, DLL_VERSION, 0, startup };
+	CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "", typ, false, DLL_VERSION, 0, startup, HeaderEncV1 };
 	g_ConnectAddress.SetServer(m_strIP, atoi(m_strPort));
 
 	if (!g_ConnectAddress.IsValid()) {

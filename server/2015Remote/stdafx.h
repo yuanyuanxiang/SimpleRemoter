@@ -78,6 +78,8 @@
 #define WM_OPENKEYBOARDDIALOG			WM_USER+3012
 #define WM_UPXTASKRESULT			    WM_USER+3013
 #define WM_OPENPROXYDIALOG				WM_USER+3014
+#define WM_OPENHIDESCREENDLG			WM_USER+3015
+#define WM_OPENMACHINEMGRDLG			WM_USER+3016
 
 enum
 {
@@ -93,6 +95,8 @@ enum
 	TALK_DLG,
 	MONITOR_DLG,
 	PROXY_DLG,
+	HIDESCREEN_DLG,
+	MACHINE_DLG,
 };
 
 
@@ -111,9 +115,20 @@ enum
 #include <MMSystem.h>
 #pragma comment(lib, "winmm.lib")
 
-#define SAFE_DELETE(p) if(p){ delete (p); (p) = NULL; }
-#define SAFE_DELETE_ARRAY(p) if(p){ delete[] (p); (p) = NULL; }
+#ifndef SAFE_DELETE
+#define SAFE_DELETE(p) if(NULL !=(p)){ delete (p);(p) = NULL;}
+#endif
 
-#include "common/logger.h"
+#ifndef SAFE_DELETE_ARRAY
+#define SAFE_DELETE_ARRAY(p) if(NULL !=(p)){ delete[] (p);(p) = NULL;}
+#endif
+
+#ifndef SAFE_DELETE_AR
+#define SAFE_DELETE_AR(p) if(NULL !=(p)){ delete[] (p);(p) = NULL;}
+#endif
+
 #include "common/locker.h"
+#include "common/logger.h"
 #include "common/commands.h"
+
+#define SAFE_CANCELIO(p) if (INVALID_SOCKET != (p)){ CancelIo((HANDLE)(p)); closesocket((SOCKET)(p)); (p) = INVALID_SOCKET; }

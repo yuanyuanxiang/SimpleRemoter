@@ -75,21 +75,21 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir);$(SolutionDir)common;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(SolutionDir);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(SolutionDir);$(SolutionDir)..\SimpleRemoter;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir);$(SolutionDir)common;$(IncludePath)</IncludePath>
-    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(SolutionDir);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(SolutionDir);$(SolutionDir)..\SimpleRemoter;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(SolutionDir);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VLDPATH)\lib\Win32\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(SolutionDir);$(SolutionDir)..\SimpleRemoter;$(LibraryPath)</LibraryPath>
     <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir);$(SolutionDir)common;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(SolutionDir);$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(SolutionDir);$(SolutionDir)..\SimpleRemoter;$(LibraryPath)</LibraryPath>
     <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir);$(SolutionDir)common;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -97,10 +97,11 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;CBC;_WIN32_WINNT=0x0602;WINVER=0x0602;NTDDI_VERSION=0x06020000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OpenMPSupport>false</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -108,6 +109,7 @@
       <AdditionalDependencies>zlib\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <OutputFile>$(SolutionDir)Bin\$(TargetName)_x86d$(TargetExt)</OutputFile>
+      <ImageHasSafeExceptionHandlers>true</ImageHasSafeExceptionHandlers>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -125,10 +127,11 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;CBC;_WIN32_WINNT=0x0602;WINVER=0x0602;NTDDI_VERSION=0x06020000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OpenMPSupport>false</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -153,11 +156,12 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;CBC;_WIN32_WINNT=0x0602;WINVER=0x0602;NTDDI_VERSION=0x06020000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <StringPooling>true</StringPooling>
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OpenMPSupport>false</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -185,11 +189,12 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;CBC;_WIN32_WINNT=0x0602;WINVER=0x0602;NTDDI_VERSION=0x06020000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <StringPooling>true</StringPooling>
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <OpenMPSupport>false</OpenMPSupport>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -243,6 +248,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
+    <ClInclude Include="..\..\common\aes.h" />
+    <ClInclude Include="..\..\common\encrypt.h" />
     <ClInclude Include="2015Remote.h" />
     <ClInclude Include="2015RemoteDlg.h" />
     <ClInclude Include="AudioDlg.h" />
@@ -250,10 +257,12 @@
     <ClInclude Include="BuildDlg.h" />
     <ClInclude Include="CPasswordDlg.h" />
     <ClInclude Include="CpuUseage.h" />
+    <ClInclude Include="CTextDlg.h" />
     <ClInclude Include="DateVerify.h" />
     <ClInclude Include="EditDialog.h" />
     <ClInclude Include="FileManagerDlg.h" />
     <ClInclude Include="FileTransferModeDlg.h" />
+    <ClInclude Include="HideScreenSpyDlg.h" />
     <ClInclude Include="iniFile.h" />
     <ClInclude Include="InputDlg.h" />
     <ClInclude Include="IOCPServer.h" />
@@ -273,6 +282,10 @@
     <ClInclude Include="ShellDlg.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="SystemDlg.h" />
+    <ClInclude Include="sys\CCreateTaskDlg.h" />
+    <ClInclude Include="sys\CInjectCodeDlg.h" />
+    <ClInclude Include="sys\MachineDlg.h" />
+    <ClInclude Include="sys\ServiceInfoDlg.h" />
     <ClInclude Include="TalkDlg.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TrueColorToolBar.h" />
@@ -282,11 +295,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\client\Audio.cpp" />
-    <ClCompile Include="..\..\client\Loader.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    <ClCompile Include="..\..\common\aes.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="2015Remote.cpp" />
     <ClCompile Include="2015RemoteDlg.cpp" />
@@ -295,13 +308,21 @@
     <ClCompile Include="BuildDlg.cpp" />
     <ClCompile Include="CPasswordDlg.cpp" />
     <ClCompile Include="CpuUseage.cpp" />
+    <ClCompile Include="CTextDlg.cpp" />
     <ClCompile Include="EditDialog.cpp" />
     <ClCompile Include="FileManagerDlg.cpp" />
     <ClCompile Include="FileTransferModeDlg.cpp" />
+    <ClCompile Include="HideScreenSpyDlg.cpp" />
     <ClCompile Include="iniFile.cpp" />
     <ClCompile Include="InputDlg.cpp" />
     <ClCompile Include="IOCPServer.cpp" />
     <ClCompile Include="KeyBoardDlg.cpp" />
+    <ClCompile Include="Loader.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="parse_ip.cpp" />
     <ClCompile Include="proxy\ProxyConnectServer.cpp" />
     <ClCompile Include="proxy\ProxyMapDlg.cpp" />
@@ -318,6 +339,10 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="SystemDlg.cpp" />
+    <ClCompile Include="sys\CCreateTaskDlg.cpp" />
+    <ClCompile Include="sys\CInjectCodeDlg.cpp" />
+    <ClCompile Include="sys\MachineDlg.cpp" />
+    <ClCompile Include="sys\ServiceInfoDlg.cpp" />
     <ClCompile Include="TalkDlg.cpp" />
     <ClCompile Include="TrueColorToolBar.cpp" />
     <ClCompile Include="VideoDlg.cpp" />
@@ -335,10 +360,14 @@
     <Image Include="res\Bitmap_4.bmp" />
     <Image Include="res\Bitmap_5.bmp" />
     <Image Include="res\delete.bmp" />
+    <Image Include="res\icon2.ico" />
     <Image Include="res\keyboard.ico" />
+    <Image Include="res\machine.ico" />
     <Image Include="res\password.ico" />
     <Image Include="res\proxifler.ico" />
     <Image Include="res\proxy.ico" />
+    <Image Include="res\screen.ico" />
+    <Image Include="res\system.ico" />
     <Image Include="res\toolbar1.bmp" />
     <Image Include="res\toolbar2.bmp" />
     <Image Include="res\update.bmp" />

@@ -179,7 +179,7 @@ VOID  CSystemManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			break;
 		}
 
-	case COMMAND_WINDOW_CLOSE:
+	case CMD_WINDOW_CLOSE:
 		{
 			HWND hWnd = *((HWND*)(szBuffer+1));
 

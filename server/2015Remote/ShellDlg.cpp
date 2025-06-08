@@ -108,7 +108,6 @@ VOID CShellDlg::AddKeyBoardData(void)
 {
 	// 最后填上0
 
-	//Hello>dir
 	//Shit\0
 	m_ContextObject->InDeCompressedBuffer.WriteBuffer((LPBYTE)"", 1);           //从被控制端来的数据我们要加上一个\0
 	Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(0);
@@ -130,8 +129,7 @@ VOID CShellDlg::AddKeyBoardData(void)
 	}
 
 	//得到当前窗口的字符个数
-	int	iLength = m_Edit.GetWindowTextLength();    //kdfjdjfdir
-	//hello                                    
+	int	iLength = m_Edit.GetWindowTextLength();    //kdfjdjfdir                                 
 	//1.txt
 	//2.txt
 	//dir\r\n
@@ -144,7 +142,7 @@ VOID CShellDlg::AddKeyBoardData(void)
 
 	//重新得到字符的大小
 
-	m_nCurSel = m_Edit.GetWindowTextLength();   //Hello 
+	m_nCurSel = m_Edit.GetWindowTextLength(); 
 
 	//我们注意到，我们在使用远程终端时 ，发送的每一个命令行 都有一个换行符  就是一个回车
 	//要找到这个回车的处理我们就要到PreTranslateMessage函数的定义  
@@ -229,7 +227,6 @@ BOOL CShellDlg::PreTranslateMessage(MSG* pMsg)
 		}
 		// 示例：
 		//dir\r\n  5
-		//hello\r\n 7
 	}
 
 	return CDialog::PreTranslateMessage(pMsg);

