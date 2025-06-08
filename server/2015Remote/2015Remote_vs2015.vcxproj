@@ -255,6 +255,7 @@
     <ClInclude Include="AudioDlg.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="BuildDlg.h" />
+    <ClInclude Include="Chat.h" />
     <ClInclude Include="CPasswordDlg.h" />
     <ClInclude Include="CpuUseage.h" />
     <ClInclude Include="CTextDlg.h" />
@@ -306,6 +307,7 @@
     <ClCompile Include="AudioDlg.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="BuildDlg.cpp" />
+    <ClCompile Include="Chat.cpp" />
     <ClCompile Include="CPasswordDlg.cpp" />
     <ClCompile Include="CpuUseage.cpp" />
     <ClCompile Include="CTextDlg.cpp" />
@@ -354,11 +356,16 @@
     <Text Include="..\..\ReadMe.md" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="res\Bitmap\DxgiDesktop.bmp" />
+    <Image Include="res\Bitmap\GrayDesktop.bmp" />
     <Image Include="res\Bitmap\note.bmp" />
     <Image Include="res\Bitmap\proxy.bmp" />
     <Image Include="res\Bitmap\Share.bmp" />
+    <Image Include="res\Bitmap\SpeedDesktop.bmp" />
+    <Image Include="res\Bitmap\VirtualDesktop.bmp" />
     <Image Include="res\Bitmap_4.bmp" />
     <Image Include="res\Bitmap_5.bmp" />
+    <Image Include="res\chat.ico" />
     <Image Include="res\delete.bmp" />
     <Image Include="res\icon2.ico" />
     <Image Include="res\keyboard.ico" />
