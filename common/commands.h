@@ -164,6 +164,7 @@ enum
 	COMMAND_SHARE = 59,				// 分享主机
 	COMMAND_PROXY = 60,				// 代理映射
 	TOKEN_SYSINFOLIST = 61,			// 主机管理
+	TOKEN_CHAT_START = 62,			// 远程交谈
 
 	// 服务端发出的标识
 	TOKEN_AUTH = 100,				// 要求验证
@@ -349,6 +350,14 @@ struct  WINDOWSINFO {
 	bool canlook;
 	int w;
 	int h;
+};
+
+// 远程交谈
+enum ChatManager {
+	COMMAND_NEXT_CHAT,
+	COMMAND_CHAT_CLOSE,
+	COMMAND_CHAT_SCREEN_LOCK,
+	COMMAND_CHAT_SCREEN_UNLOCK,
 };
 
 enum 
