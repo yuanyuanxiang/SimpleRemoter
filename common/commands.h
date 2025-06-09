@@ -220,8 +220,12 @@ enum
 
 	SOCKET_DLLLOADER=210,           // 客户端请求DLL
 	CMD_DLLDATA,                    // 响应DLL数据
+	CMD_RUNASADMIN=214,             // ADMIN 运行
 	CMD_MASTERSETTING = 215,		// 主控设置
 	CMD_HEARTBEAT_ACK = 216,		// 心跳回应
+	CMD_SERVER_ADDR = 229,          // 主控地址
+	TOKEN_ERROR = 230,              // 错误提示
+	TOKEN_SHELL_DATA = 231,         // 终端结果
 	CMD_EXECUTE_DLL = 240,			// 执行代码
 };
 
