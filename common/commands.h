@@ -675,7 +675,8 @@ typedef struct DllExecuteInfo {
 	int Size;								// DLL 大小
 	int CallType;							// 调用方式
 	char Name[32];							// DLL 名称
-	char Reseverd[56];
+	char Md5[33];							// DLL MD5
+	char Reseverd[23];
 }DllExecuteInfo;
 
 enum

