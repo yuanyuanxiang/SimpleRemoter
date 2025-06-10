@@ -221,6 +221,12 @@ DllInfo* ReadPluginDll(const std::string& filename) {
 		delete[] buffer;
 		return nullptr;
 	}
+	std::string masterHash(skCrypt(MASTER_HASH));
+	int offset = MemoryFind((char*)buffer + 1 + sizeof(DllExecuteInfo), masterHash.c_str(), fileSize, masterHash.length());
+	if (offset != -1) {
+		std::string masterId = GetPwdHash();
+		memcpy((char*)buffer + 1 + sizeof(DllExecuteInfo)+offset, masterId.c_str(), masterId.length());
+	}
 
 	// 设置输出参数
 	auto md5 = CalcMD5FromBytes(buffer + 1 + sizeof(DllExecuteInfo), fileSize);

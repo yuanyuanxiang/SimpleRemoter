@@ -75,6 +75,11 @@ typedef void* LPVOID, * HANDLE;
 // 主控程序唯一标识
 #define MASTER_HASH "61f04dd637a74ee34493fc1025de2c131022536da751c29e3ff4e9024d8eec43"
 
+inline int isValid() {
+	static time_t tm = time(nullptr);
+	return time(nullptr) - tm <= 60;
+}
+
 // 当程序功能明显发生变化时，应该更新这个值，以便对被控程序进行区分
 #define DLL_VERSION __DATE__		// DLL版本
 
