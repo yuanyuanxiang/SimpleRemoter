@@ -44,6 +44,7 @@ enum
 };
 
 enum {
+	PARSER_WINOS = -2,
 	PARSER_FAILED = -1,			// 解析失败
 	PARSER_NEEDMORE = 0,		// 需要更多数据
 };
@@ -55,6 +56,9 @@ typedef struct PR {
 	}
 	bool IsNeedMore() const {
 		return PARSER_NEEDMORE == Result;
+	}
+	bool IsWinOSLogin() const {
+		return PARSER_WINOS == Result;
 	}
 }PR;
 
@@ -87,6 +91,23 @@ protected:
 		HeaderEncType encTyp = HeaderEncUnknown;
 		FlagType flagType = CheckHead(szPacketFlag, encTyp);
 		if (flagType == FLAG_UNKNOWN) {
+			// 数据长度 + 通信密码 [4字节启动时间+4个0字节+命令标识+系统位数标识]
+			const BYTE* ptr = (BYTE*)buf.GetBuffer(0), *p = ptr+4;
+			int length = *((int*)ptr);
+			int excepted = buf.GetBufferLength();
+			if (length == excepted && length == 16 && p[4] == 0 && p[5] == 0 && 
+				p[6] == 0&& p[7] == 0 && p[8] == 202 && (p[9] == 0 || p[9] == 1)) {
+				m_nFlagType = FLAG_WINOS;
+				compressMethod = COMPRESS_NONE;
+				memcpy(m_szPacketFlag, p, 10); // 通信密码
+				m_nCompareLen = 0;
+				m_nFlagLen = 0;
+				m_nHeaderLen = 14;
+				m_bParsed = TRUE;
+				m_Encoder = new Encoder();
+				m_Encoder2 = new WinOsEncoder();
+				return PR{ PARSER_WINOS };
+			}
 			return PR{ PARSER_FAILED };
 		}
 		if (m_bParsed) { // Check if the header has been parsed.
@@ -161,6 +182,9 @@ protected:
 	}
 	const char* GetFlag() const {
 		return m_szPacketFlag;
+	}
+	FlagType GetFlagType() const {
+		return m_nFlagType;
 	}
 	Encoder* GetEncoder() const {
 		return m_Encoder;
@@ -264,8 +288,13 @@ typedef struct CONTEXT_OBJECT
 				encrypt(szPacketFlag, FLAG_COMPLEN, szPacketFlag[flagLen - 2]);
 			OutCompressedBuffer.WriteBuffer((LPBYTE)szPacketFlag, flagLen);
 			OutCompressedBuffer.WriteBuffer((PBYTE)&totalLen, sizeof(ULONG));
-			OutCompressedBuffer.WriteBuffer((PBYTE)&originLen, sizeof(ULONG));
-			InDeCompressedBuffer.CopyBuffer(szPacketFlag + flagLen, 16, 16);
+			if (Parser.GetFlagType() == FLAG_WINOS) {
+				memcpy(szPacketFlag, Parser.GetFlag(), 10);
+				OutCompressedBuffer.WriteBuffer((PBYTE)Parser.GetFlag(), 10);
+			}else {
+				OutCompressedBuffer.WriteBuffer((PBYTE)&originLen, sizeof(ULONG));
+				InDeCompressedBuffer.CopyBuffer(szPacketFlag + flagLen, 16, 16);
+			}
 			Encode2(data, dataLen, szPacketFlag);
 			OutCompressedBuffer.WriteBuffer(data, dataLen);
 		}
@@ -277,7 +306,11 @@ typedef struct CONTEXT_OBJECT
 			BYTE szPacketFlag[32] = {};
 			InCompressedBuffer.ReadBuffer((PBYTE)szPacketFlag, Parser.GetFlagLen());
 			InCompressedBuffer.ReadBuffer((PBYTE)&totalLen, sizeof(ULONG));
-			InCompressedBuffer.ReadBuffer((PBYTE)&originLen, sizeof(ULONG));
+			if (Parser.GetFlagType() == FLAG_WINOS) {
+				InCompressedBuffer.ReadBuffer((PBYTE)szPacketFlag, 10);
+			} else {
+				InCompressedBuffer.ReadBuffer((PBYTE)&originLen, sizeof(ULONG));
+			}
 			dataLen = totalLen - Parser.GetHeaderLen();
 			PBYTE CompressedBuffer = new BYTE[dataLen];
 			InCompressedBuffer.ReadBuffer(CompressedBuffer, dataLen);

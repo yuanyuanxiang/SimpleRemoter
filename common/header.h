@@ -113,6 +113,7 @@ inline HeaderFlag GetHead(EncFun enc) {
 }
 
 enum FlagType {
+	FLAG_WINOS = -1,
 	FLAG_UNKNOWN = 0,
 	FLAG_SHINE = 1,
 	FLAG_FUCK = 2,

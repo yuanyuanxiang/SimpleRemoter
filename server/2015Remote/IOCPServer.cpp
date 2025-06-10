@@ -499,6 +499,16 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 			else if (pr.IsNeedMore()) {
 				break;
 			}
+			else if (pr.IsWinOSLogin())
+			{
+				ContextObject->InDeCompressedBuffer.ClearBuffer();
+				ULONG ulCompressedLength = 0;
+				ULONG ulOriginalLength = 0;
+				PBYTE CompressedBuffer = ContextObject->ReadBuffer(ulCompressedLength, ulOriginalLength);
+				ContextObject->InDeCompressedBuffer.WriteBuffer(CompressedBuffer, ulCompressedLength);
+				m_NotifyProc(ContextObject);
+				break;
+			}
 			
 			ULONG ulPackTotalLength = 0;
 			ContextObject->InCompressedBuffer.CopyBuffer(&ulPackTotalLength, sizeof(ULONG), pr.Result);
