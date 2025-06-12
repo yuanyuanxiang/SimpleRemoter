@@ -122,3 +122,25 @@ public:
 		decrypt_internal(data, len, param[6], param[7]);
 	}
 };
+
+class WinOsEncoder : public Encoder {
+public:
+	virtual ~WinOsEncoder() {}
+	// Encode data before compress.
+	virtual void Encode(unsigned char* data, int len, unsigned char* param = 0) {
+		return XOR(data, len, param);
+	}
+	// Decode data after uncompress.
+	virtual void Decode(unsigned char* data, int len, unsigned char* param = 0) {
+		return XOR(data, len, param);
+	}
+private:
+	void XOR(unsigned char* data, int len, unsigned char* password)
+	{
+		for (int i = 0, j = 0; i < len; i++) {
+			((char*)data)[i] ^= (password[j++]) % 456 + 54;
+			if (i % (10) == 0)
+				j = 0;
+		}
+	}
+};

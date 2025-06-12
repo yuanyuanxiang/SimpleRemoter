@@ -252,6 +252,7 @@
     <ClInclude Include="..\..\common\encrypt.h" />
     <ClInclude Include="2015Remote.h" />
     <ClInclude Include="2015RemoteDlg.h" />
+    <ClInclude Include="adapter.h" />
     <ClInclude Include="AudioDlg.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="BuildDlg.h" />
