@@ -25,8 +25,13 @@
 // 获取 IP 地址地理位置
 std::string GetGeoLocation(const std::string& ip);
 
+// 是否为本机IP
 bool isLocalIP(const std::string& ip);
 
+// 获取本机公网IP, 获取失败返回空
 std::string getPublicIP();
 
+// 判断给定的 IP 地址是否是局域网（内网）IP
 bool IsPrivateIP(const std::string& ipAddress);
+
+void splitIpPort(const std::string& input, std::string& ip, std::string& port);

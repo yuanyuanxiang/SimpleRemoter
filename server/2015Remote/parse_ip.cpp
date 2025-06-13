@@ -153,3 +153,15 @@ std::string getPublicIP() {
 
 	return std::string(buffer);
 }
+
+void splitIpPort(const std::string& input, std::string& ip, std::string& port) {
+	size_t pos = input.find(':');
+	if (pos != std::string::npos) {
+		ip = input.substr(0, pos);
+		port = input.substr(pos + 1);
+	}
+	else {
+		ip = input;
+		port = "";
+	}
+}
