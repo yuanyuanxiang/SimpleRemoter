@@ -36,4 +36,6 @@ public:
 	int m_nReportInterval;
 	CComboBox m_ComboSoftwareDetect;
 	CString m_sSoftwareDetect;
+	CEdit m_EditPublicIP;
+	CString m_sPublicIP;
 };

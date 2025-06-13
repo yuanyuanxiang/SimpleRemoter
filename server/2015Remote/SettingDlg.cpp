@@ -6,6 +6,7 @@
 #include "SettingDlg.h"
 #include "afxdialogex.h"
 #include "client/CursorInfo.h"
+#include "parse_ip.h"
 
 // CSettingDlg 对话框
 
@@ -19,6 +20,7 @@ CSettingDlg::CSettingDlg(CWnd* pParent)
 	, m_sScreenCompress(_T("屏幕差异算法"))
 	, m_nReportInterval(5)
 	, m_sSoftwareDetect(_T("摄像头"))
+	, m_sPublicIP(_T(""))
 {
 }
 
@@ -43,6 +45,9 @@ void CSettingDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO_SOFTWAREDETECT, m_ComboSoftwareDetect);
 	DDX_CBString(pDX, IDC_COMBO_SOFTWAREDETECT, m_sSoftwareDetect);
 	DDV_MaxChars(pDX, m_sSoftwareDetect, 256);
+	DDX_Control(pDX, IDC_EDIT_PUBLIC_IP, m_EditPublicIP);
+	DDX_Text(pDX, IDC_EDIT_PUBLIC_IP, m_sPublicIP);
+	DDV_MaxChars(pDX, m_sPublicIP, 100);
 }
 
 BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)
@@ -58,10 +63,11 @@ END_MESSAGE_MAP()
 BOOL CSettingDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-
-	int nPort = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");         
+	m_sPublicIP = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "master", "");
+	m_sPublicIP = m_sPublicIP.IsEmpty() ? getPublicIP().c_str() : m_sPublicIP;
+	int nPort = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");
 	//读取ini 文件中的监听端口
-	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");    
+	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");
 
 	int DXGI = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "DXGI");
 
@@ -121,7 +127,8 @@ BOOL CSettingDlg::OnInitDialog()
 void CSettingDlg::OnBnClickedButtonSettingapply()
 {
 	UpdateData(TRUE);
-	((CMy2015RemoteApp *)AfxGetApp())->m_iniFile.SetInt("settings", "ghost", m_nListenPort);      
+	((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.SetStr("settings", "master", m_sPublicIP.GetBuffer());
+	((CMy2015RemoteApp *)AfxGetApp())->m_iniFile.SetInt("settings", "ghost", m_nListenPort);
 	//向ini文件中写入值
 	((CMy2015RemoteApp *)AfxGetApp())->m_iniFile.SetInt("settings", "MaxConnection", m_nMax_Connect);
 

