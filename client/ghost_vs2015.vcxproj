@@ -206,6 +206,7 @@
     <ClInclude Include="CaptureVideo.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="CursorInfo.h" />
+    <ClInclude Include="domain_pool.h" />
     <ClInclude Include="FileManager.h" />
     <ClInclude Include="IOCPClient.h" />
     <ClInclude Include="KernelManager.h" />

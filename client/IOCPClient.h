@@ -19,6 +19,7 @@
 #include "Buffer.h"
 #include "common/commands.h"
 #include "zstd/zstd.h"
+#include "domain_pool.h"
 
 #define MAX_RECV_BUFFER  1024*32
 #define MAX_SEND_BUFFER  1024*32
@@ -86,6 +87,11 @@ public:
 	BOOL OnServerSending(const char* szBuffer, ULONG ulOriginalLength);
 	BOOL SendWithSplit(const char* szBuffer, ULONG ulLength, ULONG ulSplitLength);
 
+	void SetServerAddress(const char* szServerIP, unsigned short uPort) {
+		m_Domain = szServerIP ? szServerIP : "127.0.0.1";
+		m_nHostPort = uPort;
+	}
+
 	BOOL IsRunning() const
 	{
 		return m_bIsRunning;
@@ -110,7 +116,9 @@ public:
 	State& g_bExit;					// 全局状态量
 	void* m_Manager;				// 用户数据
 	DataProcessCB m_DataProcess;	// 处理用户数据
-
+	DomainPool m_Domain;
+	std::string m_sCurIP;
+	int m_nHostPort;
 	bool m_exit_while_disconnect;
 };
 
