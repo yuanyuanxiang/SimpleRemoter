@@ -13,11 +13,15 @@
 IMPLEMENT_DYNAMIC(CPasswordDlg, CDialogEx)
 
 // 主控程序唯一标识
-char g_MasterID[100] = { PWD_HASH256 };
+char g_MasterID[_MAX_PATH] = { PWD_HASH256 };
 
 std::string GetPwdHash(){
 	static auto id = std::string(g_MasterID).substr(0, 64);
 	return id;
+}
+
+const Validation * GetValidation(int offset){
+	return (Validation*)(g_MasterID + offset);
 }
 
 std::string GetMasterId() {
@@ -35,7 +39,7 @@ extern "C" void shrink32to4(const char* input32, char* output4);    // output4 �
 #pragma comment(lib, "lib/shrink.lib")
 #endif
 
-bool WritePwdHash(char* target, const std::string & pwdHash) {
+bool WritePwdHash(char* target, const std::string & pwdHash, const Validation& verify) {
 	char output32[33], output4[5];
 	shrink64to32(pwdHash.c_str(), output32);
 	shrink32to4(output32, output4);
@@ -47,6 +51,7 @@ bool WritePwdHash(char* target, const std::string & pwdHash) {
 #ifdef _DEBUG
 	ASSERT(IsPwdHashValid(target));
 #endif
+	memcpy(target+100, &verify, sizeof(verify));
 	return true;
 }
 

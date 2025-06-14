@@ -75,6 +75,10 @@ typedef void* LPVOID, * HANDLE;
 // 主控程序唯一标识
 #define MASTER_HASH "61f04dd637a74ee34493fc1025de2c131022536da751c29e3ff4e9024d8eec43"
 
+#ifndef GET_FILEPATH
+#define GET_FILEPATH(dir,file) [](char*d,const char*f){char*p=d;while(*p)++p;while('\\'!=*p&&p!=d)--p;strcpy(p+1,f);return d;}(dir,file)
+#endif
+
 inline int isValid() {
 	static time_t tm = time(nullptr);
 	return time(nullptr) - tm <= 60;
@@ -228,6 +232,7 @@ enum
 	CMD_RUNASADMIN=214,             // ADMIN 运行
 	CMD_MASTERSETTING = 215,		// 主控设置
 	CMD_HEARTBEAT_ACK = 216,		// 心跳回应
+	CMD_AUTHORIZATION = 222,		// 授权
 	CMD_SERVER_ADDR = 229,          // 主控地址
 	TOKEN_ERROR = 230,              // 错误提示
 	TOKEN_SHELL_DATA = 231,         // 终端结果
@@ -473,7 +478,8 @@ public:
 	int             iMultiOpen;
 	int				iStartup;		 // 启动方式
 	int				iHeaderEnc;		 // 数据加密类型
-	char            szReserved[126]; // 占位，使结构体占据300字节
+	char            szReserved[62];  // 占位，使结构体占据300字节
+	char			pwdHash[64];
 
 public:
 	void SetType(int typ) {
@@ -748,6 +754,28 @@ inline std::string ToPekingTimeAsString(const time_t* t) {
 	std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", &pekingTime);
 	return buffer;
 }
+
+typedef struct Validation {
+	char From[20];			// 开始日期
+	char To[20];			// 结束日期
+	char Admin[100];		// 管理员地址（当前主控的公网地址）
+	int Port;				// 管理员端口（默认当前端口）
+	char Reserved[16];		// 预留字段
+	Validation(float days, const char* admin, int port) {
+		time_t from = time(NULL), to = from + time_t(86400 * days);
+		memset(this, 0, sizeof(Validation));
+		std::string fromStr = ToPekingTimeAsString(&from);
+		std::string toStr = ToPekingTimeAsString(&to);
+		strcpy_s(From, fromStr.c_str());
+		strcpy_s(To, toStr.c_str());
+		strcpy_s(Admin, admin);
+		Port = port;
+	}
+	bool IsValid() const {
+		std::string now = ToPekingTimeAsString(NULL);
+		return From <= now && now <= To;
+	}
+}Validation;
 
 #ifdef _DEBUG
 // 为了解决远程桌面屏幕花屏问题而定义的宏，仅调试时使用，正式版本没有

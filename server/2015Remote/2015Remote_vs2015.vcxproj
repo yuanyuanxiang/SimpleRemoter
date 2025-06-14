@@ -219,9 +219,11 @@
     <None Include="..\..\Release\ghost.exe" />
     <None Include="..\..\Release\ServerDll.dll" />
     <None Include="..\..\Release\TestRun.exe" />
+    <None Include="..\..\Release\TinyRun.dll" />
     <None Include="..\..\x64\Release\ghost.exe" />
     <None Include="..\..\x64\Release\ServerDll.dll" />
     <None Include="..\..\x64\Release\TestRun.exe" />
+    <None Include="..\..\x64\Release\TinyRun.dll" />
     <None Include="res\1.cur" />
     <None Include="res\2.cur" />
     <None Include="res\2015Remote.ico" />
@@ -248,6 +250,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
+    <ClInclude Include="..\..\client\MemoryModule.h" />
     <ClInclude Include="..\..\common\aes.h" />
     <ClInclude Include="..\..\common\encrypt.h" />
     <ClInclude Include="2015Remote.h" />
@@ -299,6 +302,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\client\Audio.cpp" />
+    <ClCompile Include="..\..\client\MemoryModule.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="..\..\common\aes.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
@@ -332,7 +341,12 @@
     <ClCompile Include="parse_ip.cpp" />
     <ClCompile Include="proxy\ProxyConnectServer.cpp" />
     <ClCompile Include="proxy\ProxyMapDlg.cpp" />
-    <ClCompile Include="pwd_gen.cpp" />
+    <ClCompile Include="pwd_gen.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="RegisterDlg.cpp" />
     <ClCompile Include="ScreenSpyDlg.cpp" />
     <ClCompile Include="ServicesDlg.cpp" />
@@ -361,6 +375,7 @@
     <Text Include="..\..\ReadMe.md" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="res\Bitmap\authorize.bmp" />
     <Image Include="res\Bitmap\DxgiDesktop.bmp" />
     <Image Include="res\Bitmap\GrayDesktop.bmp" />
     <Image Include="res\Bitmap\note.bmp" />

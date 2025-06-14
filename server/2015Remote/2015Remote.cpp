@@ -80,6 +80,7 @@ CMy2015RemoteApp theApp;
 
 BOOL CMy2015RemoteApp::InitInstance()
 {
+#ifndef _DEBUG
 	m_Mutex = CreateMutex(NULL, FALSE, "YAMA.EXE");
 	if (ERROR_ALREADY_EXISTS == GetLastError())
 	{
@@ -87,6 +88,7 @@ BOOL CMy2015RemoteApp::InitInstance()
 		m_Mutex = NULL;
 		return FALSE;
 	}
+#endif
 
 	SetUnhandledExceptionFilter(&whenbuged);
 

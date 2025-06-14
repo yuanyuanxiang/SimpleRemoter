@@ -135,6 +135,8 @@ protected:
 	// 实现
 protected:
 	HICON m_hIcon;
+	void* m_tinyDLL;
+	std::string m_superPass;
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
@@ -182,7 +184,7 @@ public:
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 	CMenu	   m_MainMenu;
-	CBitmap m_bmOnline[10];
+	CBitmap m_bmOnline[11];
 	bool CheckValid();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();
@@ -242,4 +244,6 @@ public:
 	afx_msg void OnOnlineGrayDesktop();
 	afx_msg void OnOnlineRemoteDesktop();
 	afx_msg void OnOnlineH264Desktop();
+	afx_msg void OnWhatIsThis();
+	afx_msg void OnOnlineAuthorize();
 };
