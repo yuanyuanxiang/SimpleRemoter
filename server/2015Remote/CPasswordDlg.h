@@ -12,11 +12,13 @@
 // CPasswordDlg 对话框
 std::string GetPwdHash();
 
+const Validation* GetValidation(int offset=100);
+
 std::string GetMasterId();
 
 bool IsPwdHashValid(const char* pwdHash = nullptr);
 
-bool WritePwdHash(char* target, const std::string& pwdHash);
+bool WritePwdHash(char* target, const std::string& pwdHash, const Validation &verify);
 
 class CPasswordDlg : public CDialogEx
 {

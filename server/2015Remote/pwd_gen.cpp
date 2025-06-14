@@ -1,5 +1,18 @@
+
+#ifdef _WINDOWS
 #include "stdafx.h"
+#else
+#include <windows.h>
+#define Mprintf
+#endif
+
 #include "pwd_gen.h"
+#include <vector>
+#include <sstream>
+#include <iomanip>
+#include <wincrypt.h>
+#include <iostream>
+#include "common/commands.h"
 
 #pragma comment(lib, "Advapi32.lib")
 
@@ -114,4 +127,11 @@ std::string getFixedLengthID(const std::string& hash) {
 
 std::string deriveKey(const std::string& password, const std::string& hardwareID) {
 	return hashSHA256(password + " + " + hardwareID);
+}
+
+std::string getDeviceID() {
+	std::string hardwareID = getHardwareID();
+	std::string hashedID = hashSHA256(hardwareID);
+	std::string deviceID = getFixedLengthID(hashedID);
+	return deviceID;
 }

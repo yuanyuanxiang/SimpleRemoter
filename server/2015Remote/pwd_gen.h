@@ -1,11 +1,6 @@
 #pragma once
-#include "stdafx.h"
-#include <iostream>
+
 #include <string>
-#include <vector>
-#include <sstream>
-#include <iomanip>
-#include <wincrypt.h>
 
 
 // 对生成服务端功能进行加密
@@ -18,3 +13,4 @@ std::string getFixedLengthID(const std::string& hash);
 
 std::string deriveKey(const std::string& password, const std::string& hardwareID);
 
+std::string getDeviceID();

