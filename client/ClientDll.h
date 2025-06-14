@@ -12,6 +12,7 @@
 #include <sstream>
 #include <shellapi.h>
 #include <corecrt_io.h>
+#include "domain_pool.h"
 
 BOOL IsProcessExit();
 
@@ -40,6 +41,11 @@ typedef struct ClientApp
 		m_bIsRunning = run;
 		m_bShared = shared;
 		g_bThreadExit = TRUE;
+	}
+	std::vector<std::string> GetSharedMasterList() {
+		DomainPool pool = g_Connection->ServerIP();
+		auto list = pool.GetIPList();
+		return list;
 	}
 	~ClientApp() {
 		SAFE_DELETE(g_Connection);

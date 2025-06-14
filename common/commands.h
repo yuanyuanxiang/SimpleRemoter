@@ -465,6 +465,18 @@ inline int MemoryFind(const char* szBuffer, const char* Key, int iBufferSize, in
 	return -1;
 }
 
+enum ProtoType {
+	PROTO_TCP = 0,					// TCP
+	PROTO_UDP = 1,					// UDP
+	PROTO_HTTP = 2,					// HTTP
+	PROTO_HTTPS = 3,				// HTTPS
+};
+
+enum RunningType {
+	RUNNING_RANDOM = 0,				// 随机上线
+	RUNNING_PARALLEL = 1,			// 并发上线
+};
+
 // 所连接的主控程序信息
 typedef struct CONNECT_ADDRESS
 {
@@ -478,7 +490,9 @@ public:
 	int             iMultiOpen;
 	int				iStartup;		 // 启动方式
 	int				iHeaderEnc;		 // 数据加密类型
-	char            szReserved[62];  // 占位，使结构体占据300字节
+	char			protoType;		 // 协议类型
+	char			runningType;	 // 运行方式
+	char            szReserved[60];  // 占位，使结构体占据300字节
 	char			pwdHash[64];
 
 public:

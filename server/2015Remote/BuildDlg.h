@@ -32,4 +32,5 @@ public:
 	afx_msg void OnCbnSelchangeComboExe();
 	CStatic m_OtherItem;
 	CComboBox m_ComboBits;
+	CComboBox m_ComboRunType;
 };

@@ -72,6 +72,7 @@ void CBuildDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO_EXE, m_ComboExe);
 	DDX_Control(pDX, IDC_STATIC_OTHER_ITEM, m_OtherItem);
 	DDX_Control(pDX, IDC_COMBO_BITS, m_ComboBits);
+	DDX_Control(pDX, IDC_COMBO_RUNTYPE, m_ComboRunType);
 }
 
 
@@ -146,6 +147,7 @@ void CBuildDlg::OnBnClickedOk()
 	//////////上线信息//////////////////////
 	CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "", typ, false, DLL_VERSION, 0, startup, HeaderEncV1 };
 	g_ConnectAddress.SetServer(m_strIP, atoi(m_strPort));
+	g_ConnectAddress.runningType = m_ComboRunType.GetCurSel();
 
 	if (!g_ConnectAddress.IsValid()) {
 		SAFE_DELETE_ARRAY(szBuffer);
@@ -236,6 +238,8 @@ BOOL CBuildDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	// TODO:  在此添加额外的初始化
+	CEdit* pEdit = (CEdit*)GetDlgItem(IDC_EDIT_IP);
+	pEdit->LimitText(99);
 	m_ComboExe.InsertString(IndexTestRun_DLL, "TestRun - 磁盘DLL");
 	m_ComboExe.InsertString(IndexTestRun_MemDLL, "TestRun - 内存DLL");
 	m_ComboExe.InsertString(IndexTestRun_InjSC, "TestRun - 注入记事本");
@@ -248,6 +252,10 @@ BOOL CBuildDlg::OnInitDialog()
 	m_ComboBits.InsertString(0, "64位");
 	m_ComboBits.InsertString(1, "32位");
 	m_ComboBits.SetCurSel(0);
+
+	m_ComboRunType.InsertString(RUNNING_RANDOM, "随机上线");
+	m_ComboRunType.InsertString(RUNNING_PARALLEL, "并发上线");
+	m_ComboRunType.SetCurSel(RUNNING_RANDOM);
 
 	m_OtherItem.ShowWindow(SW_HIDE);
 

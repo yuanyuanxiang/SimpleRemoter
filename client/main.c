@@ -188,7 +188,9 @@ struct CONNECT_ADDRESS
 	int             iMultiOpen;
 	int				iStartup;
 	int				iHeaderEnc;
-	char            szReserved[62];
+	char			protoType;
+	char			runningType;
+	char            szReserved[60];
 	char			pwdHash[64];
 }g_Server = { "Hello, World!", "127.0.0.1", "6543" };
 

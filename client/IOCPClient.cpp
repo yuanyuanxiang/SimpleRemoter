@@ -48,6 +48,7 @@ inline int WSAGetLastError() { return -1; }
 #endif
 #endif
 #endif
+#include <WS2tcpip.h>
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -97,6 +98,7 @@ VOID IOCPClient::setManagerCallBack(void* Manager,  DataProcessCB dataProcess)
 
 IOCPClient::IOCPClient(State&bExit, bool exit_while_disconnect) : g_bExit(bExit)
 {
+	m_nHostPort = 0;
 	m_Manager = NULL;
 #ifdef _WIN32
 	WSADATA wsaData;
@@ -152,11 +154,16 @@ IOCPClient::~IOCPClient()
 }
 
 // 从域名获取IP地址
-inline std::string GetIPAddress(const char *hostName)
+std::string GetIPAddress(const char *hostName)
 {
 #ifdef _WIN32
+	struct sockaddr_in sa = { 0 };
+	if (inet_pton(AF_INET, hostName, &(sa.sin_addr)) == 1) {
+		return hostName;
+	}
 	struct hostent *host = gethostbyname(hostName);
 #ifdef _DEBUG
+	if (host == NULL) return "";
 	Mprintf("此域名的IP类型为: %s.\n", host->h_addrtype == AF_INET ? "IPV4" : "IPV6");
 	for (int i = 0; host->h_addr_list[i]; ++i)
 		Mprintf("获取的第%d个IP: %s\n", i+1, inet_ntoa(*(struct in_addr*)host->h_addr_list[i]));
@@ -189,6 +196,12 @@ inline std::string GetIPAddress(const char *hostName)
 
 BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 {
+	if (szServerIP != NULL && uPort != 0) {
+		SetServerAddress(szServerIP, uPort);
+	}
+	m_sCurIP = m_Domain.SelectIP();
+	unsigned short port = m_nHostPort;
+
 	m_sClientSocket = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);    //传输层
 
 	if (m_sClientSocket == SOCKET_ERROR)   
@@ -200,11 +213,8 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 	//构造sockaddr_in结构 也就是主控端的结构
 	sockaddr_in	ServerAddr;
 	ServerAddr.sin_family	= AF_INET;               //网络层  IP
-	ServerAddr.sin_port	= htons(uPort);	
-	// 若szServerIP非数字开头，则认为是域名，需进行IP转换
-	std::string server = ('0' <= szServerIP[0] && szServerIP[0] <= '9') 
-		? szServerIP : GetIPAddress(szServerIP);
-	ServerAddr.sin_addr.S_un.S_addr = inet_addr(server.c_str());
+	ServerAddr.sin_port	= htons(port);
+	ServerAddr.sin_addr.S_un.S_addr = inet_addr(m_sCurIP.c_str());
 
 	if (connect(m_sClientSocket,(SOCKADDR *)&ServerAddr,sizeof(sockaddr_in)) == SOCKET_ERROR) 
 	{
@@ -218,13 +228,10 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 #else
 	sockaddr_in ServerAddr = {};
 	ServerAddr.sin_family = AF_INET;   // 网络层 IP
-	ServerAddr.sin_port = htons(uPort);
-	std::string server = ('0' <= szServerIP[0] && szServerIP[0] <= '9') 
-		? szServerIP : GetIPAddress(szServerIP);
-
+	ServerAddr.sin_port = htons(port);
 	// 若szServerIP非数字开头，则认为是域名，需进行IP转换
 	// 使用 inet_pton 替代 inet_addr (inet_pton 可以支持 IPv4 和 IPv6)
-	if (inet_pton(AF_INET, server.c_str(), &ServerAddr.sin_addr) <= 0) {
+	if (inet_pton(AF_INET, m_sCurIP.c_str(), &ServerAddr.sin_addr) <= 0) {
 		Mprintf("Invalid address or address not supported\n");
 		return false;
 	}
