@@ -171,8 +171,11 @@ public:
 	VOID MessageHandle(CONTEXT_OBJECT* ContextObject);
 	VOID SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength);
 	// 显示用户上线信息
+	CWnd* m_pFloatingTip=nullptr;
 	CListCtrl  m_CList_Online;    
 	CListCtrl  m_CList_Message;
+
+	void DeletePopupWindow();
 
 	CStatusBar m_StatusBar;          //状态条
 	CTrueColorToolBar m_ToolBar;
@@ -246,4 +249,5 @@ public:
 	afx_msg void OnOnlineH264Desktop();
 	afx_msg void OnWhatIsThis();
 	afx_msg void OnOnlineAuthorize();
+	void OnListClick(NMHDR* pNMHDR, LRESULT* pResult);
 };

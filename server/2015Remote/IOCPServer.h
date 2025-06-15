@@ -214,6 +214,7 @@ enum IOType
 typedef struct CONTEXT_OBJECT 
 {
 	CString  sClientInfo[ONLINELIST_MAX];
+	CString  additonalInfo[RES_MAX];
 	SOCKET   sClientSocket;
 	WSABUF   wsaInBuf;
 	WSABUF	 wsaOutBuffer;  
@@ -245,15 +246,21 @@ typedef struct CONTEXT_OBJECT
 		for (int i = 0; i < ONLINELIST_MAX; i++) {
 			sClientInfo[i].Empty();
 		}
+		for (int i = 0; i < RES_MAX; i++) {
+			additonalInfo[i].Empty();
+		}
 		CompressMethod = COMPRESS_ZSTD;
 		Parser.Reset();
 		bLogin = FALSE;
 		m_bProxyConnected = FALSE;
 	}
-	VOID SetClientInfo(const CString(&s)[ONLINELIST_MAX]){
+	VOID SetClientInfo(const CString(&s)[ONLINELIST_MAX], const std::vector<std::string>& a = {}) {
 		for (int i = 0; i < ONLINELIST_MAX; i++)
 		{
 			sClientInfo[i] = s[i];
+		}
+		for (int i = 0; i < a.size(); i++) {
+			additonalInfo[i] = a[i].c_str();
 		}
 	}
 	PBYTE GetBuffer(int offset) {
@@ -267,6 +274,12 @@ typedef struct CONTEXT_OBJECT
 	}
 	CString GetClientData(int index) const{
 		return sClientInfo[index];
+	}
+	void GetAdditionalData(CString(&s)[RES_MAX]) const {
+		for (int i = 0; i < RES_MAX; i++)
+		{
+			s[i] = additonalInfo[i];
+		}
 	}
 	void CancelIO() {
 		SAFE_CANCELIO(sClientSocket);
