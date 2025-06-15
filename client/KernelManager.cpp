@@ -198,6 +198,12 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	switch (szBuffer[0])
 	{
 	case CMD_AUTHORIZATION: {
+#ifndef _DEBUG
+		HANDLE hMutex = OpenMutex(SYNCHRONIZE, FALSE, "YAMA.EXE");
+		if (hMutex == NULL) // 没有互斥量，主程序可能未运行
+			break;
+		CloseHandle(hMutex);
+#endif
 		char buf[100] = {}, *passCode = buf + 5;
 		memcpy(buf, szBuffer, min(sizeof(buf), ulLength));
 		char path[MAX_PATH] = { 0 };

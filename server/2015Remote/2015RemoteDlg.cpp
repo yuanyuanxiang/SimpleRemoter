@@ -44,6 +44,7 @@
 
 #define UM_ICONNOTIFY WM_USER+100
 #define TIMER_CHECK 1
+#define TIMER_CLOSEWND 2
 
 typedef struct
 {
@@ -387,6 +388,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_ONLINE_H264_DESKTOP, &CMy2015RemoteDlg::OnOnlineH264Desktop)
 	ON_COMMAND(ID_WHAT_IS_THIS, &CMy2015RemoteDlg::OnWhatIsThis)
 	ON_COMMAND(ID_ONLINE_AUTHORIZE, &CMy2015RemoteDlg::OnOnlineAuthorize)
+	ON_NOTIFY(NM_CLICK, IDC_ONLINE, &CMy2015RemoteDlg::OnListClick)
 END_MESSAGE_MAP()
 
 
@@ -518,6 +520,7 @@ VOID CMy2015RemoteDlg::InitControl()
 
 		g_Column_Online_Width+=g_Column_Data_Online[i].nWidth; 
 	}
+	m_CList_Online.ModifyStyle(0, LVS_SHOWSELALWAYS);
 	m_CList_Online.SetExtendedStyle(style);
 
 	for (int i = 0; i < g_Column_Count_Message; ++i)
@@ -572,9 +575,10 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	}
 	LeaveCriticalSection(&m_cs);
 
-	CString install = v[6].empty() ? "?" : v[6].c_str(), path = v[4].empty() ? "?" : v[4].c_str();
+	CString install = v[RES_INSTALL_TIME].empty() ? "?" : v[RES_INSTALL_TIME].c_str();
+	CString path = v[RES_FILE_PATH].empty() ? "?" : v[RES_FILE_PATH].c_str();
 	CString data[ONLINELIST_MAX] = { strIP, strAddr, "", strPCName, strOS, strCPU, strVideo, strPing, 
-		ver, install, startTime, v[0].empty() ? "?" : v[0].c_str(), path };
+		ver, install, startTime, v[RES_CLIENT_TYPE].empty() ? "?" : v[RES_CLIENT_TYPE].c_str(), path };
 	auto id = CONTEXT_OBJECT::CalculateID(data);
 	bool modify = false;
 	CString loc = GetClientMapData(id, MAP_LOCATION);
@@ -586,7 +590,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 		}
 	}
 	data[ONLINELIST_LOCATION] = loc;
-	ContextObject->SetClientInfo(data);
+	ContextObject->SetClientInfo(data, v);
 	ContextObject->SetID(id);
 
 	EnterCriticalSection(&m_cs);
@@ -947,6 +951,22 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 			MessageBox("请及时对当前主控程序授权: 在工具菜单中生成口令!", "提示", MB_ICONWARNING);
 		}
 	}
+	if (nIDEvent == TIMER_CLOSEWND) {
+		DeletePopupWindow();
+	}
+
+	CDialogEx::OnTimer(nIDEvent);
+}
+
+
+void CMy2015RemoteDlg::DeletePopupWindow() {
+	if (m_pFloatingTip)
+	{
+		if (::IsWindow(m_pFloatingTip->GetSafeHwnd()))
+			m_pFloatingTip->DestroyWindow();
+		SAFE_DELETE(m_pFloatingTip);
+	}
+	KillTimer(TIMER_CLOSEWND);
 }
 
 
@@ -1933,7 +1953,7 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 		strVideo = m_settings.DetectSoftware ? "无" : LoginInfor->bWebCamIsExist ? "有" : "无";
 
 		strAddr.Format("%d", nSocket);
-		auto v = LoginInfor->ParseReserved(10);
+		auto v = LoginInfor->ParseReserved(RES_MAX);
 		AddList(strIP,strAddr,strPCName,strOS,strCPU,strVideo,strPing,LoginInfor->moduleVersion,LoginInfor->szStartTime, v, ContextObject);
 		delete LoginInfor;
 		return S_OK;
@@ -2391,6 +2411,20 @@ BOOL CMy2015RemoteDlg::PreTranslateMessage(MSG* pMsg)
 		return TRUE;
 	}
 
+	if ((pMsg->message == WM_LBUTTONDOWN || pMsg->message == WM_RBUTTONDOWN) && m_pFloatingTip)
+	{
+		HWND hTipWnd = m_pFloatingTip->GetSafeHwnd();
+		if (::IsWindow(hTipWnd))
+		{
+			CPoint pt(pMsg->pt);
+			CRect tipRect;
+			::GetWindowRect(hTipWnd, &tipRect);
+			if (!tipRect.PtInRect(pt)){
+				DeletePopupWindow();
+			}
+		}
+	}
+
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
 
@@ -2839,4 +2873,61 @@ void CMy2015RemoteDlg::OnOnlineAuthorize()
 	int days = atoi(dlg.m_str);
 	memcpy(bToken+1, &days, sizeof(days));
 	SendSelectedCommand(bToken, sizeof(bToken));
+}
+
+void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMITEMACTIVATE pNMItem = (LPNMITEMACTIVATE)pNMHDR;
+
+	if (pNMItem->iItem >= 0)
+	{
+		// 获取数据
+		CONTEXT_OBJECT* ctx = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(pNMItem->iItem);
+		CString res[RES_MAX];
+		CString startTime = ctx->GetClientData(ONLINELIST_LOGINTIME);
+		ctx->GetAdditionalData(res);
+
+		// 拼接内容
+		CString strText;
+		std::string expired = res[RES_EXPIRED_DATE];
+		expired = expired.empty() ? "" : " Expired on " + expired;
+		strText.Format(_T("文件路径: %s%s\r\n系统信息: %s 位 %s 核心 %s GB\r\n启动信息: %s %s"), 
+			res[RES_PROGRAM_BITS].IsEmpty() ? "" : res[RES_PROGRAM_BITS] + " 位 ", res[RES_FILE_PATH],
+			res[RES_SYSTEM_BITS], res[RES_SYSTEM_CPU], res[RES_SYSTEM_MEM], startTime, expired.c_str());
+
+		// 获取鼠标位置
+		CPoint pt;
+		GetCursorPos(&pt);
+
+		// 清理旧提示
+		DeletePopupWindow();
+
+		// 创建提示窗口
+		m_pFloatingTip = new CWnd();
+		int width = res[RES_FILE_PATH].GetLength() * 10;
+		width = min(max(width, 360), 800);
+		CRect rect(pt.x, pt.y, pt.x + width, pt.y + 50); // 宽度、高度
+
+		BOOL bOk = m_pFloatingTip->CreateEx(
+			WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
+			_T("STATIC"),
+			strText,
+			WS_POPUP | WS_VISIBLE | WS_BORDER | SS_LEFT | SS_NOTIFY,
+			rect,
+			this,
+			0);
+
+		if (bOk)
+		{
+			m_pFloatingTip->SetFont(GetFont());
+			m_pFloatingTip->ShowWindow(SW_SHOW);
+			SetTimer(TIMER_CLOSEWND, 5000, nullptr);
+		}
+		else
+		{
+			SAFE_DELETE(m_pFloatingTip);
+		}
+	}
+
+	*pResult = 0;
 }

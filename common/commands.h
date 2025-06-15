@@ -600,6 +600,20 @@ inline std::vector<std::string> StringToVector(const std::string& str, char ch, 
 	return result;
 }
 
+enum LOGIN_RES {
+	RES_CLIENT_TYPE = 0,					// 类型
+	RES_SYSTEM_BITS = 1,					// 系统位数
+	RES_SYSTEM_CPU = 2,						// CPU核数
+	RES_SYSTEM_MEM = 3,						// 系统内存
+	RES_FILE_PATH = 4,						// 文件路径
+	RES_RESVERD = 5,						// ?
+	RES_INSTALL_TIME = 6,					// 安装时间
+	RES_INSTALL_INFO = 7,					// 安装信息
+	RES_PROGRAM_BITS = 8,					// 程序位数
+	RES_EXPIRED_DATE = 9,					// 到期日期
+	RES_MAX,
+};
+
 // 服务上线后发送的计算机信息
 // 此结构体一旦发生变化（比如大小），则以前版本的客户端无法连接新版主控.
 // 新版客户端也无法连接老版本的主控程序.

