@@ -187,7 +187,7 @@ public:
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 	CMenu	   m_MainMenu;
-	CBitmap m_bmOnline[11];
+	CBitmap m_bmOnline[12];
 	bool CheckValid();
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();
@@ -250,4 +250,5 @@ public:
 	afx_msg void OnWhatIsThis();
 	afx_msg void OnOnlineAuthorize();
 	void OnListClick(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnOnlineUnauthorize();
 };

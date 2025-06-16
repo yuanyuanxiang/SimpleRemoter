@@ -282,6 +282,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent): CDial
 	m_bmOnline[8].LoadBitmap(IDB_BITMAP_DDESKTOP);
 	m_bmOnline[9].LoadBitmap(IDB_BITMAP_SDESKTOP);
 	m_bmOnline[10].LoadBitmap(IDB_BITMAP_AUTHORIZE);
+	m_bmOnline[11].LoadBitmap(IDB_BITMAP_UNAUTH);
 
 	for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
 		m_ServerDLL[i] = nullptr;
@@ -389,6 +390,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_WHAT_IS_THIS, &CMy2015RemoteDlg::OnWhatIsThis)
 	ON_COMMAND(ID_ONLINE_AUTHORIZE, &CMy2015RemoteDlg::OnOnlineAuthorize)
 	ON_NOTIFY(NM_CLICK, IDC_ONLINE, &CMy2015RemoteDlg::OnListClick)
+	ON_COMMAND(ID_ONLINE_UNAUTHORIZE, &CMy2015RemoteDlg::OnOnlineUnauthorize)
 END_MESSAGE_MAP()
 
 
@@ -1077,6 +1079,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	Menu.SetMenuItemBitmaps(ID_ONLINE_REMOTE_DESKTOP, MF_BYCOMMAND, &m_bmOnline[8], &m_bmOnline[8]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_H264_DESKTOP, MF_BYCOMMAND, &m_bmOnline[9], &m_bmOnline[9]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND, &m_bmOnline[10], &m_bmOnline[10]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_UNAUTHORIZE, MF_BYCOMMAND, &m_bmOnline[11], &m_bmOnline[11]);
 
 	// 创建一个新的子菜单
 	CMenu newMenu;
@@ -1109,6 +1112,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	}
 	else if (GetPwdHash() != std::string(skCrypt(MASTER_HASH))) {
 		SubMenu->EnableMenuItem(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
+		SubMenu->EnableMenuItem(ID_ONLINE_UNAUTHORIZE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 	}
 
 	// 刷新菜单显示
@@ -1297,7 +1301,7 @@ bool CMy2015RemoteDlg::CheckValid() {
 #ifdef _DEBUG
 	BOOL isTrail = verify.isTrail(0);
 #else
-	BOOL isTrail = verify.isTrail(14);
+	BOOL isTrail = verify.isTrail(-1);
 #endif
 
 	if (!isTrail) {
@@ -2930,4 +2934,26 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
 	}
 
 	*pResult = 0;
+}
+
+
+void CMy2015RemoteDlg::OnOnlineUnauthorize()
+{
+	if (m_superPass.empty()) {
+		CInputDialog pass(this);
+		pass.Init("需要密码", "当前主控程序的密码:");
+		if (pass.DoModal() != IDOK || pass.m_str.IsEmpty())
+			return;
+		std::string masterHash(skCrypt(MASTER_HASH));
+		if (hashSHA256(pass.m_str.GetBuffer()) != masterHash) {
+			MessageBox("密码不正确!", "错误", MB_ICONWARNING);
+			return;
+		}
+		m_superPass = pass.m_str;
+	}
+
+	BYTE	bToken[32] = { CMD_AUTHORIZATION };
+	int days = -1;
+	memcpy(bToken + 1, &days, sizeof(days));
+	SendSelectedCommand(bToken, sizeof(bToken));
 }
