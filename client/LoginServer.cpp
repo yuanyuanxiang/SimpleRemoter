@@ -275,7 +275,7 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 		str = std::string(auth);
 		str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
 		auto list = StringToVector(str, '-', 3);
-		str = list[1];
+		str = list[1].empty() ? "Unknown" : list[1];
 	}
 	LoginInfor.AddReserved(str.c_str());			   //  ⁄»®–≈œ¢
 	bool isDefault = strlen(conn.szFlag) == 0 || strcmp(conn.szFlag, skCrypt(FLAG_GHOST)) == 0 ||

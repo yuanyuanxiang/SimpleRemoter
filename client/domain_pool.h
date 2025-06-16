@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <vector>
-#include <commands.h>
+#include <common/commands.h>
 
 std::string GetIPAddress(const char* hostName);
 
