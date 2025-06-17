@@ -22,6 +22,9 @@ The author will fix reported issues as time permits.
 
 ## Disclaimer
 
+This project is a research-oriented implementation of remote control technology and is intended solely for educational purposes.  
+Any use of this software for unauthorized access, surveillance, or control of other systems is **strictly prohibited**.  
+
 This software is provided "as is" without any warranty. Use of this software is at your own risk.  
 We are not responsible for any illegal or malicious use resulting from this software.  
 Users should comply with relevant laws and regulations and use this software responsibly.  

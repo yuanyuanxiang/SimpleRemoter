@@ -7,6 +7,7 @@
 #include <ctime>
 #include <NTSecAPI.h>
 #include "common/skCrypter.h"
+#include <common/iniFile.h>
 
 // by ChatGPT
 bool IsWindows11() {
@@ -269,10 +270,8 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 #else
 		{
 #endif
-		GET_FILEPATH(buf, "settings.ini");
-		char auth[_MAX_PATH] = { 0 };
-		GetPrivateProfileStringA("settings", "Password", "", auth, sizeof(auth), buf);
-		str = std::string(auth);
+		iniFile cfg;
+		str = cfg.GetStr("settings", "Password", "");
 		str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
 		auto list = StringToVector(str, '-', 3);
 		str = list[1].empty() ? "Unknown" : list[1];

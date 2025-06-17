@@ -16,6 +16,15 @@
 #include <DbgHelp.h>
 #pragma comment(lib, "Dbghelp.lib")
 
+CMy2015RemoteApp* GetThisApp() {
+	return ((CMy2015RemoteApp*)AfxGetApp());
+}
+
+config& GetThisCfg() {
+	config *cfg = GetThisApp()->m_iniFile;
+	return *cfg;
+}
+
 /** 
 * @brief 程序遇到未知BUG导致终止时调用此函数，不弹框
 * 并且转储dump文件到dump目录.
@@ -53,6 +62,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteApp, CWinApp)
 	ON_COMMAND(ID_HELP, &CWinApp::OnHelp)
 END_MESSAGE_MAP()
 
+std::string GetPwdHash();
 
 // CMy2015RemoteApp 构造
 
@@ -64,7 +74,8 @@ CMy2015RemoteApp::CMy2015RemoteApp()
 	// TODO: 在此处添加构造代码，
 	// 将所有重要的初始化放置在 InitInstance 中
 	m_Mutex = NULL;
-
+	std::string masterHash(skCrypt(MASTER_HASH));
+	m_iniFile = GetPwdHash() == masterHash ? new config : new iniFile;
 	m_iocpServer = new IOCPServer();
 
 	srand(static_cast<unsigned int>(time(0)));
@@ -77,8 +88,6 @@ CMy2015RemoteApp theApp;
 
 
 // CMy2015RemoteApp 初始化
-
-std::string GetPwdHash();
 
 BOOL CMy2015RemoteApp::InitInstance()
 {
@@ -161,5 +170,7 @@ int CMy2015RemoteApp::ExitInstance()
 		delete m_iocpServer;
 		m_iocpServer = NULL;
 	}
+	SAFE_DELETE(m_iniFile);
+
 	return CWinApp::ExitInstance();
 }

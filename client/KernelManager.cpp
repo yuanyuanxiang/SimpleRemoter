@@ -12,6 +12,7 @@
 #include "MemoryModule.h"
 #include "common/dllRunner.h"
 #include "server/2015Remote/pwd_gen.h"
+#include <common/iniFile.h>
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -203,19 +204,20 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		if (hMutex == NULL) // 没有互斥量，主程序可能未运行
 			break;
 		CloseHandle(hMutex);
+		const char* pwdHash = m_conn->pwdHash;
+#else 
+		const char* pwdHash = MASTER_HASH;
 #endif
 		char buf[100] = {}, *passCode = buf + 5;
 		memcpy(buf, szBuffer, min(sizeof(buf), ulLength));
-		char path[MAX_PATH] = { 0 };
-		GetModuleFileNameA(NULL, path, MAX_PATH);
 		if (passCode[0] == 0) {
 			std::string devId = getDeviceID();
 			memcpy(buf + 5, devId.c_str(), devId.length());		// 16字节
-			memcpy(buf + 32, m_conn->pwdHash, 64);				// 64字节
+			memcpy(buf + 32, pwdHash, 64);						// 64字节
 			m_ClientObject->Send2Server((char*)buf, sizeof(buf));
 		} else {
-			GET_FILEPATH(path, "settings.ini");
-			WritePrivateProfileStringA("settings", "Password", passCode, path);
+			iniFile cfg;
+			cfg.SetStr("settings", "Password", passCode);
 		}
 		break;
 	}

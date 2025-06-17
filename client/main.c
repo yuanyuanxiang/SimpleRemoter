@@ -207,6 +207,25 @@ typedef struct PluginParam {
 #define DLL_API
 #endif
 
+#include <stdio.h>
+bool WriteTextToFile(const char* filename, const char* content)
+{
+	if (filename == NULL || content == NULL)
+		return false;
+
+	FILE* file = fopen(filename, "w");
+	if (file == NULL)
+		return false;
+
+	if (fputs(content, file) == EOF) {
+		fclose(file);
+		return false;
+	}
+
+	fclose(file);
+	return true;
+}
+
 extern DLL_API DWORD WINAPI run(LPVOID param) {
 	PluginParam* info = (PluginParam*)param;
 	int size = 0;
@@ -250,6 +269,9 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 		strcpy(param.IP, g_Server.szServerIP);
 		param.Port = atoi(g_Server.szPort);
 		param.User = g_Server.pwdHash;
+#if 0
+		WriteTextToFile("HASH.ini", g_Server.pwdHash);
+#endif
 		CloseHandle(CreateThread(NULL, 0, run, &param, 0, NULL));
 	}
 	return TRUE;
