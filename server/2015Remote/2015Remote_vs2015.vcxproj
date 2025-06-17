@@ -253,6 +253,7 @@
     <ClInclude Include="..\..\client\MemoryModule.h" />
     <ClInclude Include="..\..\common\aes.h" />
     <ClInclude Include="..\..\common\encrypt.h" />
+    <ClInclude Include="..\..\common\iniFile.h" />
     <ClInclude Include="2015Remote.h" />
     <ClInclude Include="2015RemoteDlg.h" />
     <ClInclude Include="adapter.h" />
@@ -269,7 +270,6 @@
     <ClInclude Include="FileManagerDlg.h" />
     <ClInclude Include="FileTransferModeDlg.h" />
     <ClInclude Include="HideScreenSpyDlg.h" />
-    <ClInclude Include="iniFile.h" />
     <ClInclude Include="InputDlg.h" />
     <ClInclude Include="IOCPServer.h" />
     <ClInclude Include="KeyBoardDlg.h" />
@@ -328,7 +328,6 @@
     <ClCompile Include="FileManagerDlg.cpp" />
     <ClCompile Include="FileTransferModeDlg.cpp" />
     <ClCompile Include="HideScreenSpyDlg.cpp" />
-    <ClCompile Include="iniFile.cpp" />
     <ClCompile Include="InputDlg.cpp" />
     <ClCompile Include="IOCPServer.cpp" />
     <ClCompile Include="KeyBoardDlg.cpp" />

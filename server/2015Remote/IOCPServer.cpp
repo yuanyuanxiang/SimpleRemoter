@@ -72,7 +72,7 @@ IOCPServer::IOCPServer(void)
 	m_hListenEvent	      = WSA_INVALID_EVENT;
 	m_hListenThread       = NULL;
 
-	m_ulMaxConnections = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");
+	m_ulMaxConnections = THIS_CFG.GetInt("settings", "MaxConnection");
 
 	if (m_ulMaxConnections<=0)   
 	{

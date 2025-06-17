@@ -63,15 +63,15 @@ END_MESSAGE_MAP()
 BOOL CSettingDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-	m_sPublicIP = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "master", "");
+	m_sPublicIP = THIS_CFG.GetStr("settings", "master", "").c_str();
 	m_sPublicIP = m_sPublicIP.IsEmpty() ? getPublicIP().c_str() : m_sPublicIP;
-	int nPort = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "ghost");
+	int nPort = THIS_CFG.GetInt("settings", "ghost");
 	//读取ini 文件中的监听端口
-	int nMaxConnection = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "MaxConnection");
+	int nMaxConnection = THIS_CFG.GetInt("settings", "MaxConnection");
 
-	int DXGI = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "DXGI");
+	int DXGI = THIS_CFG.GetInt("settings", "DXGI");
 
-	CString algo = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "ScreenCompress", "");
+	CString algo = THIS_CFG.GetStr("settings", "ScreenCompress", "").c_str();
 
 	m_nListenPort = (nPort<=0 || nPort>65535) ? 6543 : nPort;
 	m_nMax_Connect  = nMaxConnection<=0 ? 10000 : nMaxConnection;
@@ -102,9 +102,9 @@ BOOL CSettingDlg::OnInitDialog()
 
 	m_ComboSoftwareDetect.InsertString(SOFTWARE_CAMERA, "摄像头");
 	m_ComboSoftwareDetect.InsertString(SOFTWARE_TELEGRAM, "电报");
-	auto str = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetStr("settings", "ReportInterval", "5");
-	m_nReportInterval = atoi(str.GetBuffer());
-	n = ((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.GetInt("settings", "SoftwareDetect");
+	auto str = THIS_CFG.GetStr("settings", "ReportInterval", "5");
+	m_nReportInterval = atoi(str.c_str());
+	n = THIS_CFG.GetInt("settings", "SoftwareDetect");
 	switch (n)
 	{
 	case SOFTWARE_CAMERA:
@@ -127,20 +127,20 @@ BOOL CSettingDlg::OnInitDialog()
 void CSettingDlg::OnBnClickedButtonSettingapply()
 {
 	UpdateData(TRUE);
-	((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.SetStr("settings", "master", m_sPublicIP.GetBuffer());
-	((CMy2015RemoteApp *)AfxGetApp())->m_iniFile.SetInt("settings", "ghost", m_nListenPort);
+	THIS_CFG.SetStr("settings", "master", m_sPublicIP.GetBuffer());
+	THIS_CFG.SetInt("settings", "ghost", m_nListenPort);
 	//向ini文件中写入值
-	((CMy2015RemoteApp *)AfxGetApp())->m_iniFile.SetInt("settings", "MaxConnection", m_nMax_Connect);
+	THIS_CFG.SetInt("settings", "MaxConnection", m_nMax_Connect);
 
 	int n = m_ComboScreenCapture.GetCurSel();
-	((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.SetInt("settings", "DXGI", n);
+	THIS_CFG.SetInt("settings", "DXGI", n);
 
 	n = m_ComboScreenCompress.GetCurSel();
-	((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.SetInt("settings", "ScreenCompress", n);
+	THIS_CFG.SetInt("settings", "ScreenCompress", n);
 
-	((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.SetInt("settings", "ReportInterval", m_nReportInterval);
+	THIS_CFG.SetInt("settings", "ReportInterval", m_nReportInterval);
 	n = m_ComboSoftwareDetect.GetCurSel();
-	((CMy2015RemoteApp*)AfxGetApp())->m_iniFile.SetInt("settings", "SoftwareDetect", n);
+	THIS_CFG.SetInt("settings", "SoftwareDetect", n);
 
 	m_ApplyButton.EnableWindow(FALSE);
 	m_ApplyButton.ShowWindow(SW_HIDE);

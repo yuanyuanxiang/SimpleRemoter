@@ -9,7 +9,7 @@
 #endif
 
 #include "resource.h"		// Ö÷·ûºÅ
-#include "iniFile.h"
+#include "common/iniFile.h"
 #include "IOCPServer.h"
 
 // CMy2015RemoteApp:
@@ -20,7 +20,7 @@ class CMy2015RemoteApp : public CWinApp
 {
 public:
 	CMy2015RemoteApp();
-	iniFile  m_iniFile;
+	config  *m_iniFile;
 	HANDLE m_Mutex;
 	IOCPServer* m_iocpServer;
 // ÖØÐ´
@@ -34,3 +34,11 @@ public:
 };
 
 extern CMy2015RemoteApp theApp;
+
+CMy2015RemoteApp* GetThisApp();
+
+config& GetThisCfg();
+
+#define THIS_APP GetThisApp()
+
+#define THIS_CFG GetThisCfg()

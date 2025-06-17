@@ -176,9 +176,8 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
 	std::string hashedID = hashSHA256(hardwareID);
 	std::string deviceID = getFixedLengthID(hashedID);
 	if (deviceID == m_sDeviceID.GetString()) { // 授权的是当前主控程序
-		auto THIS_APP = (CMy2015RemoteApp*)AfxGetApp();
 		auto settings = "settings", pwdKey = "Password";
-		THIS_APP->m_iniFile.SetStr(settings, pwdKey, fixedKey.c_str());
+		THIS_CFG.SetStr(settings, pwdKey, fixedKey.c_str());
 	}
 }
 

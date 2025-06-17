@@ -95,8 +95,8 @@ BOOL CRegisterDlg::OnInitDialog()
 	m_ControlList.SetExtendedStyle(LVS_EX_FULLROWSELECT);
 	//////添加图标//////
 	m_ImageListControlList.Create(16,16,TRUE,2,2);
-	m_ImageListControlList.Add(AfxGetApp()->LoadIcon(IDI_ICON_STRING));
-	m_ImageListControlList.Add(AfxGetApp()->LoadIcon(IDI_ICON_DWORD));
+	m_ImageListControlList.Add(THIS_APP->LoadIcon(IDI_ICON_STRING));
+	m_ImageListControlList.Add(THIS_APP->LoadIcon(IDI_ICON_DWORD));
 	m_ControlList.SetImageList(&m_ImageListControlList,LVSIL_SMALL);
 
 	m_isEnable = TRUE;   //该值是为了解决频繁 向被控端请求   

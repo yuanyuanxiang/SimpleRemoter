@@ -557,9 +557,9 @@ void CFileManagerDlg::OnBegindragListLocal(NMHDR* pNMHDR, LRESULT* pResult)
 	//We will call delete later (in LButtonUp) to clean this up
 	
    	if(m_list_local.GetSelectedCount() > 1) //more than 1 item in list is selected
-   		m_hCursor = AfxGetApp()->LoadCursor(IDC_CURSOR_MDRAG);
+   		m_hCursor = THIS_APP->LoadCursor(IDC_CURSOR_MDRAG);
    	else
-   		m_hCursor = AfxGetApp()->LoadCursor(IDC_CURSOR_DRAG);
+   		m_hCursor = THIS_APP->LoadCursor(IDC_CURSOR_DRAG);
 	
 	ASSERT(m_hCursor); //make sure it was created
 	//// Change the cursor to the drag image
@@ -589,9 +589,9 @@ void CFileManagerDlg::OnBegindragListRemote(NMHDR* pNMHDR, LRESULT* pResult)
 	//We will call delete later (in LButtonUp) to clean this up
 	
    	if(m_list_remote.GetSelectedCount() > 1) //more than 1 item in list is selected
-		m_hCursor = AfxGetApp()->LoadCursor(IDC_CURSOR_MDRAG);
+		m_hCursor = THIS_APP->LoadCursor(IDC_CURSOR_MDRAG);
    	else
-		m_hCursor = AfxGetApp()->LoadCursor(IDC_CURSOR_DRAG);
+		m_hCursor = THIS_APP->LoadCursor(IDC_CURSOR_DRAG);
 	
 	ASSERT(m_hCursor); //make sure it was created
 	//// Change the cursor to the drag image
@@ -620,7 +620,7 @@ void CFileManagerDlg::OnMouseMove(UINT nFlags, CPoint point)
 	//// If we are in a drag/drop procedure (m_bDragging is true)
 	if (m_bDragging)
 	{	
-		//SetClassLong(m_list_local.m_hWnd, GCL_HCURSOR, (LONG)AfxGetApp()->LoadCursor(IDC_DRAG));
+		//SetClassLong(m_list_local.m_hWnd, GCL_HCURSOR, (LONG)THIS_APP->LoadCursor(IDC_DRAG));
 
 		//// Move the drag image
 		CPoint pt(point);	//get our current mouse coordinates

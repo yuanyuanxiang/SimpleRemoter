@@ -153,7 +153,7 @@ public:
 	VOID TestOnline();              //²âÊÔº¯Êý
 	VOID AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, CString strCPU, CString strVideo, CString strPing, 
 		CString ver, CString startTime, const std::vector<std::string> &v, CONTEXT_OBJECT* ContextObject);
-	VOID ShowMessage(BOOL bOk, CString strMsg);
+	VOID ShowMessage(CString strType, CString strMsg);
 	VOID CreatStatusBar();
 	VOID CreateToolBar();
 	VOID CreateNotifyBar();

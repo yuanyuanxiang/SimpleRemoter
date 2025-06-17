@@ -58,8 +58,8 @@ CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJEC
 	CHAR szFullPath[MAX_PATH];
 	GetSystemDirectory(szFullPath, MAX_PATH);
 	lstrcat(szFullPath, "\\shell32.dll");  //图标
-	m_hIcon = ExtractIcon(AfxGetApp()->m_hInstance, szFullPath, 17);
-	m_hCursor = LoadCursor(AfxGetApp()->m_hInstance, MAKEINTRESOURCE(IDC_ARROWS));
+	m_hIcon = ExtractIcon(THIS_APP->m_hInstance, szFullPath, 17);
+	m_hCursor = LoadCursor(THIS_APP->m_hInstance, MAKEINTRESOURCE(IDC_ARROWS));
 
 	sockaddr_in  ClientAddr;
 	memset(&ClientAddr, 0, sizeof(ClientAddr));
