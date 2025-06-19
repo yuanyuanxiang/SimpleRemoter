@@ -79,9 +79,16 @@ typedef void* LPVOID, * HANDLE;
 #define GET_FILEPATH(dir,file) [](char*d,const char*f){char*p=d;while(*p)++p;while('\\'!=*p&&p!=d)--p;strcpy(p+1,f);return d;}(dir,file)
 #endif
 
-inline int isValid() {
+inline int isValid_30s() {
 	static time_t tm = time(nullptr);
-	return time(nullptr) - tm <= 60;
+	int span = int(time(nullptr) - tm);
+	return span <= 30;
+}
+
+inline int isValid_10s() {
+	static time_t tm = time(nullptr);
+	int span = int(time(nullptr) - tm);
+	return span <= 10;
 }
 
 // 当程序功能明显发生变化时，应该更新这个值，以便对被控程序进行区分

@@ -189,7 +189,7 @@ int CManager::Send(LPBYTE lpData, UINT nSize)
 
 VOID CManager::WaitForDialogOpen()
 {
-	WaitForSingleObject(m_hEventDlgOpen, INFINITE);
+	WaitForSingleObject(m_hEventDlgOpen, 8000);
 	//必须的Sleep,因为远程窗口从InitDialog中发送COMMAND_NEXT到显示还要一段时间
 	Sleep(150);
 }
