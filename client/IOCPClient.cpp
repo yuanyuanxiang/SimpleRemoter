@@ -539,5 +539,6 @@ VOID IOCPClient::RunEventLoop(const BOOL &bCondition)
 	Mprintf("======> RunEventLoop begin\n");
 	while (m_bIsRunning && bCondition)
 		Sleep(200);
+	setManagerCallBack(NULL, NULL);
 	Mprintf("======> RunEventLoop end\n");
 }
