@@ -3,129 +3,183 @@
 **[🇺🇸 English](./ReadMe_EN.md) | [🇨🇳 中文](./ReadMe.md)**
 
 ---
+# 📚 Table of Contents
 
-# Project Overview
+- [1. Project Overview](#1-project-overview)
+- [2. Legal Disclaimer](#2-legal-disclaimer)
+- [3. System Architecture](#3-system-architecture)
+  - [3.1 Master Controller](#31-master-controller)
+  - [3.2 Controlled Client](#32-controlled-client)
+  - [3.3 Linux Client](#33-linux-client)
+- [4. Deployment Methods](#4-deployment-methods)
+  - [4.1 Intranet Deployment](#41-intranet-deployment)
+  - [4.2 Internet Deployment](#42-internet-deployment)
+- [5. Changelog](#5-changelog)
+- [6. Related Projects](#6-related-projects)
+- [7. Feedback & Communication](#7-feedback--communication)
+
+---
+
+# 1. Project Overview
 
 **Original Source:** [zibility](https://github.com/zibility/Remote)
 
 **Feature Summary:**  
-A remote controller based on Gh0st, implementing functionalities including terminal management, process management, window management, desktop control, file transfer, voice management, video monitoring, service management, registry viewer, keylogging, SOCKS proxy, virtual desktop, code execution, and more.
+A remote control system based on gh0st, supporting terminal management, process management, window management, desktop control, file transfer, audio/video streaming, service control, registry viewing, keylogging, SOCKS proxy, virtual desktop, code execution, and more.
 
-If you're interested in control programs and enjoy this project, please consider starring it. Forks, watches, issue submissions, and pull requests are all welcome.  
-The author will fix reported issues as time permits.
+If you are passionate about researching control programs and find this project useful, you're welcome to star, fork, watch the repository, submit issues, or contribute via pull requests. The author will address issues depending on spare time availability.
 
 [![Star History Chart](https://api.star-history.com/svg?repos=yuanyuanxiang/SimpleRemoter&type=Date)](https://star-history.com/#yuanyuanxiang/SimpleRemoter&Date)
 
-<span style="color:#FF5722; font-weight:bold;">*This software is intended for learning and technical communication only. Users are responsible for any consequences resulting from its use.*</span>
+*This program is for educational and technical research purposes only. Users are fully responsible for any consequences arising from its usage.*
 
-**Project Start Date:** January 1, 2019
+**Initial Release Date:** January 1, 2019
 
-## Disclaimer
+# 2. Legal Disclaimer
 
-This project is a research-oriented implementation of remote control technology and is intended solely for educational purposes.  
-Any use of this software for unauthorized access, surveillance, or control of other systems is **strictly prohibited**.  
+This project is a research-oriented implementation of remote control technology and is intended solely for legal and educational use.  
+**Strictly prohibited**: any illegal access, control, or monitoring of others' devices.
 
-This software is provided "as is" without any warranty. Use of this software is at your own risk.  
-We are not responsible for any illegal or malicious use resulting from this software.  
-Users should comply with relevant laws and regulations and use this software responsibly.  
-The developer assumes no liability for any damage arising from the use of this software.
+This software is provided "as is" without any warranties. Use of this software is at your own risk.  
+We are not liable for any illegal or malicious use of this software.  
+Users must comply with applicable laws and use the software responsibly.  
+The developer assumes no responsibility for any damages caused by use of this software.
 
-## Controller (Server)
+# 3. System Architecture
 
-The main controller is **YAMA.exe**, which functions as the server. It is based on IOCP communication and supports tens of thousands of concurrent connections. Only one instance can run per machine in the Release version.
+![Architecture](https://github.com/yuanyuanxiang/SimpleRemoter/wiki/res/Architecture.jpg)
 
-Below are interface previews of the controller program. All features are stable and functional.  
-Note: Some features require the client (controlled program) to run with administrator privileges.
+Since version v1.1.1, the system adopts a two-tier architecture:
+- (1) A superuser distributes and manages multiple master controllers.
+- (2) Each master controller manages its own set of controlled clients.
 
-![Main Interface](./images/Yama.jpg)
+**Key characteristics of this architecture:**
+- Superusers can control any client in the system via the subordinate masters as relays.
+- Cross-communication between hosts managed by different masters is disallowed—each master can only control its own clients.
+- Superuser authorization is required to manage master controllers.
 
-The main window displays a list of connected clients.  
-Select a client to perform remote operations such as editing notes, setting up proxy mappings, or executing code.
+**Important: Unauthorized control of other users' devices is strictly prohibited.**
+
+## 3.1 Master Controller
+
+The master controller executable is **YAMA.exe**. It serves as the Server side, using IOCP for communication, and supports tens of thousands of clients online concurrently.
+
+Thanks to the layered architecture, the supported number of hosts increases exponentially.  
+For example, if one superuser manages 10 masters, and each master handles 10,000 clients, the system can control up to 100,000 clients.
+
+All features are available and stable in the UI. Some operations require the client to run with administrator privileges.
+
+![Main UI](./images/Yama.jpg)
+
+The main UI displays all connected clients.  
+You can select a host to perform remote actions such as renaming, proxy mapping, or executing commands.
 
 ![Terminal Management](./images/Console.jpg)
 
-**Terminal Management** opens a command line interface to execute remote commands.  
-A [minimal version](./linux/main.cpp) is available with Linux client support for research purposes.
+The terminal module allows you to execute remote commands in a command-line interface.  
+A [minimal Linux version](./linux/main.cpp) is also available for research and development.
 
 ![Process Management](./images/Process.jpg)
 
-**Process Management** shows all running processes on the remote machine.  
-You can start or stop regular processes (not high-privileged ones).
+Displays the running processes on the controlled host. You can start or stop normal processes (not system-level ones).
 
 ![Window Management](./images/Window.jpg)
 
-**Window Management** displays currently open windows or programs on the remote machine, allowing you to hide or show them.
+Displays and allows manipulation of open windows on the controlled machine, including hide/show functionality.
 
-![Desktop Control](./images/Remote.jpg)  
+![Desktop Management](./images/Remote.jpg)  
 ![Desktop Settings](./images/RemoteSet.jpg)
 
-**Desktop Control** functions as "Remote Desktop" for controlling the remote machine.  
-You can configure screenshot capture methods (GDI, DXGI, or VIRTUAL) and compression algorithms (grayscale, screen-diff, H264).  
-"VIRTUAL" enables a virtual desktop running in the background, improving smoothness.  
-Additionally, it supports reporting the active window and detecting specific software.
+Desktop management provides a full remote desktop experience. You can configure the capture method (GDI, DXGI, or VIRTUAL) and compression options (grayscale, screen diff, H264).  
+The **VIRTUAL** option allows headless remote control for improved performance.  
+It also supports reporting active windows and detecting specific applications.
 
 ![File Management](./images/FileManage.jpg)
 
-**File Management** handles file transfer between the local and remote machine.
+File management allows file transfer between your machine and the client device.
 
 ![Voice Management](./images/Voice.jpg)
 
-**Voice Management** allows you to listen to the remote machine’s audio or send audio if a device is available.
+Enables audio monitoring and voice transmission, provided the target machine has audio devices.
 
 ![Video Management](./images/Video.jpg)
 
-**Video Management** enables webcam access on the remote machine.  
-If enabled in settings, the controller will show whether a webcam is present.
+Opens the client’s webcam. Camera detection is enabled by default and indicated in the host list.
 
 ![Service Management](./images/Service.jpg)
 
-**Service Management** lists services on the remote machine.  
-If permitted, you can start, stop, or manage services.
+Allows viewing and managing services on the target machine (start/stop), subject to permissions.
 
-![Registry Management](./images/Register.jpg)
+![Registry Viewer](./images/Register.jpg)
 
-**Registry Management** provides view-only access to the remote machine's registry.
+Enables viewing (read-only) the client’s registry.
 
-## Linux Client
+**About Licensing:**  
+Since version v1.0.8, using the master controller requires authorization. New builds have a 14-day trial, after which a "serial number" is needed to request an unlock code.  
+To remove this logic, refer to the `OnOnlineBuildClient` function and recompile the software. See:  
+[#91](https://github.com/yuanyuanxiang/SimpleRemoter/issues/91)
 
-![LinuxClient](./images/LinuxClient.png)
+The unlock code includes a validity period and is tied to the machine ID. The system checks for system time tampering. Generating a valid unlock code requires a password.
 
-A Linux client is available under the [v1.0.8](./Releases/v1.0.8/ghost) directory, currently supporting only terminal commands.
+![Authorization Dialog](./images/AuthDlg.jpg)  
+![Password Generator](./images/PasswordGen.jpg)
+
+As of v1.1.1, the precompiled version is no longer authorized. All users must build the software themselves.  
+Otherwise, after 10 minutes of use, a dialog will prompt for an unlock code.  
+This prevents misuse by non-technical users.  
+If you only want to try out the program, version v1.0.7 or earlier is sufficient as core functionality is unchanged.  
+If you're interested in the technology, you're encouraged to compile it yourself.
+
+## 3.2 Controlled Client
+
+![Client UI](./images/TestRun.jpg)
+
+The controlled client is the **Client-side** application, available in two formats:
+1. A single executable: `ghost.exe`
+2. A launcher + DLL: `TestRun.exe` with `ServerDll.dll`
+
+The first form is self-contained.  
+Since [v1.0.8](https://github.com/yuanyuanxiang/SimpleRemoter/releases/tag/v1.0.0.8), `TestRun.exe` loads the DLL into memory, allowing dynamic updates from the master.
+
+## 3.3 Linux Client
+
+![Linux Client](./images/LinuxClient.png)
+
+A Linux version is included in [v1.0.8](./Releases/v1.0.8/ghost), currently only supporting terminal access.
 
 ![Build Dialog](./images/BuildDlg.jpg)
 
-Compile the client under a Linux environment, then use the server build dialog to select the file and set connection info for generating a Linux version.
-
-## Licensing & Authorization
-
-![Auth Dialog](./images/AuthDlg.jpg)  
-![Password Generator](./images/PasswordGen.jpg)
-
-Starting from v1.0.8, operating the controller requires authorization.  
-Newly compiled programs have a 14-day trial period. After expiration, generating clients requires a **serial number** to obtain an **authorization token**.  
-
-To bypass the authorization logic, refer to the `OnOnlineBuildClient` function and recompile the program. See issue:  
-[#91](https://github.com/yuanyuanxiang/SimpleRemoter/issues/91)  
-The token includes the authorization period and enforces one-machine-one-code rules.  
-The logic also detects date tampering. Token generation requires a password.
-
-## Controlled Program (Client)
-
-![Main Interface](./images/TestRun.jpg)
-
-The controlled program acts as the **Client**, with two available formats:
-
-1. A standalone program `ghost.exe`  
-2. A combo format `TestRun.exe + ServerDll.dll`
-
-- Format (1) is self-contained with no external dependencies.  
-- Format (2) runs the EXE, which invokes a core DLL.
-
-Note: Since [v1.0.8](https://github.com/yuanyuanxiang/SimpleRemoter/releases/tag/v1.0.0.8), `TestRun.exe` loads DLLs into memory on demand from the controller, which supports hot code updates.
+Compile the client on a Linux system. Then, in the master build dialog, select the compiled binary and set the desired connection address to generate a valid Linux client.
 
 ---
 
-# Changelog
+# 4. Deployment Methods
+
+## 4.1 Intranet Deployment
+
+This means the master and clients are within the same local network. The client can directly reach the master’s IP and port.  
+This is the simplest form—just enter the master’s local IP and port when building the client.
+
+## 4.2 Internet Deployment
+
+In this case, the master and clients are on different networks, and the master lacks a public IP.  
+Clients cannot directly connect. To bridge this, a **"middleman"** is required to forward traffic.
+
+One method is using [Peanuthull](./使用花生壳.txt), but here we focus on a second method, which works similarly:
+
+> *Client → VPS → Master*
+
+A **VPS (Virtual Private Server)** is used as a relay to control remote clients.  
+A physical server can also be used, but VPS is more cost-effective.  
+Usually, you need to rent one and set up port forwarding using [FRP (Fast Reverse Proxy)](https://github.com/fatedier/frp).
+
+During client generation, use the VPS IP (or domain, if available).  
+The FRP server runs on the VPS, while the FRP client runs on your local machine.  
+Once a client connects to the VPS, the relay will forward traffic to your local machine, completing the control loop.
+
+---
+
+# 5. Changelog
 
 For changes before 2025, see: [history](./history.md)
 
@@ -195,7 +249,7 @@ Release v1.1.0:
 
 ---
 
-# Other Projects
+# 6. Related Projects
 
 - [HoldingHands](https://github.com/yuanyuanxiang/HoldingHands): A remote control program with a fully English interface and a different architectural design.
 - [BGW RAT](https://github.com/yuanyuanxiang/BGW_RAT): A fully featured remote access tool, also known as Big Grey Wolf 9.5.
@@ -203,7 +257,7 @@ Release v1.1.0:
 
 ---
 
-# Feedback & Contact
+# 7. Feedback & Communication
 
 QQ: 962914132
 
