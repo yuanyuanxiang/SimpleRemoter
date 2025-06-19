@@ -92,8 +92,10 @@ CMy2015RemoteApp theApp;
 BOOL CMy2015RemoteApp::InitInstance()
 {
 	std::string masterHash(skCrypt(MASTER_HASH));
-	if (GetPwdHash() != masterHash) {
-		m_Mutex = CreateMutex(NULL, FALSE, "YAMA.EXE");
+	std::string mu = GetPwdHash()==masterHash ? "MASTER.EXE" : "YAMA.EXE";
+#ifndef _DEBUG
+	{
+		m_Mutex = CreateMutex(NULL, FALSE, mu.c_str());
 		if (ERROR_ALREADY_EXISTS == GetLastError())
 		{
 			CloseHandle(m_Mutex);
@@ -101,6 +103,7 @@ BOOL CMy2015RemoteApp::InitInstance()
 			return FALSE;
 		}
 	}
+#endif
 
 	SetUnhandledExceptionFilter(&whenbuged);
 
