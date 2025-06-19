@@ -4,7 +4,24 @@
 
 ---
 
-# 项目简介
+# 📚 导航目录
+
+- [1. 项目简介](#1-project-overview)
+- [2. 免责声明](#2-legal-disclaimer)
+- [3. 系统架构](#3-system-architecture)
+  - [3.1 主控程序](#31-master-controller)
+  - [3.2 受控程序](#32-controlled-client)
+  - [3.3 Linux客户端](#33-linux-client)
+- [4. 部署方式](#4-deployment-methods)
+  - [4.1 内网部署](#41-intranet-deployment)
+  - [4.2 外网部署](#42-internet-deployment)
+- [5. 更新日志](#5-changelog)
+- [6. 其他项目](#6-other-projects)
+- [7. 沟通反馈](#7-feedback-and-contact)
+
+---
+
+# 1.项目简介 <a id="1-project-overview"></a>
 
 **原始来源：** [zibility](https://github.com/zibility/Remote)
 
@@ -19,15 +36,33 @@
 
 **起始日期**：2019.1.1
 
-## 免责声明
+# 2.免责声明 <a id="2-legal-disclaimer"></a>
 
 本项目为远程控制技术的研究性实现，仅供合法学习用途。**严禁**用于非法侵入、控制、监听他人设备等违法行为。
 
 本软件以“现状”提供，不附带任何保证。使用本软件的风险由用户自行承担。我们不对任何因使用本软件而引发的非法或恶意用途负责。
 用户应遵守相关法律法规，并负责任地使用本软件。开发者对任何因使用本软件产生的损害不承担责任。
 
-## 主控程序
-主控程序为**YAMA.exe**是Server端，基于IOCP通讯，支持上万主机同时在线，Release发布版本在单台电脑只能运行一个实例。
+# 3.系统架构 <a id="3-system-architecture"></a>
+
+![Architecture](https://github.com/yuanyuanxiang/SimpleRemoter/wiki/res/Architecture.jpg)
+
+此程序（自v1.1.1）采用2层架构：
+- （1）.由超级用户分发并管理主控程序；
+
+- （2）.各个主控程序分别控制一些计算机。
+
+这个架构具有下述特点：
+- 借助于下层的主控程序作跳板，超级用户可以对整个系统中任何计算机进行控制；
+- 不同的主控程序（Master 1,2,3等）所管理的计算机之间不能乱连，即主控程序只能控制由其本身生成的控制端；
+- 由超级用户管理主控程序的授权。
+
+**郑重提示：严禁用于非法控制他人的设备。**
+
+## 3.1主控程序 <a id="31-master-controller"></a>
+主控程序为**YAMA.exe**，作为Server端，基于IOCP通讯，支持上万主机同时在线；并且得益于分层控制架构，
+系统支持的主机数量上升一个数量级。例如，一个超级用户管理10个Master，每个Master控制1万台主机，那么对超级管理员而言
+可以控制10万台主机。
 下面展示主控程序运行界面，所有功能均可用，程序运行稳定。
 某些功能要求受控程序以管理员权限运行。
 
@@ -76,7 +111,31 @@
 
 注册表管理即打开受控机器上面的注册表，只能查看注册表，不支持修改。
 
-## Linux 客户端
+**关于授权：**
+自v1.0.8起，操作主控程序需要获得授权。给新编译的程序14天试用期，过期之后生成服务端需要凭借"序列号"申请口令；
+如果要屏蔽该授权逻辑，请参考`OnOnlineBuildClient`函数，重新编译程序，参看：
+[#91](https://github.com/yuanyuanxiang/SimpleRemoter/issues/91)。
+“口令”包含授权日期范围，确保一机一码；授权逻辑会检测计算机日期未被篡改。生成口令需使用密码。
+
+![AuthDlg](./images/AuthDlg.jpg)
+
+![PasswordGen](./images/PasswordGen.jpg)
+
+自v1.1.1起，撤销对新编译程序的授权，任何人使用本程序，需要自行编译。否则程序将在使用10分钟后弹出对话框，请求输入口令。
+授权逻辑的引入可以将大部分毫无编程经验的小白阻挡在外。
+如果只想体验此远程控制程序，作者认为使用v1.0.7及以前版本即可，它们和后续版本在核心功能上没有本质不同。 
+如果您对技术有兴趣，则作者认为您有足够的能力亲自编译程序。
+
+## 3.2受控程序 <a id="32-controlled-client"></a>
+![主界面](./images/TestRun.jpg)
+
+受控程序是Client端，分为2种运行形式（"类型"）：单个程序 **（1）** ghost.exe和 **（2）** TestRun.exe+ServerDll.dll形式。
+（1）单个程序运行时，不依赖其他动态链接库，而第（2）种情况运行时，由EXE程序调用核心动态链接库。
+
+注意：自[v1.0.8](https://github.com/yuanyuanxiang/SimpleRemoter/releases/tag/v1.0.0.8)起，
+`TestRun.exe`将采取内存加载DLL运行方式，向主控程序请求DLL并在内存中执行，这有利于代码的热更新。
+
+## 3.3Linux客户端 <a id="33-linux-client"></a>
 
 ![LinuxClient](./images/LinuxClient.png)
 
@@ -86,29 +145,31 @@
 
 请在Linux环境编译得到客户端，然后在生成服务端对话框，选择该文件，填写上线地址生成Linux端程序。
 
-## 关于授权
-
-![AuthDlg](./images/AuthDlg.jpg)
-
-![PasswordGen](./images/PasswordGen.jpg)
-
-自v1.0.8起，操作主控程序需要获得授权。给新编译的程序14天试用期，过期之后生成服务端需要凭借"序列号"申请口令；
-如果要屏蔽该授权逻辑，请参考`OnOnlineBuildClient`函数，重新编译程序，参看：
-[#91](https://github.com/yuanyuanxiang/SimpleRemoter/issues/91)。
-“口令”包含授权日期范围，确保一机一码；授权逻辑会检测计算机日期未被篡改。生成口令需使用密码。
-
-## 受控程序
-![主界面](./images/TestRun.jpg)
-
-受控程序是Client端，分为2种运行形式（"类型"）：单个程序 **（1）** ghost.exe和 **（2）** TestRun.exe+ServerDll.dll形式。
-（1）单个程序运行时，不依赖其他动态链接库，而第（2）种情况运行时，由EXE程序调用核心动态链接库。
-
-注意：自[v1.0.8](https://github.com/yuanyuanxiang/SimpleRemoter/releases/tag/v1.0.0.8)起，
-`TestRun.exe`将采取内存加载DLL运行方式，向主控程序请求DLL并在内存中执行，这有利于代码的热更新。
-
 ---
 
-# 更新日志
+# 4.部署方式 <a id="4-deployment-methods"></a>
+
+## 4.1内网部署 <a id="41-intranet-deployment"></a>
+
+指的是主控程序和受控设备在同一个局域网，受控设备能直接连接主控的地址。这种部署方式非常简单，
+在生成服务时填写主控的IP和端口即可。
+
+## 4.2外网部署 <a id="42-internet-deployment"></a>
+
+指的是主控程序和受控程序在不同的网络，主控设备没有公网IP，受控设备不能直接连接主控的地址。
+为此，需要一个“中间人”，能将主控设备的内网IP穿透出去。一种方式是[使用花生壳](./使用花生壳.txt)，此处不再赘述。
+
+本文讲述第二种方法，其原理和使用花生壳无异：
+
+*受控 ——> VPS ——> 主控*
+
+我们用VPS作为“中间人”，实现对远程设备的控制。VPS的全称是“Virtual Private Server”，使用物理机也是可以的，不过VPS更具有性价比。
+通常，您需要购买VPS。VPS和程序之间的通讯基于[FRP](https://github.com/fatedier/frp).
+
+这种情况，在生成服务端程序时，IP填写的是VPS的IP，有些VPS供应商甚至提供域名，则填写域名也可以。通常，在VPS上运行FRP服务程序，
+在本地运行FRP客户端程序。当有主机连接VPS时，则VPS这个中间人会把请求转发到本地计算机，而我们发起的控制请求也将经这个中间人打到受控主机。
+
+# 5.更新日志 <a id="5-changelog"></a>
 
 2025年以前的变更记录参看：[history](./history.md)
 
@@ -175,7 +236,7 @@
 
 ---
 
-# 其他项目
+# 6.其他项目 <a id="6-other-projects"></a>
 
 - [HoldingHands](https://github.com/yuanyuanxiang/HoldingHands)：此远控程序界面为全英文，采用不同的架构设计。
 - [BGW RAT](https://github.com/yuanyuanxiang/BGW_RAT): 一款功能全面的远程控制程序，即大灰狼9.5.
@@ -183,7 +244,7 @@
 
 ---
 
-# 沟通反馈
+# 7.沟通反馈 <a id="7-feedback-and-contact"></a>
 
 QQ：962914132
 
@@ -195,5 +256,5 @@ QQ：962914132
 
 赞助方式 / Sponsor：该项目的研究出自技术学习和兴趣爱好，本人视业余情况不定期更新项目。
 **如果该项目对你有益，请通过赞助图标对本项目进行支持。**
-如果你希望采用其他方式（如微信、支付宝）对本项目进行赞助，请点击
+如果你希望采用其他方式（如微信、支付宝、PayPal）对本项目进行赞助，请点击
 [这里](https://github.com/yuanyuanxiang/yuanyuanxiang/blob/main/images/QR_Codes.jpg)。
