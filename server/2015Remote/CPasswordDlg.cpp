@@ -162,6 +162,7 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
 	if (pwdHash != GetPwdHash()) {
 		Mprintf("hashSHA256 [%s]: %s\n", m_sUserPwd, pwdHash.c_str());
 		MessageBoxA("您输入的密码不正确，无法生成口令!", "提示", MB_OK | MB_ICONWARNING);
+		m_sUserPwd.Empty();
 		return;
 	}
 	CString strBeginDate = m_StartTm.Format("%Y%m%d");

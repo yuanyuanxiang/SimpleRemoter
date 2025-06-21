@@ -865,7 +865,7 @@ void CMachineDlg::ShowProcessList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("已复制数据到剪切板!"));
+        MessageBox(_T("已复制数据到剪切板!"), "提示");
     }
     break;
     case 200: {
@@ -1025,7 +1025,7 @@ void CMachineDlg::ShowWindowsList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("已复制数据到剪切板!"));
+        MessageBox(_T("已复制数据到剪切板!"), "提示");
     }
     break;
     case 200: {
@@ -1188,7 +1188,7 @@ void CMachineDlg::ShowNetStateList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("已复制数据到剪切板!"));
+        MessageBox(_T("已复制数据到剪切板!"), "提示");
     }
     break;
     case 150: {
@@ -1245,7 +1245,7 @@ void CMachineDlg::ShowSoftWareList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("已复制数据到剪切板!"));
+        MessageBox(_T("已复制数据到剪切板!"), "提示");
     }
     break;
     case 200: {
@@ -1315,7 +1315,7 @@ void CMachineDlg::ShowIEHistoryList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("已复制数据到剪切板!"));
+        MessageBox(_T("已复制数据到剪切板!"), "提示");
     }
     break;
 
@@ -1503,7 +1503,7 @@ void CMachineDlg::ShowFavoritesUrlList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("已复制数据到剪切板!"));
+        MessageBox(_T("已复制数据到剪切板!"), "提示");
     }
     break;
     default:
@@ -1611,7 +1611,7 @@ void CMachineDlg::ShowHostsList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("已复制数据到剪切板!"));
+        MessageBox(_T("已复制数据到剪切板!"), "提示");
     }
     break;
     case 200: {

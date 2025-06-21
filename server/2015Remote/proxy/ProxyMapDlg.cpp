@@ -58,7 +58,7 @@ BOOL CProxyMapDlg::OnInitDialog()
     // 开启IPCP服务器
     m_nPort = 5543;
 	if (!m_iocpLocal->Initialize(NotifyProc, this, 100000, m_nPort)) {
-		AfxMessageBox("初始化代理服务器失败!");
+		MessageBox("初始化代理服务器失败!", "提示");
         return FALSE;
 	}
     TCHAR ip[256] = {};

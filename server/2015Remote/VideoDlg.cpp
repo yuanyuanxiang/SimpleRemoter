@@ -98,8 +98,8 @@ void CVideoDlg::SaveAvi(void)
 	m_aviFile = dlg.GetPathName();
 	if (!m_aviStream.Open(m_aviFile, m_BitmapInfor_Full))
 	{
+		MessageBox("创建录像文件失败:"+m_aviFile, "提示");
 		m_aviFile.Empty();
-		MessageBox("创建录像文件失败!");	
 	}
 	else
 	{

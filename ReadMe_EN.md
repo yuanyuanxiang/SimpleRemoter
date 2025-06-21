@@ -247,6 +247,29 @@ Release v1.1.0:
 * feat: Support virtual remote desktop monitoring
 * feature: Add command to execute DLL
 
+**2025.06.21**
+
+Release v1.1.1:
+
+*Starting from this version, the controller program requires authorization and 
+will automatically connect to the authorization server. 
+You may contact the author to request authorization. If you have concerns about this, 
+please use an earlier version (prior to v1.0.8). 
+Modifying and compiling the program yourself can also resolve this issue.*
+
+* fix: remote desktop algorithm doesn't take effort
+* Add some menus for operating online client
+* Plugin: Add remote chat feature
+* Plugin: Add browser decryption feature
+* Plugin: Add host management feature
+* Plugin: Add virtual desktop feature
+* Improve: #48 Support sorting in file management dialog
+* Feature: Support WinOS RAT client
+* Improve authorization logic: Support authorize master online
+* feature: Support random or multi connection
+* Improvement: Add a popup window to show details
+* Improve client stability
+
 ---
 
 # 6. Related Projects

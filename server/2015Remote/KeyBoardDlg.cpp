@@ -138,7 +138,7 @@ bool CKeyBoardDlg::SaveRecord()
 
     CFile	file;
     if (!file.Open( dlg.GetPathName(), CFile::modeWrite | CFile::modeCreate)) {
-        MessageBox("文件保存失败");
+        MessageBox("文件保存失败："+dlg.GetPathName(), "提示");
         return false;
     }
     // Write the DIB header and the bits
