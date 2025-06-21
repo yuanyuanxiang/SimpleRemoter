@@ -2638,7 +2638,7 @@ bool UPXUncompressFile(const std::string& upx, std::string &file) {
 			Mprintf("Failed to copy file. Error: %d\n", GetLastError());
 			return false;
 		}
-		int result = run_upx(path, file, false);
+		int result = run_upx(upx, file, false);
 		Mprintf("UPX decompression %s!\n", result ? "failed" : "successful");
 		return 0 == result;
 	}
