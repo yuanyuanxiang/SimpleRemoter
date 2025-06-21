@@ -153,7 +153,8 @@ void CBuildDlg::OnBnClickedOk()
 		SAFE_DELETE_ARRAY(szBuffer);
 		return;
 	}
-	g_ConnectAddress.Encrypt();
+	if (startup != Startup_InjSC)
+		g_ConnectAddress.Encrypt();
 	try
 	{
 		// 更新标识
@@ -204,8 +205,7 @@ void CBuildDlg::OnBnClickedOk()
 		}
 		File.Write(szBuffer, dwFileSize);
 		File.Close();
-		CString tip = index == IndexTestRun_InjSC ? "\r\n提示: 记事本只能连接本机6543端口。" :
-			index == IndexTestRun_DLL ? "\r\n提示: 请生成\"ServerDll.dll\"，以便程序正常运行。" : "";
+		CString tip = index == IndexTestRun_DLL ? "\r\n提示: 请生成\"ServerDll.dll\"，以便程序正常运行。" : "";
 		MessageBox("生成成功! 文件位于:\r\n"+ strSeverFile + tip, "提示", MB_ICONINFORMATION);
 		SAFE_DELETE_ARRAY(szBuffer);
 		if (index == IndexTestRun_DLL) return;
@@ -286,7 +286,7 @@ void CBuildDlg::OnCbnSelchangeComboExe()
 		CComPtr<IShellFolder> spDesktop;
 		HRESULT hr = SHGetDesktopFolder(&spDesktop);
 		if (FAILED(hr)) {
-			AfxMessageBox("Explorer 未正确初始化! 请稍后再试。");
+			MessageBox("Explorer 未正确初始化! 请稍后再试。", "提示");
 			return;
 		}
 		// 过滤器：显示所有文件和特定类型文件（例如文本文件）
@@ -297,7 +297,7 @@ void CBuildDlg::OnCbnSelchangeComboExe()
 			ret = fileDlg.DoModal();
 		}
 		catch (...) {
-			AfxMessageBox("文件对话框未成功打开! 请稍后再试。");
+			MessageBox("文件对话框未成功打开! 请稍后再试。", "提示");
 			return;
 		}
 		if (ret == IDOK)

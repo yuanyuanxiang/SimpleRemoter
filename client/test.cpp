@@ -382,7 +382,7 @@ BOOL Run(const char* argv1, int argv2) {
 			port = argv2;
 		}
 		else {
-			GetPrivateProfileStringA("settings", "localIp", g_ConnectAddress.ServerIP(), ip, _MAX_PATH, path);
+			GetPrivateProfileStringA("settings", "master", g_ConnectAddress.ServerIP(), ip, _MAX_PATH, path);
 			port = GetPrivateProfileIntA("settings", "ghost", g_ConnectAddress.ServerPort(), path);
 		}
 		Mprintf("[server] %s:%d\n", ip, port);

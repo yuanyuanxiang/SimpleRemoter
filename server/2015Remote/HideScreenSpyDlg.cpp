@@ -142,7 +142,7 @@ bool CHideScreenSpyDlg::SaveSnapshot()
     LPBITMAPINFO		lpbi = m_BitmapInfor_Full;
     CFile	file;
     if (!file.Open(dlg.GetPathName(), CFile::modeWrite | CFile::modeCreate)) {
-        MessageBox(_T("文件保存失败:\n") + dlg.GetPathName());
+        MessageBox(_T("文件保存失败:\n") + dlg.GetPathName(), "提示");
         return false;
     }
     // BITMAPINFO大小
@@ -474,7 +474,7 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         }
 
         if (m_BitmapInfor_Full->bmiHeader.biBitCount <= 15) {
-            AfxMessageBox(_T("不支持16位及以下颜色录像!"));
+            MessageBox(_T("不支持16位及以下颜色录像!"), "提示");
             return;
         }
 
@@ -486,8 +486,8 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         m_aviFile = dlg.GetPathName();
 
         if (!m_aviStream.Open(m_hWnd, m_aviFile, m_BitmapInfor_Full)) {
+            MessageBox(_T("Create Video(*.avi) Failed:\n") + m_aviFile, "提示");
             m_aviFile = _T("");
-            MessageBox(_T("Create Video(*.avi) Failed:\n") + m_aviFile);
         } else {
             ::SetTimer(m_hWnd, 132, 250, NULL);
             pSysMenu->CheckMenuItem(IDM_SAVEAVI_S, MF_CHECKED);

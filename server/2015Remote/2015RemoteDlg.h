@@ -26,7 +26,6 @@ typedef struct DllInfo {
 //////////////////////////////////////////////////////////////////////////
 #include <unordered_map>
 #include <fstream>
-#define DB_FILENAME "./YAMA.db"
 
 enum {
 	MAP_NOTE,
@@ -188,7 +187,7 @@ public:
 	BOOL       isClosed;
 	CMenu	   m_MainMenu;
 	CBitmap m_bmOnline[12];
-	bool CheckValid();
+	bool CheckValid(int trail = 14);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();
 			void Release();
