@@ -3,6 +3,7 @@
 //////////////////////////////////////////////////////////////////////
 #ifdef _WIN32
 #include "stdafx.h"
+#include <WS2tcpip.h>
 #else
 #include <netdb.h>
 #include <sys/socket.h>
@@ -48,7 +49,6 @@ inline int WSAGetLastError() { return -1; }
 #endif
 #endif
 #endif
-#include <WS2tcpip.h>
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
