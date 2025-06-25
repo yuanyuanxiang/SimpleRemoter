@@ -111,7 +111,11 @@ public:
 	VOID Disconnect();
 	VOID RunEventLoop(const BOOL &bCondition);
 	bool IsConnected() const { return m_bConnected == TRUE; }
-
+	BOOL Reconnect(void* manager) {
+		Disconnect();
+		if (manager) m_Manager = manager;
+		return ConnectServer(NULL, 0);
+	}
 public:	
 	State& g_bExit;					// 全局状态量
 	void* m_Manager;				// 用户数据

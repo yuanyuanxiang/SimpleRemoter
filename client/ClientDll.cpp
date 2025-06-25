@@ -491,6 +491,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 	}
 
 	app.SetThreadRun(TRUE);
+	ThreadInfo* kb = CreateKB(&settings, bExit);
 	while (app.m_bIsRunning(&app))
 	{
 		ULONGLONG dwTickCount = GetTickCount64();
@@ -500,7 +501,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 			continue;
 		}
 		SAFE_DELETE(Manager);
-		Manager = new CKernelManager(&settings, ClientObject, app.g_hInstance);
+		Manager = new CKernelManager(&settings, ClientObject, app.g_hInstance, kb);
 
 		//准备第一波数据
 		LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings);
@@ -513,6 +514,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 		while (GetTickCount64() - dwTickCount < 5000 && app.m_bIsRunning(&app))
 			Sleep(200);
 	}
+	kb->Exit(10);
 	if (app.g_bExit == S_CLIENT_EXIT && app.g_hEvent && !app.m_bShared) {
 		BOOL b = SetEvent(app.g_hEvent);
 		Mprintf(">>> [StartClient] Set event: %s %s!\n", EVENT_FINISHED, b ? "succeed" : "failed");
