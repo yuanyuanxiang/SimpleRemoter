@@ -524,7 +524,7 @@ VOID IOCPClient::Disconnect()
 	if (m_sClientSocket == INVALID_SOCKET)
 		return;
 
-	Mprintf("断开和服务端的连接.\n");
+	Mprintf("Disconnect with [%s:%d].\n", m_sCurIP.c_str(), m_nHostPort);
 
 	CancelIo((HANDLE)m_sClientSocket);
 	closesocket(m_sClientSocket);	
@@ -537,7 +537,7 @@ VOID IOCPClient::Disconnect()
 VOID IOCPClient::RunEventLoop(const BOOL &bCondition)
 {
 	Mprintf("======> RunEventLoop begin\n");
-	while (m_bIsRunning && bCondition)
+	while ((m_bIsRunning && bCondition) || bCondition == FOREVER_RUN)
 		Sleep(200);
 	setManagerCallBack(NULL, NULL);
 	Mprintf("======> RunEventLoop end\n");

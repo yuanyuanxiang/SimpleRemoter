@@ -2,6 +2,9 @@
 
 #include "common/commands.h"
 
+#define YAMA_PATH			"Software\\YAMA"
+#define CLIENT_PATH			"Software\\ServerD11"
+
 class config
 {
 private:
@@ -49,10 +52,10 @@ private:
 public:
 	~iniFile() {}
 
-	iniFile()
+	iniFile(const std::string& path = YAMA_PATH)
 	{
 		m_hRootKey = HKEY_CURRENT_USER;
-		m_SubKeyPath = "Software\\YAMA";
+		m_SubKeyPath = path;
 	}
 
 	// 写入整数，实际写为字符串
