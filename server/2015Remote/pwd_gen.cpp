@@ -120,6 +120,14 @@ std::string hashSHA256(const std::string& data) {
 	return result.str();
 }
 
+std::string genHMAC(const std::string& pwdHash, const std::string& superPass) {
+	std::string key = hashSHA256(superPass);
+	std::vector<std::string> list({ "g","h","o","s","t" });
+	for (int i = 0; i < list.size(); ++i)
+		key = hashSHA256(key + " - " + list.at(i));
+	return hashSHA256(pwdHash + " - " + key).substr(0, 16);
+}
+
 // 生成 16 字符的唯一设备 ID
 std::string getFixedLengthID(const std::string& hash) {
 	return hash.substr(0, 4) + "-" + hash.substr(4, 4) + "-" + hash.substr(8, 4) + "-" + hash.substr(12, 4);
