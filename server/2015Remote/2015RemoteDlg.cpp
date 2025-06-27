@@ -232,8 +232,11 @@ DllInfo* ReadPluginDll(const std::string& filename) {
 	std::string masterHash(skCrypt(MASTER_HASH));
 	int offset = MemoryFind((char*)buffer + 1 + sizeof(DllExecuteInfo), masterHash.c_str(), fileSize, masterHash.length());
 	if (offset != -1) {
-		std::string masterId = GetPwdHash();
+		std::string masterId = GetPwdHash(), hmac = GetHMAC();
+		if(hmac.empty())
+			hmac = THIS_CFG.GetStr("settings", "HMAC");
 		memcpy((char*)buffer + 1 + sizeof(DllExecuteInfo)+offset, masterId.c_str(), masterId.length());
+		memcpy((char*)buffer + 1 + sizeof(DllExecuteInfo) + offset + masterId.length(), hmac.c_str(), hmac.length());
 	}
 
 	// 设置输出参数
@@ -732,6 +735,15 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 		OnMainExit();
 		return FALSE;
 	}
+	if (GetPwdHash() == std::string(skCrypt(MASTER_HASH))) {
+		auto pass = THIS_CFG.GetStr("settings", "superAdmin");
+		if (hashSHA256(pass) == GetPwdHash()) {
+			m_superPass = pass;
+		} else {
+			THIS_CFG.SetStr("settings", "superAdmin", "");
+		}
+	}
+
 	// 将“关于...”菜单项添加到系统菜单中。
 	SetWindowText(_T("Yama"));
 	LoadFromFile(m_ClientMap, GetDbPath());
@@ -952,7 +964,13 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 	if (nIDEvent == TIMER_CHECK)
 	{
 		if (!m_superPass.empty()) {
+			Mprintf(">>> Timer is killed <<<\n");
 			KillTimer(nIDEvent);
+			std::string masterHash = std::string(skCrypt(MASTER_HASH));
+			if (GetPwdHash() == masterHash) {
+				THIS_CFG.SetStr("settings", "superAdmin", m_superPass);
+				THIS_CFG.SetStr("settings", "HMAC", genHMAC(masterHash, m_superPass));
+			}
 			return;
 		}
 		if (!CheckValid(-1)) 
@@ -1795,11 +1813,15 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		int *days = (int*)(resp+1);
 		if (devId[0] == 0 || pwdHash[0] == 0)break;
 		// 密码形式：20250209 - 20350209: SHA256
+		std::string hash = pwdHash;
 		std::string password = getDateStr(0) + " - " + getDateStr(*days) + ": " + pwdHash;
 		std::string finalKey = deriveKey(password, devId);
 		std::string fixedKey = getDateStr(0) + std::string("-") + getDateStr(*days) + std::string("-") + getFixedLengthID(finalKey);
 		memcpy(devId, fixedKey.c_str(), fixedKey.length());
 		devId[fixedKey.length()] = 0;
+		std::string hmac = genHMAC(hash, m_superPass);
+		memcpy(resp + 64, hmac.c_str(), hmac.length());
+		resp[80] = 0;
 		m_iocpServer->OnClientPreSending(ContextObject, (LPBYTE)resp, sizeof(resp));
 		break;
 	}
@@ -2762,7 +2784,8 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 		}
 	}
 	int port = THIS_CFG.GetInt("settings", "ghost");
-	Validation verify(atof(days.m_str), master.c_str(), port<=0 ? 6543 : port);
+	std::string id = genHMAC(pwdHash, m_superPass);
+	Validation verify(atof(days.m_str), master.c_str(), port<=0 ? 6543 : port, id.c_str());
 	if (!WritePwdHash(curEXE + iOffset, pwdHash, verify)) {
 		MessageBox("写入哈希失败! 无法生成主控。", "错误", MB_ICONWARNING);
 		SAFE_DELETE_ARRAY(curEXE);

@@ -29,6 +29,11 @@ std::string GetMasterId() {
 	return id;
 }
 
+std::string GetHMAC(int offset) {
+	const Validation * v= (Validation*)(g_MasterID + offset);
+	return v->Checksum;
+}
+
 extern "C" void shrink64to32(const char* input64, char* output32);  // output32 必须至少 33 字节
 
 extern "C" void shrink32to4(const char* input32, char* output4);    // output4 必须至少 5 字节
