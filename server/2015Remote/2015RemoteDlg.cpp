@@ -403,6 +403,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_ONLINE_AUTHORIZE, &CMy2015RemoteDlg::OnOnlineAuthorize)
 	ON_NOTIFY(NM_CLICK, IDC_ONLINE, &CMy2015RemoteDlg::OnListClick)
 	ON_COMMAND(ID_ONLINE_UNAUTHORIZE, &CMy2015RemoteDlg::OnOnlineUnauthorize)
+	ON_COMMAND(ID_TOOL_REQUEST_AUTH, &CMy2015RemoteDlg::OnToolRequestAuth)
 END_MESSAGE_MAP()
 
 
@@ -3015,4 +3016,13 @@ void CMy2015RemoteDlg::OnOnlineUnauthorize()
 	int days = -1;
 	memcpy(bToken + 1, &days, sizeof(days));
 	SendSelectedCommand(bToken, sizeof(bToken));
+}
+
+
+void CMy2015RemoteDlg::OnToolRequestAuth()
+{
+	MessageBoxA("本软件仅限于合法、正当、合规的用途。\r\n禁止将本软件用于任何违法、恶意、侵权或违反道德规范的行为。", 
+		"声明", MB_ICONINFORMATION);
+	CString url = _T("https://github.com/yuanyuanxiang/SimpleRemoter/wiki#请求授权");
+	ShellExecute(NULL, _T("open"), url, NULL, NULL, SW_SHOWNORMAL);
 }
