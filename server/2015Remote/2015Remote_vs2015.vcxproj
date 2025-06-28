@@ -269,6 +269,9 @@
     <ClInclude Include="EditDialog.h" />
     <ClInclude Include="FileManagerDlg.h" />
     <ClInclude Include="FileTransferModeDlg.h" />
+    <ClInclude Include="file\CFileListCtrl.h" />
+    <ClInclude Include="file\CFileManagerDlg.h" />
+    <ClInclude Include="file\CFileTransferModeDlg.h" />
     <ClInclude Include="HideScreenSpyDlg.h" />
     <ClInclude Include="InputDlg.h" />
     <ClInclude Include="IOCPServer.h" />
@@ -326,6 +329,9 @@
     <ClCompile Include="EditDialog.cpp" />
     <ClCompile Include="FileManagerDlg.cpp" />
     <ClCompile Include="FileTransferModeDlg.cpp" />
+    <ClCompile Include="file\CFileListCtrl.cpp" />
+    <ClCompile Include="file\CFileManagerDlg.cpp" />
+    <ClCompile Include="file\CFileTransferModeDlg.cpp" />
     <ClCompile Include="HideScreenSpyDlg.cpp" />
     <ClCompile Include="InputDlg.cpp" />
     <ClCompile Include="IOCPServer.cpp" />

