@@ -231,6 +231,7 @@ public:
 	afx_msg LRESULT OnOpenProxyDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnOpenChatDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnOpenDecryptDialog(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnOpenFileMgrDialog(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT UPXProcResult(WPARAM wParam, LPARAM lParam);
 	afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
