@@ -179,6 +179,11 @@ BOOL CScreenSpyDlg::OnInitDialog()
 VOID CScreenSpyDlg::OnClose()
 {
 	CancelIO();
+	// 等待数据处理完毕
+	if (IsProcessing()) {
+		ShowWindow(SW_HIDE);
+		return;
+	}
 
 	DialogBase::OnClose();
 }

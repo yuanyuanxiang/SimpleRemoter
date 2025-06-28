@@ -198,10 +198,6 @@ CString CMachineDlg::__MakePriority(DWORD dwPriClass)
     return strRet;
 }
 
-void CMachineDlg::OnReceive()
-{
-}
-
 void CMachineDlg::OnReceiveComplete()
 {
     if (m_bIsClosed) return;
@@ -320,6 +316,11 @@ void CMachineDlg::OnRclickList(NMHDR* pNMHDR, LRESULT* pResult)
 void CMachineDlg::OnClose()
 {
 	CancelIO();
+    // 等待数据处理完毕
+    if (IsProcessing()) {
+        ShowWindow(SW_HIDE);
+        return;
+    }
 	DeleteList();
     if (m_wndStatusBar.GetSafeHwnd())
         m_wndStatusBar.DestroyWindow();

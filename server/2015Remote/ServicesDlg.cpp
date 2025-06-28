@@ -118,6 +118,12 @@ int CServicesDlg::ShowServicesList(void)
 void CServicesDlg::OnClose()
 {
 	CancelIO();
+	// 等待数据处理完毕
+	if (IsProcessing()) {
+		ShowWindow(SW_HIDE);
+		return;
+	}
+
 	DeleteAllItems();
 
 	DialogBase::OnClose();

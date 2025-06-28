@@ -103,6 +103,11 @@ BOOL CRegisterDlg::OnInitDialog()
 void CRegisterDlg::OnClose()
 {
 	CancelIO();
+	// 等待数据处理完毕
+	if (IsProcessing()) {
+		ShowWindow(SW_HIDE);
+		return;
+	}
 
 	DialogBase::OnClose();
 }

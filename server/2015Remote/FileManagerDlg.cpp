@@ -883,10 +883,13 @@ void CFileManagerDlg::FixedRemoteDriveList()
 
 void CFileManagerDlg::OnClose() 
 {
-	// TODO: Add your message handler code here and/or call default
-	CoUninitialize();
-
 	CancelIO();
+	// 等待数据处理完毕
+	if (IsProcessing()) {
+		ShowWindow(SW_HIDE);
+		return;
+	}
+	CoUninitialize();
 
 	DialogBase::OnClose();
 }

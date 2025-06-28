@@ -115,6 +115,11 @@ void CAudioDlg::OnReceiveComplete(void)
 void CAudioDlg::OnClose()
 {
 	CancelIO();
+	// 等待数据处理完毕
+	if (IsProcessing()) {
+		ShowWindow(SW_HIDE);
+		return;
+	}
 
 	m_bIsWorking = FALSE;
 	WaitForSingleObject(m_hWorkThread, INFINITE);
