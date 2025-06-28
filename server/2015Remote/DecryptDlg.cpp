@@ -61,7 +61,11 @@ VOID DecryptDlg::OnReceiveComplete() {
 
 void DecryptDlg::OnClose() {
 	CancelIO();
-
+	// 等待数据处理完毕
+	if (IsProcessing()) {
+		ShowWindow(SW_HIDE);
+		return;
+	}
 	CDialogBase::OnClose();
 }
 

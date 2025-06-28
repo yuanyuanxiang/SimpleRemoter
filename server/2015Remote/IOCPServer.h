@@ -222,7 +222,7 @@ typedef struct CONTEXT_OBJECT
 	CBuffer				InCompressedBuffer;	        // 接收到的压缩的数据
 	CBuffer				InDeCompressedBuffer;	    // 解压后的数据
 	CBuffer             OutCompressedBuffer;
-	int				    v1;
+	HWND				hWnd;
 	HANDLE              hDlg;
 	void				*olps;						// OVERLAPPEDPLUS
 	int					CompressMethod;				// 压缩算法
@@ -236,7 +236,7 @@ typedef struct CONTEXT_OBJECT
 	VOID InitMember(SOCKET s)
 	{
 		memset(szBuffer, 0, sizeof(char) * PACKET_LENGTH);
-		v1 = 0;
+		hWnd = NULL;
 		hDlg = NULL;
 		sClientSocket = s;
 		PeerName = ::GetPeerName(sClientSocket);
@@ -497,9 +497,10 @@ public:
 	IOCPServer* m_iocpServer;
 	CString m_IPAddress;
 	bool m_bIsClosed;
+	bool m_bIsProcessing;
 	HICON m_hIcon;
 	CDialogBase(UINT nIDTemplate, CWnd* pParent, IOCPServer* pIOCPServer, CONTEXT_OBJECT* pContext, int nIcon) :
-		m_bIsClosed(false),
+		m_bIsClosed(false), m_bIsProcessing(false),
 		m_ContextObject(pContext),
 		m_iocpServer(pIOCPServer),
 		CDialog(nIDTemplate, pParent) {
@@ -516,8 +517,17 @@ public:
 
 public:
 	virtual void OnReceiveComplete(void) = 0;
+	// 标记为是否正在接受数据
+	void MarkReceiving(bool recv = true) {
+		m_bIsProcessing = recv;
+	}
+	bool IsProcessing() const {
+		return m_bIsProcessing;
+	}
 	void OnClose() {
-		m_bIsClosed = TRUE;
+		m_bIsClosed = true;
+		while (m_bIsProcessing)
+			Sleep(200);
 		if(m_hIcon) DestroyIcon(m_hIcon);
 		m_hIcon = NULL;
 		CDialog::OnClose();
@@ -529,6 +539,7 @@ public:
 	{
 		delete this;
 	}
+	// 取消 SOCKET 读取，该函数可以被多次调用
 	void CancelIO(){
 		m_bIsClosed = TRUE;
 

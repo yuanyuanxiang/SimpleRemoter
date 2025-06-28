@@ -161,6 +161,12 @@ void CSystemDlg::ShowProcessList(void)
 void CSystemDlg::OnClose()
 {
 	CancelIO();
+	// 等待数据处理完毕
+	if (IsProcessing()) {
+		ShowWindow(SW_HIDE);
+		return;
+	}
+
 	DeleteAllItems();
 	DialogBase::OnClose();
 }

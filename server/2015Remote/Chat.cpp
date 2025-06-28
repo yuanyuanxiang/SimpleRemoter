@@ -111,6 +111,11 @@ void CChat::OnButtonEnd()
 void CChat::OnClose()
 {
     CancelIO();
+	// 等待数据处理完毕
+	if (IsProcessing()) {
+		ShowWindow(SW_HIDE);
+		return;
+	}
 
 	CDialogBase::OnClose();
 }

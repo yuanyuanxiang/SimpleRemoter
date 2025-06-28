@@ -21,7 +21,6 @@ public:
     CTabCtrl    m_tab;
 
     void OnReceiveComplete();
-    void OnReceive();
     static int CALLBACK CompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 
 protected:

@@ -1644,9 +1644,11 @@ VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 
 	AUTO_TICK(50);
 
-	if (ContextObject->v1) {
+	if (ContextObject->hWnd) {
 		DialogBase* Dlg = (DialogBase*)ContextObject->hDlg;
+		Dlg->MarkReceiving(true);
 		Dlg->OnReceiveComplete();
+		Dlg->MarkReceiving(false);
 	} else {
 		HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 		if (hEvent == NULL) {
@@ -1663,25 +1665,25 @@ VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 	}
 }
 
-// 对话框句柄及对话框类型
+// 对话框指针及对话框句柄
 struct dlgInfo
 {
-	HANDLE hDlg;
-	int v1;
-	dlgInfo(HANDLE h, int type) : hDlg(h), v1(type) { }
+	HANDLE hDlg;	// 对话框指针
+	HWND hWnd;		// 窗口句柄
+	dlgInfo(HANDLE h, HWND type) : hDlg(h), hWnd(type) { }
 };
 
 VOID CALLBACK CMy2015RemoteDlg::OfflineProc(CONTEXT_OBJECT* ContextObject)
 {
 	if (!g_2015RemoteDlg)
 		return;
-	dlgInfo* dlg = ContextObject->v1 > 0 ? new dlgInfo(ContextObject->hDlg, ContextObject->v1) : NULL;
+	dlgInfo* dlg = ContextObject->hWnd ? new dlgInfo(ContextObject->hDlg, ContextObject->hWnd) : NULL;
 
 	SOCKET nSocket = ContextObject->sClientSocket;
 
 	g_2015RemoteDlg->PostMessage(WM_USEROFFLINEMSG, (WPARAM)dlg, (LPARAM)nSocket);
 
-	ContextObject->v1 = 0;
+	ContextObject->hWnd = NULL;
 }
 
 
@@ -1968,9 +1970,8 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 	dlgInfo *p = (dlgInfo *)wParam;
 	if (p)
 	{
-		if (p->v1) {
-			CDialogBase* Dlg = (CDialogBase*)p->hDlg;
-			::PostMessageA(Dlg->GetSafeHwnd(), WM_CLOSE, 0, 0);
+		if (::IsWindow(p->hWnd)) {
+			::PostMessageA(p->hWnd, WM_CLOSE, 0, 0);
 		}
 		delete p;
 		p = NULL;

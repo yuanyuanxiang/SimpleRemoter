@@ -154,7 +154,7 @@ public:
 		Dlg->Create(id, GetDesktopWindow());
 		Dlg->ShowWindow(Show);
 
-		ContextObject->v1 = id;
+		ContextObject->hWnd = Dlg->GetSafeHwnd();
 		ContextObject->hDlg = Dlg;
 
 		return 0;

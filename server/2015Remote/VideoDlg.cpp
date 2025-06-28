@@ -219,13 +219,17 @@ BOOL CVideoDlg::OnInitDialog()
 
 void CVideoDlg::OnClose()
 {
+	CancelIO();
+	// 等待数据处理完毕
+	if (IsProcessing()) {
+		ShowWindow(SW_HIDE);
+		return;
+	}
 	if (!m_aviFile.IsEmpty())
 	{
 		SaveAvi();
 		m_aviFile.Empty();
 	}
-
-	CancelIO();
 
 	DialogBase::OnClose();
 }

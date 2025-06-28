@@ -492,11 +492,12 @@ void CFileManagerDlg::fixNetHood(BYTE* pbuffer, int buffersize)
 
 void CFileManagerDlg::OnClose()
 {
-    if (m_bIsClosed) return;
-
     CancelIO();
-
-    DestroyIcon(m_hIcon);
+	// 等待数据处理完毕
+	if (IsProcessing()) {
+		ShowWindow(SW_HIDE);
+		return;
+	}
 
     DestroyCursor(m_hCursor);
 
