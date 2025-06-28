@@ -190,6 +190,7 @@
     <ClCompile Include="X264Encoder.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\common\location.h" />
     <ClInclude Include="..\server\2015Remote\pwd_gen.h" />
     <ClInclude Include="Audio.h" />
     <ClInclude Include="AudioManager.h" />

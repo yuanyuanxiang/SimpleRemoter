@@ -23,7 +23,7 @@
 #include "InputDlg.h"
 #include "CPasswordDlg.h"
 #include "pwd_gen.h"
-#include "parse_ip.h"
+#include "common/location.h"
 #include <proxy/ProxyMapDlg.h>
 #include "DateVerify.h"
 #include <fstream>
@@ -597,7 +597,11 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	bool modify = false;
 	CString loc = GetClientMapData(id, MAP_LOCATION);
 	if (loc.IsEmpty()) {
-		loc = GetGeoLocation(data[ONLINELIST_IP].GetString()).c_str();
+		loc = v[RES_CLIENT_LOC].c_str();
+		if (loc.IsEmpty()) {
+			IPConverter cvt;
+			loc = cvt.GetGeoLocation(data[ONLINELIST_IP].GetString()).c_str();
+		}
 		if (!loc.IsEmpty()) {
 			modify = true;
 			SetClientMapData(id, MAP_LOCATION, loc);
@@ -611,15 +615,16 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	if (modify)
 		SaveToFile(m_ClientMap, GetDbPath());
 	auto& m = m_ClientMap[ContextObject->ID];
-	int i = m_CList_Online.InsertItem(m_CList_Online.GetItemCount(), strIP);
+	bool flag = strIP == "127.0.0.1" && !v[RES_CLIENT_PUBIP].empty();
+	int i = m_CList_Online.InsertItem(m_CList_Online.GetItemCount(), flag ? v[RES_CLIENT_PUBIP].c_str() : strIP);
 	for (int n = ONLINELIST_ADDR; n <= ONLINELIST_CLIENTTYPE; n++) {
 		n == ONLINELIST_COMPUTER_NAME ? 
 			m_CList_Online.SetItemText(i, n, m.GetNote()[0] ? m.GetNote() : data[n]) :
 			m_CList_Online.SetItemText(i, n, data[n].IsEmpty() ? "?" : data[n]);
 	}
 	m_CList_Online.SetItemData(i,(DWORD_PTR)ContextObject);
-
-	ShowMessage("操作成功",strIP+"主机上线");
+	std::string tip = flag ? " (" + v[RES_CLIENT_PUBIP] + ") " : "";
+	ShowMessage("操作成功",strIP + tip.c_str() + "主机上线");
 	LeaveCriticalSection(&m_cs);
 
 	SendMasterSettings(ContextObject);
@@ -835,7 +840,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 #else
 	SetTimer(TIMER_CHECK, 600 * 1000, NULL);
 #endif
-	CString tip = !ip.empty() && ip != getPublicIP() ? 
+	IPConverter cvt;
+	CString tip = !ip.empty() && ip != cvt.getPublicIP() ? 
 		CString(ip.c_str()) + " 必须是\"公网IP\"或反向代理服务器IP":
 		"请设置\"公网IP\"，或使用反向代理服务器的IP";
 	ShowMessage("使用提示", tip);

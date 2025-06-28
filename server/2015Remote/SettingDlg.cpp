@@ -6,7 +6,7 @@
 #include "SettingDlg.h"
 #include "afxdialogex.h"
 #include "client/CursorInfo.h"
-#include "parse_ip.h"
+#include "common/location.h"
 
 // CSettingDlg 对话框
 
@@ -63,8 +63,9 @@ END_MESSAGE_MAP()
 BOOL CSettingDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
+	IPConverter cvt;
 	m_sPublicIP = THIS_CFG.GetStr("settings", "master", "").c_str();
-	m_sPublicIP = m_sPublicIP.IsEmpty() ? getPublicIP().c_str() : m_sPublicIP;
+	m_sPublicIP = m_sPublicIP.IsEmpty() ? cvt.getPublicIP().c_str() : m_sPublicIP;
 	int nPort = THIS_CFG.GetInt("settings", "ghost");
 	//读取ini 文件中的监听端口
 	int nMaxConnection = THIS_CFG.GetInt("settings", "MaxConnection");

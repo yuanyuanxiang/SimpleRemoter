@@ -531,7 +531,7 @@ void CMachineDlg::ShowNetStateList()
                     if (!IPAddress.Compare(_T("0.0.0.0")) || !IPAddress.Compare(_T("*.*.*.*"))) {
                         str = _T("---");
                     } else {
-                        str = m_IPConverter->IPtoAddress(IPAddress);
+                        str = m_IPConverter->IPtoAddress(IPAddress.GetString()).c_str();
                     }
                     m_list.SetItemText(i, j, str);
                 }
