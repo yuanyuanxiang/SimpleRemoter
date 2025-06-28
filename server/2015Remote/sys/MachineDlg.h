@@ -7,11 +7,7 @@
 // CMachineDlg dialog
 
 // TODO: 实现IP获取.
-class IPConverter
-{
-public:
-    CString IPtoAddress(const CString& ip) { return "implement me"; }
-};
+#include "common/location.h"
 
 
 class CMachineDlg : public DialogBase

@@ -633,6 +633,8 @@ enum LOGIN_RES {
 	RES_INSTALL_INFO = 7,					// 安装信息
 	RES_PROGRAM_BITS = 8,					// 程序位数
 	RES_EXPIRED_DATE = 9,					// 到期日期
+	RES_CLIENT_LOC = 10,					// 地理位置
+	RES_CLIENT_PUBIP = 11,					// 公网地址
 	RES_MAX,
 };
 

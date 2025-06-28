@@ -8,6 +8,7 @@
 #include <NTSecAPI.h>
 #include "common/skCrypter.h"
 #include <common/iniFile.h>
+#include <location.h>
 
 // by ChatGPT
 bool IsWindows11() {
@@ -284,6 +285,23 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 		strcmp(conn.szFlag, skCrypt("Happy New Year!")) == 0;
 	const char* id = isDefault ? masterHash.c_str() : conn.szFlag;
 	memcpy(LoginInfor.szMasterID, id, min(strlen(id), 16));
+	iniFile cfg(CLIENT_PATH);
+	std::string loc = cfg.GetStr("settings", "location", "");
+	std::string pubIP = cfg.GetStr("settings", "public_ip", "");
+	IPConverter cvt;
+	if (loc.empty()) {
+		std::string ip = cvt.getPublicIP();
+		if (pubIP.empty()) pubIP = ip;
+		loc = cvt.GetGeoLocation(pubIP);
+		cfg.SetStr("settings", "location", loc);
+	}
+	if (pubIP.empty()) {
+		pubIP = cvt.getPublicIP();
+		cfg.SetStr("settings", "public_ip", pubIP);
+	}
+	LoginInfor.AddReserved(loc.c_str());
+	LoginInfor.AddReserved(pubIP.c_str());
+
 	return LoginInfor;
 }
 
