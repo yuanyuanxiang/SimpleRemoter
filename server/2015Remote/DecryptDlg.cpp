@@ -60,7 +60,7 @@ VOID DecryptDlg::OnReceiveComplete() {
 }
 
 void DecryptDlg::OnClose() {
-	m_ContextObject->CancelIO();
+	CancelIO();
 
 	CDialogBase::OnClose();
 }

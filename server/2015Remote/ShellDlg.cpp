@@ -26,12 +26,8 @@ void CAutoEndEdit::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags) {
 IMPLEMENT_DYNAMIC(CShellDlg, CDialog)
 
 CShellDlg::CShellDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT *ContextObject)
-	: CDialog(CShellDlg::IDD, pParent)
+	: DialogBase(CShellDlg::IDD, pParent, IOCPServer, ContextObject, IDI_ICON_SHELL)
 {
-	m_iocpServer	= IOCPServer;
-	m_ContextObject		= ContextObject;
-
-	m_hIcon			= LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_SHELL)); 
 }
 
 CShellDlg::~CShellDlg()
@@ -60,15 +56,11 @@ BOOL CShellDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 	m_nCurSel = 0;
 	m_nReceiveLength = 0;
+	SetIcon(m_hIcon, TRUE);
 	SetIcon(m_hIcon,FALSE);
 
 	CString str;
-	sockaddr_in  ClientAddr;
-	memset(&ClientAddr, 0, sizeof(ClientAddr));
-	int ClientAddrLen = sizeof(ClientAddr);
-	BOOL bResult = getpeername(m_ContextObject->sClientSocket, (SOCKADDR*)&ClientAddr, &ClientAddrLen);
-
-	str.Format("%s - Ô¶³ÌÖÕ¶Ë", bResult != INVALID_SOCKET ? inet_ntoa(ClientAddr.sin_addr) : "");
+	str.Format("%s - Ô¶³ÌÖÕ¶Ë", m_IPAddress);
 	SetWindowText(str);
 
 	BYTE bToken = COMMAND_NEXT;
@@ -150,16 +142,9 @@ VOID CShellDlg::AddKeyBoardData(void)
 
 void CShellDlg::OnClose()
 {
-#if CLOSE_DELETE_DLG
-	m_ContextObject->v1 = 0;
-#endif
-	CancelIo((HANDLE)m_ContextObject->sClientSocket);
-	closesocket(m_ContextObject->sClientSocket);
+	CancelIO();
 
-	CDialog::OnClose();
-#if CLOSE_DELETE_DLG
-	delete this;
-#endif
+	DialogBase::OnClose();
 }
 
 

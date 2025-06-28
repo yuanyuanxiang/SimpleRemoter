@@ -12,17 +12,16 @@ public:
 
 // CShellDlg 对话框
 
-class CShellDlg : public CDialog
+class CShellDlg : public DialogBase
 {
 	DECLARE_DYNAMIC(CShellDlg)
 
 public:
 	CShellDlg(CWnd* pParent = NULL, IOCPServer* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL); 
 	virtual ~CShellDlg();
-	CONTEXT_OBJECT* m_ContextObject;
-	IOCPServer* m_iocpServer;
+
 	VOID OnReceiveComplete();
-	HICON       m_hIcon;
+
 	UINT m_nReceiveLength;
 	VOID AddKeyBoardData(void);
 	int m_nCurSel;   //获得当前数据所在位置;

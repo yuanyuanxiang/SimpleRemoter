@@ -147,7 +147,18 @@ public:
 	void SortByColumn(int nColumn);
 	afx_msg VOID OnHdnItemclickList(NMHDR* pNMHDR, LRESULT* pResult);
 	static int CALLBACK CompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
+	template<class T, int id, int Show=SW_SHOW> LRESULT OpenDialog(WPARAM wParam, LPARAM lParam)
+	{
+		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
+		T* Dlg = new T(this, m_iocpServer, ContextObject);
+		Dlg->Create(id, GetDesktopWindow());
+		Dlg->ShowWindow(Show);
 
+		ContextObject->v1 = id;
+		ContextObject->hDlg = Dlg;
+
+		return 0;
+	}
 	VOID InitControl();             //³õÊ¼¿Ø¼þ
 	VOID TestOnline();              //²âÊÔº¯Êý
 	VOID AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, CString strCPU, CString strVideo, CString strPing, 

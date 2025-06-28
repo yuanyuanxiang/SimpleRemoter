@@ -512,15 +512,27 @@ public:
 		m_IPAddress = bResult != INVALID_SOCKET ? inet_ntoa(sockAddr.sin_addr) : "";
 		m_hIcon = nIcon > 0 ? LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(nIcon)) : NULL;
 	}
+	virtual ~CDialogBase(){}
 
 public:
 	virtual void OnReceiveComplete(void) = 0;
 	void OnClose() {
+		m_bIsClosed = TRUE;
+		if(m_hIcon) DestroyIcon(m_hIcon);
+		m_hIcon = NULL;
 		CDialog::OnClose();
-		m_bIsClosed = true;
-#if CLOSE_DELETE_DLG
+
+		if (GetSafeHwnd())
+			DestroyWindow();
+	}
+	virtual void PostNcDestroy() override
+	{
 		delete this;
-#endif
+	}
+	void CancelIO(){
+		m_bIsClosed = TRUE;
+
+		m_ContextObject->CancelIO();
 	}
 };
 

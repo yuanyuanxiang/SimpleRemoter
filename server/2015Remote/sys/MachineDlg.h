@@ -32,10 +32,6 @@ protected:
     int                 m_nSortedCol;
     bool                m_bAscending;
     bool                m_bIsReceiving;
-    ClientContext*      m_pContext;
-    ISocketBase*        m_iocpServer;
-    HICON               m_hIcon;
-    BOOL                m_bOnClose;
     CMy2015RemoteDlg*   m_pMainWnd;
     CStatusBar          m_wndStatusBar;
     IPConverter*        m_IPConverter;

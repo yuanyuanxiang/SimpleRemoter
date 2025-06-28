@@ -82,9 +82,6 @@ namespace file {
         void SearchEnd();			// 搜索结束
         void FixedRemoteSearchFileList(BYTE* pbBuffer, DWORD dwBufferLen);
         int m_nNewIconBaseIndex; // 新加的ICON
-        ClientContext* m_pContext;
-        ISocketBase* m_iocpServer;
-        CString m_IPAddress;
         CProgressCtrl* m_ProgressCtrl;
         HCURSOR m_hCursor;
         CString m_Local_Path;
@@ -94,11 +91,10 @@ namespace file {
         void FixedRemoteFileList(BYTE* pbBuffer, DWORD dwBufferLen);
         void fixNetHood(BYTE* pbuffer, int buffersize);//远程共享目录
         bool id_search_result;
-        HICON m_hIcon;
         CStatusBar m_wndStatusBar;
         CFileManagerDlg(CWnd* pParent = NULL, ISocketBase* pIOCPServer = NULL, ClientContext* pContext = NULL);
         ~CFileManagerDlg() {
-            m_bOnClose = TRUE;
+            m_bIsClosed = TRUE;
             SAFE_DELETE(m_ProgressCtrl);
         }
         enum {
@@ -180,8 +176,6 @@ namespace file {
         afx_msg void OnBnClickedSearchResult();
         DECLARE_MESSAGE_MAP()
 
-    protected:
-        BOOL m_bOnClose;
     private:
         bool m_bIsUpload; // 是否是把本地主机传到远程上，标志方向位
         BOOL m_bDragging;	// during a drag operation

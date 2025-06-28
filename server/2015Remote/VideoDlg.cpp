@@ -91,7 +91,7 @@ void CVideoDlg::SaveAvi(void)
 		return;
 	}
 
-	CString	strFileName = m_strIPAddress + CTime::GetCurrentTime().Format("_%Y-%m-%d_%H-%M-%S.avi");
+	CString	strFileName = m_IPAddress + CTime::GetCurrentTime().Format("_%Y-%m-%d_%H-%M-%S.avi");
 	CFileDialog dlg(FALSE, "avi", strFileName, OFN_OVERWRITEPROMPT, "视频文件(*.avi)|*.avi|", this);
 	if(dlg.DoModal () != IDOK)
 		return;
@@ -109,19 +109,12 @@ void CVideoDlg::SaveAvi(void)
 
 
 CVideoDlg::CVideoDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT *ContextObject)
-	: CDialog(CVideoDlg::IDD, pParent)
+	: DialogBase(CVideoDlg::IDD, pParent, IOCPServer, ContextObject, IDI_ICON_CAMERA)
 {
 	m_nCount = 0;
 	m_aviFile.Empty();
-	m_ContextObject = ContextObject;
-	m_iocpServer = IOCPServer;
 	m_BitmapInfor_Full = NULL;
 	m_pVideoCodec      = NULL;
-	sockaddr_in  ClientAddress;
-	memset(&ClientAddress, 0, sizeof(ClientAddress));
-	int iClientAddressLength = sizeof(ClientAddress);
-	BOOL bResult = getpeername(m_ContextObject->sClientSocket, (SOCKADDR*)&ClientAddress, &iClientAddressLength);
-	m_strIPAddress = bResult != INVALID_SOCKET ? inet_ntoa(ClientAddress.sin_addr) : "";
 
 	m_BitmapData_Full = NULL;
 	m_BitmapCompressedData_Full = NULL;
@@ -209,7 +202,7 @@ BOOL CVideoDlg::OnInitDialog()
 
 		CString strString;
 
-		strString.Format("%s - 视频管理 %d×%d", m_strIPAddress, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
+		strString.Format("%s - 视频管理 %d×%d", m_IPAddress, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
 
 		SetWindowText(strString);
 
@@ -218,7 +211,6 @@ BOOL CVideoDlg::OnInitDialog()
 		m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, sizeof(BYTE));
 	}
 
-	m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_CAMERA));
 	SetIcon(m_hIcon, TRUE);
 	SetIcon(m_hIcon, FALSE);
 
@@ -232,16 +224,10 @@ void CVideoDlg::OnClose()
 		SaveAvi();
 		m_aviFile.Empty();
 	}
-#if CLOSE_DELETE_DLG
-	m_ContextObject->v1 = 0;
-#endif
-	CancelIo((HANDLE)m_ContextObject->sClientSocket);
-	closesocket(m_ContextObject->sClientSocket);
 
-	CDialog::OnClose();
-#if CLOSE_DELETE_DLG
-	delete this;
-#endif
+	CancelIO();
+
+	DialogBase::OnClose();
 }
 
 void CVideoDlg::OnReceiveComplete(void)

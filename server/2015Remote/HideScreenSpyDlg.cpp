@@ -38,15 +38,12 @@ enum {
 IMPLEMENT_DYNAMIC(CHideScreenSpyDlg, CDialog)
 
 CHideScreenSpyDlg::CHideScreenSpyDlg(CWnd* pParent, ISocketBase* pIOCPServer, ClientContext* pContext)
-    : DialogBase(CHideScreenSpyDlg::IDD, pParent, pIOCPServer, pContext, 0)
+    : DialogBase(CHideScreenSpyDlg::IDD, pParent, pIOCPServer, pContext, IDI_SCREENSYP)
 {
-    m_iocpServer = pIOCPServer;
-    m_ContextObject = pContext;
     m_bIsFirst = true; // 如果是第一次打开对话框，显示提示等待信息
     m_BitmapData_Full = NULL;
     m_lpvRectBits = NULL;
-    m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_SCREENSYP));
-    m_IPAddress = m_ContextObject->GetPeerName().c_str();
+
     UINT	nBISize = m_ContextObject->GetBufferLength() - 1;
     m_BitmapInfor_Full = (BITMAPINFO*) new BYTE[nBISize];
     m_lpbmi_rect = (BITMAPINFO*) new BYTE[nBISize];
@@ -97,7 +94,7 @@ END_MESSAGE_MAP()
 // CHideScreenSpyDlg message handlers
 void CHideScreenSpyDlg::OnClose()
 {
-    m_ContextObject->CancelIO();
+    CancelIO();
 
 	CDialogBase::OnClose();
 }

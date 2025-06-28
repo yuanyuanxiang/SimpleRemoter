@@ -392,6 +392,13 @@
     <Image Include="res\chat.ico" />
     <Image Include="res\decrypt.ico" />
     <Image Include="res\delete.bmp" />
+    <Image Include="res\file\FILE.ico" />
+    <Image Include="res\file\Icon_A.ico" />
+    <Image Include="res\file\Icon_C.ico" />
+    <Image Include="res\file\Icon_D.ico" />
+    <Image Include="res\file\Icon_E.ico" />
+    <Image Include="res\file\Icon_F.ico" />
+    <Image Include="res\file\Icon_G.ico" />
     <Image Include="res\icon2.ico" />
     <Image Include="res\keyboard.ico" />
     <Image Include="res\machine.ico" />

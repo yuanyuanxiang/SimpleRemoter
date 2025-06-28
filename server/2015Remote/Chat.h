@@ -24,8 +24,6 @@ protected:
 
 // Implementation
 protected:
-    ClientContext* m_pContext;
-    ISocketBase* m_iocpServer;
 
     virtual BOOL OnInitDialog();
     afx_msg void OnButtonSend();
@@ -36,9 +34,7 @@ protected:
     afx_msg void OnKillfocusEditChatLog();
 
     DECLARE_MESSAGE_MAP()
-private:
-    HICON m_hIcon;
-    BOOL m_bOnClose;
+
 public:
     CEdit m_editTip;
     CEdit m_editNewMsg;

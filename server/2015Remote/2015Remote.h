@@ -23,6 +23,10 @@ public:
 	config  *m_iniFile;
 	HANDLE m_Mutex;
 	IOCPServer* m_iocpServer;
+
+	CImageList m_pImageList_Large;  //系统大图标
+	CImageList m_pImageList_Small;	//系统小图标
+
 // 重写
 public:
 	virtual BOOL InitInstance();

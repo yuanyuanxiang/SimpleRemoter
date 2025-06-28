@@ -23,9 +23,6 @@
 // 移除对话框中MFC控件的支持，减小静态编译程序的大小
 #define _AFX_NO_MFC_CONTROLS_IN_DIALOGS
 
-// 关闭对话框时删除对话框
-#define CLOSE_DELETE_DLG 0
-
 // 检测内存泄漏，需安装VLD；否则请注释此行
 // 如果安装了VLD, 请将安装路径添加到环境变量: 名称为"VLDPATH", 路径为"D:\Program Files (x86)\Visual Leak Detector"
 // 请根据实际安装目录填写VLDPATH. 或者手动编辑每个项目文件的头文件目录和库目录. 有关下载VLD库的信息请参考下面链接.
@@ -83,28 +80,6 @@
 #define WM_OPENCHATDIALOG				WM_USER+3017
 #define WM_OPENDECRYPTDIALOG			WM_USER+3018
 #define WM_OPENFILEMGRDIALOG			WM_USER+3019
-
-enum
-{
-	FILEMANAGER_DLG = 1,
-	SCREENSPY_DLG,
-	VIDEO_DLG,
-	AUDIO_DLG,
-	KEYBOARD_DLG,
-	SYSTEM_DLG,
-	SHELL_DLG,
-	SERVICES_DLG,
-	REGISTER_DLG,
-	TALK_DLG,
-	MONITOR_DLG,
-	PROXY_DLG,
-	HIDESCREEN_DLG,
-	MACHINE_DLG,
-	CHAT_DLG,
-	DECRYPT_DLG,
-	FILEMGR_DLG,
-};
-
 
 #ifdef _UNICODE
 #if defined _M_IX86

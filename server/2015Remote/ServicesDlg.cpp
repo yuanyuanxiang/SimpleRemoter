@@ -21,10 +21,8 @@ typedef  struct  ItemData1
 } ItemData1;
 
 CServicesDlg::CServicesDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT *ContextObject)
-	: CDialog(CServicesDlg::IDD, pParent)
+	: DialogBase(CServicesDlg::IDD, pParent, IOCPServer, ContextObject, IDI_SERVICE)
 {
-	m_ContextObject = ContextObject;
-	m_iocpServer = IOCPServer;
 }
 
 CServicesDlg::~CServicesDlg()
@@ -41,6 +39,7 @@ void CServicesDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CServicesDlg, CDialog)
 	ON_WM_CLOSE()
+	ON_WM_SIZE()
 	ON_COMMAND(ID_SERVICES_AUTO, &CServicesDlg::OnServicesAuto)
 	ON_COMMAND(ID_SERVICES_MANUAL, &CServicesDlg::OnServicesManual)
 	ON_COMMAND(ID_SERVICES_STOP, &CServicesDlg::OnServicesStop)
@@ -58,12 +57,10 @@ BOOL CServicesDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
+	SetIcon(m_hIcon, TRUE);
+	SetIcon(m_hIcon, FALSE);
 	CString strString;
-	sockaddr_in  ClientAddress;
-	memset(&ClientAddress, 0, sizeof(ClientAddress));
-	int iClientAddressLength = sizeof(ClientAddress);
-	BOOL bResult = getpeername(m_ContextObject->sClientSocket, (SOCKADDR*)&ClientAddress, &iClientAddressLength);
-	strString.Format("%s - 服务管理", bResult != INVALID_SOCKET ? inet_ntoa(ClientAddress.sin_addr) : "");
+	strString.Format("%s - 服务管理",m_IPAddress);
 	SetWindowText(strString);
 
 	m_ControlList.SetExtendedStyle( LVS_EX_FULLROWSELECT);
@@ -120,17 +117,10 @@ int CServicesDlg::ShowServicesList(void)
 
 void CServicesDlg::OnClose()
 {
-	// TODO: 在此添加消息处理程序代码和/或调用默认值
-#if CLOSE_DELETE_DLG
-	m_ContextObject->v1 = 0;
-#endif
+	CancelIO();
 	DeleteAllItems();
-	CancelIo((HANDLE)m_ContextObject->sClientSocket);
-	closesocket(m_ContextObject->sClientSocket);
-	CDialog::OnClose();
-#if CLOSE_DELETE_DLG
-	delete this;
-#endif
+
+	DialogBase::OnClose();
 }
 
 
@@ -260,4 +250,19 @@ void CServicesDlg::ServicesConfig(BYTE bCmd)
 
 	m_iocpServer->OnClientPreSending(m_ContextObject, szBuffer, LocalSize(szBuffer));
 	LocalFree(szBuffer);
+}
+
+void CServicesDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CDialog::OnSize(nType, cx, cy);
+
+	if (!m_ControlList.GetSafeHwnd()) return; // 确保控件已创建
+
+	// 计算新位置和大小
+	CRect rc;
+	m_ControlList.GetWindowRect(&rc);
+	ScreenToClient(&rc);
+
+	// 重新设置控件大小
+	m_ControlList.MoveWindow(0, 0, cx, cy, TRUE);
 }

@@ -38,16 +38,13 @@ extern "C"
 
 // CScreenSpyDlg 对话框
 
-class CScreenSpyDlg : public CDialog
+class CScreenSpyDlg : public DialogBase
 {
 	DECLARE_DYNAMIC(CScreenSpyDlg)
 
 public:
 	CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);   
 	virtual ~CScreenSpyDlg();
-
-	CONTEXT_OBJECT* m_ContextObject;
-	IOCPServer*     m_iocpServer;
 
 	VOID SendNext(void);
 	VOID OnReceiveComplete();
@@ -63,11 +60,9 @@ public:
 	ULONG m_ulVScrollPos;
 	VOID DrawTipString(CString strString);
 
-	HICON  m_hIcon;
 	HICON  m_hCursor;
 	POINT  m_ClientCursorPos;
 	BYTE m_bCursorIndex;
-	CString  m_strClientIP;
 	BOOL     m_bIsTraceCursor;
 	CCursorInfo	m_CursorInfo; //自定义的一个系统的光标类
 	VOID SendCommand(const MSG64* Msg);
