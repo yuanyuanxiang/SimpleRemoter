@@ -250,4 +250,5 @@ public:
 	afx_msg void OnOnlineAuthorize();
 	void OnListClick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnOnlineUnauthorize();
+	afx_msg void OnToolRequestAuth();
 };
