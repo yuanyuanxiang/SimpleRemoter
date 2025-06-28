@@ -40,7 +40,9 @@ CMachineDlg::CMachineDlg(CWnd* pParent, ISocketBase* pIOCPServer, ClientContext*
 }
 
 CMachineDlg::~CMachineDlg() {
+    m_bOnClose = TRUE;
     SAFE_DELETE(m_IPConverter);
+    DeleteList();
 }
 
 // 如果用`SortItemsEx`函数对列表排序则不需要定义这个结构体,
@@ -204,6 +206,7 @@ CString CMachineDlg::__MakePriority(DWORD dwPriClass)
 void CMachineDlg::OnReceive()
 {
 }
+
 void CMachineDlg::OnReceiveComplete()
 {
     if (m_bOnClose) return;
