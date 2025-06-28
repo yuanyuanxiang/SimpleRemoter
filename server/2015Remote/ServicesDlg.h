@@ -5,15 +5,14 @@
 
 // CServicesDlg 对话框
 
-class CServicesDlg : public CDialog
+class CServicesDlg : public DialogBase
 {
 	DECLARE_DYNAMIC(CServicesDlg)
 
 public:
 	CServicesDlg(CWnd* pParent = NULL, IOCPServer* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // 标准构造函数
 	virtual ~CServicesDlg();
-	CONTEXT_OBJECT* m_ContextObject;
-	IOCPServer*     m_iocpServer;
+
 	int ShowServicesList(void);
 	void OnReceiveComplete(void);
 	void ServicesConfig(BYTE bCmd);
@@ -41,4 +40,5 @@ public:
 	afx_msg void OnServicesStart();
 	afx_msg void OnServicesReflash();
 	afx_msg void OnNMRClickList(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnSize(UINT nType, int cx, int cy);
 };

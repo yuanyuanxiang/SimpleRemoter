@@ -5,17 +5,14 @@
 
 // CAudioDlg 对话框
 
-class CAudioDlg : public CDialog
+class CAudioDlg : public DialogBase
 {
 	DECLARE_DYNAMIC(CAudioDlg)
 
 public:
 	CAudioDlg(CWnd* pParent = NULL, IOCPServer* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // 标准构造函数
 	virtual ~CAudioDlg();
-	CONTEXT_OBJECT* m_ContextObject;
-	IOCPServer*     m_iocpServer;
-	HICON          m_hIcon;
-	CString       m_strIPAddress;
+
 	DWORD         m_nTotalRecvBytes;
 	BOOL          m_bIsWorking;
 	BOOL		  m_bThreadRun;

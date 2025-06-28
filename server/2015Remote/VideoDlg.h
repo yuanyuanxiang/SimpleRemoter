@@ -158,17 +158,13 @@ public:
 
 // CVideoDlg 对话框
 
-class CVideoDlg : public CDialog
+class CVideoDlg : public DialogBase
 {
 	DECLARE_DYNAMIC(CVideoDlg)
-	HICON m_hIcon;
 
 public:
 	CVideoDlg(CWnd* pParent = NULL, IOCPServer* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // 标准构造函数
 	virtual ~CVideoDlg();
-	CONTEXT_OBJECT* m_ContextObject;
-	IOCPServer*     m_iocpServer;
-	CString    m_strIPAddress;
 
 	LPBITMAPINFO m_BitmapInfor_Full;
 	BYTE*        m_BitmapData_Full;

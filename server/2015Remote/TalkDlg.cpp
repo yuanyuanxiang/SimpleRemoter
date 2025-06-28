@@ -11,10 +11,8 @@
 IMPLEMENT_DYNAMIC(CTalkDlg, CDialog)
 
 CTalkDlg::CTalkDlg(CWnd* pParent,IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
-	: CDialog(CTalkDlg::IDD, pParent)
+	: DialogBase(CTalkDlg::IDD, pParent, IOCPServer, ContextObject, IDR_MAINFRAME)
 {
-	m_iocpServer	= IOCPServer;
-	m_ContextObject	= ContextObject;
 }
 
 CTalkDlg::~CTalkDlg()
@@ -42,7 +40,6 @@ BOOL CTalkDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
-	m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDR_MAINFRAME));
 	SetIcon(m_hIcon, FALSE);
 	BYTE bToken = COMMAND_NEXT;  
 	m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, sizeof(BYTE));
@@ -95,14 +92,7 @@ BOOL CTalkDlg::PreTranslateMessage(MSG* pMsg)
 
 void CTalkDlg::OnClose()
 {
-	// TODO: 在此添加消息处理程序代码和/或调用默认值
-#if CLOSE_DELETE_DLG
-	m_ContextObject->v1 = 0;
-#endif
-	CancelIo((HANDLE)m_ContextObject->sClientSocket);
-	closesocket(m_ContextObject->sClientSocket);
-	CDialog::OnClose();
-#if CLOSE_DELETE_DLG
-	delete this;
-#endif
+	CancelIO();
+
+	DialogBase::OnClose();
 }

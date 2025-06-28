@@ -13,7 +13,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // CKeyBoardDlg dialog
 
-class CKeyBoardDlg : public CDialog
+class CKeyBoardDlg : public DialogBase
 {
 // Construction
 public:
@@ -38,12 +38,8 @@ protected:
 
 // Implementation
 protected:
-    ClientContext* m_pContext;
-    CIOCPServer* m_iocpServer;
-    HICON m_hIcon;
     bool m_bIsOfflineRecord;
 
-    CString m_IPAddress;
     void AddKeyBoardData();
     void UpdateTitle();
     void ResizeEdit();

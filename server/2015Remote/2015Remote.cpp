@@ -107,6 +107,12 @@ BOOL CMy2015RemoteApp::InitInstance()
 
 	SetUnhandledExceptionFilter(&whenbuged);
 
+	SHFILEINFO	sfi = {};
+	HIMAGELIST hImageList = (HIMAGELIST)SHGetFileInfo((LPCTSTR)_T(""), 0, &sfi, sizeof(SHFILEINFO), SHGFI_LARGEICON | SHGFI_SYSICONINDEX);
+	m_pImageList_Large.Attach(hImageList);
+	hImageList = (HIMAGELIST)SHGetFileInfo((LPCTSTR)_T(""), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SMALLICON | SHGFI_SYSICONINDEX);
+	m_pImageList_Small.Attach(hImageList);
+
 	// 如果一个运行在 Windows XP 上的应用程序清单指定要
 	// 使用 ComCtl32.dll 版本 6 或更高版本来启用可视化方式，
 	//则需要 InitCommonControlsEx()。否则，将无法创建窗口。

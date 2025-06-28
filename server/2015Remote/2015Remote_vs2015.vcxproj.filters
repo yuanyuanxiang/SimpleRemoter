@@ -140,6 +140,13 @@
     <Image Include="res\toolbar2.bmp" />
     <Image Include="res\update.bmp" />
     <Image Include="res\webcam.ico" />
+    <Image Include="res\file\FILE.ico" />
+    <Image Include="res\file\Icon_A.ico" />
+    <Image Include="res\file\Icon_C.ico" />
+    <Image Include="res\file\Icon_D.ico" />
+    <Image Include="res\file\Icon_E.ico" />
+    <Image Include="res\file\Icon_F.ico" />
+    <Image Include="res\file\Icon_G.ico" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Release\ghost.exe" />

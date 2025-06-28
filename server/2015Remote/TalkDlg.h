@@ -4,7 +4,7 @@
 
 // CTalkDlg 对话框
 
-class CTalkDlg : public CDialog
+class CTalkDlg : public DialogBase
 {
 	DECLARE_DYNAMIC(CTalkDlg)
 
@@ -14,9 +14,10 @@ public:
 
 	// 对话框数据
 	enum { IDD = IDD_DIALOG_TALK };
-	CONTEXT_OBJECT* m_ContextObject;
-	IOCPServer*     m_iocpServer;
-	HICON m_hIcon;
+
+	void OnReceiveComplete(void){
+	}
+
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 

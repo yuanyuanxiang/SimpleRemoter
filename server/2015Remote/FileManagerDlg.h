@@ -43,7 +43,7 @@ typedef struct
 // CFileManagerDlg dialog
 typedef CList<CString, CString&> strList;
 
-class CFileManagerDlg : public CDialog
+class CFileManagerDlg : public DialogBase
 {
 protected:
 	// 更新状态栏信息
@@ -94,10 +94,6 @@ public:
 
 	int m_nNewIconBaseIndex; // 新加的ICON
 
-	ClientContext* m_pContext;
-	CIOCPServer* m_iocpServer;
-	CString m_IPAddress;
-
 	CProgressCtrl* m_ProgressCtrl;
 	HCURSOR m_hCursor;
 	CString m_Local_Path;
@@ -108,10 +104,9 @@ public:
 	void GetRemoteFileList(CString directory = "");
 	void FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen);
 
-	HICON m_hIcon;
 	CStatusBar m_wndStatusBar;
 	CFileManagerDlg(CWnd* pParent = NULL, CIOCPServer* pIOCPServer = NULL, ClientContext *pContext = NULL);   // standard constructor
-	bool m_bIsClosed;
+
 	~CFileManagerDlg()
 	{
 		if(m_ProgressCtrl) delete m_ProgressCtrl;

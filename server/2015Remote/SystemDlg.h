@@ -4,15 +4,14 @@
 #include "IOCPServer.h"
 // CSystemDlg ¶Ô»°¿ò
 
-class CSystemDlg : public CDialog
+class CSystemDlg : public DialogBase
 {
 	DECLARE_DYNAMIC(CSystemDlg)
 
 public:
 	CSystemDlg(CWnd* pParent = NULL, IOCPServer* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL); 
 	virtual ~CSystemDlg();
-	CONTEXT_OBJECT* m_ContextObject;
-	IOCPServer*     m_iocpServer;
+
 	VOID GetProcessList(void);
 	VOID ShowProcessList(void);
 	void ShowWindowsList(void);
@@ -45,4 +44,5 @@ public:
 	afx_msg void OnWlistRecover();
 	afx_msg void OnWlistMax();
 	afx_msg void OnWlistMin();
+	afx_msg void OnSize(UINT nType, int cx, int cy);
 };

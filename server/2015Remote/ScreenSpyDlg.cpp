@@ -32,7 +32,7 @@ extern "C" void* x265_api_get_192() { return nullptr; }
 extern "C" char* __imp_strtok(char* str, const char* delim) { return strtok(str, delim); }
 
 CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
-	: CDialog(CScreenSpyDlg::IDD, Parent)
+	: DialogBase(CScreenSpyDlg::IDD, Parent, IOCPServer, ContextObject, 0)
 {
 	m_pCodec = nullptr;
 	m_pCodecContext = nullptr;
@@ -52,21 +52,11 @@ CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJEC
 	ImmDisableIME(0);// 禁用输入法
 	m_bFullScreen = FALSE;
 
-	m_iocpServer	= IOCPServer;
-	m_ContextObject	= ContextObject;
-
 	CHAR szFullPath[MAX_PATH];
 	GetSystemDirectory(szFullPath, MAX_PATH);
 	lstrcat(szFullPath, "\\shell32.dll");  //图标
 	m_hIcon = ExtractIcon(THIS_APP->m_hInstance, szFullPath, 17);
 	m_hCursor = LoadCursor(THIS_APP->m_hInstance, MAKEINTRESOURCE(IDC_ARROWS));
-
-	sockaddr_in  ClientAddr;
-	memset(&ClientAddr, 0, sizeof(ClientAddr));
-	int ulClientAddrLen = sizeof(sockaddr_in);
-	BOOL bOk = getpeername(m_ContextObject->sClientSocket,(SOCKADDR*)&ClientAddr, &ulClientAddrLen);
-
-	m_strClientIP = bOk != INVALID_SOCKET ? inet_ntoa(ClientAddr.sin_addr) : "";
 
 	m_bIsFirst = TRUE;
 	m_ulHScrollPos = 0;
@@ -145,7 +135,7 @@ BOOL CScreenSpyDlg::OnInitDialog()
 	SetIcon(m_hIcon,FALSE);
 
 	CString strString;
-	strString.Format("%s - 远程桌面控制 %d×%d", m_strClientIP, 
+	strString.Format("%s - 远程桌面控制 %d×%d", m_IPAddress, 
 		m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
 	SetWindowText(strString);
 
@@ -188,16 +178,9 @@ BOOL CScreenSpyDlg::OnInitDialog()
 
 VOID CScreenSpyDlg::OnClose()
 {
-#if CLOSE_DELETE_DLG
-	m_ContextObject->v1 = 0;
-#endif
-	CancelIo((HANDLE)m_ContextObject->sClientSocket);
-	closesocket(m_ContextObject->sClientSocket);
+	CancelIO();
 
-	CDialog::OnClose();
-#if CLOSE_DELETE_DLG
-	delete this;
-#endif
+	DialogBase::OnClose();
 }
 
 
@@ -578,7 +561,7 @@ VOID CScreenSpyDlg::SendCommand(const MSG64* Msg)
 
 BOOL CScreenSpyDlg::SaveSnapshot(void)
 {
-	CString	strFileName = m_strClientIP + CTime::GetCurrentTime().Format("_%Y-%m-%d_%H-%M-%S.bmp");
+	CString	strFileName = m_IPAddress + CTime::GetCurrentTime().Format("_%Y-%m-%d_%H-%M-%S.bmp");
 	CFileDialog Dlg(FALSE, "bmp", strFileName, OFN_OVERWRITEPROMPT, "位图文件(*.bmp)|*.bmp|", this);
 	if(Dlg.DoModal () != IDOK)
 		return FALSE;
