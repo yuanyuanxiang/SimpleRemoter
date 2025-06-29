@@ -18,10 +18,15 @@
 
 #pragma comment(lib,"Strmiids.lib")
 
+// TODO 全局变量, 定义位置：qedit.h
+
+// 接口 ID	回调接口，用于在每一帧抓取时通知应用
 EXTERN_C const IID IID_ISampleGrabberCB;
 
+// 类 ID	创建 Sample Grabber COM 对象
 EXTERN_C const CLSID CLSID_SampleGrabber;
 
+// 	接口 ID	设置 Sample Grabber 的参数、格式、回调等操作接口
 EXTERN_C const IID IID_ISampleGrabber;
 
 struct ISampleGrabberCB : public IUnknown
@@ -35,7 +40,6 @@ public:
 		double SampleTime,
 		BYTE* pBuffer,
 		long BufferLen) = 0;
-
 };
 
 struct ISampleGrabber : public IUnknown

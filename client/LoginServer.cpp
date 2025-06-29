@@ -254,11 +254,11 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 	GetModuleFileNameA(NULL, buf, sizeof(buf));
 	LoginInfor.AddReserved(buf);                        // 文件路径
 	LoginInfor.AddReserved("?");						// test
-	std::string installTime;
-	auto b = ReadAppSettingA("install_time", installTime);
-	if (!b || installTime.empty()) {
-		installTime = ToPekingTimeAsString(nullptr);;
-		WriteAppSettingA("install_time", installTime);
+	iniFile cfg(CLIENT_PATH);
+	std::string installTime = cfg.GetStr("settings", "install_time");
+	if (installTime.empty()) {
+		installTime = ToPekingTimeAsString(nullptr);
+		cfg.SetStr("settings", "install_time", installTime);
 	}
 	LoginInfor.AddReserved(installTime.c_str());		// 安装时间
 	LoginInfor.AddReserved("?");						// 安装信息
@@ -285,7 +285,6 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 		strcmp(conn.szFlag, skCrypt("Happy New Year!")) == 0;
 	const char* id = isDefault ? masterHash.c_str() : conn.szFlag;
 	memcpy(LoginInfor.szMasterID, id, min(strlen(id), 16));
-	iniFile cfg(CLIENT_PATH);
 	std::string loc = cfg.GetStr("settings", "location", "");
 	std::string pubIP = cfg.GetStr("settings", "public_ip", "");
 	IPConverter cvt;
