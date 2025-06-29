@@ -146,7 +146,7 @@ void CRegisterDlg::OnTvnSelchangedTree(NMHDR *pNMHDR, LRESULT *pResult)
 	bToken=COMMAND_REG_FIND;
 	strFullPath.Insert(0,bToken);      //²åÈë²éÑ¯ÃüÁî  [COMMAND_REG_FIND][x]
 
-	m_iocpServer->Send2Client(m_ContextObject, (LPBYTE)(strFullPath.GetBuffer(0)), strFullPath.GetLength()+1);
+	m_ContextObject->Send2Client((LPBYTE)(strFullPath.GetBuffer(0)), strFullPath.GetLength()+1);
 
 	m_isEnable = TRUE;
 

@@ -114,7 +114,7 @@ void CALLBACK CProxyMapDlg::NotifyProc(void *user, ClientContext* pContext, UINT
                 BYTE lpData[5] = "";
                 lpData[0] = COMMAND_PROXY_CLOSE;
                 memcpy(lpData + 1, &index, sizeof(DWORD));
-                g_pProxyMap->m_iocpServer->Send2Client(g_pProxyMap->m_ContextObject, lpData, 5);
+                g_pProxyMap->m_ContextObject->Send2Client(lpData, 5);
             }
             wsprintf(szMsg, _T("%d 本地连接断开\r\n"), index);
             break;
@@ -122,7 +122,7 @@ void CALLBACK CProxyMapDlg::NotifyProc(void *user, ClientContext* pContext, UINT
             break;
         case NC_RECEIVE:
             if (pContext->m_bProxyConnected == 2) {
-                g_pProxyMap->m_iocpServer->Send2Client(g_pProxyMap->m_ContextObject, pContext->InDeCompressedBuffer.GetBuffer(0),
+                g_pProxyMap->m_ContextObject->Send2Client(pContext->InDeCompressedBuffer.GetBuffer(0),
                                                 pContext->InDeCompressedBuffer.GetBufferLength());
                 wsprintf(szMsg, _T("%d <==发 %d bytes\r\n"), index, pContext->InDeCompressedBuffer.GetBufferLength() - 5);
             } else if (pContext->m_bProxyConnected == 0) {
@@ -139,7 +139,7 @@ void CALLBACK CProxyMapDlg::NotifyProc(void *user, ClientContext* pContext, UINT
                         buf[0] = COMMAND_PROXY_CONNECT; // 1个字节 ip v4 连接
                         memcpy(buf + 1, &index, 4);		 // 四个字节 套接字的编号
                         memcpy(buf + 5, lpData + 4, 6);	 // 4字节ip 2字节端口
-                        g_pProxyMap->m_iocpServer->Send2Client(g_pProxyMap->m_ContextObject, buf, sizeof(buf));
+                        g_pProxyMap->m_ContextObject->Send2Client(buf, sizeof(buf));
                         in_addr inaddr = {};
                         inaddr.s_addr = *(DWORD*)(buf + 5);
                         char szmsg1[MAX_PATH];
@@ -152,7 +152,7 @@ void CALLBACK CProxyMapDlg::NotifyProc(void *user, ClientContext* pContext, UINT
                         memcpy(HostName + 7, &Socks5Request->szIP, Socks5Request->IP_LEN);
                         memcpy(HostName + 1, &index, 4);
                         memcpy(HostName + 5, &Socks5Request->szIP + Socks5Request->IP_LEN, 2);
-                        g_pProxyMap->m_iocpServer->Send2Client(g_pProxyMap->m_ContextObject, HostName, Socks5Request->IP_LEN + 8);
+                        g_pProxyMap->m_ContextObject->Send2Client(HostName, Socks5Request->IP_LEN + 8);
                         SAFE_DELETE_ARRAY(HostName);
                         wsprintf(szMsg, _T("域名 连接 %d \r\n"), index);
                     } else if (lpData[3] == 4) { //ipv6

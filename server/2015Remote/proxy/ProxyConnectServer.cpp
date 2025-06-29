@@ -61,7 +61,7 @@ EnHandleResult CProxyConnectServer::OnAccept(ITcpServer* pSender, CONNID dwConnI
     if (pContext == NULL)
         return HR_ERROR;
     
-    pContext->InitMember(dwConnID);
+    pContext->InitMember(dwConnID, nullptr);
     pContext->m_Socket = dwConnID;
     char szAddress[64] = {};
     int iAddressLen = sizeof(szAddress);

@@ -42,7 +42,7 @@ BOOL CTalkDlg::OnInitDialog()
 
 	SetIcon(m_hIcon, FALSE);
 	BYTE bToken = COMMAND_NEXT;  
-	m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));
+	m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// 异常: OCX 属性页应返回 FALSE
@@ -66,7 +66,7 @@ void CTalkDlg::OnBnClickedButtonTalk()
 
 	m_EditTalk.SetWindowText(NULL);
 
-	m_iocpServer->Send2Client(m_ContextObject, (LPBYTE)szBuffer, strlen(szBuffer));
+	m_ContextObject->Send2Client((LPBYTE)szBuffer, strlen(szBuffer));
 }
 
 

@@ -56,7 +56,7 @@ BOOL CAudioDlg::OnInitDialog()
 	SetWindowText(strString);
 
 	BYTE bToken = COMMAND_NEXT;
-	m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));
+	m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
 
 	//启动线程 判断CheckBox
 	m_hWorkThread = CreateThread(NULL, 0, WorkThread, (LPVOID)this, 0, NULL);
@@ -84,7 +84,7 @@ DWORD  CAudioDlg::WorkThread(LPVOID lParam)
 		LPBYTE	szBuffer = This->m_AudioObject.GetRecordBuffer(&dwBufferSize);   //播放声音
 
 		if (szBuffer != NULL && dwBufferSize > 0)
-			This->m_iocpServer->Send2Client(This->m_ContextObject, szBuffer, dwBufferSize); //没有消息头
+			This->m_ContextObject->Send2Client(szBuffer, dwBufferSize); //没有消息头
 	}
 	This->m_bThreadRun = FALSE;
 

