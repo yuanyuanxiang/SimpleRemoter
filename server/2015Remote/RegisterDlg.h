@@ -10,7 +10,7 @@ class CRegisterDlg : public DialogBase
 	DECLARE_DYNAMIC(CRegisterDlg)
 
 public:
-	CRegisterDlg(CWnd* Parent, IOCPServer* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);   // 标准构造函数
+	CRegisterDlg(CWnd* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);   // 标准构造函数
 	virtual ~CRegisterDlg();
 
 // 对话框数据

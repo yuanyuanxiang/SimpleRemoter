@@ -14,14 +14,10 @@
 
 #define IDM_PROXY_CHROME      8000
 
-CProxyMapDlg::CProxyMapDlg(CWnd* pParent, ISocketBase* pIOCPServer, ClientContext* pContext)
-    : CDialog(CProxyMapDlg::IDD, pParent)
+CProxyMapDlg::CProxyMapDlg(CWnd* pParent, Server* pIOCPServer, ClientContext* pContext)
+    : CDialogBase(CProxyMapDlg::IDD, pParent, pIOCPServer, pContext, IDI_Proxifier)
 {
-    m_iocpServer = pIOCPServer;
-    m_ContextObject = pContext;
     m_iocpLocal = NULL;
-    m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_Proxifier));
-    m_bIsClose = false;
 }
 
 void CProxyMapDlg::DoDataExchange(CDataExchange* pDX)
@@ -87,24 +83,24 @@ BOOL CProxyMapDlg::OnInitDialog()
 
 void CProxyMapDlg::OnCancel()
 {
-    if (m_bIsClose) return;
+    m_bIsClosed = true;
+	// 等待数据处理完毕
+	if (IsProcessing()) {
+		ShowWindow(SW_HIDE);
+		return;
+	}
+	m_iocpLocal->Shutdown();
+	SAFE_DELETE(m_iocpLocal);
 
-    m_bIsClose = true;
-    m_iocpServer->Disconnect(m_ContextObject);
-    DestroyIcon(m_hIcon);
-    m_iocpLocal->Shutdown();
-    SAFE_DELETE(m_iocpLocal);
-	CancelIo((HANDLE)m_ContextObject->sClientSocket);
-	closesocket(m_ContextObject->sClientSocket);
-    Sleep(50);
-    if (IsWindow(m_hWnd))
-        DestroyWindow();
+    CancelIO();
+
+    DialogBase::OnClose();
 }
 
 void CALLBACK CProxyMapDlg::NotifyProc(void *user, ClientContext* pContext, UINT nCode)
 {
     CProxyMapDlg* g_pProxyMap = (CProxyMapDlg*)user;
-    if (g_pProxyMap->m_bIsClose) return;
+    if (g_pProxyMap->m_bIsClosed) return;
 
     DWORD index = pContext->ID;
     TCHAR szMsg[200] = { 0 };
@@ -118,7 +114,7 @@ void CALLBACK CProxyMapDlg::NotifyProc(void *user, ClientContext* pContext, UINT
                 BYTE lpData[5] = "";
                 lpData[0] = COMMAND_PROXY_CLOSE;
                 memcpy(lpData + 1, &index, sizeof(DWORD));
-                g_pProxyMap->m_iocpServer->Send(g_pProxyMap->m_ContextObject, lpData, 5);
+                g_pProxyMap->m_iocpServer->Send2Client(g_pProxyMap->m_ContextObject, lpData, 5);
             }
             wsprintf(szMsg, _T("%d 本地连接断开\r\n"), index);
             break;
@@ -126,7 +122,7 @@ void CALLBACK CProxyMapDlg::NotifyProc(void *user, ClientContext* pContext, UINT
             break;
         case NC_RECEIVE:
             if (pContext->m_bProxyConnected == 2) {
-                g_pProxyMap->m_iocpServer->Send(g_pProxyMap->m_ContextObject, pContext->InDeCompressedBuffer.GetBuffer(0),
+                g_pProxyMap->m_iocpServer->Send2Client(g_pProxyMap->m_ContextObject, pContext->InDeCompressedBuffer.GetBuffer(0),
                                                 pContext->InDeCompressedBuffer.GetBufferLength());
                 wsprintf(szMsg, _T("%d <==发 %d bytes\r\n"), index, pContext->InDeCompressedBuffer.GetBufferLength() - 5);
             } else if (pContext->m_bProxyConnected == 0) {
@@ -143,7 +139,7 @@ void CALLBACK CProxyMapDlg::NotifyProc(void *user, ClientContext* pContext, UINT
                         buf[0] = COMMAND_PROXY_CONNECT; // 1个字节 ip v4 连接
                         memcpy(buf + 1, &index, 4);		 // 四个字节 套接字的编号
                         memcpy(buf + 5, lpData + 4, 6);	 // 4字节ip 2字节端口
-                        g_pProxyMap->m_iocpServer->Send(g_pProxyMap->m_ContextObject, buf, sizeof(buf));
+                        g_pProxyMap->m_iocpServer->Send2Client(g_pProxyMap->m_ContextObject, buf, sizeof(buf));
                         in_addr inaddr = {};
                         inaddr.s_addr = *(DWORD*)(buf + 5);
                         char szmsg1[MAX_PATH];
@@ -156,7 +152,7 @@ void CALLBACK CProxyMapDlg::NotifyProc(void *user, ClientContext* pContext, UINT
                         memcpy(HostName + 7, &Socks5Request->szIP, Socks5Request->IP_LEN);
                         memcpy(HostName + 1, &index, 4);
                         memcpy(HostName + 5, &Socks5Request->szIP + Socks5Request->IP_LEN, 2);
-                        g_pProxyMap->m_iocpServer->Send(g_pProxyMap->m_ContextObject, HostName, Socks5Request->IP_LEN + 8);
+                        g_pProxyMap->m_iocpServer->Send2Client(g_pProxyMap->m_ContextObject, HostName, Socks5Request->IP_LEN + 8);
                         SAFE_DELETE_ARRAY(HostName);
                         wsprintf(szMsg, _T("域名 连接 %d \r\n"), index);
                     } else if (lpData[3] == 4) { //ipv6
@@ -193,7 +189,7 @@ void CProxyMapDlg::OnReceiveComplete()
     if (m_iocpLocal == NULL)
         return;
 
-    if (m_iocpLocal->m_TcpServer->HasStarted() == FALSE || m_bIsClose)
+    if (m_iocpLocal->m_TcpServer->HasStarted() == FALSE || m_bIsClosed)
         return;
 
     LPBYTE buf = m_ContextObject->m_DeCompressionBuffer.GetBuffer(0);
@@ -255,14 +251,14 @@ void CProxyMapDlg::OnReceiveComplete()
 
 void CProxyMapDlg::AddLog(TCHAR* lpText)
 {
-    if (m_bIsClose == TRUE) return;
+    if (m_bIsClosed == TRUE) return;
     m_Edit.SetSel(-1, -1);
     m_Edit.ReplaceSel(lpText);
 }
 
 void CProxyMapDlg::AddLog_other(TCHAR* lpText)
 {
-    if (m_bIsClose == TRUE) return;
+    if (m_bIsClosed == TRUE) return;
     m_EditOther.SetSel(-1, -1);
     m_EditOther.ReplaceSel(lpText);
 }
@@ -284,15 +280,6 @@ void CProxyMapDlg::OnSize(UINT nType, int cx, int cy)
     rectEdit.bottom = rectClient.bottom;
     m_Edit.MoveWindow(&rectEdit);
 }
-
-void CProxyMapDlg::PostNcDestroy()
-{
-    if (!m_bIsClose)
-        OnCancel();
-    CDialog::PostNcDestroy();
-    delete this;
-}
-
 
 void CProxyMapDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {

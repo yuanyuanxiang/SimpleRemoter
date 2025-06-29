@@ -20,6 +20,9 @@
 #include <TlHelp32.h>
 #include "LoginServer.h"
 
+// 根据配置决定采用什么通讯协议
+IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, bool exit_while_disconnect = false);
+
 ThreadInfo* CreateKB(CONNECT_ADDRESS* conn, State& bExit);
 
 class ActivityWindow {

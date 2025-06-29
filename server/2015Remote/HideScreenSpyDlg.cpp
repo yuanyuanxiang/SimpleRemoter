@@ -37,7 +37,7 @@ enum {
 
 IMPLEMENT_DYNAMIC(CHideScreenSpyDlg, CDialog)
 
-CHideScreenSpyDlg::CHideScreenSpyDlg(CWnd* pParent, ISocketBase* pIOCPServer, ClientContext* pContext)
+CHideScreenSpyDlg::CHideScreenSpyDlg(CWnd* pParent, Server* pIOCPServer, ClientContext* pContext)
     : DialogBase(CHideScreenSpyDlg::IDD, pParent, pIOCPServer, pContext, IDI_SCREENSYP)
 {
     m_bIsFirst = true; // 如果是第一次打开对话框，显示提示等待信息

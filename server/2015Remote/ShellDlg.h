@@ -17,7 +17,7 @@ class CShellDlg : public DialogBase
 	DECLARE_DYNAMIC(CShellDlg)
 
 public:
-	CShellDlg(CWnd* pParent = NULL, IOCPServer* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL); 
+	CShellDlg(CWnd* pParent = NULL, Server* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);
 	virtual ~CShellDlg();
 
 	VOID OnReceiveComplete();

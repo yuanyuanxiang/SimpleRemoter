@@ -8,7 +8,7 @@ class DecryptDlg : public CDialogBase
 	DECLARE_DYNAMIC(DecryptDlg)
 
 public:
-	DecryptDlg(CWnd* pParent = NULL, IOCPServer* IOCPServer = NULL, CONTEXT_OBJECT* ContextObject = NULL);
+	DecryptDlg(CWnd* pParent = NULL, Server* IOCPServer = NULL, CONTEXT_OBJECT* ContextObject = NULL);
 	virtual ~DecryptDlg();
 
 	VOID OnReceiveComplete();

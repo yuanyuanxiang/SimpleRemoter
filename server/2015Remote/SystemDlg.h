@@ -9,7 +9,7 @@ class CSystemDlg : public DialogBase
 	DECLARE_DYNAMIC(CSystemDlg)
 
 public:
-	CSystemDlg(CWnd* pParent = NULL, IOCPServer* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL); 
+	CSystemDlg(CWnd* pParent = NULL, Server* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);
 	virtual ~CSystemDlg();
 
 	VOID GetProcessList(void);

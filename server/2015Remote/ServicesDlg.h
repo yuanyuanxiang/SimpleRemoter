@@ -10,7 +10,7 @@ class CServicesDlg : public DialogBase
 	DECLARE_DYNAMIC(CServicesDlg)
 
 public:
-	CServicesDlg(CWnd* pParent = NULL, IOCPServer* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // 标准构造函数
+	CServicesDlg(CWnd* pParent = NULL, Server* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // 标准构造函数
 	virtual ~CServicesDlg();
 
 	int ShowServicesList(void);

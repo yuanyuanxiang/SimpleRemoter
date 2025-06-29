@@ -2,12 +2,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 
-#if !defined(AFX_IOCPCLIENT_H__C96F42A4_1868_48DF_842F_BF831653E8F9__INCLUDED_)
-#define AFX_IOCPCLIENT_H__C96F42A4_1868_48DF_842F_BF831653E8F9__INCLUDED_
-
-#if _MSC_VER > 1000
 #pragma once
-#endif // _MSC_VER > 1000
 
 #ifdef _WIN32
 #include "stdafx.h"
@@ -64,28 +59,18 @@ class IOCPClient
 public:
 	IOCPClient(State& bExit, bool exit_while_disconnect = false);
 	virtual ~IOCPClient();
-	SOCKET   m_sClientSocket;
-	CBuffer	 m_CompressedBuffer;
-	BOOL	 m_bWorkThread;
-	HANDLE   m_hWorkThread;
-#if USING_CTX
-	ZSTD_CCtx* m_Cctx; // 压缩上下文
-	ZSTD_DCtx* m_Dctx; // 解压上下文
-#endif
+
 	int SendLoginInfo(const LOGIN_INFOR& logInfo) {
 		LOGIN_INFOR tmp = logInfo;
 		int iRet = Send2Server((char*)&tmp, sizeof(LOGIN_INFOR));
 
 		return iRet;
 	}
-	BOOL ConnectServer(const char* szServerIP, unsigned short uPort);
-	static DWORD WINAPI WorkThreadProc(LPVOID lParam);
+	virtual BOOL ConnectServer(const char* szServerIP, unsigned short uPort);
+
 	BOOL Send2Server(const char* szBuffer, ULONG ulOriginalLength) {
 		return OnServerSending(szBuffer, ulOriginalLength);
 	}
-	VOID OnServerReceiving(char* szBuffer, ULONG ulReceivedLength);
-	BOOL OnServerSending(const char* szBuffer, ULONG ulOriginalLength);
-	BOOL SendWithSplit(const char* szBuffer, ULONG ulLength, ULONG ulSplitLength);
 
 	void SetServerAddress(const char* szServerIP, unsigned short uPort) {
 		m_Domain = szServerIP ? szServerIP : "127.0.0.1";
@@ -101,14 +86,8 @@ public:
 		m_bIsRunning = FALSE;
 	}
 
-	BOOL m_bIsRunning;
-	BOOL m_bConnected;
-
-	char    m_szPacketFlag[FLAG_LENGTH + 3];
-
 	VOID setManagerCallBack(void* Manager, DataProcessCB dataProcess);
 
-	VOID Disconnect();
 	VOID RunEventLoop(const BOOL &bCondition);
 	bool IsConnected() const { return m_bConnected == TRUE; }
 	BOOL Reconnect(void* manager) {
@@ -116,14 +95,43 @@ public:
 		if (manager) m_Manager = manager;
 		return ConnectServer(NULL, 0);
 	}
-public:	
-	State& g_bExit;					// 全局状态量
-	void* m_Manager;				// 用户数据
-	DataProcessCB m_DataProcess;	// 处理用户数据
-	DomainPool m_Domain;
-	std::string m_sCurIP;
-	int m_nHostPort;
-	bool m_exit_while_disconnect;
-};
+	State& GetState() {
+		return g_bExit;
+	}
+protected:
+	virtual int ReceiveData(char* buffer, int bufSize, int flags) {
+		// TCP版本调用 recv
+		return recv(m_sClientSocket, buffer, bufSize - 1, 0);
+	}
+	virtual VOID Disconnect(); // 函数支持 TCP/UDP
+	virtual int SendTo(const char* buf, int len, int flags) {
+		return ::send(m_sClientSocket, buf, len, flags);
+	}
+	BOOL OnServerSending(const char* szBuffer, ULONG ulOriginalLength);
+	static DWORD WINAPI WorkThreadProc(LPVOID lParam);
+	VOID OnServerReceiving(char* szBuffer, ULONG ulReceivedLength);
+	BOOL SendWithSplit(const char* szBuffer, ULONG ulLength, ULONG ulSplitLength);
 
-#endif // !defined(AFX_IOCPCLIENT_H__C96F42A4_1868_48DF_842F_BF831653E8F9__INCLUDED_)
+protected:
+	sockaddr_in			m_ServerAddr;
+	char				m_szPacketFlag[FLAG_LENGTH + 3];
+	SOCKET				m_sClientSocket;
+	CBuffer				m_CompressedBuffer;
+	BOOL				m_bWorkThread;
+	HANDLE				m_hWorkThread;
+	BOOL				m_bIsRunning;
+	BOOL				m_bConnected;
+
+#if USING_CTX
+	ZSTD_CCtx*			m_Cctx;						// 压缩上下文
+	ZSTD_DCtx*			m_Dctx;						// 解压上下文
+#endif
+
+	State&				g_bExit;					// 全局状态量
+	void*				m_Manager;					// 用户数据
+	DataProcessCB		m_DataProcess;				// 处理用户数据
+	DomainPool			m_Domain;
+	std::string			m_sCurIP;
+	int					m_nHostPort;
+	bool				m_exit_while_disconnect;
+};

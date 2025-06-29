@@ -29,7 +29,7 @@ class CHideScreenSpyDlg : public DialogBase {
     enum { IDD = IDD_SCREEN };
 
 public:
-    CHideScreenSpyDlg(CWnd* pParent = NULL, ISocketBase* pIOCPServer = NULL, ClientContext* pContext = NULL);
+    CHideScreenSpyDlg(CWnd* pParent = NULL, Server* pIOCPServer = NULL, ClientContext* pContext = NULL);
     virtual ~CHideScreenSpyDlg();
 
 	VOID SendNext(void) {

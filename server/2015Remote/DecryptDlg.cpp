@@ -4,7 +4,7 @@
 
 IMPLEMENT_DYNAMIC(DecryptDlg, CDialog)
 
-DecryptDlg::DecryptDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
+DecryptDlg::DecryptDlg(CWnd* pParent, Server* IOCPServer, CONTEXT_OBJECT* ContextObject)
 	: CDialogBase(DecryptDlg::IDD, pParent, IOCPServer, ContextObject, IDI_ICON_DECRYPT) {
 }
 

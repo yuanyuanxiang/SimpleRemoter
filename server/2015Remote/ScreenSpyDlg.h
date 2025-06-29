@@ -43,7 +43,7 @@ class CScreenSpyDlg : public DialogBase
 	DECLARE_DYNAMIC(CScreenSpyDlg)
 
 public:
-	CScreenSpyDlg(CWnd* Parent, IOCPServer* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);   
+	CScreenSpyDlg(CWnd* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);
 	virtual ~CScreenSpyDlg();
 
 	VOID SendNext(void);

@@ -13,7 +13,7 @@
 class CMachineDlg : public DialogBase
 {
 public:
-    CMachineDlg(CWnd* pParent = NULL, ISocketBase* pIOCPServer = NULL, ClientContext* pContext = NULL);
+    CMachineDlg(CWnd* pParent = NULL, Server* pIOCPServer = NULL, ClientContext* pContext = NULL);
     ~CMachineDlg();
 
     enum { IDD = IDD_MACHINE };
