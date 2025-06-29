@@ -808,7 +808,7 @@ PCONTEXT_OBJECT IOCPServer::AllocateContext(SOCKET s)
 
 	if (ContextObject != NULL)
 	{
-		ContextObject->InitMember(s);
+		ContextObject->InitMember(s, this);
 	}
 
 	return ContextObject;

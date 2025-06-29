@@ -19,7 +19,6 @@ public:
     CServiceInfoDlg(CWnd* pParent = NULL);
 
 	ClientContext* m_ContextObject;
-    Server* m_iocpServer;
 
     enum { IDD = IDD_SERVICE_INFO };
     CComboBox	m_combox_runway;

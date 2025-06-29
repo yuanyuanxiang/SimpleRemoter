@@ -57,11 +57,9 @@ enum {
 	COMPRESS_NONE = 1,				// 没有压缩
 };
 
-struct CONTEXT_OBJECT;
-
 // Header parser: parse the data to make sure it's from a supported client.
 class HeaderParser {
-	friend struct CONTEXT_OBJECT;
+	friend class CONTEXT_OBJECT;
 protected:
 	HeaderParser() {
 		memset(this, 0, sizeof(HeaderParser));
@@ -229,8 +227,31 @@ public:
 	}
 };
 
-typedef struct CONTEXT_OBJECT
+typedef void (CALLBACK* pfnNotifyProc)(CONTEXT_OBJECT* ContextObject);
+typedef void (CALLBACK* pfnOfflineProc)(CONTEXT_OBJECT* ContextObject);
+
+class Server
 {
+public:
+	friend class CONTEXT_OBJECT;
+
+	Server() {}
+	virtual ~Server() {}
+
+	virtual UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort) = 0;
+
+	virtual	void Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) = 0;
+
+	virtual void UpdateMaxConnection(int maxConn) {}
+
+	virtual void Destroy() {}
+
+	virtual void Disconnect(CONTEXT_OBJECT* ctx) {}
+};
+
+typedef class CONTEXT_OBJECT
+{
+public:
 	CString  sClientInfo[ONLINELIST_MAX];
 	CString  additonalInfo[RES_MAX];
 	SOCKET   sClientSocket;
@@ -250,10 +271,11 @@ typedef struct CONTEXT_OBJECT
 	BOOL				m_bProxyConnected;			// 代理是否连接
 	BOOL 				bLogin;						// 是否 login
 	std::string			PeerName;					// 对端IP
+	Server*				server;						// 所属服务端
 	int					addrLen;					// for UDP
 	sockaddr_in			clientAddr;					// for UDP
 
-	VOID InitMember(SOCKET s)
+	VOID InitMember(SOCKET s, Server *svr)
 	{
 		memset(szBuffer, 0, sizeof(char) * PACKET_LENGTH);
 		hWnd = NULL;
@@ -273,8 +295,16 @@ typedef struct CONTEXT_OBJECT
 		Parser.Reset();
 		bLogin = FALSE;
 		m_bProxyConnected = FALSE;
+		server = svr;
 		clientAddr = {};
 		addrLen = sizeof(sockaddr_in);
+	}
+	Server* GetServer() {
+		return server;
+	}
+	VOID Send2Client(PBYTE szBuffer, ULONG ulOriginalLength) {
+		if (server)
+			server->Send2Client(this, szBuffer, ulOriginalLength);
 	}
 	VOID SetClientInfo(const CString(&s)[ONLINELIST_MAX], const std::vector<std::string>& a = {}) {
 		for (int i = 0; i < ONLINELIST_MAX; i++)
@@ -396,23 +426,3 @@ typedef struct CONTEXT_OBJECT
 }CONTEXT_OBJECT, * PCONTEXT_OBJECT;
 
 typedef CList<PCONTEXT_OBJECT> ContextObjectList;
-
-typedef void (CALLBACK* pfnNotifyProc)(CONTEXT_OBJECT* ContextObject);
-typedef void (CALLBACK* pfnOfflineProc)(CONTEXT_OBJECT* ContextObject);
-
-class Server
-{
-public:
-	Server(){}
-	virtual ~Server(){}
-
-	virtual UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort) = 0;
-
-	virtual	void Send2Client(CONTEXT_OBJECT * ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) = 0;
-
-	virtual void UpdateMaxConnection(int maxConn){}
-
-	virtual void Destroy(){}
-
-	virtual void Disconnect(CONTEXT_OBJECT* ctx) {}
-};

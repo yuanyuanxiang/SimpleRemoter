@@ -125,7 +125,7 @@ protected:
 	}
 	// 构造
 public:
-	CMy2015RemoteDlg(Server* iocpServer, CWnd* pParent = NULL);	// 标准构造函数
+	CMy2015RemoteDlg(CWnd* pParent = NULL);	// 标准构造函数
 	~CMy2015RemoteDlg();
 	// 对话框数据
 	enum { IDD = IDD_MY2015REMOTE_DIALOG };
@@ -150,7 +150,7 @@ public:
 	template<class T, int id, int Show=SW_SHOW> LRESULT OpenDialog(WPARAM wParam, LPARAM lParam)
 	{
 		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
-		T* Dlg = new T(this, m_iocpServer, ContextObject);
+		T* Dlg = new T(this, ContextObject->GetServer(), ContextObject);
 		Dlg->Create(id, GetDesktopWindow());
 		Dlg->ShowWindow(Show);
 
@@ -193,7 +193,6 @@ public:
 	std::vector<DllInfo*> m_DllList;
 	NOTIFYICONDATA  m_Nid;
 	HANDLE m_hExit;
-	Server* m_iocpServer;
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 	CMenu	   m_MainMenu;

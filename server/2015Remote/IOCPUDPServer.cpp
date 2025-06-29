@@ -51,7 +51,7 @@ void IOCPUDPServer::PostRecv() {
 
 	AddCount(1);
 	CONTEXT_OBJECT* ctx = new CONTEXT_OBJECT();
-	ctx->InitMember(m_socket);
+	ctx->InitMember(m_socket, this);
 
 	IO_CONTEXT* ioCtx = new IO_CONTEXT();
 	ZeroMemory(&ioCtx->ol, sizeof(OVERLAPPED));

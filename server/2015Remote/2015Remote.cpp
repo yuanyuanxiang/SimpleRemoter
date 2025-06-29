@@ -22,7 +22,7 @@ CMy2015RemoteApp* GetThisApp() {
 }
 
 config& GetThisCfg() {
-	config *cfg = GetThisApp()->m_iniFile;
+	config *cfg = GetThisApp()->GetCfg();
 	return *cfg;
 }
 
@@ -77,7 +77,6 @@ CMy2015RemoteApp::CMy2015RemoteApp()
 	m_Mutex = NULL;
 	std::string masterHash(skCrypt(MASTER_HASH));
 	m_iniFile = GetPwdHash() == masterHash ? new config : new iniFile;
-	m_iocpServer = new IOCPServer();
 
 	srand(static_cast<unsigned int>(time(0)));
 }
@@ -141,7 +140,7 @@ BOOL CMy2015RemoteApp::InitInstance()
 	// 例如修改为公司或组织名
 	SetRegistryKey(_T("Remoter"));
 
-	CMy2015RemoteDlg dlg(m_iocpServer);
+	CMy2015RemoteDlg dlg(nullptr);
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();
 	if (nResponse == IDOK)
@@ -174,12 +173,8 @@ int CMy2015RemoteApp::ExitInstance()
 		CloseHandle(m_Mutex);
 		m_Mutex = NULL;
 	}
-	if (m_iocpServer != NULL)
-	{
-		m_iocpServer->Destroy();
-		delete m_iocpServer;
-		m_iocpServer = NULL;
-	}
+	Delete();
+
 	SAFE_DELETE(m_iniFile);
 
 	return CWinApp::ExitInstance();

