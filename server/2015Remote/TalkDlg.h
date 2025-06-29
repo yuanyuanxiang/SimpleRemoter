@@ -9,7 +9,7 @@ class CTalkDlg : public DialogBase
 	DECLARE_DYNAMIC(CTalkDlg)
 
 public:
-	CTalkDlg(CWnd* Parent, IOCPServer* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);   // 标准构造函数
+	CTalkDlg(CWnd* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);   // 标准构造函数
 	virtual ~CTalkDlg();
 
 	// 对话框数据

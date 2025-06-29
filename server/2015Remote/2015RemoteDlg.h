@@ -125,7 +125,7 @@ protected:
 	}
 	// 构造
 public:
-	CMy2015RemoteDlg(IOCPServer* iocpServer, CWnd* pParent = NULL);	// 标准构造函数
+	CMy2015RemoteDlg(Server* iocpServer, CWnd* pParent = NULL);	// 标准构造函数
 	~CMy2015RemoteDlg();
 	// 对话框数据
 	enum { IDD = IDD_MY2015REMOTE_DIALOG };
@@ -193,7 +193,7 @@ public:
 	std::vector<DllInfo*> m_DllList;
 	NOTIFYICONDATA  m_Nid;
 	HANDLE m_hExit;
-	IOCPServer* m_iocpServer;
+	Server* m_iocpServer;
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 	CMenu	   m_MainMenu;

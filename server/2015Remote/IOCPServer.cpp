@@ -5,35 +5,6 @@
 #include <iostream>
 #include <ws2tcpip.h>
 
-// ZLIB 压缩库
-#include "zlib/zlib.h"
-
-#if USING_LZ4
-#include "lz4/lz4.h"
-#pragma comment(lib, "lz4/lz4.lib")
-#define C_FAILED(p) (0 == (p))
-#define C_SUCCESS(p) (!C_FAILED(p))
-#define Mcompress(dest, destLen, source, sourceLen) LZ4_compress_default((const char*)source, (char*)dest, sourceLen, *(destLen))
-#define Muncompress(dest, destLen, source, sourceLen) LZ4_decompress_safe((const char*)source, (char*)dest, sourceLen, *(destLen))
-#else // ZSTD
-#include "zstd/zstd.h"
-#ifdef _WIN64
-#pragma comment(lib, "zstd/zstd_x64.lib")
-#else
-#pragma comment(lib, "zstd/zstd.lib")
-#endif
-#define C_FAILED(p) ZSTD_isError(p)
-#define C_SUCCESS(p) (!C_FAILED(p))
-#define ZSTD_CLEVEL 5
-#if USING_CTX
-#define Mcompress(dest, destLen, source, sourceLen) ZSTD_compress2(m_Cctx, dest, *(destLen), source, sourceLen)
-#define Muncompress(dest, destLen, source, sourceLen) ZSTD_decompressDCtx(m_Dctx, dest, *(destLen), source, sourceLen)
-#else
-#define Mcompress(dest, destLen, source, sourceLen) ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
-#define Muncompress(dest, destLen, source, sourceLen) ZSTD_decompress(dest, *(destLen), source, sourceLen)
-#endif
-#endif
-
 // 根据 socket 获取客户端IP地址.
 std::string GetPeerName(SOCKET sock) {
 	sockaddr_in  ClientAddr = {};
@@ -306,7 +277,6 @@ BOOL IOCPServer::InitializeIOCP(VOID)
 	m_ulThreadPoolMax  = SystemInfo.dwNumberOfProcessors * 2;
 	m_ulCPULowThreadsHold  = 10; 
 	m_ulCPUHighThreadsHold = 75; 
-	m_cpu.Init();
 
 	ULONG ulWorkThreadCount = m_ulThreadPoolMax;
 

@@ -31,10 +31,10 @@ typedef struct {
 } Socks5Info;
 
 // ¥˙¿Ì≤‚ ‘: curl --socks5 127.0.0.1:5543 https://www.example.com
-class CProxyMapDlg : public CDialog
+class CProxyMapDlg : public DialogBase
 {
 public:
-    CProxyMapDlg(CWnd* pParent = NULL, ISocketBase* pIOCPServer = NULL, ClientContext* pContext = NULL);
+    CProxyMapDlg(CWnd* pParent = NULL, Server* pIOCPServer = NULL, ClientContext* pContext = NULL);
 
     enum { IDD = IDD_PROXY };
 
@@ -45,7 +45,6 @@ public:
     void AddLog(TCHAR* lpText);
     void AddLog_other(TCHAR* lpText);
     virtual void DoDataExchange(CDataExchange* pDX);
-    virtual void PostNcDestroy();
     virtual void OnCancel();
     afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
     virtual BOOL OnInitDialog();
@@ -53,11 +52,7 @@ public:
     DECLARE_MESSAGE_MAP()
 
 private:
-    ClientContext*          m_ContextObject;
-    ISocketBase*            m_iocpServer;
     CProxyConnectServer*    m_iocpLocal;
-    HICON                   m_hIcon;
-    bool                    m_bIsClose;
 	CEdit	                m_Edit;
 	USHORT                  m_nPort;
     CEdit                   m_EditOther;

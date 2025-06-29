@@ -14,6 +14,7 @@
 #include <io.h>
 #include <direct.h>
 #include <DbgHelp.h>
+#include "IOCPUDPServer.h"
 #pragma comment(lib, "Dbghelp.lib")
 
 CMy2015RemoteApp* GetThisApp() {

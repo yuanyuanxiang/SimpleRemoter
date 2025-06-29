@@ -103,7 +103,7 @@ void CVideoManager::SendBitMapInfor()
 	BYTE szBuffer[dwBytesLength + 3] = { 0 };
 	szBuffer[0] = TOKEN_WEBCAM_BITMAPINFO;
 	memcpy(szBuffer + 1, m_CapVideo.GetBmpInfor(), sizeof(BITMAPINFO));
-	m_ClientObject->OnServerSending((char*)szBuffer, dwBytesLength);
+	m_ClientObject->Send2Server((char*)szBuffer, dwBytesLength);
 }
 
 BOOL CVideoManager::SendNextScreen()
@@ -149,7 +149,7 @@ BOOL CVideoManager::SendNextScreen()
 	}
 	m_CapVideo.SendEnd();    //copy  send
 
-	m_ClientObject->OnServerSending((char*)lpBuffer, nPacketLen);
+	m_ClientObject->Send2Server((char*)lpBuffer, nPacketLen);
 
 	return TRUE;
 }

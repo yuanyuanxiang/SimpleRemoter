@@ -18,7 +18,7 @@ class CKeyBoardDlg : public DialogBase
 // Construction
 public:
     void OnReceiveComplete();
-    CKeyBoardDlg(CWnd* pParent = NULL, CIOCPServer* pIOCPServer = NULL, ClientContext *pContext = NULL);   // standard constructor
+    CKeyBoardDlg(CWnd* pParent = NULL, Server* pIOCPServer = NULL, ClientContext *pContext = NULL);   // standard constructor
 
 // Dialog Data
     //{{AFX_DATA(CKeyBoardDlg)

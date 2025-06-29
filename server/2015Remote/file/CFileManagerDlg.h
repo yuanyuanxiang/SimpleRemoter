@@ -92,7 +92,7 @@ namespace file {
         void fixNetHood(BYTE* pbuffer, int buffersize);//Ô¶³Ì¹²ÏíÄ¿Â¼
         bool id_search_result;
         CStatusBar m_wndStatusBar;
-        CFileManagerDlg(CWnd* pParent = NULL, ISocketBase* pIOCPServer = NULL, ClientContext* pContext = NULL);
+        CFileManagerDlg(CWnd* pParent = NULL, Server* pIOCPServer = NULL, ClientContext* pContext = NULL);
         ~CFileManagerDlg() {
             m_bIsClosed = TRUE;
             SAFE_DELETE(m_ProgressCtrl);

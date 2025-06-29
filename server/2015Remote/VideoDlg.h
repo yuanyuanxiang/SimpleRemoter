@@ -163,7 +163,7 @@ class CVideoDlg : public DialogBase
 	DECLARE_DYNAMIC(CVideoDlg)
 
 public:
-	CVideoDlg(CWnd* pParent = NULL, IOCPServer* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // 标准构造函数
+	CVideoDlg(CWnd* pParent = NULL, Server* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // 标准构造函数
 	virtual ~CVideoDlg();
 
 	LPBITMAPINFO m_BitmapInfor_Full;

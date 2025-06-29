@@ -26,7 +26,7 @@ enum KEYVALUE{
 IMPLEMENT_DYNAMIC(CRegisterDlg, CDialog)
 
 
-CRegisterDlg::CRegisterDlg(CWnd* pParent,IOCPServer* IOCPServer, CONTEXT_OBJECT* ContextObject)
+CRegisterDlg::CRegisterDlg(CWnd* pParent, Server* IOCPServer, CONTEXT_OBJECT* ContextObject)
 	: DialogBase(CRegisterDlg::IDD, pParent, IOCPServer, ContextObject, IDI_ICON_STRING)
 {
 	m_bIsClosed = FALSE;
@@ -146,7 +146,7 @@ void CRegisterDlg::OnTvnSelchangedTree(NMHDR *pNMHDR, LRESULT *pResult)
 	bToken=COMMAND_REG_FIND;
 	strFullPath.Insert(0,bToken);      //²åÈë²éÑ¯ÃüÁî  [COMMAND_REG_FIND][x]
 
-	m_iocpServer->OnClientPreSending(m_ContextObject, (LPBYTE)(strFullPath.GetBuffer(0)), strFullPath.GetLength()+1);
+	m_iocpServer->Send2Client(m_ContextObject, (LPBYTE)(strFullPath.GetBuffer(0)), strFullPath.GetLength()+1);
 
 	m_isEnable = TRUE;
 

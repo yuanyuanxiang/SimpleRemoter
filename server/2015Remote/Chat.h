@@ -9,7 +9,7 @@ class CChat : public DialogBase
 {
     // Construction
 public:
-    CChat(CWnd* pParent = NULL, ISocketBase* pIOCPServer = NULL, ClientContext* pContext = NULL);
+    CChat(CWnd* pParent = NULL, Server* pIOCPServer = NULL, ClientContext* pContext = NULL);
     void OnReceiveComplete();
     void OnReceive();
 

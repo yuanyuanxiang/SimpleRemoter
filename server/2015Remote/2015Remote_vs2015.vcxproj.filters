@@ -11,7 +11,6 @@
     <ClCompile Include="BuildDlg.cpp" />
     <ClCompile Include="Chat.cpp" />
     <ClCompile Include="CPasswordDlg.cpp" />
-    <ClCompile Include="CpuUseage.cpp" />
     <ClCompile Include="CTextDlg.cpp" />
     <ClCompile Include="DecryptDlg.cpp" />
     <ClCompile Include="EditDialog.cpp" />
@@ -49,6 +48,7 @@
     <ClCompile Include="file\CFileListCtrl.cpp">
       <Filter>file</Filter>
     </ClCompile>
+    <ClCompile Include="IOCPUDPServer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
@@ -64,7 +64,6 @@
     <ClInclude Include="BuildDlg.h" />
     <ClInclude Include="Chat.h" />
     <ClInclude Include="CPasswordDlg.h" />
-    <ClInclude Include="CpuUseage.h" />
     <ClInclude Include="CTextDlg.h" />
     <ClInclude Include="DateVerify.h" />
     <ClInclude Include="DecryptDlg.h" />
@@ -109,6 +108,8 @@
     <ClInclude Include="file\CFileListCtrl.h">
       <Filter>file</Filter>
     </ClInclude>
+    <ClInclude Include="IOCPUDPServer.h" />
+    <ClInclude Include="Server.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />

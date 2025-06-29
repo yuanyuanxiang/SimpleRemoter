@@ -10,7 +10,7 @@ class CAudioDlg : public DialogBase
 	DECLARE_DYNAMIC(CAudioDlg)
 
 public:
-	CAudioDlg(CWnd* pParent = NULL, IOCPServer* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // 标准构造函数
+	CAudioDlg(CWnd* pParent = NULL, Server* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // 标准构造函数
 	virtual ~CAudioDlg();
 
 	DWORD         m_nTotalRecvBytes;
