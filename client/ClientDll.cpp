@@ -265,6 +265,8 @@ int main(int argc, const char *argv[])
 	status = E_STOP;
 
 	CloseHandle(hMutex);
+	Logger::getInstance().stop();
+
 	return 0;
 }
 #else

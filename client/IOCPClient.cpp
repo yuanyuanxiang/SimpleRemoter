@@ -344,6 +344,19 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 	return 0xDEAD;
 }
 
+// 带异常处理的数据处理逻辑:
+// 如果 f 执行时 没有触发系统异常（如访问冲突），返回 0
+// 如果 f 执行过程中 抛出了异常（比如空指针访问），将被 __except 捕获，返回异常码（如 0xC0000005 表示访问违规）
+int DataProcessWithSEH(DataProcessCB f, void* manager, LPBYTE data, ULONG len) {
+	__try {
+		if (f) f(manager, data, len);
+		return 0;
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER) {
+		return GetExceptionCode();
+	}
+}
+
 
 VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 {
@@ -394,8 +407,10 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 				{
 					//解压好的数据和长度传递给对象Manager进行处理 注意这里是用了多态
 					//由于m_pManager中的子类不一样造成调用的OnReceive函数不一样
-					if (m_DataProcess)
-						m_DataProcess(m_Manager, (PBYTE)DeCompressedBuffer, ulOriginalLength);
+					int ret = DataProcessWithSEH(m_DataProcess, m_Manager, DeCompressedBuffer, ulOriginalLength);
+					if (ret) {
+						Mprintf("[ERROR] DataProcessWithSEH return exception code: [0x%08X]\n", ret);
+					}
 				}
 				else{
 					Mprintf("[ERROR] uncompress fail: dstLen %d, srcLen %d\n", ulOriginalLength, ulCompressedLength);
