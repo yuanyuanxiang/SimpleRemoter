@@ -169,7 +169,7 @@ public:
 	VOID CreateNotifyBar();
 	VOID CreateSolidMenu();	
 	BOOL ListenPort();
-	BOOL Activate(int nPort,int nMaxConnection);
+	BOOL Activate(const std::string& nPort,int nMaxConnection);
 	void UpdateActiveWindow(CONTEXT_OBJECT* ctx);
 	void SendMasterSettings(CONTEXT_OBJECT* ctx);
 	VOID SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, bool is64Bit);

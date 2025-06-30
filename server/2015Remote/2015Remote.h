@@ -11,10 +11,44 @@
 #include "resource.h"		// 主符号
 #include "common/iniFile.h"
 #include "IOCPServer.h"
+#include "IOCPUDPServer.h"
 
 // CMy2015RemoteApp:
 // 有关此类的实现，请参阅 2015Remote.cpp
 //
+
+// ServerPair: 
+// 一对SOCKET服务端，监听端口: 同时监听TCP和UDP.
+class ServerPair
+{
+private:
+	Server* m_tcpServer;
+	Server* m_udpServer;
+public:
+	ServerPair() : m_tcpServer(new IOCPServer), m_udpServer(new IOCPUDPServer) {}
+	virtual ~ServerPair() { SAFE_DELETE(m_tcpServer); SAFE_DELETE(m_udpServer); }
+
+	BOOL StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort) {
+		UINT ret1 = m_tcpServer->StartServer(NotifyProc, OffProc, uPort);
+		UINT ret2 = m_udpServer->StartServer(NotifyProc, OffProc, uPort);
+		return (ret1 == 0 || ret2 == 0);
+	}
+
+	void UpdateMaxConnection(int maxConn) {
+		if (m_tcpServer) m_tcpServer->UpdateMaxConnection(maxConn);
+		if (m_udpServer) m_udpServer->UpdateMaxConnection(maxConn);
+	}
+
+	void Destroy() {
+		if (m_tcpServer) m_tcpServer->Destroy();
+		if (m_udpServer) m_udpServer->Destroy();
+	}
+
+	void Disconnect(CONTEXT_OBJECT* ctx) {
+		if (m_tcpServer) m_tcpServer->Disconnect(ctx);
+		if (m_udpServer) m_udpServer->Disconnect(ctx);
+	}
+};
 
 class CMy2015RemoteApp : public CWinApp
 {
@@ -22,7 +56,7 @@ private:
 	// 配置文件读取器
 	config* m_iniFile = nullptr;
 	// 服务端容器列表
-	std::vector<Server*> m_iocpServer;
+	std::vector<ServerPair*> m_iocpServer;
 	// 互斥锁
 	HANDLE m_Mutex = nullptr;
 
@@ -38,16 +72,25 @@ public:
 		return m_iniFile;
 	}
 
-	// 启动一个服务端，成功返回0
-	UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort) {
-		auto svr = new IOCPServer();
-		UINT ret = svr->StartServer(NotifyProc, OffProc, uPort);
-		if (ret != 0) {
-			SAFE_DELETE(svr);
-			return ret;
+	// 启动多个服务端，成功返回0
+	// nPort示例: 6543;7543
+	UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, const std::string& uPort) {
+		bool succeed = false;
+		auto list = StringToVector(uPort, ';');
+		for (int i=0; i<list.size(); ++i)
+		{
+			int port = std::atoi(list[i].c_str());
+			auto svr = new ServerPair();
+			BOOL ret = svr->StartServer(NotifyProc, OffProc, port);
+			if (ret == FALSE) {
+				SAFE_DELETE(svr);
+				continue;
+			}
+			succeed = true;
+			m_iocpServer.push_back(svr);
 		}
-		m_iocpServer.push_back(svr);
-		return 0;
+
+		return succeed ? 0 : -1;
 	}
 
 	// 释放服务端 SOCKET
