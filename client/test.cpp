@@ -5,6 +5,7 @@
 #include <WS2tcpip.h>
 #include <common/commands.h>
 #include "common/dllRunner.h"
+#include <common/iniFile.h>
 #pragma comment(lib, "ws2_32.lib")
 
 // 自动启动注册表中的值
@@ -382,8 +383,9 @@ BOOL Run(const char* argv1, int argv2) {
 			port = argv2;
 		}
 		else {
-			GetPrivateProfileStringA("settings", "master", g_ConnectAddress.ServerIP(), ip, _MAX_PATH, path);
-			port = GetPrivateProfileIntA("settings", "ghost", g_ConnectAddress.ServerPort(), path);
+			config cfg;
+			strcpy_s(path, cfg.GetStr("settings", "master", g_ConnectAddress.ServerIP()).c_str());
+			port = cfg.Get1Int("settings", "ghost", ';', 6543);
 		}
 		Mprintf("[server] %s:%d\n", ip, port);
 		do

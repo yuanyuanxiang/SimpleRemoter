@@ -1,5 +1,6 @@
 #pragma once
 
+#include "stdafx.h"
 #include "common/commands.h"
 #include "common/header.h"
 #include "common/encrypt.h"

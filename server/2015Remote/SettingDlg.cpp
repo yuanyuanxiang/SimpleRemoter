@@ -14,7 +14,7 @@ IMPLEMENT_DYNAMIC(CSettingDlg, CDialog)
 
 CSettingDlg::CSettingDlg(CWnd* pParent)
 	: CDialog(CSettingDlg::IDD, pParent)
-	, m_nListenPort(0)
+	, m_nListenPort("6543")
 	, m_nMax_Connect(0)
 	, m_sScreenCapture(_T("GDI"))
 	, m_sScreenCompress(_T("屏幕差异算法"))
@@ -32,6 +32,7 @@ void CSettingDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT_PORT, m_nListenPort);
+	DDV_MaxChars(pDX, m_nListenPort, 32);
 	DDX_Text(pDX, IDC_EDIT_MAX, m_nMax_Connect);
 	DDX_Control(pDX, IDC_BUTTON_SETTINGAPPLY, m_ApplyButton);
 	DDX_Control(pDX, IDC_COMBO_SCREEN_CAPTURE, m_ComboScreenCapture);
@@ -66,7 +67,7 @@ BOOL CSettingDlg::OnInitDialog()
 	IPConverter cvt;
 	m_sPublicIP = THIS_CFG.GetStr("settings", "master", "").c_str();
 	m_sPublicIP = m_sPublicIP.IsEmpty() ? cvt.getPublicIP().c_str() : m_sPublicIP;
-	int nPort = THIS_CFG.GetInt("settings", "ghost");
+	std::string nPort = THIS_CFG.GetStr("settings", "ghost", "6543");
 	//读取ini 文件中的监听端口
 	int nMaxConnection = THIS_CFG.GetInt("settings", "MaxConnection");
 
@@ -74,7 +75,7 @@ BOOL CSettingDlg::OnInitDialog()
 
 	CString algo = THIS_CFG.GetStr("settings", "ScreenCompress", "").c_str();
 
-	m_nListenPort = (nPort<=0 || nPort>65535) ? 6543 : nPort;
+	m_nListenPort = nPort.c_str();
 	m_nMax_Connect  = nMaxConnection<=0 ? 10000 : nMaxConnection;
 
 	int n = algo.IsEmpty() ? ALGORITHM_DIFF : atoi(algo.GetString());
@@ -129,7 +130,7 @@ void CSettingDlg::OnBnClickedButtonSettingapply()
 {
 	UpdateData(TRUE);
 	THIS_CFG.SetStr("settings", "master", m_sPublicIP.GetBuffer());
-	THIS_CFG.SetInt("settings", "ghost", m_nListenPort);
+	THIS_CFG.SetStr("settings", "ghost", m_nListenPort.GetString());
 	//向ini文件中写入值
 	THIS_CFG.SetInt("settings", "MaxConnection", m_nMax_Connect);
 

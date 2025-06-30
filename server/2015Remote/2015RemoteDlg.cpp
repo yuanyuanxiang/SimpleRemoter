@@ -774,8 +774,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	}
 	// 主控程序公网IP
 	std::string ip = THIS_CFG.GetStr("settings", "master", "");
-	std::string port = THIS_CFG.GetStr("settings", "ghost", "6543");
-	std::string master = ip.empty() ? "" : ip + ":" + port;
+	int port = THIS_CFG.Get1Int("settings", "ghost", ';', 6543);
+	std::string master = ip.empty() ? "" : ip + ":" + std::to_string(port);
 	const Validation* v = GetValidation();
 	if (!(strlen(v->Admin) && v->Port > 0)) {
 		// IMPORTANT: For authorization only.
@@ -1422,7 +1422,7 @@ void CMy2015RemoteDlg::OnOnlineBuildClient()
 	// TODO: 在此添加命令处理程序代码
 	CBuildDlg Dlg;
 	Dlg.m_strIP = THIS_CFG.GetStr("settings", "master", "").c_str();
-	int Port = THIS_CFG.GetInt("settings", "ghost");
+	int Port = THIS_CFG.Get1Int("settings", "ghost", ';', 6543);
 	Dlg.m_strIP = Dlg.m_strIP.IsEmpty() ? "127.0.0.1" : Dlg.m_strIP;
 	Dlg.m_strPort = Port <= 0 ? "6543" : std::to_string(Port).c_str();
 	Dlg.DoModal();
@@ -1508,12 +1508,11 @@ void CMy2015RemoteDlg::OnMainExit()
 
 BOOL CMy2015RemoteDlg::ListenPort()
 {
-	int nPort = THIS_CFG.GetInt("settings", "ghost");
+	std::string nPort = THIS_CFG.GetStr("settings", "ghost", "6543");
 	//读取ini 文件中的监听端口
 	int nMaxConnection = THIS_CFG.GetInt("settings", "MaxConnection");
 	//读取最大连接数
-	if (nPort<=0 || nPort>65535)
-		nPort = 6543;
+
 	if (nMaxConnection <= 0)
 		nMaxConnection = 10000;
 	return Activate(nPort,nMaxConnection);             //开始监听
@@ -1586,14 +1585,14 @@ std::vector<std::string> splitByNewline(const std::string& input) {
 	return lines;
 }
 
-BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
+BOOL CMy2015RemoteDlg::Activate(const std::string& nPort,int nMaxConnection)
 {
 	UINT ret = 0;
 	if ( (ret = THIS_APP->StartServer(NotifyProc, OfflineProc, nPort)) !=0 )
 	{
 		Mprintf("======> StartServer Failed \n");
 		char cmd[200];
-		sprintf_s(cmd, "for /f \"tokens=5\" %%i in ('netstat -ano ^| findstr \":%d \"') do @echo %%i", nPort);
+		sprintf_s(cmd, "for /f \"tokens=5\" %%i in ('netstat -ano ^| findstr \":%s \"') do @echo %%i", nPort.c_str());
 		std::string output = exec(cmd);
 		output.erase(std::remove(output.begin(), output.end(), '\r'), output.end());
 		if (!output.empty())
@@ -1625,7 +1624,7 @@ BOOL CMy2015RemoteDlg::Activate(int nPort,int nMaxConnection)
 
 	ShowMessage("使用提示", "严禁用于非法侵入、控制、监听他人设备等违法行为");
 	CString strTemp;
-	strTemp.Format("监听端口: %d成功", nPort);
+	strTemp.Format("监听端口: %s成功", nPort.c_str());
 	ShowMessage("操作成功",strTemp);
 	return TRUE;
 }
@@ -2466,7 +2465,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 			return;
 		}
 	}
-	int port = THIS_CFG.GetInt("settings", "ghost");
+	int port = THIS_CFG.Get1Int("settings", "ghost", ';', 6543);
 	std::string id = genHMAC(pwdHash, m_superPass);
 	Validation verify(atof(days.m_str), master.c_str(), port<=0 ? 6543 : port, id.c_str());
 	if (!WritePwdHash(curEXE + iOffset, pwdHash, verify)) {

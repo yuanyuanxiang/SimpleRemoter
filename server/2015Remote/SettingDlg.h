@@ -20,7 +20,7 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 public:
-	UINT m_nListenPort;
+	CString m_nListenPort;
 	UINT m_nMax_Connect;
 	virtual BOOL OnInitDialog();
 	afx_msg void OnBnClickedButtonSettingapply();

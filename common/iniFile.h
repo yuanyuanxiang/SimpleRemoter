@@ -24,6 +24,14 @@ public:
 		return ::GetPrivateProfileIntA(MainKey.c_str(), SubKey.c_str(), nDef, m_IniFilePath);
 	}
 
+	// 获取配置项中的第一个整数
+	virtual int Get1Int(const std::string& MainKey, const std::string& SubKey, char ch=';', int nDef=0)
+	{
+		std::string s = GetStr(MainKey, SubKey, "");
+		s = StringToVector(s, ch)[0];
+		return s.empty() ? nDef : atoi(s.c_str());
+	}
+
 	virtual bool SetInt(const std::string& MainKey, const std::string& SubKey, int Data)
 	{
 		std::string strData = std::to_string(Data);
