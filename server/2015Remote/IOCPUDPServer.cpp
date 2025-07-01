@@ -2,6 +2,7 @@
 #include "IOCPUDPServer.h"
 #include <thread>
 #include <iostream>
+#include "IOCPServer.h"
 
 IOCPUDPServer::IOCPUDPServer() {
 	WSADATA wsaData;
@@ -50,7 +51,7 @@ void IOCPUDPServer::PostRecv() {
 	if (!m_running) return;
 
 	AddCount(1);
-	CONTEXT_OBJECT* ctx = new CONTEXT_OBJECT();
+	CONTEXT_UDP* ctx = new CONTEXT_UDP();
 	ctx->InitMember(m_socket, this);
 
 	IO_CONTEXT* ioCtx = new IO_CONTEXT();
@@ -59,7 +60,6 @@ void IOCPUDPServer::PostRecv() {
 
 	ctx->wsaInBuf.buf = ctx->szBuffer;
 	ctx->wsaInBuf.len = sizeof(ctx->szBuffer);
-	ctx->addrLen = sizeof(sockaddr_in);
 
 	DWORD flags = 0;
 	int err = WSARecvFrom(
@@ -104,14 +104,11 @@ void IOCPUDPServer::WorkerThread() {
 		if (!pOverlapped) continue;
 
 		IO_CONTEXT* ioCtx = CONTAINING_RECORD(pOverlapped, IO_CONTEXT, ol);
-		CONTEXT_OBJECT* ctx = ioCtx->pContext;
-
-		if (m_notify)
-			m_notify(ctx);
+		CONTEXT_UDP* ctx = ioCtx->pContext;
+		ParseReceivedData(ctx, bytes, m_notify);
 
 		// 释放
 		delete ioCtx;
-		delete ctx;
 		AddCount(-1);
 
 		PostRecv(); // 继续提交
@@ -119,15 +116,22 @@ void IOCPUDPServer::WorkerThread() {
 }
 
 VOID IOCPUDPServer::Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) {
-	WSABUF buf = { ulOriginalLength, (CHAR*)szBuffer };
+	ContextObject->OutCompressedBuffer.ClearBuffer();
+	if (!WriteContextData(ContextObject, szBuffer, ulOriginalLength)) 
+		return;
+	WSABUF buf = { 
+		ContextObject->OutCompressedBuffer.GetBufferLength(), 
+		(CHAR*)ContextObject->OutCompressedBuffer.GetBuffer(),
+	};
 	DWORD sent = 0;
+	CONTEXT_UDP* ctx = (CONTEXT_UDP*)ContextObject;
 	int err = WSASendTo(
 		ContextObject->sClientSocket,
 		&buf,
 		1,
 		&sent,
 		0,
-		(sockaddr*)&ContextObject->clientAddr,
+		(sockaddr*)&ctx->clientAddr,
 		sizeof(sockaddr_in),
 		NULL,
 		NULL
