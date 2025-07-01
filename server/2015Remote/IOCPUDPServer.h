@@ -41,6 +41,6 @@ private:
 
 	struct IO_CONTEXT {
 		OVERLAPPED ol;
-		CONTEXT_OBJECT* pContext;
+		CONTEXT_UDP* pContext;
 	};
 };

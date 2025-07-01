@@ -446,13 +446,12 @@ BOOL IOCPServer::OnClientInitializing(PCONTEXT_OBJECT  ContextObject, DWORD dwTr
 	return TRUE;
 }
 
-BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans)
-{
+// May be this function should be a member of `CONTEXT_OBJECT`.
+BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyProc m_NotifyProc) {
 	try
 	{
 		if (dwTrans == 0)    //对方关闭了套接字
 		{
-			RemoveStaleContext(ContextObject);
 			return FALSE;
 		}
 		//将接收到的数据拷贝到我们自己的内存中wsabuff    8192
@@ -543,14 +542,23 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 		ContextObject->InCompressedBuffer.ClearBuffer();
 		ContextObject->InDeCompressedBuffer.ClearBuffer();
 	}
+	return TRUE;
+}
+
+BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans)
+{
+	if (FALSE == ParseReceivedData(ContextObject, dwTrans, m_NotifyProc)) {
+		RemoveStaleContext(ContextObject);
+		return FALSE;
+	}
+
 	PostRecv(ContextObject); //投递新的接收数据的请求
 
 	return TRUE;
 }
 
-VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength)
-{
-	assert (ContextObject);
+BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength) {
+	assert(ContextObject);
 	// 输出服务端所发送的命令
 	if (ulOriginalLength < 100 && szBuffer[0] != COMMAND_SCREEN_CONTROL && szBuffer[0] != CMD_HEARTBEAT_ACK) {
 		char buf[100] = { 0 };
@@ -566,10 +574,10 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 	{
 		do
 		{
-			if (ulOriginalLength <= 0) return;
+			if (ulOriginalLength <= 0) return FALSE;
 			if (ContextObject->CompressMethod == COMPRESS_UNKNOWN) {
 				Mprintf("[ERROR] UNKNOWN compress method \n");
-				return;
+				return FALSE;
 			}
 			else if (ContextObject->CompressMethod == COMPRESS_NONE) {
 				Buffer tmp(szBuffer, ulOriginalLength); szBuffer = tmp.Buf();
@@ -595,7 +603,7 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 			{
 				Mprintf("[ERROR] compress failed \n");
 				if (CompressedBuffer != buf) delete [] CompressedBuffer;
-				return;
+				return FALSE;
 			}
 
 			ulCompressedLength =  usingZstd ? iRet : ulCompressedLength;
@@ -604,6 +612,17 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 			if (CompressedBuffer != buf) delete [] CompressedBuffer;
 		}while (false);
 
+		return TRUE;
+	}
+	catch (...) {
+		Mprintf("[ERROR] OnClientPreSending catch an error \n");
+		return FALSE;
+	}
+}
+
+VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength)
+{
+	if (WriteContextData(ContextObject, szBuffer, ulOriginalLength)){
 		OVERLAPPEDPLUS* OverlappedPlus = new OVERLAPPEDPLUS(IOWrite);
 		BOOL bOk = PostQueuedCompletionStatus(m_hCompletionPort, 0, (ULONG_PTR)ContextObject, &OverlappedPlus->m_ol);
 		if ( (!bOk && GetLastError() != ERROR_IO_PENDING) )  //如果投递失败
@@ -613,8 +632,6 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 			RemoveStaleContext(ContextObject);
 			SAFE_DELETE(OverlappedPlus);
 		}
-	}catch(...){
-		Mprintf("[ERROR] OnClientPreSending catch an error \n");
 	}
 }
 

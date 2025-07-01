@@ -8,6 +8,7 @@
 #include "Buffer.h"
 #define XXH_INLINE_ALL
 #include "xxhash.h"
+#include <WS2tcpip.h>
 
 #define PACKET_LENGTH   0x2000
 
@@ -250,9 +251,32 @@ public:
 	virtual void Disconnect(CONTEXT_OBJECT* ctx) {}
 };
 
-typedef class CONTEXT_OBJECT
+class context {
+public:
+	// 纯虚函数
+	virtual VOID InitMember(SOCKET s, Server* svr)=0;
+	virtual void Send2Client(PBYTE szBuffer, ULONG ulOriginalLength) = 0;
+	virtual CString GetClientData(int index)const = 0;
+	virtual void GetAdditionalData(CString(&s)[RES_MAX]) const =0;
+	virtual uint64_t GetClientID() const = 0;
+	virtual std::string GetPeerName() const = 0;
+	virtual int GetPort() const = 0;
+
+public:
+	virtual ~context() {}
+	virtual void Destroy() {}
+	virtual BOOL IsLogin() const { 
+		return TRUE;
+	}
+	virtual bool IsEqual(context *ctx) const {
+		return this == ctx || (GetPeerName() == ctx->GetPeerName() && GetPort() == ctx->GetPort());
+	}
+};
+
+typedef class CONTEXT_OBJECT : public context
 {
 public:
+	virtual ~CONTEXT_OBJECT(){}
 	CString  sClientInfo[ONLINELIST_MAX];
 	CString  additonalInfo[RES_MAX];
 	SOCKET   sClientSocket;
@@ -273,8 +297,6 @@ public:
 	BOOL 				bLogin;						// 是否 login
 	std::string			PeerName;					// 对端IP
 	Server*				server;						// 所属服务端
-	int					addrLen;					// for UDP
-	sockaddr_in			clientAddr;					// for UDP
 
 	VOID InitMember(SOCKET s, Server *svr)
 	{
@@ -297,13 +319,11 @@ public:
 		bLogin = FALSE;
 		m_bProxyConnected = FALSE;
 		server = svr;
-		clientAddr = {};
-		addrLen = sizeof(sockaddr_in);
 	}
 	Server* GetServer() {
 		return server;
 	}
-	VOID Send2Client(PBYTE szBuffer, ULONG ulOriginalLength) {
+	VOID Send2Client(PBYTE szBuffer, ULONG ulOriginalLength) override {
 		if (server)
 			server->Send2Client(this, szBuffer, ulOriginalLength);
 	}
@@ -322,17 +342,26 @@ public:
 	ULONG GetBufferLength() {
 		return InDeCompressedBuffer.GetBufferLength();
 	}
-	std::string GetPeerName() const {
+	virtual std::string GetPeerName() const {
 		return PeerName;
 	}
-	CString GetClientData(int index) const {
+	virtual int GetPort() const {
+		return sClientSocket;
+	}
+	CString GetClientData(int index)  const override {
 		return sClientInfo[index];
 	}
-	void GetAdditionalData(CString(&s)[RES_MAX]) const {
+	void GetAdditionalData(CString(&s)[RES_MAX])  const override {
 		for (int i = 0; i < RES_MAX; i++)
 		{
 			s[i] = additonalInfo[i];
 		}
+	}
+	BOOL IsLogin() const override {
+		return bLogin;
+	}
+	uint64_t GetClientID() const override {
+		return ID;
 	}
 	void CancelIO() {
 		SAFE_CANCELIO(sClientSocket);
@@ -427,3 +456,27 @@ public:
 }CONTEXT_OBJECT, * PCONTEXT_OBJECT;
 
 typedef CList<PCONTEXT_OBJECT> ContextObjectList;
+
+class CONTEXT_UDP : public CONTEXT_OBJECT {
+public:
+	int					addrLen;
+	sockaddr_in			clientAddr;
+
+	VOID InitMember(SOCKET s, Server* svr) override {
+		CONTEXT_OBJECT::InitMember(s, svr);
+		clientAddr = {};
+		addrLen = sizeof(sockaddr_in);
+	}
+	void Destroy() override {
+		delete this;
+	}
+	virtual std::string GetPeerName() const override {
+		char client_ip[INET_ADDRSTRLEN];
+		inet_ntop(AF_INET, &clientAddr.sin_addr, client_ip, INET_ADDRSTRLEN);
+		return client_ip;
+	}
+	virtual int GetPort() const override {
+		int client_port = ntohs(clientAddr.sin_port);
+		return client_port;
+	}
+};
