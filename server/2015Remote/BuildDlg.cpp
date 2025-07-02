@@ -73,6 +73,7 @@ void CBuildDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_STATIC_OTHER_ITEM, m_OtherItem);
 	DDX_Control(pDX, IDC_COMBO_BITS, m_ComboBits);
 	DDX_Control(pDX, IDC_COMBO_RUNTYPE, m_ComboRunType);
+	DDX_Control(pDX, IDC_COMBO_PROTO, m_ComboProto);
 }
 
 
@@ -148,6 +149,7 @@ void CBuildDlg::OnBnClickedOk()
 	CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "", typ, false, DLL_VERSION, 0, startup, HeaderEncV1 };
 	g_ConnectAddress.SetServer(m_strIP, atoi(m_strPort));
 	g_ConnectAddress.runningType = m_ComboRunType.GetCurSel();
+	g_ConnectAddress.protoType = m_ComboProto.GetCurSel();
 
 	if (!g_ConnectAddress.IsValid()) {
 		SAFE_DELETE_ARRAY(szBuffer);
@@ -256,6 +258,10 @@ BOOL CBuildDlg::OnInitDialog()
 	m_ComboRunType.InsertString(RUNNING_RANDOM, "随机上线");
 	m_ComboRunType.InsertString(RUNNING_PARALLEL, "并发上线");
 	m_ComboRunType.SetCurSel(RUNNING_RANDOM);
+
+	m_ComboProto.InsertString(PROTO_TCP, "TCP");
+	m_ComboProto.InsertString(PROTO_UDP, "UDP");
+	m_ComboProto.SetCurSel(PROTO_TCP);
 
 	m_OtherItem.ShowWindow(SW_HIDE);
 

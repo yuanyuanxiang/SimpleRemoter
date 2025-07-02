@@ -149,6 +149,7 @@ IOCPServer::~IOCPServer(void)
 // 返回错误码0代表成功，否则代表错误信息.
 UINT IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort)
 {
+	m_nPort = uPort;
 	m_NotifyProc = NotifyProc;
 	m_OfflineProc = OffProc;
 	m_hKillEvent = CreateEvent(NULL,FALSE,FALSE,NULL);
@@ -448,6 +449,7 @@ BOOL IOCPServer::OnClientInitializing(PCONTEXT_OBJECT  ContextObject, DWORD dwTr
 
 // May be this function should be a member of `CONTEXT_OBJECT`.
 BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyProc m_NotifyProc) {
+	BOOL ret = 1;
 	try
 	{
 		if (dwTrans == 0)    //对方关闭了套接字
@@ -475,7 +477,8 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
 				ULONG ulOriginalLength = 0;
 				PBYTE CompressedBuffer = ContextObject->ReadBuffer(ulCompressedLength, ulOriginalLength);
 				ContextObject->InDeCompressedBuffer.WriteBuffer(CompressedBuffer, ulCompressedLength);
-				m_NotifyProc(ContextObject);
+				if (m_NotifyProc(ContextObject))
+					ret = 999;
 				break;
 			}
 			
@@ -496,7 +499,8 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
 					ContextObject->InDeCompressedBuffer.ClearBuffer();
 					ContextObject->Decode(CompressedBuffer, ulOriginalLength);
 					ContextObject->InDeCompressedBuffer.WriteBuffer(CompressedBuffer, ulOriginalLength);
-					m_NotifyProc(ContextObject);
+					if (m_NotifyProc(ContextObject))
+						ret = 999;
 					SAFE_DELETE_ARRAY(CompressedBuffer);
 					continue;
 				}
@@ -510,7 +514,8 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
 					ContextObject->InDeCompressedBuffer.ClearBuffer();
 					ContextObject->Decode(DeCompressedBuffer, ulOriginalLength);
 					ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
-					m_NotifyProc(ContextObject);  //通知窗口
+					if (m_NotifyProc(ContextObject))
+						ret = 999;
 				}else if (usingZstd){
 					// 尝试用zlib解压缩
 					if (Z_OK == uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength)) {
@@ -518,7 +523,8 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
 						ContextObject->InDeCompressedBuffer.ClearBuffer();
 						ContextObject->Decode(DeCompressedBuffer, ulOriginalLength);
 						ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
-						m_NotifyProc(ContextObject);
+						if (m_NotifyProc(ContextObject))
+							ret = 999;
 					} else {
 						zlibFailed = true;
 						ContextObject->CompressMethod = COMPRESS_UNKNOWN;
@@ -542,7 +548,7 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
 		ContextObject->InCompressedBuffer.ClearBuffer();
 		ContextObject->InDeCompressedBuffer.ClearBuffer();
 	}
-	return TRUE;
+	return ret;
 }
 
 BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans)
