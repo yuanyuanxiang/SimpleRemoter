@@ -33,4 +33,5 @@ public:
 	CStatic m_OtherItem;
 	CComboBox m_ComboBits;
 	CComboBox m_ComboRunType;
+	CComboBox m_ComboProto;
 };

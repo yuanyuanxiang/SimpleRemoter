@@ -1241,8 +1241,10 @@ void CMy2015RemoteDlg::OnOnlineDelete()
 	{
 		POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
 		int iItem = m_CList_Online.GetNextSelectedItem(Pos);
-		CString strIP = m_CList_Online.GetItemText(iItem,ONLINELIST_IP);  
+		CString strIP = m_CList_Online.GetItemText(iItem,ONLINELIST_IP);
+		context* ctx = (context*)m_CList_Online.GetItemData(iItem);
 		m_CList_Online.DeleteItem(iItem);
+		ctx->Destroy();
 		strIP+="断开连接";
 		ShowMessage("操作成功",strIP);
 	}
@@ -1631,11 +1633,10 @@ BOOL CMy2015RemoteDlg::Activate(const std::string& nPort,int nMaxConnection)
 }
 
 
-VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
+BOOL CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 {
 	if (!g_2015RemoteDlg || g_2015RemoteDlg->isClosed) {
-		ContextObject->Destroy();
-		return;
+		return FALSE;
 	}
 
 	AUTO_TICK(50);
@@ -1649,16 +1650,17 @@ VOID CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 		HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 		if (hEvent == NULL) {
 			Mprintf("===> NotifyProc CreateEvent FAILED: %p <===\n", ContextObject);
-			return;
+			return FALSE;
 		}
 		if (!g_2015RemoteDlg->PostMessage(WM_HANDLEMESSAGE, (WPARAM)hEvent, (LPARAM)ContextObject)) {
 			Mprintf("===> NotifyProc PostMessage FAILED: %p <===\n", ContextObject);
 			CloseHandle(hEvent);
-			return;
+			return FALSE;
 		}
 		HANDLE handles[2] = { hEvent, g_2015RemoteDlg->m_hExit };
 		DWORD result = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
 	}
+	return TRUE;
 }
 
 // 对话框指针及对话框句柄
@@ -1669,10 +1671,10 @@ struct dlgInfo
 	dlgInfo(HANDLE h, HWND type) : hDlg(h), hWnd(type) { }
 };
 
-VOID CALLBACK CMy2015RemoteDlg::OfflineProc(CONTEXT_OBJECT* ContextObject)
+BOOL CALLBACK CMy2015RemoteDlg::OfflineProc(CONTEXT_OBJECT* ContextObject)
 {
-	if (!g_2015RemoteDlg)
-		return;
+	if (!g_2015RemoteDlg || g_2015RemoteDlg->isClosed)
+		return FALSE;
 	dlgInfo* dlg = ContextObject->hWnd ? new dlgInfo(ContextObject->hDlg, ContextObject->hWnd) : NULL;
 
 	SOCKET nSocket = ContextObject->sClientSocket;
@@ -1680,6 +1682,8 @@ VOID CALLBACK CMy2015RemoteDlg::OfflineProc(CONTEXT_OBJECT* ContextObject)
 	g_2015RemoteDlg->PostMessage(WM_USEROFFLINEMSG, (WPARAM)dlg, (LPARAM)nSocket);
 
 	ContextObject->hWnd = NULL;
+
+	return TRUE;
 }
 
 
@@ -2629,9 +2633,10 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
 		CString strText;
 		std::string expired = res[RES_EXPIRED_DATE];
 		expired = expired.empty() ? "" : " Expired on " + expired;
-		strText.Format(_T("文件路径: %s%s\r\n系统信息: %s 位 %s 核心 %s GB\r\n启动信息: %s %s"), 
+		strText.Format(_T("文件路径: %s%s\r\n系统信息: %s 位 %s 核心 %s GB\r\n启动信息: %s %s\r\n上线信息: %s %d"), 
 			res[RES_PROGRAM_BITS].IsEmpty() ? "" : res[RES_PROGRAM_BITS] + " 位 ", res[RES_FILE_PATH],
-			res[RES_SYSTEM_BITS], res[RES_SYSTEM_CPU], res[RES_SYSTEM_MEM], startTime, expired.c_str());
+			res[RES_SYSTEM_BITS], res[RES_SYSTEM_CPU], res[RES_SYSTEM_MEM], startTime, expired.c_str(),
+			ctx->GetProtocol().c_str(), ctx->GetServerPort());
 
 		// 获取鼠标位置
 		CPoint pt;
@@ -2644,7 +2649,7 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
 		m_pFloatingTip = new CWnd();
 		int width = res[RES_FILE_PATH].GetLength() * 10;
 		width = min(max(width, 360), 800);
-		CRect rect(pt.x, pt.y, pt.x + width, pt.y + 50); // 宽度、高度
+		CRect rect(pt.x, pt.y, pt.x + width, pt.y + 60); // 宽度、高度
 
 		BOOL bOk = m_pFloatingTip->CreateEx(
 			WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,

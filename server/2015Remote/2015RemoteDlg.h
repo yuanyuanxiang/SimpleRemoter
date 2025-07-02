@@ -176,8 +176,8 @@ public:
 	Buffer* m_ServerDLL[PAYLOAD_MAXTYPE];
 	Buffer* m_ServerBin[PAYLOAD_MAXTYPE];
 	MasterSettings m_settings;
-	static VOID CALLBACK NotifyProc(CONTEXT_OBJECT* ContextObject);
-	static VOID CALLBACK OfflineProc(CONTEXT_OBJECT* ContextObject);
+	static BOOL CALLBACK NotifyProc(CONTEXT_OBJECT* ContextObject);
+	static BOOL CALLBACK OfflineProc(CONTEXT_OBJECT* ContextObject);
 	VOID MessageHandle(CONTEXT_OBJECT* ContextObject);
 	VOID SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength);
 	// 显示用户上线信息

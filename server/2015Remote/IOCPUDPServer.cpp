@@ -15,7 +15,7 @@ IOCPUDPServer::~IOCPUDPServer() {
 
 UINT IOCPUDPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort) {
 	if (m_running) return 1;
-
+	m_port = uPort;
 	m_notify = NotifyProc;
 	m_offline = OffProc;
 
@@ -50,14 +50,8 @@ UINT IOCPUDPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc
 void IOCPUDPServer::PostRecv() {
 	if (!m_running) return;
 
-	AddCount(1);
-	CONTEXT_UDP* ctx = new CONTEXT_UDP();
-	ctx->InitMember(m_socket, this);
-
-	IO_CONTEXT* ioCtx = new IO_CONTEXT();
-	ZeroMemory(&ioCtx->ol, sizeof(OVERLAPPED));
-	ioCtx->pContext = ctx;
-
+	IO_CONTEXT* ioCtx = AddCount();
+	CONTEXT_UDP* ctx = ioCtx->pContext;
 	ctx->wsaInBuf.buf = ctx->szBuffer;
 	ctx->wsaInBuf.len = sizeof(ctx->szBuffer);
 
@@ -78,8 +72,7 @@ void IOCPUDPServer::PostRecv() {
 		DWORD err = WSAGetLastError();
 		Mprintf("[IOCP] PostRecv error: %d\n", err);
 		delete ioCtx;
-		delete ctx;
-		AddCount(-1);
+		DelCount();
 	}
 }
 
@@ -95,9 +88,8 @@ void IOCPUDPServer::WorkerThread() {
 			Mprintf("[IOCP] PostRecv error: %d\n", err);
 			if (pOverlapped) {
 				IO_CONTEXT* ioCtx = CONTAINING_RECORD(pOverlapped, IO_CONTEXT, ol);
-				delete ioCtx->pContext;
 				delete ioCtx;
-				AddCount(-1);
+				DelCount();
 			}
 			continue;
 		}
@@ -105,14 +97,19 @@ void IOCPUDPServer::WorkerThread() {
 
 		IO_CONTEXT* ioCtx = CONTAINING_RECORD(pOverlapped, IO_CONTEXT, ol);
 		CONTEXT_UDP* ctx = ioCtx->pContext;
-		ParseReceivedData(ctx, bytes, m_notify);
+		BOOL ret = ParseReceivedData(ctx, bytes, m_notify);
+		if (999 != ret)
+			ctx->Destroy();
 
 		// 释放
+		ioCtx->pContext = NULL;
 		delete ioCtx;
-		AddCount(-1);
+		DelCount();
 
 		PostRecv(); // 继续提交
 	}
+	CloseHandle(m_hThread);
+	m_hThread = NULL;
 }
 
 VOID IOCPUDPServer::Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) {
@@ -157,8 +154,8 @@ VOID IOCPUDPServer::Destroy() {
 
 	if (m_hThread) {
 		WaitForSingleObject(m_hThread, INFINITE);
-		CloseHandle(m_hThread);
-		m_hThread = NULL;
+		while (m_hThread)
+			Sleep(200);
 	}
 
 	if (m_hIOCP) {

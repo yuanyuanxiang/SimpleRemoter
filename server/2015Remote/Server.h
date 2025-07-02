@@ -64,7 +64,12 @@ class HeaderParser {
 	friend class CONTEXT_OBJECT;
 protected:
 	HeaderParser() {
-		memset(this, 0, sizeof(HeaderParser));
+		m_Encoder = nullptr;
+		m_Encoder2 = nullptr;
+		m_bParsed = FALSE;
+		m_nHeaderLen = m_nCompareLen = m_nFlagLen = 0;
+		m_nFlagType = FLAG_UNKNOWN;
+		memset(m_szPacketFlag, 0, sizeof(m_szPacketFlag));
 	}
 	virtual ~HeaderParser() {
 		Reset();
@@ -112,6 +117,8 @@ protected:
 			m_nFlagLen = m_nCompareLen;
 			m_nHeaderLen = m_nFlagLen + 8;
 			m_bParsed = TRUE;
+			assert(NULL==m_Encoder);
+			assert(NULL==m_Encoder2);
 			m_Encoder = new Encoder();
 			m_Encoder2 = new Encoder();
 			break;
@@ -156,7 +163,10 @@ protected:
 	HeaderParser& Reset() {
 		SAFE_DELETE(m_Encoder);
 		SAFE_DELETE(m_Encoder2);
-		memset(this, 0, sizeof(HeaderParser));
+		m_bParsed = FALSE;
+		m_nHeaderLen = m_nCompareLen = m_nFlagLen = 0;
+		m_nFlagType = FLAG_UNKNOWN;
+		memset(m_szPacketFlag, 0, sizeof(m_szPacketFlag));
 		return *this;
 	}
 	BOOL IsParsed() const {
@@ -187,8 +197,8 @@ private:
 	int					m_nFlagLen;					// 标识长度
 	FlagType			m_nFlagType;				// 标识类型
 	char				m_szPacketFlag[32];			// 对比信息
-	Encoder* m_Encoder;					// 编码器
-	Encoder* m_Encoder2;					// 编码器2
+	Encoder*			m_Encoder;					// 编码器
+	Encoder*			m_Encoder2;					// 编码器2
 };
 
 enum IOType
@@ -229,8 +239,8 @@ public:
 	}
 };
 
-typedef void (CALLBACK* pfnNotifyProc)(CONTEXT_OBJECT* ContextObject);
-typedef void (CALLBACK* pfnOfflineProc)(CONTEXT_OBJECT* ContextObject);
+typedef BOOL (CALLBACK* pfnNotifyProc)(CONTEXT_OBJECT* ContextObject);
+typedef BOOL (CALLBACK* pfnOfflineProc)(CONTEXT_OBJECT* ContextObject);
 
 class Server
 {
@@ -239,6 +249,8 @@ public:
 
 	Server() {}
 	virtual ~Server() {}
+
+	virtual int GetPort() const = 0;
 
 	virtual UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort) = 0;
 
@@ -261,6 +273,8 @@ public:
 	virtual uint64_t GetClientID() const = 0;
 	virtual std::string GetPeerName() const = 0;
 	virtual int GetPort() const = 0;
+	virtual std::string GetProtocol() const = 0;
+	virtual int GetServerPort() const = 0;
 
 public:
 	virtual ~context() {}
@@ -298,6 +312,12 @@ public:
 	std::string			PeerName;					// 对端IP
 	Server*				server;						// 所属服务端
 
+	std::string GetProtocol() const override {
+		return "TCP";
+	}
+	int GetServerPort() const override {
+		return server->GetPort();
+	}
 	VOID InitMember(SOCKET s, Server *svr)
 	{
 		memset(szBuffer, 0, sizeof(char) * PACKET_LENGTH);
@@ -462,6 +482,9 @@ public:
 	int					addrLen;
 	sockaddr_in			clientAddr;
 
+	std::string GetProtocol() const override {
+		return "UDP";
+	}
 	VOID InitMember(SOCKET s, Server* svr) override {
 		CONTEXT_OBJECT::InitMember(s, svr);
 		clientAddr = {};

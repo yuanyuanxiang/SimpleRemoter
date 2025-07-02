@@ -47,9 +47,8 @@
 
 class IOCPServer : public Server
 {
-	typedef void (CALLBACK* pfnNotifyProc)(CONTEXT_OBJECT* ContextObject);
-	typedef void (CALLBACK* pfnOfflineProc)(CONTEXT_OBJECT* ContextObject);
 protected:
+	int					m_nPort;
 	SOCKET				m_sListenSocket;
 	HANDLE				m_hCompletionPort;
 	UINT				m_ulMaxConnections;
@@ -103,6 +102,9 @@ private:
 public:
 	IOCPServer(void);
 	~IOCPServer(void);
+	int GetPort() const override {
+		return m_nPort;
+	}
 
 	UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort);
 

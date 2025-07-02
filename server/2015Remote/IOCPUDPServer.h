@@ -6,10 +6,21 @@
 
 
 class IOCPUDPServer : public Server {
+	struct IO_CONTEXT {
+		OVERLAPPED ol;
+		CONTEXT_UDP* pContext;
+		IO_CONTEXT(CONTEXT_UDP* ctx) : ol({}), pContext(ctx) { }
+		~IO_CONTEXT() {
+			SAFE_DELETE(pContext);
+		}
+	};
 public:
 	IOCPUDPServer();
 	~IOCPUDPServer();
 
+	int GetPort() const override {
+		return m_port;
+	}
 	UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort) override;
 	VOID Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) override;
 	VOID Destroy() override;
@@ -17,9 +28,17 @@ public:
 private:
 	void WorkerThread();
 	void PostRecv();
-	void AddCount(int n=1){
+	IO_CONTEXT* AddCount(){
 		m_locker.lock();
-		m_count += n;
+		IO_CONTEXT* ioCtx = new IO_CONTEXT(new CONTEXT_UDP());
+		ioCtx->pContext->InitMember(m_socket, this);
+		m_count++;
+		m_locker.unlock();
+		return ioCtx;
+	}
+	void DelCount() {
+		m_locker.lock();
+		m_count--;
 		m_locker.unlock();
 	}
 	int GetCount() {
@@ -29,6 +48,7 @@ private:
 		return n;
 	}
 private:
+	int m_port = 6543;
 	int m_count = 0;
 	CLocker m_locker;
 	SOCKET m_socket = INVALID_SOCKET;
@@ -38,9 +58,4 @@ private:
 
 	pfnNotifyProc m_notify = nullptr;
 	pfnOfflineProc m_offline = nullptr;
-
-	struct IO_CONTEXT {
-		OVERLAPPED ol;
-		CONTEXT_UDP* pContext;
-	};
 };
