@@ -1718,7 +1718,7 @@ std::string getDateStr(int daysOffset = 0) {
 VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject) 
 {
 	if (isClosed) {
-		return;
+		return ContextObject->Destroy();
 	}
 	unsigned cmd = ContextObject->InDeCompressedBuffer.GetBYTE(0);
 	unsigned len = ContextObject->InDeCompressedBuffer.GetBufferLen();
@@ -1758,6 +1758,8 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		memcpy(resp + 64, hmac.c_str(), hmac.length());
 		resp[80] = 0;
 		ContextObject->Send2Client((LPBYTE)resp, sizeof(resp));
+		Sleep(20);
+		ContextObject->Destroy();
 		break;
 	}
 	case CMD_EXECUTE_DLL: // 请求DLL
@@ -1766,9 +1768,13 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		for (std::vector<DllInfo*>::const_iterator i=m_DllList.begin(); i!=m_DllList.end(); ++i){
 			DllInfo* dll = *i;
 			if (dll->Name == info->Name) {
-				return ContextObject->Send2Client( dll->Data->Buf(), dll->Data->length());
+				// TODO 如果是UDP，发送大包数据基本上不可能成功
+				ContextObject->Send2Client( dll->Data->Buf(), dll->Data->length());
+				break;
 			}
 		}
+		Sleep(20);
+		ContextObject->Destroy();
 		break;
 	}
 	case COMMAND_PROXY:
@@ -1802,6 +1808,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 			CancelIo((HANDLE)ContextObject->sClientSocket);
 			closesocket(ContextObject->sClientSocket); 
 			Sleep(10);
+			ContextObject->Destroy();
 			break;
 		}
 	case TOKEN_DRIVE_LIST_PLUGIN: // 文件管理

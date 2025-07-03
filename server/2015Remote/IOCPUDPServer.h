@@ -7,9 +7,10 @@
 
 class IOCPUDPServer : public Server {
 	struct IO_CONTEXT {
-		OVERLAPPED ol;
-		CONTEXT_UDP* pContext;
-		IO_CONTEXT(CONTEXT_UDP* ctx) : ol({}), pContext(ctx) { }
+		OVERLAPPED ol = {};
+		CONTEXT_UDP* pContext = nullptr;
+		IO_CONTEXT() : ol({}), pContext(new CONTEXT_UDP) {
+		}
 		~IO_CONTEXT() {
 			SAFE_DELETE(pContext);
 		}
@@ -30,7 +31,7 @@ private:
 	void PostRecv();
 	IO_CONTEXT* AddCount(){
 		m_locker.lock();
-		IO_CONTEXT* ioCtx = new IO_CONTEXT(new CONTEXT_UDP());
+		IO_CONTEXT* ioCtx = new IO_CONTEXT();
 		ioCtx->pContext->InitMember(m_socket, this);
 		m_count++;
 		m_locker.unlock();
