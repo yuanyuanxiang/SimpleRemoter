@@ -369,8 +369,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	case SERVER_EXIT:
 		{
-			BYTE	bToken = SERVER_EXIT;// 主控端退出  
-			m_ClientObject->Send2Server((char*)&bToken, 1);
+			// 主控端退出
 			g_bExit = S_SERVER_EXIT;
 			Mprintf("======> Server exit \n");
 			break;

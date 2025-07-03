@@ -120,6 +120,9 @@ VOID IOCPUDPServer::Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, U
 		ContextObject->OutCompressedBuffer.GetBufferLength(), 
 		(CHAR*)ContextObject->OutCompressedBuffer.GetBuffer(),
 	};
+	if (buf.len > 1200) {
+		Mprintf("UDP large packet may lost: %d bytes\n", buf.len);
+	}
 	DWORD sent = 0;
 	CONTEXT_UDP* ctx = (CONTEXT_UDP*)ContextObject;
 	int err = WSASendTo(

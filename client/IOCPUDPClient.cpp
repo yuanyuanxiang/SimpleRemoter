@@ -56,5 +56,8 @@ int IOCPUDPClient::ReceiveData(char* buffer, int bufSize, int flags) {
 }
 
 int IOCPUDPClient::SendTo(const char* buf, int len, int flags) {
+	if (len > 1200) {
+		Mprintf("UDP large packet may lost: %d bytes\n", len);
+	}
 	return ::sendto(m_sClientSocket, buf, len, flags, (sockaddr*)&m_ServerAddr, sizeof(m_ServerAddr));
 }

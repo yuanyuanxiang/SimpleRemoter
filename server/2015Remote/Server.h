@@ -479,9 +479,12 @@ typedef CList<PCONTEXT_OBJECT> ContextObjectList;
 
 class CONTEXT_UDP : public CONTEXT_OBJECT {
 public:
-	int					addrLen;
-	sockaddr_in			clientAddr;
-
+	int					addrLen = 0;
+	sockaddr_in			clientAddr = {};
+	CONTEXT_UDP() {
+	}
+	virtual ~CONTEXT_UDP() {
+	}
 	std::string GetProtocol() const override {
 		return "UDP";
 	}
