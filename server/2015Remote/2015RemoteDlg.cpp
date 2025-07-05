@@ -38,6 +38,7 @@
 #include "adapter.h"
 #include "client/MemoryModule.h"
 #include <file/CFileManagerDlg.h>
+#include "CDrawingBoard.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -385,6 +386,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_OPENCHATDIALOG, OnOpenChatDialog)
 	ON_MESSAGE(WM_OPENDECRYPTDIALOG, OnOpenDecryptDialog)
 	ON_MESSAGE(WM_OPENFILEMGRDIALOG, OnOpenFileMgrDialog)
+	ON_MESSAGE(WM_OPENDRAWINGBOARD, OnOpenDrawingBoard)
 	ON_MESSAGE(WM_UPXTASKRESULT, UPXProcResult)
 	ON_WM_HELPINFO()
 	ON_COMMAND(ID_ONLINE_SHARE, &CMy2015RemoteDlg::OnOnlineShare)
@@ -1811,6 +1813,11 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 			ContextObject->Destroy();
 			break;
 		}
+	case TOKEN_DRAWING_BOARD:
+	{
+		g_2015RemoteDlg->SendMessage(WM_OPENDRAWINGBOARD, 0, (LPARAM)ContextObject);
+		break;
+	}
 	case TOKEN_DRIVE_LIST_PLUGIN: // 文件管理
 	{
 		g_2015RemoteDlg->SendMessage(WM_OPENFILEMGRDIALOG, 0, (LPARAM)ContextObject);
@@ -2133,6 +2140,11 @@ LRESULT CMy2015RemoteDlg::OnOpenDecryptDialog(WPARAM wParam, LPARAM lParam)
 LRESULT CMy2015RemoteDlg::OnOpenFileMgrDialog(WPARAM wParam, LPARAM lParam)
 {
 	return OpenDialog<file::CFileManagerDlg, IDD_FILE_WINOS>(wParam, lParam);
+}
+
+LRESULT CMy2015RemoteDlg::OnOpenDrawingBoard(WPARAM wParam, LPARAM lParam)
+{
+	return OpenDialog<CDrawingBoard, IDD_DRAWING_BOARD>(wParam, lParam);
 }
 
 BOOL CMy2015RemoteDlg::OnHelpInfo(HELPINFO* pHelpInfo)

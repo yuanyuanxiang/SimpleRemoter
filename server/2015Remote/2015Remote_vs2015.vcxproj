@@ -260,6 +260,7 @@
     <ClInclude Include="AudioDlg.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="BuildDlg.h" />
+    <ClInclude Include="CDrawingBoard.h" />
     <ClInclude Include="Chat.h" />
     <ClInclude Include="CPasswordDlg.h" />
     <ClInclude Include="CTextDlg.h" />
@@ -322,6 +323,7 @@
     <ClCompile Include="AudioDlg.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="BuildDlg.cpp" />
+    <ClCompile Include="CDrawingBoard.cpp" />
     <ClCompile Include="Chat.cpp" />
     <ClCompile Include="CPasswordDlg.cpp" />
     <ClCompile Include="CTextDlg.cpp" />
@@ -380,6 +382,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\Bitmap\authorize.bmp" />
+    <Image Include="res\Bitmap\DrawingBoard.bmp" />
     <Image Include="res\Bitmap\DxgiDesktop.bmp" />
     <Image Include="res\Bitmap\GrayDesktop.bmp" />
     <Image Include="res\Bitmap\note.bmp" />
@@ -393,6 +396,7 @@
     <Image Include="res\chat.ico" />
     <Image Include="res\decrypt.ico" />
     <Image Include="res\delete.bmp" />
+    <Image Include="res\DrawingBoard.ico" />
     <Image Include="res\file\FILE.ico" />
     <Image Include="res\file\Icon_A.ico" />
     <Image Include="res\file\Icon_C.ico" />

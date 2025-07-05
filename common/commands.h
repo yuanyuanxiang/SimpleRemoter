@@ -233,6 +233,7 @@ enum
 	TOKEN_BITMAPINFO_HIDE,          // 虚拟屏幕
 	TOKEN_SCREEN_SIZE,              // 屏幕大小
 	TOKEN_DRIVE_LIST_PLUGIN = 150,	// 文件管理(插件)
+	TOKEN_DRAWING_BOARD=151,		// 画板 
 
 	TOKEN_DECRYPT = 199,
 	TOKEN_REGEDIT = 200,            // 注册表
@@ -430,6 +431,17 @@ enum FileManager {
 	TOKEN_FILE_SEARCHPLUS_INITUSN,
 	TOKEN_FILE_SEARCHPLUS_GETUSN,
 	TOKEN_FILE_SEARCHPLUS_NUMBER,
+};
+
+// 远程画板
+enum RemoteDraw {
+	CMD_DRAW_POINT = 0,
+	CMD_DRAW_END = 1,
+	CMD_TRANSPORT = 2,
+	CMD_TOPMOST = 3,
+	CMD_MOVEWINDOW = 4,
+	CMD_SET_SIZE = 5,
+	CMD_DRAW_CLEAR = 6,
 };
 
 enum 
