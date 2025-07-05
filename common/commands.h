@@ -442,6 +442,7 @@ enum RemoteDraw {
 	CMD_MOVEWINDOW = 4,
 	CMD_SET_SIZE = 5,
 	CMD_DRAW_CLEAR = 6,
+	CMD_DRAW_TEXT = 7,
 };
 
 enum 
