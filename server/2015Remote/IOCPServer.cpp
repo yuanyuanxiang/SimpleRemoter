@@ -566,10 +566,12 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength) {
 	assert(ContextObject);
 	// 输出服务端所发送的命令
-	if (ulOriginalLength < 100 && szBuffer[0] != COMMAND_SCREEN_CONTROL && szBuffer[0] != CMD_HEARTBEAT_ACK) {
+	unsigned cmd = szBuffer[0];
+	if (ulOriginalLength < 100 && cmd != COMMAND_SCREEN_CONTROL && cmd != CMD_HEARTBEAT_ACK &&
+		cmd != CMD_DRAW_POINT && cmd != CMD_MOVEWINDOW && cmd != CMD_SET_SIZE) {
 		char buf[100] = { 0 };
 		if (ulOriginalLength == 1){
-			sprintf_s(buf, "command %d", int(szBuffer[0]));
+			sprintf_s(buf, "command %d", cmd);
 		}
 		else {
 			memcpy(buf, szBuffer, ulOriginalLength);

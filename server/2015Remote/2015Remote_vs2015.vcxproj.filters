@@ -49,6 +49,7 @@
       <Filter>file</Filter>
     </ClCompile>
     <ClCompile Include="IOCPUDPServer.cpp" />
+    <ClCompile Include="CDrawingBoard.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
@@ -110,6 +111,7 @@
     </ClInclude>
     <ClInclude Include="IOCPUDPServer.h" />
     <ClInclude Include="Server.h" />
+    <ClInclude Include="CDrawingBoard.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />
@@ -148,6 +150,8 @@
     <Image Include="res\file\Icon_E.ico" />
     <Image Include="res\file\Icon_F.ico" />
     <Image Include="res\file\Icon_G.ico" />
+    <Image Include="res\Bitmap\DrawingBoard.bmp" />
+    <Image Include="res\DrawingBoard.ico" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Release\ghost.exe" />
