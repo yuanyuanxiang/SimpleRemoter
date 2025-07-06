@@ -270,6 +270,26 @@ Modifying and compiling the program yourself can also resolve this issue.*
 * Improvement: Add a popup window to show details
 * Improve client stability
 
+
+**2025.07.07**
+
+Release v1.1.2:
+
+* Fix the problem with the keylogging feature
+* Security: Improve the authorization of plugins
+* fix: Memory leak when release `CMachineDlg` object
+* fix: Showing wrong IP while using `Reverse Proxy` (#147)
+* Add a menu redirects to the authorization guide page
+* Plugin: Add another file management module
+* Improve: Reduce master program redundant code
+* fix: Prevent crash when closing window during background data processing
+* Improve: Remove redundant code for reading the registry
+* layout: Reorganize TCP client/server code; Refactor the socket server code
+* feature: Support listening on multiple ports simultaneously
+* feature: Support client connections over UDP; Add client protocol option TCP/UDP
+* Plugin: #145 Support remote drawing board
+* Plugin: Add remote desktop privacy screen feature
+
 ---
 
 # 6. Related Projects
