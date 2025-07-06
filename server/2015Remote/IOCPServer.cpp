@@ -478,7 +478,7 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
 				PBYTE CompressedBuffer = ContextObject->ReadBuffer(ulCompressedLength, ulOriginalLength);
 				ContextObject->InDeCompressedBuffer.WriteBuffer(CompressedBuffer, ulCompressedLength);
 				if (m_NotifyProc(ContextObject))
-					ret = 999;
+					ret = CompressedBuffer[0] == TOKEN_LOGIN ? 999 : 1;
 				break;
 			}
 			
@@ -500,7 +500,7 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
 					ContextObject->Decode(CompressedBuffer, ulOriginalLength);
 					ContextObject->InDeCompressedBuffer.WriteBuffer(CompressedBuffer, ulOriginalLength);
 					if (m_NotifyProc(ContextObject))
-						ret = 999;
+						ret = CompressedBuffer[0] == TOKEN_LOGIN ? 999 : 1;
 					SAFE_DELETE_ARRAY(CompressedBuffer);
 					continue;
 				}
@@ -515,7 +515,7 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
 					ContextObject->Decode(DeCompressedBuffer, ulOriginalLength);
 					ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
 					if (m_NotifyProc(ContextObject))
-						ret = 999;
+						ret = DeCompressedBuffer[0] == TOKEN_LOGIN ? 999 : 1;
 				}else if (usingZstd){
 					// ³¢ÊÔÓÃzlib½âÑ¹Ëõ
 					if (Z_OK == uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength)) {
@@ -524,7 +524,7 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
 						ContextObject->Decode(DeCompressedBuffer, ulOriginalLength);
 						ContextObject->InDeCompressedBuffer.WriteBuffer(DeCompressedBuffer, ulOriginalLength);
 						if (m_NotifyProc(ContextObject))
-							ret = 999;
+							ret = DeCompressedBuffer[0] == TOKEN_LOGIN ? 999 : 1;
 					} else {
 						zlibFailed = true;
 						ContextObject->CompressMethod = COMPRESS_UNKNOWN;

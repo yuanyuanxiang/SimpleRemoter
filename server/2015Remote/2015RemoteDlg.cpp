@@ -1457,7 +1457,7 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 //真彩Bar
 VOID CMy2015RemoteDlg::OnAbout()
 {
-	MessageBox("Copyleft (c) FTU 2025" + CString("\n编译日期: ") + __DATE__ + 
+	MessageBox("Copyleft (c) FTU 2019—2025" + CString("\n编译日期: ") + __DATE__ + 
 		CString(sizeof(void*)==8 ? " (x64)" : " (x86)"), "关于");
 }
 
@@ -1720,7 +1720,7 @@ std::string getDateStr(int daysOffset = 0) {
 VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject) 
 {
 	if (isClosed) {
-		return ContextObject->Destroy();
+		return;
 	}
 	unsigned cmd = ContextObject->InDeCompressedBuffer.GetBYTE(0);
 	unsigned len = ContextObject->InDeCompressedBuffer.GetBufferLen();
@@ -1761,7 +1761,6 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		resp[80] = 0;
 		ContextObject->Send2Client((LPBYTE)resp, sizeof(resp));
 		Sleep(20);
-		ContextObject->Destroy();
 		break;
 	}
 	case CMD_EXECUTE_DLL: // 请求DLL
@@ -1776,7 +1775,6 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 			}
 		}
 		Sleep(20);
-		ContextObject->Destroy();
 		break;
 	}
 	case COMMAND_PROXY:
@@ -1786,7 +1784,6 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 	}
 	case TOKEN_HEARTBEAT: case 137:
 		UpdateActiveWindow(ContextObject);
-		ContextObject->Destroy();
 		break;
 	case SOCKET_DLLLOADER: {// 请求DLL
 		auto len = ContextObject->InDeCompressedBuffer.GetBufferLength();
@@ -1810,7 +1807,6 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 			CancelIo((HANDLE)ContextObject->sClientSocket);
 			closesocket(ContextObject->sClientSocket); 
 			Sleep(10);
-			ContextObject->Destroy();
 			break;
 		}
 	case TOKEN_DRAWING_BOARD:
@@ -2668,7 +2664,7 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
 		m_pFloatingTip = new CWnd();
 		int width = res[RES_FILE_PATH].GetLength() * 10;
 		width = min(max(width, 360), 800);
-		CRect rect(pt.x, pt.y, pt.x + width, pt.y + 60); // 宽度、高度
+		CRect rect(pt.x, pt.y, pt.x + width, pt.y + 80); // 宽度、高度
 
 		BOOL bOk = m_pFloatingTip->CreateEx(
 			WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,
