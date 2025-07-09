@@ -2,20 +2,28 @@
 // This file implements a serial of data header encoding methods.
 #include <cstring>
 #include <common/skCrypter.h>
+#include "common/encfuncs.h"
 
 #define MSG_HEADER "HELL"
 
 enum HeaderEncType {
 	HeaderEncUnknown = -1,
 	HeaderEncNone,
+	HeaderEncV0,
 	HeaderEncV1,
+	HeaderEncV2,
+	HeaderEncV3,
+	HeaderEncV4,
+	HeaderEncV5,
+	HeaderEncV6,
+	HeaderEncNum,
 };
 
 // 数据编码格式：标识符 + 编码后长度(4字节) + 解码后长度(4字节)
 const int FLAG_COMPLEN = 4;
 const int FLAG_LENGTH = 8;
 const int HDR_LENGTH = FLAG_LENGTH + 2 * sizeof(unsigned int);
-const int MIN_COMLEN = 8;
+const int MIN_COMLEN = 12;
 
 typedef void (*EncFun)(unsigned char* data, size_t length, unsigned char key);
 typedef void (*DecFun)(unsigned char* data, size_t length, unsigned char key);
@@ -74,15 +82,8 @@ inline void decrypt(unsigned char* data, size_t length, unsigned char key) {
 }
 
 inline EncFun GetHeaderEncoder(HeaderEncType type) {
-	switch (type)
-	{
-	case HeaderEncNone:
-		return default_encrypt;
-	case HeaderEncV1:
-		return encrypt;
-	default:
-		return NULL;
-	}
+	static const DecFun methods[] = { default_encrypt, encrypt, encrypt_v1, encrypt_v2, encrypt_v3, encrypt_v4, encrypt_v5, encrypt_v6 };
+	return methods[type];
 }
 
 typedef struct HeaderFlag {
@@ -142,7 +143,7 @@ inline FlagType CheckHead(const char* flag, DecFun dec) {
 	else if (compare(flag, skCrypt("Shine"), 5, dec, 0) == 0) {
 		type = FLAG_SHINE;
 	}
-	else if (compare(flag, skCrypt("<<FUCK>>"), 8, dec, 0) == 0) {
+	else if (compare(flag, skCrypt("<<FUCK>>"), 8, dec, flag[9]) == 0) {
 		type = FLAG_FUCK;
 	}
 	else if (compare(flag, skCrypt("Hello?"), 6, dec, flag[6]) == 0) {
@@ -156,14 +157,14 @@ inline FlagType CheckHead(const char* flag, DecFun dec) {
 
 // 解密需要尝试多种方法，以便能兼容老版本通讯协议
 inline FlagType CheckHead(char* flag, HeaderEncType& funcHit) {
-	static const DecFun methods[] = { default_decrypt, decrypt };
+	static const DecFun methods[] = { default_decrypt, decrypt, decrypt_v1, decrypt_v2, decrypt_v3, decrypt_v4, decrypt_v5, decrypt_v6 };
 	static const int methodNum = sizeof(methods) / sizeof(DecFun);
-	char buffer[FLAG_LENGTH + 1] = {};
+	char buffer[MIN_COMLEN + 4] = {};
 	for (int i = 0; i < methodNum; ++i) {
-		memcpy(buffer, flag, FLAG_LENGTH);
+		memcpy(buffer, flag, MIN_COMLEN);
 		FlagType type = CheckHead(buffer, methods[i]);
 		if (type != FLAG_UNKNOWN) {
-			memcpy(flag, buffer, FLAG_LENGTH);
+			memcpy(flag, buffer, MIN_COMLEN);
 			funcHit = HeaderEncType(i);
 			return type;
 		}
