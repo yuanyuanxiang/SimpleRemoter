@@ -404,7 +404,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_ONLINE_H264_DESKTOP, &CMy2015RemoteDlg::OnOnlineH264Desktop)
 	ON_COMMAND(ID_WHAT_IS_THIS, &CMy2015RemoteDlg::OnWhatIsThis)
 	ON_COMMAND(ID_ONLINE_AUTHORIZE, &CMy2015RemoteDlg::OnOnlineAuthorize)
-	ON_NOTIFY(NM_CLICK, IDC_ONLINE, &CMy2015RemoteDlg::OnListClick)
+	ON_NOTIFY(NM_DBLCLK, IDC_ONLINE, &CMy2015RemoteDlg::OnListClick)
 	ON_COMMAND(ID_ONLINE_UNAUTHORIZE, &CMy2015RemoteDlg::OnOnlineUnauthorize)
 	ON_COMMAND(ID_TOOL_REQUEST_AUTH, &CMy2015RemoteDlg::OnToolRequestAuth)
 END_MESSAGE_MAP()
@@ -735,6 +735,92 @@ Buffer* ReadKernelDll(bool is64Bit, bool isDLL=true, const std::string &addr="")
 	return ret;
 }
 
+bool IsAddressInSystemModule(void* addr, const std::string& expectedModuleName)
+{
+	MEMORY_BASIC_INFORMATION mbi = {};
+	if (VirtualQuery(addr, &mbi, sizeof(mbi)) == 0)
+		return false;
+
+	char modPath[MAX_PATH] = {};
+	if (GetModuleFileNameA((HMODULE)mbi.AllocationBase, modPath, MAX_PATH) == 0)
+		return false;
+
+	std::string path = modPath;
+
+	// 合法跳转：仍在指定模块或 system32 下
+	return (path.find(expectedModuleName) != std::string::npos ||
+		path.find("System32") != std::string::npos ||
+		path.find("SysWOW64") != std::string::npos);
+}
+
+bool IsFunctionReallyHooked(const char* dllName, const char* funcName)
+{
+	HMODULE hMod = GetModuleHandleA(dllName);
+	if (!hMod) return true;
+
+	FARPROC pFunc = GetProcAddress(hMod, funcName);
+	if (!pFunc) return true;
+
+	BYTE* p = (BYTE*)pFunc;
+
+#ifdef _WIN64
+	// 64 位：检测 FF 25 xx xx xx xx => JMP [RIP+rel32]
+	if (p[0] == 0xFF && p[1] == 0x25)
+	{
+		INT32 relOffset = *(INT32*)(p + 2);
+		uintptr_t* pJumpPtr = (uintptr_t*)(p + 6 + relOffset);
+
+		if (!IsBadReadPtr(pJumpPtr, sizeof(void*)))
+		{
+			void* realTarget = (void*)(*pJumpPtr);
+			if (!IsAddressInSystemModule(realTarget, dllName))
+				return true; // 跳到未知模块，可能是 Hook
+		}
+	}
+
+	// JMP rel32 (E9)
+	if (p[0] == 0xE9)
+	{
+		INT32 rel = *(INT32*)(p + 1);
+		void* target = (void*)(p + 5 + rel);
+		if (!IsAddressInSystemModule(target, dllName))
+			return true;
+	}
+
+#else
+	// 32 位：检测 FF 25 xx xx xx xx => JMP [abs addr]
+	if (p[0] == 0xFF && p[1] == 0x25)
+	{
+		uintptr_t* pJumpPtr = *(uintptr_t**)(p + 2);
+		if (!IsBadReadPtr(pJumpPtr, sizeof(void*)))
+		{
+			void* target = (void*)(*pJumpPtr);
+			if (!IsAddressInSystemModule(target, dllName))
+				return true;
+		}
+	}
+
+	// JMP rel32
+	if (p[0] == 0xE9)
+	{
+		INT32 rel = *(INT32*)(p + 1);
+		void* target = (void*)(p + 5 + rel);
+		if (!IsAddressInSystemModule(target, dllName))
+			return true;
+	}
+#endif
+
+	// 检测 PUSH addr; RET
+	if (p[0] == 0x68 && p[5] == 0xC3)
+	{
+		void* target = *(void**)(p + 1);
+		if (!IsAddressInSystemModule(target, dllName))
+			return true;
+	}
+
+	return false; // 未发现 Hook
+}
+
 BOOL CMy2015RemoteDlg::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
@@ -839,6 +925,11 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	lvColumn.pszText = (char*)str.data();
 	m_CList_Online.SetColumn(ONLINELIST_VIDEO, &lvColumn);
 	timeBeginPeriod(1);
+	if (IsFunctionReallyHooked("user32.dll","SetTimer") || IsFunctionReallyHooked("user32.dll", "KillTimer")) {
+		MessageBoxA("FUCK!!! 请勿HOOK此程序!", "提示", MB_ICONERROR);
+		ExitProcess(-1);
+		return FALSE;
+	}
 #ifdef _DEBUG
 	SetTimer(TIMER_CHECK, 60 * 1000, NULL);
 #else
