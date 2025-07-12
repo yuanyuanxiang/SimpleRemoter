@@ -75,12 +75,18 @@ public:
 	ULONG GetBufferLen() { return GetBufferLength(); }
 	VOID ClearBuffer();
 	BOOL WriteBuffer(PBYTE Buffer, ULONG ulLength);
-	BOOL Write(PBYTE Buffer, ULONG ulLength) { return WriteBuffer(Buffer, ulLength); }
+	BOOL Write(PBYTE Buffer, ULONG ulLength) {
+		return WriteBuffer(Buffer, ulLength);
+	}
+	BOOL WriteBuffer(CBuffer& buf) {
+		return WriteBuffer(buf.GetBuffer(), buf.GetBufferLen());
+	}
 	LPBYTE GetBuffer(ULONG ulPos=0);
 	Buffer GetMyBuffer(ULONG ulPos);
 	BYTE GetBYTE(ULONG ulPos);
 	BOOL CopyBuffer(PVOID pDst, ULONG nLen, ULONG ulPos);
 	ULONG RemoveCompletedBuffer(ULONG ulLength);
+	void Skip(ULONG ulPos);
 
 protected:
 	PBYTE	m_Base;

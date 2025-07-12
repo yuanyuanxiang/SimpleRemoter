@@ -12,9 +12,9 @@
 #endif
 
 #include "Buffer.h"
-#include "common/commands.h"
 #include "zstd/zstd.h"
 #include "domain_pool.h"
+#include "common/mask.h"
 
 #define MAX_RECV_BUFFER  1024*32
 #define MAX_SEND_BUFFER  1024*32
@@ -57,7 +57,7 @@ public:
 class IOCPClient  
 {
 public:
-	IOCPClient(State& bExit, bool exit_while_disconnect = false);
+	IOCPClient(State& bExit, bool exit_while_disconnect = false, int mask=0);
 	virtual ~IOCPClient();
 
 	int SendLoginInfo(const LOGIN_INFOR& logInfo) {
@@ -110,7 +110,7 @@ protected:
 	BOOL OnServerSending(const char* szBuffer, ULONG ulOriginalLength);
 	static DWORD WINAPI WorkThreadProc(LPVOID lParam);
 	VOID OnServerReceiving(char* szBuffer, ULONG ulReceivedLength);
-	BOOL SendWithSplit(const char* szBuffer, ULONG ulLength, ULONG ulSplitLength);
+	BOOL SendWithSplit(const char* src, ULONG srcSize, ULONG ulSplitLength, int cmd);
 
 protected:
 	sockaddr_in			m_ServerAddr;
@@ -134,4 +134,5 @@ protected:
 	std::string			m_sCurIP;
 	int					m_nHostPort;
 	bool				m_exit_while_disconnect;
+	PkgMask*			m_masker;
 };

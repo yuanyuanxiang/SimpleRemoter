@@ -15,6 +15,7 @@ public:
 	BOOL ReAllocateBuffer(ULONG ulLength);
 	BOOL WriteBuffer(PBYTE Buffer, ULONG ulLength);
 	PBYTE GetBuffer(ULONG ulPos=0) const;
+	void Skip(ULONG ulPos);
 
 protected:
 	PBYTE	m_Base;

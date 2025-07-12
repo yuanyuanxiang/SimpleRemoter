@@ -96,11 +96,12 @@ VOID IOCPClient::setManagerCallBack(void* Manager,  DataProcessCB dataProcess)
 }
 
 
-IOCPClient::IOCPClient(State&bExit, bool exit_while_disconnect) : g_bExit(bExit)
+IOCPClient::IOCPClient(State&bExit, bool exit_while_disconnect, int mask) : g_bExit(bExit)
 {
 	m_ServerAddr = {};
 	m_nHostPort = 0;
 	m_Manager = NULL;
+	m_masker = mask ? new HttpMask("example.com") : new PkgMask();
 #ifdef _WIN32
 	WSADATA wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -147,6 +148,7 @@ IOCPClient::~IOCPClient()
 	ZSTD_freeCCtx(m_Cctx);
 	ZSTD_freeDCtx(m_Dctx);
 #endif
+	m_masker->Destroy();
 }
 
 // 从域名获取IP地址
@@ -196,6 +198,7 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 		SetServerAddress(szServerIP, uPort);
 	}
 	m_sCurIP = m_Domain.SelectIP();
+	m_masker->SetServer(m_sCurIP.c_str());
 	unsigned short port = m_nHostPort;
 
 	m_sClientSocket = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);    //传输层
@@ -362,8 +365,16 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 		//检测数据是否大于数据头大小 如果不是那就不是正确的数据
 		while (m_CompressedBuffer.GetBufferLength() > HDR_LENGTH)
 		{
+			// UnMask
+			char* src = (char*)m_CompressedBuffer.GetBuffer();
+			ULONG srcSize = m_CompressedBuffer.GetBufferLength();
+			ULONG ret = m_masker->UnMask(src, srcSize);
+			m_CompressedBuffer.Skip(ret);
+			if (m_CompressedBuffer.GetBufferLength() <= HDR_LENGTH)
+				break;
+
 			char szPacketFlag[FLAG_LENGTH + 3] = {0};
-			LPBYTE src = m_CompressedBuffer.GetBuffer();
+			src = (char*)m_CompressedBuffer.GetBuffer();
 			CopyMemory(szPacketFlag, src, FLAG_LENGTH);
 			//判断数据头
 			if (memcmp(m_szPacketFlag, szPacketFlag, FLAG_LENGTH) != 0)
@@ -431,6 +442,7 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  
 	AUTO_TICK(50);
 	assert (ulOriginalLength > 0);
 	{
+		int cmd = BYTE(szBuffer[0]);
 		//乘以1.001是以最坏的也就是数据压缩后占用的内存空间和原先一样 +12
 		//防止缓冲区溢出//  HelloWorld  10   22
 		//数据压缩 压缩算法 微软提供
@@ -470,14 +482,22 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  
 		if (CompressedBuffer != buf) delete [] CompressedBuffer;
 
 		// 分块发送
-		return SendWithSplit((char*)m_WriteBuffer.GetBuffer(), m_WriteBuffer.GetBufferLength(), MAX_SEND_BUFFER);
+		return SendWithSplit((char*)m_WriteBuffer.GetBuffer(), m_WriteBuffer.GetBufferLength(), MAX_SEND_BUFFER, cmd);
 	}
 }
 
 //  5    2   //  2  2  1
-BOOL IOCPClient::SendWithSplit(const char* szBuffer, ULONG ulLength, ULONG ulSplitLength)
+BOOL IOCPClient::SendWithSplit(const char* src, ULONG srcSize, ULONG ulSplitLength, int cmd)
 {
+	if (src == nullptr || srcSize == 0 || ulSplitLength == 0)
+		return FALSE;
+	// Mask
+	char* szBuffer = nullptr;
+	ULONG ulLength = 0;
+	m_masker->Mask(szBuffer, ulLength, (char*)src, srcSize, cmd);
+
 	AUTO_TICK(25);
+	bool         isFail = false;
 	int			 iReturn = 0;   //真正发送了多少
 	const char*  Travel = szBuffer;
 	int			 i = 0;
@@ -497,14 +517,15 @@ BOOL IOCPClient::SendWithSplit(const char* szBuffer, ULONG ulLength, ULONG ulSpl
 		}
 		if (j == ulSendRetry)
 		{
-			return FALSE;
+			isFail = true;
+			break;
 		}
 
 		ulSended += iReturn;
 		Travel += ulSplitLength;
 	}
 	// 发送最后的部分
-	if (i>0)  //1024
+	if (!isFail && i>0)  //1024
 	{
 		int j = 0;
 		for (; j < ulSendRetry; j++)
@@ -518,9 +539,14 @@ BOOL IOCPClient::SendWithSplit(const char* szBuffer, ULONG ulLength, ULONG ulSpl
 		}
 		if (j == ulSendRetry)
 		{
-			return FALSE;
+			isFail = true;
 		}
 		ulSended += iReturn;
+	}
+	if (szBuffer != src)
+		SAFE_DELETE_ARRAY(szBuffer);
+	if (isFail) {
+		return FALSE;
 	}
 
 	return (ulSended == ulLength) ? TRUE : FALSE;
