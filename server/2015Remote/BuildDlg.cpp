@@ -261,6 +261,7 @@ BOOL CBuildDlg::OnInitDialog()
 
 	m_ComboProto.InsertString(PROTO_TCP, "TCP");
 	m_ComboProto.InsertString(PROTO_UDP, "UDP");
+	m_ComboProto.InsertString(PROTO_HTTP, "HTTP");
 	m_ComboProto.SetCurSel(PROTO_TCP);
 
 	m_OtherItem.ShowWindow(SW_HIDE);

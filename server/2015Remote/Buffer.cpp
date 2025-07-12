@@ -186,6 +186,18 @@ ULONG CBuffer::GetBufferLength() // 获得有效数据长度
 	return len;
 }
 
+void CBuffer::Skip(ULONG ulPos) {
+	if (ulPos == 0)
+		return;
+
+	EnterCriticalSection(&m_cs);
+
+	MoveMemory(m_Base, m_Base + ulPos, m_ulMaxLength - ulPos);
+	m_Ptr -= ulPos;
+
+	LeaveCriticalSection(&m_cs);
+}
+
 // 此函数不是多线程安全的. 只在远程桌面使用了.
 LPBYTE CBuffer::GetBuffer(ULONG ulPos)
 {

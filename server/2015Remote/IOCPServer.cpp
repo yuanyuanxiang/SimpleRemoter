@@ -566,7 +566,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength) {
 	assert(ContextObject);
 	// 输出服务端所发送的命令
-	unsigned cmd = szBuffer[0];
+	int cmd = szBuffer[0];
 	if (ulOriginalLength < 100 && cmd != COMMAND_SCREEN_CONTROL && cmd != CMD_HEARTBEAT_ACK &&
 		cmd != CMD_DRAW_POINT && cmd != CMD_MOVEWINDOW && cmd != CMD_SET_SIZE) {
 		char buf[100] = { 0 };
@@ -589,7 +589,7 @@ BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOr
 			}
 			else if (ContextObject->CompressMethod == COMPRESS_NONE) {
 				Buffer tmp(szBuffer, ulOriginalLength); szBuffer = tmp.Buf();
-				ContextObject->WriteBuffer(szBuffer, ulOriginalLength, ulOriginalLength);
+				ContextObject->WriteBuffer(szBuffer, ulOriginalLength, ulOriginalLength, cmd);
 				break;
 			}
 			bool usingZstd = ContextObject->CompressMethod == COMPRESS_ZSTD;
@@ -616,7 +616,7 @@ BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOr
 
 			ulCompressedLength =  usingZstd ? iRet : ulCompressedLength;
 
-			ContextObject->WriteBuffer(CompressedBuffer, ulCompressedLength, ulOriginalLength);
+			ContextObject->WriteBuffer(CompressedBuffer, ulCompressedLength, ulOriginalLength, cmd);
 			if (CompressedBuffer != buf) delete [] CompressedBuffer;
 		}while (false);
 

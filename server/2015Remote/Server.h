@@ -1,7 +1,7 @@
 #pragma once
 
 #include "stdafx.h"
-#include "common/commands.h"
+#include "common/mask.h"
 #include "common/header.h"
 #include "common/encrypt.h"
 
@@ -64,6 +64,7 @@ class HeaderParser {
 	friend class CONTEXT_OBJECT;
 protected:
 	HeaderParser() {
+		m_Masker = nullptr;
 		m_Encoder = nullptr;
 		m_Encoder2 = nullptr;
 		m_bParsed = FALSE;
@@ -74,11 +75,23 @@ protected:
 	virtual ~HeaderParser() {
 		Reset();
 	}
-	PR Parse(CBuffer& buf, int& compressMethod) {
+	PR Parse(CBuffer& buf, int& compressMethod, const std::string &peer) {
 		const int MinimumCount = MIN_COMLEN;
 		if (buf.GetBufferLength() < MinimumCount) {
 			return PR{ PARSER_NEEDMORE };
 		}
+		// UnMask
+		char* src = (char*)buf.GetBuffer();
+		ULONG srcSize = buf.GetBufferLength();
+		PkgMaskType maskType = MaskTypeUnknown;
+		ULONG ret = TryUnMask(src, srcSize, maskType);
+		if (nullptr == m_Masker) {
+			m_Masker = maskType ? new HttpMask(peer) : new PkgMask();
+		}
+		buf.Skip(ret);
+		if ((maskType && ret == 0) || (buf.GetBufferLength() <= MinimumCount))
+			return PR{ PARSER_NEEDMORE };
+
 		char szPacketFlag[32] = { 0 };
 		buf.CopyBuffer(szPacketFlag, MinimumCount, 0);
 		HeaderEncType encTyp = HeaderEncUnknown;
@@ -161,6 +174,10 @@ protected:
 		return m_nFlagType == FLAG_HELLO || m_nFlagType == FLAG_HELL;
 	}
 	HeaderParser& Reset() {
+		if (m_Masker) {
+			m_Masker->Destroy();
+			m_Masker = nullptr;
+		}
 		SAFE_DELETE(m_Encoder);
 		SAFE_DELETE(m_Encoder2);
 		m_bParsed = FALSE;
@@ -199,6 +216,7 @@ private:
 	char				m_szPacketFlag[32];			// 对比信息
 	Encoder*			m_Encoder;					// 编码器
 	Encoder*			m_Encoder2;					// 编码器2
+	PkgMask*			m_Masker;
 };
 
 enum IOType
@@ -393,7 +411,7 @@ public:
 		return InDeCompressedBuffer.GetBYTE(offset);
 	}
 	// Write compressed buffer.
-	void WriteBuffer(LPBYTE data, ULONG dataLen, ULONG originLen) {
+	void WriteBuffer(LPBYTE data, ULONG dataLen, ULONG originLen, int cmd = -1) {
 		if (Parser.IsParsed()) {
 			ULONG totalLen = dataLen + Parser.GetHeaderLen();
 			BYTE szPacketFlag[32] = {};
@@ -401,18 +419,26 @@ public:
 			memcpy(szPacketFlag, Parser.GetFlag(), flagLen);
 			if (Parser.IsEncodeHeader())
 				encrypt(szPacketFlag, FLAG_COMPLEN, szPacketFlag[flagLen - 2]);
-			OutCompressedBuffer.WriteBuffer((LPBYTE)szPacketFlag, flagLen);
-			OutCompressedBuffer.WriteBuffer((PBYTE)&totalLen, sizeof(ULONG));
+			CBuffer buf;
+			buf.WriteBuffer((LPBYTE)szPacketFlag, flagLen);
+			buf.WriteBuffer((PBYTE)&totalLen, sizeof(ULONG));
 			if (Parser.GetFlagType() == FLAG_WINOS) {
 				memcpy(szPacketFlag, Parser.GetFlag(), 10);
-				OutCompressedBuffer.WriteBuffer((PBYTE)Parser.GetFlag(), 10);
+				buf.WriteBuffer((PBYTE)Parser.GetFlag(), 10);
 			}
 			else {
-				OutCompressedBuffer.WriteBuffer((PBYTE)&originLen, sizeof(ULONG));
+				buf.WriteBuffer((PBYTE)&originLen, sizeof(ULONG));
 				InDeCompressedBuffer.CopyBuffer(szPacketFlag + flagLen, 16, 16);
 			}
 			Encode2(data, dataLen, szPacketFlag);
-			OutCompressedBuffer.WriteBuffer(data, dataLen);
+			buf.WriteBuffer(data, dataLen);
+			// Mask
+			char* src = (char*)buf.GetBuffer(), *szBuffer = nullptr;
+			ULONG ulLength = 0;
+			Parser.m_Masker->Mask(szBuffer, ulLength, src, buf.GetBufferLen(), cmd);
+			OutCompressedBuffer.WriteBuffer((LPBYTE)szBuffer, ulLength);
+			if (szBuffer != src)
+				SAFE_DELETE_ARRAY(szBuffer);
 		}
 	}
 	// Read compressed buffer.
@@ -438,7 +464,7 @@ public:
 	}
 	// Parse the data to make sure it's from a supported client. The length of `Header Flag` will be returned.
 	PR Parse(CBuffer& buf) {
-		return Parser.Parse(buf, CompressMethod);
+		return Parser.Parse(buf, CompressMethod, PeerName);
 	}
 	// Encode data before compress.
 	void Encode(PBYTE data, int len) const {

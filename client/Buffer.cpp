@@ -143,6 +143,14 @@ ULONG CBuffer::GetBufferLength() const
 }
 
 
+void CBuffer::Skip(ULONG ulPos) {
+	if (ulPos == 0)
+		return;
+	MoveMemory(m_Base, m_Base + ulPos, m_ulMaxLength - ulPos);
+	m_Ptr -= ulPos;
+}
+
+
 PBYTE CBuffer::GetBuffer(ULONG ulPos) const
 {
 	if (m_Base==NULL || ulPos>=(m_Ptr - m_Base))

@@ -21,7 +21,8 @@ IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, bool exit_while_di
 		return new IOCPClient(bExit, exit_while_disconnect);
 	if (conn->protoType == PROTO_UDP)
 		return new IOCPUDPClient(bExit, exit_while_disconnect);
-
+	if (conn->protoType == PROTO_HTTP)
+		return new IOCPClient(bExit, exit_while_disconnect, MaskTypeHTTP);
 	return NULL;
 }
 
