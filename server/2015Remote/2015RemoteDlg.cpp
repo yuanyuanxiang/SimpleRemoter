@@ -221,28 +221,29 @@ DllInfo* ReadPluginDll(const std::string& filename) {
 
 	// 分配缓冲区: CMD + DllExecuteInfo + size
 	BYTE* buffer = new BYTE[1 + sizeof(DllExecuteInfo) + fileSize];
-	if (!file.read(reinterpret_cast<char*>(buffer + 1 + sizeof(DllExecuteInfo)), fileSize)) {
+	BYTE* dllData = buffer + 1 + sizeof(DllExecuteInfo);
+	if (!file.read(reinterpret_cast<char*>(dllData), fileSize)) {
 		Mprintf("读取文件失败: %s\n", filename.c_str());
 		delete[] buffer;
 		return nullptr;
 	}
-	if (!IsDll64Bit(buffer + 1 + sizeof(DllExecuteInfo))) {
+	if (!IsDll64Bit(dllData)) {
 		Mprintf("不支持32位DLL: %s\n", filename.c_str());
 		delete[] buffer;
 		return nullptr;
 	}
 	std::string masterHash(skCrypt(MASTER_HASH));
-	int offset = MemoryFind((char*)buffer + 1 + sizeof(DllExecuteInfo), masterHash.c_str(), fileSize, masterHash.length());
+	int offset = MemoryFind((char*)dllData, masterHash.c_str(), fileSize, masterHash.length());
 	if (offset != -1) {
 		std::string masterId = GetPwdHash(), hmac = GetHMAC();
 		if(hmac.empty())
 			hmac = THIS_CFG.GetStr("settings", "HMAC");
-		memcpy((char*)buffer + 1 + sizeof(DllExecuteInfo)+offset, masterId.c_str(), masterId.length());
-		memcpy((char*)buffer + 1 + sizeof(DllExecuteInfo) + offset + masterId.length(), hmac.c_str(), hmac.length());
+		memcpy((char*)dllData + offset, masterId.c_str(), masterId.length());
+		memcpy((char*)dllData + offset + masterId.length(), hmac.c_str(), hmac.length());
 	}
 
 	// 设置输出参数
-	auto md5 = CalcMD5FromBytes(buffer + 1 + sizeof(DllExecuteInfo), fileSize);
+	auto md5 = CalcMD5FromBytes(dllData, fileSize);
 	DllExecuteInfo info = { MEMORYDLL, fileSize, CALLTYPE_IOCPTHREAD, };
 	memcpy(info.Name, name.c_str(), name.length());
 	memcpy(info.Md5, md5.c_str(), md5.length());
@@ -2659,7 +2660,7 @@ void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID) {
 		Buffer* buf = m_DllList[menuIndex]->Data;
 		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
 		context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
-		ContextObject->Send2Client( buf->Buf(), 1 + sizeof(DllExecuteInfo));
+		ContextObject->Send2Client( buf->Buf(), 1 + sizeof(DllExecuteInfo) );
 	}
 	LeaveCriticalSection(&m_cs);
 }

