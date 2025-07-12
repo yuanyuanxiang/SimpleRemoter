@@ -15,15 +15,62 @@
 #include "zstd/zstd.h"
 #include "domain_pool.h"
 #include "common/mask.h"
+#include "common/header.h"
+#define NO_AES
+#include "common/encrypt.h"
 
 #define MAX_RECV_BUFFER  1024*32
 #define MAX_SEND_BUFFER  1024*32
-#define FLAG_LENGTH    5
-#define HDR_LENGTH     13
 
 enum { S_STOP = 0, S_RUN, S_END };
 
 typedef int (*DataProcessCB)(void* userData, PBYTE szBuffer, ULONG ulLength);
+
+
+class ProtocolEncoder {
+public:
+	virtual ~ProtocolEncoder(){}
+	virtual HeaderFlag GetHead() const {
+		return "Shine";
+	}
+	virtual int GetHeadLen() const {
+		return 13;
+	}
+	virtual int GetFlagLen() const {
+		return 5;
+	}
+	virtual void Encode(unsigned char* data, int len, unsigned char* param = 0) {}
+	virtual void Decode(unsigned char* data, int len, unsigned char* param = 0) {}
+};
+
+class HellEncoder : public ProtocolEncoder {
+private:
+	EncFun m_HeaderEnc;
+	Encoder *m_BodyEnc;
+public:
+	HellEncoder(EncFun head, Encoder *body) {
+		m_HeaderEnc = head;
+		m_BodyEnc = body;
+	}
+	~HellEncoder() {
+		SAFE_DELETE(m_BodyEnc);
+	}
+	virtual HeaderFlag GetHead() const override {
+		return ::GetHead(m_HeaderEnc);
+	}
+	virtual int GetHeadLen() const override {
+		return 16;
+	}
+	virtual int GetFlagLen() const override {
+		return 8;
+	}
+	virtual void Encode(unsigned char* data, int len, unsigned char* param = 0) override {
+		return m_BodyEnc->Encode(data, len, param);
+	}
+	virtual void Decode(unsigned char* data, int len, unsigned char* param = 0) override {
+		return m_BodyEnc->Decode(data, len, param);
+	}
+};
 
 class IOCPManager {
 public:
@@ -57,7 +104,7 @@ public:
 class IOCPClient  
 {
 public:
-	IOCPClient(State& bExit, bool exit_while_disconnect = false, int mask=0);
+	IOCPClient(State& bExit, bool exit_while_disconnect = false, int mask=0, int encoder=0);
 	virtual ~IOCPClient();
 
 	int SendLoginInfo(const LOGIN_INFOR& logInfo) {
@@ -114,7 +161,6 @@ protected:
 
 protected:
 	sockaddr_in			m_ServerAddr;
-	char				m_szPacketFlag[FLAG_LENGTH + 3];
 	SOCKET				m_sClientSocket;
 	CBuffer				m_CompressedBuffer;
 	BOOL				m_bWorkThread;
@@ -130,6 +176,7 @@ protected:
 	State&				g_bExit;					// 全局状态量
 	void*				m_Manager;					// 用户数据
 	DataProcessCB		m_DataProcess;				// 处理用户数据
+	ProtocolEncoder*	m_Encoder;					// 加密
 	DomainPool			m_Domain;
 	std::string			m_sCurIP;
 	int					m_nHostPort;

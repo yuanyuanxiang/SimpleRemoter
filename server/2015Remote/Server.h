@@ -293,6 +293,7 @@ public:
 	virtual int GetPort() const = 0;
 	virtual std::string GetProtocol() const = 0;
 	virtual int GetServerPort() const = 0;
+	virtual FlagType GetFlagType() const = 0;
 
 public:
 	virtual ~context() {}
@@ -331,7 +332,7 @@ public:
 	Server*				server;						// ËùÊô·þÎñ¶Ë
 
 	std::string GetProtocol() const override {
-		return "TCP";
+		return Parser.m_Masker && Parser.m_Masker->GetMaskType() == MaskTypeNone ? "TCP" : "HTTP";
 	}
 	int GetServerPort() const override {
 		return server->GetPort();
@@ -409,6 +410,9 @@ public:
 	}
 	BYTE GetBYTE(int offset) {
 		return InDeCompressedBuffer.GetBYTE(offset);
+	}
+	virtual FlagType GetFlagType() const override {
+		return Parser.m_nFlagType;
 	}
 	// Write compressed buffer.
 	void WriteBuffer(LPBYTE data, ULONG dataLen, ULONG originLen, int cmd = -1) {
