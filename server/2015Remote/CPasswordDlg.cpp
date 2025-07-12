@@ -62,7 +62,7 @@ bool WritePwdHash(char* target, const std::string & pwdHash, const Validation& v
 
 bool IsPwdHashValid(const char* hash) {
 	const char* ptr = hash ? hash : g_MasterID;
-	if (ptr == std::string(skCrypt(MASTER_HASH)))
+	if (ptr == GetMasterHash())
 		return true;
 	std::string pwdHash(ptr, 64), s1(ptr +64, 32), s2(ptr +96, 4);
 	char output32[33], output4[5];

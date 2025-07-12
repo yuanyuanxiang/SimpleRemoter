@@ -26,6 +26,11 @@ config& GetThisCfg() {
 	return *cfg;
 }
 
+std::string GetMasterHash() {
+	static std::string hash(skCrypt(MASTER_HASH));
+	return hash;
+}
+
 /** 
 * @brief 程序遇到未知BUG导致终止时调用此函数，不弹框
 * 并且转储dump文件到dump目录.
@@ -75,7 +80,7 @@ CMy2015RemoteApp::CMy2015RemoteApp()
 	// TODO: 在此处添加构造代码，
 	// 将所有重要的初始化放置在 InitInstance 中
 	m_Mutex = NULL;
-	std::string masterHash(skCrypt(MASTER_HASH));
+	std::string masterHash(GetMasterHash());
 	m_iniFile = GetPwdHash() == masterHash ? new config : new iniFile;
 
 	srand(static_cast<unsigned int>(time(0)));
@@ -91,7 +96,7 @@ CMy2015RemoteApp theApp;
 
 BOOL CMy2015RemoteApp::InitInstance()
 {
-	std::string masterHash(skCrypt(MASTER_HASH));
+	std::string masterHash(GetMasterHash());
 	std::string mu = GetPwdHash()==masterHash ? "MASTER.EXE" : "YAMA.EXE";
 #ifndef _DEBUG
 	{

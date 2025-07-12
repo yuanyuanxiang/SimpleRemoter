@@ -479,6 +479,7 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
 				ContextObject->InDeCompressedBuffer.WriteBuffer(CompressedBuffer, ulCompressedLength);
 				if (m_NotifyProc(ContextObject))
 					ret = CompressedBuffer[0] == TOKEN_LOGIN ? 999 : 1;
+				SAFE_DELETE_ARRAY(CompressedBuffer);
 				break;
 			}
 			
