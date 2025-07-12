@@ -74,12 +74,14 @@ void CBuildDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO_BITS, m_ComboBits);
 	DDX_Control(pDX, IDC_COMBO_RUNTYPE, m_ComboRunType);
 	DDX_Control(pDX, IDC_COMBO_PROTO, m_ComboProto);
+	DDX_Control(pDX, IDC_COMBO_ENCRYPT, m_ComboEncrypt);
 }
 
 
 BEGIN_MESSAGE_MAP(CBuildDlg, CDialog)
 	ON_BN_CLICKED(IDOK, &CBuildDlg::OnBnClickedOk)
 	ON_CBN_SELCHANGE(IDC_COMBO_EXE, &CBuildDlg::OnCbnSelchangeComboExe)
+	ON_COMMAND(ID_HELP_PARAMETERS, &CBuildDlg::OnHelpParameters)
 END_MESSAGE_MAP()
 
 
@@ -150,6 +152,7 @@ void CBuildDlg::OnBnClickedOk()
 	g_ConnectAddress.SetServer(m_strIP, atoi(m_strPort));
 	g_ConnectAddress.runningType = m_ComboRunType.GetCurSel();
 	g_ConnectAddress.protoType = m_ComboProto.GetCurSel();
+	g_ConnectAddress.iHeaderEnc = m_ComboEncrypt.GetCurSel();
 
 	if (!g_ConnectAddress.IsValid()) {
 		SAFE_DELETE_ARRAY(szBuffer);
@@ -264,26 +267,15 @@ BOOL CBuildDlg::OnInitDialog()
 	m_ComboProto.InsertString(PROTO_HTTP, "HTTP");
 	m_ComboProto.SetCurSel(PROTO_TCP);
 
+	m_ComboEncrypt.InsertString(PROTOCOL_SHINE, "Shine");
+	m_ComboEncrypt.InsertString(PROTOCOL_HELL, "HELL");
+	m_ComboEncrypt.SetCurSel(PROTOCOL_SHINE);
+
 	m_OtherItem.ShowWindow(SW_HIDE);
 
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // 异常: OCX 属性页应返回 FALSE
 }
-
-Buffer CBuildDlg::Encrypt(BYTE* buffer, int len, int method) {
-	switch (method)
-	{
-	case 0:// 不加密
-		break;
-	case 1: // XOR
-		xor_encrypt_decrypt(buffer, len, { 'G', 'H', 'O', 'S', 'T' });
-		break;
-	default:
-		break;
-	}
-	return Buffer();
-}
-
 
 void CBuildDlg::OnCbnSelchangeComboExe()
 {
@@ -334,4 +326,11 @@ void CBuildDlg::OnCbnSelchangeComboExe()
 		m_OtherItem.SetWindowTextA("");
 		m_OtherItem.ShowWindow(SW_HIDE);
 	}
+}
+
+
+void CBuildDlg::OnHelpParameters()
+{
+	CString url = _T("https://github.com/yuanyuanxiang/SimpleRemoter/wiki#生成参数");
+	ShellExecute(NULL, _T("open"), url, NULL, NULL, SW_SHOWNORMAL);
 }
