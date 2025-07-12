@@ -5,6 +5,7 @@
 #include <time.h>
 #include <assert.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 #ifdef _DEBUG
 #include <stdio.h>
@@ -179,22 +180,25 @@ inline int MemoryFind(const char* szBuffer, const char* Key, int iBufferSize, in
 	return -1;
 }
 
+#pragma pack(push, 4)
 struct CONNECT_ADDRESS
 {
-	char	        szFlag[32];
-	char			szServerIP[100];
-	char			szPort[8];
-	int				iType;
-	bool            bEncrypt;
-	char            szBuildDate[12];
-	int             iMultiOpen;
-	int				iStartup;
-	int				iHeaderEnc;
-	char			protoType;
-	char			runningType;
-	char            szReserved[60];
-	char			pwdHash[64];
+	char	        szFlag[32];		 // 标识
+	char			szServerIP[100]; // 主控IP
+	char			szPort[8];		 // 主控端口
+	int				iType;			 // 客户端类型
+	bool            bEncrypt;		 // 上线信息是否加密
+	char            szBuildDate[12]; // 构建日期(版本)
+	int             iMultiOpen;		 // 支持打开多个
+	int				iStartup;		 // 启动方式
+	int				iHeaderEnc;		 // 数据加密类型
+	char			protoType;		 // 协议类型
+	char			runningType;	 // 运行方式
+	char            szReserved[52];  // 占位，使结构体占据300字节
+	uint64_t		superAdmin;		 // 管理员主控ID
+	char			pwdHash[64];	 // 密码哈希
 }g_Server = { "Hello, World!", "127.0.0.1", "6543" };
+#pragma pack(pop)
 
 typedef struct PluginParam {
 	char IP[100];

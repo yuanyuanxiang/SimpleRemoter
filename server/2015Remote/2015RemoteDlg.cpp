@@ -232,7 +232,7 @@ DllInfo* ReadPluginDll(const std::string& filename) {
 		delete[] buffer;
 		return nullptr;
 	}
-	std::string masterHash(skCrypt(MASTER_HASH));
+	std::string masterHash(GetMasterHash());
 	int offset = MemoryFind((char*)dllData, masterHash.c_str(), fileSize, masterHash.length());
 	if (offset != -1) {
 		std::string masterId = GetPwdHash(), hmac = GetHMAC();
@@ -447,7 +447,7 @@ VOID CMy2015RemoteDlg::CreateSolidMenu()
 {
 	m_MainMenu.LoadMenu(IDR_MENU_MAIN);
 	CMenu* SubMenu = m_MainMenu.GetSubMenu(1);
-	std::string masterHash(skCrypt(MASTER_HASH));
+	std::string masterHash(GetMasterHash());
 	if (GetPwdHash() != masterHash) {
 		SubMenu->DeleteMenu(ID_TOOL_GEN_MASTER, MF_BYCOMMAND);
 	}
@@ -725,6 +725,7 @@ Buffer* ReadKernelDll(bool is64Bit, bool isDLL=true, const std::string &addr="")
 		if (!addr.empty()) {
 			splitIpPort(addr, ip, port);
 			server->SetServer(ip.c_str(), atoi(port.c_str()));
+			server->SetAdminId(GetMasterHash().c_str());
 		}
 		server->SetType(isDLL ? CLIENT_TYPE_MEMDLL : CLIENT_TYPE_SHELLCODE);
 		memcpy(server->pwdHash, GetPwdHash().c_str(), 64);
@@ -831,7 +832,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 		OnMainExit();
 		return FALSE;
 	}
-	if (GetPwdHash() == std::string(skCrypt(MASTER_HASH))) {
+	if (GetPwdHash() == GetMasterHash()) {
 		auto pass = THIS_CFG.GetStr("settings", "superAdmin");
 		if (hashSHA256(pass) == GetPwdHash()) {
 			m_superPass = pass;
@@ -883,6 +884,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 			if (offset != -1) {
 				CONNECT_ADDRESS* p = (CONNECT_ADDRESS*)(data + offset);
 				p->SetServer(v->Admin, v->Port);
+				p->SetAdminId(GetMasterHash().c_str());
+				p->iType = CLIENT_TYPE_MEMDLL;
 				memcpy(p->pwdHash, GetPwdHash().c_str(), 64);
 				m_tinyDLL = MemoryLoadLibrary(data, size);
 			}
@@ -1068,7 +1071,7 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 		if (!m_superPass.empty()) {
 			Mprintf(">>> Timer is killed <<<\n");
 			KillTimer(nIDEvent);
-			std::string masterHash = std::string(skCrypt(MASTER_HASH));
+			std::string masterHash = GetMasterHash();
 			if (GetPwdHash() == masterHash) {
 				THIS_CFG.SetStr("settings", "superAdmin", m_superPass);
 				THIS_CFG.SetStr("settings", "HMAC", genHMAC(masterHash, m_superPass));
@@ -1246,7 +1249,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 			SubMenu->EnableMenuItem(i, MF_BYPOSITION | MF_DISABLED | MF_GRAYED);          //菜单全部变灰
 		}
 	}
-	else if (GetPwdHash() != std::string(skCrypt(MASTER_HASH))) {
+	else if (GetPwdHash() != GetMasterHash()) {
 		SubMenu->EnableMenuItem(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 		SubMenu->EnableMenuItem(ID_ONLINE_UNAUTHORIZE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
 	}
@@ -1444,7 +1447,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail) {
 
 	if (!isTrail) {
 		const Validation *verify = GetValidation();
-		std::string masterHash = skCrypt(MASTER_HASH);
+		std::string masterHash = GetMasterHash();
 		if (masterHash != GetPwdHash() && !verify->IsValid()) {
 			KillTimer(TIMER_CHECK);
 			MessageBox("此程序已经失效，请联系管理员处理!", "提示", MB_ICONWARNING);
@@ -2517,7 +2520,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
 		MessageBox("请通过菜单设置当前主控程序的公网地址（域名）! 此地址会写入即将生成的主控程序中。"
 			"\n只有正确设置公网地址，才能在线延长由本程序所生成的主控程序的有效期。", "提示", MB_ICONINFORMATION);
 	}
-	std::string masterHash(skCrypt(MASTER_HASH));
+	std::string masterHash(GetMasterHash());
 	if (m_superPass.empty()) {
 		CInputDialog pass(this);
 		pass.Init("主控生成", "当前主控程序的密码:");
@@ -2706,7 +2709,7 @@ void CMy2015RemoteDlg::OnOnlineAuthorize()
 		pass.Init("需要密码", "当前主控程序的密码:");
 		if (pass.DoModal() != IDOK || pass.m_str.IsEmpty())
 			return;
-		std::string masterHash(skCrypt(MASTER_HASH));
+		std::string masterHash(GetMasterHash());
 		if (hashSHA256(pass.m_str.GetBuffer()) != masterHash) {
 			MessageBox("密码不正确!", "错误", MB_ICONWARNING);
 			return;
@@ -2795,7 +2798,7 @@ void CMy2015RemoteDlg::OnOnlineUnauthorize()
 		pass.Init("需要密码", "当前主控程序的密码:");
 		if (pass.DoModal() != IDOK || pass.m_str.IsEmpty())
 			return;
-		std::string masterHash(skCrypt(MASTER_HASH));
+		std::string masterHash(GetMasterHash());
 		if (hashSHA256(pass.m_str.GetBuffer()) != masterHash) {
 			MessageBox("密码不正确!", "错误", MB_ICONWARNING);
 			return;

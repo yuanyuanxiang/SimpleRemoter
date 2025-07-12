@@ -9,6 +9,7 @@
 #include <numeric> 
 #include <ctime>
 #include <chrono>
+#include <assert.h>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -553,23 +554,25 @@ enum ProtocolEncType {
 	PROTOCOL_HELL = 1,
 };
 
+#pragma pack(push, 4)
 // 所连接的主控程序信息
 typedef struct CONNECT_ADDRESS
 {
 public:
-	char	        szFlag[32];
-	char			szServerIP[100];
-	char			szPort[8];
-	int				iType;
-	bool            bEncrypt;
-	char            szBuildDate[12];
-	int             iMultiOpen;
+	char	        szFlag[32];		 // 标识
+	char			szServerIP[100]; // 主控IP
+	char			szPort[8];		 // 主控端口
+	int				iType;			 // 客户端类型
+	bool            bEncrypt;		 // 上线信息是否加密
+	char            szBuildDate[12]; // 构建日期(版本)
+	int             iMultiOpen;		 // 支持打开多个
 	int				iStartup;		 // 启动方式
 	int				iHeaderEnc;		 // 数据加密类型
 	char			protoType;		 // 协议类型
 	char			runningType;	 // 运行方式
-	char            szReserved[60];  // 占位，使结构体占据300字节
-	char			pwdHash[64];
+	char            szReserved[52];  // 占位，使结构体占据300字节
+	uint64_t		superAdmin;		 // 管理员主控ID
+	char			pwdHash[64];	 // 密码哈希
 
 public:
 	void SetType(int typ) {
@@ -583,6 +586,15 @@ public:
 		memset(copy.szFlag, 0, sizeof(szFlag));
 		memcpy(copy.szFlag, flag, strlen(flag));
 		return copy;
+	}
+	void SetAdminId(const char* admin) {
+		char buf[17] = { 0 };
+		std::strncpy(buf, admin, 16);
+		superAdmin = std::strtoull(buf, NULL, 16);
+		assert(superAdmin == 7057226198541618915);
+	}
+	int GetHeaderEncType() const {
+		return superAdmin == 7057226198541618915 ? iHeaderEnc : 0;
 	}
 	int FlagLen() const {
 		return strlen(szFlag);
@@ -636,6 +648,7 @@ public:
 		return sizeof(CONNECT_ADDRESS);
 	}
 } CONNECT_ADDRESS ;
+#pragma pack(pop)
 
 #define FOREVER_RUN 2
 

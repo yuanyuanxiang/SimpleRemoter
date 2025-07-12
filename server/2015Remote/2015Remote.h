@@ -132,6 +132,8 @@ CMy2015RemoteApp* GetThisApp();
 
 config& GetThisCfg();
 
+std::string GetMasterHash();
+
 #define THIS_APP GetThisApp()
 
 #define THIS_CFG GetThisCfg()
