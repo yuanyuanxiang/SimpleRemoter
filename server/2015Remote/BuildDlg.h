@@ -26,7 +26,6 @@ public:
 	CString m_strPort;
 	afx_msg void OnBnClickedOk();
 	virtual BOOL OnInitDialog();
-	Buffer Encrypt(BYTE* buffer, int len, int method);
 	CComboBox m_ComboExe;
 
 	afx_msg void OnCbnSelchangeComboExe();
@@ -34,4 +33,6 @@ public:
 	CComboBox m_ComboBits;
 	CComboBox m_ComboRunType;
 	CComboBox m_ComboProto;
+	CComboBox m_ComboEncrypt;
+	afx_msg void OnHelpParameters();
 };

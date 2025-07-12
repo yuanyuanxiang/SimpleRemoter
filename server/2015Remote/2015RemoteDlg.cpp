@@ -2735,15 +2735,20 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
 		CString res[RES_MAX];
 		CString startTime = ctx->GetClientData(ONLINELIST_LOGINTIME);
 		ctx->GetAdditionalData(res);
+		FlagType type = ctx->GetFlagType();
+		static std::map<FlagType, std::string> typMap = {
+			{FLAG_WINOS, "WinOS"}, {FLAG_UNKNOWN, "Unknown"}, {FLAG_SHINE, "Shine"}, 
+			{FLAG_FUCK, "FUCK"}, {FLAG_HELLO, "Hello"}, {FLAG_HELL, "HELL"},
+		};
 
 		// 拼接内容
 		CString strText;
 		std::string expired = res[RES_EXPIRED_DATE];
 		expired = expired.empty() ? "" : " Expired on " + expired;
-		strText.Format(_T("文件路径: %s%s\r\n系统信息: %s 位 %s 核心 %s GB\r\n启动信息: %s %s\r\n上线信息: %s %d"), 
+		strText.Format(_T("文件路径: %s%s\r\n系统信息: %s 位 %s 核心 %s GB\r\n启动信息: %s %s\r\n上线信息: %s %d %s"), 
 			res[RES_PROGRAM_BITS].IsEmpty() ? "" : res[RES_PROGRAM_BITS] + " 位 ", res[RES_FILE_PATH],
 			res[RES_SYSTEM_BITS], res[RES_SYSTEM_CPU], res[RES_SYSTEM_MEM], startTime, expired.c_str(),
-			ctx->GetProtocol().c_str(), ctx->GetServerPort());
+			ctx->GetProtocol().c_str(), ctx->GetServerPort(), typMap[type].c_str());
 
 		// 获取鼠标位置
 		CPoint pt;

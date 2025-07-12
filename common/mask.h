@@ -50,10 +50,17 @@ public:
         return 0;
     }
     virtual void SetServer(const char* addr) {}
+    virtual PkgMaskType GetMaskType() const {
+        return MaskTypeNone;
+    }
 };
 
 class HttpMask : public PkgMask {
 public:
+	virtual PkgMaskType GetMaskType() const override {
+		return MaskTypeHTTP;
+	}
+
     /**
      * @brief 构造函数
      * @param host HTTP Host 头字段

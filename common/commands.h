@@ -548,6 +548,11 @@ enum RunningType {
 	RUNNING_PARALLEL = 1,			// 并发上线
 };
 
+enum ProtocolEncType {
+	PROTOCOL_SHINE = 0,
+	PROTOCOL_HELL = 1,
+};
+
 // 所连接的主控程序信息
 typedef struct CONNECT_ADDRESS
 {
