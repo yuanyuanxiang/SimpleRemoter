@@ -1987,6 +1987,10 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 			g_2015RemoteDlg->SendMessage(WM_OPENWEBCAMDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
+	case CMD_PADDING: {
+		Mprintf("Receive padding command '%s' [%d]: Len=%d\n", ContextObject->PeerName.c_str(), cmd, len);
+		break;
+	}
 	default: {
 			Mprintf("Receive unknown command '%s' [%d]: Len=%d\n", ContextObject->PeerName.c_str(), cmd, len);
 		}

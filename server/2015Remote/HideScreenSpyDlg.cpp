@@ -759,6 +759,19 @@ void CHideScreenSpyDlg::SendScaledMouseMessage(MSG* pMsg, bool makeLP) {
 	if (!m_bIsCtrl)
 		return;
 
+	if (pMsg->message == WM_MOUSEMOVE) {
+		auto now = clock();
+		auto time_elapsed = now - m_lastMouseMove;
+		int dx = abs(pMsg->pt.x - m_lastMousePoint.x);
+		int dy = abs(pMsg->pt.y - m_lastMousePoint.y);
+		int dist_sq = dx * dx + dy * dy;
+		if (time_elapsed < 200 && dist_sq < 18 * 18) {
+			return;
+		}
+		m_lastMouseMove = now;
+		m_lastMousePoint = pMsg->pt;
+	}
+
     MYMSG msg(*pMsg);
 	auto low = ((LONG)LOWORD(pMsg->lParam)) * m_wZoom;
 	auto high = ((LONG)HIWORD(pMsg->lParam)) * m_hZoom;
