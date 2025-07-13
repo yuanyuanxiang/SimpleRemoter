@@ -1739,6 +1739,8 @@ BOOL CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 	AUTO_TICK(50);
 
 	if (ContextObject->hWnd) {
+		if (!IsWindow(ContextObject->hWnd))
+			return FALSE;
 		DialogBase* Dlg = (DialogBase*)ContextObject->hDlg;
 		Dlg->MarkReceiving(true);
 		Dlg->OnReceiveComplete();

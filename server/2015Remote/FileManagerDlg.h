@@ -85,9 +85,6 @@ public:
 	CString GetParentDirectory(CString strPath);
 	void OnReceiveComplete();
 
-	CImageList* m_pImageList_Large;
-	CImageList* m_pImageList_Small;
-
 	int m_nNewIconBaseIndex; // ÐÂ¼ÓµÄICON
 
 	CProgressCtrl* m_ProgressCtrl;

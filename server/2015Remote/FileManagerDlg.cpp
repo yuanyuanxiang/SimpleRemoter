@@ -46,38 +46,6 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, Server* pIOCPServer, ClientConte
 	//}}AFX_DATA_INIT
 	m_bIsClosed = false;
 	m_ProgressCtrl = NULL;
-	SHFILEINFO	sfi;
-	SHGetFileInfo
-		(
-		"\\\\",
-		FILE_ATTRIBUTE_NORMAL, 
-		&sfi,
-		sizeof(SHFILEINFO), 
-		SHGFI_ICON | SHGFI_USEFILEATTRIBUTES
-		);
-	// 加载系统图标列表
-	static HIMAGELIST hImageList_Large = (HIMAGELIST)SHGetFileInfo
-		(
-		NULL,
-		0,
-		&sfi,
-        sizeof(SHFILEINFO),
-		SHGFI_LARGEICON | SHGFI_SYSICONINDEX
-		);
-	static CImageList *pLarge = CImageList::FromHandle(hImageList_Large);
-	m_pImageList_Large = pLarge;
-
-	// 加载系统图标列表
-	static HIMAGELIST hImageList_Small = (HIMAGELIST)SHGetFileInfo
-		(
-		NULL,
-		0,
-		&sfi,
-        sizeof(SHFILEINFO),
-		SHGFI_SMALLICON | SHGFI_SYSICONINDEX
-		);
-	static CImageList *pSmall = CImageList::FromHandle(hImageList_Small);
-	m_pImageList_Small = pSmall;
 
 	// 保存远程驱动器列表
 	memset(m_bRemoteDriveList, 0, sizeof(m_bRemoteDriveList));
@@ -252,8 +220,8 @@ BOOL CFileManagerDlg::OnInitDialog()
 	SetWindowText(str);
 
 	// 为列表视图设置ImageList
-	m_list_local.SetImageList(m_pImageList_Large, LVSIL_NORMAL);
-	m_list_local.SetImageList(m_pImageList_Small, LVSIL_SMALL);
+	m_list_local.SetImageList(&(THIS_APP->m_pImageList_Large), LVSIL_NORMAL);
+	m_list_local.SetImageList(&(THIS_APP->m_pImageList_Small), LVSIL_SMALL);
 	// 创建带进度条的状态栏
 	if (!m_wndStatusBar.Create(this) ||
 		!m_wndStatusBar.SetIndicators(indicators,
