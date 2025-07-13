@@ -156,13 +156,12 @@ protected:
 	}
 	BOOL OnServerSending(const char* szBuffer, ULONG ulOriginalLength);
 	static DWORD WINAPI WorkThreadProc(LPVOID lParam);
-	VOID OnServerReceiving(char* szBuffer, ULONG ulReceivedLength);
+	VOID OnServerReceiving(CBuffer *m_CompressedBuffer, char* szBuffer, ULONG ulReceivedLength);
 	BOOL SendWithSplit(const char* src, ULONG srcSize, ULONG ulSplitLength, int cmd);
 
 protected:
 	sockaddr_in			m_ServerAddr;
 	SOCKET				m_sClientSocket;
-	CBuffer				m_CompressedBuffer;
 	BOOL				m_bWorkThread;
 	HANDLE				m_hWorkThread;
 	BOOL				m_bIsRunning;
