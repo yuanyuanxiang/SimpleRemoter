@@ -34,6 +34,8 @@ extern "C" char* __imp_strtok(char* str, const char* delim) { return strtok(str,
 CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, Server* IOCPServer, CONTEXT_OBJECT* ContextObject)
 	: DialogBase(CScreenSpyDlg::IDD, Parent, IOCPServer, ContextObject, 0)
 {
+	m_lastMouseMove = 0;
+	m_lastMousePoint = {};
 	m_pCodec = nullptr;
 	m_pCodecContext = nullptr;
 	memset(&m_AVPacket, 0, sizeof(AVPacket));
@@ -555,6 +557,19 @@ VOID CScreenSpyDlg::SendCommand(const MSG64* Msg)
 {
 	if (!m_bIsCtrl)
 		return;
+
+	if (Msg->message == WM_MOUSEMOVE) {
+		auto now = clock();
+		auto time_elapsed = now - m_lastMouseMove;
+		int dx = abs(Msg->pt.x - m_lastMousePoint.x);
+		int dy = abs(Msg->pt.y - m_lastMousePoint.y);
+		int dist_sq = dx * dx + dy * dy;
+		if (time_elapsed < 200 && dist_sq < 18 * 18) {
+			return;
+		}
+		m_lastMouseMove = now;
+		m_lastMousePoint = Msg->pt;
+	}
 
 	const int length = sizeof(MSG64) + 1;
 	BYTE szData[length + 3];

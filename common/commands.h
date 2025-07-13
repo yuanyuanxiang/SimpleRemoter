@@ -248,6 +248,7 @@ enum
 	CMD_RUNASADMIN=214,             // ADMIN 运行
 	CMD_MASTERSETTING = 215,		// 主控设置
 	CMD_HEARTBEAT_ACK = 216,		// 心跳回应
+	CMD_PADDING =217,
 	CMD_AUTHORIZATION = 222,		// 授权
 	CMD_SERVER_ADDR = 229,          // 主控地址
 	TOKEN_ERROR = 230,              // 错误提示

@@ -89,6 +89,9 @@ public:
 	AVPacket			m_AVPacket;
 	AVFrame				m_AVFrame;
 
+	clock_t				m_lastMouseMove; // 鼠标移动时间
+	POINT				m_lastMousePoint;// 上次鼠标位置
+
 	bool Decode(LPBYTE Buffer, int size);
 	void EnterFullScreen();
 	bool LeaveFullScreen();

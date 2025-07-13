@@ -81,6 +81,9 @@ protected:
     BYTE                m_bCursorIndex;
 	CString				m_strTip;
 
+	clock_t				m_lastMouseMove; // 鼠标移动时间
+	POINT				m_lastMousePoint;// 上次鼠标位置
+
 private:
 	CString             m_aviFile;
 	CBmpToAvi	        m_aviStream;
