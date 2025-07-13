@@ -626,22 +626,20 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
 			(MSG64*)msg64.Create(msg32.Create(ptr, msgSize));
 		switch (Msg->message)
 		{
-		case WM_LBUTTONDOWN:
-		case WM_LBUTTONUP:
-		case WM_RBUTTONDOWN:
-		case WM_RBUTTONUP:
+		case WM_LBUTTONDOWN: case WM_LBUTTONUP: case WM_RBUTTONDOWN: case WM_RBUTTONUP:
+		case WM_LBUTTONDBLCLK: case WM_RBUTTONDBLCLK: case WM_MBUTTONDOWN: case WM_MBUTTONUP:
 		case WM_MOUSEMOVE:
-		case WM_LBUTTONDBLCLK:
-		case WM_RBUTTONDBLCLK:
-		case WM_MBUTTONDOWN:
-		case WM_MBUTTONUP:
 			{
 				POINT Point;
 				Point.x = LOWORD(Msg->lParam);
 				Point.y = HIWORD(Msg->lParam);
 				m_ScreenSpyObject->PointConversion(Point);
-				SetCursorPos(Point.x, Point.y);
-				SetCapture(WindowFromPoint(Point));
+				BOOL b = SetCursorPos(Point.x, Point.y);
+				if (!b) {
+					SetForegroundWindow(GetDesktopWindow());
+					ReleaseCapture();
+					return;
+				}
 			}
 			break;
 		default:
