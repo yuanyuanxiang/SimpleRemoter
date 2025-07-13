@@ -9,7 +9,6 @@
 #include <numeric> 
 #include <ctime>
 #include <chrono>
-#include <assert.h>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -591,7 +590,6 @@ public:
 		char buf[17] = { 0 };
 		std::strncpy(buf, admin, 16);
 		superAdmin = std::strtoull(buf, NULL, 16);
-		assert(superAdmin == 7057226198541618915);
 	}
 	int GetHeaderEncType() const {
 		return superAdmin == 7057226198541618915 ? iHeaderEnc : 0;

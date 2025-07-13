@@ -286,7 +286,7 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 	char* szBuffer = new char[MAX_RECV_BUFFER];
 	fd_set fd;
 	struct timeval tm = { 2, 0 };
-	This->m_CompressedBuffer.ClearBuffer();
+	CBuffer m_CompressedBuffer;
 
 	while (This->IsRunning()) // 没有退出，就一直陷在这个循环中
 	{
@@ -309,7 +309,7 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 			{
 				Mprintf("[select] return %d, GetLastError= %d. \n", iRet, WSAGetLastError());
 				This->Disconnect(); //接收错误处理
-				This->m_CompressedBuffer.ClearBuffer();
+				m_CompressedBuffer.ClearBuffer();
 				if(This->m_exit_while_disconnect)
 					break;
 			}
@@ -321,13 +321,13 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 			{
 				int a = WSAGetLastError();
 				This->Disconnect(); //接收错误处理
-				This->m_CompressedBuffer.ClearBuffer();
+				m_CompressedBuffer.ClearBuffer();
 				if(This->m_exit_while_disconnect)
 					break;
 			}else{
 				szBuffer[iReceivedLength] = 0;
 				//正确接收就调用OnRead处理,转到OnRead
-				This->OnServerReceiving(szBuffer, iReceivedLength);
+				This->OnServerReceiving(&m_CompressedBuffer, szBuffer, iReceivedLength);
 			}
 		}
 	}
@@ -354,51 +354,51 @@ int DataProcessWithSEH(DataProcessCB f, void* manager, LPBYTE data, ULONG len) {
 }
 
 
-VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
+VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, ULONG ulLength)
 {
 	try
 	{
 		assert (ulLength > 0);	
 		//以下接到数据进行解压缩
-		m_CompressedBuffer.WriteBuffer((LPBYTE)szBuffer, ulLength);
+		m_CompressedBuffer->WriteBuffer((LPBYTE)szBuffer, ulLength);
 		int FLAG_LENGTH = m_Encoder->GetFlagLen();
 		int HDR_LENGTH = m_Encoder->GetHeadLen();
 
 		//检测数据是否大于数据头大小 如果不是那就不是正确的数据
-		while (m_CompressedBuffer.GetBufferLength() > HDR_LENGTH)
+		while (m_CompressedBuffer->GetBufferLength() > HDR_LENGTH)
 		{
 			// UnMask
-			char* src = (char*)m_CompressedBuffer.GetBuffer();
-			ULONG srcSize = m_CompressedBuffer.GetBufferLength();
+			char* src = (char*)m_CompressedBuffer->GetBuffer();
+			ULONG srcSize = m_CompressedBuffer->GetBufferLength();
 			ULONG ret = m_masker->UnMask(src, srcSize);
-			m_CompressedBuffer.Skip(ret);
-			if (m_CompressedBuffer.GetBufferLength() <= HDR_LENGTH)
+			m_CompressedBuffer->Skip(ret);
+			if (m_CompressedBuffer->GetBufferLength() <= HDR_LENGTH)
 				break;
 
 			char szPacketFlag[32] = {0};
-			src = (char*)m_CompressedBuffer.GetBuffer();
+			src = (char*)m_CompressedBuffer->GetBuffer();
 			CopyMemory(szPacketFlag, src, FLAG_LENGTH);
 			//判断数据头
 			HeaderEncType encType = HeaderEncUnknown;
 			FlagType flagType = CheckHead(szPacketFlag, encType);
 			if (flagType == FLAG_UNKNOWN) {
 				Mprintf("[ERROR] OnServerReceiving memcmp fail: unknown header '%s'\n", szPacketFlag);
-				m_CompressedBuffer.ClearBuffer();
+				m_CompressedBuffer->ClearBuffer();
 				break;
 			}
 
 			ULONG ulPackTotalLength = 0;
-			CopyMemory(&ulPackTotalLength, m_CompressedBuffer.GetBuffer(FLAG_LENGTH), sizeof(ULONG));
+			CopyMemory(&ulPackTotalLength, m_CompressedBuffer->GetBuffer(FLAG_LENGTH), sizeof(ULONG));
 
 			//--- 数据的大小正确判断
-			ULONG len = m_CompressedBuffer.GetBufferLength();
+			ULONG len = m_CompressedBuffer->GetBufferLength();
 			if (ulPackTotalLength && len >= ulPackTotalLength)
 			{
 				ULONG ulOriginalLength = 0;
 
-				m_CompressedBuffer.ReadBuffer((PBYTE)szPacketFlag, FLAG_LENGTH);//读取各种头部 shine
-				m_CompressedBuffer.ReadBuffer((PBYTE) &ulPackTotalLength, sizeof(ULONG));
-				m_CompressedBuffer.ReadBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG));
+				m_CompressedBuffer->ReadBuffer((PBYTE)szPacketFlag, FLAG_LENGTH);//读取各种头部 shine
+				m_CompressedBuffer->ReadBuffer((PBYTE) &ulPackTotalLength, sizeof(ULONG));
+				m_CompressedBuffer->ReadBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG));
 
 				ULONG ulCompressedLength = ulPackTotalLength - HDR_LENGTH;
 				const int bufSize = 512;
@@ -406,7 +406,7 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 				PBYTE CompressedBuffer = ulCompressedLength > bufSize ? new BYTE[ulCompressedLength] : buf1;
 				PBYTE DeCompressedBuffer = ulCompressedLength > bufSize ? new BYTE[ulOriginalLength] : buf2;
 
-				m_CompressedBuffer.ReadBuffer(CompressedBuffer, ulCompressedLength);
+				m_CompressedBuffer->ReadBuffer(CompressedBuffer, ulCompressedLength);
 				m_Encoder->Decode(CompressedBuffer, ulCompressedLength, (LPBYTE)szPacketFlag);
 				size_t	iRet = uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
 
@@ -421,7 +421,7 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 				}
 				else{
 					Mprintf("[ERROR] uncompress fail: dstLen %d, srcLen %d\n", ulOriginalLength, ulCompressedLength);
-					m_CompressedBuffer.ClearBuffer();
+					m_CompressedBuffer->ClearBuffer();
 				}
 
 				if (CompressedBuffer != buf1)delete [] CompressedBuffer;
@@ -432,7 +432,7 @@ VOID IOCPClient::OnServerReceiving(char* szBuffer, ULONG ulLength)
 			}
 		}
 	}catch(...) { 
-		m_CompressedBuffer.ClearBuffer();
+		m_CompressedBuffer->ClearBuffer();
 		Mprintf("[ERROR] OnServerReceiving catch an error \n");
 	}
 }
