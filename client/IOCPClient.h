@@ -18,6 +18,7 @@
 #include "common/header.h"
 #define NO_AES
 #include "common/encrypt.h"
+#include "SafeThread.h"
 
 #define MAX_RECV_BUFFER  1024*32
 #define MAX_SEND_BUFFER  1024*32
@@ -41,6 +42,7 @@ public:
 	}
 	virtual void Encode(unsigned char* data, int len, unsigned char* param = 0) {}
 	virtual void Decode(unsigned char* data, int len, unsigned char* param = 0) {}
+	virtual EncFun GetHeaderEncoder() const { return nullptr; }
 };
 
 class HellEncoder : public ProtocolEncoder {
@@ -69,6 +71,9 @@ public:
 	}
 	virtual void Decode(unsigned char* data, int len, unsigned char* param = 0) override {
 		return m_BodyEnc->Decode(data, len, param);
+	}
+	virtual EncFun GetHeaderEncoder() const override {
+		return m_HeaderEnc;
 	}
 };
 
@@ -181,4 +186,5 @@ protected:
 	int					m_nHostPort;
 	bool				m_exit_while_disconnect;
 	PkgMask*			m_masker;
+	BOOL				m_EncoderType;
 };

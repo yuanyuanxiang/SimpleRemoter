@@ -6,6 +6,12 @@
 #include "Audio.h"
 #include <iostream>
 
+#ifdef _WINDOWS
+#define __CreateThread CreateThread
+#else
+#include "SafeThread.h"
+#endif
+
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
@@ -108,7 +114,7 @@ BOOL CAudio::InitializeWaveIn()
 	MMRESULT	mmResult;  
 	DWORD		dwThreadID = 0;
 
-	m_hThreadCallBack = m_Thread = CreateThread(NULL, 0, 
+	m_hThreadCallBack = m_Thread = __CreateThread(NULL, 0,
 		waveInCallBack, (LPVOID)this, 
 		CREATE_SUSPENDED, &dwThreadID);
 

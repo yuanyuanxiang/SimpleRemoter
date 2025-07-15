@@ -717,7 +717,7 @@ void CMachineDlg::ShowHostsList()
 
     LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     int i = 0;
-    char* buf;
+    char* buf=nullptr;
     char* lpString = (char*)lpBuffer;
     const char* d = "\n";
     char* p = strtok_s(lpString, d, &buf);
@@ -1658,7 +1658,7 @@ void CMachineDlg::ShowHostsList_menu()
 
         DeleteList();
         int i = 0;
-        char* buf;
+        char* buf=nullptr;
         char* lpString = (char*)lpBuffer;
         const char* d = "\n";
         char* p = strtok_s(lpString, d, &buf);

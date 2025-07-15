@@ -24,8 +24,13 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#ifdef _DEBUG
 // 检测内存泄漏，需安装VLD；否则请注释此行
 #include "vld.h"
+#define USING_SAFETHRED 0
+#else
+#define USING_SAFETHRED 1
+#endif
 
 // Insert your headers here
 #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers

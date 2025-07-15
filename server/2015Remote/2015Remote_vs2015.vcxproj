@@ -242,7 +242,6 @@
     <None Include="res\Cur\MutiDrag.cur" />
     <None Include="res\dword.ico" />
     <None Include="res\file.ico" />
-    <None Include="res\icon1.ico" />
     <None Include="res\My2015Remote.rc2" />
     <None Include="res\pc.ico" />
     <None Include="res\string.ico" />
@@ -382,7 +381,6 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\Bitmap\authorize.bmp" />
-    <Image Include="res\Bitmap\DrawingBoard.bmp" />
     <Image Include="res\Bitmap\DxgiDesktop.bmp" />
     <Image Include="res\Bitmap\GrayDesktop.bmp" />
     <Image Include="res\Bitmap\note.bmp" />
@@ -404,12 +402,10 @@
     <Image Include="res\file\Icon_E.ico" />
     <Image Include="res\file\Icon_F.ico" />
     <Image Include="res\file\Icon_G.ico" />
-    <Image Include="res\icon2.ico" />
     <Image Include="res\keyboard.ico" />
     <Image Include="res\machine.ico" />
     <Image Include="res\password.ico" />
     <Image Include="res\proxifler.ico" />
-    <Image Include="res\proxy.ico" />
     <Image Include="res\screen.ico" />
     <Image Include="res\system.ico" />
     <Image Include="res\toolbar1.bmp" />

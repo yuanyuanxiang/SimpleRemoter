@@ -36,7 +36,7 @@ BOOL IOCPUDPClient::ConnectServer(const char* szServerIP, unsigned short uPort) 
 	// 创建工作线程（如果需要）
 	if (m_hWorkThread == NULL) {
 #ifdef _WIN32
-		m_hWorkThread = (HANDLE)CreateThread(NULL, 0, WorkThreadProc, (LPVOID)this, 0, NULL);
+		m_hWorkThread = (HANDLE)__CreateThread(NULL, 0, WorkThreadProc, (LPVOID)this, 0, NULL);
 		m_bWorkThread = m_hWorkThread ? S_RUN : S_STOP;
 #else
 		pthread_t id = 0;
