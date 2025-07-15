@@ -96,8 +96,8 @@ public:
 	LPBITMAPINFO     m_BitmapInfor_Full; // BMP信息
 	BYTE             m_bAlgorithm;       // 屏幕差异算法
 
-	ULONG			 m_iScreenX;		 // 起始x坐标
-	ULONG			 m_iScreenY;		 // 起始y坐标
+	int				 m_iScreenX;		 // 起始x坐标
+	int				 m_iScreenY;		 // 起始y坐标
 	ULONG            m_ulFullWidth;      // 屏幕宽
 	ULONG            m_ulFullHeight;     // 屏幕高
 	bool             m_bZoomed;          // 屏幕被缩放
@@ -110,7 +110,7 @@ public:
 	bool		     m_SendKeyFrame;	 // 发送关键帧
 	CX264Encoder	 *m_encoder;		 // 编码器
 
-	ScreenCapture(int n = 32, BYTE algo = ALGORITHM_DIFF) : 
+	ScreenCapture(int n = 32, BYTE algo = ALGORITHM_DIFF, BOOL all = FALSE) : 
 		m_ThreadPool(nullptr), m_FirstBuffer(nullptr), m_RectBuffer(nullptr),
 		m_BitmapInfor_Full(nullptr), m_bAlgorithm(algo), m_SendQuality(100),
 		m_ulFullWidth(0), m_ulFullHeight(0), m_bZoomed(false), m_wZoom(1), m_hZoom(1),
@@ -120,21 +120,28 @@ public:
 		m_BlockNum = 8;
 		m_ThreadPool = new ThreadPool(m_BlockNum);
 
-		//::GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN)获取屏幕大小不准
-		//例如当屏幕显示比例为125%时，获取到的屏幕大小需要乘以1.25才对
-		DEVMODE devmode;
-		memset(&devmode, 0, sizeof(devmode));
-		devmode.dmSize = sizeof(DEVMODE);
-		devmode.dmDriverExtra = 0;
-		BOOL Isgetdisplay = EnumDisplaySettingsA(NULL, ENUM_CURRENT_SETTINGS, &devmode);
-		m_ulFullWidth = devmode.dmPelsWidth;
-		m_ulFullHeight = devmode.dmPelsHeight;
-		int w = GetSystemMetrics(SM_CXSCREEN), h = GetSystemMetrics(SM_CYSCREEN);
-		m_bZoomed = (w != m_ulFullWidth) || (h != m_ulFullHeight);
-		m_wZoom = double(m_ulFullWidth) / w, m_hZoom = double(m_ulFullHeight) / h;
-		Mprintf("=> 桌面缩放比例: %.2f, %.2f\t分辨率：%d x %d\n", m_wZoom, m_hZoom, m_ulFullWidth, m_ulFullHeight);
-		m_wZoom = 1.0 / m_wZoom, m_hZoom = 1.0 / m_hZoom;
-
+		if (all)
+		{
+			m_iScreenX = GetSystemMetrics(SM_XVIRTUALSCREEN);
+			m_iScreenY = GetSystemMetrics(SM_YVIRTUALSCREEN);
+			m_ulFullWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+			m_ulFullHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+		} else {
+			//::GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN)获取屏幕大小不准
+			//例如当屏幕显示比例为125%时，获取到的屏幕大小需要乘以1.25才对
+			DEVMODE devmode;
+			memset(&devmode, 0, sizeof(devmode));
+			devmode.dmSize = sizeof(DEVMODE);
+			devmode.dmDriverExtra = 0;
+			BOOL Isgetdisplay = EnumDisplaySettingsA(NULL, ENUM_CURRENT_SETTINGS, &devmode);
+			m_ulFullWidth = devmode.dmPelsWidth;
+			m_ulFullHeight = devmode.dmPelsHeight;
+			int w = GetSystemMetrics(SM_CXSCREEN), h = GetSystemMetrics(SM_CYSCREEN);
+			m_bZoomed = (w != m_ulFullWidth) || (h != m_ulFullHeight);
+			m_wZoom = double(m_ulFullWidth) / w, m_hZoom = double(m_ulFullHeight) / h;
+			Mprintf("=> 桌面缩放比例: %.2f, %.2f\t分辨率：%d x %d\n", m_wZoom, m_hZoom, m_ulFullWidth, m_ulFullHeight);
+			m_wZoom = 1.0 / m_wZoom, m_hZoom = 1.0 / m_hZoom;
+		}
 		if (ALGORITHM_H264 == m_bAlgorithm)
 		{
 			m_encoder = new CX264Encoder();

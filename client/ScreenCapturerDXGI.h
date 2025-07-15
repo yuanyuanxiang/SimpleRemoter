@@ -22,7 +22,7 @@ private:
 	BYTE* m_NextBuffer = nullptr;
 
 public:
-	ScreenCapturerDXGI(BYTE algo, int gop = DEFAULT_GOP) : ScreenCapture(32, algo) {
+	ScreenCapturerDXGI(BYTE algo, int gop = DEFAULT_GOP, BOOL all = FALSE) : ScreenCapture(32, algo, all) {
 		m_GOP = gop;
 		InitDXGI();
 		Mprintf("Capture screen with DXGI: GOP= %d\n", m_GOP);

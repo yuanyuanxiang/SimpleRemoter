@@ -599,6 +599,9 @@ public:
 		return superAdmin == 7057226198541618915 ? iHeaderEnc : 0;
 #endif
 	}
+	bool IsVerified() const {
+		return superAdmin && (superAdmin % 313) == 0;
+	}
 	int FlagLen() const {
 		return strlen(szFlag);
 	}

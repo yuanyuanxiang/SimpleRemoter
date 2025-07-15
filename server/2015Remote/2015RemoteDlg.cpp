@@ -1371,8 +1371,9 @@ VOID CMy2015RemoteDlg::OnOnlineWindowManager()
 VOID CMy2015RemoteDlg::OnOnlineDesktopManager()
 {
 	int n = THIS_CFG.GetInt("settings", "DXGI");
+	BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
 	CString algo = THIS_CFG.GetStr("settings", "ScreenCompress", "").c_str();
-	BYTE	bToken[32] = { COMMAND_SCREEN_SPY, n, algo.IsEmpty() ? ALGORITHM_DIFF : atoi(algo.GetString())};
+	BYTE	bToken[32] = { COMMAND_SCREEN_SPY, n, algo.IsEmpty() ? ALGORITHM_DIFF : atoi(algo.GetString()), all};
 	SendSelectedCommand(bToken, sizeof(bToken));
 }
 

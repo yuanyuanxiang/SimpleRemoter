@@ -83,7 +83,7 @@ protected:
 	EnumHwndsPrintData		m_data;
 
 public:
-	CScreenSpy(ULONG ulbiBitCount, BYTE algo, BOOL vDesk = FALSE, int gop = DEFAULT_GOP);
+	CScreenSpy(ULONG ulbiBitCount, BYTE algo, BOOL vDesk = FALSE, int gop = DEFAULT_GOP, BOOL all = FALSE);
 
 	virtual ~CScreenSpy();
 
