@@ -132,11 +132,13 @@ void CScreenManager::InitScreenSpy() {
 	int DXGI = USING_GDI;
 	BYTE algo = ALGORITHM_DIFF;
 	BYTE* user = (BYTE*)m_ptrUser;
-	if (!(user == NULL || (int)user == 1)) {
+	BOOL all = FALSE;
+	if (!(user == NULL || ((int)user) == 1)) {
 		UserParam* param = (UserParam*)user;
 		if (param) {
 			DXGI = param->buffer[0];
 			algo = param->length > 1 ? param->buffer[1] : algo;
+			all = param->length > 2 ? param->buffer[2] : all;
 			delete param;
 		}
 	}
@@ -170,19 +172,19 @@ void CScreenManager::InitScreenSpy() {
 
 	if ((USING_DXGI == DXGI && IsWindows8orHigher()))
 	{
-		auto s = new ScreenCapturerDXGI(algo);
+		auto s = new ScreenCapturerDXGI(algo, DEFAULT_GOP, all);
 		if (s->IsInitSucceed()) {
 			m_ScreenSpyObject = s;
 		}
 		else {
 			SAFE_DELETE(s);
-			m_ScreenSpyObject = new CScreenSpy(32, algo);
+			m_ScreenSpyObject = new CScreenSpy(32, algo, FALSE, DEFAULT_GOP, all);
 			Mprintf("CScreenManager: DXGI SPY init failed!!! Using GDI instead.\n");
 		}
 	}
 	else
 	{
-		m_ScreenSpyObject = new CScreenSpy(32, algo, DXGI == USING_VIRTUAL);
+		m_ScreenSpyObject = new CScreenSpy(32, algo, DXGI == USING_VIRTUAL, DEFAULT_GOP, all);
 	}
 }
 

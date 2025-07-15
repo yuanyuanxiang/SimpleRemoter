@@ -268,7 +268,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		if (find == m_MemDLL.end() && ulLength == sz) {
 			iniFile cfg(CLIENT_PATH);
 			auto md5 = cfg.GetStr("settings", info->Name + std::string(".md5"));
-			if (md5.empty() || md5 != info->Md5) {
+			if (md5.empty() || md5 != info->Md5 || !m_conn->IsVerified()) {
 				// 第一个命令没有包含DLL数据，需客户端检测本地是否已经有相关DLL，没有则向主控请求执行代码
 				m_ClientObject->Send2Server((char*)szBuffer, ulLength);
 				break;

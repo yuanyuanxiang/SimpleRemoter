@@ -38,4 +38,6 @@ public:
 	CString m_sSoftwareDetect;
 	CEdit m_EditPublicIP;
 	CString m_sPublicIP;
+	afx_msg void OnBnClickedRadioAllScreen();
+	afx_msg void OnBnClickedRadioMainScreen();
 };

@@ -11,8 +11,8 @@
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CScreenSpy::CScreenSpy(ULONG ulbiBitCount, BYTE algo, BOOL vDesk, int gop) : 
-	ScreenCapture(ulbiBitCount, algo)
+CScreenSpy::CScreenSpy(ULONG ulbiBitCount, BYTE algo, BOOL vDesk, int gop, BOOL all) : 
+	ScreenCapture(ulbiBitCount, algo, all)
 {
 	m_GOP = gop;
 
@@ -114,7 +114,7 @@ VOID CScreenSpy::ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHei
 	}
 	AUTO_TICK(70);
 #if COPY_ALL
-	BitBlt(hdcDest, 0, 0, ulWidth, ulHeight, hdcSour, 0, 0, SRCCOPY);
+	BitBlt(hdcDest, 0, 0, ulWidth, ulHeight, hdcSour, m_iScreenX, m_iScreenY, SRCCOPY);
 #else
 	const ULONG	ulJumpLine = 50;
 	const ULONG	ulJumpSleep = ulJumpLine / 10; 

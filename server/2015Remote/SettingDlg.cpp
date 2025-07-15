@@ -55,6 +55,8 @@ BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)
 	ON_BN_CLICKED(IDC_BUTTON_SETTINGAPPLY, &CSettingDlg::OnBnClickedButtonSettingapply)
 	ON_EN_CHANGE(IDC_EDIT_PORT, &CSettingDlg::OnEnChangeEditPort)
 	ON_EN_CHANGE(IDC_EDIT_MAX, &CSettingDlg::OnEnChangeEditMax)
+	ON_BN_CLICKED(IDC_RADIO_ALL_SCREEN, &CSettingDlg::OnBnClickedRadioAllScreen)
+	ON_BN_CLICKED(IDC_RADIO_MAIN_SCREEN, &CSettingDlg::OnBnClickedRadioMainScreen)
 END_MESSAGE_MAP()
 
 
@@ -119,7 +121,9 @@ BOOL CSettingDlg::OnInitDialog()
 		m_sSoftwareDetect = "ÉãÏñÍ·";
 		break;
 	}
-
+	BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
+	((CButton*)GetDlgItem(IDC_RADIO_ALL_SCREEN))->SetCheck(!all);
+	((CButton*)GetDlgItem(IDC_RADIO_MAIN_SCREEN))->SetCheck(all);
 	UpdateData(FALSE);
 
 	return TRUE; 
@@ -143,6 +147,9 @@ void CSettingDlg::OnBnClickedButtonSettingapply()
 	THIS_CFG.SetInt("settings", "ReportInterval", m_nReportInterval);
 	n = m_ComboSoftwareDetect.GetCurSel();
 	THIS_CFG.SetInt("settings", "SoftwareDetect", n);
+
+	BOOL all = ((CButton*)GetDlgItem(IDC_RADIO_MAIN_SCREEN))->GetCheck();
+	THIS_CFG.SetInt("settings", "MultiScreen", all);
 
 	m_ApplyButton.EnableWindow(FALSE);
 	m_ApplyButton.ShowWindow(SW_HIDE);
@@ -183,4 +190,18 @@ void CSettingDlg::OnOK()
 	OnBnClickedButtonSettingapply();
 
 	CDialog::OnOK();
+}
+
+
+void CSettingDlg::OnBnClickedRadioAllScreen()
+{
+	BOOL b = ((CButton*)GetDlgItem(IDC_RADIO_ALL_SCREEN))->GetCheck();
+	((CButton*)GetDlgItem(IDC_RADIO_MAIN_SCREEN))->SetCheck(!b);
+}
+
+
+void CSettingDlg::OnBnClickedRadioMainScreen()
+{
+	BOOL b = ((CButton*)GetDlgItem(IDC_RADIO_MAIN_SCREEN))->GetCheck();
+	((CButton*)GetDlgItem(IDC_RADIO_ALL_SCREEN))->SetCheck(!b);
 }
