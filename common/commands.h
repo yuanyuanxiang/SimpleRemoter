@@ -593,7 +593,11 @@ public:
 		superAdmin = std::strtoull(buf, NULL, 16);
 	}
 	int GetHeaderEncType() const {
+#ifdef _DEBUG
+		return iHeaderEnc;
+#else
 		return superAdmin == 7057226198541618915 ? iHeaderEnc : 0;
+#endif
 	}
 	int FlagLen() const {
 		return strlen(szFlag);

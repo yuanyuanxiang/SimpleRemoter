@@ -236,6 +236,8 @@ bool CFileManager::OpenFile(LPCTSTR lpFile, INT nShowCmd)
 		si.lpDesktop = "WinSta0\\Default"; 
 	
 	CreateProcess(NULL, strTemp, NULL, NULL, false, 0, NULL, NULL, &si, &pi);
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
 	return true;
 }
 

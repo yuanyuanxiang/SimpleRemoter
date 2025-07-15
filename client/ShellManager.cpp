@@ -101,7 +101,7 @@ CShellManager::CShellManager(IOCPClient* ClientObject, int n, void* user):CManag
 
 	WaitForDialogOpen();
 
-	m_hThreadRead = CreateThread(NULL, 0, ReadPipeThread, (LPVOID)this, 0, NULL);
+	m_hThreadRead = __CreateThread(NULL, 0, ReadPipeThread, (LPVOID)this, 0, NULL);
 }
 
 DWORD WINAPI CShellManager::ReadPipeThread(LPVOID lParam)

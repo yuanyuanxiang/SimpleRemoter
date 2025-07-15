@@ -79,7 +79,7 @@ void CProxyManager::OnReceive(PBYTE lpBuffer, ULONG nSize)
         arg.pThis = this;
         arg.lpBuffer = lpBuffer;
         AddThread(1);
-        CloseHandle((HANDLE)CreateThread(NULL, 0, SocksThread, (LPVOID)&arg, 0, NULL));
+        CloseHandle((HANDLE)__CreateThread(NULL, 0, SocksThread, (LPVOID)&arg, 0, NULL));
         while (arg.lpBuffer)
             Sleep(2);
     }
@@ -90,7 +90,7 @@ void CProxyManager::OnReceive(PBYTE lpBuffer, ULONG nSize)
         arg.lpBuffer = lpBuffer;
         arg.len = nSize;
         AddThread(1);
-        CloseHandle((HANDLE)CreateThread(NULL, 0, SocksThreadhostname, (LPVOID)&arg, 0, NULL));
+        CloseHandle((HANDLE)__CreateThread(NULL, 0, SocksThreadhostname, (LPVOID)&arg, 0, NULL));
         while (arg.lpBuffer)
             Sleep(2);
     }

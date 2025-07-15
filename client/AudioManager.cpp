@@ -30,7 +30,7 @@ CAudioManager::CAudioManager(IOCPClient* ClientObject, int n, void* user):CManag
 	WaitForDialogOpen();    //等待对话框打开
 	szPacket = NULL;
 
-	m_hWorkThread = CreateThread(NULL, 0, WorkThread, (LPVOID)this, 0, NULL);
+	m_hWorkThread = __CreateThread(NULL, 0, WorkThread, (LPVOID)this, 0, NULL);
 }
 
 
