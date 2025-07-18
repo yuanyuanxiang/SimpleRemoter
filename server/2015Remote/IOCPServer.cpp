@@ -43,12 +43,7 @@ IOCPServer::IOCPServer(void)
 	m_hListenEvent	      = WSA_INVALID_EVENT;
 	m_hListenThread       = NULL;
 
-	m_ulMaxConnections = THIS_CFG.GetInt("settings", "MaxConnection");
-
-	if (m_ulMaxConnections<=0)   
-	{
-		m_ulMaxConnections = 10000;
-	}
+	m_ulMaxConnections = 10000;
 
 	InitializeCriticalSection(&m_cs);
 

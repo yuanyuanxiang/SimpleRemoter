@@ -168,7 +168,7 @@ public:
 	VOID CreateToolBar();
 	VOID CreateNotifyBar();
 	VOID CreateSolidMenu();	
-	BOOL ListenPort();
+	int m_nMaxConnection;
 	BOOL Activate(const std::string& nPort,int nMaxConnection);
 	void UpdateActiveWindow(CONTEXT_OBJECT* ctx);
 	void SendMasterSettings(CONTEXT_OBJECT* ctx);
@@ -263,4 +263,5 @@ public:
 	void OnListClick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnOnlineUnauthorize();
 	afx_msg void OnToolRequestAuth();
+	afx_msg LRESULT OnPasswordCheck(WPARAM wParam, LPARAM lParam);
 };

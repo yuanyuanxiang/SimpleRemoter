@@ -78,7 +78,7 @@ public:
 
 	// 启动多个服务端，成功返回0
 	// nPort示例: 6543;7543
-	UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, const std::string& uPort) {
+	UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, const std::string& uPort, int maxConn) {
 		bool succeed = false;
 		auto list = StringToVector(uPort, ';');
 		for (int i=0; i<list.size(); ++i)
@@ -90,6 +90,7 @@ public:
 				SAFE_DELETE(svr);
 				continue;
 			}
+			svr->UpdateMaxConnection(maxConn);
 			succeed = true;
 			m_iocpServer.push_back(svr);
 		}

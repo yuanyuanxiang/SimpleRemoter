@@ -126,6 +126,7 @@ CPwdGenDlg::CPwdGenDlg(CWnd* pParent /*=nullptr*/)
 	, m_sUserPwd(_T(""))
 	, m_ExpireTm(COleDateTime::GetCurrentTime())
 	, m_StartTm(COleDateTime::GetCurrentTime())
+	, m_nHostNum(1)
 {
 
 }
@@ -150,6 +151,9 @@ void CPwdGenDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_DateTimeCtrl(pDX, IDC_EXPIRE_DATE, m_ExpireTm);
 	DDX_Control(pDX, IDC_START_DATE, m_StartDate);
 	DDX_DateTimeCtrl(pDX, IDC_START_DATE, m_StartTm);
+	DDX_Control(pDX, IDC_EDIT_HOSTNUM, m_EditHostNum);
+	DDX_Text(pDX, IDC_EDIT_HOSTNUM, m_nHostNum);
+	DDV_MinMaxInt(pDX, m_nHostNum, 1, 9999);
 }
 
 
@@ -172,10 +176,12 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
 	}
 	CString strBeginDate = m_StartTm.Format("%Y%m%d");
 	CString strEndDate = m_ExpireTm.Format("%Y%m%d");
-	// 密码形式：20250209 - 20350209: SHA256
-	std::string password = std::string(strBeginDate.GetString()) + " - " + strEndDate.GetBuffer() + ": " + GetPwdHash();
+	CString hostNum;
+	hostNum.Format("%04d", m_nHostNum);
+	// 密码形式：20250209 - 20350209: SHA256: HostNum
+	std::string password = std::string(strBeginDate.GetString()) + " - " + strEndDate.GetBuffer() + ": " + GetPwdHash() + ": " + hostNum.GetBuffer();
 	std::string finalKey = deriveKey(password, m_sDeviceID.GetString());
-	std::string fixedKey = strBeginDate.GetString() + std::string("-") + strEndDate.GetBuffer() + std::string("-") +
+	std::string fixedKey = strBeginDate.GetString() + std::string("-") + strEndDate.GetBuffer() + std::string("-") + hostNum.GetString() + "-" + 
 		getFixedLengthID(finalKey);
 	m_EditPassword.SetWindowTextA(fixedKey.c_str());
 	std::string hardwareID = getHardwareID();
