@@ -76,4 +76,6 @@ public:
 	CDateTimeCtrl m_StartDate;
 	COleDateTime m_StartTm;
 	virtual BOOL OnInitDialog();
+	CEdit m_EditHostNum;
+	int m_nHostNum;
 };

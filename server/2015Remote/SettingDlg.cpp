@@ -70,15 +70,12 @@ BOOL CSettingDlg::OnInitDialog()
 	m_sPublicIP = THIS_CFG.GetStr("settings", "master", "").c_str();
 	m_sPublicIP = m_sPublicIP.IsEmpty() ? cvt.getPublicIP().c_str() : m_sPublicIP;
 	std::string nPort = THIS_CFG.GetStr("settings", "ghost", "6543");
-	//读取ini 文件中的监听端口
-	int nMaxConnection = THIS_CFG.GetInt("settings", "MaxConnection");
 
 	int DXGI = THIS_CFG.GetInt("settings", "DXGI");
 
 	CString algo = THIS_CFG.GetStr("settings", "ScreenCompress", "").c_str();
 
 	m_nListenPort = nPort.c_str();
-	m_nMax_Connect  = nMaxConnection<=0 ? 10000 : nMaxConnection;
 
 	int n = algo.IsEmpty() ? ALGORITHM_DIFF : atoi(algo.GetString());
 	switch (n)
@@ -135,8 +132,6 @@ void CSettingDlg::OnBnClickedButtonSettingapply()
 	UpdateData(TRUE);
 	THIS_CFG.SetStr("settings", "master", m_sPublicIP.GetBuffer());
 	THIS_CFG.SetStr("settings", "ghost", m_nListenPort.GetString());
-	//向ini文件中写入值
-	THIS_CFG.SetInt("settings", "MaxConnection", m_nMax_Connect);
 
 	int n = m_ComboScreenCapture.GetCurSel();
 	THIS_CFG.SetInt("settings", "DXGI", n);

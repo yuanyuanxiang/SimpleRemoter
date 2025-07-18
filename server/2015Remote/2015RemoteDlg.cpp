@@ -282,6 +282,7 @@ std::vector<DllInfo*> ReadAllDllFilesWindows(const std::string& dirPath) {
 
 CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::IDD, pParent)
 {
+	m_nMaxConnection = 0;
 	m_hExit = CreateEvent(NULL, TRUE, FALSE, NULL);
 	m_hIcon = THIS_APP->LoadIcon(IDR_MAINFRAME);
 
@@ -350,7 +351,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_ONLINE_MESSAGE, &CMy2015RemoteDlg::OnOnlineMessage)
 	ON_COMMAND(ID_ONLINE_DELETE, &CMy2015RemoteDlg::OnOnlineDelete)
 	ON_COMMAND(ID_ONLINE_UPDATE, &CMy2015RemoteDlg::OnOnlineUpdate)
-	ON_COMMAND(IDM_ONLINE_ABOUT,&CMy2015RemoteDlg::OnAbout)
+	ON_COMMAND(IDM_ONLINE_ABOUT, &CMy2015RemoteDlg::OnAbout)
 
 	ON_COMMAND(IDM_ONLINE_CMD, &CMy2015RemoteDlg::OnOnlineCmdManager)
 	ON_COMMAND(IDM_ONLINE_PROCESS, &CMy2015RemoteDlg::OnOnlineProcessManager)
@@ -360,17 +361,17 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(IDM_ONLINE_AUDIO, &CMy2015RemoteDlg::OnOnlineAudioManager)
 	ON_COMMAND(IDM_ONLINE_VIDEO, &CMy2015RemoteDlg::OnOnlineVideoManager)
 	ON_COMMAND(IDM_ONLINE_SERVER, &CMy2015RemoteDlg::OnOnlineServerManager)
-	ON_COMMAND(IDM_ONLINE_REGISTER, &CMy2015RemoteDlg::OnOnlineRegisterManager)  
+	ON_COMMAND(IDM_ONLINE_REGISTER, &CMy2015RemoteDlg::OnOnlineRegisterManager)
 	ON_COMMAND(IDM_KEYBOARD, &CMy2015RemoteDlg::OnOnlineKeyboardManager)
 	ON_COMMAND(IDM_ONLINE_BUILD, &CMy2015RemoteDlg::OnOnlineBuildClient)    //生成Client
-	ON_MESSAGE(UM_ICONNOTIFY, (LRESULT (__thiscall CWnd::* )(WPARAM,LPARAM))OnIconNotify) 
+	ON_MESSAGE(UM_ICONNOTIFY, (LRESULT(__thiscall CWnd::*)(WPARAM, LPARAM))OnIconNotify)
 	ON_COMMAND(IDM_NOTIFY_SHOW, &CMy2015RemoteDlg::OnNotifyShow)
 	ON_COMMAND(ID_NOTIFY_EXIT, &CMy2015RemoteDlg::OnNotifyExit)
 	ON_COMMAND(ID_MAIN_SET, &CMy2015RemoteDlg::OnMainSet)
 	ON_COMMAND(ID_MAIN_EXIT, &CMy2015RemoteDlg::OnMainExit)
-	ON_MESSAGE(WM_USERTOONLINELIST, OnUserToOnlineList) 
+	ON_MESSAGE(WM_USERTOONLINELIST, OnUserToOnlineList)
 	ON_MESSAGE(WM_USEROFFLINEMSG, OnUserOfflineMsg)
-	ON_MESSAGE(WM_OPENSCREENSPYDIALOG, OnOpenScreenSpyDialog) 
+	ON_MESSAGE(WM_OPENSCREENSPYDIALOG, OnOpenScreenSpyDialog)
 	ON_MESSAGE(WM_OPENFILEMANAGERDIALOG, OnOpenFileManagerDialog)
 	ON_MESSAGE(WM_OPENTALKDIALOG, OnOpenTalkDialog)
 	ON_MESSAGE(WM_OPENSHELLDIALOG, OnOpenShellDialog)
@@ -389,6 +390,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_OPENFILEMGRDIALOG, OnOpenFileMgrDialog)
 	ON_MESSAGE(WM_OPENDRAWINGBOARD, OnOpenDrawingBoard)
 	ON_MESSAGE(WM_UPXTASKRESULT, UPXProcResult)
+	ON_MESSAGE(WM_PASSWORDCHECK, OnPasswordCheck)
 	ON_WM_HELPINFO()
 	ON_COMMAND(ID_ONLINE_SHARE, &CMy2015RemoteDlg::OnOnlineShare)
 	ON_COMMAND(ID_TOOL_AUTH, &CMy2015RemoteDlg::OnToolAuth)
@@ -914,7 +916,18 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 
 	CreateSolidMenu();
 
-	if (!ListenPort()) {
+	std::string nPort = THIS_CFG.GetStr("settings", "ghost", "6543");
+	m_nMaxConnection = 1;
+	std::string pwd = THIS_CFG.GetStr("settings", "Password");
+	auto arr = StringToVector(pwd, '-', 6);
+	if (arr.size() == 7) {
+		m_nMaxConnection = atoi(arr[2].c_str());
+	}
+	else {
+		int nMaxConnection = THIS_CFG.GetInt("settings", "MaxConnection");
+		m_nMaxConnection = nMaxConnection <= 0 ? 10000 : nMaxConnection;
+	}
+	if (!Activate(nPort, m_nMaxConnection)){
 		OnCancel();
 		return FALSE;
 	}
@@ -1063,6 +1076,31 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
 	}
 }
 
+LRESULT CMy2015RemoteDlg::OnPasswordCheck(WPARAM wParam, LPARAM lParam) {
+	static bool isChecking = false;
+	if (isChecking) 
+		return S_OK;
+
+	isChecking = true;
+	if (!CheckValid(-1))
+	{
+		KillTimer(TIMER_CHECK);
+		CInputDialog dlg(this);
+		dlg.m_str = m_superPass.c_str();
+		dlg.Init("输入密码", "输入主控程序的密码:");
+		dlg.DoModal();
+		if (hashSHA256(dlg.m_str.GetString()) != GetPwdHash()) {
+			THIS_APP->UpdateMaxConnection(1);
+			MessageBox("请向管理员申请口令。", "提示", MB_ICONWARNING);
+		}
+		else {
+			m_superPass = dlg.m_str.GetString();
+			MessageBox("请及时对当前主控程序授权: 在工具菜单中生成口令!", "提示", MB_ICONWARNING);
+		}
+	}
+	isChecking = false;
+	return S_OK;
+}
 
 void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 {
@@ -1078,21 +1116,7 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 			}
 			return;
 		}
-		if (!CheckValid(-1)) 
-		{
-			KillTimer(nIDEvent);
-			CInputDialog dlg(this);
-			dlg.m_str = m_superPass.c_str();
-			dlg.Init("输入密码", "输入主控程序的密码:");
-			dlg.DoModal();
-			if (hashSHA256(dlg.m_str.GetString()) != GetPwdHash()) {
-				MessageBox("请通知管理员延长授权时间，再关闭此提示信息!!!"
-					"\n否则，关闭此提示信息将退出程序，无法授权成功。", "提示", MB_ICONWARNING);
-				return OnMainExit();
-			}
-			m_superPass = dlg.m_str.GetString();
-			MessageBox("请及时对当前主控程序授权: 在工具菜单中生成口令!", "提示", MB_ICONWARNING);
-		}
+		PostMessageA(WM_PASSWORDCHECK);
 	}
 	if (nIDEvent == TIMER_CLOSEWND) {
 		DeletePopupWindow();
@@ -1471,17 +1495,17 @@ bool CMy2015RemoteDlg::CheckValid(int trail) {
 			return false;
 		}
 
-		// 密码形式：20250209 - 20350209: SHA256
+		// 密码形式：20250209 - 20350209: SHA256: HostNum
 		auto v = splitString(dlg.m_sPassword.GetBuffer(), '-');
-		if (v.size() != 6)
+		if (v.size() != 6 && v.size() != 7)
 		{
 			THIS_CFG.SetStr(settings, pwdKey, "");
 			MessageBox("格式错误，请重新申请口令!", "提示", MB_ICONINFORMATION);
 			KillTimer(TIMER_CHECK);
 			return false;
 		}
-		std::vector<std::string> subvector(v.begin() + 2, v.end());
-		std::string password = v[0] + " - " + v[1] + ": " + GetPwdHash();
+		std::vector<std::string> subvector(v.end() - 4, v.end());
+		std::string password = v[0] + " - " + v[1] + ": " + GetPwdHash() + (v.size()==6?"":": "+v[2]);
 		std::string finalKey = deriveKey(password, deviceID);
 		std::string hash256 = joinString(subvector, '-');
 		std::string fixedKey = getFixedLengthID(finalKey);
@@ -1512,14 +1536,6 @@ bool CMy2015RemoteDlg::CheckValid(int trail) {
 
 void CMy2015RemoteDlg::OnOnlineBuildClient()
 {
-	// 给新编译的程序14天试用期，过期之后生成服务端需要申请"口令"；
-	// 如果要对其他功能乃至整个程序启动授权逻辑，将下述if语句添加到相应地方即可。
-	// 口令包含授权日期范围，确保一机一码；授权逻辑会检测计算机日期未被篡改!
-	// 注释下面 if 语句可以屏蔽该授权逻辑.
-	// 2025/04/20 
-	if (!CheckValid(365))
-		return;
-
 	// TODO: 在此添加命令处理程序代码
 	CBuildDlg Dlg;
 	Dlg.m_strIP = THIS_CFG.GetStr("settings", "master", "").c_str();
@@ -1575,14 +1591,11 @@ void CMy2015RemoteDlg::OnNotifyExit()
 //固态菜单
 void CMy2015RemoteDlg::OnMainSet()
 {
-	int nMaxConnection = THIS_CFG.GetInt("settings", "MaxConnection");
 	CSettingDlg  Dlg;
+	Dlg.m_nMax_Connect = m_nMaxConnection;
 
 	Dlg.DoModal();   //模态 阻塞
-	if (nMaxConnection != Dlg.m_nMax_Connect)
-	{
-		THIS_APP->UpdateMaxConnection(Dlg.m_nMax_Connect);
-	}
+
 	int m = atoi(THIS_CFG.GetStr("settings", "ReportInterval", "5").c_str());
 	int n = THIS_CFG.GetInt("settings", "SoftwareDetect");
 	if (m== m_settings.ReportInterval && n == m_settings.DetectSoftware) {
@@ -1606,19 +1619,6 @@ void CMy2015RemoteDlg::OnMainExit()
 	Release();
 	CDialogEx::OnOK(); // 关闭对话框
 }
-
-BOOL CMy2015RemoteDlg::ListenPort()
-{
-	std::string nPort = THIS_CFG.GetStr("settings", "ghost", "6543");
-	//读取ini 文件中的监听端口
-	int nMaxConnection = THIS_CFG.GetInt("settings", "MaxConnection");
-	//读取最大连接数
-
-	if (nMaxConnection <= 0)
-		nMaxConnection = 10000;
-	return Activate(nPort,nMaxConnection);             //开始监听
-}
-
 
 std::string exec(const std::string& cmd) {
 	HANDLE hReadPipe, hWritePipe;
@@ -1689,7 +1689,7 @@ std::vector<std::string> splitByNewline(const std::string& input) {
 BOOL CMy2015RemoteDlg::Activate(const std::string& nPort,int nMaxConnection)
 {
 	UINT ret = 0;
-	if ( (ret = THIS_APP->StartServer(NotifyProc, OfflineProc, nPort)) !=0 )
+	if ( (ret = THIS_APP->StartServer(NotifyProc, OfflineProc, nPort, nMaxConnection)) !=0 )
 	{
 		Mprintf("======> StartServer Failed \n");
 		char cmd[200];
