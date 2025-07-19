@@ -65,7 +65,7 @@ public:
 			DestroyCursor(m_CursorHandleArray[i]);
 	}
 
-	int getCurrentCursorIndex()
+	int getCurrentCursorIndex() const
 	{
 		CURSORINFO	ci;
 		ci.cbSize = sizeof(CURSORINFO);

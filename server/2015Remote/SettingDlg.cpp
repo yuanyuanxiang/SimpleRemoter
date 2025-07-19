@@ -21,6 +21,7 @@ CSettingDlg::CSettingDlg(CWnd* pParent)
 	, m_nReportInterval(5)
 	, m_sSoftwareDetect(_T("…„œÒÕ∑"))
 	, m_sPublicIP(_T(""))
+	, m_sUdpOption(_T(""))
 {
 }
 
@@ -49,6 +50,9 @@ void CSettingDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_PUBLIC_IP, m_EditPublicIP);
 	DDX_Text(pDX, IDC_EDIT_PUBLIC_IP, m_sPublicIP);
 	DDV_MaxChars(pDX, m_sPublicIP, 100);
+	DDX_Control(pDX, IDC_EDIT_UDP_OPTION, m_EditUdpOption);
+	DDX_Text(pDX, IDC_EDIT_UDP_OPTION, m_sUdpOption);
+	DDV_MaxChars(pDX, m_sUdpOption, 24);
 }
 
 BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)
@@ -70,6 +74,7 @@ BOOL CSettingDlg::OnInitDialog()
 	m_sPublicIP = THIS_CFG.GetStr("settings", "master", "").c_str();
 	m_sPublicIP = m_sPublicIP.IsEmpty() ? cvt.getPublicIP().c_str() : m_sPublicIP;
 	std::string nPort = THIS_CFG.GetStr("settings", "ghost", "6543");
+	m_sUdpOption = THIS_CFG.GetStr("settings", "UDPOption", "").c_str();
 
 	int DXGI = THIS_CFG.GetInt("settings", "DXGI");
 
@@ -132,6 +137,7 @@ void CSettingDlg::OnBnClickedButtonSettingapply()
 	UpdateData(TRUE);
 	THIS_CFG.SetStr("settings", "master", m_sPublicIP.GetBuffer());
 	THIS_CFG.SetStr("settings", "ghost", m_nListenPort.GetString());
+	THIS_CFG.SetStr("settings", "UDPOption", m_sUdpOption.GetString());
 
 	int n = m_ComboScreenCapture.GetCurSel();
 	THIS_CFG.SetInt("settings", "DXGI", n);

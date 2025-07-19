@@ -40,4 +40,6 @@ public:
 	CString m_sPublicIP;
 	afx_msg void OnBnClickedRadioAllScreen();
 	afx_msg void OnBnClickedRadioMainScreen();
+	CEdit m_EditUdpOption;
+	CString m_sUdpOption;
 };

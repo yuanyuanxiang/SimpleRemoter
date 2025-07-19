@@ -269,6 +269,8 @@ BOOL CBuildDlg::OnInitDialog()
 	m_ComboProto.InsertString(PROTO_TCP, "TCP");
 	m_ComboProto.InsertString(PROTO_UDP, "UDP");
 	m_ComboProto.InsertString(PROTO_HTTP, "HTTP");
+	m_ComboProto.InsertString(PROTO_HTTPS, "---");
+	m_ComboProto.InsertString(PROTO_KCP, "KCP");
 	m_ComboProto.SetCurSel(PROTO_TCP);
 
 	m_ComboEncrypt.InsertString(PROTOCOL_SHINE, "Shine");

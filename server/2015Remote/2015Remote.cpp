@@ -178,7 +178,10 @@ int CMy2015RemoteApp::ExitInstance()
 		CloseHandle(m_Mutex);
 		m_Mutex = NULL;
 	}
-	Delete();
+	__try{
+		Delete();
+	}__except(EXCEPTION_EXECUTE_HANDLER){
+	}
 
 	SAFE_DELETE(m_iniFile);
 
