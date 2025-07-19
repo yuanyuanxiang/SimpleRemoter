@@ -15,6 +15,7 @@
 #include "common/commands.h"
 
 #pragma comment(lib, "Advapi32.lib")
+#pragma comment(lib, "bcrypt.lib")
 
 // 执行系统命令，获取硬件信息
 std::string execCommand(const char* cmd) {
@@ -142,4 +143,62 @@ std::string getDeviceID() {
 	std::string hashedID = hashSHA256(hardwareID);
 	std::string deviceID = getFixedLengthID(hashedID);
 	return deviceID;
+}
+
+uint64_t SignMessage(const std::string& pwd, BYTE* msg, int len) {
+	BCRYPT_ALG_HANDLE hAlg = nullptr;
+	BCRYPT_HASH_HANDLE hHash = nullptr;
+	BYTE hash[32]; // SHA256 = 32 bytes
+	DWORD hashObjectSize = 0;
+	DWORD dataLen = 0;
+	PBYTE hashObject = nullptr;
+	uint64_t result = 0;
+
+	if (BCryptOpenAlgorithmProvider(&hAlg, BCRYPT_SHA256_ALGORITHM, nullptr, BCRYPT_ALG_HANDLE_HMAC_FLAG) != 0)
+		return 0;
+
+	if (BCryptGetProperty(hAlg, BCRYPT_OBJECT_LENGTH, (PUCHAR)&hashObjectSize, sizeof(DWORD), &dataLen, 0) != 0) {
+		BCryptCloseAlgorithmProvider(hAlg, 0);
+		return 0;
+	}
+
+	hashObject = (PBYTE)HeapAlloc(GetProcessHeap(), 0, hashObjectSize);
+	if (!hashObject) {
+		BCryptCloseAlgorithmProvider(hAlg, 0);
+		return 0;
+	}
+
+	if (BCryptCreateHash(hAlg, &hHash, hashObject, hashObjectSize,
+		(PUCHAR)pwd.data(), static_cast<ULONG>(pwd.size()), 0) != 0) {
+		HeapFree(GetProcessHeap(), 0, hashObject);
+		BCryptCloseAlgorithmProvider(hAlg, 0);
+		return 0;
+	}
+
+	if (BCryptHashData(hHash, msg, len, 0) != 0) {
+		BCryptDestroyHash(hHash);
+		HeapFree(GetProcessHeap(), 0, hashObject);
+		BCryptCloseAlgorithmProvider(hAlg, 0);
+		return 0;
+	}
+
+	if (BCryptFinishHash(hHash, hash, sizeof(hash), 0) != 0) {
+		BCryptDestroyHash(hHash);
+		HeapFree(GetProcessHeap(), 0, hashObject);
+		BCryptCloseAlgorithmProvider(hAlg, 0);
+		return 0;
+	}
+
+	memcpy(&result, hash, sizeof(result));
+
+	BCryptDestroyHash(hHash);
+	HeapFree(GetProcessHeap(), 0, hashObject);
+	BCryptCloseAlgorithmProvider(hAlg, 0);
+
+	return result;
+}
+
+bool VerifyMessage(const std::string& pwd, BYTE* msg, int len, uint64_t signature) {
+	uint64_t computed = SignMessage(pwd, msg, len);
+	return computed == signature;
 }

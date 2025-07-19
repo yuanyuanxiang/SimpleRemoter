@@ -233,8 +233,9 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		HANDLE hMutex = OpenMutex(SYNCHRONIZE, FALSE, "MASTER.EXE");
 		hMutex = hMutex ? hMutex : OpenMutex(SYNCHRONIZE, FALSE, "YAMA.EXE");
 #ifndef _DEBUG
-		if (hMutex == NULL) // 没有互斥量，主程序可能未运行
-			break;
+		if (hMutex == NULL) { // 没有互斥量，主程序可能未运行
+			Mprintf("!!! [WARN] Master program is not running.\n");
+		}
 #endif
 		CloseHandle(hMutex);
 
@@ -244,14 +245,19 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		const char* pwdHash = m_conn->pwdHash[0] ? m_conn->pwdHash : masterHash.c_str();
 		if (passCode[0] == 0) {
 			std::string devId = getDeviceID();
+			memcpy(buf + 24, buf + 12, 8); // 消息签名
+			memcpy(buf + 96, buf + 8, 4); // 时间戳
 			memcpy(buf + 5, devId.c_str(), devId.length());		// 16字节
 			memcpy(buf + 32, pwdHash, 64);						// 64字节
 			m_ClientObject->Send2Server((char*)buf, sizeof(buf));
+			Mprintf("Request for authorization update.\n");
 		} else {
-			int* days = (int*)(buf + 1);
+			unsigned short* days = (unsigned short*)(buf + 1);
+			unsigned short* num = (unsigned short*)(buf + 3);
 			config* cfg = pwdHash == masterHash ? new config : new iniFile;
 			cfg->SetStr("settings", "Password", *days <= 0 ? "" : passCode);
 			cfg->SetStr("settings", "HMAC", *days <= 0 ? "" : buf + 64);
+			Mprintf("Update authorization: %s, HMAC: %s\n", passCode, buf+64);
 			delete cfg;
 			g_bExit = S_SERVER_EXIT;
 		}

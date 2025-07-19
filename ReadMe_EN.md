@@ -290,6 +290,22 @@ Release v1.1.2:
 * Plugin: #145 Support remote drawing board
 * Plugin: Add remote desktop privacy screen feature
 
+**2025.07.19**
+
+Release v1.1.2
+
+* Add encrypt and decrypt functions
+* Modify the popup message to be triggered by `NM_DBLCLK`
+* Improve: Save DLL data to registry
+* Feature: Support HTTP protocol and add building option
+* Feature: Add encryption option for client building
+* Improvement: Reduce transmit mouse move message
+* fix: Lost control when operating high permission windows
+* Improve client stability by handling exceptions
+* feature: Remote desktop support multi monitor
+* Improve: Support authorizing the online host quantity
+* fix：#159 Authorization doesn't work under TestRun injection
+
 ---
 
 # 6. Related Projects

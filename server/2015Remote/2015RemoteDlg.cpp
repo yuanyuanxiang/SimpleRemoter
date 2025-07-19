@@ -948,7 +948,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 		return FALSE;
 	}
 #ifdef _DEBUG
-	SetTimer(TIMER_CHECK, 60 * 1000, NULL);
+	SetTimer(TIMER_CHECK, 10 * 1000, NULL);
 #else
 	SetTimer(TIMER_CHECK, 600 * 1000, NULL);
 #endif
@@ -1464,11 +1464,7 @@ std::string joinString(const std::vector<std::string>& tokens, char delimiter) {
 
 bool CMy2015RemoteDlg::CheckValid(int trail) {
 	DateVerify verify;
-#ifdef _DEBUG
-	BOOL isTrail = verify.isTrail(0);
-#else
 	BOOL isTrail = verify.isTrail(trail);
-#endif
 
 	if (!isTrail) {
 		const Validation *verify = GetValidation();
@@ -1845,13 +1841,32 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		if (n < 100) break;
 		char resp[100] = { 0 }, *devId = resp + 5, *pwdHash = resp + 32;
 		ContextObject->InDeCompressedBuffer.CopyBuffer(resp, min(n, sizeof(resp)), 0);
-		int *days = (int*)(resp+1);
-		if (devId[0] == 0 || pwdHash[0] == 0)break;
-		// 密码形式：20250209 - 20350209: SHA256
-		std::string hash = pwdHash;
-		std::string password = getDateStr(0) + " - " + getDateStr(*days) + ": " + pwdHash;
-		std::string finalKey = deriveKey(password, devId);
-		std::string fixedKey = getDateStr(0) + std::string("-") + getDateStr(*days) + std::string("-") + getFixedLengthID(finalKey);
+		unsigned short* days = (unsigned short*)(resp + 1);
+		unsigned short* num = (unsigned short*)(resp + 3);
+		BYTE msg[12] = {};
+		memcpy(msg, resp, 5);
+		memcpy(msg+8, resp+96, 4);
+		uint32_t now = clock();
+		uint32_t tm = *(uint32_t*)(resp + 96);
+		if (now < tm || now - tm > 30000) {
+			Mprintf("Get authorization timeout[%s], devId: %s, pwdHash:%s", ContextObject->PeerName.c_str(),
+				devId, pwdHash);
+			break;
+		}
+		uint64_t signature = *(uint64_t*)(resp + 24);
+		if (devId[0] == 0 || pwdHash[0] == 0 || !VerifyMessage(m_superPass, msg, sizeof(msg), signature)){
+			Mprintf("Get authorization failed[%s], devId: %s, pwdHash:%s\n", ContextObject->PeerName.c_str(),
+				devId, pwdHash);
+			break;
+		}
+		char hostNum[10] = {};
+		sprintf(hostNum, "%04d", *num);
+		// 密码形式：20250209 - 20350209: SHA256: HostNum
+		std::string hash = std::string(pwdHash, pwdHash+64);
+		std::string password = getDateStr(0) + " - " + getDateStr(*days) + ": " + hash + ": " + hostNum;
+		std::string finalKey = deriveKey(password, std::string(devId, devId+19));
+		std::string fixedKey = getDateStr(0) + std::string("-") + getDateStr(*days) + "-" + hostNum + 
+			std::string("-") + getFixedLengthID(finalKey);
 		memcpy(devId, fixedKey.c_str(), fixedKey.length());
 		devId[fixedKey.length()] = 0;
 		std::string hmac = genHMAC(hash, m_superPass);
@@ -2726,11 +2741,19 @@ void CMy2015RemoteDlg::OnOnlineAuthorize()
 
 	CInputDialog dlg(this);
 	dlg.Init("延长授权", "主控程序授权天数:");
+	dlg.Init2("并发上线机器数量:", std::to_string(100).c_str());
 	if (dlg.DoModal() != IDOK || atoi(dlg.m_str) <= 0)
 		return;
 	BYTE	bToken[32] = { CMD_AUTHORIZATION };
-	int days = atoi(dlg.m_str);
+	unsigned short days = atoi(dlg.m_str);
+	unsigned short num = atoi(dlg.m_sSecondInput);
+	uint32_t tm = clock();
+	// 2字节天数+2字节主机数+4字节时间戳+消息签名
 	memcpy(bToken+1, &days, sizeof(days));
+	memcpy(bToken+3, &num, sizeof(num));
+	memcpy(bToken + 8, &tm, sizeof(tm));
+	uint64_t signature = SignMessage(m_superPass, bToken, 12);
+	memcpy(bToken + 12, &signature, sizeof(signature));
 	SendSelectedCommand(bToken, sizeof(bToken));
 }
 
@@ -2814,8 +2837,15 @@ void CMy2015RemoteDlg::OnOnlineUnauthorize()
 	}
 
 	BYTE	bToken[32] = { CMD_AUTHORIZATION };
-	int days = -1;
+	unsigned short days = 0;
+	unsigned short num = 1;
+	uint32_t tm = clock();
+	// 2字节天数+2字节主机数+4字节时间戳+消息签名
 	memcpy(bToken + 1, &days, sizeof(days));
+	memcpy(bToken + 3, &num, sizeof(num));
+	memcpy(bToken + 8, &tm, sizeof(tm));
+	uint64_t signature = SignMessage(m_superPass, bToken, 12);
+	memcpy(bToken + 12, &signature, sizeof(signature));
 	SendSelectedCommand(bToken, sizeof(bToken));
 }
 

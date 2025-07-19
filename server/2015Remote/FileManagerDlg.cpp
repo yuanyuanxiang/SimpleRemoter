@@ -1778,7 +1778,8 @@ void CFileManagerDlg::WriteLocalRecvFile()
 	}
 	if (i == MAX_WRITE_RETRY && nRet <= 0)
 	{
-		::MessageBox(m_hWnd, m_strReceiveLocalFile + " 文件写入失败", "警告", MB_OK|MB_ICONWARNING);
+		::MessageBox(m_hWnd, m_strReceiveLocalFile + " 文件写入失败!", "警告", MB_OK|MB_ICONWARNING);
+		m_bIsStop = true;
 	}
 	CloseHandle(hFile);
 	// 为了比较，计数器递增
