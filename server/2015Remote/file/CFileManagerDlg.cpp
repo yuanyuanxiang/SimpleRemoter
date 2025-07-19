@@ -1423,14 +1423,17 @@ void CFileManagerDlg::WriteLocalRecvFile()
                 break;
         }
         if (i == MAX_WRITE_RETRY && !bResult) {
-            ::MessageBox(m_hWnd, m_strReceiveLocalFile + _T(" 文件写入失败"), _T("警告"), MB_OK | MB_ICONWARNING);
+            ::MessageBox(m_hWnd, m_strReceiveLocalFile + _T(" 文件写入失败!"), _T("警告"), MB_OK | MB_ICONWARNING);
+            m_bIsStop = true;
         }
-        dwOffsetLow = 0;
-        dwOffsetHigh = 0;
-        dwOffsetLow = SetFilePointer(m_hFileRecv, dwOffsetLow, &dwOffsetHigh, FILE_CURRENT);
-        // 为了比较，计数器递增
-        m_nCounter += dwBytesWrite;
-        ShowProgress();
+        else {
+            dwOffsetLow = 0;
+            dwOffsetHigh = 0;
+            dwOffsetLow = SetFilePointer(m_hFileRecv, dwOffsetLow, &dwOffsetHigh, FILE_CURRENT);
+            // 为了比较，计数器递增
+            m_nCounter += dwBytesWrite;
+            ShowProgress();
+        }
     }
     if (m_bIsStop)
         SendStop(TRUE);

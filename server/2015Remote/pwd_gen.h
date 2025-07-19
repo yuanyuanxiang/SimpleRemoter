@@ -16,3 +16,8 @@ std::string getFixedLengthID(const std::string& hash);
 std::string deriveKey(const std::string& password, const std::string& hardwareID);
 
 std::string getDeviceID();
+
+// Use HMAC to sign a message.
+uint64_t SignMessage(const std::string& pwd, BYTE* msg, int len);
+
+bool VerifyMessage(const std::string& pwd, BYTE* msg, int len, uint64_t signature);
