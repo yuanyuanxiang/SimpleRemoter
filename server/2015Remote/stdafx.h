@@ -23,6 +23,7 @@
 // 移除对话框中MFC控件的支持，减小静态编译程序的大小
 #define _AFX_NO_MFC_CONTROLS_IN_DIALOGS
 
+#ifdef _DEBUG
 // 检测内存泄漏，需安装VLD；否则请注释此行
 // 如果安装了VLD, 请将安装路径添加到环境变量: 名称为"VLDPATH", 路径为"D:\Program Files (x86)\Visual Leak Detector"
 // 请根据实际安装目录填写VLDPATH. 或者手动编辑每个项目文件的头文件目录和库目录. 有关下载VLD库的信息请参考下面链接.
@@ -36,6 +37,10 @@
 // 勾选 Microsoft Symbol Servers. 指定符号缓存目录，例如 "C:\Symbols"。
 // 调试时，缺失的符号（如 dbghelp.pdb）会自动下载到缓存目录。
 #include "vld.h"
+#ifndef VLD_RPTHOOK_REMOVE
+#error 检测内存泄漏，需安装VLD；否则请注释#include "vld.h"，或使用Release编译
+#endif
+#endif
 
 #include "targetver.h"
 

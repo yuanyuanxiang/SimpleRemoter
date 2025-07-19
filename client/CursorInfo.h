@@ -17,6 +17,7 @@ enum {
 
 #define ALGORITHM_GRAY 0
 #define ALGORITHM_DIFF 1
+#define ALGORITHM_DEFAULT 1
 #define ALGORITHM_H264 2
 #define ALGORITHM_HOME 3
 

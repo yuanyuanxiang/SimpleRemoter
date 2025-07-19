@@ -27,6 +27,9 @@
 #ifdef _DEBUG
 // 检测内存泄漏，需安装VLD；否则请注释此行
 #include "vld.h"
+#ifndef VLD_RPTHOOK_REMOVE
+#error 检测内存泄漏，需安装VLD；否则请注释#include "vld.h"，或使用Release编译
+#endif
 #define USING_SAFETHRED 0
 #else
 #define USING_SAFETHRED 1
