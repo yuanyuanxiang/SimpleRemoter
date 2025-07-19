@@ -542,6 +542,7 @@ enum ProtoType {
 	PROTO_UDP = 1,					// UDP
 	PROTO_HTTP = 2,					// HTTP
 	PROTO_HTTPS = 3,				// HTTPS
+	PROTO_KCP = 4,					// KCP
 };
 
 enum RunningType {

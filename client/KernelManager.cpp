@@ -14,6 +14,7 @@
 #include "server/2015Remote/pwd_gen.h"
 #include <common/iniFile.h>
 #include "IOCPUDPClient.h"
+#include "IOCPKCPClient.h"
 
 // UDP 协议仅能针对小包数据，且数据没有时序关联
 IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, bool exit_while_disconnect) {
@@ -23,6 +24,9 @@ IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, bool exit_while_di
 		return new IOCPUDPClient(bExit, exit_while_disconnect);
 	if (conn->protoType == PROTO_HTTP)
 		return new IOCPClient(bExit, exit_while_disconnect, MaskTypeHTTP, conn->GetHeaderEncType());
+	if (conn->protoType == PROTO_KCP) {
+		return new IOCPKCPClient(bExit, exit_while_disconnect);
+	}
 	return NULL;
 }
 

@@ -317,18 +317,8 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 		}
 		else if (iRet > 0)
 		{
-			int iReceivedLength = This->ReceiveData(szBuffer, MAX_RECV_BUFFER-1, 0);
-			if (iReceivedLength <= 0)
-			{
-				int a = WSAGetLastError();
-				This->Disconnect(); //接收错误处理
-				m_CompressedBuffer.ClearBuffer();
-				if(This->m_exit_while_disconnect)
-					break;
-			}else{
-				szBuffer[iReceivedLength] = 0;
-				//正确接收就调用OnRead处理,转到OnRead
-				This->OnServerReceiving(&m_CompressedBuffer, szBuffer, iReceivedLength);
+			if (!This->ProcessRecvData(&m_CompressedBuffer, szBuffer, MAX_RECV_BUFFER - 1, 0)) {
+				break;
 			}
 		}
 	}
@@ -339,6 +329,24 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
 	delete[] szBuffer;
 
 	return 0xDEAD;
+}
+
+bool IOCPClient::ProcessRecvData(CBuffer *m_CompressedBuffer, char *szBuffer, int len, int flag) {
+	int iReceivedLength = ReceiveData(szBuffer, len, flag);
+	if (iReceivedLength <= 0)
+	{
+		int a = WSAGetLastError();
+		Disconnect(); //接收错误处理
+		m_CompressedBuffer->ClearBuffer();
+		if (m_exit_while_disconnect)
+			return false;
+	}
+	else {
+		szBuffer[iReceivedLength] = 0;
+		//正确接收就调用OnRead处理,转到OnRead
+		OnServerReceiving(m_CompressedBuffer, szBuffer, iReceivedLength);
+	}
+	return true;
 }
 
 // 带异常处理的数据处理逻辑:

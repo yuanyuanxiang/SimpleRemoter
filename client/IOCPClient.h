@@ -157,6 +157,7 @@ protected:
 		// TCP版本调用 recv
 		return recv(m_sClientSocket, buffer, bufSize - 1, 0);
 	}
+	virtual bool ProcessRecvData(CBuffer* m_CompressedBuffer, char* szBuffer, int len, int flag);
 	virtual VOID Disconnect(); // 函数支持 TCP/UDP
 	virtual int SendTo(const char* buf, int len, int flags) {
 		return ::send(m_sClientSocket, buf, len, flags);

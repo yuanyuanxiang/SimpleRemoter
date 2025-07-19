@@ -2114,6 +2114,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx) {
 	ctx->InDeCompressedBuffer.CopyBuffer(&hb, sizeof(Heartbeat), 1);
 
 	// 回复心跳
+	if(0)
 	{
 		HeartbeatACK ack = { hb.Time };
 		BYTE buf[sizeof(HeartbeatACK) + 1] = { CMD_HEARTBEAT_ACK};

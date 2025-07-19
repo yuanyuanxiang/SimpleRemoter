@@ -252,6 +252,7 @@
     <ClInclude Include="..\..\client\MemoryModule.h" />
     <ClInclude Include="..\..\common\aes.h" />
     <ClInclude Include="..\..\common\encrypt.h" />
+    <ClInclude Include="..\..\common\ikcp.h" />
     <ClInclude Include="..\..\common\iniFile.h" />
     <ClInclude Include="2015Remote.h" />
     <ClInclude Include="2015RemoteDlg.h" />
@@ -273,6 +274,7 @@
     <ClInclude Include="file\CFileTransferModeDlg.h" />
     <ClInclude Include="HideScreenSpyDlg.h" />
     <ClInclude Include="InputDlg.h" />
+    <ClInclude Include="IOCPKCPServer.h" />
     <ClInclude Include="IOCPServer.h" />
     <ClInclude Include="IOCPUDPServer.h" />
     <ClInclude Include="KeyBoardDlg.h" />
@@ -317,6 +319,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\..\common\ikcp.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="2015Remote.cpp" />
     <ClCompile Include="2015RemoteDlg.cpp" />
     <ClCompile Include="AudioDlg.cpp" />
@@ -335,6 +343,7 @@
     <ClCompile Include="file\CFileTransferModeDlg.cpp" />
     <ClCompile Include="HideScreenSpyDlg.cpp" />
     <ClCompile Include="InputDlg.cpp" />
+    <ClCompile Include="IOCPKCPServer.cpp" />
     <ClCompile Include="IOCPServer.cpp" />
     <ClCompile Include="IOCPUDPServer.cpp" />
     <ClCompile Include="KeyBoardDlg.cpp" />

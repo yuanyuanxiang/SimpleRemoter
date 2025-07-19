@@ -12,6 +12,7 @@
 #include "common/iniFile.h"
 #include "IOCPServer.h"
 #include "IOCPUDPServer.h"
+#include "IOCPKCPServer.h"
 
 // CMy2015RemoteApp:
 // 有关此类的实现，请参阅 2015Remote.cpp
@@ -25,7 +26,7 @@ private:
 	Server* m_tcpServer;
 	Server* m_udpServer;
 public:
-	ServerPair() : m_tcpServer(new IOCPServer), m_udpServer(new IOCPUDPServer) {}
+	ServerPair() : m_tcpServer(new IOCPServer), m_udpServer(new IOCPKCPServer) {}
 	virtual ~ServerPair() { SAFE_DELETE(m_tcpServer); SAFE_DELETE(m_udpServer); }
 
 	BOOL StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort) {

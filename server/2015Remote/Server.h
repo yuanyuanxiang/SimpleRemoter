@@ -9,6 +9,7 @@
 #define XXH_INLINE_ALL
 #include "xxhash.h"
 #include <WS2tcpip.h>
+#include <common/ikcp.h>
 
 #define PACKET_LENGTH   0x2000
 
@@ -309,7 +310,12 @@ public:
 typedef class CONTEXT_OBJECT : public context
 {
 public:
-	virtual ~CONTEXT_OBJECT(){}
+	virtual ~CONTEXT_OBJECT(){
+		if (kcp) {
+			ikcp_release(kcp);
+			kcp = nullptr;
+		}
+	}
 	CString  sClientInfo[ONLINELIST_MAX];
 	CString  additonalInfo[RES_MAX];
 	SOCKET   sClientSocket;
@@ -330,6 +336,7 @@ public:
 	BOOL 				bLogin;						// 是否 login
 	std::string			PeerName;					// 对端IP
 	Server*				server;						// 所属服务端
+	ikcpcb*				kcp = nullptr;				// 新增，指向KCP会话
 
 	std::string GetProtocol() const override {
 		return Parser.m_Masker && Parser.m_Masker->GetMaskType() == MaskTypeNone ? "TCP" : "HTTP";
