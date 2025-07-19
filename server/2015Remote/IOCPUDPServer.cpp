@@ -51,6 +51,11 @@ void IOCPUDPServer::PostRecv() {
 	if (!m_running) return;
 
 	IO_CONTEXT* ioCtx = AddCount();
+	if (ioCtx == nullptr) {
+		Mprintf("IOCPUDPServer max connection number reached.\n");
+		return;
+	}
+
 	CONTEXT_UDP* ctx = ioCtx->pContext;
 	ctx->wsaInBuf.buf = ctx->szBuffer;
 	ctx->wsaInBuf.len = sizeof(ctx->szBuffer);
