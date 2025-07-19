@@ -52,6 +52,9 @@ public:
 	}
 	virtual void Notify() { }
 	int Send(LPBYTE lpData, UINT nSize);
+	int SendData(LPBYTE lpData, UINT nSize) {
+		return Send(lpData, nSize);
+	}
 	virtual void SetReady(BOOL ready = true) { m_bReady = ready; }
 };
 

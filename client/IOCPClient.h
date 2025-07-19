@@ -106,6 +106,8 @@ public:
 	}
 };
 
+typedef BOOL(*TrailCheck)(void);
+
 class IOCPClient  
 {
 public:
@@ -139,7 +141,7 @@ public:
 	}
 
 	VOID setManagerCallBack(void* Manager, DataProcessCB dataProcess);
-
+	VOID RunEventLoop(TrailCheck checker);
 	VOID RunEventLoop(const BOOL &bCondition);
 	bool IsConnected() const { return m_bConnected == TRUE; }
 	BOOL Reconnect(void* manager) {
