@@ -25,12 +25,21 @@ public:
 	UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort) override;
 	VOID Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) override;
 	VOID Destroy() override;
+	virtual void UpdateMaxConnection(int maxConn) override {
+		m_locker.lock();
+		m_maxConn = maxConn;
+		m_locker.unlock();
+	}
 
 private:
 	void WorkerThread();
 	void PostRecv();
 	IO_CONTEXT* AddCount(){
 		m_locker.lock();
+		if (m_count > m_maxConn) {
+			m_locker.unlock();
+			return nullptr;
+		}
 		IO_CONTEXT* ioCtx = new IO_CONTEXT();
 		ioCtx->pContext->InitMember(m_socket, this);
 		m_count++;
@@ -49,6 +58,7 @@ private:
 		return n;
 	}
 private:
+	int m_maxConn = 10000;
 	int m_port = 6543;
 	int m_count = 0;
 	CLocker m_locker;
