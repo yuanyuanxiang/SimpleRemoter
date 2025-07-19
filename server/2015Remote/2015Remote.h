@@ -12,6 +12,7 @@
 #include "common/iniFile.h"
 #include "IOCPServer.h"
 #include "IOCPUDPServer.h"
+#include "IOCPKCPServer.h"
 
 // CMy2015RemoteApp:
 // 有关此类的实现，请参阅 2015Remote.cpp
@@ -25,7 +26,9 @@ private:
 	Server* m_tcpServer;
 	Server* m_udpServer;
 public:
-	ServerPair() : m_tcpServer(new IOCPServer), m_udpServer(new IOCPUDPServer) {}
+	ServerPair(int method=0) : 
+		m_tcpServer(new IOCPServer), 
+		m_udpServer(method ? (Server*)new IOCPKCPServer : new IOCPUDPServer) {}
 	virtual ~ServerPair() { SAFE_DELETE(m_tcpServer); SAFE_DELETE(m_udpServer); }
 
 	BOOL StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort) {
@@ -78,13 +81,14 @@ public:
 
 	// 启动多个服务端，成功返回0
 	// nPort示例: 6543;7543
-	UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, const std::string& uPort, int maxConn) {
+	UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, const std::string& uPort, int maxConn, const std::string& method) {
 		bool succeed = false;
 		auto list = StringToVector(uPort, ';');
+		auto methods = StringToVector(method, ';', list.size());
 		for (int i=0; i<list.size(); ++i)
 		{
 			int port = std::atoi(list[i].c_str());
-			auto svr = new ServerPair();
+			auto svr = new ServerPair(atoi(methods[i].c_str()));
 			BOOL ret = svr->StartServer(NotifyProc, OffProc, port);
 			if (ret == FALSE) {
 				SAFE_DELETE(svr);

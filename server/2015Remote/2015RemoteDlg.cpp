@@ -591,7 +591,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	EnterCriticalSection(&m_cs);
 	if (IsExitItem(m_CList_Online, (ULONG_PTR)ContextObject)) {
 		LeaveCriticalSection(&m_cs);
-		OutputDebugStringA(CString("===> '") + strIP + CString("' already exist!!\n"));
+		Mprintf("===> '%s' already exist!!\n", strIP);
 		return;
 	}
 	LeaveCriticalSection(&m_cs);
@@ -927,7 +927,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 		int nMaxConnection = THIS_CFG.GetInt("settings", "MaxConnection");
 		m_nMaxConnection = nMaxConnection <= 0 ? 10000 : nMaxConnection;
 	}
-	if (!Activate(nPort, m_nMaxConnection)){
+	const std::string method = THIS_CFG.GetStr("settings", "UDPOption");
+	if (!Activate(nPort, m_nMaxConnection, method)){
 		OnCancel();
 		return FALSE;
 	}
@@ -1552,10 +1553,7 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 		context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
 		if (!ContextObject->IsLogin() && szBuffer[0] != COMMAND_BYE)
 			continue;
-		if (szBuffer[0]== COMMAND_WEBCAM && ContextObject->GetClientData(ONLINELIST_VIDEO) == CString("无"))
-		{
-			continue;
-		}
+
 		// 发送获得驱动器列表数据包
 		ContextObject->Send2Client(szBuffer, ulLength);
 	} 
@@ -1682,10 +1680,10 @@ std::vector<std::string> splitByNewline(const std::string& input) {
 	return lines;
 }
 
-BOOL CMy2015RemoteDlg::Activate(const std::string& nPort,int nMaxConnection)
+BOOL CMy2015RemoteDlg::Activate(const std::string& nPort,int nMaxConnection, const std::string& method)
 {
 	UINT ret = 0;
-	if ( (ret = THIS_APP->StartServer(NotifyProc, OfflineProc, nPort, nMaxConnection)) !=0 )
+	if ( (ret = THIS_APP->StartServer(NotifyProc, OfflineProc, nPort, nMaxConnection, method)) !=0 )
 	{
 		Mprintf("======> StartServer Failed \n");
 		char cmd[200];
@@ -1712,7 +1710,7 @@ BOOL CMy2015RemoteDlg::Activate(const std::string& nPort,int nMaxConnection)
 					auto cmd = std::string("taskkill /f /pid ") + line;
 					exec(cmd.c_str());
 				}
-				return Activate(nPort, nMaxConnection);
+				return Activate(nPort, nMaxConnection, method);
 			}
 		}else
 			MessageBox("调用函数StartServer失败! 错误代码:" + CString(std::to_string(ret).c_str()));
@@ -2114,6 +2112,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx) {
 	ctx->InDeCompressedBuffer.CopyBuffer(&hb, sizeof(Heartbeat), 1);
 
 	// 回复心跳
+	// if(0)
 	{
 		HeartbeatACK ack = { hb.Time };
 		BYTE buf[sizeof(HeartbeatACK) + 1] = { CMD_HEARTBEAT_ACK};

@@ -50,6 +50,8 @@
     </ClCompile>
     <ClCompile Include="IOCPUDPServer.cpp" />
     <ClCompile Include="CDrawingBoard.cpp" />
+    <ClCompile Include="IOCPKCPServer.cpp" />
+    <ClCompile Include="..\..\common\ikcp.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
@@ -112,6 +114,8 @@
     <ClInclude Include="IOCPUDPServer.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="CDrawingBoard.h" />
+    <ClInclude Include="IOCPKCPServer.h" />
+    <ClInclude Include="..\..\common\ikcp.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />

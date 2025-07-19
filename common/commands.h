@@ -542,7 +542,10 @@ enum ProtoType {
 	PROTO_UDP = 1,					// UDP
 	PROTO_HTTP = 2,					// HTTP
 	PROTO_HTTPS = 3,				// HTTPS
+	PROTO_KCP = 4,					// KCP
 };
+
+#define KCP_SESSION_ID 666
 
 enum RunningType {
 	RUNNING_RANDOM = 0,				// Ëæ»úÉÏÏß

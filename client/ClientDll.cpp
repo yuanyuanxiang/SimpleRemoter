@@ -484,6 +484,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 	}
 	State& bExit(app.g_bExit);
 	IOCPClient  *ClientObject = NewNetClient(&settings, bExit);
+	if (nullptr == ClientObject) return -1;
 	CKernelManager* Manager = nullptr;
 
 	if (!app.m_bShared) {

