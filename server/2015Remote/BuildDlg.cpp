@@ -215,6 +215,7 @@ void CBuildDlg::OnBnClickedOk()
 		File.Write(szBuffer, dwFileSize);
 		File.Close();
 		CString tip = index == IndexTestRun_DLL ? "\r\n提示: 请生成\"ServerDll.dll\"，以便程序正常运行。" : "";
+		tip += g_ConnectAddress.protoType==PROTO_KCP ? "\n提示: 使用KCP协议生成服务，必须设置主控UDP协议参数为1。" : "";
 		MessageBox("生成成功! 文件位于:\r\n"+ strSeverFile + tip, "提示", MB_ICONINFORMATION);
 		SAFE_DELETE_ARRAY(szBuffer);
 		if (index == IndexTestRun_DLL) return;
@@ -269,7 +270,7 @@ BOOL CBuildDlg::OnInitDialog()
 	m_ComboProto.InsertString(PROTO_TCP, "TCP");
 	m_ComboProto.InsertString(PROTO_UDP, "UDP");
 	m_ComboProto.InsertString(PROTO_HTTP, "HTTP");
-	m_ComboProto.InsertString(PROTO_HTTPS, "---");
+	m_ComboProto.InsertString(PROTO_RANDOM, "随机");
 	m_ComboProto.InsertString(PROTO_KCP, "KCP");
 	m_ComboProto.SetCurSel(PROTO_TCP);
 
