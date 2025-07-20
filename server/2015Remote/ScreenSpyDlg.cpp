@@ -21,6 +21,7 @@ enum
 	IDM_SAVEDIB,		// 保存图片
 	IDM_GET_CLIPBOARD,	// 获取剪贴板
 	IDM_SET_CLIPBOARD,	// 设置剪贴板
+	IDM_ADAPTIVE_SIZE,
 };
 
 IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
@@ -157,6 +158,7 @@ BOOL CScreenSpyDlg::OnInitDialog()
 		SysMenu->AppendMenu(MF_SEPARATOR);
 		SysMenu->AppendMenu(MF_STRING, IDM_CONTROL, "控制屏幕(&Y)");
 		SysMenu->AppendMenu(MF_STRING, IDM_FULLSCREEN, "全屏(&F)");
+		SysMenu->AppendMenu(MF_STRING, IDM_ADAPTIVE_SIZE, "自适应窗口大小(&A)");
 		SysMenu->AppendMenu(MF_STRING, IDM_TRACE_CURSOR, "跟踪被控端鼠标(&T)");
 		SysMenu->AppendMenu(MF_STRING, IDM_BLOCK_INPUT, "锁定被控端鼠标和键盘(&L)");
 		SysMenu->AppendMenu(MF_STRING, IDM_SAVEDIB, "保存快照(&S)");
@@ -171,6 +173,18 @@ BOOL CScreenSpyDlg::OnInitDialog()
 	m_ClientCursorPos.x = 0;
 	m_ClientCursorPos.y = 0;
 	m_bCursorIndex = 0;
+
+	m_hRemoteCursor = LoadCursor(NULL, IDC_ARROW);
+	ICONINFO CursorInfo;
+	::GetIconInfo(m_hRemoteCursor, &CursorInfo);
+	SysMenu->CheckMenuItem(IDM_CONTROL, m_bIsCtrl ? MF_CHECKED : MF_UNCHECKED);
+	SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
+
+	GetClientRect(&m_CRect);
+	ScreenToClient(m_CRect);
+	m_wZoom = ((double)m_BitmapInfor_Full->bmiHeader.biWidth) / ((double)(m_CRect.right - m_CRect.left));
+	m_hZoom = ((double)m_BitmapInfor_Full->bmiHeader.biHeight) / ((double)(m_CRect.bottom - m_CRect.top));
+	ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);
 
 	SendNext();
 
@@ -406,14 +420,9 @@ void CScreenSpyDlg::OnPaint()
 		return;
 	}
 
-	BitBlt(m_hFullDC,0,0,
-		m_BitmapInfor_Full->bmiHeader.biWidth, 
-		m_BitmapInfor_Full->bmiHeader.biHeight,
-		m_hFullMemDC,
-		m_ulHScrollPos,
-		m_ulVScrollPos,
-		SRCCOPY
-		);
+	m_bAdaptiveSize ?
+		StretchBlt(m_hFullDC, 0, 0, m_CRect.Width(), m_CRect.Height(), m_hFullMemDC, 0, 0, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight, SRCCOPY) :
+		BitBlt(m_hFullDC, 0, 0, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight, m_hFullMemDC, m_ulHScrollPos, m_ulVScrollPos, SRCCOPY);
 
 	if (m_bIsTraceCursor)
 		DrawIconEx(
@@ -457,6 +466,7 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 		{
 			m_bIsCtrl = !m_bIsCtrl;
 			SysMenu->CheckMenuItem(IDM_CONTROL, m_bIsCtrl ? MF_CHECKED : MF_UNCHECKED);
+			SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
 			break;
 		}
 	case IDM_FULLSCREEN: // 全屏
@@ -474,7 +484,8 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 		{	
 			m_bIsTraceCursor = !m_bIsTraceCursor; //这里在改变数据
 			SysMenu->CheckMenuItem(IDM_TRACE_CURSOR, m_bIsTraceCursor ? MF_CHECKED : MF_UNCHECKED);//在菜单打钩不打钩
-
+			m_bAdaptiveSize = !m_bIsTraceCursor;
+			ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);
 			// 重绘消除或显示鼠标
 			OnPaint();
 			break;
@@ -501,6 +512,12 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 			SendServerClipboard();
 			break;
 		}
+	case IDM_ADAPTIVE_SIZE: {
+			m_bAdaptiveSize = !m_bAdaptiveSize;
+			ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);
+			SysMenu->CheckMenuItem(IDM_ADAPTIVE_SIZE, m_bAdaptiveSize);
+			break;
+		}
 	}
 
 	CDialog::OnSysCommand(nID, lParam);
@@ -512,37 +529,21 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
 #define MAKEDWORD(h,l)        (((unsigned long)h << 16) | l) 
 	switch (pMsg->message)
 	{
-	case WM_LBUTTONDOWN:
-	case WM_LBUTTONUP:
-	case WM_RBUTTONDOWN:
-	case WM_RBUTTONUP:
-	case WM_MOUSEMOVE:
-	case WM_LBUTTONDBLCLK:
-	case WM_RBUTTONDBLCLK:
-	case WM_MBUTTONDOWN:
-	case WM_MBUTTONUP:
-	case WM_MOUSEWHEEL:
-		{
-			MSG64 Msg(*pMsg);
-			Msg.lParam = MAKEDWORD(HIWORD(pMsg->lParam) + m_ulVScrollPos, LOWORD(pMsg->lParam) + m_ulHScrollPos);
-			Msg.pt.x += m_ulHScrollPos;
-			Msg.pt.y += m_ulVScrollPos;
-			SendCommand(&Msg);
-		}
-		break;
-	case WM_KEYDOWN:
-	case WM_KEYUP:
-	case WM_SYSKEYDOWN:
-	case WM_SYSKEYUP:
+	case WM_LBUTTONDOWN: case WM_LBUTTONUP:
+	case WM_RBUTTONDOWN: case WM_RBUTTONUP:
+	case WM_LBUTTONDBLCLK: case WM_RBUTTONDBLCLK: case WM_MBUTTONDBLCLK:
+	case WM_MBUTTONDOWN: case WM_MBUTTONUP:
+	case WM_MOUSEMOVE: case WM_MOUSEWHEEL:
+	{
+		SendScaledMouseMessage(pMsg, true);
+	}
+	break;
+	case WM_KEYDOWN: case WM_KEYUP: case WM_SYSKEYDOWN: case WM_SYSKEYUP:
 		if (pMsg->wParam == VK_F11 && LeaveFullScreen()) // F11: 退出全屏
 			return TRUE;
 		if (pMsg->wParam != VK_LWIN && pMsg->wParam != VK_RWIN)
 		{
-			MSG64 Msg(*pMsg);
-			Msg.lParam = MAKEDWORD(HIWORD(pMsg->lParam) + m_ulVScrollPos, LOWORD(pMsg->lParam) + m_ulHScrollPos);
-			Msg.pt.x += m_ulHScrollPos;
-			Msg.pt.y += m_ulVScrollPos;
-			SendCommand(&Msg);
+			SendScaledMouseMessage(pMsg, true);
 		}
 		if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE)
 			return TRUE;// 屏蔽Enter和ESC关闭对话
@@ -553,7 +554,20 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
 }
 
 
-VOID CScreenSpyDlg::SendCommand(const MSG64* Msg)
+void CScreenSpyDlg::SendScaledMouseMessage(MSG* pMsg, bool makeLP) {
+	if (!m_bIsCtrl)
+		return;
+
+	MYMSG msg(*pMsg);
+	auto low = m_bAdaptiveSize ? ((LONG)LOWORD(pMsg->lParam)) * m_wZoom : LOWORD(pMsg->lParam) + m_ulHScrollPos;
+	auto high = m_bAdaptiveSize ? ((LONG)HIWORD(pMsg->lParam)) * m_hZoom : HIWORD(pMsg->lParam) + m_ulVScrollPos;
+	if (makeLP) msg.lParam = MAKELPARAM(low, high);
+	msg.pt.x = (int)low;
+	msg.pt.y = (int)high;
+	SendCommand(&msg);
+}
+
+VOID CScreenSpyDlg::SendCommand(const MYMSG* Msg)
 {
 	if (!m_bIsCtrl)
 		return;
@@ -635,6 +649,8 @@ VOID CScreenSpyDlg::SendServerClipboard(void)
 
 void CScreenSpyDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
+	if (m_bAdaptiveSize) return;
+
 	SCROLLINFO si = {sizeof(si)};
 	si.fMask = SIF_ALL;
 	GetScrollInfo(SB_HORZ, &si);
@@ -680,6 +696,8 @@ void CScreenSpyDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 
 void CScreenSpyDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 {
+	if (m_bAdaptiveSize) return;
+
 	SCROLLINFO si = {sizeof(si)};
 	si.fMask = SIF_ALL;
 	GetScrollInfo(SB_VERT, &si);
@@ -740,7 +758,7 @@ void CScreenSpyDlg::EnterFullScreen()
 		SetWindowLong(m_hWnd, GWL_STYLE, lStyle);
 
 		// 4. 隐藏滚动条
-		ShowScrollBar(SB_BOTH, FALSE);  // 隐藏水平和垂直滚动条
+		ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);  // 隐藏水平和垂直滚动条
 
 		// 5. 重新调整窗口大小并更新
 		SetWindowPos(&CWnd::wndTop, 0, 0, screenWidth, screenHeight, SWP_NOZORDER | SWP_FRAMECHANGED);
@@ -765,7 +783,7 @@ bool CScreenSpyDlg::LeaveFullScreen()
 		SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
 
 		// 3. 显示滚动条
-		ShowScrollBar(SB_BOTH, TRUE);  // 显示水平和垂直滚动条
+		ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);  // 显示水平和垂直滚动条
 
 		// 4. 标记退出全屏
 		m_bFullScreen = false;
@@ -811,4 +829,15 @@ void CScreenSpyDlg::OnKillFocus(CWnd* pNewWnd)
 void CScreenSpyDlg::OnSize(UINT nType, int cx, int cy)
 {
 	CDialog::OnSize(nType, cx, cy);
+
+	// TODO: Add your message handler code here
+	if (!IsWindowVisible())
+		return;
+
+	GetClientRect(&m_CRect);
+	ScreenToClient(m_CRect);
+	if (!m_bIsFirst) {
+		m_wZoom = ((double)m_BitmapInfor_Full->bmiHeader.biWidth) / ((double)(m_CRect.right - m_CRect.left));
+		m_hZoom = ((double)m_BitmapInfor_Full->bmiHeader.biHeight) / ((double)(m_CRect.bottom - m_CRect.top));
+	}
 }
