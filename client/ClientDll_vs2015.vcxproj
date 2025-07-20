@@ -161,6 +161,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\common\ikcp.c" />
     <ClCompile Include="..\server\2015Remote\pwd_gen.cpp" />
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="AudioManager.cpp" />
@@ -170,6 +171,7 @@
     <ClCompile Include="Common.cpp" />
     <ClCompile Include="FileManager.cpp" />
     <ClCompile Include="IOCPClient.cpp" />
+    <ClCompile Include="IOCPKCPClient.cpp" />
     <ClCompile Include="IOCPUDPClient.cpp" />
     <ClCompile Include="KernelManager.cpp" />
     <ClCompile Include="KeyboardManager.cpp" />
@@ -192,6 +194,7 @@
     <ClCompile Include="X264Encoder.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\common\ikcp.h" />
     <ClInclude Include="..\common\location.h" />
     <ClInclude Include="..\server\2015Remote\pwd_gen.h" />
     <ClInclude Include="Audio.h" />
@@ -202,6 +205,7 @@
     <ClInclude Include="CursorInfo.h" />
     <ClInclude Include="FileManager.h" />
     <ClInclude Include="IOCPClient.h" />
+    <ClInclude Include="IOCPKCPClient.h" />
     <ClInclude Include="IOCPUDPClient.h" />
     <ClInclude Include="KernelManager.h" />
     <ClInclude Include="KeyboardManager.h" />

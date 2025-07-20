@@ -18,15 +18,19 @@
 
 // UDP 协议仅能针对小包数据，且数据没有时序关联
 IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, bool exit_while_disconnect) {
-	if (!conn->IsVerified() || conn->protoType == PROTO_TCP)
+	if (conn->protoType == PROTO_HTTPS) return NULL;
+
+	int type = conn->protoType == PROTO_RANDOM ? time(nullptr) % PROTO_RANDOM : conn->protoType;
+	if (!conn->IsVerified() || type == PROTO_TCP)
 		return new IOCPClient(bExit, exit_while_disconnect, MaskTypeNone, conn->GetHeaderEncType());
-	if (conn->protoType == PROTO_UDP)
+	if (type == PROTO_UDP)
 		return new IOCPUDPClient(bExit, exit_while_disconnect);
-	if (conn->protoType == PROTO_HTTP)
+	if (type == PROTO_HTTP || type == PROTO_HTTPS)
 		return new IOCPClient(bExit, exit_while_disconnect, MaskTypeHTTP, conn->GetHeaderEncType());
-	if (conn->protoType == PROTO_KCP) {
+	if (type == PROTO_KCP) {
 		return new IOCPKCPClient(bExit, exit_while_disconnect);
 	}
+
 	return NULL;
 }
 

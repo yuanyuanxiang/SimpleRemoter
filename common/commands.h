@@ -541,8 +541,9 @@ enum ProtoType {
 	PROTO_TCP = 0,					// TCP
 	PROTO_UDP = 1,					// UDP
 	PROTO_HTTP = 2,					// HTTP
-	PROTO_HTTPS = 3,				// HTTPS
+	PROTO_RANDOM = 3,				// Ëæ»ú
 	PROTO_KCP = 4,					// KCP
+	PROTO_HTTPS = 5,				// HTTPS
 };
 
 #define KCP_SESSION_ID 666
