@@ -410,6 +410,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_NOTIFY(NM_DBLCLK, IDC_ONLINE, &CMy2015RemoteDlg::OnListClick)
 	ON_COMMAND(ID_ONLINE_UNAUTHORIZE, &CMy2015RemoteDlg::OnOnlineUnauthorize)
 	ON_COMMAND(ID_TOOL_REQUEST_AUTH, &CMy2015RemoteDlg::OnToolRequestAuth)
+	ON_COMMAND(ID_TOOL_INPUT_PASSWORD, &CMy2015RemoteDlg::OnToolInputPassword)
 END_MESSAGE_MAP()
 
 
@@ -948,10 +949,12 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 		ExitProcess(-1);
 		return FALSE;
 	}
+	int tm = THIS_CFG.GetInt("settings", "Notify", 10);
+	tm = min(tm, 10);
 #ifdef _DEBUG
-	SetTimer(TIMER_CHECK, 10 * 1000, NULL);
+	SetTimer(TIMER_CHECK, max(1, tm) * 1000, NULL);
 #else
-	SetTimer(TIMER_CHECK, 600 * 1000, NULL);
+	SetTimer(TIMER_CHECK, max(1, tm) * 60 * 1000, NULL);
 #endif
 	IPConverter cvt;
 	CString tip = !ip.empty() && ip != cvt.getPublicIP() ? 
@@ -1085,18 +1088,20 @@ LRESULT CMy2015RemoteDlg::OnPasswordCheck(WPARAM wParam, LPARAM lParam) {
 	isChecking = true;
 	if (!CheckValid(-1))
 	{
-		KillTimer(TIMER_CHECK);
 		CInputDialog dlg(this);
 		dlg.m_str = m_superPass.c_str();
 		dlg.Init("输入密码", "输入主控程序的密码:");
 		dlg.DoModal();
 		if (hashSHA256(dlg.m_str.GetString()) != GetPwdHash()) {
-			THIS_APP->UpdateMaxConnection(1);
+			KillTimer(TIMER_CHECK);
+			m_nMaxConnection = 1;
+			THIS_APP->UpdateMaxConnection(m_nMaxConnection);
+			int tm = THIS_CFG.GetInt("settings", "Notify", 10);
+			THIS_CFG.SetInt("settings", "Notify", tm - 1);
 			MessageBox("请向管理员申请口令。", "提示", MB_ICONWARNING);
 		}
 		else {
 			m_superPass = dlg.m_str.GetString();
-			MessageBox("请及时对当前主控程序授权: 在工具菜单中生成口令!", "提示", MB_ICONWARNING);
 		}
 	}
 	isChecking = false;
@@ -1471,7 +1476,6 @@ bool CMy2015RemoteDlg::CheckValid(int trail) {
 		const Validation *verify = GetValidation();
 		std::string masterHash = GetMasterHash();
 		if (masterHash != GetPwdHash() && !verify->IsValid()) {
-			KillTimer(TIMER_CHECK);
 			MessageBox("此程序已经失效，请联系管理员处理!", "提示", MB_ICONWARNING);
 			OnMainExit();
 			ExitProcess(-1);
@@ -1488,7 +1492,6 @@ bool CMy2015RemoteDlg::CheckValid(int trail) {
 		dlg.m_sDeviceID = deviceID.c_str();
 		dlg.m_sPassword = pwd;
 		if (pwd.IsEmpty() && IDOK != dlg.DoModal() || dlg.m_sPassword.IsEmpty()) {
-			KillTimer(TIMER_CHECK);
 			return false;
 		}
 
@@ -1498,7 +1501,6 @@ bool CMy2015RemoteDlg::CheckValid(int trail) {
 		{
 			THIS_CFG.SetStr(settings, pwdKey, "");
 			MessageBox("格式错误，请重新申请口令!", "提示", MB_ICONINFORMATION);
-			KillTimer(TIMER_CHECK);
 			return false;
 		}
 		std::vector<std::string> subvector(v.end() - 4, v.end());
@@ -1508,10 +1510,9 @@ bool CMy2015RemoteDlg::CheckValid(int trail) {
 		std::string fixedKey = getFixedLengthID(finalKey);
 		if (hash256 != fixedKey) {
 			THIS_CFG.SetStr(settings, pwdKey, "");
-			if (pwd.IsEmpty() || (IDOK != dlg.DoModal() || hash256 != fixedKey)) {
+			if (pwd.IsEmpty() || hash256 != fixedKey || IDOK != dlg.DoModal()) {
 				if (!dlg.m_sPassword.IsEmpty())
 					MessageBox("口令错误, 无法继续操作!", "提示", MB_ICONWARNING);
-				KillTimer(TIMER_CHECK);
 				return false;
 			}
 		}
@@ -1522,11 +1523,16 @@ bool CMy2015RemoteDlg::CheckValid(int trail) {
 		if (curDate < v[0] || curDate > v[1]) {
 			THIS_CFG.SetStr(settings, pwdKey, "");
 			MessageBox("口令过期，请重新申请口令!", "提示", MB_ICONINFORMATION);
-			KillTimer(TIMER_CHECK);
 			return false;
 		}
 		if (dlg.m_sPassword != pwd)
 			THIS_CFG.SetStr(settings, pwdKey, dlg.m_sPassword.GetString());
+		
+		int maxConn = v.size() == 7 ? atoi(v[2].c_str()) : 1;
+		if (maxConn != m_nMaxConnection) {
+			m_nMaxConnection = maxConn;
+			THIS_APP->UpdateMaxConnection(m_nMaxConnection);
+		}
 	}
 	return true;
 }
@@ -2855,4 +2861,28 @@ void CMy2015RemoteDlg::OnToolRequestAuth()
 		"声明", MB_ICONINFORMATION);
 	CString url = _T("https://github.com/yuanyuanxiang/SimpleRemoter/wiki#请求授权");
 	ShellExecute(NULL, _T("open"), url, NULL, NULL, SW_SHOWNORMAL);
+}
+
+
+void CMy2015RemoteDlg::OnToolInputPassword()
+{
+	if (CheckValid(-1)) {
+		CString pwd = THIS_CFG.GetStr("settings", "Password", "").c_str();
+		auto v = splitString(pwd.GetBuffer(), '-');
+		CString info;
+		info.Format("软件有效期限: %s — %s, 并发连接数量: %d.", v[0].c_str(), v[1].c_str(), atoi(v[2].c_str()));
+		if (IDYES == MessageBoxA(info + "\n如需修改授权信息，请联系管理员。是否现在修改授权？", "提示", MB_YESNO | MB_ICONINFORMATION)) {
+			CInputDialog dlg(this);
+			dlg.m_str = pwd;
+			dlg.Init("更改口令", "请输入新的口令:");
+			if (dlg.DoModal() == IDOK) {
+				THIS_CFG.SetStr("settings", "Password", dlg.m_str.GetString());
+#ifdef _DEBUG
+				SetTimer(TIMER_CHECK, 10 * 1000, NULL);
+#else
+				SetTimer(TIMER_CHECK, 600 * 1000, NULL);
+#endif
+			}
+		}
+	}
 }

