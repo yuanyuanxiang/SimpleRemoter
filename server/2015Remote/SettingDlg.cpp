@@ -74,7 +74,7 @@ BOOL CSettingDlg::OnInitDialog()
 	m_sPublicIP = THIS_CFG.GetStr("settings", "master", "").c_str();
 	m_sPublicIP = m_sPublicIP.IsEmpty() ? cvt.getPublicIP().c_str() : m_sPublicIP;
 	std::string nPort = THIS_CFG.GetStr("settings", "ghost", "6543");
-	m_sUdpOption = THIS_CFG.GetStr("settings", "UDPOption", "").c_str();
+	m_sUdpOption = THIS_CFG.GetStr("settings", "UDPOption", "0").c_str();
 
 	int DXGI = THIS_CFG.GetInt("settings", "DXGI");
 

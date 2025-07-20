@@ -264,4 +264,5 @@ public:
 	afx_msg void OnOnlineUnauthorize();
 	afx_msg void OnToolRequestAuth();
 	afx_msg LRESULT OnPasswordCheck(WPARAM wParam, LPARAM lParam);
+	afx_msg void OnToolInputPassword();
 };

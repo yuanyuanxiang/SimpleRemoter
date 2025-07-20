@@ -94,7 +94,7 @@ void CPasswordDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_DEVICEID, m_sDeviceID);
 	DDV_MaxChars(pDX, m_sDeviceID, 19);
 	DDX_Text(pDX, IDC_EDIT_DEVICEPWD, m_sPassword);
-	DDV_MaxChars(pDX, m_sPassword, 37);
+	DDV_MaxChars(pDX, m_sPassword, 42);
 }
 
 
@@ -144,7 +144,7 @@ void CPwdGenDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_EDIT_DEVICEID, m_sDeviceID);
 	DDV_MaxChars(pDX, m_sDeviceID, 19);
 	DDX_Text(pDX, IDC_EDIT_DEVICEPWD, m_sPassword);
-	DDV_MaxChars(pDX, m_sPassword, 37);
+	DDV_MaxChars(pDX, m_sPassword, 42);
 	DDX_Text(pDX, IDC_EDIT_USERPWD, m_sUserPwd);
 	DDV_MaxChars(pDX, m_sUserPwd, 24);
 	DDX_Control(pDX, IDC_EXPIRE_DATE, m_PwdExpireDate);
@@ -153,7 +153,7 @@ void CPwdGenDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_DateTimeCtrl(pDX, IDC_START_DATE, m_StartTm);
 	DDX_Control(pDX, IDC_EDIT_HOSTNUM, m_EditHostNum);
 	DDX_Text(pDX, IDC_EDIT_HOSTNUM, m_nHostNum);
-	DDV_MinMaxInt(pDX, m_nHostNum, 1, 9999);
+	DDV_MinMaxInt(pDX, m_nHostNum, 1, 10000);
 }
 
 

@@ -57,6 +57,7 @@ BOOL CInputDialog::OnInitDialog()
 
 	SetWindowText(m_sCaption);
 	GetDlgItem(IDC_STATIC)->SetWindowText(m_sPrompt);
+	GetDlgItem(IDC_EDIT_FOLDERNAME)->SetWindowText(m_str);
 	
 	m_Static2thInput.SetWindowTextA(m_sItemName);
 	m_Static2thInput.ShowWindow(m_sItemName.IsEmpty() ? SW_HIDE : SW_SHOW);
