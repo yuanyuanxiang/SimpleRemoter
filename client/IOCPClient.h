@@ -111,7 +111,7 @@ typedef BOOL(*TrailCheck)(void);
 class IOCPClient  
 {
 public:
-	IOCPClient(State& bExit, bool exit_while_disconnect = false, int mask=0, int encoder=0);
+	IOCPClient(const State& bExit, bool exit_while_disconnect = false, int mask=0, int encoder=0);
 	virtual ~IOCPClient();
 
 	int SendLoginInfo(const LOGIN_INFOR& logInfo) {
@@ -149,7 +149,7 @@ public:
 		if (manager) m_Manager = manager;
 		return ConnectServer(NULL, 0);
 	}
-	State& GetState() {
+	const State& GetState() const {
 		return g_bExit;
 	}
 protected:
@@ -180,7 +180,7 @@ protected:
 	ZSTD_DCtx*			m_Dctx;						// 解压上下文
 #endif
 
-	State&				g_bExit;					// 全局状态量
+	const State&		g_bExit;					// 全局状态量
 	void*				m_Manager;					// 用户数据
 	DataProcessCB		m_DataProcess;				// 处理用户数据
 	ProtocolEncoder*	m_Encoder;					// 加密

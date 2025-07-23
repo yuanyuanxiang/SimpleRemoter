@@ -47,8 +47,8 @@ ThreadInfo* CreateKB(CONNECT_ADDRESS* conn, State& bExit) {
 // Construction/Destruction
 //////////////////////////////////////////////////////////////////////
 
-CKernelManager::CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, HINSTANCE hInstance, ThreadInfo* kb)
-	: m_conn(conn), m_hInstance(hInstance), CManager(ClientObject)
+CKernelManager::CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, HINSTANCE hInstance, ThreadInfo* kb, State& s)
+	: m_conn(conn), m_hInstance(hInstance), CManager(ClientObject), g_bExit(s)
 {
 	m_ulThreadCount = 0;
 #ifdef _DEBUG

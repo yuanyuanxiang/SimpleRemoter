@@ -574,7 +574,8 @@ public:
 	int				iHeaderEnc;		 // 数据加密类型
 	char			protoType;		 // 协议类型
 	char			runningType;	 // 运行方式
-	char            szReserved[52];  // 占位，使结构体占据300字节
+	char            szReserved[44];  // 占位，使结构体占据300字节
+	uint64_t		parentHwnd;		 // 父进程窗口句柄
 	uint64_t		superAdmin;		 // 管理员主控ID
 	char			pwdHash[64];	 // 密码哈希
 
@@ -689,9 +690,9 @@ struct ThreadInfo
 struct PluginParam {
 	char IP[100];			// 主控IP
 	int Port;				// 主控端口
-	State *Exit;			// 客户端状态
-	void* User;				// CONNECT_ADDRESS* 指针
-	PluginParam(const char*ip, int port, State *s, void* u=0) : Port(port), Exit(s), User(u){
+	const State *Exit;		// 客户端状态
+	const void* User;		// CONNECT_ADDRESS* 指针
+	PluginParam(const char*ip, int port, const State *s, const void* u=0) : Port(port), Exit(s), User(u){
 		strcpy_s(IP, ip);
 	}
 };

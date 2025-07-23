@@ -96,7 +96,7 @@ VOID IOCPClient::setManagerCallBack(void* Manager,  DataProcessCB dataProcess)
 }
 
 
-IOCPClient::IOCPClient(State&bExit, bool exit_while_disconnect, int mask, int encoder) : g_bExit(bExit)
+IOCPClient::IOCPClient(const State&bExit, bool exit_while_disconnect, int mask, int encoder) : g_bExit(bExit)
 {
 	m_ServerAddr = {};
 	m_nHostPort = 0;

@@ -82,7 +82,7 @@ class CKernelManager : public CManager
 public:
 	CONNECT_ADDRESS* m_conn;
 	HINSTANCE m_hInstance;
-	CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, HINSTANCE hInstance, ThreadInfo* kb);
+	CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, HINSTANCE hInstance, ThreadInfo* kb, State& s);
 	virtual ~CKernelManager();
 	VOID OnReceive(PBYTE szBuffer, ULONG ulLength);
 	ThreadInfo* m_hKeyboard;
@@ -91,7 +91,7 @@ public:
 	// 因此我将此值的含义修改为"可用线程下标"，代表数组m_hThread中所指位置可用，即创建新的线程放置在该位置
 	ULONG   m_ulThreadCount;
 	UINT	GetAvailableIndex();
-
+	State& g_bExit; // Hide base class variable
 	MasterSettings m_settings;
 	int m_nNetPing; // 网络状况
 	// 发送心跳

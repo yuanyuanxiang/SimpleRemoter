@@ -508,7 +508,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 			continue;
 		}
 		SAFE_DELETE(Manager);
-		Manager = new CKernelManager(&settings, ClientObject, app.g_hInstance, kb);
+		Manager = new CKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit);
 
 		//准备第一波数据
 		LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings);

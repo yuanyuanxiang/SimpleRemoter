@@ -197,6 +197,7 @@ public:
 	BOOL       isClosed;
 	CMenu	   m_MainMenu;
 	CBitmap m_bmOnline[12];
+	uint64_t m_superID;
 	bool CheckValid(int trail = 14);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();
@@ -265,4 +266,5 @@ public:
 	afx_msg void OnToolRequestAuth();
 	afx_msg LRESULT OnPasswordCheck(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnToolInputPassword();
+	afx_msg LRESULT OnShowMessage(WPARAM wParam, LPARAM lParam);
 };

