@@ -126,7 +126,7 @@ CPwdGenDlg::CPwdGenDlg(CWnd* pParent /*=nullptr*/)
 	, m_sUserPwd(_T(""))
 	, m_ExpireTm(COleDateTime::GetCurrentTime())
 	, m_StartTm(COleDateTime::GetCurrentTime())
-	, m_nHostNum(1)
+	, m_nHostNum(2)
 {
 
 }
@@ -153,7 +153,7 @@ void CPwdGenDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_DateTimeCtrl(pDX, IDC_START_DATE, m_StartTm);
 	DDX_Control(pDX, IDC_EDIT_HOSTNUM, m_EditHostNum);
 	DDX_Text(pDX, IDC_EDIT_HOSTNUM, m_nHostNum);
-	DDV_MinMaxInt(pDX, m_nHostNum, 1, 10000);
+	DDV_MinMaxInt(pDX, m_nHostNum, 2, 10000);
 }
 
 

