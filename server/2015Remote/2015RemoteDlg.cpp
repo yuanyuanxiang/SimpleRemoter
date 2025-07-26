@@ -304,6 +304,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::I
 	m_bmOnline[10].LoadBitmap(IDB_BITMAP_AUTHORIZE);
 	m_bmOnline[11].LoadBitmap(IDB_BITMAP_UNAUTH);
 	m_bmOnline[12].LoadBitmap(IDB_BITMAP_ASSIGNTO);
+	m_bmOnline[13].LoadBitmap(IDB_BITMAP_ADDWATCH);
 
 	for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
 		m_ServerDLL[i] = nullptr;
@@ -420,6 +421,9 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_TOOL_INPUT_PASSWORD, &CMy2015RemoteDlg::OnToolInputPassword)
 	ON_COMMAND(ID_TOOL_GEN_SHELLCODE, &CMy2015RemoteDlg::OnToolGenShellcode)
 	ON_COMMAND(ID_ONLINE_ASSIGN_TO, &CMy2015RemoteDlg::OnOnlineAssignTo)
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_MESSAGE, &CMy2015RemoteDlg::OnNMCustomdrawMessage)
+	ON_COMMAND(ID_ONLINE_ADD_WATCH, &CMy2015RemoteDlg::OnOnlineAddWatch)
+	ON_NOTIFY(NM_CUSTOMDRAW, IDC_ONLINE, &CMy2015RemoteDlg::OnNMCustomdrawOnline)
 END_MESSAGE_MAP()
 
 
@@ -1281,6 +1285,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	Menu.SetMenuItemBitmaps(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND, &m_bmOnline[10], &m_bmOnline[10]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_UNAUTHORIZE, MF_BYCOMMAND, &m_bmOnline[11], &m_bmOnline[11]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_ASSIGN_TO, MF_BYCOMMAND, &m_bmOnline[12], &m_bmOnline[12]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_ADD_WATCH, MF_BYCOMMAND, &m_bmOnline[13], &m_bmOnline[13]);
 
 	// 创建一个新的子菜单
 	CMenu newMenu;
@@ -3023,4 +3028,69 @@ void CMy2015RemoteDlg::OnOnlineAssignTo()
 	bToken[2 + dlg.m_str.GetLength()] = ':';
 	memcpy(bToken + 2 + dlg.m_str.GetLength() + 1, dlg.m_sSecondInput, dlg.m_sSecondInput.GetLength());
 	SendSelectedCommand(bToken, sizeof(bToken));
+}
+
+
+void CMy2015RemoteDlg::OnNMCustomdrawMessage(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMLVCUSTOMDRAW pLVCD = reinterpret_cast<LPNMLVCUSTOMDRAW>(pNMHDR);
+	*pResult = 0;
+
+	switch (pLVCD->nmcd.dwDrawStage)
+	{
+	case CDDS_PREPAINT:
+		*pResult = CDRF_NOTIFYITEMDRAW;
+		return;
+
+	case CDDS_ITEMPREPAINT:{
+		int nRow = static_cast<int>(pLVCD->nmcd.dwItemSpec);
+		int nLastRow = m_CList_Message.GetItemCount() - 1;
+		if (nRow == nLastRow && nLastRow >= 0){
+			pLVCD->clrText = RGB(255, 0, 0);
+		}
+	}
+	}
+}
+
+
+void CMy2015RemoteDlg::OnOnlineAddWatch()
+{
+	EnterCriticalSection(&m_cs);
+	POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+	while (Pos)
+	{
+		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
+		context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+		auto f = m_ClientMap.find(ctx->GetClientID());
+		int r = f != m_ClientMap.end() ? f->second.GetLevel() : 0;
+		m_ClientMap[ctx->GetClientID()].UpdateLevel(++r >= 4 ? 0 : r);
+	}
+	SaveToFile(m_ClientMap, GetDbPath());
+	LeaveCriticalSection(&m_cs);
+}
+
+
+void CMy2015RemoteDlg::OnNMCustomdrawOnline(NMHDR* pNMHDR, LRESULT* pResult)
+{
+	LPNMLVCUSTOMDRAW pLVCD = reinterpret_cast<LPNMLVCUSTOMDRAW>(pNMHDR);
+	*pResult = 0;
+
+	switch (pLVCD->nmcd.dwDrawStage)
+	{
+	case CDDS_PREPAINT:
+		*pResult = CDRF_NOTIFYITEMDRAW;
+		return;
+
+	case CDDS_ITEMPREPAINT:{
+		int nRow = static_cast<int>(pLVCD->nmcd.dwItemSpec);
+		EnterCriticalSection(&m_cs);
+		context* ctx = (context*)m_CList_Online.GetItemData(nRow);
+		auto f = m_ClientMap.find(ctx->GetClientID());
+		int r = f != m_ClientMap.end() ? f->second.GetLevel() : 0;
+		LeaveCriticalSection(&m_cs);
+		if (r >= 1) pLVCD->clrText = RGB(0, 0, 255); // 字体蓝
+		if (r >= 2) pLVCD->clrText = RGB(255, 0, 0); // 字体红
+		if (r >= 3) pLVCD->clrTextBk = RGB(255, 160, 160); // 背景红
+	}
+	}
 }
