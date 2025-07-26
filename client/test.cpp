@@ -175,6 +175,7 @@ public:
 			serverAddr.sin_addr.s_addr = inet_addr(ip.c_str());
 			if (connect(clientSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
 				closesocket(clientSocket);
+				SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
 				continue;
 			}
 #ifdef _DEBUG

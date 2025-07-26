@@ -517,6 +517,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 		if (!ClientObject->ConnectServer(settings.ServerIP(), settings.ServerPort()))
 		{
 			for (int k = 500; app.m_bIsRunning(&app) && --k; Sleep(10));
+			SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
 			continue;
 		}
 		SAFE_DELETE(Manager);
@@ -529,6 +530,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 		do 
 		{
 			Manager->SendHeartbeat();
+			SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
 		} while (ClientObject->IsRunning() && ClientObject->IsConnected() && app.m_bIsRunning(&app));
 		while (GetTickCount64() - dwTickCount < 5000 && app.m_bIsRunning(&app))
 			Sleep(200);
