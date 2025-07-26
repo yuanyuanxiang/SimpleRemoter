@@ -5,6 +5,7 @@
 #define YAMA_PATH			"Software\\YAMA"
 #define CLIENT_PATH			"Software\\ServerD11"
 
+// 配置读取类: 文件配置.
 class config
 {
 private:
@@ -51,6 +52,7 @@ public:
 	}
 };
 
+// 配置读取类: 注册表配置.
 class iniFile : public config
 {
 private:
