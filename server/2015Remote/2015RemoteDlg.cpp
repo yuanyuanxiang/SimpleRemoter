@@ -464,8 +464,12 @@ VOID CMy2015RemoteDlg::CreateSolidMenu()
 	m_MainMenu.LoadMenu(IDR_MENU_MAIN);
 	CMenu* SubMenu = m_MainMenu.GetSubMenu(1);
 	std::string masterHash(GetMasterHash());
-	if (GetPwdHash() != masterHash) {
+	if (GetPwdHash() != masterHash || m_superPass.empty()) {
 		SubMenu->DeleteMenu(ID_TOOL_GEN_MASTER, MF_BYCOMMAND);
+	}
+	SubMenu = m_MainMenu.GetSubMenu(2);
+	if (!THIS_CFG.GetStr("settings", "Password").empty()) {
+		SubMenu->DeleteMenu(ID_TOOL_REQUEST_AUTH, MF_BYCOMMAND);
 	}
 
 	::SetMenu(this->GetSafeHwnd(), m_MainMenu.GetSafeHmenu()); //为窗口设置菜单
@@ -1286,6 +1290,12 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	Menu.SetMenuItemBitmaps(ID_ONLINE_UNAUTHORIZE, MF_BYCOMMAND, &m_bmOnline[11], &m_bmOnline[11]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_ASSIGN_TO, MF_BYCOMMAND, &m_bmOnline[12], &m_bmOnline[12]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_ADD_WATCH, MF_BYCOMMAND, &m_bmOnline[13], &m_bmOnline[13]);
+
+	std::string masterHash(GetMasterHash());
+	if (GetPwdHash() != masterHash || m_superPass.empty()) {
+		Menu.DeleteMenu(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND);
+		Menu.DeleteMenu(ID_ONLINE_UNAUTHORIZE, MF_BYCOMMAND);
+	}
 
 	// 创建一个新的子菜单
 	CMenu newMenu;
