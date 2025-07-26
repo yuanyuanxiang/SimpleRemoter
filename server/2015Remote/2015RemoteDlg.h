@@ -30,13 +30,15 @@ typedef struct DllInfo {
 enum {
 	MAP_NOTE,
 	MAP_LOCATION,
+	MAP_LEVEL,
 };
 
 struct _ClientValue
 {
 	char Note[64];
 	char Location[64];
-	char Reserved[128]; // ‘§¡Ù
+	char Level;
+	char Reserved[127]; // ‘§¡Ù
 	_ClientValue() {
 		memset(this, 0, sizeof(_ClientValue));
 	}
@@ -51,11 +53,17 @@ struct _ClientValue
 	void UpdateLocation(const CString& loc) {
 		strcpy_s(Location, loc.GetString());
 	}
+	void UpdateLevel(int level) {
+		Level = level;
+	}
 	const char* GetNote() const {
 		return Note;
 	}
 	const char* GetLocation() const {
 		return Location;
+	}
+	int GetLevel() const {
+		return Level;
 	}
 	int GetLength() const {
 		return sizeof(_ClientValue);
@@ -105,7 +113,7 @@ protected:
 				break;
 			}
 		}
-		EnterCriticalSection(&m_cs);
+		LeaveCriticalSection(&m_cs);
 		return r;
 	}
 	void SetClientMapData(ClientKey key, int typ, const char* value) {
@@ -121,7 +129,7 @@ protected:
 		default:
 			break;
 		}
-		EnterCriticalSection(&m_cs);
+		LeaveCriticalSection(&m_cs);
 	}
 	// ππ‘Ï
 public:
@@ -196,7 +204,7 @@ public:
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 	CMenu	   m_MainMenu;
-	CBitmap m_bmOnline[13];
+	CBitmap m_bmOnline[14];
 	uint64_t m_superID;
 	bool CheckValid(int trail = 14);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
@@ -269,4 +277,7 @@ public:
 	afx_msg LRESULT OnShowMessage(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnToolGenShellcode();
 	afx_msg void OnOnlineAssignTo();
+	afx_msg void OnNMCustomdrawMessage(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnOnlineAddWatch();
+	afx_msg void OnNMCustomdrawOnline(NMHDR* pNMHDR, LRESULT* pResult);
 };
