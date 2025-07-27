@@ -31,8 +31,10 @@
 #error 检测内存泄漏，需安装VLD；否则请注释#include "vld.h"，或使用Release编译
 #endif
 #define USING_SAFETHRED 0
+#define IsDebug 1
 #else
 #define USING_SAFETHRED 1
+#define IsDebug 0
 #endif
 
 // Insert your headers here

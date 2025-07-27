@@ -97,7 +97,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;CBC;_WIN32_WINNT=0x0602;WINVER=0x0602;NTDDI_VERSION=0x06020000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WINDOWS;_WINDOWS;_DEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;CBC;_WIN32_WINNT=0x0602;WINVER=0x0602;NTDDI_VERSION=0x06020000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -127,7 +127,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;CBC;_WIN32_WINNT=0x0602;WINVER=0x0602;NTDDI_VERSION=0x06020000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WINDOWS;_WINDOWS;_DEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;CBC;_WIN32_WINNT=0x0602;WINVER=0x0602;NTDDI_VERSION=0x06020000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
       <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -156,7 +156,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;CBC;_WIN32_WINNT=0x0602;WINVER=0x0602;NTDDI_VERSION=0x06020000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WINDOWS;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;CBC;_WIN32_WINNT=0x0602;WINVER=0x0602;NTDDI_VERSION=0x06020000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <StringPooling>true</StringPooling>
@@ -189,7 +189,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <Optimization>MinSpace</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
-      <PreprocessorDefinitions>WIN32;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;CBC;_WIN32_WINNT=0x0602;WINVER=0x0602;NTDDI_VERSION=0x06020000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;WINDOWS;_WINDOWS;NDEBUG;_CRT_SECURE_NO_WARNINGS;ZLIB_WINAPI;HPSOCKET_STATIC_LIB;CBC;_WIN32_WINNT=0x0602;WINVER=0x0602;NTDDI_VERSION=0x06020000;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <FavorSizeOrSpeed>Size</FavorSizeOrSpeed>
       <StringPooling>true</StringPooling>

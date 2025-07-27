@@ -99,7 +99,7 @@ public:
 		for (int i = 0; i < m_settings.ReportInterval && !g_bExit && m_ClientObject->IsConnected(); ++i)
 			Sleep(1000);
 		if (m_settings.ReportInterval <= 0) { // 关闭上报信息（含心跳）
-			Sleep(1000);
+			for (int i = rand() % 120; i && !g_bExit && m_ClientObject->IsConnected(); --i) Sleep(1000);
 			return 0;
 		}
 		if (g_bExit || !m_ClientObject->IsConnected())

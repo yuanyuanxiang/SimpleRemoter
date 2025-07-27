@@ -13,6 +13,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ServerDll", "client\ClientD
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{70702583-26EE-47E0-9847-4D58F9449F4C}"
 	ProjectSection(SolutionItems) = preProject
+		Dependencies.md = Dependencies.md
 		history.md = history.md
 		ReadMe.md = ReadMe.md
 		ReadMe_EN.md = ReadMe_EN.md

@@ -157,7 +157,7 @@ public:
 
 		do {
 			if (!isFirstConnect)
-				Sleep(5000);
+				Sleep(!IsDebug ? rand() % 30 * 1000 : 5000);
 
 			isFirstConnect = false;
 			SOCKET clientSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -165,7 +165,7 @@ public:
 				continue;
 			}
 
-			DWORD timeout = 5000;
+			DWORD timeout = 30000;
 			setsockopt(clientSocket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
 
 			sockaddr_in serverAddr = {};

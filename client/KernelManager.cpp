@@ -54,7 +54,7 @@ CKernelManager::CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, 
 #ifdef _DEBUG
 	m_settings = { 5 };
 #else
-	m_settings = { 30 };
+	m_settings = { 0 };
 #endif
 	m_nNetPing = -1;
 	m_hKeyboard = kb;

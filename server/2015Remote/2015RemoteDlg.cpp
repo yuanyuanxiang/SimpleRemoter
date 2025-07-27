@@ -583,16 +583,6 @@ VOID CMy2015RemoteDlg::TestOnline()
 	ShowMessage("操作成功", "软件初始化成功...");
 }
 
-bool IsExitItem(CListCtrl &list, DWORD_PTR data){
-	for (int i=0,n=list.GetItemCount();i<n;i++)
-	{
-		DWORD_PTR v = list.GetItemData(i);
-		if (v == data) {
-			return true;
-		}
-	}
-	return false;
-}
 
 std::vector<CString> SplitCString(CString strData) {
 	std::vector<CString> vecItems;
@@ -612,14 +602,6 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 							   CString strCPU, CString strVideo, CString strPing, CString ver, 
 	CString startTime, const std::vector<std::string>& v, CONTEXT_OBJECT * ContextObject)
 {
-	EnterCriticalSection(&m_cs);
-	if (IsExitItem(m_CList_Online, (ULONG_PTR)ContextObject)) {
-		LeaveCriticalSection(&m_cs);
-		Mprintf("===> '%s' already exist!!\n", strIP);
-		return;
-	}
-	LeaveCriticalSection(&m_cs);
-
 	CString install = v[RES_INSTALL_TIME].empty() ? "?" : v[RES_INSTALL_TIME].c_str();
 	CString path = v[RES_FILE_PATH].empty() ? "?" : v[RES_FILE_PATH].c_str();
 	CString data[ONLINELIST_MAX] = { strIP, strAddr, "", strPCName, strOS, strCPU, strVideo, strPing, 
@@ -643,6 +625,16 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 	ContextObject->SetID(id);
 
 	EnterCriticalSection(&m_cs);
+
+	for (int i = 0, n = m_CList_Online.GetItemCount(); i < n; i++){
+		CONTEXT_OBJECT* ctx = (CONTEXT_OBJECT*)m_CList_Online.GetItemData(i);
+		if (ctx == ContextObject || ctx->GetID() == id) {
+			LeaveCriticalSection(&m_cs);
+			Mprintf("TODO: '%s' already exist!!\n", strIP);
+			return;
+		}
+	}
+
 	if (modify)
 		SaveToFile(m_ClientMap, GetDbPath());
 	auto& m = m_ClientMap[ContextObject->ID];
