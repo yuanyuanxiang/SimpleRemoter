@@ -93,6 +93,12 @@ static UINT Indicators[] =
 	IDR_STATUSBAR_STRING  
 };
 
+std::string EventName() {
+	char eventName[64];
+	snprintf(eventName, sizeof(eventName), "EVENT_%d", GetCurrentProcessId());
+	return eventName;
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 // 保存 unordered_map 到文件
@@ -1151,6 +1157,14 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	if (nIDEvent == TIMER_CHECK)
 	{
+		static int count = 0;
+		static std::string eventName = EventName();
+		HANDLE hEvent = OpenEventA(SYNCHRONIZE, FALSE, eventName.c_str());
+		if (hEvent) {
+			CloseHandle(hEvent);
+		}else if (++count == 10) {
+			THIS_APP->UpdateMaxConnection(count);
+		}
 		if (!m_superPass.empty()) {
 			Mprintf(">>> Timer is killed <<<\n");
 			KillTimer(nIDEvent);

