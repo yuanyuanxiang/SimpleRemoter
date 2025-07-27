@@ -325,6 +325,7 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 	memcpy(LoginInfor.szMasterID, id, min(strlen(id), 16));
 	std::string loc = cfg.GetStr("settings", "location", "");
 	std::string pubIP = cfg.GetStr("settings", "public_ip", "");
+	auto ip_time = cfg.GetInt("settings", "ip_time");
 	IPConverter cvt;
 	if (loc.empty()) {
 		std::string ip = cvt.getPublicIP();
@@ -332,9 +333,10 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 		loc = cvt.GetGeoLocation(pubIP);
 		cfg.SetStr("settings", "location", loc);
 	}
-	if (pubIP.empty()) {
+	if ( pubIP.empty() || ip_time <= 0 || (time(0)-ip_time>7*86400) ) {
 		pubIP = cvt.getPublicIP();
 		cfg.SetStr("settings", "public_ip", pubIP);
+		cfg.SetInt("settings", "ip_time", time(0));
 	}
 	LoginInfor.AddReserved(loc.c_str());
 	LoginInfor.AddReserved(pubIP.c_str());
