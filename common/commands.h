@@ -733,6 +733,7 @@ enum LOGIN_RES {
 	RES_EXPIRED_DATE = 9,					// 到期日期
 	RES_CLIENT_LOC = 10,					// 地理位置
 	RES_CLIENT_PUBIP = 11,					// 公网地址
+	RES_EXE_VERSION = 12,					// EXE版本
 	RES_MAX,
 };
 

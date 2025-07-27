@@ -225,6 +225,44 @@ double GetMemorySizeGB() {
 	return GB;
 }
 
+#pragma comment(lib, "Version.lib")
+std::string GetCurrentExeVersion() {
+	TCHAR filePath[MAX_PATH];
+	if (GetModuleFileName(NULL, filePath, MAX_PATH) == 0) {
+		return "Unknown";
+	}
+
+	DWORD handle = 0;
+	DWORD verSize = GetFileVersionInfoSize(filePath, &handle);
+	if (verSize == 0) {
+		return "Unknown";
+	}
+
+	std::vector<BYTE> verData(verSize);
+	if (!GetFileVersionInfo(filePath, handle, verSize, verData.data())) {
+		return "Unknown";
+	}
+
+	VS_FIXEDFILEINFO* pFileInfo = nullptr;
+	UINT len = 0;
+	if (!VerQueryValue(verData.data(), "\\", reinterpret_cast<LPVOID*>(&pFileInfo), &len)) {
+		return "Unknown";
+	}
+
+	if (pFileInfo) {
+		DWORD major = HIWORD(pFileInfo->dwFileVersionMS);
+		DWORD minor = LOWORD(pFileInfo->dwFileVersionMS);
+		DWORD build = HIWORD(pFileInfo->dwFileVersionLS);
+		DWORD revision = LOWORD(pFileInfo->dwFileVersionLS);
+
+		std::ostringstream oss;
+		oss << major << "." << minor << "." << build << "." << revision;
+		return "v" + oss.str();
+	}
+
+	return "Unknown";
+}
+
 LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 {
 	LOGIN_INFOR  LoginInfor;
@@ -300,6 +338,7 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 	}
 	LoginInfor.AddReserved(loc.c_str());
 	LoginInfor.AddReserved(pubIP.c_str());
+	LoginInfor.AddReserved(GetCurrentExeVersion().c_str());
 
 	return LoginInfor;
 }
