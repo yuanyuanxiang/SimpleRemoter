@@ -91,7 +91,7 @@ public:
 
 	clock_t				m_lastMouseMove; // 鼠标移动时间
 	POINT				m_lastMousePoint;// 上次鼠标位置
-	BOOL				m_bAdaptiveSize = FALSE;
+	BOOL				m_bAdaptiveSize = TRUE;
 	HCURSOR				m_hRemoteCursor = NULL;
 	CRect				m_CRect;
 	double				m_wZoom=1, m_hZoom=1;

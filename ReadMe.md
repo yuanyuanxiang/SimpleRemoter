@@ -36,6 +36,11 @@
 
 **起始日期**：2019.1.1
 
+**编译方法：** 此项目采用VS2019进行开发和维护，使用最新的VS2022编译器也可以成功编译，详见：[#171](https://github.com/yuanyuanxiang/SimpleRemoter/issues/171).
+
+主控程序在非中文系统可能显示乱码，有关解决方法参看 [#157](https://github.com/yuanyuanxiang/SimpleRemoter/issues/157).
+
+
 # 2.免责声明 <a id="2-legal-disclaimer"></a>
 
 本项目为远程控制技术的研究性实现，仅供合法学习用途。**严禁**用于非法侵入、控制、监听他人设备等违法行为。

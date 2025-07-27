@@ -80,8 +80,12 @@ CMy2015RemoteApp::CMy2015RemoteApp()
 	// TODO: 在此处添加构造代码，
 	// 将所有重要的初始化放置在 InitInstance 中
 	m_Mutex = NULL;
+#ifdef _DEBUG
 	std::string masterHash(GetMasterHash());
 	m_iniFile = GetPwdHash() == masterHash ? new config : new iniFile;
+#else
+	m_iniFile = new iniFile;
+#endif
 
 	srand(static_cast<unsigned int>(time(0)));
 }
