@@ -190,7 +190,7 @@ public:
 		hInternet = InternetOpen("Mozilla/5.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
 		if (!hInternet) return "";
 
-		hConnect = InternetOpenUrl(hInternet, "https://api64.ipify.org", NULL, 0, INTERNET_FLAG_RELOAD | INTERNET_FLAG_SECURE, 0);
+		hConnect = InternetOpenUrl(hInternet, "https://api.ipify.org", NULL, 0, INTERNET_FLAG_RELOAD | INTERNET_FLAG_SECURE, 0);
 		if (!hConnect) {
 			InternetCloseHandle(hInternet);
 			return "";

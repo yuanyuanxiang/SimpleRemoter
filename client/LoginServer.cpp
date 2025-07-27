@@ -326,15 +326,12 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 	std::string loc = cfg.GetStr("settings", "location", "");
 	std::string pubIP = cfg.GetStr("settings", "public_ip", "");
 	auto ip_time = cfg.GetInt("settings", "ip_time");
+	bool timeout = ip_time <= 0 || (time(0) - ip_time > 7 * 86400);
 	IPConverter cvt;
-	if (loc.empty()) {
-		std::string ip = cvt.getPublicIP();
-		if (pubIP.empty()) pubIP = ip;
+	if (loc.empty() || pubIP.empty() || timeout) {
+		pubIP = cvt.getPublicIP();
 		loc = cvt.GetGeoLocation(pubIP);
 		cfg.SetStr("settings", "location", loc);
-	}
-	if ( pubIP.empty() || ip_time <= 0 || (time(0)-ip_time>7*86400) ) {
-		pubIP = cvt.getPublicIP();
 		cfg.SetStr("settings", "public_ip", pubIP);
 		cfg.SetInt("settings", "ip_time", time(0));
 	}
