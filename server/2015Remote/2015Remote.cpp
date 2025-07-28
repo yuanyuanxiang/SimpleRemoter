@@ -109,6 +109,7 @@ BOOL CMy2015RemoteApp::InitInstance()
 		{
 			CloseHandle(m_Mutex);
 			m_Mutex = NULL;
+			MessageBoxA(NULL, "一个主控程序已经在运行，请检查任务管理器。", "提示", MB_ICONINFORMATION);
 			return FALSE;
 		}
 	}

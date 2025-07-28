@@ -13,7 +13,8 @@
 IMPLEMENT_DYNAMIC(CPasswordDlg, CDialogEx)
 
 // 主控程序唯一标识
-char g_MasterID[_MAX_PATH] = { PWD_HASH256 };
+// 密码的哈希值
+char g_MasterID[_MAX_PATH] = {  "61f04dd637a74ee34493fc1025de2c131022536da751c29e3ff4e9024d8eec43" };
 
 std::string GetPwdHash(){
 	static auto id = std::string(g_MasterID).substr(0, 64);

@@ -178,6 +178,7 @@ BOOL CScreenSpyDlg::OnInitDialog()
 	ICONINFO CursorInfo;
 	::GetIconInfo(m_hRemoteCursor, &CursorInfo);
 	SysMenu->CheckMenuItem(IDM_CONTROL, m_bIsCtrl ? MF_CHECKED : MF_UNCHECKED);
+	SysMenu->CheckMenuItem(IDM_ADAPTIVE_SIZE, m_bAdaptiveSize ? MF_CHECKED : MF_UNCHECKED);
 	SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
 
 	GetClientRect(&m_CRect);
@@ -515,7 +516,7 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	case IDM_ADAPTIVE_SIZE: {
 			m_bAdaptiveSize = !m_bAdaptiveSize;
 			ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);
-			SysMenu->CheckMenuItem(IDM_ADAPTIVE_SIZE, m_bAdaptiveSize);
+			SysMenu->CheckMenuItem(IDM_ADAPTIVE_SIZE, m_bAdaptiveSize ? MF_CHECKED : MF_UNCHECKED);
 			break;
 		}
 	}

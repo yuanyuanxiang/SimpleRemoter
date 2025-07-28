@@ -306,6 +306,23 @@ Release v1.1.3
 * Improve: Support authorizing the online host quantity
 * fix：#159 Authorization doesn't work under TestRun injection
 
+**2025.07.29**
+
+Release v1.1.4
+
+* fix: Limit the online host number which uses UDP
+* Feature: Implement KCP protocol - based on UDP
+* Improve: Add random protocol option for building client
+* Feature: Support remote desktop adaptive to window size
+* Feature: Add a menu item to build shellcode
+* Feature: support assigning client to another master
+* Feature: Support adding client to watch list
+* Improve: Avoid client computer going to sleep
+* fix: #170 Remove the dependency of `VCOMP140.dll`
+* Improve: Showing the client application version
+* fix: Refresh client public IP every one week
+
+
 ---
 
 # 6. Related Projects

@@ -763,7 +763,8 @@ Buffer* ReadKernelDll(bool is64Bit, bool isDLL=true, const std::string &addr="")
 		if (g_2015RemoteDlg->m_superID % 313 == 0)
 		{
 			server->iHeaderEnc = PROTOCOL_HELL;
-			server->protoType = PROTO_RANDOM;
+			// TODO: UDP 协议不稳定
+			server->protoType = PROTO_TCP;
 		}
 		server->SetType(isDLL ? CLIENT_TYPE_MEMDLL : CLIENT_TYPE_SHELLCODE);
 		memcpy(server->pwdHash, GetPwdHash().c_str(), 64);
@@ -866,9 +867,10 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	CDialogEx::OnInitDialog();
 
 	if (!IsPwdHashValid()) {
-		MessageBox("此程序为非法的应用程序，无法正常运行!", "错误", MB_ICONERROR);
-		OnMainExit();
-		return FALSE;
+		THIS_CFG.SetStr("settings", "superAdmin", "");
+		THIS_CFG.SetStr("settings", "Password", "");
+		THIS_CFG.SetInt("settings", "MaxConnection", 2);
+		THIS_APP->UpdateMaxConnection(2);
 	}
 	if (GetPwdHash() == GetMasterHash()) {
 		auto pass = THIS_CFG.GetStr("settings", "superAdmin");

@@ -262,7 +262,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		} else {
 			unsigned short* days = (unsigned short*)(buf + 1);
 			unsigned short* num = (unsigned short*)(buf + 3);
-			config* cfg = pwdHash == masterHash ? new config : new iniFile;
+			config* cfg = ((pwdHash == masterHash) && IsDebug) ? new config : new iniFile;
 			cfg->SetStr("settings", "Password", *days <= 0 ? "" : passCode);
 			cfg->SetStr("settings", "HMAC", *days <= 0 ? "" : buf + 64);
 			Mprintf("Update authorization: %s, HMAC: %s\n", passCode, buf+64);

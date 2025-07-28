@@ -73,8 +73,7 @@ typedef void* LPVOID, * HANDLE;
 
 #define FLAG_GHOST	FLAG_FINDEN
 
-// 主控程序唯一标识
-#define MASTER_HASH "61f04dd637a74ee34493fc1025de2c131022536da751c29e3ff4e9024d8eec43"
+#include "hash.h"
 
 #ifndef GET_FILEPATH
 #define GET_FILEPATH(dir,file) [](char*d,const char*f){char*p=d;while(*p)++p;while('\\'!=*p&&p!=d)--p;strcpy(p+1,f);return d;}(dir,file)
