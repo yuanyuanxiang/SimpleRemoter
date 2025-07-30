@@ -390,6 +390,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\Bitmap\AddWatch.bmp" />
+    <Image Include="res\Bitmap\AdminRun.bmp" />
     <Image Include="res\Bitmap\AssignTo.bmp" />
     <Image Include="res\Bitmap\authorize.bmp" />
     <Image Include="res\Bitmap\DxgiDesktop.bmp" />

