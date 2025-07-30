@@ -155,6 +155,7 @@
     <Image Include="res\DrawingBoard.ico" />
     <Image Include="res\Bitmap\AssignTo.bmp" />
     <Image Include="res\Bitmap\AddWatch.bmp" />
+    <Image Include="res\Bitmap\AdminRun.bmp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Release\ghost.exe" />

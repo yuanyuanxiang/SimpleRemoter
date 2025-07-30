@@ -204,7 +204,7 @@ public:
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 	CMenu	   m_MainMenu;
-	CBitmap m_bmOnline[14];
+	CBitmap m_bmOnline[15];
 	uint64_t m_superID;
 	bool CheckValid(int trail = 14);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
@@ -280,4 +280,5 @@ public:
 	afx_msg void OnNMCustomdrawMessage(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnOnlineAddWatch();
 	afx_msg void OnNMCustomdrawOnline(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnOnlineRunAsAdmin();
 };

