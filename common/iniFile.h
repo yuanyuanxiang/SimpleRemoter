@@ -9,15 +9,19 @@
 class config
 {
 private:
-	char m_IniFilePath[_MAX_PATH];
+	char m_IniFilePath[_MAX_PATH] = { 0 };
 
 public:
 	virtual ~config() {}
 
-	config()
+	config(const std::string& path="")
 	{
-		::GetModuleFileNameA(NULL, m_IniFilePath, sizeof(m_IniFilePath));
-		GET_FILEPATH(m_IniFilePath, "settings.ini");
+		if (path.length() == 0) {
+			::GetModuleFileNameA(NULL, m_IniFilePath, sizeof(m_IniFilePath));
+			GET_FILEPATH(m_IniFilePath, "settings.ini");
+		} else {
+			memcpy(m_IniFilePath, path.c_str(), path.length());
+		}
 	}
 
 	virtual int GetInt(const std::string& MainKey, const std::string& SubKey, int nDef=0)

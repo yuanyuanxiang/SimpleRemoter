@@ -19,6 +19,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		ReadMe_EN.md = ReadMe_EN.md
 		使用方法.txt = 使用方法.txt
 		使用花生壳.txt = 使用花生壳.txt
+		反向代理.md = 反向代理.md
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TinyRun", "client\TinyRun.vcxproj", "{E3F3A477-05BA-431D-B002-28EF8BFA6E86}"

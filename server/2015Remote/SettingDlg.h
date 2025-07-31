@@ -42,4 +42,10 @@ public:
 	afx_msg void OnBnClickedRadioMainScreen();
 	CEdit m_EditUdpOption;
 	CString m_sUdpOption;
+	afx_msg void OnBnClickedRadioFrpOff();
+	afx_msg void OnBnClickedRadioFrpOn();
+	CEdit m_EditFrpPort;
+	int m_nFrpPort;
+	CEdit m_EditFrpToken;
+	CString m_sFrpToken;
 };

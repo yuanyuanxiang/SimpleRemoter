@@ -242,6 +242,7 @@
     <None Include="res\Cur\MutiDrag.cur" />
     <None Include="res\dword.ico" />
     <None Include="res\file.ico" />
+    <None Include="res\frpc.dll" />
     <None Include="res\My2015Remote.rc2" />
     <None Include="res\pc.ico" />
     <None Include="res\string.ico" />
