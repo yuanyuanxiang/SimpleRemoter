@@ -155,7 +155,7 @@ public:
 	void SortByColumn(int nColumn);
 	afx_msg VOID OnHdnItemclickList(NMHDR* pNMHDR, LRESULT* pResult);
 	static int CALLBACK CompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
-	template<class T, int id, int Show=SW_SHOW> LRESULT OpenDialog(WPARAM wParam, LPARAM lParam)
+	template<class T, int id, int Show = SW_SHOW> LRESULT OpenDialog(WPARAM wParam, LPARAM lParam)
 	{
 		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
 		T* Dlg = new T(this, ContextObject->GetServer(), ContextObject);
@@ -169,15 +169,15 @@ public:
 	}
 	VOID InitControl();             //初始控件
 	VOID TestOnline();              //测试函数
-	VOID AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, CString strCPU, CString strVideo, CString strPing, 
-		CString ver, CString startTime, const std::vector<std::string> &v, CONTEXT_OBJECT* ContextObject);
+	VOID AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, CString strCPU, CString strVideo, CString strPing,
+		CString ver, CString startTime, const std::vector<std::string>& v, CONTEXT_OBJECT* ContextObject);
 	VOID ShowMessage(CString strType, CString strMsg);
 	VOID CreatStatusBar();
 	VOID CreateToolBar();
 	VOID CreateNotifyBar();
-	VOID CreateSolidMenu();	
+	VOID CreateSolidMenu();
 	int m_nMaxConnection;
-	BOOL Activate(const std::string& nPort,int nMaxConnection, const std::string& method);
+	BOOL Activate(const std::string& nPort, int nMaxConnection, const std::string& method);
 	void UpdateActiveWindow(CONTEXT_OBJECT* ctx);
 	void SendMasterSettings(CONTEXT_OBJECT* ctx);
 	VOID SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, bool is64Bit);
@@ -189,8 +189,8 @@ public:
 	VOID MessageHandle(CONTEXT_OBJECT* ContextObject);
 	VOID SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength);
 	// 显示用户上线信息
-	CWnd* m_pFloatingTip=nullptr;
-	CListCtrl  m_CList_Online;    
+	CWnd* m_pFloatingTip = nullptr;
+	CListCtrl  m_CList_Online;
 	CListCtrl  m_CList_Message;
 
 	void DeletePopupWindow();
@@ -206,6 +206,16 @@ public:
 	CMenu	   m_MainMenu;
 	CBitmap m_bmOnline[15];
 	uint64_t m_superID;
+	enum {
+		STATUS_UNKNOWN = -1,
+		STATUS_RUN = 0,
+		STATUS_STOP = 1,
+		STATUS_EXIT = 2,
+	};
+	HANDLE m_hFRPThread = NULL;
+	int m_frpStatus = STATUS_RUN;
+	static DWORD WINAPI StartFrpClient(LPVOID param);
+	void ApplyFrpSettings();
 	bool CheckValid(int trail = 14);
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg void OnClose();
@@ -281,4 +291,5 @@ public:
 	afx_msg void OnOnlineAddWatch();
 	afx_msg void OnNMCustomdrawOnline(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnOnlineRunAsAdmin();
+	afx_msg LRESULT OnShowErrMessage(WPARAM wParam, LPARAM lParam);
 };

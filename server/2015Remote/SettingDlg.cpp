@@ -22,6 +22,8 @@ CSettingDlg::CSettingDlg(CWnd* pParent)
 	, m_sSoftwareDetect(_T("ÉãÏñÍ·"))
 	, m_sPublicIP(_T(""))
 	, m_sUdpOption(_T(""))
+	, m_nFrpPort(7000)
+	, m_sFrpToken(_T(""))
 {
 }
 
@@ -53,6 +55,12 @@ void CSettingDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_UDP_OPTION, m_EditUdpOption);
 	DDX_Text(pDX, IDC_EDIT_UDP_OPTION, m_sUdpOption);
 	DDV_MaxChars(pDX, m_sUdpOption, 24);
+	DDX_Control(pDX, IDC_EDIT_FRP_PORT, m_EditFrpPort);
+	DDX_Text(pDX, IDC_EDIT_FRP_PORT, m_nFrpPort);
+	DDV_MinMaxInt(pDX, m_nFrpPort, 1, 65535);
+	DDX_Control(pDX, IDC_EDIT_FRP_TOKEN, m_EditFrpToken);
+	DDX_Text(pDX, IDC_EDIT_FRP_TOKEN, m_sFrpToken);
+	DDV_MaxChars(pDX, m_sFrpToken, 24);
 }
 
 BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)
@@ -61,6 +69,8 @@ BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)
 	ON_EN_CHANGE(IDC_EDIT_MAX, &CSettingDlg::OnEnChangeEditMax)
 	ON_BN_CLICKED(IDC_RADIO_ALL_SCREEN, &CSettingDlg::OnBnClickedRadioAllScreen)
 	ON_BN_CLICKED(IDC_RADIO_MAIN_SCREEN, &CSettingDlg::OnBnClickedRadioMainScreen)
+	ON_BN_CLICKED(IDC_RADIO_FRP_OFF, &CSettingDlg::OnBnClickedRadioFrpOff)
+	ON_BN_CLICKED(IDC_RADIO_FRP_ON, &CSettingDlg::OnBnClickedRadioFrpOn)
 END_MESSAGE_MAP()
 
 
@@ -126,6 +136,13 @@ BOOL CSettingDlg::OnInitDialog()
 	BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
 	((CButton*)GetDlgItem(IDC_RADIO_ALL_SCREEN))->SetCheck(!all);
 	((CButton*)GetDlgItem(IDC_RADIO_MAIN_SCREEN))->SetCheck(all);
+
+	BOOL frp = THIS_CFG.GetInt("frp", "UseFrp");
+	((CButton*)GetDlgItem(IDC_RADIO_FRP_OFF))->SetCheck(!frp);
+	((CButton*)GetDlgItem(IDC_RADIO_FRP_ON))->SetCheck(frp);
+	m_nFrpPort = THIS_CFG.GetInt("frp", "server_port", 7000);
+	m_sFrpToken = THIS_CFG.GetStr("frp", "token").c_str();
+
 	UpdateData(FALSE);
 
 	return TRUE; 
@@ -151,6 +168,11 @@ void CSettingDlg::OnBnClickedButtonSettingapply()
 
 	BOOL all = ((CButton*)GetDlgItem(IDC_RADIO_MAIN_SCREEN))->GetCheck();
 	THIS_CFG.SetInt("settings", "MultiScreen", all);
+
+	BOOL frp = ((CButton*)GetDlgItem(IDC_RADIO_FRP_ON))->GetCheck();
+	THIS_CFG.SetInt("frp", "UseFrp", frp);
+	THIS_CFG.SetInt("frp", "server_port", m_nFrpPort);
+	THIS_CFG.SetStr("frp", "token", m_sFrpToken.GetString());
 
 	m_ApplyButton.EnableWindow(FALSE);
 	m_ApplyButton.ShowWindow(SW_HIDE);
@@ -205,4 +227,18 @@ void CSettingDlg::OnBnClickedRadioMainScreen()
 {
 	BOOL b = ((CButton*)GetDlgItem(IDC_RADIO_MAIN_SCREEN))->GetCheck();
 	((CButton*)GetDlgItem(IDC_RADIO_ALL_SCREEN))->SetCheck(!b);
+}
+
+
+void CSettingDlg::OnBnClickedRadioFrpOff()
+{
+	BOOL b = ((CButton*)GetDlgItem(IDC_RADIO_FRP_OFF))->GetCheck();
+	((CButton*)GetDlgItem(IDC_RADIO_FRP_ON))->SetCheck(!b);
+}
+
+
+void CSettingDlg::OnBnClickedRadioFrpOn()
+{
+	BOOL b = ((CButton*)GetDlgItem(IDC_RADIO_FRP_ON))->GetCheck();
+	((CButton*)GetDlgItem(IDC_RADIO_FRP_OFF))->SetCheck(!b);
 }

