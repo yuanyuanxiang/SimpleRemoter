@@ -829,12 +829,6 @@ void CScreenSpyDlg::OnMouseMove(UINT nFlags, CPoint point)
 {
 	if (!m_bMouseTracking)
 	{
-		// 第一次进入，开始追踪 WM_MOUSELEAVE
-		TRACKMOUSEEVENT tme = { sizeof(TRACKMOUSEEVENT) };
-		tme.dwFlags = TME_LEAVE;
-		tme.hwndTrack = m_hWnd;
-		TrackMouseEvent(&tme);
-
 		m_bMouseTracking = true;
 		SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
 	}

@@ -84,6 +84,25 @@ private:
 
 class ScreenCapture
 {
+private:
+	static BOOL CALLBACK MonitorEnumProc(HMONITOR hMonitor, HDC hdcMonitor, LPRECT lprcMonitor, LPARAM dwData)
+	{
+		std::vector<MONITORINFOEX>* monitors = reinterpret_cast<std::vector<MONITORINFOEX>*>(dwData);
+
+		MONITORINFOEX mi;
+		mi.cbSize = sizeof(MONITORINFOEX);
+		if (GetMonitorInfo(hMonitor, &mi))
+		{
+			monitors->push_back(mi); // 保存显示器信息
+		}
+		return TRUE;
+	}
+	std::vector<MONITORINFOEX> GetAllMonitors()
+	{
+		std::vector<MONITORINFOEX> monitors;
+		EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&monitors);
+		return monitors;
+	}
 public:
 	ThreadPool*      m_ThreadPool;		 // 线程池
 	BYTE*            m_FirstBuffer;		 // 上一帧数据
@@ -119,13 +138,24 @@ public:
 
 		m_BlockNum = 8;
 		m_ThreadPool = new ThreadPool(m_BlockNum);
-
-		if (all)
+		static auto monitors = GetAllMonitors();
+		static int index = 0;
+		if (all && !monitors.empty())
 		{
-			m_iScreenX = GetSystemMetrics(SM_XVIRTUALSCREEN);
-			m_iScreenY = GetSystemMetrics(SM_YVIRTUALSCREEN);
-			m_ulFullWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
-			m_ulFullHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+			int idx = index++ % (monitors.size()+1);
+			if (idx == 0) {
+				m_iScreenX = GetSystemMetrics(SM_XVIRTUALSCREEN);
+				m_iScreenY = GetSystemMetrics(SM_YVIRTUALSCREEN);
+				m_ulFullWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+				m_ulFullHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+			}
+			else {
+				RECT rt = monitors[idx-1].rcMonitor;
+				m_iScreenX = rt.left;
+				m_iScreenY = rt.top;
+				m_ulFullWidth = rt.right - rt.left;
+				m_ulFullHeight = rt.bottom - rt.top;
+			}
 		} else {
 			//::GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN)获取屏幕大小不准
 			//例如当屏幕显示比例为125%时，获取到的屏幕大小需要乘以1.25才对
@@ -411,6 +441,8 @@ public:
 			pt.x *= m_wZoom;
 			pt.y *= m_hZoom;
 		}
+		pt.x += m_iScreenX;
+		pt.y += m_iScreenY;
 	}
 
 	// 获取位图结构信息
