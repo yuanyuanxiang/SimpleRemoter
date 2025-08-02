@@ -100,7 +100,8 @@ void CHideScreenSpyDlg::OnClose()
 		ShowWindow(SW_HIDE);
 		return;
 	}
-
+	// 恢复鼠标状态
+	SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)LoadCursor(NULL, IDC_ARROW));
 	CDialogBase::OnClose();
 }
 

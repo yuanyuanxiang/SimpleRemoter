@@ -59,12 +59,6 @@ public:
 		}
 	}
 
-	virtual ~CCursorInfo()
-	{
-		for (int i = 0; i < MAX_CURSOR_TYPE; ++i)
-			DestroyCursor(m_CursorHandleArray[i]);
-	}
-
 	int getCurrentCursorIndex() const
 	{
 		CURSORINFO	ci;
@@ -78,18 +72,14 @@ public:
 			if (ci.hCursor == m_CursorHandleArray[i])
 				break;
 		}
-		DestroyCursor(ci.hCursor);
 
 		int	nIndex = i == MAX_CURSOR_TYPE ? -1 : i;
 		return nIndex;
 	}
 
-	HCURSOR getCursorHandle( int nIndex )
+	HCURSOR getCursorHandle( int nIndex ) const 
 	{
-		if (nIndex >= 0 && nIndex < MAX_CURSOR_TYPE)
-			return	m_CursorHandleArray[nIndex];
-		else
-			return NULL;
+		return (nIndex >= 0 && nIndex < MAX_CURSOR_TYPE) ? m_CursorHandleArray[nIndex] : NULL;
 	}
 };
 
