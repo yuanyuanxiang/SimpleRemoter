@@ -182,9 +182,8 @@ BOOL CScreenSpyDlg::OnInitDialog()
 	SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
 
 	GetClientRect(&m_CRect);
-	ScreenToClient(m_CRect);
-	m_wZoom = ((double)m_BitmapInfor_Full->bmiHeader.biWidth) / ((double)(m_CRect.right - m_CRect.left));
-	m_hZoom = ((double)m_BitmapInfor_Full->bmiHeader.biHeight) / ((double)(m_CRect.bottom - m_CRect.top));
+	m_wZoom = ((double)m_BitmapInfor_Full->bmiHeader.biWidth) / ((double)(m_CRect.Width()));
+	m_hZoom = ((double)m_BitmapInfor_Full->bmiHeader.biHeight) / ((double)(m_CRect.Height()));
 	ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);
 
 	SendNext();
@@ -560,11 +559,12 @@ void CScreenSpyDlg::SendScaledMouseMessage(MSG* pMsg, bool makeLP) {
 		return;
 
 	MYMSG msg(*pMsg);
-	auto low = m_bAdaptiveSize ? ((LONG)LOWORD(pMsg->lParam)) * m_wZoom : LOWORD(pMsg->lParam) + m_ulHScrollPos;
-	auto high = m_bAdaptiveSize ? ((LONG)HIWORD(pMsg->lParam)) * m_hZoom : HIWORD(pMsg->lParam) + m_ulVScrollPos;
+	LONG x = LOWORD(pMsg->lParam), y = HIWORD(pMsg->lParam);
+	LONG low = m_bAdaptiveSize ? x * m_wZoom : x + m_ulHScrollPos;
+	LONG high = m_bAdaptiveSize ? y * m_hZoom : y + m_ulVScrollPos;
 	if (makeLP) msg.lParam = MAKELPARAM(low, high);
-	msg.pt.x = (int)low;
-	msg.pt.y = (int)high;
+	msg.pt.x = low;
+	msg.pt.y = high;
 	SendCommand(&msg);
 }
 
@@ -836,9 +836,6 @@ void CScreenSpyDlg::OnSize(UINT nType, int cx, int cy)
 		return;
 
 	GetClientRect(&m_CRect);
-	ScreenToClient(m_CRect);
-	if (!m_bIsFirst) {
-		m_wZoom = ((double)m_BitmapInfor_Full->bmiHeader.biWidth) / ((double)(m_CRect.right - m_CRect.left));
-		m_hZoom = ((double)m_BitmapInfor_Full->bmiHeader.biHeight) / ((double)(m_CRect.bottom - m_CRect.top));
-	}
+	m_wZoom = ((double)m_BitmapInfor_Full->bmiHeader.biWidth) / ((double)(m_CRect.Width()));
+	m_hZoom = ((double)m_BitmapInfor_Full->bmiHeader.biHeight) / ((double)(m_CRect.Height()));
 }
