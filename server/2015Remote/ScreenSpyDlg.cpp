@@ -746,25 +746,34 @@ void CScreenSpyDlg::EnterFullScreen()
 {
 	if (!m_bFullScreen)
 	{
-		// 1. 获取屏幕分辨率
-		int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-		int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+		// 1. 获取鼠标位置
+		POINT pt;
+		GetCursorPos(&pt);
 
-		// 2. 记录当前窗口状态
+		// 2. 获取鼠标所在显示器
+		HMONITOR hMonitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+		MONITORINFO mi = { sizeof(mi) };
+		if (!GetMonitorInfo(hMonitor, &mi))
+			return;
+
+		RECT rcMonitor = mi.rcMonitor;
+
+		// 3. 记录当前窗口状态
 		GetWindowPlacement(&m_struOldWndpl);
 
-		// 3. 修改窗口样式，移除标题栏、边框
+		// 4. 修改窗口样式，移除标题栏、边框
 		LONG lStyle = GetWindowLong(m_hWnd, GWL_STYLE);
 		lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_BORDER);
 		SetWindowLong(m_hWnd, GWL_STYLE, lStyle);
 
-		// 4. 隐藏滚动条
+		// 5. 隐藏滚动条
 		ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);  // 隐藏水平和垂直滚动条
 
-		// 5. 重新调整窗口大小并更新
-		SetWindowPos(&CWnd::wndTop, 0, 0, screenWidth, screenHeight, SWP_NOZORDER | SWP_FRAMECHANGED);
+		// 6. 重新调整窗口大小并更新
+		SetWindowPos(&CWnd::wndTop, rcMonitor.left, rcMonitor.top, rcMonitor.right - rcMonitor.left,
+			rcMonitor.bottom - rcMonitor.top, SWP_NOZORDER | SWP_FRAMECHANGED);
 
-		// 6. 标记全屏模式
+		// 7. 标记全屏模式
 		m_bFullScreen = true;
 	}
 }
