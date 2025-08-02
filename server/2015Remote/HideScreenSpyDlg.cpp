@@ -773,11 +773,11 @@ void CHideScreenSpyDlg::SendScaledMouseMessage(MSG* pMsg, bool makeLP) {
 	}
 
     MYMSG msg(*pMsg);
-	auto low = ((LONG)LOWORD(pMsg->lParam)) * m_wZoom;
-	auto high = ((LONG)HIWORD(pMsg->lParam)) * m_hZoom;
+    LONG low = ((LONG)LOWORD(pMsg->lParam)) * m_wZoom;
+    LONG high = ((LONG)HIWORD(pMsg->lParam)) * m_hZoom;
     if(makeLP) msg.lParam = MAKELPARAM(low, high);
-	msg.pt.x = (int)(low + m_rect.left);
-	msg.pt.y = (int)(high + m_rect.top);
+	msg.pt.x = low + m_rect.left;
+	msg.pt.y = high + m_rect.top;
 	SendCommand(msg);
 }
 
