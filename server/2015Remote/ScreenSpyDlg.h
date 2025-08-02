@@ -60,7 +60,6 @@ public:
 	ULONG m_ulVScrollPos;
 	VOID DrawTipString(CString strString);
 
-	HICON  m_hCursor;
 	POINT  m_ClientCursorPos;
 	BYTE m_bCursorIndex;
 	BOOL     m_bIsTraceCursor;
@@ -95,6 +94,7 @@ public:
 	HCURSOR				m_hRemoteCursor = NULL;
 	CRect				m_CRect;
 	double				m_wZoom=1, m_hZoom=1;
+	bool				m_bMouseTracking = false;
 
 	bool Decode(LPBYTE Buffer, int size);
 	void EnterFullScreen();
@@ -106,6 +106,7 @@ public:
 	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+	afx_msg void OnMouseLeave();
 	afx_msg void OnKillFocus(CWnd* pNewWnd);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 

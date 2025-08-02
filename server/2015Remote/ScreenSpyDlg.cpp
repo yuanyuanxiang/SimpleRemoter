@@ -59,7 +59,6 @@ CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, Server* IOCPServer, CONTEXT_OBJECT* C
 	GetSystemDirectory(szFullPath, MAX_PATH);
 	lstrcat(szFullPath, "\\shell32.dll");  //图标
 	m_hIcon = ExtractIcon(THIS_APP->m_hInstance, szFullPath, 17);
-	m_hCursor = LoadCursor(THIS_APP->m_hInstance, MAKEINTRESOURCE(IDC_ARROWS));
 
 	m_bIsFirst = TRUE;
 	m_ulHScrollPos = 0;
@@ -124,6 +123,7 @@ BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialog)
 	ON_WM_LBUTTONUP()
 	ON_WM_MOUSEWHEEL()
 	ON_WM_MOUSEMOVE()
+	ON_WM_MOUSELEAVE()
 	ON_WM_KILLFOCUS()
 	ON_WM_SIZE()
 END_MESSAGE_MAP()
@@ -200,7 +200,8 @@ VOID CScreenSpyDlg::OnClose()
 		ShowWindow(SW_HIDE);
 		return;
 	}
-
+	// 恢复鼠标状态
+	SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)LoadCursor(NULL, IDC_ARROW));
 	DialogBase::OnClose();
 }
 
@@ -826,9 +827,28 @@ BOOL CScreenSpyDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 
 void CScreenSpyDlg::OnMouseMove(UINT nFlags, CPoint point)
 {
+	if (!m_bMouseTracking)
+	{
+		// 第一次进入，开始追踪 WM_MOUSELEAVE
+		TRACKMOUSEEVENT tme = { sizeof(TRACKMOUSEEVENT) };
+		tme.dwFlags = TME_LEAVE;
+		tme.hwndTrack = m_hWnd;
+		TrackMouseEvent(&tme);
+
+		m_bMouseTracking = true;
+		SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
+	}
+
 	CDialog::OnMouseMove(nFlags, point);
 }
 
+void CScreenSpyDlg::OnMouseLeave()
+{
+	CWnd::OnMouseLeave();
+
+	m_bMouseTracking = false;
+	SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
+}
 
 void CScreenSpyDlg::OnKillFocus(CWnd* pNewWnd)
 {
