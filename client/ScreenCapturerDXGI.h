@@ -9,6 +9,7 @@
 #include <d3d11.h>
 
 #pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "dxgi.lib")
 
 // author: ChatGPT 
 // update: 962914132@qq.com
@@ -24,7 +25,7 @@ private:
 public:
 	ScreenCapturerDXGI(BYTE algo, int gop = DEFAULT_GOP, BOOL all = FALSE) : ScreenCapture(32, algo, all) {
 		m_GOP = gop;
-		InitDXGI();
+		InitDXGI(all);
 		Mprintf("Capture screen with DXGI: GOP= %d\n", m_GOP);
 	}
 
@@ -36,26 +37,38 @@ public:
 		SAFE_DELETE_ARRAY(m_RectBuffer);
 	}
 
-	void InitDXGI() {
+	void InitDXGI(BOOL all) {
+		m_iScreenX = 0;
+		m_iScreenY = 0;
 		// 1. 创建 D3D11 设备
 		D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, nullptr, 0, D3D11_SDK_VERSION, &d3dDevice, nullptr, &d3dContext);
-
-		IDXGIDevice * dxgiDevice = nullptr;
-		IDXGIAdapter* dxgiAdapter = nullptr;
+		
+		IDXGIFactory1* pFactory = nullptr;
+		IDXGIAdapter1* dxgiAdapter = nullptr;
 		IDXGIOutput* dxgiOutput = nullptr;
 		IDXGIOutput1* dxgiOutput1 = nullptr;
 
-		do {
-			// 2. 获取 DXGI 设备
-			d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
-			if(!dxgiDevice)break;
+		// 2. 创建工厂
+		CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&pFactory);
+		if (!pFactory) return;
 
-			// 3. 获取 DXGI 适配器
-			dxgiDevice->GetAdapter(&dxgiAdapter);
+		do {
+			// 3. 获取设备
+			static UINT idx = 0;
+			idx = pFactory->EnumAdapters1(idx, &dxgiAdapter) == DXGI_ERROR_NOT_FOUND ? 0 : idx;
+			if (!dxgiAdapter) pFactory->EnumAdapters1(idx, &dxgiAdapter);
 			if (!dxgiAdapter)break;
 
 			// 4. 获取 DXGI 输出（屏幕）
-			dxgiAdapter->EnumOutputs(0, &dxgiOutput);
+			static UINT screen = 0;
+			HRESULT r = dxgiAdapter->EnumOutputs(screen++, &dxgiOutput);
+			if (r == DXGI_ERROR_NOT_FOUND && all) {
+				screen = 0;
+				idx ++;
+				dxgiAdapter->Release();
+				dxgiAdapter = nullptr;
+				continue;
+			}
 			if (!dxgiOutput)break;
 
 			// 5. 获取 DXGI 输出 1
@@ -99,13 +112,15 @@ public:
 			m_FirstBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage + 1];
 			m_NextBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage + 1];
 			m_RectBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage * 2 + 12];
-		} while (false);
+
+			break;
+		} while (true);
 
 		// 释放 DXGI 资源
 		if (dxgiOutput1) dxgiOutput1->Release();
 		if (dxgiOutput) dxgiOutput->Release();
 		if (dxgiAdapter) dxgiAdapter->Release();
-		if (dxgiDevice) dxgiDevice->Release();
+		if (pFactory) pFactory->Release();
 	}
 
 	bool IsInitSucceed() const {
