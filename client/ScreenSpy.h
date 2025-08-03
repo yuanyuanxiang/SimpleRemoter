@@ -22,10 +22,10 @@ public:
 	void Create(HDC desktop, int _x, int _y, int w, int h) {
 		x = _x;
 		y = _y;
-		width = w;
-		height = h;
+		width = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+		height = GetSystemMetrics(SM_CYVIRTUALSCREEN);
 		hDcWindow = CreateCompatibleDC(desktop);
-		hBmpWindow = CreateCompatibleBitmap(desktop, w, h);
+		hBmpWindow = CreateCompatibleBitmap(desktop, width, height);
 	}
 	EnumHwndsPrintData& SetScreenDC(HDC dc) {
 		hDcScreen = dc;
@@ -154,7 +154,7 @@ public:
 
 	static BOOL CALLBACK EnumHwndsPrint(HWND hWnd, LPARAM lParam)
 	{
-		AUTO_TICK_C(50);
+		AUTO_TICK_C(100);
 		if (FALSE == PaintWindow(hWnd, (EnumHwndsPrintData*)lParam)) {
 			char text[_MAX_PATH] = {};
 			GetWindowText(hWnd, text, sizeof(text));

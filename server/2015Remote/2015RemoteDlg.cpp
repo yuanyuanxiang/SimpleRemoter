@@ -3114,7 +3114,8 @@ void CMy2015RemoteDlg::OnToolGenShellcode()
 			_tcscpy_s(buffer, name);
 			PathRemoveExtension(buffer);
 			if (WriteBinaryAsCArray(CString(buffer) + ".c", srcData, srcLen, "Shellcode")) {
-				MessageBox("Shellcode 生成成功! \r\n" + CString(buffer) + ".c", "提示", MB_ICONINFORMATION);
+				MessageBox("Shellcode 生成成功! 请自行编写调用程序。\r\n" + CString(buffer) + ".c", 
+					"提示", MB_ICONINFORMATION);
 			}
 		}
 		SAFE_DELETE_ARRAY(srcData);

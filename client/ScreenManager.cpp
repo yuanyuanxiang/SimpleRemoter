@@ -433,51 +433,52 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
 			case WM_KEYUP:
 				return;
 			case WM_CHAR:
-
 			case WM_KEYDOWN: {
 				m_point = m_lastPoint;
 				hWnd = WindowFromPoint(m_point);
 				break;
 			}
-			case WM_RBUTTONDOWN: {
-				// 记录右键按下时的坐标
-				m_rmouseDown = TRUE;
-				m_rclickPoint = msg->pt;
-				break;
-			}
-			case WM_RBUTTONUP: {
-				m_rmouseDown = FALSE;
-				m_rclickWnd = WindowFromPoint(m_rclickPoint);
-				// 检查是否为系统菜单（如任务栏）
-				char szClass[256];
-				GetClassNameA(m_rclickWnd, szClass, sizeof(szClass));
-				Mprintf("Right click on '%s' %s[%p]\n", szClass, GetTitle(hWnd).c_str(), hWnd);
-				if (strcmp(szClass, "Shell_TrayWnd") == 0) {
-					// 触发系统级右键菜单（任务栏）
-					PostMessage(m_rclickWnd, WM_CONTEXTMENU, (WPARAM)m_rclickWnd,
-						MAKELPARAM(m_rclickPoint.x, m_rclickPoint.y));
-				}
-				else {
-					// 普通窗口的右键菜单
-					if (!PostMessage(m_rclickWnd, WM_RBUTTONUP, msg->wParam,
-						MAKELPARAM(m_rclickPoint.x, m_rclickPoint.y))) {
-						// 附加：模拟键盘按下Shift+F10（备用菜单触发方式）
-						keybd_event(VK_SHIFT, 0, 0, 0);
-						keybd_event(VK_F10, 0, 0, 0);
-						keybd_event(VK_F10, 0, KEYEVENTF_KEYUP, 0);
-						keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
-					}
-				}
-				break;
-			}
 			default:
 			{
+				msg->pt = { LOWORD(msg->lParam), HIWORD(msg->lParam) };
+				m_ScreenSpyObject->PointConversion(msg->pt);
+				msg->lParam = MAKELPARAM(msg->pt.x, msg->pt.y);
+
 				mouseMsg = TRUE;
 				m_point = msg->pt;
 				hWnd = WindowFromPoint(m_point);
 				lastPointCopy = m_lastPoint;
 				m_lastPoint = m_point;
-				if (msg->message == WM_LBUTTONUP) {
+				if (msg->message == WM_RBUTTONDOWN) {
+					// 记录右键按下时的坐标
+					m_rmouseDown = TRUE;
+					m_rclickPoint = msg->pt;
+				}
+				else if (msg->message == WM_RBUTTONUP) {
+					m_rmouseDown = FALSE;
+					m_rclickWnd = WindowFromPoint(m_rclickPoint);
+					// 检查是否为系统菜单（如任务栏）
+					char szClass[256] = {};
+					GetClassNameA(m_rclickWnd, szClass, sizeof(szClass));
+					Mprintf("Right click on '%s' %s[%p]\n", szClass, GetTitle(hWnd).c_str(), hWnd);
+					if (strcmp(szClass, "Shell_TrayWnd") == 0) {
+						// 触发系统级右键菜单（任务栏）
+						PostMessage(m_rclickWnd, WM_CONTEXTMENU, (WPARAM)m_rclickWnd,
+							MAKELPARAM(m_rclickPoint.x, m_rclickPoint.y));
+					}
+					else {
+						// 普通窗口的右键菜单
+						if (!PostMessage(m_rclickWnd, WM_RBUTTONUP, msg->wParam,
+							MAKELPARAM(m_rclickPoint.x, m_rclickPoint.y))) {
+							// 附加：模拟键盘按下Shift+F10（备用菜单触发方式）
+							keybd_event(VK_SHIFT, 0, 0, 0);
+							keybd_event(VK_F10, 0, 0, 0);
+							keybd_event(VK_F10, 0, KEYEVENTF_KEYUP, 0);
+							keybd_event(VK_SHIFT, 0, KEYEVENTF_KEYUP, 0);
+						}
+					}
+				}
+				else if (msg->message == WM_LBUTTONUP) {
 					if (m_rclickWnd && hWnd != m_rclickWnd)
 					{
 						PostMessageA(m_rclickWnd, WM_LBUTTONDOWN, MK_LBUTTON, 0);

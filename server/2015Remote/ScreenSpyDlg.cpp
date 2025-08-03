@@ -168,7 +168,7 @@ BOOL CScreenSpyDlg::OnInitDialog()
 		SysMenu->AppendMenu(MF_SEPARATOR);
 	}
 
-	m_bIsCtrl = FALSE;   //不是控制
+	m_bIsCtrl = THIS_CFG.GetInt("settings", "DXGI") == USING_VIRTUAL;
 	m_bIsTraceCursor = FALSE;  //不是跟踪
 	m_ClientCursorPos.x = 0;
 	m_ClientCursorPos.y = 0;
