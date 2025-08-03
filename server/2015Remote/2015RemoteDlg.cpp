@@ -382,6 +382,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_ONLINE_DELETE, &CMy2015RemoteDlg::OnOnlineDelete)
 	ON_COMMAND(ID_ONLINE_UPDATE, &CMy2015RemoteDlg::OnOnlineUpdate)
 	ON_COMMAND(IDM_ONLINE_ABOUT, &CMy2015RemoteDlg::OnAbout)
+	ON_COMMAND(ID_HELP, &CMy2015RemoteDlg::OnAbout)
 
 	ON_COMMAND(IDM_ONLINE_CMD, &CMy2015RemoteDlg::OnOnlineCmdManager)
 	ON_COMMAND(IDM_ONLINE_PROCESS, &CMy2015RemoteDlg::OnOnlineProcessManager)
@@ -2422,7 +2423,7 @@ LRESULT CMy2015RemoteDlg::OnOpenDrawingBoard(WPARAM wParam, LPARAM lParam)
 
 BOOL CMy2015RemoteDlg::OnHelpInfo(HELPINFO* pHelpInfo)
 {
-	MessageBox("Copyleft (c) FTU 2025", "关于");
+	OnAbout();
 	return TRUE;
 }
 
