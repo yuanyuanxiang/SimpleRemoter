@@ -68,7 +68,7 @@ CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, Server* IOCPServer, CONTEXT_OBJECT* C
 	m_BitmapInfor_Full = (BITMAPINFO *) new BYTE[ulBitmapInforLength];
 	m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapInfor_Full, ulBitmapInforLength, 1);
 
-	m_bIsCtrl = FALSE;
+	m_bIsCtrl = THIS_CFG.GetInt("settings", "DXGI") == USING_VIRTUAL;
 	m_bIsTraceCursor = FALSE;
 }
 
