@@ -322,6 +322,23 @@ Release v1.1.4
 * Improve: Showing the client application version
 * fix: Refresh client public IP every one week
 
+**2025.08.08**
+
+Release v1.1.5
+
+This version focuses on improving the remote control experience (especially multi-monitor support and UI behavior), enhancing integration and permission handling, and resolving several critical bugs.
+
+* Feature: Add run client program as admin feature
+* Feature: Integrate frp client with master program
+* Improve: Showing inactive locked client status
+* Clean up: Remove old history releases
+* fix: #176 #177 Desktop control does not work properly
+* Improve: Enter full screen on the current monitor
+* fix: Showing the correct cursor status on window
+* Improve: Support multiple screen desktop monitoring
+* fix: Virtual desktop control support multiple monitor
+* fix: Avoid opening w web page when press F1
+
 
 ---
 

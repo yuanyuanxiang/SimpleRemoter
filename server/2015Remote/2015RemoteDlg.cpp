@@ -1249,7 +1249,6 @@ LRESULT CMy2015RemoteDlg::OnPasswordCheck(WPARAM wParam, LPARAM lParam) {
 			THIS_APP->UpdateMaxConnection(m_nMaxConnection);
 			int tm = THIS_CFG.GetInt("settings", "Notify", 10);
 			THIS_CFG.SetInt("settings", "Notify", tm - 1);
-			MessageBox("请向管理员申请口令。", "提示", MB_ICONWARNING);
 		}
 		else {
 			m_superPass = dlg.m_str.GetString();
@@ -1610,9 +1609,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail) {
 		const Validation *verify = GetValidation();
 		std::string masterHash = GetMasterHash();
 		if (masterHash != GetPwdHash() && !verify->IsValid()) {
-			MessageBox("此程序已经失效，请联系管理员处理!", "提示", MB_ICONWARNING);
-			OnMainExit();
-			ExitProcess(-1);
+			return false;
 		}
 
 		auto settings = "settings", pwdKey = "Password";
