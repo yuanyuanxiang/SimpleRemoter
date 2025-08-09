@@ -35,4 +35,5 @@ public:
 	CComboBox m_ComboProto;
 	CComboBox m_ComboEncrypt;
 	afx_msg void OnHelpParameters();
+	CComboBox m_ComboCompress;
 };

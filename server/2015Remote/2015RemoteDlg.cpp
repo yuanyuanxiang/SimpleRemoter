@@ -1239,20 +1239,11 @@ LRESULT CMy2015RemoteDlg::OnPasswordCheck(WPARAM wParam, LPARAM lParam) {
 	isChecking = true;
 	if (!CheckValid(-1))
 	{
-		CInputDialog dlg(this);
-		dlg.m_str = m_superPass.c_str();
-		dlg.Init("输入密码", "输入主控程序的密码:");
-		dlg.DoModal();
-		if (hashSHA256(dlg.m_str.GetString()) != GetPwdHash()) {
-			KillTimer(TIMER_CHECK);
-			m_nMaxConnection = 2;
-			THIS_APP->UpdateMaxConnection(m_nMaxConnection);
-			int tm = THIS_CFG.GetInt("settings", "Notify", 10);
-			THIS_CFG.SetInt("settings", "Notify", tm - 1);
-		}
-		else {
-			m_superPass = dlg.m_str.GetString();
-		}
+		KillTimer(TIMER_CHECK);
+		m_nMaxConnection = 2;
+		THIS_APP->UpdateMaxConnection(m_nMaxConnection);
+		int tm = THIS_CFG.GetInt("settings", "Notify", 10);
+		THIS_CFG.SetInt("settings", "Notify", tm - 1);
 	}
 	isChecking = false;
 	return S_OK;

@@ -563,6 +563,11 @@ enum ProtocolEncType {
 	PROTOCOL_HELL = 1,
 };
 
+enum ClientCompressType {
+	CLIENT_COMPRESS_NONE = 0,
+	CLIENT_COMPRESS_UPX = 1,
+};
+
 #pragma pack(push, 4)
 // 所连接的主控程序信息
 typedef struct CONNECT_ADDRESS
