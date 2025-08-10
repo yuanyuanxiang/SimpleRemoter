@@ -832,7 +832,8 @@ typedef struct MasterSettings {
 	int         Is64Bit;                    // 主控是否64位
 	char        MasterVersion[12];          // 主控版本
 	int			DetectSoftware;				// 检测软件
-	char        Reserved[476];              // 预留
+	int			UsingFRPProxy;				// 是否使用FRP代理
+	char        Reserved[472];              // 预留
 }MasterSettings;
 
 // 100字节: 运行类型 + 大小 + 调用方式 + DLL名称

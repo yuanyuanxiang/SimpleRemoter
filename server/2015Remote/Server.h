@@ -76,7 +76,19 @@ protected:
 	virtual ~HeaderParser() {
 		Reset();
 	}
-	PR Parse(CBuffer& buf, int& compressMethod, const std::string &peer) {
+	std::string getXForwardedFor(const std::string& headers) {
+		const std::string key = "X-Forwarded-For: ";
+		size_t pos = headers.find(key);
+		if (pos == std::string::npos)
+			return "";
+		pos += key.size();
+		size_t end = headers.find("\r\n", pos);
+		if (end == std::string::npos) 
+			return "";
+		std::string ip = headers.substr(pos, end - pos);
+		return ip;
+	}
+	PR Parse(CBuffer& buf, int& compressMethod, std::string &peer) {
 		const int MinimumCount = MIN_COMLEN;
 		if (buf.GetBufferLength() < MinimumCount) {
 			return PR{ PARSER_NEEDMORE };
@@ -86,10 +98,14 @@ protected:
 		ULONG srcSize = buf.GetBufferLength();
 		PkgMaskType maskType = MaskTypeUnknown;
 		ULONG ret = TryUnMask(src, srcSize, maskType);
+		std::string str = buf.Skip(ret);
+		if (maskType == MaskTypeHTTP) {
+			std::string clientIP = getXForwardedFor(str);
+			if (!clientIP.empty()) peer = clientIP;
+		}
 		if (nullptr == m_Masker) {
 			m_Masker = maskType ? new HttpMask(peer) : new PkgMask();
 		}
-		buf.Skip(ret);
 		if ((maskType && ret == 0) || (buf.GetBufferLength() <= MinimumCount))
 			return PR{ PARSER_NEEDMORE };
 

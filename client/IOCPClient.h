@@ -111,7 +111,8 @@ typedef BOOL(*TrailCheck)(void);
 class IOCPClient  
 {
 public:
-	IOCPClient(const State& bExit, bool exit_while_disconnect = false, int mask=0, int encoder=0);
+	IOCPClient(const State& bExit, bool exit_while_disconnect = false, int mask=0, int encoder=0, 
+		const std::string&pubIP="");
 	virtual ~IOCPClient();
 
 	int SendLoginInfo(const LOGIN_INFOR& logInfo) {
@@ -122,8 +123,17 @@ public:
 	}
 	virtual BOOL ConnectServer(const char* szServerIP, unsigned short uPort);
 
-	BOOL Send2Server(const char* szBuffer, ULONG ulOriginalLength) {
-		return OnServerSending(szBuffer, ulOriginalLength);
+	std::string GetClientIP() const {
+		return m_sLocPublicIP;
+	}
+
+	std::map<std::string, std::string> GetClientIPHeader() const {
+		return m_sLocPublicIP.empty() ? std::map<std::string, std::string>{} : 
+			std::map<std::string, std::string>{ {"X-Forwarded-For", m_sLocPublicIP} };
+	}
+
+	BOOL Send2Server(const char* szBuffer, ULONG ulOriginalLength, PkgMask* mask = NULL) {
+		return OnServerSending(szBuffer, ulOriginalLength, mask);
 	}
 
 	void SetServerAddress(const char* szServerIP, unsigned short uPort) {
@@ -162,10 +172,10 @@ protected:
 	virtual int SendTo(const char* buf, int len, int flags) {
 		return ::send(m_sClientSocket, buf, len, flags);
 	}
-	BOOL OnServerSending(const char* szBuffer, ULONG ulOriginalLength);
+	BOOL OnServerSending(const char* szBuffer, ULONG ulOriginalLength, PkgMask* mask);
 	static DWORD WINAPI WorkThreadProc(LPVOID lParam);
 	VOID OnServerReceiving(CBuffer *m_CompressedBuffer, char* szBuffer, ULONG ulReceivedLength);
-	BOOL SendWithSplit(const char* src, ULONG srcSize, ULONG ulSplitLength, int cmd);
+	BOOL SendWithSplit(const char* src, ULONG srcSize, ULONG ulSplitLength, int cmd, PkgMask* mask);
 
 protected:
 	sockaddr_in			m_ServerAddr;
@@ -190,4 +200,5 @@ protected:
 	bool				m_exit_while_disconnect;
 	PkgMask*			m_masker;
 	BOOL				m_EncoderType;
+	std::string			m_sLocPublicIP;
 };

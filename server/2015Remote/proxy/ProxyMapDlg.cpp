@@ -62,11 +62,7 @@ BOOL CProxyMapDlg::OnInitDialog()
     m_iocpLocal->m_TcpServer->GetListenAddress(ip, len, m_nPort);
 
 	CString strString;
-	sockaddr_in  ClientAddress;
-	memset(&ClientAddress, 0, sizeof(ClientAddress));
-	int iClientAddressLength = sizeof(ClientAddress);
-	BOOL bResult = getpeername(m_ContextObject->sClientSocket, (SOCKADDR*)&ClientAddress, &iClientAddressLength);
-	strString.Format("%s - 代理服务", bResult != INVALID_SOCKET ? inet_ntoa(ClientAddress.sin_addr) : "");
+	strString.Format("%s - 代理服务", m_IPAddress);
 	SetWindowText(strString);
 
     str.Format(_T("SOCKS 代理软件请设置服务器为: <127.0.0.1:%d>\r\n"), m_nPort);

