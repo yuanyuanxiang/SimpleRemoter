@@ -18,14 +18,7 @@
 // ZLIB Ñ¹Ëõ¿â
 #include "zlib/zlib.h"
 
-#if USING_LZ4
-#include "lz4/lz4.h"
-#pragma comment(lib, "lz4/lz4.lib")
-#define C_FAILED(p) (0 == (p))
-#define C_SUCCESS(p) (!C_FAILED(p))
-#define Mcompress(dest, destLen, source, sourceLen) LZ4_compress_default((const char*)source, (char*)dest, sourceLen, *(destLen))
-#define Muncompress(dest, destLen, source, sourceLen) LZ4_decompress_safe((const char*)source, (char*)dest, sourceLen, *(destLen))
-#else // ZSTD
+// ZSTD
 #include "zstd/zstd.h"
 #ifdef _WIN64
 #pragma comment(lib, "zstd/zstd_x64.lib")
@@ -41,7 +34,6 @@
 #else
 #define Mcompress(dest, destLen, source, sourceLen) ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
 #define Muncompress(dest, destLen, source, sourceLen) ZSTD_decompress(dest, *(destLen), source, sourceLen)
-#endif
 #endif
 
 
@@ -142,12 +134,7 @@ public:
 		m_iocpServer(pIOCPServer),
 		CDialog(nIDTemplate, pParent) {
 
-		sockaddr_in  sockAddr;
-		memset(&sockAddr, 0, sizeof(sockAddr));
-		int nSockAddrLen = sizeof(sockaddr_in);
-		BOOL bResult = getpeername(m_ContextObject->sClientSocket, (SOCKADDR*)&sockAddr, &nSockAddrLen);
-
-		m_IPAddress = bResult != INVALID_SOCKET ? inet_ntoa(sockAddr.sin_addr) : "";
+		m_IPAddress = pContext->GetPeerName().c_str();
 		m_hIcon = nIcon > 0 ? LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(nIcon)) : NULL;
 	}
 	virtual ~CDialogBase(){}

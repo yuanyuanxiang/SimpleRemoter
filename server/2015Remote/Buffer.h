@@ -86,7 +86,7 @@ public:
 	BYTE GetBYTE(ULONG ulPos);
 	BOOL CopyBuffer(PVOID pDst, ULONG nLen, ULONG ulPos);
 	ULONG RemoveCompletedBuffer(ULONG ulLength);
-	void Skip(ULONG ulPos);
+	std::string Skip(ULONG ulPos);
 
 protected:
 	PBYTE	m_Base;

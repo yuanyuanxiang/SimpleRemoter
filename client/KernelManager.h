@@ -21,9 +21,9 @@
 #include "LoginServer.h"
 
 // 根据配置决定采用什么通讯协议
-IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, bool exit_while_disconnect = false);
+IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, const std::string& publicIP, bool exit_while_disconnect = false);
 
-ThreadInfo* CreateKB(CONNECT_ADDRESS* conn, State& bExit);
+ThreadInfo* CreateKB(CONNECT_ADDRESS* conn, State& bExit, const std::string& publicIP);
 
 class ActivityWindow {
 public:

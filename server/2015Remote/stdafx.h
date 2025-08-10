@@ -5,12 +5,8 @@
 
 #pragma once
 
-//  «∑Ò π”√LZ4
-#define USING_LZ4 0
-#if !USING_LZ4
 #define USING_ZSTD 1
 #define USING_CTX 0
-#endif
 
 #ifndef _SECURE_ATL
 #define _SECURE_ATL 1

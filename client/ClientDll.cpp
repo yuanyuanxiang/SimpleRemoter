@@ -495,8 +495,10 @@ DWORD WINAPI StartClient(LPVOID lParam)
 		// The main ClientApp.
 		settings.SetServer(list[0].c_str(), settings.ServerPort());
 	}
+	iniFile cfg(CLIENT_PATH);
+	std::string pubIP = cfg.GetStr("settings", "public_ip", "");
 	State& bExit(app.g_bExit);
-	IOCPClient  *ClientObject = NewNetClient(&settings, bExit);
+	IOCPClient  *ClientObject = NewNetClient(&settings, bExit, pubIP);
 	if (nullptr == ClientObject) return -1;
 	CKernelManager* Manager = nullptr;
 
@@ -510,7 +512,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
 	}
 
 	app.SetThreadRun(TRUE);
-	ThreadInfo* kb = CreateKB(&settings, bExit);
+	ThreadInfo* kb = CreateKB(&settings, bExit, pubIP);
 	while (app.m_bIsRunning(&app))
 	{
 		ULONGLONG dwTickCount = GetTickCount64();

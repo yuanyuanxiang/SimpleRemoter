@@ -18,7 +18,8 @@ CProxyManager::CProxyManager(ISocketBase* pClient, int n, void* user) : CManager
     m_nSend = 0;
     Threads = 0;
     BYTE cmd = COMMAND_PROXY;
-    Send(&cmd, 1);
+    HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
+    pClient->Send2Server((char*)&cmd, 1, &mask);
     Mprintf("CProxyManager create: %p\n", this);
 }
 
@@ -41,13 +42,6 @@ CProxyManager::~CProxyManager()
     Wait();
     DeleteCriticalSection(&m_cs);
     Mprintf("CProxyManager destroy: %p\n", this);
-}
-
-int CProxyManager::Send(LPBYTE lpData, UINT nSize)
-{
-    if (!m_bUse) return 0;
-    int ret = CManager::Send(lpData, nSize);
-    return ret;
 }
 
 void CProxyManager::SendConnectResult(LPBYTE lpBuffer, DWORD ip, USHORT port)

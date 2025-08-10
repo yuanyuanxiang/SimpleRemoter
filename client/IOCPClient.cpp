@@ -23,14 +23,6 @@ inline int WSAGetLastError() { return -1; }
 #define Z_FAILED(p) (Z_OK != (p))
 #define Z_SUCCESS(p) (!Z_FAILED(p))
 #else
-#if USING_LZ4
-#include "lz4/lz4.h"
-#pragma comment(lib, "lz4/lz4.lib")
-#define Z_FAILED(p) (0 == (p))
-#define Z_SUCCESS(p) (!Z_FAILED(p))
-#define compress(dest, destLen, source, sourceLen) LZ4_compress_default((const char*)source, (char*)dest, sourceLen, *(destLen))
-#define uncompress(dest, destLen, source, sourceLen) LZ4_decompress_safe((const char*)source, (char*)dest, sourceLen, *(destLen))
-#else
 #include "zstd/zstd.h"
 #ifdef _WIN64
 #pragma comment(lib, "zstd/zstd_x64.lib")
@@ -46,7 +38,6 @@ inline int WSAGetLastError() { return -1; }
 #else
 #define compress(dest, destLen, source, sourceLen) ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
 #define uncompress(dest, destLen, source, sourceLen) ZSTD_decompress(dest, *(destLen), source, sourceLen)
-#endif
 #endif
 #endif
 
@@ -96,12 +87,14 @@ VOID IOCPClient::setManagerCallBack(void* Manager,  DataProcessCB dataProcess)
 }
 
 
-IOCPClient::IOCPClient(const State&bExit, bool exit_while_disconnect, int mask, int encoder) : g_bExit(bExit)
+IOCPClient::IOCPClient(const State&bExit, bool exit_while_disconnect, int mask, int encoder, 
+	const std::string& pubIP) : g_bExit(bExit)
 {
+	m_sLocPublicIP = pubIP;
 	m_ServerAddr = {};
 	m_nHostPort = 0;
 	m_Manager = NULL;
-	m_masker = mask ? new HttpMask("example.com") : new PkgMask();
+	m_masker = mask ? new HttpMask(DEFAULT_HOST) : new PkgMask();
 	auto enc = GetHeaderEncoder(HeaderEncType(time(nullptr) % HeaderEncNum));
 	m_EncoderType = encoder;
 	m_Encoder = encoder ? new HellEncoder(enc, new XOREncoder16()) : new ProtocolEncoder();
@@ -379,7 +372,9 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
 			// UnMask
 			char* src = (char*)m_CompressedBuffer->GetBuffer();
 			ULONG srcSize = m_CompressedBuffer->GetBufferLength();
-			ULONG ret = m_masker->UnMask(src, srcSize);
+			PkgMaskType maskType = MaskTypeUnknown;
+			ULONG ret = TryUnMask(src, srcSize, maskType);
+			// ULONG ret = m_masker->UnMask(src, srcSize);
 			m_CompressedBuffer->Skip(ret);
 			if (m_CompressedBuffer->GetBufferLength() <= HDR_LENGTH)
 				break;
@@ -449,7 +444,7 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
 
 // 向server发送数据，压缩操作比较耗时。
 // 关闭压缩开关时，SendWithSplit比较耗时。
-BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  //Hello
+BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength, PkgMask* mask)  //Hello
 {
 	AUTO_TICK(50);
 	assert (ulOriginalLength > 0);
@@ -462,8 +457,6 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  
 		//destLen = 448
 #if USING_ZLIB
 		unsigned long	ulCompressedLength = (double)ulOriginalLength * 1.001  + 12;
-#elif USING_LZ4
-		unsigned long	ulCompressedLength = LZ4_compressBound(ulOriginalLength);
 #else
 		unsigned long	ulCompressedLength = ZSTD_compressBound(ulOriginalLength);
 #endif
@@ -495,20 +488,23 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength)  
 		if (CompressedBuffer != buf) delete [] CompressedBuffer;
 
 		// 分块发送
-		return SendWithSplit((char*)m_WriteBuffer.GetBuffer(), m_WriteBuffer.GetBufferLength(), MAX_SEND_BUFFER, cmd);
+		return SendWithSplit((char*)m_WriteBuffer.GetBuffer(), m_WriteBuffer.GetBufferLength(), MAX_SEND_BUFFER, cmd, mask);
 	}
 }
 
 //  5    2   //  2  2  1
-BOOL IOCPClient::SendWithSplit(const char* src, ULONG srcSize, ULONG ulSplitLength, int cmd)
+BOOL IOCPClient::SendWithSplit(const char* src, ULONG srcSize, ULONG ulSplitLength, int cmd, PkgMask* mask)
 {
 	if (src == nullptr || srcSize == 0 || ulSplitLength == 0)
 		return FALSE;
 	// Mask
 	char* szBuffer = nullptr;
 	ULONG ulLength = 0;
-	m_masker->Mask(szBuffer, ulLength, (char*)src, srcSize, cmd);
-
+	(mask && srcSize <= ulSplitLength) ? mask->SetServer(m_sCurIP)->Mask(szBuffer, ulLength, (char*)src, srcSize, cmd) :
+		m_masker->Mask(szBuffer, ulLength, (char*)src, srcSize, cmd);
+	if(szBuffer != src && srcSize > ulSplitLength){
+		Mprintf("SendWithSplit: %d bytes large packet may causes issues.\n", srcSize);
+	}
 	AUTO_TICK(25);
 	bool         isFail = false;
 	int			 iReturn = 0;   //真正发送了多少

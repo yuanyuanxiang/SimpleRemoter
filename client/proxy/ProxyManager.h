@@ -9,7 +9,6 @@ public:
     CProxyManager(ISocketBase* pClient, int n = 0, void* user = nullptr);
     virtual ~CProxyManager();
     virtual void OnReceive(PBYTE lpBuffer, ULONG nSize);
-    int Send(LPBYTE lpData, UINT nSize);
     void Disconnect(DWORD index);
     void SendConnectResult(LPBYTE lpBuffer, DWORD ip, USHORT port);
     static DWORD __stdcall SocksThread(LPVOID lparam);

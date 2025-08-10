@@ -589,12 +589,8 @@ BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOr
 				break;
 			}
 			bool usingZstd = ContextObject->CompressMethod == COMPRESS_ZSTD;
-#if USING_LZ4
-			unsigned long	ulCompressedLength = LZ4_compressBound(ulOriginalLength);
-#else
 			unsigned long	ulCompressedLength = usingZstd ? 
 				ZSTD_compressBound(ulOriginalLength) : (double)ulOriginalLength * 1.001 + 12;
-#endif
 			BYTE			buf[1024];
 			LPBYTE			CompressedBuffer = ulCompressedLength>1024 ? new BYTE[ulCompressedLength]:buf;
 			Buffer tmp(szBuffer, ulOriginalLength); szBuffer = tmp.Buf();

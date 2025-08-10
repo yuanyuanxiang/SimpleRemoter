@@ -26,8 +26,9 @@ CTalkManager::CTalkManager(IOCPClient* ClientObject, int n, void* user):CManager
 	m_hInstance = HINSTANCE(user);
 	g_Event = 0;
 	memset(g_Buffer, 0, sizeof(g_Buffer));
-	BYTE	bToken = TOKEN_TALK_START;   
-	m_ClientObject->Send2Server((char*)&bToken, 1);
+	BYTE	bToken = TOKEN_TALK_START;
+	HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
+	m_ClientObject->Send2Server((char*)&bToken, 1, &mask);
 	WaitForDialogOpen();
 	Mprintf("Talk ππ‘Ï\n");
 }

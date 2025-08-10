@@ -186,16 +186,17 @@ ULONG CBuffer::GetBufferLength() // 获得有效数据长度
 	return len;
 }
 
-void CBuffer::Skip(ULONG ulPos) {
+std::string CBuffer::Skip(ULONG ulPos) {
 	if (ulPos == 0)
-		return;
+		return "";
 
 	EnterCriticalSection(&m_cs);
-
+	std::string ret(m_Base, m_Base + ulPos);
 	MoveMemory(m_Base, m_Base + ulPos, m_ulMaxLength - ulPos);
 	m_Ptr -= ulPos;
 
 	LeaveCriticalSection(&m_cs);
+	return ret;
 }
 
 // 此函数不是多线程安全的. 只在远程桌面使用了.

