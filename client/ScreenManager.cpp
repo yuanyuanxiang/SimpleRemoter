@@ -232,6 +232,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 					s0 = (s0 <= sleep*4) ? s0*alpha : s0;
 					c1 = 0;
 #ifdef _DEBUG
+					if (1000./s0>1.0)
 					Mprintf("[+]SendScreen Span= %dms, s0= %f, fps= %f\n", span, s0, 1000./s0);
 #endif
 				}
@@ -241,6 +242,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 					s0 = (s0 >= sleep/4) ? s0/alpha : s0;
 					c2 = 0;
 #ifdef _DEBUG
+					if (1000./s0<20.0)
 					Mprintf("[-]SendScreen Span= %dms, s0= %f, fps= %f\n", span, s0, 1000./s0);
 #endif
 				}

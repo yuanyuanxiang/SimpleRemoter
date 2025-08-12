@@ -162,6 +162,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\common\ikcp.c" />
+    <ClCompile Include="..\common\zstd_wrapper.c" />
     <ClCompile Include="..\server\2015Remote\pwd_gen.cpp" />
     <ClCompile Include="Audio.cpp" />
     <ClCompile Include="AudioManager.cpp" />
@@ -196,6 +197,7 @@
   <ItemGroup>
     <ClInclude Include="..\common\ikcp.h" />
     <ClInclude Include="..\common\location.h" />
+    <ClInclude Include="..\common\zstd_wrapper.h" />
     <ClInclude Include="..\server\2015Remote\pwd_gen.h" />
     <ClInclude Include="Audio.h" />
     <ClInclude Include="AudioManager.h" />
