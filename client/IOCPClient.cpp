@@ -23,7 +23,7 @@ inline int WSAGetLastError() { return -1; }
 #define Z_FAILED(p) (Z_OK != (p))
 #define Z_SUCCESS(p) (!Z_FAILED(p))
 #else
-#include "zstd/zstd.h"
+#include "common/zstd_wrapper.h"
 #ifdef _WIN64
 #pragma comment(lib, "zstd/zstd_x64.lib")
 #else
@@ -31,9 +31,9 @@ inline int WSAGetLastError() { return -1; }
 #endif
 #define Z_FAILED(p) ZSTD_isError(p)
 #define Z_SUCCESS(p) (!Z_FAILED(p))
-#define ZSTD_CLEVEL 5
+#define ZSTD_CLEVEL ZSTD_CLEVEL_DEFAULT
 #if USING_CTX
-#define compress(dest, destLen, source, sourceLen) ZSTD_compress2(m_Cctx, dest, *(destLen), source, sourceLen)
+#define compress(dest, destLen, source, sourceLen) zstd_compress_auto(m_Cctx, dest, *(destLen), source, sourceLen, 1024*1024)
 #define uncompress(dest, destLen, source, sourceLen) ZSTD_decompressDCtx(m_Dctx, dest, *(destLen), source, sourceLen)
 #else
 #define compress(dest, destLen, source, sourceLen) ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
@@ -114,7 +114,15 @@ IOCPClient::IOCPClient(const State&bExit, bool exit_while_disconnect, int mask, 
 #if USING_CTX
 	m_Cctx = ZSTD_createCCtx();
 	m_Dctx = ZSTD_createDCtx();
+	auto n = ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_nbWorkers, 4);
+	if (Z_FAILED(n)) {
+		ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_nbWorkers, 0);
+	}
 	ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_compressionLevel, ZSTD_CLEVEL);
+	ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_hashLog, 15);
+	ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_chainLog, 16);
+	ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_searchLog, 1);
+	ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_windowLog, 19);
 #endif
 }
 
@@ -446,7 +454,7 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
 // 关闭压缩开关时，SendWithSplit比较耗时。
 BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength, PkgMask* mask)  //Hello
 {
-	AUTO_TICK(50);
+	AUTO_TICK(40);
 	assert (ulOriginalLength > 0);
 	{
 		int cmd = BYTE(szBuffer[0]);
@@ -487,6 +495,7 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength, P
 
 		if (CompressedBuffer != buf) delete [] CompressedBuffer;
 
+		STOP_TICK;
 		// 分块发送
 		return SendWithSplit((char*)m_WriteBuffer.GetBuffer(), m_WriteBuffer.GetBufferLength(), MAX_SEND_BUFFER, cmd, mask);
 	}
@@ -495,6 +504,7 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength, P
 //  5    2   //  2  2  1
 BOOL IOCPClient::SendWithSplit(const char* src, ULONG srcSize, ULONG ulSplitLength, int cmd, PkgMask* mask)
 {
+	AUTO_TICK(50);
 	if (src == nullptr || srcSize == 0 || ulSplitLength == 0)
 		return FALSE;
 	// Mask
@@ -505,7 +515,6 @@ BOOL IOCPClient::SendWithSplit(const char* src, ULONG srcSize, ULONG ulSplitLeng
 	if(szBuffer != src && srcSize > ulSplitLength){
 		Mprintf("SendWithSplit: %d bytes large packet may causes issues.\n", srcSize);
 	}
-	AUTO_TICK(25);
 	bool         isFail = false;
 	int			 iReturn = 0;   //真正发送了多少
 	const char*  Travel = szBuffer;

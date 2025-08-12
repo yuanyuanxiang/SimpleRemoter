@@ -3071,7 +3071,7 @@ int main() {
 */
 void CMy2015RemoteDlg::OnToolGenShellcode()
 {
-	CFileDialog fileDlg(TRUE, _T("dll"), "ServerDll.dll", OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+	CFileDialog fileDlg(TRUE, _T("dll"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		_T("DLL Files (*.dll)|*.dll|All Files (*.*)|*.*||"), AfxGetMainWnd());
 	int ret = 0;
 	try {
