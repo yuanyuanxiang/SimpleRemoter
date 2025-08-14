@@ -6,7 +6,6 @@
 #pragma once
 
 #define USING_ZSTD 1
-#define USING_CTX 0
 
 #ifndef _SECURE_ATL
 #define _SECURE_ATL 1
