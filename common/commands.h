@@ -795,6 +795,13 @@ typedef struct  LOGIN_INFOR
 	}
 }LOGIN_INFOR;
 
+inline uint64_t GetUnixMs() {
+	auto system_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(
+		std::chrono::system_clock::now()
+		);
+	return system_ms.time_since_epoch().count();
+}
+
 // ¹Ì¶¨1024×Ö½Ú
 typedef struct Heartbeat
 {
@@ -808,10 +815,7 @@ typedef struct Heartbeat
 		memset(this, 0, sizeof(Heartbeat));
 	}
 	Heartbeat(const std::string& s, int ping = 0) {
-		auto system_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(
-			std::chrono::system_clock::now()
-			);
-		Time = system_ms.time_since_epoch().count();
+		Time = GetUnixMs();
 		strcpy_s(ActiveWnd, s.c_str());
 		Ping = ping;
 		memset(Reserved, 0, sizeof(Reserved));

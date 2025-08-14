@@ -4,11 +4,6 @@
 #include <WinSock2.h>
 #pragma comment(lib,"ws2_32.lib")
 #include "Server.h"
-
-#if USING_CTX
-#include "zstd/zstd.h"
-#endif
-
 #include <Mstcpip.h>
 
 #define	NC_CLIENT_CONNECT		0x0001
@@ -28,14 +23,12 @@
 #define C_FAILED(p) ZSTD_isError(p)
 #define C_SUCCESS(p) (!C_FAILED(p))
 #define ZSTD_CLEVEL 5
-#if USING_CTX
-#define Mcompress(dest, destLen, source, sourceLen) ZSTD_compress2(m_Cctx, dest, *(destLen), source, sourceLen)
-#define Muncompress(dest, destLen, source, sourceLen) ZSTD_decompressDCtx(m_Dctx, dest, *(destLen), source, sourceLen)
-#else
-#define Mcompress(dest, destLen, source, sourceLen) ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
-#define Muncompress(dest, destLen, source, sourceLen) ZSTD_decompress(dest, *(destLen), source, sourceLen)
-#endif
 
+#define Mcompress(dest, destLen, source, sourceLen) m_Cctx ? ZSTD_compress2(m_Cctx, dest, *(destLen), source, sourceLen):\
+	ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
+
+#define Muncompress(dest, destLen, source, sourceLen) m_Dctx ? ZSTD_decompressDCtx(m_Dctx, dest, *(destLen), source, sourceLen):\
+	ZSTD_decompress(dest, *(destLen), source, sourceLen)
 
 class IOCPServer : public Server
 {
@@ -55,11 +48,6 @@ protected:
 	ULONG				m_ulCurrentThread;
 	ULONG				m_ulBusyThread;
 
-#if USING_CTX
-	ZSTD_CCtx*			m_Cctx; // 压缩上下文
-	ZSTD_DCtx*			m_Dctx; // 解压上下文
-#endif
-
 	ULONG				m_ulKeepLiveTime;
 	pfnNotifyProc		m_NotifyProc;
 	pfnOfflineProc		m_OfflineProc;
@@ -78,9 +66,9 @@ private:
 	VOID RemoveStaleContext(CONTEXT_OBJECT* ContextObject);
 	VOID MoveContextToFreePoolList(CONTEXT_OBJECT* ContextObject);
 	VOID PostRecv(CONTEXT_OBJECT* ContextObject);
-	BOOL HandleIO(IOType PacketFlags, PCONTEXT_OBJECT ContextObject, DWORD dwTrans);
+	BOOL HandleIO(IOType PacketFlags, PCONTEXT_OBJECT ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx);
 	BOOL OnClientInitializing(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans);
-	BOOL OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans);
+	BOOL OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx);
 	VOID OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength);
 	BOOL OnClientPostSending(CONTEXT_OBJECT* ContextObject, ULONG ulCompressedLength);
 	int AddWorkThread(int n) {
@@ -173,6 +161,6 @@ public:
 
 typedef CDialogBase DialogBase;
 
-BOOL ParseReceivedData(CONTEXT_OBJECT* ContextObject, DWORD dwTrans, pfnNotifyProc m_NotifyProc);
+BOOL ParseReceivedData(CONTEXT_OBJECT* ContextObject, DWORD dwTrans, pfnNotifyProc m_NotifyProc, ZSTD_DCtx *ctx=NULL);
 
-BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength);
+BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength, ZSTD_CCtx *ctx=NULL);

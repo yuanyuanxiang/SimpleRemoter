@@ -65,7 +65,7 @@ COLUMNSTRUCT g_Column_Data_Online[g_Column_Count_Online] =
 	{"操作系统",		120	},
 	{"CPU",				80	},
 	{"摄像头",			70	},
-	{"PING",			70	},
+	{"RTT",				70	},
 	{"版本",			90	},
 	{"安装时间",        120 },
 	{"活动窗口",		140 },

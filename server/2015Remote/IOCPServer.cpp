@@ -64,11 +64,6 @@ IOCPServer::IOCPServer(void)
 
 	m_NotifyProc = NULL;
 	m_OfflineProc = NULL;
-#if USING_CTX
-	m_Cctx = ZSTD_createCCtx();
-	m_Dctx = ZSTD_createDCtx();
-	ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_compressionLevel, ZSTD_CLEVEL);
-#endif
 }
 
 void IOCPServer::Destroy() {
@@ -132,11 +127,6 @@ IOCPServer::~IOCPServer(void)
 	m_ulCurrentThread = 0;
 	m_ulBusyThread = 0;
 	m_ulKeepLiveTime = 0;
-
-#if USING_CTX
-	ZSTD_freeCCtx(m_Cctx);
-	ZSTD_freeDCtx(m_Dctx);
-#endif
 
 	WSACleanup();
 }
@@ -304,6 +294,8 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 {
 	Mprintf("======> IOCPServer WorkThreadProc begin \n");
 
+	ZSTD_DCtx* m_Dctx = ZSTD_createDCtx(); // 解压上下文
+
 	IOCPServer* This = (IOCPServer*)(lParam);
 
 	HANDLE   hCompletionPort = This->m_hCompletionPort;
@@ -384,7 +376,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 			{
 				try
 				{   
-					This->HandleIO(OverlappedPlus->m_ioType, ContextObject, dwTrans);  
+					This->HandleIO(OverlappedPlus->m_ioType, ContextObject, dwTrans, m_Dctx);
 
 					ContextObject = NULL;
 				}
@@ -405,13 +397,16 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 	if (n == 0) {
 		Mprintf("======> IOCPServer All WorkThreadProc done\n");
 	}
+
+	ZSTD_freeDCtx(m_Dctx);
+
 	Mprintf("======> IOCPServer WorkThreadProc end \n");
 
 	return 0;
 }
 
 //在工作线程中被调用
-BOOL IOCPServer::HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWORD dwTrans)
+BOOL IOCPServer::HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx)
 {
 	BOOL bRet = FALSE;
 
@@ -421,10 +416,10 @@ BOOL IOCPServer::HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWOR
 		bRet = OnClientInitializing(ContextObject, dwTrans); 
 		break;
 	case IORead:
-		bRet = OnClientReceiving(ContextObject,dwTrans);
+		bRet = OnClientReceiving(ContextObject, dwTrans, ctx);
 		break;
 	case IOWrite:
-		bRet = OnClientPostSending(ContextObject,dwTrans);
+		bRet = OnClientPostSending(ContextObject, dwTrans);
 		break;
 	case IOIdle:
 		Mprintf("=> HandleIO PacketFlags= IOIdle\n");
@@ -443,7 +438,8 @@ BOOL IOCPServer::OnClientInitializing(PCONTEXT_OBJECT  ContextObject, DWORD dwTr
 }
 
 // May be this function should be a member of `CONTEXT_OBJECT`.
-BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyProc m_NotifyProc) {
+BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyProc m_NotifyProc, ZSTD_DCtx* m_Dctx) {
+	AUTO_TICK(40);
 	BOOL ret = 1;
 	try
 	{
@@ -547,9 +543,9 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
 	return ret;
 }
 
-BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans)
+BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx)
 {
-	if (FALSE == ParseReceivedData(ContextObject, dwTrans, m_NotifyProc)) {
+	if (FALSE == ParseReceivedData(ContextObject, dwTrans, m_NotifyProc, ctx)) {
 		RemoveStaleContext(ContextObject);
 		return FALSE;
 	}
@@ -559,7 +555,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 	return TRUE;
 }
 
-BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength) {
+BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength, ZSTD_CCtx* m_Cctx) {
 	assert(ContextObject);
 	// 输出服务端所发送的命令
 	int cmd = szBuffer[0];

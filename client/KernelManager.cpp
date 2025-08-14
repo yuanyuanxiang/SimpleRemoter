@@ -56,7 +56,7 @@ CKernelManager::CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, 
 #else
 	m_settings = { 0 };
 #endif
-	m_nNetPing = -1;
+	m_nNetPing = {};
 	m_hKeyboard = kb;
 }
 
@@ -521,10 +521,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		if (ulLength > 8) {
 			uint64_t n = 0;
 			memcpy(&n, szBuffer + 1, sizeof(uint64_t));
-			auto system_ms = std::chrono::time_point_cast<std::chrono::milliseconds>(
-				std::chrono::system_clock::now()
-				);
-			m_nNetPing = int((system_ms.time_since_epoch().count() - n) / 2);
+			m_nNetPing.update_from_sample(GetUnixMs() - n);
 		}
 		break;
 	case CMD_MASTERSETTING:
