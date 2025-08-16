@@ -156,59 +156,7 @@ DWORD WaitForMultipleHandlesEx(
 
 #if _CONSOLE
 
-//提升权限
-void DebugPrivilege()
-{
-	HANDLE hToken = NULL;
-	//打开当前进程的访问令牌
-	int hRet = OpenProcessToken(GetCurrentProcess(), TOKEN_ALL_ACCESS, &hToken);
-
-	if (hRet)
-	{
-		TOKEN_PRIVILEGES tp;
-		tp.PrivilegeCount = 1;
-		//取得描述权限的LUID
-		LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &tp.Privileges[0].Luid);
-		tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-		//调整访问令牌的权限
-		AdjustTokenPrivileges(hToken, FALSE, &tp, sizeof(tp), NULL, NULL);
-
-		CloseHandle(hToken);
-	}
-}
-
-/**
-* @brief 设置本身开机自启动
-* @param[in] *sPath 注册表的路径
-* @param[in] *sNmae 注册表项名称
-* @return 返回注册结果
-* @details Win7 64位机器上测试结果表明，注册项在：\n
-* HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run
-* @note 首次运行需要以管理员权限运行，才能向注册表写入开机启动项
-*/
-BOOL SetSelfStart(const char* sPath, const char* sNmae)
-{
-	DebugPrivilege();
-
-	// 写入的注册表路径
-#define REGEDIT_PATH "Software\\Microsoft\\Windows\\CurrentVersion\\Run\\"
-
-	// 在注册表中写入启动信息
-	HKEY hKey = NULL;
-	LONG lRet = RegOpenKeyExA(HKEY_LOCAL_MACHINE, REGEDIT_PATH, 0, KEY_ALL_ACCESS, &hKey);
-
-	// 判断是否成功
-	if (lRet != ERROR_SUCCESS)
-		return FALSE;
-
-	lRet = RegSetValueExA(hKey, sNmae, 0, REG_SZ, (const BYTE*)sPath, strlen(sPath) + 1);
-
-	// 关闭注册表
-	RegCloseKey(hKey);
-
-	// 判断是否成功
-	return lRet == ERROR_SUCCESS;
-}
+#include "auto_start.h"
 
 // 隐藏控制台
 // 参看：https://blog.csdn.net/lijia11080117/article/details/44916647

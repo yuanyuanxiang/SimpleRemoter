@@ -211,6 +211,7 @@
     <ClInclude Include="..\server\2015Remote\pwd_gen.h" />
     <ClInclude Include="Audio.h" />
     <ClInclude Include="AudioManager.h" />
+    <ClInclude Include="auto_start.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CaptureVideo.h" />
     <ClInclude Include="Common.h" />
