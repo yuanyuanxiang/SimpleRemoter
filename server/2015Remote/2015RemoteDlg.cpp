@@ -674,6 +674,12 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 }
 
 LRESULT CMy2015RemoteDlg::OnShowMessage(WPARAM wParam, LPARAM lParam) {
+	if (wParam && !lParam) {
+		CString* text = (CString*)wParam;
+		ShowMessage("提示信息", *text);
+		delete text;
+		return S_OK;
+	}
 	std::string pwd = THIS_CFG.GetStr("settings", "Password");
 	if (pwd.empty())
 		ShowMessage("授权提醒", "程序可能有使用限制，请联系管理员请求授权");
@@ -691,6 +697,7 @@ LRESULT CMy2015RemoteDlg::OnShowMessage(WPARAM wParam, LPARAM lParam) {
 
 VOID CMy2015RemoteDlg::ShowMessage(CString strType, CString strMsg)
 {
+	AUTO_TICK(200);
 	CTime Timer = CTime::GetCurrentTime();
 	CString strTime= Timer.Format("%H:%M:%S");
 
@@ -899,6 +906,7 @@ bool IsFunctionReallyHooked(const char* dllName, const char* funcName)
 
 BOOL CMy2015RemoteDlg::OnInitDialog()
 {
+	AUTO_TICK(500);
 	CDialogEx::OnInitDialog();
 
 	if (!IsPwdHashValid()) {
@@ -1003,10 +1011,6 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 		m_nMaxConnection = nMaxConnection <= 0 ? 10000 : nMaxConnection;
 	}
 	const std::string method = THIS_CFG.GetStr("settings", "UDPOption", "0");
-	if (!Activate(nPort, m_nMaxConnection, method)){
-		OnCancel();
-		return FALSE;
-	}
 	int m = atoi(THIS_CFG.GetStr("settings", "ReportInterval", "5").c_str());
 	int n = THIS_CFG.GetInt("settings", "SoftwareDetect");
 	int usingFRP = master.empty() ? 0 : THIS_CFG.GetInt("frp", "UseFrp");
@@ -1031,23 +1035,36 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 #else
 	SetTimer(TIMER_CHECK, max(1, tm) * 60 * 1000, NULL);
 #endif
-	IPConverter cvt;
-	CString tip = !ip.empty() && ip != cvt.getPublicIP() ? 
-		CString(ip.c_str()) + " 必须是\"公网IP\"或反向代理服务器IP":
-		"请设置\"公网IP\"，或使用反向代理服务器的IP";
-	ShowMessage("使用提示", tip);
 
-#ifdef _WIN64
-	if (usingFRP) {
-		m_hFRPThread = CreateThread(NULL, 0, StartFrpClient, this, NULL, NULL);
+	m_hFRPThread = CreateThread(NULL, 0, StartFrpClient, this, NULL, NULL);
+
+	// 最后启动SOCKET
+	if (!Activate(nPort, m_nMaxConnection, method)) {
+		OnCancel();
+		return FALSE;
 	}
-#endif
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
 DWORD WINAPI CMy2015RemoteDlg::StartFrpClient(LPVOID param){
 	CMy2015RemoteDlg* This = (CMy2015RemoteDlg*)param;
+	IPConverter cvt;
+	std::string ip = THIS_CFG.GetStr("settings", "master", "");
+	CString tip = !ip.empty() && ip != cvt.getPublicIP() ?
+		CString(ip.c_str()) + " 必须是\"公网IP\"或反向代理服务器IP" :
+		"请设置\"公网IP\"，或使用反向代理服务器的IP";
+	This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CString(tip), NULL);
+	int usingFRP = 0;
+#ifdef _WIN64
+	usingFRP = ip.empty() ? 0 : THIS_CFG.GetInt("frp", "UseFrp");
+#endif
+	if (!usingFRP) {
+		CloseHandle(This->m_hFRPThread);
+		This->m_hFRPThread = NULL;
+		return 0x20250820;
+	}
+
 	Mprintf("[FRP] Proxy thread start running\n");
 
 	do 
@@ -1830,6 +1847,7 @@ std::vector<std::string> splitByNewline(const std::string& input) {
 
 BOOL CMy2015RemoteDlg::Activate(const std::string& nPort,int nMaxConnection, const std::string& method)
 {
+	AUTO_TICK(200);
 	UINT ret = 0;
 	if ( (ret = THIS_APP->StartServer(NotifyProc, OfflineProc, nPort, nMaxConnection, method)) !=0 )
 	{

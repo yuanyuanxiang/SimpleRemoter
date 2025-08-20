@@ -183,22 +183,28 @@ public:
 
 	// 获取公网IP, 获取失败返回空
 	std::string getPublicIP() {
+		clock_t t = clock();
 		HINTERNET hInternet, hConnect;
 		DWORD bytesRead;
 		char buffer[1024] = { 0 };
 
 		hInternet = InternetOpen("Mozilla/5.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
-		if (!hInternet) return "";
+		if (!hInternet) {
+			Mprintf("getPublicIP failed cost %d ms.\n", clock() - t);
+			return "";
+		}
 
 		hConnect = InternetOpenUrl(hInternet, "https://api.ipify.org", NULL, 0, INTERNET_FLAG_RELOAD | INTERNET_FLAG_SECURE, 0);
 		if (!hConnect) {
 			InternetCloseHandle(hInternet);
+			Mprintf("getPublicIP failed cost %d ms.\n", clock() - t);
 			return "";
 		}
 
 		InternetReadFile(hConnect, buffer, sizeof(buffer) - 1, &bytesRead);
 		InternetCloseHandle(hConnect);
 		InternetCloseHandle(hInternet);
+		Mprintf("getPublicIP succeed cost %d ms.\n", clock() - t);
 
 		return std::string(buffer);
 	}
