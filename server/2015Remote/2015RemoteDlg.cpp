@@ -302,6 +302,28 @@ std::vector<DllInfo*> ReadAllDllFilesWindows(const std::string& dirPath) {
 	return result;
 }
 
+std::string GetParentDir()
+{
+	char exePath[MAX_PATH];
+	GetModuleFileNameA(NULL, exePath, MAX_PATH);
+
+	std::string path(exePath);
+
+	// 找到最后一个反斜杠，得到程序目录
+	size_t pos = path.find_last_of("\\/");
+	if (pos != std::string::npos) {
+		path = path.substr(0, pos); // 程序目录
+	}
+
+	// 再往上一级
+	pos = path.find_last_of("\\/");
+	if (pos != std::string::npos) {
+		path = path.substr(0, pos);
+	}
+
+	return path;
+}
+
 CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::IDD, pParent)
 {
 	auto s = GetMasterHash();
@@ -342,6 +364,8 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::I
 	GET_FILEPATH(path, "Plugins");
 	m_DllList = ReadAllDllFilesWindows(path);
 	m_tinyDLL = NULL;
+	auto dlls = ReadAllDllFilesWindows(GetParentDir() + "\\Plugins");
+	m_DllList.insert(m_DllList.end(), dlls.begin(), dlls.end());
 }
 
 
@@ -717,15 +741,16 @@ VOID CMy2015RemoteDlg::ShowMessage(CString strType, CString strMsg)
 
 LRESULT CMy2015RemoteDlg::OnShowErrMessage(WPARAM wParam, LPARAM lParam) {
 	CString* text = (CString*)wParam;
-	CString err = *text;
-	delete text;
+	CString* title = (CString*)lParam;
 
 	CTime Timer = CTime::GetCurrentTime();
 	CString strTime = Timer.Format("%H:%M:%S");
 
-	m_CList_Message.InsertItem(0, "操作错误");
+	m_CList_Message.InsertItem(0, title ? *title : "操作错误");
 	m_CList_Message.SetItemText(0, 1, strTime);
-	m_CList_Message.SetItemText(0, 2, err);
+	m_CList_Message.SetItemText(0, 2, text ? *text : "内部错误");
+	delete title;
+	delete text;
 
 	return S_OK;
 }
@@ -1043,6 +1068,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 		OnCancel();
 		return FALSE;
 	}
+	THIS_CFG.SetStr("settings", "MainWnd", std::to_string((uint64_t)GetSafeHwnd()));
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -1919,6 +1945,10 @@ BOOL CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 		}
 		HANDLE handles[2] = { hEvent, g_2015RemoteDlg->m_hExit };
 		DWORD result = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+		if (result == WAIT_FAILED) {
+			DWORD err = GetLastError();
+			Mprintf("NotifyProc WaitForMultipleObjects failed, error=%lu\n", err);
+		}
 	}
 	return TRUE;
 }
@@ -1980,6 +2010,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 	if (isClosed) {
 		return;
 	}
+	clock_t tick = clock();
 	unsigned cmd = ContextObject->InDeCompressedBuffer.GetBYTE(0);
 	unsigned len = ContextObject->InDeCompressedBuffer.GetBufferLen();
 	// 【L】：主机上下线和授权
@@ -2175,6 +2206,10 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 	default: {
 			Mprintf("Receive unknown command '%s' [%d]: Len=%d\n", ContextObject->PeerName.c_str(), cmd, len);
 		}
+	}
+	auto duration = clock() - tick;
+	if (duration > 200) {
+		Mprintf("[%s] Command '%s' [%d] cost %d ms\n", __FUNCTION__, ContextObject->PeerName.c_str(), cmd, duration);
 	}
 }
 
@@ -2840,7 +2875,7 @@ void CMy2015RemoteDlg::OnHelpFeedback()
 
 void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID) {
 	if (m_DllList.size() == 0) {
-		MessageBoxA("请将64位的DLL放于 'Plugins' 目录，再来点击此项菜单。"
+		MessageBoxA("请将64位的DLL放于主控程序的 'Plugins' 目录，再来点击此项菜单。"
 			"\n执行未经测试的代码可能造成程序崩溃。", "提示", MB_ICONINFORMATION);
 		char path[_MAX_PATH];
 		GetModuleFileNameA(NULL, path, _MAX_PATH);
