@@ -6,6 +6,7 @@
 #include "BuildDlg.h"
 #include "afxdialogex.h"
 #include <io.h>
+#include "InputDlg.h"
 
 enum Index
 {
@@ -58,6 +59,7 @@ CBuildDlg::CBuildDlg(CWnd* pParent)
 	: CDialog(CBuildDlg::IDD, pParent)
 	, m_strIP(_T(""))
 	, m_strPort(_T(""))
+	, m_strFindden(FLAG_FINDEN)
 {
 
 }
@@ -85,6 +87,7 @@ BEGIN_MESSAGE_MAP(CBuildDlg, CDialog)
 	ON_BN_CLICKED(IDOK, &CBuildDlg::OnBnClickedOk)
 	ON_CBN_SELCHANGE(IDC_COMBO_EXE, &CBuildDlg::OnCbnSelchangeComboExe)
 	ON_COMMAND(ID_HELP_PARAMETERS, &CBuildDlg::OnHelpParameters)
+	ON_COMMAND(ID_HELP_FINDDEN, &CBuildDlg::OnHelpFindden)
 END_MESSAGE_MAP()
 
 
@@ -154,6 +157,8 @@ void CBuildDlg::OnBnClickedOk()
 	}
 	//////////上线信息//////////////////////
 	CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "", typ, false, DLL_VERSION, 0, startup, HeaderEncV0 };
+	if(m_strFindden.GetLength())
+		memcpy(g_ConnectAddress.szFlag, m_strFindden.GetBuffer(), min(sizeof(g_ConnectAddress.szFlag), m_strFindden.GetLength()));
 	g_ConnectAddress.SetAdminId(GetMasterHash().c_str());
 	g_ConnectAddress.SetServer(m_strIP, atoi(m_strPort));
 	g_ConnectAddress.runningType = m_ComboRunType.GetCurSel();
@@ -354,4 +359,15 @@ void CBuildDlg::OnHelpParameters()
 {
 	CString url = _T("https://github.com/yuanyuanxiang/SimpleRemoter/wiki#生成参数");
 	ShellExecute(NULL, _T("open"), url, NULL, NULL, SW_SHOWNORMAL);
+}
+
+
+void CBuildDlg::OnHelpFindden()
+{
+	CInputDialog dlg(this);
+	dlg.m_str = m_strFindden;
+	dlg.Init("生成标识", "请设置标识信息:");
+	if (dlg.DoModal() == IDOK) {
+		m_strFindden = dlg.m_str;
+	}
 }

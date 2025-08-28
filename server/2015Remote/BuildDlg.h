@@ -36,4 +36,6 @@ public:
 	CComboBox m_ComboEncrypt;
 	afx_msg void OnHelpParameters();
 	CComboBox m_ComboCompress;
+	CString m_strFindden;
+	afx_msg void OnHelpFindden();
 };
