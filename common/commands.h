@@ -566,6 +566,7 @@ enum ProtocolEncType {
 enum ClientCompressType {
 	CLIENT_COMPRESS_NONE = 0,
 	CLIENT_COMPRESS_UPX = 1,
+	CLIENT_COMPRESS_SC = 2,
 };
 
 #pragma pack(push, 4)

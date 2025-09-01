@@ -189,6 +189,8 @@
     <None Include="res\string.ico" />
     <None Include="res\upx.exe" />
     <None Include="res\frpc.dll" />
+    <None Include="..\..\Release\SCLoader.exe" />
+    <None Include="..\..\x64\Release\SCLoader.exe" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\ReadMe.md" />

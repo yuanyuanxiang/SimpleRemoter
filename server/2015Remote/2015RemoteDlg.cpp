@@ -758,14 +758,16 @@ LRESULT CMy2015RemoteDlg::OnShowErrMessage(WPARAM wParam, LPARAM lParam) {
 extern "C" BOOL ConvertToShellcode(LPVOID inBytes, DWORD length, DWORD userFunction, 
 	LPVOID userData, DWORD userLength, DWORD flags, LPSTR * outBytes, DWORD * outLength);
 
-bool MakeShellcode(LPBYTE& compressedBuffer, int& ulTotalSize, LPBYTE originBuffer, int ulOriginalLength) {
+bool MakeShellcode(LPBYTE& compressedBuffer, int& ulTotalSize, LPBYTE originBuffer, int ulOriginalLength, bool align=false) {
 	if (originBuffer[0] == 'M' && originBuffer[1] == 'Z') {
 		LPSTR finalShellcode = NULL;
 		DWORD finalSize;
 		if (!ConvertToShellcode(originBuffer, ulOriginalLength, NULL, NULL, 0, 0x1, &finalShellcode, &finalSize)) {
 			return false;
 		}
-		compressedBuffer = new BYTE[finalSize];
+		int padding = align ? ALIGN16(finalSize) - finalSize : 0;
+		compressedBuffer = new BYTE[finalSize + padding];
+		memset(compressedBuffer + finalSize, 0, padding);
 		ulTotalSize = finalSize;
 
 		memcpy(compressedBuffer, finalShellcode, finalSize);
