@@ -936,6 +936,16 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	AUTO_TICK(500);
 	CDialogEx::OnInitDialog();
 
+	// Grid 容器
+	int size = THIS_CFG.GetInt("settings", "VideoWallSize");
+	size = max(size, 1);
+	if (size > 1) {
+		m_gridDlg = new CGridDialog();
+		m_gridDlg->Create(IDD_GRID_DIALOG, GetDesktopWindow());
+		m_gridDlg->ShowWindow(SW_HIDE);
+		m_gridDlg->SetGrid(size, size);
+	}
+
 	if (!IsPwdHashValid()) {
 		THIS_CFG.SetStr("settings", "superAdmin", "");
 		THIS_CFG.SetStr("settings", "Password", "");
@@ -1366,6 +1376,7 @@ void CMy2015RemoteDlg::Release(){
 		Sleep(20);
 
 	THIS_APP->Destroy();
+	SAFE_DELETE(m_gridDlg);
 	g_2015RemoteDlg = NULL;
 	SetEvent(m_hExit);
 	CloseHandle(m_hExit);

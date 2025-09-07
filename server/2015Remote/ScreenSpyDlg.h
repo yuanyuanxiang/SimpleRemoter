@@ -120,4 +120,5 @@ public:
 	afx_msg void OnPaint();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
+	void OnLButtonDblClk(UINT nFlags, CPoint point);
 };

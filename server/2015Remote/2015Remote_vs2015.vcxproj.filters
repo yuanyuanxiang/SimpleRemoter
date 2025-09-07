@@ -52,6 +52,7 @@
     <ClCompile Include="CDrawingBoard.cpp" />
     <ClCompile Include="IOCPKCPServer.cpp" />
     <ClCompile Include="..\..\common\ikcp.c" />
+    <ClCompile Include="CGridDialog.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
@@ -116,6 +117,7 @@
     <ClInclude Include="CDrawingBoard.h" />
     <ClInclude Include="IOCPKCPServer.h" />
     <ClInclude Include="..\..\common\ikcp.h" />
+    <ClInclude Include="CGridDialog.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />
