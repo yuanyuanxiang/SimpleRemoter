@@ -26,6 +26,7 @@ typedef struct DllInfo {
 //////////////////////////////////////////////////////////////////////////
 #include <unordered_map>
 #include <fstream>
+#include "CGridDialog.h"
 
 enum {
 	MAP_NOTE,
@@ -159,8 +160,19 @@ public:
 	{
 		CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
 		T* Dlg = new T(this, ContextObject->GetServer(), ContextObject);
-		Dlg->Create(id, GetDesktopWindow());
+		BOOL isGrid = id == IDD_DIALOG_SCREEN_SPY;
+		BOOL ok = (isGrid&&m_gridDlg) ? m_gridDlg->HasSlot() : FALSE;
+		Dlg->Create(id, ok ? m_gridDlg : GetDesktopWindow());
 		Dlg->ShowWindow(Show);
+		if (ok) {
+			m_gridDlg->AddChild((CDialog*)Dlg);
+			LONG style = ::GetWindowLong(Dlg->GetSafeHwnd(), GWL_STYLE);
+			style &= ~(WS_CAPTION | WS_SIZEBOX);  // 去掉标题栏和调整大小
+			::SetWindowLong(Dlg->GetSafeHwnd(), GWL_STYLE, style);
+			::SetWindowPos(Dlg->GetSafeHwnd(), nullptr, 0, 0, 0, 0,
+				SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+			m_gridDlg->ShowWindow(isGrid ? SW_SHOWMAXIMIZED : SW_HIDE);
+		}
 
 		ContextObject->hWnd = Dlg->GetSafeHwnd();
 		ContextObject->hDlg = Dlg;
@@ -197,7 +209,7 @@ public:
 
 	CStatusBar m_StatusBar;          //状态条
 	CTrueColorToolBar m_ToolBar;
-
+	CGridDialog * m_gridDlg = NULL;
 	std::vector<DllInfo*> m_DllList;
 	NOTIFYICONDATA  m_Nid;
 	HANDLE m_hExit;

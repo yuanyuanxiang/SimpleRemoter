@@ -7,6 +7,7 @@
 #include "afxdialogex.h"
 #include <imm.h>
 #include <WinUser.h>
+#include "CGridDialog.h"
 
 
 // CScreenSpyDlg 对话框
@@ -126,11 +127,26 @@ BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialog)
 	ON_WM_MOUSELEAVE()
 	ON_WM_KILLFOCUS()
 	ON_WM_SIZE()
+	ON_WM_LBUTTONDBLCLK()
 END_MESSAGE_MAP()
 
 
 // CScreenSpyDlg 消息处理程序
 
+void CScreenSpyDlg::OnLButtonDblClk(UINT nFlags, CPoint point)
+{
+	if (!m_bIsCtrl) {
+		CWnd* parent = GetParent();
+		if (parent) {
+			// 通知父对话框，传递点击点
+			CPoint ptScreen = point;
+			ClientToScreen(&ptScreen);
+			GetParent()->ScreenToClient(&ptScreen);
+			GetParent()->SendMessage(WM_LBUTTONDBLCLK, nFlags, MAKELPARAM(ptScreen.x, ptScreen.y));
+		}
+	}
+	CDialog::OnLButtonDblClk(nFlags, point);
+}
 
 BOOL CScreenSpyDlg::OnInitDialog()
 {
@@ -195,13 +211,19 @@ BOOL CScreenSpyDlg::OnInitDialog()
 VOID CScreenSpyDlg::OnClose()
 {
 	CancelIO();
+	// 恢复鼠标状态
+	SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)LoadCursor(NULL, IDC_ARROW));
+	// 通知父窗口
+	CWnd* parent = GetParent();
+	if (parent)
+		parent->SendMessage(WM_CHILD_CLOSED, (WPARAM)this, 0);
+
 	// 等待数据处理完毕
 	if (IsProcessing()) {
 		ShowWindow(SW_HIDE);
 		return;
 	}
-	// 恢复鼠标状态
-	SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)LoadCursor(NULL, IDC_ARROW));
+
 	DialogBase::OnClose();
 }
 

@@ -61,6 +61,7 @@ void CSettingDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_EDIT_FRP_TOKEN, m_EditFrpToken);
 	DDX_Text(pDX, IDC_EDIT_FRP_TOKEN, m_sFrpToken);
 	DDV_MaxChars(pDX, m_sFrpToken, 24);
+	DDX_Control(pDX, IDC_COMBO_VIDEO_WALL, m_ComboVideoWall);
 }
 
 BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)
@@ -143,6 +144,15 @@ BOOL CSettingDlg::OnInitDialog()
 	m_nFrpPort = THIS_CFG.GetInt("frp", "server_port", 7000);
 	m_sFrpToken = THIS_CFG.GetStr("frp", "token").c_str();
 
+	int size = THIS_CFG.GetInt("settings", "VideoWallSize");
+	m_ComboVideoWall.InsertString(0, "нч");
+	m_ComboVideoWall.InsertString(1, "2 x 2");
+	m_ComboVideoWall.InsertString(2, "3 x 3");
+	m_ComboVideoWall.InsertString(3, "4 x 4");
+	m_ComboVideoWall.InsertString(4, "5 x 5");
+	if (size < 1 || size > 5) size = 1;
+	m_ComboVideoWall.SetCurSel(size-1);
+
 	UpdateData(FALSE);
 
 	return TRUE; 
@@ -173,6 +183,8 @@ void CSettingDlg::OnBnClickedButtonSettingapply()
 	THIS_CFG.SetInt("frp", "UseFrp", frp);
 	THIS_CFG.SetInt("frp", "server_port", m_nFrpPort);
 	THIS_CFG.SetStr("frp", "token", m_sFrpToken.GetString());
+
+	THIS_CFG.SetInt("settings", "VideoWallSize", m_ComboVideoWall.GetCurSel()+1);
 
 	m_ApplyButton.EnableWindow(FALSE);
 	m_ApplyButton.ShowWindow(SW_HIDE);

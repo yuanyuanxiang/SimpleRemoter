@@ -48,4 +48,5 @@ public:
 	int m_nFrpPort;
 	CEdit m_EditFrpToken;
 	CString m_sFrpToken;
+	CComboBox m_ComboVideoWall;
 };
