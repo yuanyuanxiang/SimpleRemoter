@@ -339,6 +339,21 @@ This version focuses on improving the remote control experience (especially mult
 * fix: Virtual desktop control support multiple monitor
 * fix: Avoid opening w web page when press F1
 
+**2025.09.11**
+
+Release v1.1.6
+
+This update adds client compression and build options, supports multiple displays (video wall), improves performance (e.g., multi-threaded compression and RTT), and fixes protocol and injection issues.
+
+* Feature: Support compression option when building client
+* fix: #182 First command using HTTP protocol
+* Improve: Enable zstd multi-thread compression for client
+* Improve: Master using ZSTD_DCtx and using new RTT
+* fix: Improve creating registry and injecting shellcode
+* Improve: getPublicIP may fail and block mater program
+* Feature: Support setting the client building flag
+* Feature: Add client shellcode building option
+* Feature: Supports multiple remote displays (video wall)
 
 ---
 
