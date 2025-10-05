@@ -62,3 +62,24 @@ inline BOOL SetSelfStart(const char* sPath, const char* sNmae)
 	// ÅÐ¶ÏÊÇ·ñ³É¹¦
 	return lRet == ERROR_SUCCESS;
 }
+
+inline BOOL self_del(void)
+{
+	char file[MAX_PATH] = { 0 }, szCmd[MAX_PATH * 2] = { 0 };
+	if (GetModuleFileName(NULL, file, MAX_PATH) == 0)
+		return FALSE;
+
+	sprintf(szCmd, "cmd.exe /C timeout /t 3 /nobreak > Nul & Del /f /q \"%s\"", file);
+
+	STARTUPINFO si = { 0 };
+	PROCESS_INFORMATION pi = { 0 };
+	si.cb = sizeof(si);
+
+	if (CreateProcess(NULL, szCmd, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
+		CloseHandle(pi.hThread);
+		CloseHandle(pi.hProcess);
+		return TRUE;
+	}
+
+	return FALSE;
+}
