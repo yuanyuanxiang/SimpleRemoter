@@ -156,11 +156,13 @@
   <ItemGroup>
     <ClCompile Include="Loader.cpp" />
     <ClCompile Include="MemoryModule.c" />
+    <ClCompile Include="reg_startup.c" />
     <ClCompile Include="test.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="auto_start.h" />
     <ClInclude Include="MemoryModule.h" />
+    <ClInclude Include="reg_startup.h" />
     <ClInclude Include="resource1.h" />
   </ItemGroup>
   <ItemGroup>

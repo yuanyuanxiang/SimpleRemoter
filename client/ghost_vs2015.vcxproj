@@ -193,6 +193,7 @@
     <ClCompile Include="proxy\ProxyManager.cpp" />
     <ClCompile Include="RegisterManager.cpp" />
     <ClCompile Include="RegisterOperation.cpp" />
+    <ClCompile Include="reg_startup.c" />
     <ClCompile Include="SafeThread.cpp" />
     <ClCompile Include="ScreenManager.cpp" />
     <ClCompile Include="ScreenSpy.cpp" />
@@ -232,6 +233,7 @@
     <ClInclude Include="proxy\ProxyManager.h" />
     <ClInclude Include="RegisterManager.h" />
     <ClInclude Include="RegisterOperation.h" />
+    <ClInclude Include="reg_startup.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SafeThread.h" />
     <ClInclude Include="ScreenManager.h" />

