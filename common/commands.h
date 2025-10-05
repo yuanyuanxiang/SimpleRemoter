@@ -838,7 +838,7 @@ typedef struct MasterSettings {
 	char        MasterVersion[12];          // 主控版本
 	int			DetectSoftware;				// 检测软件
 	int			UsingFRPProxy;				// 是否使用FRP代理
-	char        Reserved[472];              // 预留
+	char		WalletAddress[472];			// Wallets
 }MasterSettings;
 
 // 100字节: 运行类型 + 大小 + 调用方式 + DLL名称

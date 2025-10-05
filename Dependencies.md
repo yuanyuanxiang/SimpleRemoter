@@ -14,3 +14,4 @@
 
 - [HPSocket v6.0.3](https://github.com/ldcsaa/HP-Socket)
 - [shrink v0.0.1](https://github.com/yuanyuanxiang/PrivateRemoter/tree/master/shrink)
+- [clip v1.11](https://github.com/dacap/clip)
