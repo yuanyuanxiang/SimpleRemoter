@@ -207,6 +207,7 @@
   <ItemGroup>
     <ClInclude Include="..\common\ikcp.h" />
     <ClInclude Include="..\common\mask.h" />
+    <ClInclude Include="..\common\wallet.h" />
     <ClInclude Include="..\common\zstd_wrapper.h" />
     <ClInclude Include="..\server\2015Remote\pwd_gen.h" />
     <ClInclude Include="Audio.h" />
@@ -214,6 +215,7 @@
     <ClInclude Include="auto_start.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CaptureVideo.h" />
+    <ClInclude Include="clip.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="CursorInfo.h" />
     <ClInclude Include="domain_pool.h" />
