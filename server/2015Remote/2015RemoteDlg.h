@@ -305,4 +305,5 @@ public:
 	afx_msg void OnOnlineRunAsAdmin();
 	afx_msg LRESULT OnShowErrMessage(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnMainWallet();
+	afx_msg void OnToolRcedit();
 };

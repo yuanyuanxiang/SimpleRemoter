@@ -4,6 +4,8 @@
 
 LPBYTE ReadResource(int resourceId, DWORD& dwSize);
 
+std::string ReleaseEXE(int resID, const char* name);
+
 // CBuildDlg ¶Ô»°¿ò
 
 class CBuildDlg : public CDialog

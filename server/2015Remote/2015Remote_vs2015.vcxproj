@@ -247,6 +247,7 @@
     <None Include="res\frpc.dll" />
     <None Include="res\My2015Remote.rc2" />
     <None Include="res\pc.ico" />
+    <None Include="res\rcedit.exe" />
     <None Include="res\string.ico" />
     <None Include="res\upx.exe" />
   </ItemGroup>
@@ -267,6 +268,7 @@
     <ClInclude Include="CGridDialog.h" />
     <ClInclude Include="Chat.h" />
     <ClInclude Include="CPasswordDlg.h" />
+    <ClInclude Include="CRcEditDlg.h" />
     <ClInclude Include="CTextDlg.h" />
     <ClInclude Include="CWalletDlg.h" />
     <ClInclude Include="DateVerify.h" />
@@ -339,6 +341,7 @@
     <ClCompile Include="CGridDialog.cpp" />
     <ClCompile Include="Chat.cpp" />
     <ClCompile Include="CPasswordDlg.cpp" />
+    <ClCompile Include="CRcEditDlg.cpp" />
     <ClCompile Include="CTextDlg.cpp" />
     <ClCompile Include="CWalletDlg.cpp" />
     <ClCompile Include="DecryptDlg.cpp" />
