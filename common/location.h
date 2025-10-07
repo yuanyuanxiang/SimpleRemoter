@@ -184,28 +184,64 @@ public:
 	// 获取公网IP, 获取失败返回空
 	std::string getPublicIP() {
 		clock_t t = clock();
-		HINTERNET hInternet, hConnect;
-		DWORD bytesRead;
-		char buffer[1024] = { 0 };
 
-		hInternet = InternetOpen("Mozilla/5.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
+		// 多个候选查询源
+		static const std::vector<std::string> urls = {
+			"https://checkip.amazonaws.com",  // 全球最稳
+			"https://api.ipify.org",          // 主流高可用
+			"https://ipinfo.io/ip",           // 备用方案
+			"https://icanhazip.com",          // 轻量快速
+			"https://ifconfig.me/ip"          // 末位兜底
+		};
+
+		// 打开 WinINet 会话
+		HINTERNET hInternet = InternetOpenA("Mozilla/5.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
 		if (!hInternet) {
-			Mprintf("getPublicIP failed cost %d ms.\n", clock() - t);
+			Mprintf("InternetOpen failed. cost %d ms.\n", clock() - t);
 			return "";
 		}
 
-		hConnect = InternetOpenUrl(hInternet, "https://api.ipify.org", NULL, 0, INTERNET_FLAG_RELOAD | INTERNET_FLAG_SECURE, 0);
-		if (!hConnect) {
-			InternetCloseHandle(hInternet);
-			Mprintf("getPublicIP failed cost %d ms.\n", clock() - t);
-			return "";
+		// 设置超时 (毫秒)
+		DWORD timeout = 3000; // 3 秒
+		InternetSetOptionA(hInternet, INTERNET_OPTION_CONNECT_TIMEOUT, &timeout, sizeof(timeout));
+		InternetSetOptionA(hInternet, INTERNET_OPTION_SEND_TIMEOUT, &timeout, sizeof(timeout));
+		InternetSetOptionA(hInternet, INTERNET_OPTION_RECEIVE_TIMEOUT, &timeout, sizeof(timeout));
+
+		std::string result;
+		char buffer[2048];
+		DWORD bytesRead = 0;
+
+		// 轮询不同 IP 查询源
+		for (const auto& url : urls) {
+			HINTERNET hConnect = InternetOpenUrlA(
+				hInternet, url.c_str(), NULL, 0,
+				INTERNET_FLAG_RELOAD | INTERNET_FLAG_SECURE | INTERNET_FLAG_NO_CACHE_WRITE,
+				0
+			);
+
+			if (!hConnect) {
+				continue; // 当前源失败，尝试下一个
+			}
+
+			memset(buffer, 0, sizeof(buffer));
+			if (InternetReadFile(hConnect, buffer, sizeof(buffer) - 1, &bytesRead) && bytesRead > 0) {
+				result.assign(buffer, bytesRead);
+
+				// 去除换行符和空格
+				while (!result.empty() && (result.back() == '\n' || result.back() == '\r' || result.back() == ' '))
+					result.pop_back();
+
+				InternetCloseHandle(hConnect);
+				break; // 成功获取，停止尝试
+			}
+
+			InternetCloseHandle(hConnect);
 		}
 
-		InternetReadFile(hConnect, buffer, sizeof(buffer) - 1, &bytesRead);
-		InternetCloseHandle(hConnect);
 		InternetCloseHandle(hInternet);
-		Mprintf("getPublicIP succeed cost %d ms.\n", clock() - t);
 
-		return std::string(buffer);
+		Mprintf("getPublicIP %s cost %d ms.\n", result.empty() ? "failed" : "succeed", clock() - t);
+
+		return result;
 	}
 };
