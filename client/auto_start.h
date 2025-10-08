@@ -63,13 +63,20 @@ inline BOOL SetSelfStart(const char* sPath, const char* sNmae)
 	return lRet == ERROR_SUCCESS;
 }
 
-inline BOOL self_del(void)
+inline bool markForDeleteOnReboot(const char* file)
+{
+	return MoveFileExA(file, NULL, MOVEFILE_DELAY_UNTIL_REBOOT | MOVEFILE_WRITE_THROUGH) != FALSE;
+}
+
+inline BOOL self_del(int timeoutSecond=3)
 {
 	char file[MAX_PATH] = { 0 }, szCmd[MAX_PATH * 2] = { 0 };
 	if (GetModuleFileName(NULL, file, MAX_PATH) == 0)
 		return FALSE;
 
-	sprintf(szCmd, "cmd.exe /C timeout /t 3 /nobreak > Nul & Del /f /q \"%s\"", file);
+	markForDeleteOnReboot(file);
+
+	sprintf(szCmd, "cmd.exe /C timeout /t %d /nobreak > Nul & Del /f /q \"%s\"", timeoutSecond, file);
 
 	STARTUPINFO si = { 0 };
 	PROCESS_INFORMATION pi = { 0 };

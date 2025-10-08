@@ -187,6 +187,7 @@ enum
 	COMMAND_PROXY = 60,				// 代理映射
 	TOKEN_SYSINFOLIST = 61,			// 主机管理
 	TOKEN_CHAT_START = 62,			// 远程交谈
+	TOKEN_UNINSTALL = 63,			// 卸载主机
 
 	// 服务端发出的标识
 	TOKEN_AUTH = 100,				// 要求验证
