@@ -353,6 +353,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::I
 	m_bmOnline[12].LoadBitmap(IDB_BITMAP_ASSIGNTO);
 	m_bmOnline[13].LoadBitmap(IDB_BITMAP_ADDWATCH);
 	m_bmOnline[14].LoadBitmap(IDB_BITMAP_ADMINRUN);
+	m_bmOnline[15].LoadBitmap(IDB_BITMAP_UNINSTALL);
 
 	for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
 		m_ServerDLL[i] = nullptr;
@@ -479,6 +480,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_ONLINE_RUN_AS_ADMIN, &CMy2015RemoteDlg::OnOnlineRunAsAdmin)
 	ON_COMMAND(ID_MAIN_WALLET, &CMy2015RemoteDlg::OnMainWallet)
 	ON_COMMAND(ID_TOOL_RCEDIT, &CMy2015RemoteDlg::OnToolRcedit)
+	ON_COMMAND(ID_ONLINE_UNINSTALL, &CMy2015RemoteDlg::OnOnlineUninstall)
 END_MESSAGE_MAP()
 
 
@@ -1465,6 +1467,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	Menu.SetMenuItemBitmaps(ID_ONLINE_ASSIGN_TO, MF_BYCOMMAND, &m_bmOnline[12], &m_bmOnline[12]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_ADD_WATCH, MF_BYCOMMAND, &m_bmOnline[13], &m_bmOnline[13]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_RUN_AS_ADMIN, MF_BYCOMMAND, &m_bmOnline[14], &m_bmOnline[14]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_UNINSTALL, MF_BYCOMMAND, &m_bmOnline[15], &m_bmOnline[15]);
 
 	std::string masterHash(GetMasterHash());
 	if (GetPwdHash() != masterHash || m_superPass.empty()) {
@@ -3304,4 +3307,29 @@ void CMy2015RemoteDlg::OnToolRcedit()
 {
 	CRcEditDlg dlg;
 	dlg.DoModal();
+}
+
+
+void CMy2015RemoteDlg::OnOnlineUninstall()
+{
+	if (IDYES != MessageBox(_T("确定卸载选定的被控程序吗?"), _T("提示"), MB_ICONQUESTION | MB_YESNO))
+		return;
+
+	BYTE bToken = TOKEN_UNINSTALL;
+	SendSelectedCommand(&bToken, sizeof(BYTE));
+
+	EnterCriticalSection(&m_cs);
+	int iCount = m_CList_Online.GetSelectedCount();
+	for (int i = 0; i < iCount; ++i)
+	{
+		POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+		int iItem = m_CList_Online.GetNextSelectedItem(Pos);
+		CString strIP = m_CList_Online.GetItemText(iItem, ONLINELIST_IP);
+		context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+		m_CList_Online.DeleteItem(iItem);
+		ctx->Destroy();
+		strIP += "断开连接";
+		ShowMessage("操作成功", strIP);
+	}
+	LeaveCriticalSection(&m_cs);
 }

