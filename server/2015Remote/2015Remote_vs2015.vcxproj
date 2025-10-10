@@ -406,6 +406,7 @@
     <Image Include="res\Bitmap\DxgiDesktop.bmp" />
     <Image Include="res\Bitmap\GrayDesktop.bmp" />
     <Image Include="res\Bitmap\note.bmp" />
+    <Image Include="res\Bitmap\PrivateScreen.bmp" />
     <Image Include="res\Bitmap\proxy.bmp" />
     <Image Include="res\Bitmap\remove.bmp" />
     <Image Include="res\Bitmap\Share.bmp" />

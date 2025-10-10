@@ -216,7 +216,7 @@ public:
 	CRITICAL_SECTION m_cs;
 	BOOL       isClosed;
 	CMenu	   m_MainMenu;
-	CBitmap m_bmOnline[16];
+	CBitmap m_bmOnline[17];
 	uint64_t m_superID;
 	enum {
 		STATUS_UNKNOWN = -1,
@@ -307,4 +307,5 @@ public:
 	afx_msg void OnMainWallet();
 	afx_msg void OnToolRcedit();
 	afx_msg void OnOnlineUninstall();
+	afx_msg void OnOnlinePrivateScreen();
 };

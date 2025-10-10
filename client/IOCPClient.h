@@ -19,6 +19,7 @@
 #define NO_AES
 #include "common/encrypt.h"
 #include "SafeThread.h"
+#include "IOCPBase.h"
 
 #define MAX_RECV_BUFFER  1024*32
 #define MAX_SEND_BUFFER  1024*32
@@ -108,7 +109,7 @@ public:
 
 typedef BOOL(*TrailCheck)(void);
 
-class IOCPClient  
+class IOCPClient : public IOCPBase
 {
 public:
 	IOCPClient(const State& bExit, bool exit_while_disconnect = false, int mask=0, int encoder=0, 
