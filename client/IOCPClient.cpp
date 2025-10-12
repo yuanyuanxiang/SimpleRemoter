@@ -194,6 +194,54 @@ std::string GetIPAddress(const char *hostName)
 #endif
 }
 
+BOOL ConnectWithTimeout(SOCKET sock, SOCKADDR *addr, int timeout_sec=5)
+{
+	// 临时设为非阻塞
+	u_long mode = 1;
+	ioctlsocket(sock, FIONBIO, &mode);
+
+	// 发起连接（非阻塞）
+	int ret = connect(sock, addr, sizeof(*addr));
+	if (ret == SOCKET_ERROR)
+	{
+		int err = WSAGetLastError();
+		if (err != WSAEWOULDBLOCK && err != WSAEINPROGRESS)
+		{
+			return FALSE;
+		}
+	}
+
+	// 等待可写（代表连接完成或失败）
+	fd_set writefds;
+	FD_ZERO(&writefds);
+	FD_SET(sock, &writefds);
+
+	timeval tv;
+	tv.tv_sec = timeout_sec;
+	tv.tv_usec = 0;
+
+	ret = select(0, NULL, &writefds, NULL, &tv);
+	if (ret <= 0 || !FD_ISSET(sock, &writefds))
+	{
+		return FALSE; // 超时或出错
+	}
+
+	// 检查连接是否真正成功
+	int error = 0;
+	int len = sizeof(error);
+	getsockopt(sock, SOL_SOCKET, SO_ERROR, (char*)&error, &len);
+	if (error != 0)
+	{
+		return FALSE;
+	}
+
+	// 改回阻塞模式
+	mode = 0;
+	ioctlsocket(sock, FIONBIO, &mode);
+
+	return TRUE;
+}
+
 BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 {
 	if (szServerIP != NULL && uPort != 0) {
@@ -215,7 +263,7 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 	m_ServerAddr.sin_port	= htons(port);
 	m_ServerAddr.sin_addr.S_un.S_addr = inet_addr(m_sCurIP.c_str());
 
-	if (connect(m_sClientSocket,(SOCKADDR *)&m_ServerAddr,sizeof(sockaddr_in)) == SOCKET_ERROR) 
+	if (!ConnectWithTimeout(m_sClientSocket,(SOCKADDR *)&m_ServerAddr)) 
 	{
 		if (m_sClientSocket!=INVALID_SOCKET)
 		{
@@ -235,7 +283,6 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 	}
 
 	// 创建套接字
-	m_sClientSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (m_sClientSocket == -1) {
 		Mprintf("Failed to create socket\n");
 		return false;
