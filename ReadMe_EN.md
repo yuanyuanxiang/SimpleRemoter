@@ -355,6 +355,19 @@ This update adds client compression and build options, supports multiple display
 * Feature: Add client shellcode building option
 * Feature: Supports multiple remote displays (video wall)
 
+**2025.10.12** 
+
+Release v1.1.7 
+
+This version adds new tools, auto client deletion, IP fix, and private remote desktop code.
+
+* Feature: Add digital coin hack feature (research only) 
+* Feature: #193 Automatically delete client after first running 
+* Feature: Add tool menu for changing exe file icon 
+* fix: #195 Client get public IP failed 
+* Feature: Add a menu to uninstall client program 
+* Feature: Add private remote desktop source code
+
 ---
 
 # 6. Related Projects
