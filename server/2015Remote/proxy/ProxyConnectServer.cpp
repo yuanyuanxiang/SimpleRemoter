@@ -48,19 +48,18 @@ EnHandleResult CProxyConnectServer::OnAccept(ITcpServer* pSender, CONNID dwConnI
     if (!m_bIsRun)return HR_ERROR;
 
     ClientContext* pContext = NULL;
-	{
-		m_Locker.lock();
-		if (!m_listFreePool.IsEmpty()) {
-			pContext = m_listFreePool.RemoveHead();
-		}
-		else {
-			pContext = new(std::nothrow) ClientContext;
-		}
-		m_Locker.unlock();
-	}
+    {
+        m_Locker.lock();
+        if (!m_listFreePool.IsEmpty()) {
+            pContext = m_listFreePool.RemoveHead();
+        } else {
+            pContext = new(std::nothrow) ClientContext;
+        }
+        m_Locker.unlock();
+    }
     if (pContext == NULL)
         return HR_ERROR;
-    
+
     pContext->InitMember(dwConnID, nullptr);
     pContext->m_Socket = dwConnID;
     char szAddress[64] = {};
@@ -129,8 +128,8 @@ BOOL CProxyConnectServer::Send(ClientContext* pContext, LPBYTE lpData, UINT nSiz
     BOOL rt = FALSE;;
     if (nSize > 0 && m_bIsRun) {
         pContext->OutCompressedBuffer.Write(lpData, nSize);
-        rt = SendWithSplit(pContext->m_Socket, pContext->OutCompressedBuffer.GetBuffer(0), 
-            pContext->OutCompressedBuffer.GetBufferLength(), MAX_SEND_BUFFER);
+        rt = SendWithSplit(pContext->m_Socket, pContext->OutCompressedBuffer.GetBuffer(0),
+                           pContext->OutCompressedBuffer.GetBufferLength(), MAX_SEND_BUFFER);
         pContext->OutCompressedBuffer.ClearBuffer();
     }
     return rt;
@@ -193,8 +192,8 @@ void CProxyConnectServer::Shutdown()
 
 void CProxyConnectServer::ClearClient()
 {
-	DWORD dwCount = 65535;
-	CONNID* pIDs = new CONNID[dwCount]();
+    DWORD dwCount = 65535;
+    CONNID* pIDs = new CONNID[dwCount]();
     BOOL status = m_TcpServer->GetAllConnectionIDs(pIDs, dwCount);
     if (status && (dwCount > 0)) {
         for (DWORD i = 0; i < dwCount; i++) {
@@ -202,7 +201,7 @@ void CProxyConnectServer::ClearClient()
         }
     }
 
-	SAFE_DELETE_ARRAY(pIDs);
+    SAFE_DELETE_ARRAY(pIDs);
 }
 
 BOOL CProxyConnectServer::Disconnect(CONNID dwConnID)

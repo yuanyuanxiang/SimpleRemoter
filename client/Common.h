@@ -3,20 +3,21 @@
 #include "IOCPClient.h"
 #include "common/commands.h"
 
-typedef struct _THREAD_ARG_LIST
-{
-	DWORD (WINAPI *StartAddress)(LPVOID lParameter);  
-	LPVOID  lParam;
-	bool	bInteractive; // 是否支持交互桌面  ??
-	HANDLE	hEvent;
-}THREAD_ARG_LIST, *LPTHREAD_ARG_LIST;
+typedef struct _THREAD_ARG_LIST {
+    DWORD (WINAPI *StartAddress)(LPVOID lParameter);
+    LPVOID  lParam;
+    bool	bInteractive; // 是否支持交互桌面  ??
+    HANDLE	hEvent;
+} THREAD_ARG_LIST, *LPTHREAD_ARG_LIST;
 
-typedef struct UserParam
-{
-	BYTE* buffer;
-	int length;
-	~UserParam() { SAFE_DELETE_ARRAY(buffer); }
-}UserParam; 
+typedef struct UserParam {
+    BYTE* buffer;
+    int length;
+    ~UserParam()
+    {
+        SAFE_DELETE_ARRAY(buffer);
+    }
+} UserParam;
 
 DWORD WINAPI ThreadProc(LPVOID lParam);
 DWORD private_desktop(CONNECT_ADDRESS* conn, const State& exit, const std::string& hash, const std::string& hmac);

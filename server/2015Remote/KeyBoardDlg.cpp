@@ -196,11 +196,11 @@ BOOL CKeyBoardDlg::PreTranslateMessage(MSG* pMsg)
 void CKeyBoardDlg::OnClose()
 {
     CancelIO();
-	// 等待数据处理完毕
-	if (IsProcessing()) {
-		ShowWindow(SW_HIDE);
-		return;
-	}
+    // 等待数据处理完毕
+    if (IsProcessing()) {
+        ShowWindow(SW_HIDE);
+        return;
+    }
 
     DialogBase::OnClose();
 }

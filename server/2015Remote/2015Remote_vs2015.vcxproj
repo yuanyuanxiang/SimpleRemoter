@@ -258,6 +258,7 @@
     <ClInclude Include="..\..\common\encrypt.h" />
     <ClInclude Include="..\..\common\ikcp.h" />
     <ClInclude Include="..\..\common\iniFile.h" />
+    <ClInclude Include="..\..\common\obfs.h" />
     <ClInclude Include="2015Remote.h" />
     <ClInclude Include="2015RemoteDlg.h" />
     <ClInclude Include="adapter.h" />

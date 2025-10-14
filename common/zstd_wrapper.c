@@ -6,7 +6,8 @@ size_t zstd_compress_auto(
     void* dst, size_t dstCapacity,
     const void* src, size_t srcSize,
     size_t threshold
-) {
+)
+{
     // 检查输入有效性
     if (!cctx || !dst || !src) {
         return ZSTD_error_GENERIC;
@@ -26,7 +27,7 @@ size_t zstd_compress_auto(
     while (input.pos < input.size) {
         ret = ZSTD_compressStream2(cctx, &output, &input, ZSTD_e_continue);
         if (ZSTD_isError(ret)) break;
-        
+
         // 输出缓冲区已满（理论上不应发生，因 dstCapacity >= ZSTD_compressBound）
         if (output.pos == output.size) {
             return ZSTD_error_dstSize_tooSmall;

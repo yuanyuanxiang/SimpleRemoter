@@ -35,6 +35,17 @@ If you are passionate about researching control programs and find this project u
 
 **Initial Release Date:** January 1, 2019
 
+**Compilation Method:**  
+This project is developed and maintained using **VS2019**, but it can also be successfully compiled with the latest **VS2022** compiler. For details, see [#171](https://github.com/yuanyuanxiang/SimpleRemoter/issues/171).  
+
+The main control program may display garbled text on non-Chinese systems. For solutions, refer to [#157](https://github.com/yuanyuanxiang/SimpleRemoter/issues/157).
+
+**Source code style：**
+
+```cmd
+for /R %F in (*.cpp *.h *.c) do astyle --style=linux "%F"
+```
+
 # 2. Legal Disclaimer
 
 This project is a research-oriented implementation of remote control technology and is intended solely for legal and educational use.  

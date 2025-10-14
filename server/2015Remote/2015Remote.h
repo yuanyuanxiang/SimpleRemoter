@@ -5,7 +5,7 @@
 #pragma once
 
 #ifndef __AFXWIN_H__
-	#error "在包含此文件之前包含“stdafx.h”以生成 PCH 文件"
+#error "在包含此文件之前包含“stdafx.h”以生成 PCH 文件"
 #endif
 
 #include "resource.h"		// 主符号
@@ -18,117 +18,126 @@
 // 有关此类的实现，请参阅 2015Remote.cpp
 //
 
-// ServerPair: 
+// ServerPair:
 // 一对SOCKET服务端，监听端口: 同时监听TCP和UDP.
 class ServerPair
 {
 private:
-	Server* m_tcpServer;
-	Server* m_udpServer;
+    Server* m_tcpServer;
+    Server* m_udpServer;
 public:
-	ServerPair(int method=0) : 
-		m_tcpServer(new IOCPServer), 
-		m_udpServer(method ? (Server*)new IOCPKCPServer : new IOCPUDPServer) {}
-	virtual ~ServerPair() { SAFE_DELETE(m_tcpServer); SAFE_DELETE(m_udpServer); }
+    ServerPair(int method=0) :
+        m_tcpServer(new IOCPServer),
+        m_udpServer(method ? (Server*)new IOCPKCPServer : new IOCPUDPServer) {}
+    virtual ~ServerPair()
+    {
+        SAFE_DELETE(m_tcpServer);
+        SAFE_DELETE(m_udpServer);
+    }
 
-	BOOL StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort) {
-		UINT ret1 = m_tcpServer->StartServer(NotifyProc, OffProc, uPort);
-		if (ret1) MessageBox(NULL, CString("启动TCP服务失败: ") + std::to_string(uPort).c_str() 
-			+ CString("。错误码: ") + std::to_string(ret1).c_str(), "提示", MB_ICONINFORMATION);
-		UINT ret2 = m_udpServer->StartServer(NotifyProc, OffProc, uPort);
-		if (ret2) MessageBox(NULL, CString("启动UDP服务失败: ") + std::to_string(uPort).c_str()
-			+ CString("。错误码: ") + std::to_string(ret2).c_str(), "提示", MB_ICONINFORMATION);
-		return (ret1 == 0 || ret2 == 0);
-	}
+    BOOL StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort)
+    {
+        UINT ret1 = m_tcpServer->StartServer(NotifyProc, OffProc, uPort);
+        if (ret1) MessageBox(NULL, CString("启动TCP服务失败: ") + std::to_string(uPort).c_str()
+                                 + CString("。错误码: ") + std::to_string(ret1).c_str(), "提示", MB_ICONINFORMATION);
+        UINT ret2 = m_udpServer->StartServer(NotifyProc, OffProc, uPort);
+        if (ret2) MessageBox(NULL, CString("启动UDP服务失败: ") + std::to_string(uPort).c_str()
+                                 + CString("。错误码: ") + std::to_string(ret2).c_str(), "提示", MB_ICONINFORMATION);
+        return (ret1 == 0 || ret2 == 0);
+    }
 
-	void UpdateMaxConnection(int maxConn) {
-		if (m_tcpServer) m_tcpServer->UpdateMaxConnection(maxConn);
-		if (m_udpServer) m_udpServer->UpdateMaxConnection(maxConn);
-	}
+    void UpdateMaxConnection(int maxConn)
+    {
+        if (m_tcpServer) m_tcpServer->UpdateMaxConnection(maxConn);
+        if (m_udpServer) m_udpServer->UpdateMaxConnection(maxConn);
+    }
 
-	void Destroy() {
-		if (m_tcpServer) m_tcpServer->Destroy();
-		if (m_udpServer) m_udpServer->Destroy();
-	}
+    void Destroy()
+    {
+        if (m_tcpServer) m_tcpServer->Destroy();
+        if (m_udpServer) m_udpServer->Destroy();
+    }
 
-	void Disconnect(CONTEXT_OBJECT* ctx) {
-		if (m_tcpServer) m_tcpServer->Disconnect(ctx);
-		if (m_udpServer) m_udpServer->Disconnect(ctx);
-	}
+    void Disconnect(CONTEXT_OBJECT* ctx)
+    {
+        if (m_tcpServer) m_tcpServer->Disconnect(ctx);
+        if (m_udpServer) m_udpServer->Disconnect(ctx);
+    }
 };
 
 class CMy2015RemoteApp : public CWinApp
 {
 private:
-	// 配置文件读取器
-	config* m_iniFile = nullptr;
-	// 服务端容器列表
-	std::vector<ServerPair*> m_iocpServer;
-	// 互斥锁
-	HANDLE m_Mutex = nullptr;
+    // 配置文件读取器
+    config* m_iniFile = nullptr;
+    // 服务端容器列表
+    std::vector<ServerPair*> m_iocpServer;
+    // 互斥锁
+    HANDLE m_Mutex = nullptr;
 
 public:
-	CMy2015RemoteApp();
+    CMy2015RemoteApp();
 
-	CImageList m_pImageList_Large;  //系统大图标
-	CImageList m_pImageList_Small;	//系统小图标
+    CImageList m_pImageList_Large;  //系统大图标
+    CImageList m_pImageList_Small;	//系统小图标
 
-	virtual BOOL InitInstance();
+    virtual BOOL InitInstance();
 
-	config* GetCfg() const {
-		return m_iniFile;
-	}
+    config* GetCfg() const
+    {
+        return m_iniFile;
+    }
 
-	// 启动多个服务端，成功返回0
-	// nPort示例: 6543;7543
-	UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, const std::string& uPort, int maxConn, const std::string& method) {
-		bool succeed = false;
-		auto list = StringToVector(uPort, ';');
-		auto methods = StringToVector(method, ';', list.size());
-		for (int i=0; i<list.size(); ++i)
-		{
-			int port = std::atoi(list[i].c_str());
-			auto svr = new ServerPair(atoi(methods[i].c_str()));
-			BOOL ret = svr->StartServer(NotifyProc, OffProc, port);
-			if (ret == FALSE) {
-				SAFE_DELETE(svr);
-				continue;
-			}
-			svr->UpdateMaxConnection(maxConn);
-			succeed = true;
-			m_iocpServer.push_back(svr);
-		}
+    // 启动多个服务端，成功返回0
+    // nPort示例: 6543;7543
+    UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, const std::string& uPort, int maxConn, const std::string& method)
+    {
+        bool succeed = false;
+        auto list = StringToVector(uPort, ';');
+        auto methods = StringToVector(method, ';', list.size());
+        for (int i=0; i<list.size(); ++i) {
+            int port = std::atoi(list[i].c_str());
+            auto svr = new ServerPair(atoi(methods[i].c_str()));
+            BOOL ret = svr->StartServer(NotifyProc, OffProc, port);
+            if (ret == FALSE) {
+                SAFE_DELETE(svr);
+                continue;
+            }
+            svr->UpdateMaxConnection(maxConn);
+            succeed = true;
+            m_iocpServer.push_back(svr);
+        }
 
-		return succeed ? 0 : -1;
-	}
+        return succeed ? 0 : -1;
+    }
 
-	// 释放服务端 SOCKET
-	void Destroy() {
-		for (int i=0; i<m_iocpServer.size(); ++i)
-		{
-			m_iocpServer[i]->Destroy();
-		}
-	}
+    // 释放服务端 SOCKET
+    void Destroy()
+    {
+        for (int i=0; i<m_iocpServer.size(); ++i) {
+            m_iocpServer[i]->Destroy();
+        }
+    }
 
-	// 释放服务端指针
-	void Delete() {
-		for (int i = 0; i < m_iocpServer.size(); ++i)
-		{
-			SAFE_DELETE(m_iocpServer[i]);
-		}
-		m_iocpServer.clear();
-	}
+    // 释放服务端指针
+    void Delete()
+    {
+        for (int i = 0; i < m_iocpServer.size(); ++i) {
+            SAFE_DELETE(m_iocpServer[i]);
+        }
+        m_iocpServer.clear();
+    }
 
-	// 更新最大连接数
-	void UpdateMaxConnection(int maxConn) {
-		for (int i = 0; i < m_iocpServer.size(); ++i)
-		{
-			m_iocpServer[i]->UpdateMaxConnection(maxConn);
-		}
-	}
+    // 更新最大连接数
+    void UpdateMaxConnection(int maxConn)
+    {
+        for (int i = 0; i < m_iocpServer.size(); ++i) {
+            m_iocpServer[i]->UpdateMaxConnection(maxConn);
+        }
+    }
 
-	DECLARE_MESSAGE_MAP()
-	virtual int ExitInstance();
+    DECLARE_MESSAGE_MAP()
+    virtual int ExitInstance();
 };
 
 extern CMy2015RemoteApp theApp;

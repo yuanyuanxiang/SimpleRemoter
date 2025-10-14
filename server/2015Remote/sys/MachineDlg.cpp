@@ -34,7 +34,8 @@ CMachineDlg::CMachineDlg(CWnd* pParent, Server* pIOCPServer, ClientContext* pCon
     m_IPConverter = new IPConverter;
 }
 
-CMachineDlg::~CMachineDlg() {
+CMachineDlg::~CMachineDlg()
+{
     m_bIsClosed = TRUE;
     SAFE_DELETE(m_IPConverter);
     DeleteList();
@@ -42,32 +43,36 @@ CMachineDlg::~CMachineDlg() {
 
 // 如果用`SortItemsEx`函数对列表排序则不需要定义这个结构体,
 // 传递给排序函数的值就是行号.
-class ListItem {
+class ListItem
+{
 public:
     CString* data;
     int len;
     int pid;
-    ListItem(const CListCtrl& list, int idx, int process = 0) {
+    ListItem(const CListCtrl& list, int idx, int process = 0)
+    {
         len = list.GetHeaderCtrl()->GetItemCount();
         data = new CString[len];
         pid = process;
-        for (int i=0; i < len; ++i){
+        for (int i=0; i < len; ++i) {
             data[i] = list.GetItemText(idx, i);
         }
     }
-    void Destroy() {
+    void Destroy()
+    {
         delete [] data;
         delete this;
     }
 protected:
-    ~ListItem(){}
+    ~ListItem() {}
 };
 
-int CALLBACK CMachineDlg::CompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort) {
-	auto* pSortInfo = reinterpret_cast<std::pair<int, bool>*>(lParamSort);
-	int nColumn = pSortInfo->first;
-	bool bAscending = pSortInfo->second;
-	// 排序
+int CALLBACK CMachineDlg::CompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
+{
+    auto* pSortInfo = reinterpret_cast<std::pair<int, bool>*>(lParamSort);
+    int nColumn = pSortInfo->first;
+    bool bAscending = pSortInfo->second;
+    // 排序
     ListItem* it1 = (ListItem*)lParam1, * it2 = (ListItem*)lParam2;
     if (it1 == NULL || it2 == NULL) return 0;
     int n = it1->data[nColumn].Compare(it2->data[nColumn]);
@@ -315,17 +320,17 @@ void CMachineDlg::OnRclickList(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CMachineDlg::OnClose()
 {
-	CancelIO();
+    CancelIO();
     // 等待数据处理完毕
     if (IsProcessing()) {
         ShowWindow(SW_HIDE);
         return;
     }
-	DeleteList();
+    DeleteList();
     if (m_wndStatusBar.GetSafeHwnd())
         m_wndStatusBar.DestroyWindow();
     SAFE_DELETE(m_IPConverter);
-	CDialogBase::OnClose();
+    CDialogBase::OnClose();
 }
 
 void CMachineDlg::reflush()
@@ -363,14 +368,14 @@ LRESULT CMachineDlg::OnShowMessage(WPARAM wParam, LPARAM lParam)
 LRESULT CMachineDlg::OnWaitMessage(WPARAM wParam, LPARAM lParam)
 {
     wParam ? BeginWaitCursor() : EndWaitCursor();
-	return 0;
+    return 0;
 }
 
 void CMachineDlg::DeleteList()
 {
     if (!m_list.GetSafeHwnd()) return;
 
-    for (int i=0, n=m_list.GetItemCount(); i<n; ++i){
+    for (int i=0, n=m_list.GetItemCount(); i<n; ++i) {
         ListItem* item = (ListItem*)m_list.GetItemData(i);
         if(item) item->Destroy();
     }
@@ -440,8 +445,8 @@ void CMachineDlg::ShowProcessList()
         m_list.SetItemText(i, 9, (*is64) ? _T("x64") : _T("x86"));
         // ListItem 为进程ID
         m_list.SetItemData(i, (DWORD_PTR)new ListItem(m_list, i, *lpPID));
-        dwOffset += sizeof(DWORD) * 5 + sizeof(bool) + MAX_PATH * sizeof(char) + lstrlen(strExeFile) * sizeof(char) + 
-            lstrlen(strProcessName) * sizeof(char) + lstrlen(strProcessUser) * sizeof(char) + 6;
+        dwOffset += sizeof(DWORD) * 5 + sizeof(bool) + MAX_PATH * sizeof(char) + lstrlen(strExeFile) * sizeof(char) +
+                    lstrlen(strProcessName) * sizeof(char) + lstrlen(strProcessUser) * sizeof(char) + 6;
     }
 
     str.Format(_T("程序路径 / %d"), i);
@@ -480,8 +485,8 @@ void CMachineDlg::ShowWindowsList()
         m_list.SetItemText(i, 3, m_ibfo.canlook ? _T("显示") : _T("隐藏"));
         str.Format(_T("%d*%d"), m_ibfo.w, m_ibfo.h);
         m_list.SetItemText(i, 4, str);
-		// ListItem 为进程ID
-		m_list.SetItemData(i, (DWORD_PTR)new ListItem(m_list, i, m_ibfo.m_poceessid));
+        // ListItem 为进程ID
+        m_list.SetItemData(i, (DWORD_PTR)new ListItem(m_list, i, m_ibfo.m_poceessid));
         dwOffset += sizeof(WINDOWSINFO);
     }
     str.Format(_T("窗口名称 / %d"), i);
@@ -650,8 +655,8 @@ void CMachineDlg::ShowServiceList()
         m_list.SetItemText(i, 7, serfile);
         m_list.SetItemData(i, (DWORD_PTR)new ListItem(m_list, i));
 
-        dwOffset += lstrlen(DisplayName) + lstrlen(Describe) + lstrlen(serRunway) + lstrlen(serauto) + 
-            lstrlen(Login) + lstrlen(InterActive) + lstrlen(ServiceName) + lstrlen(serfile) + 8;
+        dwOffset += lstrlen(DisplayName) + lstrlen(Describe) + lstrlen(serRunway) + lstrlen(serauto) +
+                    lstrlen(Login) + lstrlen(InterActive) + lstrlen(ServiceName) + lstrlen(serfile) + 8;
     }
     CString strMsgShow;
     if (i <= 0) {
@@ -1432,7 +1437,7 @@ void CMachineDlg::ShowTaskList_menu()
         if (IDOK == dlg->DoModal()) {
             // 计算字符串长度
             len = lstrlen(dlg->m_TaskPath.GetBuffer()) * 2 + lstrlen(dlg->m_TaskNames.GetBuffer()) * 2 + lstrlen(dlg->m_ExePath.GetBuffer()) *
-                2 + lstrlen(dlg->m_Author.GetBuffer()) * 2 + lstrlen(dlg->m_Description.GetBuffer()) * 2 + 12;
+                  2 + lstrlen(dlg->m_Author.GetBuffer()) * 2 + lstrlen(dlg->m_Description.GetBuffer()) * 2 + 12;
             LPBYTE lpBuffer = (LPBYTE)LocalAlloc(LPTR, len);
             if (lpBuffer) {
                 lpBuffer[0] = COMMAND_TASKCREAT;
@@ -1636,8 +1641,8 @@ void CMachineDlg::ShowHostsList_menu()
         HANDLE hFile = INVALID_HANDLE_VALUE;
         DWORD dwSize = 0, dwRead;
         LPBYTE lpBuffer = NULL;
-        CFileDialog dlg(TRUE, _T("*.txt"), NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY, 
-            _T("图片文件(*.txt;*.txt)|*.txt;*.txt| All Files (*.*) |*.*||"), NULL);
+        CFileDialog dlg(TRUE, _T("*.txt"), NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY,
+                        _T("图片文件(*.txt;*.txt)|*.txt;*.txt| All Files (*.*) |*.*||"), NULL);
         dlg.m_ofn.lpstrTitle = _T("选择文件");
 
         if (dlg.DoModal() != IDOK)
@@ -1686,8 +1691,8 @@ CString CMachineDlg::oleTime2Str(double time)
         time_t t = (time_t)(time * 24 * 3600 - 2209190400);
         struct tm tm1;
         localtime_s(&tm1, &t);
-        str.Format(_T("%04d-%02d-%02d %02d:%02d:%02d"), tm1.tm_year + 1900, tm1.tm_mon + 1, 
-            tm1.tm_mday, tm1.tm_hour, tm1.tm_min, tm1.tm_sec);
+        str.Format(_T("%04d-%02d-%02d %02d:%02d:%02d"), tm1.tm_year + 1900, tm1.tm_mon + 1,
+                   tm1.tm_mday, tm1.tm_hour, tm1.tm_min, tm1.tm_sec);
     }
     return str;
 }

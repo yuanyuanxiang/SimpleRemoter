@@ -18,7 +18,7 @@ class CServiceInfoDlg : public CDialog
 public:
     CServiceInfoDlg(CWnd* pParent = NULL);
 
-	ClientContext* m_ContextObject;
+    ClientContext* m_ContextObject;
 
     enum { IDD = IDD_SERVICE_INFO };
     CComboBox	m_combox_runway;

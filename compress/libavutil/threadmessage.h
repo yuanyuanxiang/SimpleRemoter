@@ -75,7 +75,7 @@ int av_thread_message_queue_recv(AVThreadMessageQueue *mq,
  * suspend its operation.
  */
 void av_thread_message_queue_set_err_send(AVThreadMessageQueue *mq,
-                                          int err);
+        int err);
 
 /**
  * Set the receiving error code.
@@ -86,14 +86,14 @@ void av_thread_message_queue_set_err_send(AVThreadMessageQueue *mq,
  * to cause the receiving thread to stop or suspend its operation.
  */
 void av_thread_message_queue_set_err_recv(AVThreadMessageQueue *mq,
-                                          int err);
+        int err);
 
 /**
  * Set the optional free message callback function which will be called if an
  * operation is removing messages from the queue.
  */
 void av_thread_message_queue_set_free_func(AVThreadMessageQueue *mq,
-                                           void (*free_func)(void *msg));
+        void (*free_func)(void *msg));
 
 /**
  * Return the current number of messages in the queue.

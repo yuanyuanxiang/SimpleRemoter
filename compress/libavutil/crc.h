@@ -56,7 +56,7 @@ typedef enum {
     AV_CRC_24_IEEE,
     AV_CRC_8_EBU,
     AV_CRC_MAX,         /*< Not part of public API! Do not use outside libavutil. */
-}AVCRCId;
+} AVCRCId;
 
 /**
  * Initialize a CRC table.

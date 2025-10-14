@@ -10,9 +10,9 @@
 #endif // _MSC_VER > 1000
 
 enum {
-	USING_GDI = 0,
-	USING_DXGI = 1,
-	USING_VIRTUAL = 2,
+    USING_GDI = 0,
+    USING_DXGI = 1,
+    USING_VIRTUAL = 2,
 };
 
 #define ALGORITHM_GRAY 0
@@ -26,61 +26,58 @@ enum {
 class CCursorInfo
 {
 private:
-	LPCTSTR	m_CursorResArray[MAX_CURSOR_TYPE];
-	HCURSOR	m_CursorHandleArray[MAX_CURSOR_TYPE];
+    LPCTSTR	m_CursorResArray[MAX_CURSOR_TYPE];
+    HCURSOR	m_CursorHandleArray[MAX_CURSOR_TYPE];
 
 public:
-	CCursorInfo()
-	{
-		LPCTSTR	CursorResArray[MAX_CURSOR_TYPE] = 
-		{
-			IDC_APPSTARTING,
-			IDC_ARROW,
-			IDC_CROSS,
-			IDC_HAND,
-			IDC_HELP,
-			IDC_IBEAM,
-			IDC_ICON,
-			IDC_NO,
-			IDC_SIZE,
-			IDC_SIZEALL,
-			IDC_SIZENESW,
-			IDC_SIZENS,
-			IDC_SIZENWSE,
-			IDC_SIZEWE,
-			IDC_UPARROW,
-			IDC_WAIT
-		};
+    CCursorInfo()
+    {
+        LPCTSTR	CursorResArray[MAX_CURSOR_TYPE] = {
+            IDC_APPSTARTING,
+            IDC_ARROW,
+            IDC_CROSS,
+            IDC_HAND,
+            IDC_HELP,
+            IDC_IBEAM,
+            IDC_ICON,
+            IDC_NO,
+            IDC_SIZE,
+            IDC_SIZEALL,
+            IDC_SIZENESW,
+            IDC_SIZENS,
+            IDC_SIZENWSE,
+            IDC_SIZEWE,
+            IDC_UPARROW,
+            IDC_WAIT
+        };
 
-		for (int i = 0; i < MAX_CURSOR_TYPE; ++i)
-		{
-			m_CursorResArray[i] = CursorResArray[i];
-			m_CursorHandleArray[i] = LoadCursor(NULL, CursorResArray[i]);
-		}
-	}
+        for (int i = 0; i < MAX_CURSOR_TYPE; ++i) {
+            m_CursorResArray[i] = CursorResArray[i];
+            m_CursorHandleArray[i] = LoadCursor(NULL, CursorResArray[i]);
+        }
+    }
 
-	int getCurrentCursorIndex() const
-	{
-		CURSORINFO	ci;
-		ci.cbSize = sizeof(CURSORINFO);
-		if (!GetCursorInfo(&ci) || ci.flags != CURSOR_SHOWING)
-			return -1;
+    int getCurrentCursorIndex() const
+    {
+        CURSORINFO	ci;
+        ci.cbSize = sizeof(CURSORINFO);
+        if (!GetCursorInfo(&ci) || ci.flags != CURSOR_SHOWING)
+            return -1;
 
-		int i;
-		for (i = 0; i < MAX_CURSOR_TYPE; ++i)
-		{
-			if (ci.hCursor == m_CursorHandleArray[i])
-				break;
-		}
+        int i;
+        for (i = 0; i < MAX_CURSOR_TYPE; ++i) {
+            if (ci.hCursor == m_CursorHandleArray[i])
+                break;
+        }
 
-		int	nIndex = i == MAX_CURSOR_TYPE ? -1 : i;
-		return nIndex;
-	}
+        int	nIndex = i == MAX_CURSOR_TYPE ? -1 : i;
+        return nIndex;
+    }
 
-	HCURSOR getCursorHandle( int nIndex ) const 
-	{
-		return (nIndex >= 0 && nIndex < MAX_CURSOR_TYPE) ? m_CursorHandleArray[nIndex] : NULL;
-	}
+    HCURSOR getCursorHandle( int nIndex ) const
+    {
+        return (nIndex >= 0 && nIndex < MAX_CURSOR_TYPE) ? m_CursorHandleArray[nIndex] : NULL;
+    }
 };
 
 

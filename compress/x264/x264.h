@@ -83,8 +83,7 @@ typedef struct x264_t x264_t;
  * NAL structure and functions
  ****************************************************************************/
 
-enum nal_unit_type_e
-{
+enum nal_unit_type_e {
     NAL_UNKNOWN     = 0,
     NAL_SLICE       = 1,
     NAL_SLICE_DPA   = 2,
@@ -98,8 +97,7 @@ enum nal_unit_type_e
     NAL_FILLER      = 12,
     /* ref_idc == 0 for 6,9,10,11,12 */
 };
-enum nal_priority_e
-{
+enum nal_priority_e {
     NAL_PRIORITY_DISPOSABLE = 0,
     NAL_PRIORITY_LOW        = 1,
     NAL_PRIORITY_HIGH       = 2,
@@ -111,8 +109,7 @@ enum nal_priority_e
  * All data returned in an x264_nal_t, including the data in p_payload, is no longer
  * valid after the next call to x264_encoder_encode.  Thus it must be used or copied
  * before calling x264_encoder_encode or x264_encoder_headers again. */
-typedef struct x264_nal_t
-{
+typedef struct x264_nal_t {
     int i_ref_idc;  /* nal_priority_e */
     int i_type;     /* nal_unit_type_e */
     int b_long_startcode;
@@ -237,11 +234,14 @@ static const char * const x264_overscan_names[] = { "undef", "show", "crop", 0 }
 static const char * const x264_vidformat_names[] = { "component", "pal", "ntsc", "secam", "mac", "undef", 0 };
 static const char * const x264_fullrange_names[] = { "off", "on", 0 };
 static const char * const x264_colorprim_names[] = { "", "bt709", "undef", "", "bt470m", "bt470bg", "smpte170m", "smpte240m", "film", "bt2020", "smpte428",
-                                                     "smpte431", "smpte432", 0 };
+                                                     "smpte431", "smpte432", 0
+                                                   };
 static const char * const x264_transfer_names[] = { "", "bt709", "undef", "", "bt470m", "bt470bg", "smpte170m", "smpte240m", "linear", "log100", "log316",
-                                                    "iec61966-2-4", "bt1361e", "iec61966-2-1", "bt2020-10", "bt2020-12", "smpte2084", "smpte428", "arib-std-b67", 0 };
+                                                    "iec61966-2-4", "bt1361e", "iec61966-2-1", "bt2020-10", "bt2020-12", "smpte2084", "smpte428", "arib-std-b67", 0
+                                                  };
 static const char * const x264_colmatrix_names[] = { "GBR", "bt709", "undef", "", "fcc", "bt470bg", "smpte170m", "smpte240m", "YCgCo", "bt2020nc", "bt2020c",
-                                                     "smpte2085", "chroma-derived-nc", "chroma-derived-c", "ICtCp", 0 };
+                                                     "smpte2085", "chroma-derived-nc", "chroma-derived-c", "ICtCp", 0
+                                                   };
 static const char * const x264_nal_hrd_names[] = { "none", "vbr", "cbr", 0 };
 static const char * const x264_avcintra_flavor_names[] = { "panasonic", "sony", 0 };
 
@@ -298,8 +298,7 @@ static const char * const x264_avcintra_flavor_names[] = { "panasonic", "sony", 
 /* Zones: override ratecontrol or other options for specific sections of the video.
  * See x264_encoder_reconfig() for which options can be changed.
  * If zones overlap, whichever comes later in the list takes precedence. */
-typedef struct x264_zone_t
-{
+typedef struct x264_zone_t {
     int i_start, i_end; /* range of frame numbers */
     int b_force_qp; /* whether to use qp vs bitrate factor */
     int i_qp;
@@ -307,8 +306,7 @@ typedef struct x264_zone_t
     struct x264_param_t *param;
 } x264_zone_t;
 
-typedef struct x264_param_t
-{
+typedef struct x264_param_t {
     /* CPU flags */
     uint32_t    cpu;
     int         i_threads;           /* encode multiple frames in parallel */
@@ -334,8 +332,7 @@ typedef struct x264_param_t
      * will currently generate invalid HRD. */
     int         i_nal_hrd;
 
-    struct
-    {
+    struct {
         /* they will be reduced to be 0 < x <= 65535 and prime */
         int         i_sar_height;
         int         i_sar_width;
@@ -398,8 +395,7 @@ typedef struct x264_param_t
     char        *psz_dump_yuv;  /* filename (in UTF-8) for reconstructed frames */
 
     /* Encoder analyser parameters */
-    struct
-    {
+    struct {
         unsigned int intra;     /* intra partitions */
         unsigned int inter;     /* inter partitions */
 
@@ -435,8 +431,7 @@ typedef struct x264_param_t
     } analyse;
 
     /* Rate control parameters */
-    struct
-    {
+    struct {
         int         i_rc_method;    /* X264_RC_* */
 
         int         i_qp_constant;  /* 0=lossless */
@@ -480,8 +475,7 @@ typedef struct x264_param_t
 
     /* Cropping Rectangle parameters: added to those implicitly defined by
        non-mod16 video resolutions. */
-    struct
-    {
+    struct {
         int i_left;
         int i_top;
         int i_right;
@@ -493,8 +487,7 @@ typedef struct x264_param_t
 
     /* mastering display SEI: Primary and white point chromaticity coordinates
        in 0.00002 increments. Brightness units are 0.0001 cd/m^2. */
-    struct
-    {
+    struct {
         int b_mastering_display;    /* enable writing this SEI */
         int i_green_x;
         int i_green_y;
@@ -509,8 +502,7 @@ typedef struct x264_param_t
     } mastering_display;
 
     /* content light level SEI */
-    struct
-    {
+    struct {
         int b_cll;                  /* enable writing this SEI */
         int i_max_cll;
         int i_max_fall;
@@ -625,8 +617,7 @@ X264_API void x264_nal_encode( x264_t *h, uint8_t *dst, x264_nal_t *nal );
  * H.264 level restriction information
  ****************************************************************************/
 
-typedef struct x264_level_t
-{
+typedef struct x264_level_t {
     uint8_t  level_idc;
     int32_t  mbps;        /* max macroblock processing rate (macroblocks/sec) */
     int32_t  frame_size;  /* max frame size (macroblocks) */
@@ -749,8 +740,7 @@ X264_API int x264_param_apply_profile( x264_param_t *, const char *profile );
  *      there are no restrictions. */
 X264_API extern const int x264_chroma_format;
 
-enum pic_struct_e
-{
+enum pic_struct_e {
     PIC_STRUCT_AUTO              = 0, // automatically decide (default)
     PIC_STRUCT_PROGRESSIVE       = 1, // progressive frame
     // "TOP" and "BOTTOM" are not supported in x264 (PAFF only)
@@ -762,8 +752,7 @@ enum pic_struct_e
     PIC_STRUCT_TRIPLE            = 9, // triple frame
 };
 
-typedef struct x264_hrd_t
-{
+typedef struct x264_hrd_t {
     double cpb_initial_arrival_time;
     double cpb_final_arrival_time;
     double cpb_removal_time;
@@ -780,31 +769,27 @@ typedef struct x264_hrd_t
  * Payloads are written first in order of input, apart from in the case when HRD
  * is enabled where payloads are written after the Buffering Period SEI. */
 
-typedef struct x264_sei_payload_t
-{
+typedef struct x264_sei_payload_t {
     int payload_size;
     int payload_type;
     uint8_t *payload;
 } x264_sei_payload_t;
 
-typedef struct x264_sei_t
-{
+typedef struct x264_sei_t {
     int num_payloads;
     x264_sei_payload_t *payloads;
     /* In: optional callback to free each payload AND x264_sei_payload_t when used. */
     void (*sei_free)( void* );
 } x264_sei_t;
 
-typedef struct x264_image_t
-{
+typedef struct x264_image_t {
     int     i_csp;       /* Colorspace */
     int     i_plane;     /* Number of image planes */
     int     i_stride[4]; /* Strides for each plane */
     uint8_t *plane[4];   /* Pointers to each plane */
 } x264_image_t;
 
-typedef struct x264_image_properties_t
-{
+typedef struct x264_image_properties_t {
     /* All arrays of data here are ordered as follows:
      * each array contains one offset per macroblock, in raster scan order.  In interlaced
      * mode, top-field MBs and bottom-field MBs are interleaved at the row level.
@@ -845,7 +830,7 @@ typedef struct x264_image_properties_t
     void (*mb_info_free)( void* );
 
     /* The macroblock is constant and remains unchanged from the previous frame. */
-    #define X264_MBINFO_CONSTANT   (1U<<0)
+#define X264_MBINFO_CONSTANT   (1U<<0)
     /* More flags may be added in the future. */
 
     /* Out: SSIM of the the frame luma (if x264_param_t.b_ssim is set) */
@@ -859,8 +844,7 @@ typedef struct x264_image_properties_t
     double f_crf_avg;
 } x264_image_properties_t;
 
-typedef struct x264_picture_t
-{
+typedef struct x264_picture_t {
     /* In: force picture type (if not auto)
      *     If x264 encoding parameters are violated in the forcing of picture types,
      *     x264 will correct the input picture type and log a warning.

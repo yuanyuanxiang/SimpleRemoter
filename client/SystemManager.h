@@ -12,20 +12,20 @@
 #include "Manager.h"
 #include "IOCPClient.h"
 
-class CSystemManager : public CManager  
+class CSystemManager : public CManager
 {
 public:
-	CSystemManager(IOCPClient* ClientObject,BOOL bHow, void* user = nullptr);
-	virtual ~CSystemManager();
-	LPBYTE GetProcessList();
-	VOID SendProcessList();
-	BOOL DebugPrivilege(const char *szName, BOOL bEnable);
-	VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
-	VOID KillProcess(LPBYTE szBuffer, UINT ulLength);
-	LPBYTE GetWindowsList();
-	static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
-	void SendWindowsList();
-	void TestWindow(LPBYTE szBuffer);
+    CSystemManager(IOCPClient* ClientObject,BOOL bHow, void* user = nullptr);
+    virtual ~CSystemManager();
+    LPBYTE GetProcessList();
+    VOID SendProcessList();
+    BOOL DebugPrivilege(const char *szName, BOOL bEnable);
+    VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
+    VOID KillProcess(LPBYTE szBuffer, UINT ulLength);
+    LPBYTE GetWindowsList();
+    static BOOL CALLBACK EnumWindowsProc(HWND hWnd, LPARAM lParam);
+    void SendWindowsList();
+    void TestWindow(LPBYTE szBuffer);
 };
 
 #endif // !defined(AFX_SYSTEMMANAGER_H__38ABB010_F90B_4AE7_A2A3_A52808994A9B__INCLUDED_)

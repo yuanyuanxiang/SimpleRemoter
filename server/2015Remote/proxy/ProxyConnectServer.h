@@ -38,10 +38,10 @@ public:
     CTcpPullServerPtr       m_TcpServer;
 
 private:
-	NOTIFYPROC		        m_pNotifyProc;
+    NOTIFYPROC		        m_pNotifyProc;
     void*                   m_pUser;
-	ContextList             m_listFreePool;
-	CLock                   m_Locker;
+    ContextList             m_listFreePool;
+    CLock                   m_Locker;
     int                     m_nPort;			    // 插件端口
     CONNID                  m_IDs[65535];           // 所有连接ID
     LONG                    m_bStop;		        // 端口停止上线控制
