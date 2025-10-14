@@ -14,21 +14,22 @@
 #include "libyuv/basic_types.h"
 
 #ifdef __cplusplus
-namespace libyuv {
+namespace libyuv
+{
 extern "C" {
 #endif
 
 // Supported rotation.
 typedef enum RotationMode {
-  kRotate0 = 0,      // No rotation.
-  kRotate90 = 90,    // Rotate 90 degrees clockwise.
-  kRotate180 = 180,  // Rotate 180 degrees.
-  kRotate270 = 270,  // Rotate 270 degrees clockwise.
+    kRotate0 = 0,      // No rotation.
+    kRotate90 = 90,    // Rotate 90 degrees clockwise.
+    kRotate180 = 180,  // Rotate 180 degrees.
+    kRotate270 = 270,  // Rotate 270 degrees clockwise.
 
-  // Deprecated.
-  kRotateNone = 0,
-  kRotateClockwise = 90,
-  kRotateCounterClockwise = 270,
+    // Deprecated.
+    kRotateNone = 0,
+    kRotateClockwise = 90,
+    kRotateCounterClockwise = 270,
 } RotationModeEnum;
 
 // Rotate I420 frame.

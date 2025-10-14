@@ -40,85 +40,85 @@ extern "C"
 
 class CScreenSpyDlg : public DialogBase
 {
-	DECLARE_DYNAMIC(CScreenSpyDlg)
+    DECLARE_DYNAMIC(CScreenSpyDlg)
 
 public:
-	CScreenSpyDlg(CWnd* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);
-	virtual ~CScreenSpyDlg();
+    CScreenSpyDlg(CWnd* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);
+    virtual ~CScreenSpyDlg();
 
-	VOID SendNext(void);
-	VOID OnReceiveComplete();
-	HDC  m_hFullDC;        
-	HDC  m_hFullMemDC;
-	HBITMAP	m_BitmapHandle;
-	PVOID   m_BitmapData_Full;
-	LPBITMAPINFO m_BitmapInfor_Full;
-	VOID DrawFirstScreen(void);
-	VOID DrawNextScreenDiff(bool keyFrame);
-	BOOL         m_bIsFirst;
-	ULONG m_ulHScrollPos;
-	ULONG m_ulVScrollPos;
-	VOID DrawTipString(CString strString);
+    VOID SendNext(void);
+    VOID OnReceiveComplete();
+    HDC  m_hFullDC;
+    HDC  m_hFullMemDC;
+    HBITMAP	m_BitmapHandle;
+    PVOID   m_BitmapData_Full;
+    LPBITMAPINFO m_BitmapInfor_Full;
+    VOID DrawFirstScreen(void);
+    VOID DrawNextScreenDiff(bool keyFrame);
+    BOOL         m_bIsFirst;
+    ULONG m_ulHScrollPos;
+    ULONG m_ulVScrollPos;
+    VOID DrawTipString(CString strString);
 
-	POINT  m_ClientCursorPos;
-	BYTE m_bCursorIndex;
-	BOOL     m_bIsTraceCursor;
-	CCursorInfo	m_CursorInfo; //自定义的一个系统的光标类
-	VOID SendCommand(const MYMSG* Msg);
-	void SendScaledMouseMessage(MSG* pMsg, bool makeLP);
-	VOID UpdateServerClipboard(char *szBuffer,ULONG ulLength);
-	VOID SendServerClipboard(void);
+    POINT  m_ClientCursorPos;
+    BYTE m_bCursorIndex;
+    BOOL     m_bIsTraceCursor;
+    CCursorInfo	m_CursorInfo; //自定义的一个系统的光标类
+    VOID SendCommand(const MYMSG* Msg);
+    void SendScaledMouseMessage(MSG* pMsg, bool makeLP);
+    VOID UpdateServerClipboard(char *szBuffer,ULONG ulLength);
+    VOID SendServerClipboard(void);
 
-	BOOL  m_bIsCtrl;
-	LPBYTE m_szData;
-	BOOL  m_bSend;
-	ULONG m_ulMsgCount;
-	int m_FrameID;
+    BOOL  m_bIsCtrl;
+    LPBYTE m_szData;
+    BOOL  m_bSend;
+    ULONG m_ulMsgCount;
+    int m_FrameID;
 
-	BOOL SaveSnapshot(void);
-	// 对话框数据
-	enum { IDD = IDD_DIALOG_SCREEN_SPY };
+    BOOL SaveSnapshot(void);
+    // 对话框数据
+    enum { IDD = IDD_DIALOG_SCREEN_SPY };
 
-	BOOL m_bFullScreen;
+    BOOL m_bFullScreen;
 
-	WINDOWPLACEMENT m_struOldWndpl;
+    WINDOWPLACEMENT m_struOldWndpl;
 
-	AVCodec*			m_pCodec;
-	AVCodecContext*		m_pCodecContext;
-	AVPacket			m_AVPacket;
-	AVFrame				m_AVFrame;
+    AVCodec*			m_pCodec;
+    AVCodecContext*		m_pCodecContext;
+    AVPacket			m_AVPacket;
+    AVFrame				m_AVFrame;
 
-	clock_t				m_lastMouseMove; // 鼠标移动时间
-	POINT				m_lastMousePoint;// 上次鼠标位置
-	BOOL				m_bAdaptiveSize = TRUE;
-	HCURSOR				m_hRemoteCursor = NULL;
-	CRect				m_CRect;
-	double				m_wZoom=1, m_hZoom=1;
-	bool				m_bMouseTracking = false;
+    clock_t				m_lastMouseMove; // 鼠标移动时间
+    POINT				m_lastMousePoint;// 上次鼠标位置
+    BOOL				m_bAdaptiveSize = TRUE;
+    HCURSOR				m_hRemoteCursor = NULL;
+    CRect				m_CRect;
+    double				m_wZoom=1, m_hZoom=1;
+    bool				m_bMouseTracking = false;
 
-	bool Decode(LPBYTE Buffer, int size);
-	void EnterFullScreen();
-	bool LeaveFullScreen();
+    bool Decode(LPBYTE Buffer, int size);
+    void EnterFullScreen();
+    bool LeaveFullScreen();
 
-	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
-	afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
-	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
-	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
-	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
-	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
-	afx_msg void OnMouseLeave();
-	afx_msg void OnKillFocus(CWnd* pNewWnd);
-	afx_msg void OnSize(UINT nType, int cx, int cy);
+    afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+    afx_msg void OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar);
+    afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+    afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+    afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+    afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+    afx_msg void OnMouseLeave();
+    afx_msg void OnKillFocus(CWnd* pNewWnd);
+    afx_msg void OnSize(UINT nType, int cx, int cy);
 
 protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 
-	DECLARE_MESSAGE_MAP()
+    DECLARE_MESSAGE_MAP()
 public:
-	virtual BOOL OnInitDialog();
-	afx_msg void OnClose();
-	afx_msg void OnPaint();
-	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
-	virtual BOOL PreTranslateMessage(MSG* pMsg);
-	void OnLButtonDblClk(UINT nFlags, CPoint point);
+    virtual BOOL OnInitDialog();
+    afx_msg void OnClose();
+    afx_msg void OnPaint();
+    afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
+    virtual BOOL PreTranslateMessage(MSG* pMsg);
+    void OnLButtonDblClk(UINT nFlags, CPoint point);
 };

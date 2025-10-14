@@ -122,6 +122,7 @@
     <ClInclude Include="CGridDialog.h" />
     <ClInclude Include="CWalletDlg.h" />
     <ClInclude Include="CRcEditDlg.h" />
+    <ClInclude Include="..\..\common\obfs.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />

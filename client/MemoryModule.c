@@ -41,7 +41,7 @@
 #if _MSC_VER
 // Disable warning about data -> function pointer conversion
 #pragma warning(disable:4055)
- // C4244: conversion from 'uintptr_t' to 'DWORD', possible loss of data.
+// C4244: conversion from 'uintptr_t' to 'DWORD', possible loss of data.
 #pragma warning(error: 4244)
 // C4267: conversion from 'size_t' to 'int', possible loss of data.
 #pragma warning(error: 4267)
@@ -110,22 +110,26 @@ typedef struct {
 #define GET_HEADER_DICTIONARY(module, idx)  &(module)->headers->OptionalHeader.DataDirectory[idx]
 
 static inline uintptr_t
-AlignValueDown(uintptr_t value, uintptr_t alignment) {
+AlignValueDown(uintptr_t value, uintptr_t alignment)
+{
     return value & ~(alignment - 1);
 }
 
 static inline LPVOID
-AlignAddressDown(LPVOID address, uintptr_t alignment) {
+AlignAddressDown(LPVOID address, uintptr_t alignment)
+{
     return (LPVOID) AlignValueDown((uintptr_t) address, alignment);
 }
 
 static inline size_t
-AlignValueUp(size_t value, size_t alignment) {
+AlignValueUp(size_t value, size_t alignment)
+{
     return (value + alignment - 1) & ~(alignment - 1);
 }
 
 static inline void*
-OffsetPointer(void* data, ptrdiff_t offset) {
+OffsetPointer(void* data, ptrdiff_t offset)
+{
     return (void*) ((uintptr_t) data + offset);
 }
 
@@ -138,7 +142,7 @@ OutputLastError(const char *msg)
     LPVOID tmp;
     char *tmpmsg;
     FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-        NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&tmp, 0, NULL);
+                  NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR)&tmp, 0, NULL);
     tmpmsg = (char *)LocalAlloc(LPTR, strlen(msg) + strlen(tmp) + 3);
     sprintf(tmpmsg, "%s: %s", msg, tmp);
     OutputDebugString(tmpmsg);
@@ -163,7 +167,8 @@ FreePointerList(POINTER_LIST *head, CustomFreeFunc freeMemory, void *userdata)
 #endif
 
 static BOOL
-CheckSize(size_t size, size_t expected) {
+CheckSize(size_t size, size_t expected)
+{
     if (size < expected) {
         SetLastError(ERROR_INVALID_DATA);
         return FALSE;
@@ -186,10 +191,10 @@ CopySections(const unsigned char *data, size_t size, PIMAGE_NT_HEADERS old_heade
             section_size = old_headers->OptionalHeader.SectionAlignment;
             if (section_size > 0) {
                 dest = (unsigned char *)module->alloc(codeBase + section->VirtualAddress,
-                    section_size,
-                    MEM_COMMIT,
-                    PAGE_READWRITE,
-                    module->userdata);
+                                                      section_size,
+                                                      MEM_COMMIT,
+                                                      PAGE_READWRITE,
+                                                      module->userdata);
                 if (dest == NULL) {
                     return FALSE;
                 }
@@ -213,10 +218,10 @@ CopySections(const unsigned char *data, size_t size, PIMAGE_NT_HEADERS old_heade
 
         // commit memory block and copy data from dll
         dest = (unsigned char *)module->alloc(codeBase + section->VirtualAddress,
-                            section->SizeOfRawData,
-                            MEM_COMMIT,
-                            PAGE_READWRITE,
-                            module->userdata);
+                                              section->SizeOfRawData,
+                                              MEM_COMMIT,
+                                              PAGE_READWRITE,
+                                              module->userdata);
         if (dest == NULL) {
             return FALSE;
         }
@@ -247,7 +252,8 @@ static int ProtectionFlags[2][2][2] = {
 };
 
 static SIZE_T
-GetRealSectionSize(PMEMORYMODULE module, PIMAGE_SECTION_HEADER section) {
+GetRealSectionSize(PMEMORYMODULE module, PIMAGE_SECTION_HEADER section)
+{
     DWORD size = section->SizeOfRawData;
     if (size == 0) {
         if (section->Characteristics & IMAGE_SCN_CNT_INITIALIZED_DATA) {
@@ -260,7 +266,8 @@ GetRealSectionSize(PMEMORYMODULE module, PIMAGE_SECTION_HEADER section) {
 }
 
 static BOOL
-FinalizeSection(PMEMORYMODULE module, PSECTIONFINALIZEDATA sectionData) {
+FinalizeSection(PMEMORYMODULE module, PSECTIONFINALIZEDATA sectionData)
+{
     DWORD protect, oldProtect;
     BOOL executable;
     BOOL readable;
@@ -400,27 +407,25 @@ PerformBaseRelocation(PMEMORYMODULE module, ptrdiff_t delta)
             // the lower 12 bits define the offset
             int offset = *relInfo & 0xfff;
 
-            switch (type)
-            {
+            switch (type) {
             case IMAGE_REL_BASED_ABSOLUTE:
                 // skip relocation
                 break;
 
             case IMAGE_REL_BASED_HIGHLOW:
                 // change complete 32 bit address
-                {
-                    DWORD *patchAddrHL = (DWORD *) (dest + offset);
-                    *patchAddrHL += (DWORD) delta;
-                }
-                break;
+            {
+                DWORD *patchAddrHL = (DWORD *) (dest + offset);
+                *patchAddrHL += (DWORD) delta;
+            }
+            break;
 
 #ifdef _WIN64
-            case IMAGE_REL_BASED_DIR64:
-                {
-                    ULONGLONG *patchAddr64 = (ULONGLONG *) (dest + offset);
-                    *patchAddr64 += (ULONGLONG) delta;
-                }
-                break;
+            case IMAGE_REL_BASED_DIR64: {
+                ULONGLONG *patchAddr64 = (ULONGLONG *) (dest + offset);
+                *patchAddr64 += (ULONGLONG) delta;
+            }
+            break;
 #endif
 
             default:
@@ -502,14 +507,14 @@ BuildImportTable(PMEMORYMODULE module)
 
 LPVOID MemoryDefaultAlloc(LPVOID address, SIZE_T size, DWORD allocationType, DWORD protect, void* userdata)
 {
-	UNREFERENCED_PARAMETER(userdata);
-	return VirtualAlloc(address, size, allocationType, protect);
+    UNREFERENCED_PARAMETER(userdata);
+    return VirtualAlloc(address, size, allocationType, protect);
 }
 
 BOOL MemoryDefaultFree(LPVOID lpAddress, SIZE_T dwSize, DWORD dwFreeType, void* userdata)
 {
-	UNREFERENCED_PARAMETER(userdata);
-	return VirtualFree(lpAddress, dwSize, dwFreeType);
+    UNREFERENCED_PARAMETER(userdata);
+    return VirtualFree(lpAddress, dwSize, dwFreeType);
 }
 
 HCUSTOMMODULE MemoryDefaultLoadLibrary(LPCSTR filename, void *userdata)
@@ -542,12 +547,12 @@ HMEMORYMODULE MemoryLoadLibrary(const void *data, size_t size)
 }
 
 HMEMORYMODULE MemoryLoadLibraryEx(const void *data, size_t size,
-    CustomAllocFunc allocMemory,
-    CustomFreeFunc freeMemory,
-    CustomLoadLibraryFunc loadLibrary,
-    CustomGetProcAddressFunc getProcAddress,
-    CustomFreeLibraryFunc freeLibrary,
-    void *userdata)
+                                  CustomAllocFunc allocMemory,
+                                  CustomFreeFunc freeMemory,
+                                  CustomLoadLibraryFunc loadLibrary,
+                                  CustomGetProcAddressFunc getProcAddress,
+                                  CustomFreeLibraryFunc freeLibrary,
+                                  void *userdata)
 {
     PMEMORYMODULE result = NULL;
     PIMAGE_DOS_HEADER dos_header;
@@ -620,18 +625,18 @@ HMEMORYMODULE MemoryLoadLibraryEx(const void *data, size_t size,
     // XXX: is it correct to commit the complete memory region at once?
     //      calling DllEntry raises an exception if we don't...
     code = (unsigned char *)allocMemory((LPVOID)(old_header->OptionalHeader.ImageBase),
-        alignedImageSize,
-        MEM_RESERVE | MEM_COMMIT,
-        PAGE_READWRITE,
-        userdata);
+                                        alignedImageSize,
+                                        MEM_RESERVE | MEM_COMMIT,
+                                        PAGE_READWRITE,
+                                        userdata);
 
     if (code == NULL) {
         // try to allocate memory at arbitrary position
         code = (unsigned char *)allocMemory(NULL,
-            alignedImageSize,
-            MEM_RESERVE | MEM_COMMIT,
-            PAGE_READWRITE,
-            userdata);
+                                            alignedImageSize,
+                                            MEM_RESERVE | MEM_COMMIT,
+                                            PAGE_READWRITE,
+                                            userdata);
         if (code == NULL) {
             SetLastError(ERROR_OUTOFMEMORY);
             return NULL;
@@ -654,10 +659,10 @@ HMEMORYMODULE MemoryLoadLibraryEx(const void *data, size_t size,
         blockedMemory = node;
 
         code = (unsigned char *)allocMemory(NULL,
-            alignedImageSize,
-            MEM_RESERVE | MEM_COMMIT,
-            PAGE_READWRITE,
-            userdata);
+                                            alignedImageSize,
+                                            MEM_RESERVE | MEM_COMMIT,
+                                            PAGE_READWRITE,
+                                            userdata);
         if (code == NULL) {
             FreePointerList(blockedMemory, freeMemory, userdata);
             SetLastError(ERROR_OUTOFMEMORY);
@@ -695,10 +700,10 @@ HMEMORYMODULE MemoryLoadLibraryEx(const void *data, size_t size,
 
     // commit memory for headers
     headers = (unsigned char *)allocMemory(code,
-        old_header->OptionalHeader.SizeOfHeaders,
-        MEM_COMMIT,
-        PAGE_READWRITE,
-        userdata);
+                                           old_header->OptionalHeader.SizeOfHeaders,
+                                           MEM_COMMIT,
+                                           PAGE_READWRITE,
+                                           userdata);
 
     // copy PE header to code
     memcpy(headers, dos_header, old_header->OptionalHeader.SizeOfHeaders);
@@ -826,8 +831,8 @@ FARPROC MemoryGetProcAddress(HMEMORYMODULE mod, LPCSTR name)
                 entry->idx = *ordinal;
             }
             qsort(module->nameExportsTable,
-                    exports->NumberOfNames,
-                    sizeof(struct ExportNameEntry), _compare);
+                  exports->NumberOfNames,
+                  sizeof(struct ExportNameEntry), _compare);
         }
 
         // search function name in list of exported names with binary search
@@ -1173,7 +1178,8 @@ static const uintptr_t AlignValueUpTests[][3] = {
     {0, 0, 0},
 };
 
-BOOL MemoryModuleTestsuite() {
+BOOL MemoryModuleTestsuite()
+{
     BOOL success = TRUE;
     size_t idx;
     for (idx = 0; AlignValueDownTests[idx][0]; ++idx) {
@@ -1181,7 +1187,7 @@ BOOL MemoryModuleTestsuite() {
         uintptr_t value = AlignValueDown(tests[0], tests[1]);
         if (value != tests[2]) {
             Mprintf("AlignValueDown failed for 0x%" PRIxPTR "/0x%" PRIxPTR ": expected 0x%" PRIxPTR ", got 0x%" PRIxPTR "\n",
-                tests[0], tests[1], tests[2], value);
+                    tests[0], tests[1], tests[2], value);
             success = FALSE;
         }
     }
@@ -1190,7 +1196,7 @@ BOOL MemoryModuleTestsuite() {
         uintptr_t value = AlignValueUp(tests[0], tests[1]);
         if (value != tests[2]) {
             Mprintf("AlignValueUp failed for 0x%" PRIxPTR "/0x%" PRIxPTR ": expected 0x%" PRIxPTR ", got 0x%" PRIxPTR "\n",
-                tests[0], tests[1], tests[2], value);
+                    tests[0], tests[1], tests[2], value);
             success = FALSE;
         }
     }

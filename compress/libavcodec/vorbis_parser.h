@@ -34,7 +34,7 @@ typedef struct AVVorbisParseContext AVVorbisParseContext;
  * Allocate and initialize the Vorbis parser using headers in the extradata.
  */
 AVVorbisParseContext *av_vorbis_parse_init(const uint8_t *extradata,
-                                           int extradata_size);
+        int extradata_size);
 
 /**
  * Free the parser and everything associated with it.

@@ -18,7 +18,8 @@
 #include "libyuv/cpu_support.h"
 
 #ifdef __cplusplus
-namespace libyuv {
+namespace libyuv
+{
 extern "C" {
 #endif
 
@@ -1005,17 +1006,17 @@ typedef uint8_t ulvec8[32];
 #if defined(__aarch64__) || defined(__arm__) || defined(__riscv)
 // This struct is for ARM and RISC-V color conversion.
 struct YuvConstants {
-  uvec8 kUVCoeff;
-  vec16 kRGBCoeffBias;
+    uvec8 kUVCoeff;
+    vec16 kRGBCoeffBias;
 };
 #else
 // This struct is for Intel color conversion.
 struct YuvConstants {
-  uint8_t kUVToB[32];
-  uint8_t kUVToG[32];
-  uint8_t kUVToR[32];
-  int16_t kYToRgb[16];
-  int16_t kYBiasToRgb[16];
+    uint8_t kUVToB[32];
+    uint8_t kUVToG[32];
+    uint8_t kUVToR[32];
+    int16_t kYToRgb[16];
+    int16_t kYBiasToRgb[16];
 };
 
 // Offsets into YuvConstants structure

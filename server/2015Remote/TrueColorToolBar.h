@@ -33,51 +33,51 @@ class CTrueColorToolBar : public CToolBar
 {
 // Construction
 public:
-	CTrueColorToolBar();
+    CTrueColorToolBar();
 
 // Attributes
 private:
-	BOOL m_bDropDown;
+    BOOL m_bDropDown;
 
-	struct stDropDownInfo {
-	public:
-		UINT  uButtonID;
-		UINT  uMenuID;
-		CWnd* pParent;
-	};
-	
-	CArray <stDropDownInfo, stDropDownInfo&> m_lstDropDownButton;
-	
+    struct stDropDownInfo {
+    public:
+        UINT  uButtonID;
+        UINT  uMenuID;
+        CWnd* pParent;
+    };
+
+    CArray <stDropDownInfo, stDropDownInfo&> m_lstDropDownButton;
+
 // Operations
 public:
-	BOOL LoadTrueColorToolBar(int  nBtnWidth,
-							  UINT uToolBar,
-							  UINT uToolBarHot		= 0,
-							  UINT uToolBarDisabled = 0);
+    BOOL LoadTrueColorToolBar(int  nBtnWidth,
+                              UINT uToolBar,
+                              UINT uToolBarHot		= 0,
+                              UINT uToolBarDisabled = 0);
 
-	void AddDropDownButton(CWnd* pParent, UINT uButtonID, UINT uMenuID);
+    void AddDropDownButton(CWnd* pParent, UINT uButtonID, UINT uMenuID);
 
 private:
-	BOOL SetTrueColorToolBar(UINT uToolBarType,
-		                     UINT uToolBar,
-						     int  nBtnWidth);
+    BOOL SetTrueColorToolBar(UINT uToolBarType,
+                             UINT uToolBar,
+                             int  nBtnWidth);
 
 // Overrides
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CTrueColorToolBar)
-	//}}AFX_VIRTUAL
+    // ClassWizard generated virtual function overrides
+    //{{AFX_VIRTUAL(CTrueColorToolBar)
+    //}}AFX_VIRTUAL
 
 // Implementation
 public:
-	virtual ~CTrueColorToolBar();
+    virtual ~CTrueColorToolBar();
 
-	// Generated message map functions
+    // Generated message map functions
 protected:
-	//{{AFX_MSG(CTrueColorToolBar)
-	afx_msg void OnToolbarDropDown(NMHDR* pnmh, LRESULT* plRes);
-	//}}AFX_MSG
+    //{{AFX_MSG(CTrueColorToolBar)
+    afx_msg void OnToolbarDropDown(NMHDR* pnmh, LRESULT* plRes);
+    //}}AFX_MSG
 
-	DECLARE_MESSAGE_MAP()
+    DECLARE_MESSAGE_MAP()
 };
 
 /////////////////////////////////////////////////////////////////////////////

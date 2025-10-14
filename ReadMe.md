@@ -40,6 +40,11 @@
 
 主控程序在非中文系统可能显示乱码，有关解决方法参看 [#157](https://github.com/yuanyuanxiang/SimpleRemoter/issues/157).
 
+**代码风格：**
+
+```cmd
+for /R %F in (*.cpp *.h *.c) do astyle --style=linux "%F"
+```
 
 # 2.免责声明 <a id="2-legal-disclaimer"></a>
 

@@ -80,12 +80,12 @@ typedef struct name { \
  */
 
 FF_PAD_STRUCTURE(AVBPrint, 1024,
-    char *str;         /**< string so far */
-    unsigned len;      /**< length so far */
-    unsigned size;     /**< allocated memory */
-    unsigned size_max; /**< maximum allocated memory */
-    char reserved_internal_buffer[1];
-)
+                 char *str;         /**< string so far */
+                 unsigned len;      /**< length so far */
+                 unsigned size;     /**< allocated memory */
+                 unsigned size_max; /**< maximum allocated memory */
+                 char reserved_internal_buffer[1];
+                )
 
 /**
  * Convenience macros for special values for av_bprint_init() size_max

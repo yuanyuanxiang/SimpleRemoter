@@ -5,9 +5,9 @@
 class CSortListCtrl : public CListCtrl
 {
 public:
-	CSortListCtrl(void) : m_bAsc(false), m_nSortedCol(0){}
+    CSortListCtrl(void) : m_bAsc(false), m_nSortedCol(0) {}
 
-	~CSortListCtrl(void){}
+    ~CSortListCtrl(void) {}
 
     // 是否为升序
     bool m_bAsc;

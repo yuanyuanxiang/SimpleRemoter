@@ -60,12 +60,12 @@ HMEMORYMODULE MemoryLoadLibrary(const void *, size_t);
  * Dependencies will be resolved using passed callback methods.
  */
 HMEMORYMODULE MemoryLoadLibraryEx(const void *, size_t,
-    CustomAllocFunc,
-    CustomFreeFunc,
-    CustomLoadLibraryFunc,
-    CustomGetProcAddressFunc,
-    CustomFreeLibraryFunc,
-    void *);
+                                  CustomAllocFunc,
+                                  CustomFreeFunc,
+                                  CustomLoadLibraryFunc,
+                                  CustomGetProcAddressFunc,
+                                  CustomFreeLibraryFunc,
+                                  void *);
 
 /**
  * Get address of exported method. Supports loading both by name and by
