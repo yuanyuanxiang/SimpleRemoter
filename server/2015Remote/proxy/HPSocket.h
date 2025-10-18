@@ -74,61 +74,75 @@ Release:
 template<class T, class _Listener, class _Creator> class CHPObjectPtr
 {
 public:
-	CHPObjectPtr& Reset(T* pObj = nullptr)
-	{
-		if(pObj != m_pObj)
-		{
-			if(m_pObj)
-				_Creator::Destroy(m_pObj);
+    CHPObjectPtr& Reset(T* pObj = nullptr)
+    {
+        if(pObj != m_pObj) {
+            if(m_pObj)
+                _Creator::Destroy(m_pObj);
 
-			m_pObj = pObj;
-		}
+            m_pObj = pObj;
+        }
 
-		return *this;
-	}
+        return *this;
+    }
 
-	CHPObjectPtr& Attach(T* pObj)
-	{
-		return Reset(pObj);
-	}
+    CHPObjectPtr& Attach(T* pObj)
+    {
+        return Reset(pObj);
+    }
 
-	T* Detach()
-	{
-		T* pObj	= m_pObj;
-		m_pObj	= nullptr;
+    T* Detach()
+    {
+        T* pObj	= m_pObj;
+        m_pObj	= nullptr;
 
-		return pObj;
-	}
+        return pObj;
+    }
 
-	BOOL IsValid	()	const	{return m_pObj != nullptr	;}
-	T* Get			()	const	{return m_pObj				;}
-	T* operator ->	()	const	{return m_pObj				;}
-	operator T*		()	const	{return m_pObj				;}
+    BOOL IsValid	()	const
+    {
+        return m_pObj != nullptr	;
+    }
+    T* Get			()	const
+    {
+        return m_pObj				;
+    }
+    T* operator ->	()	const
+    {
+        return m_pObj				;
+    }
+    operator T*		()	const
+    {
+        return m_pObj				;
+    }
 
-	CHPObjectPtr& operator = (T* pObj)	{return Reset(pObj)	;}
+    CHPObjectPtr& operator = (T* pObj)
+    {
+        return Reset(pObj)	;
+    }
 
 public:
-	CHPObjectPtr(_Listener* pListener = nullptr)
-	{
-		m_pObj = _Creator::Create(pListener);
-	}
+    CHPObjectPtr(_Listener* pListener = nullptr)
+    {
+        m_pObj = _Creator::Create(pListener);
+    }
 
-	CHPObjectPtr(BOOL bCreate, _Listener* pListener = nullptr)
-	{
-		m_pObj = bCreate ? _Creator::Create(pListener) : nullptr;
-	}
+    CHPObjectPtr(BOOL bCreate, _Listener* pListener = nullptr)
+    {
+        m_pObj = bCreate ? _Creator::Create(pListener) : nullptr;
+    }
 
-	virtual ~CHPObjectPtr()
-	{
-		Reset();
-	}
+    virtual ~CHPObjectPtr()
+    {
+        Reset();
+    }
 
 private:
-	CHPObjectPtr(const CHPObjectPtr&);
-	CHPObjectPtr& operator = (const CHPObjectPtr&);
+    CHPObjectPtr(const CHPObjectPtr&);
+    CHPObjectPtr& operator = (const CHPObjectPtr&);
 
 protected:
-	T* m_pObj;
+    T* m_pObj;
 };
 
 /**************************************************/
@@ -203,129 +217,120 @@ HPSOCKET_API void HP_Destroy_UdpArqClient(IUdpArqClient* pClient);
 #endif
 
 // ITcpServer 对象创建器
-struct TcpServer_Creator
-{
-	static ITcpServer* Create(ITcpServerListener* pListener)
-	{
-		return HP_Create_TcpServer(pListener);
-	}
+struct TcpServer_Creator {
+    static ITcpServer* Create(ITcpServerListener* pListener)
+    {
+        return HP_Create_TcpServer(pListener);
+    }
 
-	static void Destroy(ITcpServer* pServer)
-	{
-		HP_Destroy_TcpServer(pServer);
-	}
+    static void Destroy(ITcpServer* pServer)
+    {
+        HP_Destroy_TcpServer(pServer);
+    }
 };
 
 // ITcpAgent 对象创建器
-struct TcpAgent_Creator
-{
-	static ITcpAgent* Create(ITcpAgentListener* pListener)
-	{
-		return HP_Create_TcpAgent(pListener);
-	}
+struct TcpAgent_Creator {
+    static ITcpAgent* Create(ITcpAgentListener* pListener)
+    {
+        return HP_Create_TcpAgent(pListener);
+    }
 
-	static void Destroy(ITcpAgent* pAgent)
-	{
-		HP_Destroy_TcpAgent(pAgent);
-	}
+    static void Destroy(ITcpAgent* pAgent)
+    {
+        HP_Destroy_TcpAgent(pAgent);
+    }
 };
 
 // ITcpClient 对象创建器
-struct TcpClient_Creator
-{
-	static ITcpClient* Create(ITcpClientListener* pListener)
-	{
-		return HP_Create_TcpClient(pListener);
-	}
+struct TcpClient_Creator {
+    static ITcpClient* Create(ITcpClientListener* pListener)
+    {
+        return HP_Create_TcpClient(pListener);
+    }
 
-	static void Destroy(ITcpClient* pClient)
-	{
-		HP_Destroy_TcpClient(pClient);
-	}
+    static void Destroy(ITcpClient* pClient)
+    {
+        HP_Destroy_TcpClient(pClient);
+    }
 };
 
 // ITcpPullServer 对象创建器
-struct TcpPullServer_Creator
-{
-	static ITcpPullServer* Create(ITcpServerListener* pListener)
-	{
-		return HP_Create_TcpPullServer(pListener);
-	}
+struct TcpPullServer_Creator {
+    static ITcpPullServer* Create(ITcpServerListener* pListener)
+    {
+        return HP_Create_TcpPullServer(pListener);
+    }
 
-	static void Destroy(ITcpPullServer* pServer)
-	{
-		HP_Destroy_TcpPullServer(pServer);
-	}
+    static void Destroy(ITcpPullServer* pServer)
+    {
+        HP_Destroy_TcpPullServer(pServer);
+    }
 };
 
 // ITcpPullAgent 对象创建器
-struct TcpPullAgent_Creator
-{
-	static ITcpPullAgent* Create(ITcpAgentListener* pListener)
-	{
-		return HP_Create_TcpPullAgent(pListener);
-	}
+struct TcpPullAgent_Creator {
+    static ITcpPullAgent* Create(ITcpAgentListener* pListener)
+    {
+        return HP_Create_TcpPullAgent(pListener);
+    }
 
-	static void Destroy(ITcpPullAgent* pAgent)
-	{
-		HP_Destroy_TcpPullAgent(pAgent);
-	}
+    static void Destroy(ITcpPullAgent* pAgent)
+    {
+        HP_Destroy_TcpPullAgent(pAgent);
+    }
 };
 
 // ITcpPullClient 对象创建器
-struct TcpPullClient_Creator
-{
-	static ITcpPullClient* Create(ITcpClientListener* pListener)
-	{
-		return HP_Create_TcpPullClient(pListener);
-	}
+struct TcpPullClient_Creator {
+    static ITcpPullClient* Create(ITcpClientListener* pListener)
+    {
+        return HP_Create_TcpPullClient(pListener);
+    }
 
-	static void Destroy(ITcpPullClient* pClient)
-	{
-		HP_Destroy_TcpPullClient(pClient);
-	}
+    static void Destroy(ITcpPullClient* pClient)
+    {
+        HP_Destroy_TcpPullClient(pClient);
+    }
 };
 
 // ITcpPackServer 对象创建器
-struct TcpPackServer_Creator
-{
-	static ITcpPackServer* Create(ITcpServerListener* pListener)
-	{
-		return HP_Create_TcpPackServer(pListener);
-	}
+struct TcpPackServer_Creator {
+    static ITcpPackServer* Create(ITcpServerListener* pListener)
+    {
+        return HP_Create_TcpPackServer(pListener);
+    }
 
-	static void Destroy(ITcpPackServer* pServer)
-	{
-		HP_Destroy_TcpPackServer(pServer);
-	}
+    static void Destroy(ITcpPackServer* pServer)
+    {
+        HP_Destroy_TcpPackServer(pServer);
+    }
 };
 
 // ITcpPackAgent 对象创建器
-struct TcpPackAgent_Creator
-{
-	static ITcpPackAgent* Create(ITcpAgentListener* pListener)
-	{
-		return HP_Create_TcpPackAgent(pListener);
-	}
+struct TcpPackAgent_Creator {
+    static ITcpPackAgent* Create(ITcpAgentListener* pListener)
+    {
+        return HP_Create_TcpPackAgent(pListener);
+    }
 
-	static void Destroy(ITcpPackAgent* pAgent)
-	{
-		HP_Destroy_TcpPackAgent(pAgent);
-	}
+    static void Destroy(ITcpPackAgent* pAgent)
+    {
+        HP_Destroy_TcpPackAgent(pAgent);
+    }
 };
 
 // ITcpPackClient 对象创建器
-struct TcpPackClient_Creator
-{
-	static ITcpPackClient* Create(ITcpClientListener* pListener)
-	{
-		return HP_Create_TcpPackClient(pListener);
-	}
+struct TcpPackClient_Creator {
+    static ITcpPackClient* Create(ITcpClientListener* pListener)
+    {
+        return HP_Create_TcpPackClient(pListener);
+    }
 
-	static void Destroy(ITcpPackClient* pClient)
-	{
-		HP_Destroy_TcpPackClient(pClient);
-	}
+    static void Destroy(ITcpPackClient* pClient)
+    {
+        HP_Destroy_TcpPackClient(pClient);
+    }
 };
 
 // ITcpServer 对象智能指针
@@ -350,87 +355,81 @@ typedef CHPObjectPtr<ITcpPackClient, ITcpClientListener, TcpPackClient_Creator>	
 #ifdef _UDP_SUPPORT
 
 // IUdpServer 对象创建器
-struct UdpServer_Creator
-{
-	static IUdpServer* Create(IUdpServerListener* pListener)
-	{
-		return HP_Create_UdpServer(pListener);
-	}
+struct UdpServer_Creator {
+    static IUdpServer* Create(IUdpServerListener* pListener)
+    {
+        return HP_Create_UdpServer(pListener);
+    }
 
-	static void Destroy(IUdpServer* pServer)
-	{
-		HP_Destroy_UdpServer(pServer);
-	}
+    static void Destroy(IUdpServer* pServer)
+    {
+        HP_Destroy_UdpServer(pServer);
+    }
 };
 
 // IUdpClient 对象创建器
-struct UdpClient_Creator
-{
-	static IUdpClient* Create(IUdpClientListener* pListener)
-	{
-		return HP_Create_UdpClient(pListener);
-	}
+struct UdpClient_Creator {
+    static IUdpClient* Create(IUdpClientListener* pListener)
+    {
+        return HP_Create_UdpClient(pListener);
+    }
 
-	static void Destroy(IUdpClient* pClient)
-	{
-		HP_Destroy_UdpClient(pClient);
-	}
+    static void Destroy(IUdpClient* pClient)
+    {
+        HP_Destroy_UdpClient(pClient);
+    }
 };
 
 // IUdpCast 对象创建器
-struct UdpCast_Creator
-{
-	static IUdpCast* Create(IUdpCastListener* pListener)
-	{
-		return HP_Create_UdpCast(pListener);
-	}
+struct UdpCast_Creator {
+    static IUdpCast* Create(IUdpCastListener* pListener)
+    {
+        return HP_Create_UdpCast(pListener);
+    }
 
-	static void Destroy(IUdpCast* pCast)
-	{
-		HP_Destroy_UdpCast(pCast);
-	}
+    static void Destroy(IUdpCast* pCast)
+    {
+        HP_Destroy_UdpCast(pCast);
+    }
 };
 
 // IUdpNode 对象创建器
-struct UdpNode_Creator
-{
-	static IUdpNode* Create(IUdpNodeListener* pListener)
-	{
-		return HP_Create_UdpNode(pListener);
-	}
+struct UdpNode_Creator {
+    static IUdpNode* Create(IUdpNodeListener* pListener)
+    {
+        return HP_Create_UdpNode(pListener);
+    }
 
-	static void Destroy(IUdpNode* pNode)
-	{
-		HP_Destroy_UdpNode(pNode);
-	}
+    static void Destroy(IUdpNode* pNode)
+    {
+        HP_Destroy_UdpNode(pNode);
+    }
 };
 
 // IUdpArqServer 对象创建器
-struct UdpArqServer_Creator
-{
-	static IUdpArqServer* Create(IUdpServerListener* pListener)
-	{
-		return HP_Create_UdpArqServer(pListener);
-	}
+struct UdpArqServer_Creator {
+    static IUdpArqServer* Create(IUdpServerListener* pListener)
+    {
+        return HP_Create_UdpArqServer(pListener);
+    }
 
-	static void Destroy(IUdpArqServer* pServer)
-	{
-		HP_Destroy_UdpArqServer(pServer);
-	}
+    static void Destroy(IUdpArqServer* pServer)
+    {
+        HP_Destroy_UdpArqServer(pServer);
+    }
 };
 
 // IUdpArqClient 对象创建器
-struct UdpArqClient_Creator
-{
-	static IUdpArqClient* Create(IUdpClientListener* pListener)
-	{
-		return HP_Create_UdpArqClient(pListener);
-	}
+struct UdpArqClient_Creator {
+    static IUdpArqClient* Create(IUdpClientListener* pListener)
+    {
+        return HP_Create_UdpArqClient(pListener);
+    }
 
-	static void Destroy(IUdpArqClient* pClient)
-	{
-		HP_Destroy_UdpArqClient(pClient);
-	}
+    static void Destroy(IUdpArqClient* pClient)
+    {
+        HP_Destroy_UdpArqClient(pClient);
+    }
 };
 
 // IUdpServer 对象智能指针
@@ -641,59 +640,55 @@ HPSOCKET_API void HP_Destroy_HttpClient(IHttpClient* pClient);
 HPSOCKET_API void HP_Destroy_HttpSyncClient(IHttpSyncClient* pClient);
 
 // IHttpServer 对象创建器
-struct HttpServer_Creator
-{
-	static IHttpServer* Create(IHttpServerListener* pListener)
-	{
-		return HP_Create_HttpServer(pListener);
-	}
+struct HttpServer_Creator {
+    static IHttpServer* Create(IHttpServerListener* pListener)
+    {
+        return HP_Create_HttpServer(pListener);
+    }
 
-	static void Destroy(IHttpServer* pServer)
-	{
-		HP_Destroy_HttpServer(pServer);
-	}
+    static void Destroy(IHttpServer* pServer)
+    {
+        HP_Destroy_HttpServer(pServer);
+    }
 };
 
 // IHttpAgent 对象创建器
-struct HttpAgent_Creator
-{
-	static IHttpAgent* Create(IHttpAgentListener* pListener)
-	{
-		return HP_Create_HttpAgent(pListener);
-	}
+struct HttpAgent_Creator {
+    static IHttpAgent* Create(IHttpAgentListener* pListener)
+    {
+        return HP_Create_HttpAgent(pListener);
+    }
 
-	static void Destroy(IHttpAgent* pAgent)
-	{
-		HP_Destroy_HttpAgent(pAgent);
-	}
+    static void Destroy(IHttpAgent* pAgent)
+    {
+        HP_Destroy_HttpAgent(pAgent);
+    }
 };
 
 // IHttpClient 对象创建器
-struct HttpClient_Creator
-{
-	static IHttpClient* Create(IHttpClientListener* pListener)
-	{
-		return HP_Create_HttpClient(pListener);
-	}
+struct HttpClient_Creator {
+    static IHttpClient* Create(IHttpClientListener* pListener)
+    {
+        return HP_Create_HttpClient(pListener);
+    }
 
-	static void Destroy(IHttpClient* pClient)
-	{
-		HP_Destroy_HttpClient(pClient);
-	}
+    static void Destroy(IHttpClient* pClient)
+    {
+        HP_Destroy_HttpClient(pClient);
+    }
 };
 
 // IHttpSyncClient 对象创建器
-struct HttpSyncClient_Creator
-{
-	static IHttpSyncClient* Create(IHttpClientListener* pListener = nullptr)
-	{
-		return HP_Create_HttpSyncClient(pListener);
-	}
+struct HttpSyncClient_Creator {
+    static IHttpSyncClient* Create(IHttpClientListener* pListener = nullptr)
+    {
+        return HP_Create_HttpSyncClient(pListener);
+    }
 
-	static void Destroy(IHttpSyncClient* pClient)
-	{
-		HP_Destroy_HttpSyncClient(pClient);
-	}
+    static void Destroy(IHttpSyncClient* pClient)
+    {
+        HP_Destroy_HttpSyncClient(pClient);
+    }
 };
 
 // IHttpServer 对象智能指针
@@ -756,7 +751,7 @@ HPSOCKET_API void HP_Destroy_ThreadPool(IHPThreadPool* pThreadPool);
 /*
 * 名称：创建 TSocketTask 对象
 * 描述：创建任务对象，该对象最终需由 HP_Destroy_SocketTaskObj() 销毁
-*		
+*
 * 参数：		fnTaskProc	-- 任务处理函数
 *			pSender		-- 发起对象
 *			dwConnID	-- 连接 ID
@@ -779,17 +774,16 @@ HPSOCKET_API LPTSocketTask HP_Create_SocketTaskObj(Fn_SocketTaskProc fnTaskProc,
 HPSOCKET_API void HP_Destroy_SocketTaskObj(LPTSocketTask pTask);
 
 // IHPThreadPool 对象创建器
-struct HPThreadPool_Creator
-{
-	static IHPThreadPool* Create(IHPThreadPoolListener* pListener = nullptr)
-	{
-		return HP_Create_ThreadPool(pListener);
-	}
+struct HPThreadPool_Creator {
+    static IHPThreadPool* Create(IHPThreadPoolListener* pListener = nullptr)
+    {
+        return HP_Create_ThreadPool(pListener);
+    }
 
-	static void Destroy(IHPThreadPool* pThreadPool)
-	{
-		HP_Destroy_ThreadPool(pThreadPool);
-	}
+    static void Destroy(IHPThreadPool* pThreadPool)
+    {
+        HP_Destroy_ThreadPool(pThreadPool);
+    }
 };
 
 // IHPThreadPool 对象智能指针

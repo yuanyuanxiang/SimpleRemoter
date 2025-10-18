@@ -10,7 +10,7 @@ int CALLBACK ListCompare(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
     CSortListCtrl* This = (CSortListCtrl*)lParamSort;
     CString item1 = This->GetItemText(lParam1, This->m_nSortedCol);
     CString item2 = This->GetItemText(lParam2, This->m_nSortedCol);
-	int asc = This->m_bAsc ? 1 : -1;
+    int asc = This->m_bAsc ? 1 : -1;
     int ret = item1.Compare(item2);
     return ret * asc;
 }

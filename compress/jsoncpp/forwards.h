@@ -10,7 +10,8 @@
 #include "config.h"
 #endif // if !defined(JSON_IS_AMALGAMATION)
 
-namespace Json {
+namespace Json
+{
 
 // writer.h
 class StreamWriter;

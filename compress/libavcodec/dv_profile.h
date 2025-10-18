@@ -52,9 +52,9 @@ typedef struct AVDVProfile {
     const uint8_t   *block_sizes;           /* AC block sizes, in bits */
     int              audio_stride;          /* size of audio_shuffle table */
     int              audio_min_samples[3];  /* min amount of audio samples */
-                                            /* for 48kHz, 44.1kHz and 32kHz */
+    /* for 48kHz, 44.1kHz and 32kHz */
     int              audio_samples_dist[5]; /* how many samples are supposed to be */
-                                            /* in each frame in a 5 frames window */
+    /* in each frame in a 5 frames window */
     const uint8_t  (*audio_shuffle)[9];     /* PCM shuffling table */
 } AVDVProfile;
 

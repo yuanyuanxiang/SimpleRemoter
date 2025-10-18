@@ -18,26 +18,26 @@
 
 --------------------------------------------------------------------------------------------------------------
 
-Starting from this version, the main control program requires authorization and will automatically 
+Starting from this version, the main control program requires authorization and will automatically
 connect to the authorization server. You may contact the author to request a license.
 If you have concerns about this mechanism, please use an earlier version (prior to v1.0.8).
 Alternatively, you may modify and compile the program yourself to bypass this requirement (see #91).
 
-The author maintains and updates this software in their spare time. It is open-sourced solely for 
+The author maintains and updates this software in their spare time. It is open-sourced solely for
 educational and non-commercial use; profit is not the primary goal.
 To use the official release version, a license must be obtained, which requires payment of a licensing fee.
 
-You are free to modify the code and compile it for your own use (please refer to the note above: #91). 
+You are free to modify the code and compile it for your own use (please refer to the note above: #91).
 No fees are charged in this case.
-Users are encouraged to first attempt self-compilation or test an earlier version to see if it meets their needs. 
+Users are encouraged to first attempt self-compilation or test an earlier version to see if it meets their needs.
 If further functionality is required and budget is available, you may then consider obtaining a formal license.
 
-If a license is obtained, future versions of the software can continue to be used under the same license, 
+If a license is obtained, future versions of the software can continue to be used under the same license,
 and any remaining license time will be automatically carried over to the new version.
 
 ⚠️ This software is intended for lawful, legitimate, and compliant use only.
 Any use of this software for illegal, malicious, infringing, or unethical purposes is strictly prohibited.
-The author shall not be held liable for any legal issues, damages, or disputes resulting from misuse of 
+The author shall not be held liable for any legal issues, damages, or disputes resulting from misuse of
 the software, and reserves the right to refuse or revoke authorization if improper use is discovered or suspected.
 */
 

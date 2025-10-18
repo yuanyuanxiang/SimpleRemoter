@@ -53,7 +53,7 @@ public:
 
 private:
     CProxyConnectServer*    m_iocpLocal;
-	CEdit	                m_Edit;
-	USHORT                  m_nPort;
+    CEdit	                m_Edit;
+    USHORT                  m_nPort;
     CEdit                   m_EditOther;
 };

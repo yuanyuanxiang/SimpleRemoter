@@ -12,13 +12,13 @@
 #include "Manager.h"
 #include "RegisterOperation.h"
 
-class CRegisterManager : public CManager  
+class CRegisterManager : public CManager
 {
 public:
-	CRegisterManager(IOCPClient* ClientObject, int n, void* user = nullptr);
-	virtual ~CRegisterManager();
-	VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
-	VOID Find(char bToken, char *szPath);
+    CRegisterManager(IOCPClient* ClientObject, int n, void* user = nullptr);
+    virtual ~CRegisterManager();
+    VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
+    VOID Find(char bToken, char *szPath);
 };
 
 #endif // !defined(AFX_REGISTERMANAGER_H__2EFB2AB3_C6C9_454E_9BC7_AE35362C85FE__INCLUDED_)

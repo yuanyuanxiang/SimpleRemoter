@@ -55,7 +55,7 @@ Abstract:
 #undef WINAPI_PARTITION_PKG_APPXDEPLOYMENT
 #undef WINAPI_PARTITION_PKG_WER
 
-/* 
+/*
  * PARTITIONS for feature packages. Each package might be active for one or more editions
  */
 #define WINAPI_PARTITION_PKG_WINTRUST         (WINAPI_PARTITION_SERVER == 1)

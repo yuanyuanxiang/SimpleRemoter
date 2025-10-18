@@ -35,16 +35,18 @@ protected:
     CStatusBar          m_wndStatusBar;
     IPConverter*        m_IPConverter;
     CLocker             m_Locker;
-    bool IsReceivingData() {
+    bool IsReceivingData()
+    {
         m_Locker.Lock();
         auto r = m_bIsReceiving;
         m_Locker.Unlock();
         return r;
     }
-    void SetReceivingStatus(bool b) {
-		m_Locker.Lock();
-		m_bIsReceiving = b;
-		m_Locker.Unlock();
+    void SetReceivingStatus(bool b)
+    {
+        m_Locker.Lock();
+        m_bIsReceiving = b;
+        m_Locker.Unlock();
     }
     virtual BOOL OnInitDialog();
     afx_msg void OnSize(UINT nType, int cx, int cy);

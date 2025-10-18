@@ -18,16 +18,19 @@ public:
     SOCKET* GetSocket(DWORD index,BOOL del=FALSE);
     CRITICAL_SECTION m_cs;
     int Threads;
-    void AddThread(int n = 1) {
+    void AddThread(int n = 1)
+    {
         CAutoLock L(m_cs);
         Threads += n;
     }
-    void Wait() {
+    void Wait()
+    {
         while (GetThread())
             Sleep(50);
     }
-    int GetThread() {
-		CAutoLock L(m_cs);
+    int GetThread()
+    {
+        CAutoLock L(m_cs);
         return Threads;
     }
 };

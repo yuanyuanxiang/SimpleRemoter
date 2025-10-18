@@ -190,7 +190,7 @@ BOOL CFileManagerDlg::OnInitDialog()
     m_list_remote_driver.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_ONECLICKACTIVATE | LVS_EX_SUBITEMIMAGES | LVS_EX_GRIDLINES | LVS_SHAREIMAGELISTS);
     m_list_remote.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_ONECLICKACTIVATE | LVS_EX_SUBITEMIMAGES | LVS_EX_GRIDLINES | LVS_SHAREIMAGELISTS);
     m_list_remote_search.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_ONECLICKACTIVATE | LVS_EX_SUBITEMIMAGES | LVS_EX_GRIDLINES | LVS_SHAREIMAGELISTS);
-    
+
     m_list_remote.SetImageList(&(THIS_APP->m_pImageList_Large), LVSIL_NORMAL);
     m_list_remote.SetImageList(&(THIS_APP->m_pImageList_Small), LVSIL_SMALL);
 
@@ -493,11 +493,11 @@ void CFileManagerDlg::fixNetHood(BYTE* pbuffer, int buffersize)
 void CFileManagerDlg::OnClose()
 {
     CancelIO();
-	// 等待数据处理完毕
-	if (IsProcessing()) {
-		ShowWindow(SW_HIDE);
-		return;
-	}
+    // 等待数据处理完毕
+    if (IsProcessing()) {
+        ShowWindow(SW_HIDE);
+        return;
+    }
 
     DestroyCursor(m_hCursor);
 
@@ -1425,8 +1425,7 @@ void CFileManagerDlg::WriteLocalRecvFile()
         if (i == MAX_WRITE_RETRY && !bResult) {
             ::MessageBox(m_hWnd, m_strReceiveLocalFile + _T(" 文件写入失败!"), _T("警告"), MB_OK | MB_ICONWARNING);
             m_bIsStop = true;
-        }
-        else {
+        } else {
             dwOffsetLow = 0;
             dwOffsetHigh = 0;
             dwOffsetLow = SetFilePointer(m_hFileRecv, dwOffsetLow, &dwOffsetHigh, FILE_CURRENT);

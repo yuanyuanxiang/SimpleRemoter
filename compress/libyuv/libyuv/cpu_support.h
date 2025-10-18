@@ -12,7 +12,8 @@
 #define INCLUDE_LIBYUV_CPU_SUPPORT_H_
 
 #ifdef __cplusplus
-namespace libyuv {
+namespace libyuv
+{
 extern "C" {
 #endif
 

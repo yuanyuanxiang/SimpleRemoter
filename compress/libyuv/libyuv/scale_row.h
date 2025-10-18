@@ -16,7 +16,8 @@
 #include "libyuv/scale.h"
 
 #ifdef __cplusplus
-namespace libyuv {
+namespace libyuv
+{
 extern "C" {
 #endif
 
@@ -1403,10 +1404,10 @@ void ScaleUVRowUp2_Linear_16_Any_SSE41(const uint16_t* src_ptr,
                                        uint16_t* dst_ptr,
                                        int dst_width);
 void ScaleUVRowUp2_Bilinear_16_Any_SSE41(const uint16_t* src_ptr,
-                                         ptrdiff_t src_stride,
-                                         uint16_t* dst_ptr,
-                                         ptrdiff_t dst_stride,
-                                         int dst_width);
+        ptrdiff_t src_stride,
+        uint16_t* dst_ptr,
+        ptrdiff_t dst_stride,
+        int dst_width);
 void ScaleUVRowUp2_Linear_16_AVX2(const uint16_t* src_ptr,
                                   uint16_t* dst_ptr,
                                   int dst_width);

@@ -164,20 +164,20 @@ typedef DWORD D3DMATRIXHANDLE, *LPD3DMATRIXHANDLE;
 #ifndef D3DCOLORVALUE_DEFINED
 typedef struct _D3DCOLORVALUE {
     union {
-    D3DVALUE r;
-    D3DVALUE dvR;
+        D3DVALUE r;
+        D3DVALUE dvR;
     };
     union {
-    D3DVALUE g;
-    D3DVALUE dvG;
+        D3DVALUE g;
+        D3DVALUE dvG;
     };
     union {
-    D3DVALUE b;
-    D3DVALUE dvB;
+        D3DVALUE b;
+        D3DVALUE dvB;
     };
     union {
-    D3DVALUE a;
-    D3DVALUE dvA;
+        D3DVALUE a;
+        D3DVALUE dvA;
     };
 } D3DCOLORVALUE;
 #define D3DCOLORVALUE_DEFINED
@@ -187,20 +187,20 @@ typedef struct _D3DCOLORVALUE *LPD3DCOLORVALUE;
 #ifndef D3DRECT_DEFINED
 typedef struct _D3DRECT {
     union {
-    LONG x1;
-    LONG lX1;
+        LONG x1;
+        LONG lX1;
     };
     union {
-    LONG y1;
-    LONG lY1;
+        LONG y1;
+        LONG lY1;
     };
     union {
-    LONG x2;
-    LONG lX2;
+        LONG x2;
+        LONG lX2;
     };
     union {
-    LONG y2;
-    LONG lY2;
+        LONG y2;
+        LONG lY2;
     };
 } D3DRECT;
 #define D3DRECT_DEFINED
@@ -219,16 +219,16 @@ typedef struct _D3DRECT *LPD3DRECT;
 #ifndef D3DVECTOR_DEFINED
 typedef struct _D3DVECTOR {
     union {
-    D3DVALUE x;
-    D3DVALUE dvX;
+        D3DVALUE x;
+        D3DVALUE dvX;
     };
     union {
-    D3DVALUE y;
-    D3DVALUE dvY;
+        D3DVALUE y;
+        D3DVALUE dvY;
     };
     union {
-    D3DVALUE z;
-    D3DVALUE dvZ;
+        D3DVALUE z;
+        D3DVALUE dvZ;
     };
 #if(DIRECT3D_VERSION >= 0x0500)
 #if (defined __cplusplus) && (defined D3D_OVERLOADS)
@@ -275,41 +275,41 @@ public:
     // =====================================
 
     // Addition and subtraction
-        friend _D3DVECTOR operator + (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
-        friend _D3DVECTOR operator - (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
+    friend _D3DVECTOR operator + (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
+    friend _D3DVECTOR operator - (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
     // Scalar multiplication and division
-        friend _D3DVECTOR operator * (const _D3DVECTOR& v, D3DVALUE s);
-        friend _D3DVECTOR operator * (D3DVALUE s, const _D3DVECTOR& v);
-        friend _D3DVECTOR operator / (const _D3DVECTOR& v, D3DVALUE s);
+    friend _D3DVECTOR operator * (const _D3DVECTOR& v, D3DVALUE s);
+    friend _D3DVECTOR operator * (D3DVALUE s, const _D3DVECTOR& v);
+    friend _D3DVECTOR operator / (const _D3DVECTOR& v, D3DVALUE s);
     // Memberwise multiplication and division
-        friend _D3DVECTOR operator * (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
-        friend _D3DVECTOR operator / (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
+    friend _D3DVECTOR operator * (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
+    friend _D3DVECTOR operator / (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
 
     // Vector dominance
-        friend int operator < (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
-        friend int operator <= (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
+    friend int operator < (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
+    friend int operator <= (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
 
     // Bitwise equality
-        friend int operator == (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
+    friend int operator == (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
 
     // Length-related functions
-        friend D3DVALUE SquareMagnitude (const _D3DVECTOR& v);
-        friend D3DVALUE Magnitude (const _D3DVECTOR& v);
+    friend D3DVALUE SquareMagnitude (const _D3DVECTOR& v);
+    friend D3DVALUE Magnitude (const _D3DVECTOR& v);
 
     // Returns vector with same direction and unit length
-        friend _D3DVECTOR Normalize (const _D3DVECTOR& v);
+    friend _D3DVECTOR Normalize (const _D3DVECTOR& v);
 
     // Return min/max component of the input vector
-        friend D3DVALUE Min (const _D3DVECTOR& v);
-        friend D3DVALUE Max (const _D3DVECTOR& v);
+    friend D3DVALUE Min (const _D3DVECTOR& v);
+    friend D3DVALUE Max (const _D3DVECTOR& v);
 
     // Return memberwise min/max of input vectors
-        friend _D3DVECTOR Minimize (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
-        friend _D3DVECTOR Maximize (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
+    friend _D3DVECTOR Minimize (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
+    friend _D3DVECTOR Maximize (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
 
     // Dot and cross product
-        friend D3DVALUE DotProduct (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
-        friend _D3DVECTOR CrossProduct (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
+    friend D3DVALUE DotProduct (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
+    friend _D3DVECTOR CrossProduct (const _D3DVECTOR& v1, const _D3DVECTOR& v2);
 
 #endif
 #endif /* DIRECT3D_VERSION >= 0x0500 */
@@ -338,16 +338,16 @@ typedef struct _D3DVECTOR *LPD3DVECTOR;
 typedef struct _D3DHVERTEX {
     DWORD           dwFlags;        /* Homogeneous clipping flags */
     union {
-    D3DVALUE    hx;
-    D3DVALUE    dvHX;
+        D3DVALUE    hx;
+        D3DVALUE    dvHX;
     };
     union {
-    D3DVALUE    hy;
-    D3DVALUE    dvHY;
+        D3DVALUE    hy;
+        D3DVALUE    dvHY;
     };
     union {
-    D3DVALUE    hz;
-    D3DVALUE    dvHZ;
+        D3DVALUE    hz;
+        D3DVALUE    dvHZ;
     };
 } D3DHVERTEX, *LPD3DHVERTEX;
 
@@ -356,36 +356,36 @@ typedef struct _D3DHVERTEX {
  */
 typedef struct _D3DTLVERTEX {
     union {
-    D3DVALUE    sx;             /* Screen coordinates */
-    D3DVALUE    dvSX;
+        D3DVALUE    sx;             /* Screen coordinates */
+        D3DVALUE    dvSX;
     };
     union {
-    D3DVALUE    sy;
-    D3DVALUE    dvSY;
+        D3DVALUE    sy;
+        D3DVALUE    dvSY;
     };
     union {
-    D3DVALUE    sz;
-    D3DVALUE    dvSZ;
+        D3DVALUE    sz;
+        D3DVALUE    dvSZ;
     };
     union {
-    D3DVALUE    rhw;        /* Reciprocal of homogeneous w */
-    D3DVALUE    dvRHW;
+        D3DVALUE    rhw;        /* Reciprocal of homogeneous w */
+        D3DVALUE    dvRHW;
     };
     union {
-    D3DCOLOR    color;          /* Vertex color */
-    D3DCOLOR    dcColor;
+        D3DCOLOR    color;          /* Vertex color */
+        D3DCOLOR    dcColor;
     };
     union {
-    D3DCOLOR    specular;       /* Specular component of vertex */
-    D3DCOLOR    dcSpecular;
+        D3DCOLOR    specular;       /* Specular component of vertex */
+        D3DCOLOR    dcSpecular;
     };
     union {
-    D3DVALUE    tu;             /* Texture coordinates */
-    D3DVALUE    dvTU;
+        D3DVALUE    tu;             /* Texture coordinates */
+        D3DVALUE    dvTU;
     };
     union {
-    D3DVALUE    tv;
-    D3DVALUE    dvTV;
+        D3DVALUE    tv;
+        D3DVALUE    dvTV;
     };
 #if(DIRECT3D_VERSION >= 0x0500)
 #if (defined __cplusplus) && (defined D3D_OVERLOADS)
@@ -393,10 +393,16 @@ typedef struct _D3DTLVERTEX {
     _D3DTLVERTEX(const D3DVECTOR& v, float _rhw,
                  D3DCOLOR _color, D3DCOLOR _specular,
                  float _tu, float _tv)
-        { sx = v.x; sy = v.y; sz = v.z; rhw = _rhw;
-          color = _color; specular = _specular;
-          tu = _tu; tv = _tv;
-        }
+    {
+        sx = v.x;
+        sy = v.y;
+        sz = v.z;
+        rhw = _rhw;
+        color = _color;
+        specular = _specular;
+        tu = _tu;
+        tv = _tv;
+    }
 #endif
 #endif /* DIRECT3D_VERSION >= 0x0500 */
 } D3DTLVERTEX, *LPD3DTLVERTEX;
@@ -406,33 +412,33 @@ typedef struct _D3DTLVERTEX {
  */
 typedef struct _D3DLVERTEX {
     union {
-    D3DVALUE     x;             /* Homogeneous coordinates */
-    D3DVALUE     dvX;
+        D3DVALUE     x;             /* Homogeneous coordinates */
+        D3DVALUE     dvX;
     };
     union {
-    D3DVALUE     y;
-    D3DVALUE     dvY;
+        D3DVALUE     y;
+        D3DVALUE     dvY;
     };
     union {
-    D3DVALUE     z;
-    D3DVALUE     dvZ;
+        D3DVALUE     z;
+        D3DVALUE     dvZ;
     };
     DWORD            dwReserved;
     union {
-    D3DCOLOR     color;         /* Vertex color */
-    D3DCOLOR     dcColor;
+        D3DCOLOR     color;         /* Vertex color */
+        D3DCOLOR     dcColor;
     };
     union {
-    D3DCOLOR     specular;      /* Specular component of vertex */
-    D3DCOLOR     dcSpecular;
+        D3DCOLOR     specular;      /* Specular component of vertex */
+        D3DCOLOR     dcSpecular;
     };
     union {
-    D3DVALUE     tu;            /* Texture coordinates */
-    D3DVALUE     dvTU;
+        D3DVALUE     tu;            /* Texture coordinates */
+        D3DVALUE     dvTU;
     };
     union {
-    D3DVALUE     tv;
-    D3DVALUE     dvTV;
+        D3DVALUE     tv;
+        D3DVALUE     dvTV;
     };
 #if(DIRECT3D_VERSION >= 0x0500)
 #if (defined __cplusplus) && (defined D3D_OVERLOADS)
@@ -440,10 +446,16 @@ typedef struct _D3DLVERTEX {
     _D3DLVERTEX(const D3DVECTOR& v,
                 D3DCOLOR _color, D3DCOLOR _specular,
                 float _tu, float _tv)
-        { x = v.x; y = v.y; z = v.z; dwReserved = 0;
-          color = _color; specular = _specular;
-          tu = _tu; tv = _tv;
-        }
+    {
+        x = v.x;
+        y = v.y;
+        z = v.z;
+        dwReserved = 0;
+        color = _color;
+        specular = _specular;
+        tu = _tu;
+        tv = _tv;
+    }
 #endif
 #endif /* DIRECT3D_VERSION >= 0x0500 */
 } D3DLVERTEX, *LPD3DLVERTEX;
@@ -454,45 +466,51 @@ typedef struct _D3DLVERTEX {
 
 typedef struct _D3DVERTEX {
     union {
-    D3DVALUE     x;             /* Homogeneous coordinates */
-    D3DVALUE     dvX;
+        D3DVALUE     x;             /* Homogeneous coordinates */
+        D3DVALUE     dvX;
     };
     union {
-    D3DVALUE     y;
-    D3DVALUE     dvY;
+        D3DVALUE     y;
+        D3DVALUE     dvY;
     };
     union {
-    D3DVALUE     z;
-    D3DVALUE     dvZ;
+        D3DVALUE     z;
+        D3DVALUE     dvZ;
     };
     union {
-    D3DVALUE     nx;            /* Normal */
-    D3DVALUE     dvNX;
+        D3DVALUE     nx;            /* Normal */
+        D3DVALUE     dvNX;
     };
     union {
-    D3DVALUE     ny;
-    D3DVALUE     dvNY;
+        D3DVALUE     ny;
+        D3DVALUE     dvNY;
     };
     union {
-    D3DVALUE     nz;
-    D3DVALUE     dvNZ;
+        D3DVALUE     nz;
+        D3DVALUE     dvNZ;
     };
     union {
-    D3DVALUE     tu;            /* Texture coordinates */
-    D3DVALUE     dvTU;
+        D3DVALUE     tu;            /* Texture coordinates */
+        D3DVALUE     dvTU;
     };
     union {
-    D3DVALUE     tv;
-    D3DVALUE     dvTV;
+        D3DVALUE     tv;
+        D3DVALUE     dvTV;
     };
 #if(DIRECT3D_VERSION >= 0x0500)
 #if (defined __cplusplus) && (defined D3D_OVERLOADS)
     _D3DVERTEX() { }
     _D3DVERTEX(const D3DVECTOR& v, const D3DVECTOR& n, float _tu, float _tv)
-        { x = v.x; y = v.y; z = v.z;
-          nx = n.x; ny = n.y; nz = n.z;
-          tu = _tu; tv = _tv;
-        }
+    {
+        x = v.x;
+        y = v.y;
+        z = v.z;
+        nx = n.x;
+        ny = n.y;
+        nz = n.z;
+        tu = _tu;
+        tv = _tv;
+    }
 #endif
 #endif /* DIRECT3D_VERSION >= 0x0500 */
 } D3DVERTEX, *LPD3DVERTEX;
@@ -526,16 +544,34 @@ typedef struct _D3DMATRIX {
                 D3DVALUE _m10, D3DVALUE _m11, D3DVALUE _m12, D3DVALUE _m13,
                 D3DVALUE _m20, D3DVALUE _m21, D3DVALUE _m22, D3DVALUE _m23,
                 D3DVALUE _m30, D3DVALUE _m31, D3DVALUE _m32, D3DVALUE _m33
-        )
-        {
-                m[0][0] = _m00; m[0][1] = _m01; m[0][2] = _m02; m[0][3] = _m03;
-                m[1][0] = _m10; m[1][1] = _m11; m[1][2] = _m12; m[1][3] = _m13;
-                m[2][0] = _m20; m[2][1] = _m21; m[2][2] = _m22; m[2][3] = _m23;
-                m[3][0] = _m30; m[3][1] = _m31; m[3][2] = _m32; m[3][3] = _m33;
-        }
+              )
+    {
+        m[0][0] = _m00;
+        m[0][1] = _m01;
+        m[0][2] = _m02;
+        m[0][3] = _m03;
+        m[1][0] = _m10;
+        m[1][1] = _m11;
+        m[1][2] = _m12;
+        m[1][3] = _m13;
+        m[2][0] = _m20;
+        m[2][1] = _m21;
+        m[2][2] = _m22;
+        m[2][3] = _m23;
+        m[3][0] = _m30;
+        m[3][1] = _m31;
+        m[3][2] = _m32;
+        m[3][3] = _m33;
+    }
 
-    D3DVALUE& operator()(int iRow, int iColumn) { return m[iRow][iColumn]; }
-    const D3DVALUE& operator()(int iRow, int iColumn) const { return m[iRow][iColumn]; }
+    D3DVALUE& operator()(int iRow, int iColumn)
+    {
+        return m[iRow][iColumn];
+    }
+    const D3DVALUE& operator()(int iRow, int iColumn) const
+    {
+        return m[iRow][iColumn];
+    }
 #if(DIRECT3D_VERSION >= 0x0600)
     friend _D3DMATRIX operator* (const _D3DMATRIX&, const _D3DMATRIX&);
 #endif /* DIRECT3D_VERSION >= 0x0600 */
@@ -723,24 +759,24 @@ typedef struct _D3DLIGHTINGELEMENT {
 typedef struct _D3DMATERIAL {
     DWORD           dwSize;
     union {
-    D3DCOLORVALUE   diffuse;        /* Diffuse color RGBA */
-    D3DCOLORVALUE   dcvDiffuse;
+        D3DCOLORVALUE   diffuse;        /* Diffuse color RGBA */
+        D3DCOLORVALUE   dcvDiffuse;
     };
     union {
-    D3DCOLORVALUE   ambient;        /* Ambient color RGB */
-    D3DCOLORVALUE   dcvAmbient;
+        D3DCOLORVALUE   ambient;        /* Ambient color RGB */
+        D3DCOLORVALUE   dcvAmbient;
     };
     union {
-    D3DCOLORVALUE   specular;       /* Specular 'shininess' */
-    D3DCOLORVALUE   dcvSpecular;
+        D3DCOLORVALUE   specular;       /* Specular 'shininess' */
+        D3DCOLORVALUE   dcvSpecular;
     };
     union {
-    D3DCOLORVALUE   emissive;       /* Emissive color RGB */
-    D3DCOLORVALUE   dcvEmissive;
+        D3DCOLORVALUE   emissive;       /* Emissive color RGB */
+        D3DCOLORVALUE   dcvEmissive;
     };
     union {
-    D3DVALUE        power;          /* Sharpness if specular highlight */
-    D3DVALUE        dvPower;
+        D3DVALUE        power;          /* Sharpness if specular highlight */
+        D3DVALUE        dvPower;
     };
     D3DTEXTUREHANDLE    hTexture;       /* Handle to texture map */
     DWORD           dwRampSize;
@@ -750,24 +786,24 @@ typedef struct _D3DMATERIAL {
 
 typedef struct _D3DMATERIAL7 {
     union {
-    D3DCOLORVALUE   diffuse;        /* Diffuse color RGBA */
-    D3DCOLORVALUE   dcvDiffuse;
+        D3DCOLORVALUE   diffuse;        /* Diffuse color RGBA */
+        D3DCOLORVALUE   dcvDiffuse;
     };
     union {
-    D3DCOLORVALUE   ambient;        /* Ambient color RGB */
-    D3DCOLORVALUE   dcvAmbient;
+        D3DCOLORVALUE   ambient;        /* Ambient color RGB */
+        D3DCOLORVALUE   dcvAmbient;
     };
     union {
-    D3DCOLORVALUE   specular;       /* Specular 'shininess' */
-    D3DCOLORVALUE   dcvSpecular;
+        D3DCOLORVALUE   specular;       /* Specular 'shininess' */
+        D3DCOLORVALUE   dcvSpecular;
     };
     union {
-    D3DCOLORVALUE   emissive;       /* Emissive color RGB */
-    D3DCOLORVALUE   dcvEmissive;
+        D3DCOLORVALUE   emissive;       /* Emissive color RGB */
+        D3DCOLORVALUE   dcvEmissive;
     };
     union {
-    D3DVALUE        power;          /* Sharpness if specular highlight */
-    D3DVALUE        dvPower;
+        D3DVALUE        power;          /* Sharpness if specular highlight */
+        D3DVALUE        dvPower;
     };
 } D3DMATERIAL7, *LPD3DMATERIAL7;
 
@@ -1505,8 +1541,7 @@ typedef enum _D3DRENDERSTATETYPE {
 #if(DIRECT3D_VERSION < 0x0800)
 
 // Values for material source
-typedef enum _D3DMATERIALCOLORSOURCE
-{
+typedef enum _D3DMATERIALCOLORSOURCE {
     D3DMCS_MATERIAL = 0,                // Color from material is used
     D3DMCS_COLOR1   = 1,                // Diffuse vertex color is used
     D3DMCS_COLOR2   = 2,                // Specular vertex color is used
@@ -1547,14 +1582,14 @@ typedef enum _D3DMATERIALCOLORSOURCE
 typedef struct _D3DSTATE {
     union {
 #if(DIRECT3D_VERSION < 0x0800)
-    D3DTRANSFORMSTATETYPE   dtstTransformStateType;
+        D3DTRANSFORMSTATETYPE   dtstTransformStateType;
 #endif //(DIRECT3D_VERSION < 0x0800)
-    D3DLIGHTSTATETYPE   dlstLightStateType;
-    D3DRENDERSTATETYPE  drstRenderStateType;
+        D3DLIGHTSTATETYPE   dlstLightStateType;
+        D3DRENDERSTATETYPE  drstRenderStateType;
     };
     union {
-    DWORD           dwArg[1];
-    D3DVALUE        dvArg[1];
+        DWORD           dwArg[1];
+        D3DVALUE        dvArg[1];
     };
 } D3DSTATE, *LPD3DSTATE;
 
@@ -1606,8 +1641,7 @@ typedef struct _D3DPROCESSVERTICES {
 /*
  * State enumerants for per-stage texture processing.
  */
-typedef enum _D3DTEXTURESTAGESTATETYPE
-{
+typedef enum _D3DTEXTURESTAGESTATETYPE {
     D3DTSS_COLOROP        =  1, /* D3DTEXTUREOP - per-stage blending controls for color channels */
     D3DTSS_COLORARG1      =  2, /* D3DTA_* (texture arg) */
     D3DTSS_COLORARG2      =  3, /* D3DTA_* (texture arg) */
@@ -1652,8 +1686,7 @@ typedef enum _D3DTEXTURESTAGESTATETYPE
  * Enumerations for COLOROP and ALPHAOP texture blending operations set in
  * texture processing stage controls in D3DRENDERSTATE.
  */
-typedef enum _D3DTEXTUREOP
-{
+typedef enum _D3DTEXTUREOP {
 // Control
     D3DTOP_DISABLE    = 1,      // disables stage
     D3DTOP_SELECTARG1 = 2,      // the default
@@ -1670,8 +1703,8 @@ typedef enum _D3DTEXTUREOP
     D3DTOP_ADDSIGNED2X  =  9,   // as above but left  1 bit
     D3DTOP_SUBTRACT     = 10,   // Arg1 - Arg2, with no saturation
     D3DTOP_ADDSMOOTH    = 11,   // add 2 args, subtract product
-                                // Arg1 + Arg2 - Arg1*Arg2
-                                // = Arg1 + (1-Arg1)*Arg2
+    // Arg1 + Arg2 - Arg1*Arg2
+    // = Arg1 + (1-Arg1)*Arg2
 
 // Linear alpha blend: Arg1*(Alpha) + Arg2*(1-Alpha)
     D3DTOP_BLENDDIFFUSEALPHA    = 12, // iterated alpha
@@ -1684,13 +1717,13 @@ typedef enum _D3DTEXTUREOP
 // Specular mapping
     D3DTOP_PREMODULATE            = 17,     // modulate with next texture before use
     D3DTOP_MODULATEALPHA_ADDCOLOR = 18,     // Arg1.RGB + Arg1.A*Arg2.RGB
-                                            // COLOROP only
+    // COLOROP only
     D3DTOP_MODULATECOLOR_ADDALPHA = 19,     // Arg1.RGB*Arg2.RGB + Arg1.A
-                                            // COLOROP only
+    // COLOROP only
     D3DTOP_MODULATEINVALPHA_ADDCOLOR = 20,  // (1-Arg1.A)*Arg2.RGB + Arg1.RGB
-                                            // COLOROP only
+    // COLOROP only
     D3DTOP_MODULATEINVCOLOR_ADDALPHA = 21,  // (1-Arg1.RGB)*Arg2.RGB + Arg1.A
-                                            // COLOROP only
+    // COLOROP only
 
 // Bump mapping
     D3DTOP_BUMPENVMAP           = 22, // per pixel env map perturbation
@@ -1725,8 +1758,7 @@ typedef enum _D3DTEXTUREOP
 /*
  *  IDirect3DTexture2 State Filter Types
  */
-typedef enum _D3DTEXTUREMAGFILTER
-{
+typedef enum _D3DTEXTUREMAGFILTER {
     D3DTFG_POINT        = 1,    // nearest
     D3DTFG_LINEAR       = 2,    // linear interpolation
     D3DTFG_FLATCUBIC    = 3,    // cubic
@@ -1737,16 +1769,14 @@ typedef enum _D3DTEXTUREMAGFILTER
     D3DTFG_FORCE_DWORD  = 0x7fffffff,   // force 32-bit size enum
 } D3DTEXTUREMAGFILTER;
 
-typedef enum _D3DTEXTUREMINFILTER
-{
+typedef enum _D3DTEXTUREMINFILTER {
     D3DTFN_POINT        = 1,    // nearest
     D3DTFN_LINEAR       = 2,    // linear interpolation
     D3DTFN_ANISOTROPIC  = 3,    //
     D3DTFN_FORCE_DWORD  = 0x7fffffff,   // force 32-bit size enum
 } D3DTEXTUREMINFILTER;
 
-typedef enum _D3DTEXTUREMIPFILTER
-{
+typedef enum _D3DTEXTUREMIPFILTER {
     D3DTFP_NONE         = 1,    // mipmapping disabled (use MAG filter)
     D3DTFP_POINT        = 2,    // nearest
     D3DTFP_LINEAR       = 3,    // linear interpolation
@@ -1792,16 +1822,16 @@ typedef enum _D3DTEXTUREMIPFILTER
  */
 typedef struct _D3DTRIANGLE {
     union {
-    WORD    v1;            /* Vertex indices */
-    WORD    wV1;
+        WORD    v1;            /* Vertex indices */
+        WORD    wV1;
     };
     union {
-    WORD    v2;
-    WORD    wV2;
+        WORD    v2;
+        WORD    wV2;
     };
     union {
-    WORD    v3;
-    WORD    wV3;
+        WORD    v3;
+        WORD    wV3;
     };
     WORD        wFlags;       /* Edge (and other) flags */
 } D3DTRIANGLE, *LPD3DTRIANGLE;
@@ -1812,12 +1842,12 @@ typedef struct _D3DTRIANGLE {
  */
 typedef struct _D3DLINE {
     union {
-    WORD    v1;            /* Vertex indices */
-    WORD    wV1;
+        WORD    v1;            /* Vertex indices */
+        WORD    wV1;
     };
     union {
-    WORD    v2;
-    WORD    wV2;
+        WORD    v2;
+        WORD    wV2;
     };
 } D3DLINE, *LPD3DLINE;
 
@@ -2009,16 +2039,14 @@ typedef struct _D3DVERTEXBUFFERDESC {
                           D3DFVF_TEX1 )
 
 
-typedef struct _D3DDP_PTRSTRIDE
-{
+typedef struct _D3DDP_PTRSTRIDE {
     LPVOID lpvData;
     DWORD  dwStride;
 } D3DDP_PTRSTRIDE;
 
 #define D3DDP_MAXTEXCOORD 8
 
-typedef struct _D3DDRAWPRIMITIVESTRIDEDDATA
-{
+typedef struct _D3DDRAWPRIMITIVESTRIDEDDATA {
     D3DDP_PTRSTRIDE position;
     D3DDP_PTRSTRIDE normal;
     D3DDP_PTRSTRIDE diffuse;
@@ -2069,8 +2097,7 @@ typedef struct _D3DDRAWPRIMITIVESTRIDEDDATA
 #define D3DDEVINFOID_D3DTEXTUREMANAGER 2
 #define D3DDEVINFOID_TEXTURING         3
 
-typedef enum _D3DSTATEBLOCKTYPE
-{
+typedef enum _D3DSTATEBLOCKTYPE {
     D3DSBT_ALL           = 1, // capture all state
     D3DSBT_PIXELSTATE    = 2, // capture pixel state
     D3DSBT_VERTEXSTATE   = 3, // capture vertex state
@@ -2079,8 +2106,7 @@ typedef enum _D3DSTATEBLOCKTYPE
 
 // The D3DVERTEXBLENDFLAGS type is used with D3DRENDERSTATE_VERTEXBLEND state.
 //
-typedef enum _D3DVERTEXBLENDFLAGS
-{
+typedef enum _D3DVERTEXBLENDFLAGS {
     D3DVBLEND_DISABLE  = 0, // Disable vertex blending
     D3DVBLEND_1WEIGHT  = 1, // blend between 2 matrices
     D3DVBLEND_2WEIGHTS = 2, // blend between 3 matrices

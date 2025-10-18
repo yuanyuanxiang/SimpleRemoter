@@ -24,7 +24,8 @@
 #endif
 
 
-class CHideScreenSpyDlg : public DialogBase {
+class CHideScreenSpyDlg : public DialogBase
+{
     DECLARE_DYNAMIC(CHideScreenSpyDlg)
     enum { IDD = IDD_SCREEN };
 
@@ -32,21 +33,22 @@ public:
     CHideScreenSpyDlg(CWnd* pParent = NULL, Server* pIOCPServer = NULL, ClientContext* pContext = NULL);
     virtual ~CHideScreenSpyDlg();
 
-	VOID SendNext(void) {
-		BYTE	bToken = COMMAND_NEXT;
-		m_ContextObject->Send2Client(&bToken, 1);
-	}
+    VOID SendNext(void)
+    {
+        BYTE	bToken = COMMAND_NEXT;
+        m_ContextObject->Send2Client(&bToken, 1);
+    }
     void OnReceiveComplete();
-	BOOL ParseFrame(void);
-	void DrawFirstScreen(PBYTE pDeCompressionData, unsigned long destLen);
-	void DrawNextScreenDiff(PBYTE pDeCompressionData, unsigned long	destLen);
+    BOOL ParseFrame(void);
+    void DrawFirstScreen(PBYTE pDeCompressionData, unsigned long destLen);
+    void DrawNextScreenDiff(PBYTE pDeCompressionData, unsigned long	destLen);
     void DrawNextScreenHome(PBYTE pDeCompressionData, unsigned long	destLen);
-	void DrawTipString(CString str);
+    void DrawTipString(CString str);
 
-	void SendCommand(const MYMSG& pMsg);
-	void SendScaledMouseMessage(MSG* pMsg, bool makeLP = false);
-	void UpdateServerClipboard(char* buf, int len);
-	void SendServerClipboard(void);
+    void SendCommand(const MYMSG& pMsg);
+    void SendScaledMouseMessage(MSG* pMsg, bool makeLP = false);
+    void UpdateServerClipboard(char* buf, int len);
+    void SendServerClipboard(void);
     bool SaveSnapshot(void);
 
     virtual void DoDataExchange(CDataExchange* pDX);
@@ -56,7 +58,7 @@ public:
     afx_msg void OnClose();
     afx_msg void OnPaint();
     afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
-	afx_msg void OnSize(UINT nType, int cx, int cy);
+    afx_msg void OnSize(UINT nType, int cx, int cy);
 
     virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);
 
@@ -65,32 +67,32 @@ public:
     DECLARE_MESSAGE_MAP()
 
 protected:
-	void DoPaint();
+    void DoPaint();
     bool JPG_BMP(int cbit, void* input, int inlen, void* output);
     void ResetScreen();
 
-	HDC                 m_hFullDC, m_hFullMemDC;
-	HBITMAP	            m_BitmapHandle;
-	LPVOID              m_BitmapData_Full;
-	LPBITMAPINFO        m_BitmapInfor_Full;
-	HCURSOR	            m_hRemoteCursor;
-	CCursorInfo	        m_CursorInfo;
-	BOOL                m_bIsFirst;
-	BOOL                m_bIsCtrl;
+    HDC                 m_hFullDC, m_hFullMemDC;
+    HBITMAP	            m_BitmapHandle;
+    LPVOID              m_BitmapData_Full;
+    LPBITMAPINFO        m_BitmapInfor_Full;
+    HCURSOR	            m_hRemoteCursor;
+    CCursorInfo	        m_CursorInfo;
+    BOOL                m_bIsFirst;
+    BOOL                m_bIsCtrl;
     POINT               m_ClientCursorPos;
     BYTE                m_bCursorIndex;
-	CString				m_strTip;
+    CString				m_strTip;
 
-	clock_t				m_lastMouseMove; // 鼠标移动时间
-	POINT				m_lastMousePoint;// 上次鼠标位置
+    clock_t				m_lastMouseMove; // 鼠标移动时间
+    POINT				m_lastMousePoint;// 上次鼠标位置
 
 private:
-	CString             m_aviFile;
-	CBmpToAvi	        m_aviStream;
-	CRect               m_CRect;
-	RECT                m_rect;
-	double              m_wZoom;
-	double              m_hZoom;
-	LPVOID	            m_lpvRectBits;
-	LPBITMAPINFO        m_lpbmi_rect;
+    CString             m_aviFile;
+    CBmpToAvi	        m_aviStream;
+    CRect               m_CRect;
+    RECT                m_rect;
+    double              m_wZoom;
+    double              m_hZoom;
+    LPVOID	            m_lpvRectBits;
+    LPBITMAPINFO        m_lpbmi_rect;
 };

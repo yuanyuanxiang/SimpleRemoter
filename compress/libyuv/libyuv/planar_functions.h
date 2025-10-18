@@ -18,7 +18,8 @@
 #include "libyuv/convert_argb.h"
 
 #ifdef __cplusplus
-namespace libyuv {
+namespace libyuv
+{
 extern "C" {
 #endif
 

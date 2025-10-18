@@ -1,6 +1,6 @@
 /*==========================================================================;
  *
- *  Copyright (C) Microsoft Corporation.  All Rights Reserved. 
+ *  Copyright (C) Microsoft Corporation.  All Rights Reserved.
  *
  *  File:       d3dcaps.h
  *  Content:    Direct3D capabilities include file
@@ -461,7 +461,7 @@ typedef HRESULT (CALLBACK * LPD3DENUMDEVICESCALLBACK7)(LPSTR lpDeviceDescription
 /* D3DDEVICEDESC dwDevCaps flags */
 
 #define D3DDEVCAPS_FLOATTLVERTEX        0x00000001L /* Device accepts floating point */
-                                                    /* for post-transform vertex data */
+/* for post-transform vertex data */
 #define D3DDEVCAPS_SORTINCREASINGZ      0x00000002L /* Device needs data sorted for increasing Z */
 #define D3DDEVCAPS_SORTDECREASINGZ      0X00000004L /* Device needs data sorted for decreasing Z */
 #define D3DDEVCAPS_SORTEXACT            0x00000008L /* Device needs data sorted exactly */

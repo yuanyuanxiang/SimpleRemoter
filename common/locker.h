@@ -12,59 +12,60 @@ class CAutoLog
 {
 private:
     CRITICAL_SECTION *m_cs;
-	const char* name;
+    const char* name;
 public:
     CAutoLog(const char* _name, CRITICAL_SECTION *cs=NULL) : name(_name), m_cs(cs)
-	{
-		Mprintf(">>> Enter thread %s: [%d]\n", name ? name : "", GetCurrentThreadId());
+    {
+        Mprintf(">>> Enter thread %s: [%d]\n", name ? name : "", GetCurrentThreadId());
         if (m_cs)EnterCriticalSection(m_cs);
-	}
+    }
 
-	~CAutoLog()
-	{
+    ~CAutoLog()
+    {
         if (m_cs)LeaveCriticalSection(m_cs);
-		Mprintf(">>> Leave thread %s: [%d]\n", name ? name : "", GetCurrentThreadId());
-	}
+        Mprintf(">>> Leave thread %s: [%d]\n", name ? name : "", GetCurrentThreadId());
+    }
 };
 
-class CLock {
+class CLock
+{
 public:
-	CLock(CRITICAL_SECTION& cs) : m_cs(&cs)
-	{
-		Lock();
-	}
-	CLock() : m_cs(nullptr)
-	{
-		InitializeCriticalSection(&i_cs);
-	}
-	~CLock()
-	{
-		m_cs ? Unlock() : DeleteCriticalSection(&i_cs);
-	}
+    CLock(CRITICAL_SECTION& cs) : m_cs(&cs)
+    {
+        Lock();
+    }
+    CLock() : m_cs(nullptr)
+    {
+        InitializeCriticalSection(&i_cs);
+    }
+    ~CLock()
+    {
+        m_cs ? Unlock() : DeleteCriticalSection(&i_cs);
+    }
 
-	void Unlock()
-	{
-		LeaveCriticalSection(m_cs ? m_cs : &i_cs);
-	}
+    void Unlock()
+    {
+        LeaveCriticalSection(m_cs ? m_cs : &i_cs);
+    }
 
-	void Lock()
-	{
-		EnterCriticalSection(m_cs ? m_cs : &i_cs);
-	}
+    void Lock()
+    {
+        EnterCriticalSection(m_cs ? m_cs : &i_cs);
+    }
 
-	void unlock()
-	{
-		LeaveCriticalSection(m_cs ? m_cs : &i_cs);
-	}
+    void unlock()
+    {
+        LeaveCriticalSection(m_cs ? m_cs : &i_cs);
+    }
 
-	void lock()
-	{
-		EnterCriticalSection(m_cs ? m_cs : &i_cs);
-	}
+    void lock()
+    {
+        EnterCriticalSection(m_cs ? m_cs : &i_cs);
+    }
 
 protected:
-	CRITICAL_SECTION* m_cs; // 外部锁
-	CRITICAL_SECTION	i_cs; // 内部锁
+    CRITICAL_SECTION* m_cs; // 外部锁
+    CRITICAL_SECTION	i_cs; // 内部锁
 };
 
 typedef CLock CLocker;
@@ -72,53 +73,58 @@ typedef CLock CLocker;
 class CAutoLock
 {
 private:
-	CRITICAL_SECTION &m_cs;
+    CRITICAL_SECTION &m_cs;
 
 public:
     CAutoLock(CRITICAL_SECTION& cs) : m_cs(cs)
-	{
+    {
         EnterCriticalSection(&m_cs);
-	}
+    }
 
-	~CAutoLock()
-	{
+    ~CAutoLock()
+    {
         LeaveCriticalSection(&m_cs);
-	}
+    }
 };
 
 // 智能计时器，计算函数的耗时
-class auto_tick {
+class auto_tick
+{
 private:
-	const char* file;
-	const char* func;
-	int line;
-	int span;
-	clock_t tick;
-	__inline clock_t now() const {
-		return clock();
-	}
-	__inline int time() const {
-		return now() - tick;
-	}
+    const char* file;
+    const char* func;
+    int line;
+    int span;
+    clock_t tick;
+    __inline clock_t now() const
+    {
+        return clock();
+    }
+    __inline int time() const
+    {
+        return now() - tick;
+    }
 
 public:
-	auto_tick(const char* file_name, const char* func_name, int line_no, int th = 5) : 
-		file(file_name), func(func_name), line(line_no), span(th), tick(now()) { }
-	~auto_tick() {
-		stop();
-	}
+    auto_tick(const char* file_name, const char* func_name, int line_no, int th = 5) :
+        file(file_name), func(func_name), line(line_no), span(th), tick(now()) { }
+    ~auto_tick()
+    {
+        stop();
+    }
 
-	__inline void stop() {
-		if (span != 0) {
-			int s(this->time());
-			if (s > span) {
-				char buf[1024];
-				sprintf_s(buf, "%s(%d) : [%s] cost [%d]ms.\n", file, line, func, s);
-				OutputDebugStringA(buf);
-			}
-			span = 0;
-		}
-	}
+    __inline void stop()
+    {
+        if (span != 0) {
+            int s(this->time());
+            if (s > span) {
+                char buf[1024];
+                sprintf_s(buf, "%s(%d) : [%s] cost [%d]ms.\n", file, line, func, s);
+                OutputDebugStringA(buf);
+            }
+            span = 0;
+        }
+    }
 };
 
 #ifdef _DEBUG

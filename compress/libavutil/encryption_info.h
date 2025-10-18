@@ -159,7 +159,7 @@ AVEncryptionInfo *av_encryption_info_get_side_data(const uint8_t *side_data, siz
  * @return The new side-data pointer, or NULL.
  */
 uint8_t *av_encryption_info_add_side_data(
-      const AVEncryptionInfo *info, size_t *side_data_size);
+    const AVEncryptionInfo *info, size_t *side_data_size);
 
 
 /**

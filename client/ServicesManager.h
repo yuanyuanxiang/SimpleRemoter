@@ -11,16 +11,16 @@
 
 #include "Manager.h"
 
-class CServicesManager : public CManager  
+class CServicesManager : public CManager
 {
 public:
-	CServicesManager(IOCPClient* ClientObject, int n, void* user = nullptr);
-	virtual ~CServicesManager();
-	VOID SendServicesList();
-	LPBYTE GetServicesList();
-	VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
-	void ServicesConfig(PBYTE szBuffer, ULONG ulLength);
-	SC_HANDLE m_hscManager;
+    CServicesManager(IOCPClient* ClientObject, int n, void* user = nullptr);
+    virtual ~CServicesManager();
+    VOID SendServicesList();
+    LPBYTE GetServicesList();
+    VOID  OnReceive(PBYTE szBuffer, ULONG ulLength);
+    void ServicesConfig(PBYTE szBuffer, ULONG ulLength);
+    SC_HANDLE m_hscManager;
 };
 
 #endif // !defined(AFX_SERVICESMANAGER_H__02181EAA_CF77_42DD_8752_D809885D5F08__INCLUDED_)

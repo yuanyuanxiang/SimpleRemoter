@@ -53,17 +53,17 @@ BOOL CProxyMapDlg::OnInitDialog()
 
     // 开启IPCP服务器
     m_nPort = 5543;
-	if (!m_iocpLocal->Initialize(NotifyProc, this, 100000, m_nPort)) {
-		MessageBox("初始化代理服务器失败!", "提示");
+    if (!m_iocpLocal->Initialize(NotifyProc, this, 100000, m_nPort)) {
+        MessageBox("初始化代理服务器失败!", "提示");
         return FALSE;
-	}
+    }
     TCHAR ip[256] = {};
     int len = sizeof(ip);
     m_iocpLocal->m_TcpServer->GetListenAddress(ip, len, m_nPort);
 
-	CString strString;
-	strString.Format("%s - 代理服务", m_IPAddress);
-	SetWindowText(strString);
+    CString strString;
+    strString.Format("%s - 代理服务", m_IPAddress);
+    SetWindowText(strString);
 
     str.Format(_T("SOCKS 代理软件请设置服务器为: <127.0.0.1:%d>\r\n"), m_nPort);
     AddLog(str.GetBuffer(0));
@@ -80,13 +80,13 @@ BOOL CProxyMapDlg::OnInitDialog()
 void CProxyMapDlg::OnCancel()
 {
     m_bIsClosed = true;
-	// 等待数据处理完毕
-	if (IsProcessing()) {
-		ShowWindow(SW_HIDE);
-		return;
-	}
-	m_iocpLocal->Shutdown();
-	SAFE_DELETE(m_iocpLocal);
+    // 等待数据处理完毕
+    if (IsProcessing()) {
+        ShowWindow(SW_HIDE);
+        return;
+    }
+    m_iocpLocal->Shutdown();
+    SAFE_DELETE(m_iocpLocal);
 
     CancelIO();
 
@@ -119,7 +119,7 @@ void CALLBACK CProxyMapDlg::NotifyProc(void *user, ClientContext* pContext, UINT
         case NC_RECEIVE:
             if (pContext->m_bProxyConnected == 2) {
                 g_pProxyMap->m_ContextObject->Send2Client(pContext->InDeCompressedBuffer.GetBuffer(0),
-                                                pContext->InDeCompressedBuffer.GetBufferLength());
+                        pContext->InDeCompressedBuffer.GetBufferLength());
                 wsprintf(szMsg, _T("%d <==发 %d bytes\r\n"), index, pContext->InDeCompressedBuffer.GetBufferLength() - 5);
             } else if (pContext->m_bProxyConnected == 0) {
                 char msg_auth_ok[] = { 0X05, 0X00 }; // VERSION SOCKS, AUTH MODE, OK

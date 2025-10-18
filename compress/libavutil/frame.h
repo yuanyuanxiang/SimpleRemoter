@@ -430,25 +430,25 @@ typedef struct AVFrame {
     AVFrameSideData **side_data;
     int            nb_side_data;
 
-/**
- * @defgroup lavu_frame_flags AV_FRAME_FLAGS
- * @ingroup lavu_frame
- * Flags describing additional frame properties.
- *
- * @{
- */
+    /**
+     * @defgroup lavu_frame_flags AV_FRAME_FLAGS
+     * @ingroup lavu_frame
+     * Flags describing additional frame properties.
+     *
+     * @{
+     */
 
-/**
- * The frame data may be corrupted, e.g. due to decoding errors.
- */
+    /**
+     * The frame data may be corrupted, e.g. due to decoding errors.
+     */
 #define AV_FRAME_FLAG_CORRUPT       (1 << 0)
-/**
- * A flag to mark the frames which need to be decoded, but shouldn't be output.
- */
+    /**
+     * A flag to mark the frames which need to be decoded, but shouldn't be output.
+     */
 #define AV_FRAME_FLAG_DISCARD   (1 << 2)
-/**
- * @}
- */
+    /**
+     * @}
+     */
 
     /**
      * Frame flags, a combination of @ref lavu_frame_flags
@@ -831,8 +831,8 @@ AVFrameSideData *av_frame_new_side_data(AVFrame *frame,
  *         the caller.
  */
 AVFrameSideData *av_frame_new_side_data_from_buf(AVFrame *frame,
-                                                 enum AVFrameSideDataType type,
-                                                 AVBufferRef *buf);
+        enum AVFrameSideDataType type,
+        AVBufferRef *buf);
 
 /**
  * @return a pointer to the side data of a given type on success, NULL if there

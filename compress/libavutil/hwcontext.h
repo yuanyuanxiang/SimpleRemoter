@@ -483,7 +483,7 @@ void *av_hwdevice_hwconfig_alloc(AVBufferRef *device_ctx);
  *         on the device, or NULL if not available.
  */
 AVHWFramesConstraints *av_hwdevice_get_hwframe_constraints(AVBufferRef *ref,
-                                                           const void *hwconfig);
+        const void *hwconfig);
 
 /**
  * Free an AVHWFrameConstraints structure.

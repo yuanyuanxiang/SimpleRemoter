@@ -14,7 +14,8 @@
 #include "libyuv/basic_types.h"
 
 #ifdef __cplusplus
-namespace libyuv {
+namespace libyuv
+{
 extern "C" {
 #endif
 
@@ -76,14 +77,15 @@ int InitCpuFlags(void);
 // Detect CPU has SSE2 etc.
 // Test_flag parameter should be one of kCpuHas constants above.
 // Returns non-zero if instruction set is detected
-static __inline int TestCpuFlag(int test_flag) {
-  LIBYUV_API extern int cpu_info_;
+static __inline int TestCpuFlag(int test_flag)
+{
+    LIBYUV_API extern int cpu_info_;
 #ifdef __ATOMIC_RELAXED
-  int cpu_info = __atomic_load_n(&cpu_info_, __ATOMIC_RELAXED);
+    int cpu_info = __atomic_load_n(&cpu_info_, __ATOMIC_RELAXED);
 #else
-  int cpu_info = cpu_info_;
+    int cpu_info = cpu_info_;
 #endif
-  return (!cpu_info ? InitCpuFlags() : cpu_info) & test_flag;
+    return (!cpu_info ? InitCpuFlags() : cpu_info) & test_flag;
 }
 
 // Internal function for parsing /proc/cpuinfo.
@@ -128,12 +130,13 @@ int MaskCpuFlags(int enable_flags);
 // TODO(fbarchard): consider writing a helper function that translates from
 // other library CPU info to libyuv CPU info and add a .md doc that explains
 // CPU detection.
-static __inline void SetCpuFlags(int cpu_flags) {
-  LIBYUV_API extern int cpu_info_;
+static __inline void SetCpuFlags(int cpu_flags)
+{
+    LIBYUV_API extern int cpu_info_;
 #ifdef __ATOMIC_RELAXED
-  __atomic_store_n(&cpu_info_, cpu_flags, __ATOMIC_RELAXED);
+    __atomic_store_n(&cpu_info_, cpu_flags, __ATOMIC_RELAXED);
 #else
-  cpu_info_ = cpu_flags;
+    cpu_info_ = cpu_flags;
 #endif
 }
 
