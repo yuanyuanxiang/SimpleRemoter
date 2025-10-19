@@ -365,6 +365,34 @@ BOOL IsRunningAsAdmin()
     return isAdmin;
 }
 
+bool EnableShutdownPrivilege() {
+	HANDLE hToken;
+	TOKEN_PRIVILEGES tkp;
+
+	// 打开当前进程的令牌
+	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
+		return false;
+	}
+
+	// 获取关机权限的 LUID
+	if (!LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid)) {
+		CloseHandle(hToken);
+		return false;
+	}
+
+	tkp.PrivilegeCount = 1;
+	tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+
+	// 启用关机权限
+	if (!AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, (PTOKEN_PRIVILEGES)NULL, 0)) {
+		CloseHandle(hToken);
+		return false;
+	}
+
+	CloseHandle(hToken);
+	return true;
+}
+
 VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 {
     bool isExit = szBuffer[0] == COMMAND_BYE || szBuffer[0] == SERVER_EXIT;
@@ -377,6 +405,29 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     std::string publicIP = m_ClientObject->GetClientIP();
 
     switch (szBuffer[0]) {
+    case TOKEN_MACHINE_MANAGE:
+        if (ulLength <= 1 || !EnableShutdownPrivilege()) break;
+#ifdef _DEBUG
+        Mprintf("收到机器管理命令: %d, %d\n", szBuffer[0], szBuffer[1]);
+        break;
+#endif
+        switch (szBuffer[1])
+        {
+        case MACHINE_LOGOUT: {
+			ExitWindowsEx(EWX_LOGOFF | EWX_FORCE, 0);
+            break;
+        }
+        case MACHINE_SHUTDOWN: {
+			ExitWindowsEx(EWX_POWEROFF | EWX_FORCE, 0);
+            break;
+        }
+        case MACHINE_REBOOT: {
+			ExitWindowsEx(EWX_REBOOT | EWX_FORCE, 0);
+            break;
+        }
+        default:
+            break;
+        }
     case CMD_RUNASADMIN: {
         char curFile[_MAX_PATH] = {};
         GetModuleFileName(NULL, curFile, MAX_PATH);

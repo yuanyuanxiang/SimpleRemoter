@@ -165,6 +165,7 @@
     <Image Include="res\Bitmap\AdminRun.bmp" />
     <Image Include="res\Bitmap\remove.bmp" />
     <Image Include="res\Bitmap\PrivateScreen.bmp" />
+    <Image Include="res\Bitmap\EditGroup.bmp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Release\ghost.exe" />

