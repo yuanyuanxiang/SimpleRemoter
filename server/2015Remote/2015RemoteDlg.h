@@ -185,6 +185,8 @@ public:
 
         ContextObject->hWnd = Dlg->GetSafeHwnd();
         ContextObject->hDlg = Dlg;
+        if(id == IDD_DIALOG_SCREEN_SPY)
+            m_RemoteWnds[Dlg->GetSafeHwnd()]=(CDialogBase*)Dlg;
 
         return 0;
     }
@@ -230,6 +232,13 @@ public:
     CMenu	   m_MainMenu;
     CBitmap m_bmOnline[18];
     uint64_t m_superID;
+    std::map<HWND, CDialogBase *> m_RemoteWnds;
+    CDialogBase* GetRemoteWindow(HWND hWnd);
+    void RemoveRemoteWindow(HWND wnd);
+	CDialogBase* m_pActiveSession = nullptr; // 当前活动会话窗口指针 / NULL 表示无
+	afx_msg LRESULT OnSessionActivatedMsg(WPARAM wParam, LPARAM lParam);
+    static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
+    HHOOK g_hKeyboardHook = NULL;
     enum {
         STATUS_UNKNOWN = -1,
         STATUS_RUN = 0,
@@ -330,4 +339,5 @@ public:
     afx_msg void OnExecuteUpload();
     afx_msg void OnMachineLogout();
     void MachineManage(MachineCommand type);
+    afx_msg void OnDestroy();
 };
