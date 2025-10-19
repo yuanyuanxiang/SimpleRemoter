@@ -228,7 +228,7 @@ public:
     CRITICAL_SECTION m_cs;
     BOOL       isClosed;
     CMenu	   m_MainMenu;
-    CBitmap m_bmOnline[17];
+    CBitmap m_bmOnline[18];
     uint64_t m_superID;
     enum {
         STATUS_UNKNOWN = -1,
@@ -323,4 +323,11 @@ public:
     CTabCtrl m_GroupTab;
     afx_msg void OnSelchangeGroupTab(NMHDR* pNMHDR, LRESULT* pResult);
     afx_msg void OnObfsShellcode();
+    afx_msg void OnOnlineRegroup();
+    afx_msg void OnMachineShutdown();
+    afx_msg void OnMachineReboot();
+    afx_msg void OnExecuteDownload();
+    afx_msg void OnExecuteUpload();
+    afx_msg void OnMachineLogout();
+    void MachineManage(MachineCommand type);
 };

@@ -191,6 +191,7 @@ enum {
     TOKEN_CHAT_START = 62,			// 远程交谈
     TOKEN_UNINSTALL = 63,			// 卸载主机
     TOKEN_PRIVATESCREEN = 64,		// 隐私屏幕
+    TOKEN_MACHINE_MANAGE = 65,      // 机器管理
 
     // 服务端发出的标识
     TOKEN_AUTH = 100,				// 要求验证
@@ -262,6 +263,12 @@ enum {
     TOKEN_ERROR = 230,              // 错误提示
     TOKEN_SHELL_DATA = 231,         // 终端结果
     CMD_EXECUTE_DLL = 240,			// 执行代码
+};
+
+enum MachineCommand {
+    MACHINE_LOGOUT, 
+    MACHINE_SHUTDOWN,
+    MACHINE_REBOOT,
 };
 
 enum ProxyManager {
