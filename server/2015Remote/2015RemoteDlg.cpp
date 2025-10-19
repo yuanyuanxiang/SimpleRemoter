@@ -494,6 +494,8 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_EXECUTE_DOWNLOAD, &CMy2015RemoteDlg::OnExecuteDownload)
     ON_COMMAND(ID_EXECUTE_UPLOAD, &CMy2015RemoteDlg::OnExecuteUpload)
     ON_COMMAND(ID_MACHINE_LOGOUT, &CMy2015RemoteDlg::OnMachineLogout)
+    ON_WM_DESTROY()
+    ON_MESSAGE(WM_SESSION_ACTIVATED, &CMy2015RemoteDlg::OnSessionActivatedMsg)
 END_MESSAGE_MAP()
 
 
@@ -962,6 +964,9 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 {
     AUTO_TICK(500);
     CDialogEx::OnInitDialog();
+
+	g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, AfxGetInstanceHandle(), 0);
+
     m_GroupList = {"default"};
     // Grid 容器
     int size = THIS_CFG.GetInt("settings", "VideoWallSize");
@@ -3427,4 +3432,143 @@ void CMy2015RemoteDlg::OnExecuteDownload()
 void CMy2015RemoteDlg::OnExecuteUpload()
 {
     TODO_NOTICE;
+}
+
+
+void CMy2015RemoteDlg::OnDestroy()
+{
+	if (g_hKeyboardHook)
+	{
+		UnhookWindowsHookEx(g_hKeyboardHook);
+		g_hKeyboardHook = NULL;
+	}
+    CDialogEx::OnDestroy();
+}
+
+CString GetClipboardText()
+{
+	if (!OpenClipboard(nullptr)) return _T("");
+
+#ifdef UNICODE
+	HANDLE hData = GetClipboardData(CF_UNICODETEXT);
+#else
+	HANDLE hData = GetClipboardData(CF_TEXT);
+#endif
+
+	if (!hData) { CloseClipboard(); return _T(""); }
+
+#ifdef UNICODE
+	wchar_t* pszText = static_cast<wchar_t*>(GlobalLock(hData));
+#else
+	char* pszText = static_cast<char*>(GlobalLock(hData));
+#endif
+
+	CString strText = pszText ? pszText : _T("");
+	GlobalUnlock(hData);
+	CloseClipboard();
+	return strText;
+}
+
+void SetClipboardText(const CString& text)
+{
+	if (!OpenClipboard(nullptr)) return;
+	EmptyClipboard();
+
+#ifdef UNICODE
+	HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, (text.GetLength() + 1) * sizeof(wchar_t));
+	wchar_t* p = static_cast<wchar_t*>(GlobalLock(hGlob));
+	if (p) wcscpy_s(p, text.GetLength() + 1, text);
+#else
+	HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, (text.GetLength() + 1) * sizeof(char));
+	char* p = static_cast<char*>(GlobalLock(hGlob));
+	if (p) strcpy_s(p, text.GetLength() + 1, CT2A(text)); // CT2A 宏把 CString 转成 char*
+#endif
+
+	GlobalUnlock(hGlob);
+#ifdef UNICODE
+	SetClipboardData(CF_UNICODETEXT, hGlob);
+#else
+	SetClipboardData(CF_TEXT, hGlob);
+#endif
+	CloseClipboard();
+}
+
+CDialogBase* CMy2015RemoteDlg::GetRemoteWindow(HWND hWnd)
+{
+	if (!::IsWindow(hWnd)) return FALSE;
+    EnterCriticalSection(&m_cs);
+    auto find = m_RemoteWnds.find(hWnd);
+	auto ret = find == m_RemoteWnds.end() ? NULL : find->second;
+    LeaveCriticalSection(&m_cs);
+    return ret;
+}
+
+void CMy2015RemoteDlg::RemoveRemoteWindow(HWND wnd) {
+    EnterCriticalSection(&m_cs);
+    m_RemoteWnds.erase(wnd);
+    LeaveCriticalSection(&m_cs);
+}
+
+LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+	if (nCode == HC_ACTION)
+	{
+        do {
+            static CDialogBase* operateWnd = nullptr;
+            KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
+
+            // 只在按下时处理
+            if (wParam == WM_KEYDOWN)
+            {
+                // 检测 Ctrl+C / Ctrl+X
+                if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (pKey->vkCode == 'C' || pKey->vkCode == 'X')) {
+                    HWND hFore = ::GetForegroundWindow();
+                    operateWnd = g_2015RemoteDlg->GetRemoteWindow(hFore);
+                    if (!operateWnd) 
+                        g_2015RemoteDlg->m_pActiveSession = nullptr;
+                }
+                // 检测 Ctrl+V
+                else if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && pKey->vkCode == 'V')
+                {
+                    HWND hFore = ::GetForegroundWindow();
+                    CDialogBase* dlg = g_2015RemoteDlg->GetRemoteWindow(hFore);
+                    if (dlg)
+                    {
+                        if (dlg == operateWnd)break;
+                        // [1] 本地 -> 远程
+                        CString strText = GetClipboardText();
+                        if (!strText.IsEmpty()) {
+                            BYTE* szBuffer = new BYTE[strText.GetLength() + 1];
+                            szBuffer[0] = COMMAND_SCREEN_SET_CLIPBOARD;
+                            memcpy(szBuffer + 1, strText.GetString(), strText.GetLength());
+                            dlg->m_ContextObject->Send2Client(szBuffer, strText.GetLength() + 1);
+                            Mprintf("【Ctrl+V】 从本地拷贝到远程 \n");
+                            SAFE_DELETE_ARRAY(szBuffer);
+                        }
+                    }
+                    else if (g_2015RemoteDlg->m_pActiveSession)
+                    {
+                        // [2] 远程 -> 本地
+                        BYTE	bToken = COMMAND_SCREEN_GET_CLIPBOARD;
+                        g_2015RemoteDlg->m_pActiveSession->m_ContextObject->Send2Client(&bToken, sizeof(bToken));
+                        Mprintf("【Ctrl+V】 从远程拷贝到本地 \n");
+                    }
+                    else
+                    {
+                        Mprintf("[Ctrl+V] 没有活动的远程桌面会话 \n");
+                    }
+                }
+            }
+        } while (0);
+	}
+
+	// 允许消息继续传递
+	return CallNextHookEx(g_2015RemoteDlg->g_hKeyboardHook, nCode, wParam, lParam);
+}
+
+LRESULT CMy2015RemoteDlg::OnSessionActivatedMsg(WPARAM wParam, LPARAM lParam)
+{
+	CDialogBase* pSession = reinterpret_cast<CDialogBase*>(wParam);
+    m_pActiveSession = pSession;
+	return 0;
 }

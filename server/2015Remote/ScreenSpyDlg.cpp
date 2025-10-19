@@ -8,6 +8,7 @@
 #include <imm.h>
 #include <WinUser.h>
 #include "CGridDialog.h"
+#include "2015RemoteDlg.h"
 
 
 // CScreenSpyDlg 对话框
@@ -130,6 +131,7 @@ BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialog)
     ON_WM_KILLFOCUS()
     ON_WM_SIZE()
     ON_WM_LBUTTONDBLCLK()
+    ON_WM_ACTIVATE()
 END_MESSAGE_MAP()
 
 
@@ -218,6 +220,9 @@ VOID CScreenSpyDlg::OnClose()
     CWnd* parent = GetParent();
     if (parent)
         parent->SendMessage(WM_CHILD_CLOSED, (WPARAM)this, 0);
+    extern CMy2015RemoteDlg *g_2015RemoteDlg;
+    if(g_2015RemoteDlg)
+        g_2015RemoteDlg->RemoveRemoteWindow(GetSafeHwnd());
 
     // 等待数据处理完毕
     if (IsProcessing()) {
@@ -860,4 +865,18 @@ void CScreenSpyDlg::OnSize(UINT nType, int cx, int cy)
     GetClientRect(&m_CRect);
     m_wZoom = ((double)m_BitmapInfor_Full->bmiHeader.biWidth) / ((double)(m_CRect.Width()));
     m_hZoom = ((double)m_BitmapInfor_Full->bmiHeader.biHeight) / ((double)(m_CRect.Height()));
+}
+
+void CScreenSpyDlg::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
+{
+	CDialogBase::OnActivate(nState, pWndOther, bMinimized);
+
+	CWnd* pMain = AfxGetMainWnd();
+	if (!pMain)
+		return;
+
+	if (nState != WA_INACTIVE){
+		// 通知主窗口：远程窗口获得焦点
+		::PostMessage(pMain->GetSafeHwnd(), WM_SESSION_ACTIVATED, (WPARAM)this, 0);
+	}
 }
