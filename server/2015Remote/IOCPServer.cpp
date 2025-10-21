@@ -574,7 +574,7 @@ BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOr
     }
 }
 
-VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength)
+BOOL IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength)
 {
     if (WriteContextData(ContextObject, szBuffer, ulOriginalLength)) {
         OVERLAPPEDPLUS* OverlappedPlus = new OVERLAPPEDPLUS(IOWrite);
@@ -584,8 +584,11 @@ VOID IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
             Mprintf("!!! OnClientPreSending Í¶µÝÏûÏ¢Ê§°Ü\n");
             RemoveStaleContext(ContextObject);
             SAFE_DELETE(OverlappedPlus);
+            return FALSE;
         }
+        return TRUE;
     }
+    return FALSE;
 }
 
 BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompletedLength)

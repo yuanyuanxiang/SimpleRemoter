@@ -50,7 +50,7 @@ public:
         return m_port;
     }
     virtual UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort) override;
-    virtual void Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) override;
+    virtual BOOL Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) override;
     virtual void Destroy() override;
     virtual void Disconnect(CONTEXT_OBJECT* ctx) override;
 

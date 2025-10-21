@@ -27,7 +27,7 @@ public:
         return m_port;
     }
     UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort) override;
-    VOID Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) override;
+    BOOL Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) override;
     VOID Destroy() override;
     virtual void UpdateMaxConnection(int maxConn) override
     {

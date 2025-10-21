@@ -172,7 +172,7 @@ CManager::~CManager()
 }
 
 
-int CManager::Send(LPBYTE lpData, UINT nSize)
+BOOL CManager::Send(LPBYTE lpData, UINT nSize)
 {
     int	nRet = 0;
     try {
