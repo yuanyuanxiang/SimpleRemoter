@@ -155,12 +155,12 @@ void IOCPKCPServer::KCPUpdateLoop()
     }
 }
 
-void IOCPKCPServer::Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength)
+BOOL IOCPKCPServer::Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength)
 {
-    if (!ContextObject || !ContextObject->kcp) return;
+    if (!ContextObject || !ContextObject->kcp) return FALSE;
     ContextObject->OutCompressedBuffer.ClearBuffer();
     if (!WriteContextData(ContextObject, szBuffer, ulOriginalLength))
-        return;
+        return FALSE;
     {
         std::lock_guard<std::mutex> lock(m_contextsMutex);
 
@@ -169,6 +169,7 @@ void IOCPKCPServer::Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, U
                   (int)ContextObject->OutCompressedBuffer.GetBufferLength());
         ikcp_flush(ContextObject->kcp);
     }
+    return TRUE;
 }
 
 void IOCPKCPServer::Destroy()

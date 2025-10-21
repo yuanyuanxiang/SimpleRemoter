@@ -53,8 +53,8 @@ public:
         return m_ClientObject ? m_ClientObject->Reconnect(this) : FALSE;
     }
     virtual void Notify() { }
-    int Send(LPBYTE lpData, UINT nSize);
-    int SendData(LPBYTE lpData, UINT nSize)
+    BOOL Send(LPBYTE lpData, UINT nSize);
+    BOOL SendData(LPBYTE lpData, UINT nSize)
     {
         return Send(lpData, nSize);
     }

@@ -448,7 +448,7 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
                 const int bufSize = 512;
                 BYTE buf1[bufSize], buf2[bufSize];
                 PBYTE CompressedBuffer = ulCompressedLength > bufSize ? new BYTE[ulCompressedLength] : buf1;
-                PBYTE DeCompressedBuffer = ulCompressedLength > bufSize ? new BYTE[ulOriginalLength] : buf2;
+                PBYTE DeCompressedBuffer = ulOriginalLength > bufSize ? new BYTE[ulOriginalLength] : buf2;
 
                 m_CompressedBuffer->ReadBuffer(CompressedBuffer, ulCompressedLength);
                 m_Encoder->Decode(CompressedBuffer, ulCompressedLength, (LPBYTE)szPacketFlag);

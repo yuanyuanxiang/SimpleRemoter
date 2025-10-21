@@ -122,11 +122,11 @@ void IOCPUDPServer::WorkerThread()
     m_hThread = NULL;
 }
 
-VOID IOCPUDPServer::Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength)
+BOOL IOCPUDPServer::Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength)
 {
     ContextObject->OutCompressedBuffer.ClearBuffer();
     if (!WriteContextData(ContextObject, szBuffer, ulOriginalLength))
-        return;
+        return FALSE;
     WSABUF buf = {
         ContextObject->OutCompressedBuffer.GetBufferLength(),
         (CHAR*)ContextObject->OutCompressedBuffer.GetBuffer(),
@@ -150,7 +150,9 @@ VOID IOCPUDPServer::Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, U
     if (err == SOCKET_ERROR) {
         DWORD err = WSAGetLastError();
         Mprintf("[IOCP] Send2Client error: %d\n", err);
+        return FALSE;
     }
+    return TRUE;
 }
 
 VOID IOCPUDPServer::Destroy()

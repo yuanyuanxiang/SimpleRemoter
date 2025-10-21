@@ -69,7 +69,7 @@ private:
     BOOL HandleIO(IOType PacketFlags, PCONTEXT_OBJECT ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx);
     BOOL OnClientInitializing(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans);
     BOOL OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx);
-    VOID OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength);
+    BOOL OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength);
     BOOL OnClientPostSending(CONTEXT_OBJECT* ContextObject, ULONG ulCompressedLength);
     int AddWorkThread(int n)
     {
@@ -90,9 +90,9 @@ public:
 
     UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort);
 
-    VOID Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength)
+    BOOL Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) override
     {
-        OnClientPreSending(ContextObject, szBuffer, ulOriginalLength);
+        return OnClientPreSending(ContextObject, szBuffer, ulOriginalLength);
     }
 
     void UpdateMaxConnection(int maxConn);

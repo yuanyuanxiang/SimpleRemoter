@@ -303,7 +303,7 @@ public:
 
     virtual UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort) = 0;
 
-    virtual	void Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) = 0;
+    virtual	BOOL Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, ULONG ulOriginalLength) = 0;
 
     virtual void UpdateMaxConnection(int maxConn) {}
 
@@ -317,7 +317,7 @@ class context
 public:
     // ´¿Ðéº¯Êý
     virtual VOID InitMember(SOCKET s, Server* svr)=0;
-    virtual void Send2Client(PBYTE szBuffer, ULONG ulOriginalLength) = 0;
+    virtual BOOL Send2Client(PBYTE szBuffer, ULONG ulOriginalLength) = 0;
     virtual CString GetClientData(int index)const = 0;
     virtual void GetAdditionalData(CString(&s)[RES_MAX]) const =0;
     virtual CString GetAdditionalData(int index) const = 0;
@@ -409,10 +409,11 @@ public:
     {
         return server;
     }
-    VOID Send2Client(PBYTE szBuffer, ULONG ulOriginalLength) override
+    BOOL Send2Client(PBYTE szBuffer, ULONG ulOriginalLength) override
     {
         if (server)
-            server->Send2Client(this, szBuffer, ulOriginalLength);
+            return server->Send2Client(this, szBuffer, ulOriginalLength);
+        return FALSE;
     }
     VOID SetClientInfo(const CString(&s)[ONLINELIST_MAX], const std::vector<std::string>& a = {})
     {
