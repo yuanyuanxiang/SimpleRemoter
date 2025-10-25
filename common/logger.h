@@ -98,7 +98,7 @@ public:
         }
 #ifndef _WINDOWS
 #ifdef _DEBUG
-        printf(logEntry.c_str());
+        printf("%s", logEntry.c_str());
 #endif
 #endif
         cv.notify_one(); // 通知写线程
