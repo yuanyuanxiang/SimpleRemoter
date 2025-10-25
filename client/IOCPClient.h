@@ -171,6 +171,14 @@ public:
         m_nHostPort = uPort;
     }
 
+    std::string ServerIP() const {
+        return m_sCurIP;
+    }
+
+    int ServerPort() const {
+        return m_nHostPort;
+    }
+
     BOOL IsRunning() const
     {
         return m_bIsRunning;

@@ -199,7 +199,9 @@ int main(int argc, const char *argv[])
     HANDLE hMutex = ::CreateMutexA(NULL, TRUE, "ghost.exe");
     if (ERROR_ALREADY_EXISTS == GetLastError()) {
         CloseHandle(hMutex);
+#ifndef _DEBUG
         return -2;
+#endif
     }
 
     SetConsoleCtrlHandler(&callback, TRUE);
@@ -208,6 +210,9 @@ int main(int argc, const char *argv[])
     ClientApp& app(g_MyApp);
     app.g_Connection->SetType(CLIENT_TYPE_ONE);
     app.g_Connection->SetServer(ip, port);
+#ifdef _DEBUG
+    g_SETTINGS.SetServer(ip, port);
+#endif
     if (CLIENT_PARALLEL_NUM == 1) {
         // 启动单个客户端
         StartClientApp(&app);

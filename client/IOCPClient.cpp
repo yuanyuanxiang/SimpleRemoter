@@ -428,7 +428,7 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
             HeaderEncType encType = HeaderEncUnknown;
             FlagType flagType = CheckHead(szPacketFlag, encType);
             if (flagType == FLAG_UNKNOWN) {
-                Mprintf("[ERROR] OnServerReceiving memcmp fail: unknown header '%s'. Mask: %d, Skip %d.\n", 
+                Mprintf("[ERROR] OnServerReceiving memcmp fail: unknown header '%s'. Mask: %d, Skip: %d.\n", 
                     szPacketFlag, maskType, ret);
                 m_CompressedBuffer->ClearBuffer();
                 break;

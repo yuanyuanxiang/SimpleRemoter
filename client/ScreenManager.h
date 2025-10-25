@@ -45,6 +45,12 @@ public:
     VOID SendClientClipboard();
     VOID UpdateClientClipboard(char *szBuffer, ULONG ulLength);
 
+    std::string m_hash;
+    std::string m_hmac;
+    CONNECT_ADDRESS *m_conn = nullptr;
+    void SetConnection(CONNECT_ADDRESS* conn){
+        m_conn = conn;
+    }
     // ÐéÄâ×ÀÃæ
     POINT               m_point;
     POINT               m_lastPoint;

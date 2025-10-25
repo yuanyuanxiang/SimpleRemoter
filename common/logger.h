@@ -114,7 +114,11 @@ public:
         }
         cv.notify_one();
         if (workerThread.joinable()) {
-            workerThread.join();
+			try {
+				workerThread.join();
+			} catch (const std::system_error& e) {
+				printf("Join failed: %s [%d]\n", e.what(), e.code().value());
+			}
         }
         for (int i = 0; threadRun && i++ < 1000; Sleep(1));
     }

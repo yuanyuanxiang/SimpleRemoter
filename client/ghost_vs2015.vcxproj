@@ -206,6 +206,7 @@
     <ClCompile Include="X264Encoder.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\common\file_upload.h" />
     <ClInclude Include="..\common\ikcp.h" />
     <ClInclude Include="..\common\mask.h" />
     <ClInclude Include="..\common\wallet.h" />

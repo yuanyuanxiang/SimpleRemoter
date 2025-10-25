@@ -42,6 +42,8 @@
 #include "CWalletDlg.h"
 #include <wallet.h>
 #include "CRcEditDlg.h"
+#include <thread>
+#include "common/file_upload.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -262,8 +264,7 @@ DllInfo* ReadPluginDll(const std::string& filename)
     int offset = MemoryFind((char*)dllData, masterHash.c_str(), fileSize, masterHash.length());
     if (offset != -1) {
         std::string masterId = GetPwdHash(), hmac = GetHMAC();
-        if(hmac.empty())
-            hmac = THIS_CFG.GetStr("settings", "HMAC");
+
         memcpy((char*)dllData + offset, masterId.c_str(), masterId.length());
         memcpy((char*)dllData + offset + masterId.length(), hmac.c_str(), hmac.length());
     }
@@ -964,7 +965,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 {
     AUTO_TICK(500);
     CDialogEx::OnInitDialog();
-
+    int ret = InitFileUpload(GetHMAC());
 	g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, AfxGetInstanceHandle(), 0);
 
     m_GroupList = {"default"};
@@ -1384,6 +1385,7 @@ void CMy2015RemoteDlg::OnClose()
 void CMy2015RemoteDlg::Release()
 {
     Mprintf("======> Release\n");
+    UninitFileUpload();
     DeletePopupWindow();
     isClosed = TRUE;
     m_frpStatus = STATUS_EXIT;
@@ -2050,6 +2052,30 @@ std::string getDateStr(int daysOffset = 0)
     return oss.str();
 }
 
+bool SendData(void* user, FileChunkPacket* chunk, BYTE* data, int size) {
+	CONTEXT_OBJECT* ctx = (CONTEXT_OBJECT*)user;
+	if (!ctx->Send2Client(data, size)) {
+		return false;
+	}
+	return true;
+}
+
+void RecvData(void* ptr) {
+    FileChunkPacket* pkt = (FileChunkPacket*)ptr;
+}
+
+void delay_cancel(CONTEXT_OBJECT* ctx, int sec) {
+	if (!ctx) return;
+    Sleep(sec*1000);
+	ctx->CancelIO();
+}
+
+void FinishSend(void* user) {
+    CONTEXT_OBJECT* ctx = (CONTEXT_OBJECT*)user;
+    // 需要等待客户端接收完成方可关闭
+    std::thread(delay_cancel, ctx, 15).detach();
+}
+
 VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 {
     if (isClosed) {
@@ -2057,10 +2083,33 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     }
     clock_t tick = clock();
     unsigned cmd = ContextObject->InDeCompressedBuffer.GetBYTE(0);
+    LPBYTE szBuffer = ContextObject->InDeCompressedBuffer.GetBuffer();
     unsigned len = ContextObject->InDeCompressedBuffer.GetBufferLen();
     // 【L】：主机上下线和授权
     // 【x】：对话框相关功能
     switch (cmd) {
+	case COMMAND_GET_FILE: {
+		// 发送文件
+		auto files = GetClipboardFiles();
+		if (!files.empty()) {
+			std::string dir = (char*)(szBuffer + 1);
+            std::string hash = GetPwdHash(), hmac = GetHMAC(100);
+			std::thread(FileBatchTransferWorker, files, dir, ContextObject, SendData, FinishSend,
+                hash, hmac).detach();
+		}
+		break;
+	}
+	case COMMAND_SEND_FILE: {
+		// 接收文件
+		std::string hash = GetPwdHash(), hmac = GetHMAC(100);
+        CONNECT_ADDRESS addr;
+        memcpy(addr.pwdHash, hash.c_str(), min(hash.length(), sizeof(addr.pwdHash)));
+		int n = RecvFileChunk((char*)szBuffer, len, &addr, RecvData, hash, hmac);
+		if (n) {
+			Mprintf("RecvFileChunk failed: %d. hash: %s, hmac: %s\n", n, hash.c_str(), hmac.c_str());
+		}
+		break;
+	}
     case TOKEN_GETVERSION: { // 获取版本【L】
         // TODO 维持心跳
         bool is64Bit = ContextObject->InDeCompressedBuffer.GetBYTE(1);
@@ -3329,8 +3378,7 @@ void CMy2015RemoteDlg::OnOnlineUninstall()
 void CMy2015RemoteDlg::OnOnlinePrivateScreen()
 {
     std::string masterId = GetPwdHash(), hmac = GetHMAC();
-    if (hmac.empty())
-        hmac = THIS_CFG.GetStr("settings", "HMAC");
+
     BYTE bToken[101] = { TOKEN_PRIVATESCREEN };
     memcpy(bToken + 1, masterId.c_str(), masterId.length());
     memcpy(bToken + 1 + masterId.length(), hmac.c_str(), hmac.length());
@@ -3536,21 +3584,45 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                     {
                         if (dlg == operateWnd)break;
                         // [1] 本地 -> 远程
-                        CString strText = GetClipboardText();
-                        if (!strText.IsEmpty()) {
-                            BYTE* szBuffer = new BYTE[strText.GetLength() + 1];
-                            szBuffer[0] = COMMAND_SCREEN_SET_CLIPBOARD;
-                            memcpy(szBuffer + 1, strText.GetString(), strText.GetLength());
-                            dlg->m_ContextObject->Send2Client(szBuffer, strText.GetLength() + 1);
-                            Mprintf("【Ctrl+V】 从本地拷贝到远程 \n");
-                            SAFE_DELETE_ARRAY(szBuffer);
+						auto files = GetClipboardFiles();
+						if (!files.empty())
+						{
+                            // 获取远程目录
+                            BYTE szBuffer[100] = { COMMAND_GET_FOLDER };
+							std::string masterId = GetPwdHash(), hmac = GetHMAC(100);
+							memcpy((char*)szBuffer + 1, masterId.c_str(), masterId.length());
+							memcpy((char*)szBuffer + 1 + masterId.length(), hmac.c_str(), hmac.length());
+							dlg->m_ContextObject->Send2Client(szBuffer, sizeof(szBuffer));
+						}
+                        else
+                        {
+                            CString strText = GetClipboardText();
+                            if (!strText.IsEmpty()) {
+                                BYTE* szBuffer = new BYTE[strText.GetLength() + 1];
+                                szBuffer[0] = COMMAND_SCREEN_SET_CLIPBOARD;
+                                memcpy(szBuffer + 1, strText.GetString(), strText.GetLength());
+                                dlg->m_ContextObject->Send2Client(szBuffer, strText.GetLength() + 1);
+                                Mprintf("【Ctrl+V】 从本地拷贝到远程 \n");
+                                SAFE_DELETE_ARRAY(szBuffer);
+                            }
                         }
                     }
                     else if (g_2015RemoteDlg->m_pActiveSession)
                     {
                         // [2] 远程 -> 本地
-                        BYTE	bToken = COMMAND_SCREEN_GET_CLIPBOARD;
-                        g_2015RemoteDlg->m_pActiveSession->m_ContextObject->Send2Client(&bToken, sizeof(bToken));
+                        BYTE	bToken[100] = {COMMAND_SCREEN_GET_CLIPBOARD};
+                        std::string masterId = GetPwdHash(), hmac = GetHMAC(100);
+						memcpy((char*)bToken + 1, masterId.c_str(), masterId.length());
+						memcpy((char*)bToken + 1 + masterId.length(), hmac.c_str(), hmac.length());
+						auto files = GetClipboardFiles();
+						if (!files.empty()) {
+							if (::OpenClipboard(nullptr))
+							{
+								EmptyClipboard();
+								CloseClipboard();
+							}
+						}
+                        g_2015RemoteDlg->m_pActiveSession->m_ContextObject->Send2Client(bToken, sizeof(bToken));
                         Mprintf("【Ctrl+V】 从远程拷贝到本地 \n");
                     }
                     else

