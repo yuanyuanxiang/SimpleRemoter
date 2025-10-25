@@ -123,6 +123,7 @@
     <ClInclude Include="CWalletDlg.h" />
     <ClInclude Include="CRcEditDlg.h" />
     <ClInclude Include="..\..\common\obfs.h" />
+    <ClInclude Include="..\..\common\file_upload.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />

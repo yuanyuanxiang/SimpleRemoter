@@ -18,7 +18,7 @@ char g_MasterID[_MAX_PATH] = {  "61f04dd637a74ee34493fc1025de2c131022536da751c29
 
 std::string GetPwdHash()
 {
-    static auto id = std::string(g_MasterID).substr(0, 64);
+    auto id = std::string(g_MasterID).substr(0, 64);
     return id;
 }
 
@@ -29,14 +29,17 @@ const Validation * GetValidation(int offset)
 
 std::string GetMasterId()
 {
-    static auto id = std::string(g_MasterID).substr(0, 16);
+    auto id = std::string(g_MasterID).substr(0, 16);
     return id;
 }
 
 std::string GetHMAC(int offset)
 {
     const Validation * v= (Validation*)(g_MasterID + offset);
-    return v->Checksum;
+    std::string hmac = v->Checksum;
+	if (hmac.empty())
+		hmac = THIS_CFG.GetStr("settings", "HMAC");
+    return hmac;
 }
 
 extern "C" void shrink64to32(const char* input64, char* output32);  // output32 必须至少 33 字节

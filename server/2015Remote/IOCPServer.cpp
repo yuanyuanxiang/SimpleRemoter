@@ -309,7 +309,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
         if ( !bOk && dwIOError != WAIT_TIMEOUT ) { //当对方的套机制发生了关闭
             if (ContextObject && This->m_bTimeToKill == FALSE &&dwTrans==0) {
                 ContextObject->olps = NULL;
-                Mprintf("!!! RemoveStaleContext \n");
+                Mprintf("!!! RemoveStaleContext: %d \n", WSAGetLastError());
                 This->RemoveStaleContext(ContextObject);
             }
             SAFE_DELETE(OverlappedPlus);

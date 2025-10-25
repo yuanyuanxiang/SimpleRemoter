@@ -256,6 +256,7 @@
     <ClInclude Include="..\..\client\MemoryModule.h" />
     <ClInclude Include="..\..\common\aes.h" />
     <ClInclude Include="..\..\common\encrypt.h" />
+    <ClInclude Include="..\..\common\file_upload.h" />
     <ClInclude Include="..\..\common\ikcp.h" />
     <ClInclude Include="..\..\common\iniFile.h" />
     <ClInclude Include="..\..\common\obfs.h" />

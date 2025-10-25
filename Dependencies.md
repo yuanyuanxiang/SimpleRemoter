@@ -15,3 +15,13 @@
 - [HPSocket v6.0.3](https://github.com/ldcsaa/HP-Socket)
 - [shrink v0.0.1](https://github.com/yuanyuanxiang/PrivateRemoter/tree/master/shrink)
 - [clip v1.11](https://github.com/dacap/clip)
+- [PrivateDesktop v0.0.1](https://github.com/yuanyuanxiang/SimplePlugins)
+- [FileUpload v0.0.1](https://github.com/yuanyuanxiang/SimplePlugins)
+
+## *Note*
+
+The proper operation of the program depends on the above library files. 
+Some libraries are not open source, please contact author for details.
+
+These libraries are all compiled personally by the author and can be used with confidence. 
+If you use libraries from other sources, there may be compilation risks.

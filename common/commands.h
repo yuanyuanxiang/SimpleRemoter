@@ -192,6 +192,9 @@ enum {
     TOKEN_UNINSTALL = 63,			// 卸载主机
     TOKEN_PRIVATESCREEN = 64,		// 隐私屏幕
     TOKEN_MACHINE_MANAGE = 65,      // 机器管理
+    COMMAND_GET_FOLDER = 66,        // 获取目录
+    COMMAND_GET_FILE = 67,          // 获取文件
+    COMMAND_SEND_FILE = 68,         // 发送文件
 
     // 服务端发出的标识
     TOKEN_AUTH = 100,				// 要求验证
