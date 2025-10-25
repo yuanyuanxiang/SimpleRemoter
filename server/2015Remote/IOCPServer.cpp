@@ -528,7 +528,7 @@ BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOr
         } else {
             memcpy(buf, szBuffer, ulOriginalLength);
         }
-        Mprintf("[COMMAND] Send: " + CString(buf) + "\r\n");
+        Mprintf("[COMMAND] Send: %s\r\n", buf);
     }
     try {
         do {

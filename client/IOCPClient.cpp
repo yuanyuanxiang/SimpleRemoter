@@ -427,7 +427,8 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
             HeaderEncType encType = HeaderEncUnknown;
             FlagType flagType = CheckHead(szPacketFlag, encType);
             if (flagType == FLAG_UNKNOWN) {
-                Mprintf("[ERROR] OnServerReceiving memcmp fail: unknown header '%s. Mask: %d'\n", szPacketFlag, maskType);
+                Mprintf("[ERROR] OnServerReceiving memcmp fail: unknown header '%s'. Mask: %d, Skip %d.\n", 
+                    szPacketFlag, maskType, ret);
                 m_CompressedBuffer->ClearBuffer();
                 break;
             }
@@ -499,8 +500,9 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength, P
 #endif
         BYTE			buf[1024];
         LPBYTE			CompressedBuffer = ulCompressedLength>1024 ? new BYTE[ulCompressedLength] : buf;
-
+        m_Locker.Lock();
         int	iRet = compress(CompressedBuffer, &ulCompressedLength, (PBYTE)szBuffer, ulOriginalLength);
+        m_Locker.Unlock();
         if (Z_FAILED(iRet)) {
             Mprintf("[ERROR] compress failed: srcLen %d, dstLen %d \n", ulOriginalLength, ulCompressedLength);
             if (CompressedBuffer != buf)  delete [] CompressedBuffer;
