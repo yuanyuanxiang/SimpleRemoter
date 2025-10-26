@@ -87,6 +87,23 @@ public:
     }
 };
 
+class CAutoCLock
+{
+private:
+	CLock& m_cs;
+
+public:
+    CAutoCLock(CLock& cs) : m_cs(cs)
+	{
+        m_cs.Lock();
+	}
+
+	~CAutoCLock()
+	{
+        m_cs.Unlock();
+	}
+};
+
 // 智能计时器，计算函数的耗时
 class auto_tick
 {
