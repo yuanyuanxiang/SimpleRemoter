@@ -373,6 +373,7 @@ bool IOCPClient::ProcessRecvData(CBuffer *m_CompressedBuffer, char *szBuffer, in
     int iReceivedLength = ReceiveData(szBuffer, len, flag);
     if (iReceivedLength <= 0) {
         int a = WSAGetLastError();
+        Mprintf("[recv] return %d, GetLastError= %d. \n", iReceivedLength, a);
         Disconnect(); //接收错误处理
         m_CompressedBuffer->ClearBuffer();
         if (m_exit_while_disconnect)

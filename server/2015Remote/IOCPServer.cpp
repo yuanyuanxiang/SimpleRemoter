@@ -593,6 +593,7 @@ BOOL IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
 
 BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompletedLength)
 {
+    CAutoCLock L(ContextObject->SendLock);
     try {
         DWORD ulFlags = MSG_PARTIAL;
 
@@ -609,10 +610,12 @@ BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompl
                               NULL, ulFlags,&OverlappedPlus->m_ol, NULL);
             if ( iOk == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING ) {
                 int a = GetLastError();
-                Mprintf("!!! OnClientPostSending 投递消息失败\n");
+                Mprintf("!!! OnClientPostSending 投递消息失败: %d\n", a);
                 RemoveStaleContext(ContextObject);
                 SAFE_DELETE(OverlappedPlus);
+                return FALSE;
             }
+            return TRUE;
         }
     } catch(...) {
         Mprintf("[ERROR] OnClientPostSending catch an error \n");

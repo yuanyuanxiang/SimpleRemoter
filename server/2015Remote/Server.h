@@ -374,6 +374,7 @@ public:
     Server*				server;						// 所属服务端
     ikcpcb*				kcp = nullptr;				// 新增，指向KCP会话
     std::string			GroupName;					// 分组名称
+    CLock               SendLock;                   // fix #214
 
     std::string GetProtocol() const override
     {
@@ -411,8 +412,10 @@ public:
     }
     BOOL Send2Client(PBYTE szBuffer, ULONG ulOriginalLength) override
     {
-        if (server)
+        if (server) {
+            CAutoCLock L(SendLock);
             return server->Send2Client(this, szBuffer, ulOriginalLength);
+        }
         return FALSE;
     }
     VOID SetClientInfo(const CString(&s)[ONLINELIST_MAX], const std::vector<std::string>& a = {})

