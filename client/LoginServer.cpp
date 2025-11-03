@@ -261,6 +261,19 @@ std::string GetCurrentExeVersion()
     return "Unknown";
 }
 
+
+std::string GetCurrentUserNameA() {
+	char username[256];
+	DWORD size = sizeof(username);
+
+	if (GetUserNameA(username, &size)) {
+		return std::string(username);
+	}
+	else {
+		return "Unknown";
+	}
+}
+
 LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 {
     LOGIN_INFOR  LoginInfor;
@@ -338,6 +351,9 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
     LoginInfor.AddReserved(loc.c_str());
     LoginInfor.AddReserved(pubIP.c_str());
     LoginInfor.AddReserved(GetCurrentExeVersion().c_str());
+    BOOL IsRunningAsAdmin();
+    LoginInfor.AddReserved(GetCurrentUserNameA().c_str());
+    LoginInfor.AddReserved(IsRunningAsAdmin());
 
     return LoginInfor;
 }
