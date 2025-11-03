@@ -767,6 +767,8 @@ enum LOGIN_RES {
     RES_CLIENT_LOC = 10,					// 地理位置
     RES_CLIENT_PUBIP = 11,					// 公网地址
     RES_EXE_VERSION = 12,					// EXE版本
+    RES_USERNAME = 13,                      // 电脑用户名称
+    RES_ISADMIN = 14,                       // 是否具有管理员权限
     RES_MAX,
 };
 

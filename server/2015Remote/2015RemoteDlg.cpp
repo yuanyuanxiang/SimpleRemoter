@@ -2302,7 +2302,7 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
     try {
         strIP = ContextObject->GetPeerName().c_str();
         // 不合法的数据包
-        if (ContextObject->InDeCompressedBuffer.GetBufferLength() != sizeof(LOGIN_INFOR)) {
+        if (ContextObject->InDeCompressedBuffer.GetBufferLength() < sizeof(LOGIN_INFOR)) {
             char buf[100];
             sprintf_s(buf, "*** Received [%s] invalid login data! ***\n", strIP.GetString());
             Mprintf(buf);
@@ -3049,9 +3049,10 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
         CString strText;
         std::string expired = res[RES_EXPIRED_DATE];
         expired = expired.empty() ? "" : " Expired on " + expired;
-        strText.Format(_T("文件路径: %s%s %s\r\n系统信息: %s 位 %s 核心 %s GB\r\n启动信息: %s %s\r\n上线信息: %s %d %s"),
+        strText.Format(_T("文件路径: %s%s %s\r\n系统信息: %s 位 %s 核心 %s GB\r\n启动信息: %s %s %s%s\r\n上线信息: %s %d %s"),
                        res[RES_PROGRAM_BITS].IsEmpty() ? "" : res[RES_PROGRAM_BITS] + " 位 ", res[RES_FILE_PATH], res[RES_EXE_VERSION],
                        res[RES_SYSTEM_BITS], res[RES_SYSTEM_CPU], res[RES_SYSTEM_MEM], startTime, expired.c_str(),
+			           res[RES_USERNAME], res[RES_ISADMIN] == "1" ? "[管理员]" : res[RES_ISADMIN].IsEmpty() ? "" : "[非管理员]",
                        ctx->GetProtocol().c_str(), ctx->GetServerPort(), typMap[type].c_str());
 
         // 获取鼠标位置
@@ -3583,6 +3584,11 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                     if (dlg)
                     {
                         if (dlg == operateWnd)break;
+						auto screen = (CScreenSpyDlg*)dlg;
+                        if (!screen->m_bIsCtrl) {
+                            Mprintf("【Ctrl+V】 [本地 -> 远程] 窗口不是控制状态: %s\n", screen->m_IPAddress);
+                            break;
+                        }
                         // [1] 本地 -> 远程
 						auto files = GetClipboardFiles();
 						if (!files.empty())
@@ -3609,6 +3615,11 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                     }
                     else if (g_2015RemoteDlg->m_pActiveSession)
                     {
+                        auto screen = (CScreenSpyDlg*)(g_2015RemoteDlg->m_pActiveSession);
+                        if (!screen->m_bIsCtrl) {
+                            Mprintf("【Ctrl+V】 [远程 -> 本地] 窗口不是控制状态: %s\n", screen->m_IPAddress);
+                            break;
+                        }
                         // [2] 远程 -> 本地
                         BYTE	bToken[100] = {COMMAND_SCREEN_GET_CLIPBOARD};
                         std::string masterId = GetPwdHash(), hmac = GetHMAC(100);

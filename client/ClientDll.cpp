@@ -199,6 +199,7 @@ int main(int argc, const char *argv[])
     HANDLE hMutex = ::CreateMutexA(NULL, TRUE, "ghost.exe");
     if (ERROR_ALREADY_EXISTS == GetLastError()) {
         CloseHandle(hMutex);
+        hMutex = NULL;
 #ifndef _DEBUG
         return -2;
 #endif
