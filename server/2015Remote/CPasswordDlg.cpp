@@ -164,6 +164,7 @@ void CPwdGenDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_EDIT_HOSTNUM, m_EditHostNum);
     DDX_Text(pDX, IDC_EDIT_HOSTNUM, m_nHostNum);
     DDV_MinMaxInt(pDX, m_nHostNum, 2, 10000);
+    DDX_Control(pDX, IDC_EDIT_HMAC, m_EditHMAC);
 }
 
 
@@ -197,9 +198,12 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
     std::string hardwareID = getHardwareID();
     std::string hashedID = hashSHA256(hardwareID);
     std::string deviceID = getFixedLengthID(hashedID);
+    std::string hmac = genHMAC(pwdHash, m_sUserPwd.GetString());
+    m_EditHMAC.SetWindowTextA(hmac.c_str());
     if (deviceID == m_sDeviceID.GetString()) { // 授权的是当前主控程序
         auto settings = "settings", pwdKey = "Password";
         THIS_CFG.SetStr(settings, pwdKey, fixedKey.c_str());
+        THIS_CFG.SetStr(settings, "HMAC", hmac);
     }
 }
 

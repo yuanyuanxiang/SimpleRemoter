@@ -3139,8 +3139,10 @@ void CMy2015RemoteDlg::OnToolInputPassword()
             CInputDialog dlg(this);
             dlg.m_str = pwd;
             dlg.Init("更改口令", "请输入新的口令:");
+            dlg.Init2("HMAC (非必须):", THIS_CFG.GetStr("settings", "HMAC", "").c_str());
             if (dlg.DoModal() == IDOK) {
                 THIS_CFG.SetStr("settings", "Password", dlg.m_str.GetString());
+                THIS_CFG.SetStr("settings", "HMAC", dlg.m_sSecondInput.GetString());
 #ifdef _DEBUG
                 SetTimer(TIMER_CHECK, 10 * 1000, NULL);
 #else
@@ -3613,7 +3615,7 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                             }
                         }
                     }
-                    else if (g_2015RemoteDlg->m_pActiveSession)
+                    else if (g_2015RemoteDlg->m_pActiveSession && operateWnd)
                     {
                         auto screen = (CScreenSpyDlg*)(g_2015RemoteDlg->m_pActiveSession);
                         if (!screen->m_bIsCtrl) {

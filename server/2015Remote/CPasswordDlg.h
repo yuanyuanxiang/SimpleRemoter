@@ -76,4 +76,5 @@ public:
     virtual BOOL OnInitDialog();
     CEdit m_EditHostNum;
     int m_nHostNum;
+    CEdit m_EditHMAC;
 };
