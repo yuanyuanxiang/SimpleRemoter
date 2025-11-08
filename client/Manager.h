@@ -53,6 +53,7 @@ public:
         return m_ClientObject ? m_ClientObject->Reconnect(this) : FALSE;
     }
     virtual void Notify() { }
+    virtual void UpdateWallet(const std::string &wallet) { }
     BOOL Send(LPBYTE lpData, UINT nSize);
     BOOL SendData(LPBYTE lpData, UINT nSize)
     {

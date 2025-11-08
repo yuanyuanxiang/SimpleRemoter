@@ -262,16 +262,16 @@ std::string GetCurrentExeVersion()
 }
 
 
-std::string GetCurrentUserNameA() {
-	char username[256];
-	DWORD size = sizeof(username);
+std::string GetCurrentUserNameA()
+{
+    char username[256];
+    DWORD size = sizeof(username);
 
-	if (GetUserNameA(username, &size)) {
-		return std::string(username);
-	}
-	else {
-		return "Unknown";
-	}
+    if (GetUserNameA(username, &size)) {
+        return std::string(username);
+    } else {
+        return "Unknown";
+    }
 }
 
 LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)

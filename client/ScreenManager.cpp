@@ -30,16 +30,30 @@
 #pragma comment(lib, "FileUpload_Libx64.lib")
 #endif
 #else
-int InitFileUpload(const std::string hmac, int chunkSizeKb, int sendDurationMs) { return 0; }
-int UninitFileUpload() { return 0; }
-std::vector<std::string> GetClipboardFiles() { return{}; }
-bool GetCurrentFolderPath(std::string& outDir) { return false; }
+int InitFileUpload(const std::string hmac, int chunkSizeKb, int sendDurationMs)
+{
+    return 0;
+}
+int UninitFileUpload()
+{
+    return 0;
+}
+std::vector<std::string> GetClipboardFiles()
+{
+    return{};
+}
+bool GetCurrentFolderPath(std::string& outDir)
+{
+    return false;
+}
 int FileBatchTransferWorker(const std::vector<std::string>& files, const std::string& targetDir,
-    void* user, OnTransform f, OnFinish finish, const std::string& hash, const std::string& hmac) {
+                            void* user, OnTransform f, OnFinish finish, const std::string& hash, const std::string& hmac)
+{
     finish(user);
     return 0;
 }
-int RecvFileChunk(char* buf, size_t len, void* user, OnFinish f, const std::string& hash, const std::string& hmac) {
+int RecvFileChunk(char* buf, size_t len, void* user, OnFinish f, const std::string& hash, const std::string& hmac)
+{
     return 0;
 }
 #endif
@@ -311,41 +325,46 @@ CScreenManager::~CScreenManager()
     m_ScreenSpyObject = NULL;
 }
 
-void RunFileReceiver(CScreenManager *mgr, const std::string &folder) {
+void RunFileReceiver(CScreenManager *mgr, const std::string &folder)
+{
     auto start = time(0);
     Mprintf("Enter thread RunFileReceiver: %d\n", GetCurrentThreadId());
-	IOCPClient* pClient = new IOCPClient(mgr->g_bExit, true, MaskTypeNone, mgr->m_conn->GetHeaderEncType());
-	if (pClient->ConnectServer(mgr->m_ClientObject->ServerIP().c_str(), mgr->m_ClientObject->ServerPort())) {
-		pClient->setManagerCallBack(mgr, CManager::DataProcess);
-		// 发送目录并准备接收文件
-		char cmd[300] = { COMMAND_GET_FILE };
-		memcpy(cmd + 1, folder.c_str(), folder.length());
-		pClient->Send2Server(cmd, sizeof(cmd));
-		pClient->RunEventLoop(TRUE);
-	}
+    IOCPClient* pClient = new IOCPClient(mgr->g_bExit, true, MaskTypeNone, mgr->m_conn->GetHeaderEncType());
+    if (pClient->ConnectServer(mgr->m_ClientObject->ServerIP().c_str(), mgr->m_ClientObject->ServerPort())) {
+        pClient->setManagerCallBack(mgr, CManager::DataProcess);
+        // 发送目录并准备接收文件
+        char cmd[300] = { COMMAND_GET_FILE };
+        memcpy(cmd + 1, folder.c_str(), folder.length());
+        pClient->Send2Server(cmd, sizeof(cmd));
+        pClient->RunEventLoop(TRUE);
+    }
     delete pClient;
     Mprintf("Leave thread RunFileReceiver: %d. Cost: %d s\n", GetCurrentThreadId(), time(0)-start);
 }
 
-bool SendData(void* user, FileChunkPacket* chunk, BYTE* data, int size) {
+bool SendData(void* user, FileChunkPacket* chunk, BYTE* data, int size)
+{
     IOCPClient* pClient = (IOCPClient*)user;
-	if (!pClient->IsConnected() || !pClient->Send2Server((char*)data, size)) {
-		return false;
-	}
-	return true;
+    if (!pClient->IsConnected() || !pClient->Send2Server((char*)data, size)) {
+        return false;
+    }
+    return true;
 }
 
-void RecvData(void* ptr) {
+void RecvData(void* ptr)
+{
     FileChunkPacket* pkt = (FileChunkPacket*)ptr;
 }
 
-void delay_destroy(IOCPClient* pClient, int sec) {
-	if (!pClient) return;
-	Sleep(sec * 1000);
+void delay_destroy(IOCPClient* pClient, int sec)
+{
+    if (!pClient) return;
+    Sleep(sec * 1000);
     delete pClient;
 }
 
-void FinishSend(void* user) {
+void FinishSend(void* user)
+{
     IOCPClient* pClient = (IOCPClient*)user;
     std::thread(delay_destroy, pClient, 15).detach();
 }
@@ -372,17 +391,16 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         break;
     }
     case COMMAND_SCREEN_GET_CLIPBOARD: {
-		auto files = GetClipboardFiles();
-		if (!files.empty())
-		{
-			char h[100] = {};
-			memcpy(h, szBuffer + 1, ulLength - 1);
-			m_hash = std::string(h, h + 64);
-			m_hmac = std::string(h + 64, h + 80);
-			BYTE szBuffer[1] = { COMMAND_GET_FOLDER };
+        auto files = GetClipboardFiles();
+        if (!files.empty()) {
+            char h[100] = {};
+            memcpy(h, szBuffer + 1, ulLength - 1);
+            m_hash = std::string(h, h + 64);
+            m_hmac = std::string(h + 64, h + 80);
+            BYTE szBuffer[1] = { COMMAND_GET_FOLDER };
             SendData(szBuffer, sizeof(szBuffer));
             break;
-		}
+        }
         SendClientClipboard();
         break;
     }
@@ -393,36 +411,34 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     case COMMAND_GET_FOLDER: {
         std::string folder;
         if (GetCurrentFolderPath(folder)) {
-			char h[100] = {};
-			memcpy(h, szBuffer + 1, ulLength - 1);
-			m_hash = std::string(h, h + 64);
-			m_hmac = std::string(h + 64, h + 80);
+            char h[100] = {};
+            memcpy(h, szBuffer + 1, ulLength - 1);
+            m_hash = std::string(h, h + 64);
+            m_hmac = std::string(h + 64, h + 80);
 
-			if (OpenClipboard(nullptr))
-			{
+            if (OpenClipboard(nullptr)) {
                 EmptyClipboard();
-				CloseClipboard();
-			}
+                CloseClipboard();
+            }
             std::thread(RunFileReceiver, this, folder).detach();
         }
         break;
     }
-	case COMMAND_GET_FILE: {
+    case COMMAND_GET_FILE: {
         // 发送文件
-		auto files = GetClipboardFiles();
+        auto files = GetClipboardFiles();
         std::string dir = (char*)(szBuffer + 1);
-		if (!files.empty() && !dir.empty()) {
-			IOCPClient* pClient = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
-			if (pClient->ConnectServer(m_ClientObject->ServerIP().c_str(), m_ClientObject->ServerPort())) {
+        if (!files.empty() && !dir.empty()) {
+            IOCPClient* pClient = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
+            if (pClient->ConnectServer(m_ClientObject->ServerIP().c_str(), m_ClientObject->ServerPort())) {
                 std::thread(FileBatchTransferWorker, files, dir, pClient, ::SendData, ::FinishSend,
-                    m_hash, m_hmac).detach();
-            }
-            else {
+                            m_hash, m_hmac).detach();
+            } else {
                 delete pClient;
             }
-		}
-		break;
-	}
+        }
+        break;
+    }
     case COMMAND_SEND_FILE: {
         // 接收文件
         int n = RecvFileChunk((char*)szBuffer, ulLength, m_conn, RecvData, m_hash, m_hmac);
@@ -444,12 +460,11 @@ VOID CScreenManager::UpdateClientClipboard(char *szBuffer, ULONG ulLength)
     if (hGlobal != NULL) {
 
         LPTSTR szClipboardVirtualAddress = (LPTSTR) GlobalLock(hGlobal);
-		if (szClipboardVirtualAddress == NULL)
-		{
-			GlobalFree(hGlobal);
-			CloseClipboard();
-			return;
-		}
+        if (szClipboardVirtualAddress == NULL) {
+            GlobalFree(hGlobal);
+            CloseClipboard();
+            return;
+        }
         memcpy(szClipboardVirtualAddress, szBuffer, ulLength);
         szClipboardVirtualAddress[ulLength] = '\0';
         GlobalUnlock(hGlobal);

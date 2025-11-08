@@ -48,7 +48,8 @@ public:
     std::string m_hash;
     std::string m_hmac;
     CONNECT_ADDRESS *m_conn = nullptr;
-    void SetConnection(CONNECT_ADDRESS* conn){
+    void SetConnection(CONNECT_ADDRESS* conn)
+    {
         m_conn = conn;
     }
     // ÐéÄâ×ÀÃæ
