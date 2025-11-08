@@ -340,4 +340,8 @@ public:
     afx_msg void OnMachineLogout();
     void MachineManage(MachineCommand type);
     afx_msg void OnDestroy();
+    afx_msg void OnToolGenShellcodeBin();
+    afx_msg void OnShellcodeLoadTest();
+    afx_msg void OnShellcodeObfsLoadTest();
+    afx_msg void OnObfsShellcodeBin();
 };
