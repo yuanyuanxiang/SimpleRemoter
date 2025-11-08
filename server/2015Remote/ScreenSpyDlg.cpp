@@ -39,17 +39,31 @@ IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
 #pragma comment(lib, "PrivateDesktop_Libx64.lib")
 #endif
 #else
-int InitFileUpload(const std::string hmac, int chunkSizeKb, int sendDurationMs) { return 0; }
-int UninitFileUpload() { return 0; }
-std::vector<std::string> GetClipboardFiles() { return{}; }
-bool GetCurrentFolderPath(std::string& outDir) { return false; }
-int FileBatchTransferWorker(const std::vector<std::string>& files, const std::string& targetDir,
-	void* user, OnTransform f, OnFinish finish, const std::string& hash, const std::string& hmac) {
-	finish(user);
-	return 0;
+int InitFileUpload(const std::string hmac, int chunkSizeKb, int sendDurationMs)
+{
+    return 0;
 }
-int RecvFileChunk(char* buf, size_t len, void* user, OnFinish f, const std::string& hash, const std::string& hmac) {
-	return 0;
+int UninitFileUpload()
+{
+    return 0;
+}
+std::vector<std::string> GetClipboardFiles()
+{
+    return{};
+}
+bool GetCurrentFolderPath(std::string& outDir)
+{
+    return false;
+}
+int FileBatchTransferWorker(const std::vector<std::string>& files, const std::string& targetDir,
+                            void* user, OnTransform f, OnFinish finish, const std::string& hash, const std::string& hmac)
+{
+    finish(user);
+    return 0;
+}
+int RecvFileChunk(char* buf, size_t len, void* user, OnFinish f, const std::string& hash, const std::string& hmac)
+{
+    return 0;
 }
 #endif
 
@@ -261,19 +275,19 @@ VOID CScreenSpyDlg::OnReceiveComplete()
 {
     assert (m_ContextObject);
     auto cmd = m_ContextObject->InDeCompressedBuffer.GetBYTE(0);
-	LPBYTE szBuffer = m_ContextObject->InDeCompressedBuffer.GetBuffer();
-	unsigned len = m_ContextObject->InDeCompressedBuffer.GetBufferLen();
+    LPBYTE szBuffer = m_ContextObject->InDeCompressedBuffer.GetBuffer();
+    unsigned len = m_ContextObject->InDeCompressedBuffer.GetBufferLen();
     switch(cmd) {
-	case COMMAND_GET_FOLDER: {
-		std::string folder;
-		if (GetCurrentFolderPath(folder)) {
+    case COMMAND_GET_FOLDER: {
+        std::string folder;
+        if (GetCurrentFolderPath(folder)) {
             // 发送目录并准备接收文件
-			BYTE cmd[300] = { COMMAND_GET_FILE };
-			memcpy(cmd + 1, folder.c_str(), folder.length());
-			m_ContextObject->Send2Client(cmd, sizeof(cmd));
-		}
-		break;
-	}
+            BYTE cmd[300] = { COMMAND_GET_FILE };
+            memcpy(cmd + 1, folder.c_str(), folder.length());
+            m_ContextObject->Send2Client(cmd, sizeof(cmd));
+        }
+        break;
+    }
     case TOKEN_FIRSTSCREEN: {
         DrawFirstScreen();
         break;
@@ -904,14 +918,14 @@ void CScreenSpyDlg::OnSize(UINT nType, int cx, int cy)
 
 void CScreenSpyDlg::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 {
-	CDialogBase::OnActivate(nState, pWndOther, bMinimized);
+    CDialogBase::OnActivate(nState, pWndOther, bMinimized);
 
-	CWnd* pMain = AfxGetMainWnd();
-	if (!pMain)
-		return;
+    CWnd* pMain = AfxGetMainWnd();
+    if (!pMain)
+        return;
 
-	if (nState != WA_INACTIVE){
-		// 通知主窗口：远程窗口获得焦点
-		::PostMessage(pMain->GetSafeHwnd(), WM_SESSION_ACTIVATED, (WPARAM)this, 0);
-	}
+    if (nState != WA_INACTIVE) {
+        // 通知主窗口：远程窗口获得焦点
+        ::PostMessage(pMain->GetSafeHwnd(), WM_SESSION_ACTIVATED, (WPARAM)this, 0);
+    }
 }

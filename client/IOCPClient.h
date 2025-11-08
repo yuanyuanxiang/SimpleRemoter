@@ -171,11 +171,13 @@ public:
         m_nHostPort = uPort;
     }
 
-    std::string ServerIP() const {
+    std::string ServerIP() const
+    {
         return m_sCurIP;
     }
 
-    int ServerPort() const {
+    int ServerPort() const
+    {
         return m_nHostPort;
     }
 

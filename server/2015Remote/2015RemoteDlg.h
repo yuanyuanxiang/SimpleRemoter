@@ -235,8 +235,8 @@ public:
     std::map<HWND, CDialogBase *> m_RemoteWnds;
     CDialogBase* GetRemoteWindow(HWND hWnd);
     void RemoveRemoteWindow(HWND wnd);
-	CDialogBase* m_pActiveSession = nullptr; // 当前活动会话窗口指针 / NULL 表示无
-	afx_msg LRESULT OnSessionActivatedMsg(WPARAM wParam, LPARAM lParam);
+    CDialogBase* m_pActiveSession = nullptr; // 当前活动会话窗口指针 / NULL 表示无
+    afx_msg LRESULT OnSessionActivatedMsg(WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
     HHOOK g_hKeyboardHook = NULL;
     enum {
@@ -246,7 +246,7 @@ public:
         STATUS_EXIT = 2,
     };
     HANDLE m_hFRPThread = NULL;
-    int m_frpStatus = STATUS_RUN;
+    int m_frpStatus = STATUS_UNKNOWN;
     static DWORD WINAPI StartFrpClient(LPVOID param);
     void ApplyFrpSettings();
     bool CheckValid(int trail = 14);

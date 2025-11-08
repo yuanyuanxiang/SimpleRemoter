@@ -37,8 +37,8 @@ std::string GetHMAC(int offset)
 {
     const Validation * v= (Validation*)(g_MasterID + offset);
     std::string hmac = v->Checksum;
-	if (hmac.empty())
-		hmac = THIS_CFG.GetStr("settings", "HMAC");
+    if (hmac.empty())
+        hmac = THIS_CFG.GetStr("settings", "HMAC");
     return hmac;
 }
 

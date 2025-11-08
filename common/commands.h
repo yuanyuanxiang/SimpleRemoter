@@ -269,7 +269,7 @@ enum {
 };
 
 enum MachineCommand {
-    MACHINE_LOGOUT, 
+    MACHINE_LOGOUT,
     MACHINE_SHUTDOWN,
     MACHINE_REBOOT,
 };

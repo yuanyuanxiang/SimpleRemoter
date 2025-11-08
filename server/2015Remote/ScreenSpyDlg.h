@@ -109,7 +109,7 @@ public:
     afx_msg void OnMouseLeave();
     afx_msg void OnKillFocus(CWnd* pNewWnd);
     afx_msg void OnSize(UINT nType, int cx, int cy);
-	afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+    afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
 
 protected:
     virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
