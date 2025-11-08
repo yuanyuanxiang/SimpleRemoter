@@ -7,11 +7,19 @@
 
 class ObfsBase {
 public:
+	bool m_bGenCArray;
+	ObfsBase(bool genCArray = true) : m_bGenCArray(genCArray) { }
+	virtual ~ObfsBase() { }
+
 	// 对称混淆函数：用于加密和解密
 	virtual void ObfuscateBuffer(uint8_t* buf, size_t len, uint32_t seed) {}
 
 	// 解混淆：与加密顺序相反
 	virtual void DeobfuscateBuffer(uint8_t* buf, size_t len, uint32_t seed) {}
+
+	virtual bool WriteFile(const char* filename, uint8_t* data, size_t length, const char* arrayName) {
+		return m_bGenCArray ? WriteBinaryAsCArray(filename, data, length, arrayName) : WriteBinaryFile(filename, data, length);
+	}
 
 	// 将二进制数据以 C 数组格式写入文件
 	virtual bool WriteBinaryAsCArray(const char* filename, uint8_t* data, size_t length, const char* arrayName) {
@@ -32,6 +40,17 @@ public:
 		fclose(file);
 		return true;
 	}
+
+	// 使用 "wb" 二进制写入模式
+	virtual bool WriteBinaryFile(const char* filename, const uint8_t* data, size_t length) {
+		FILE* file = fopen(filename, "wb");
+		if (!file) return false;
+
+		size_t written = fwrite(data, 1, length, file);
+		fclose(file);
+
+		return written == length;
+	}
 };
 
 class Obfs : public ObfsBase {
@@ -47,6 +66,8 @@ private:
 	}
 
 public:
+	Obfs(bool genCArray = true) : ObfsBase(genCArray) { }
+
 	// 对称混淆函数：用于加密和解密
 	virtual void ObfuscateBuffer(uint8_t* buf, size_t len, uint32_t seed) {
 		uint32_t state = seed;
