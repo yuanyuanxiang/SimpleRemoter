@@ -501,6 +501,8 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_SHELLCODE_LOAD_TEST, &CMy2015RemoteDlg::OnShellcodeLoadTest)
     ON_COMMAND(ID_SHELLCODE_OBFS_LOAD_TEST, &CMy2015RemoteDlg::OnShellcodeObfsLoadTest)
     ON_COMMAND(ID_OBFS_SHELLCODE_BIN, &CMy2015RemoteDlg::OnObfsShellcodeBin)
+    ON_COMMAND(ID_SHELLCODE_AES_BIN, &CMy2015RemoteDlg::OnShellcodeAesBin)
+    ON_COMMAND(ID_SHELLCODE_TEST_AES_BIN, &CMy2015RemoteDlg::OnShellcodeTestAesBin)
 END_MESSAGE_MAP()
 
 
@@ -3211,7 +3213,9 @@ void shellcode_process(ObfsBase *obfs, bool load = false, const char* suffix = "
             return;
         }
         int dwFileSize = File.GetLength();
-        LPBYTE szBuffer = new BYTE[dwFileSize];
+        int padding = ALIGN16(dwFileSize) - dwFileSize;
+        LPBYTE szBuffer = new BYTE[dwFileSize + padding];
+        memset(szBuffer + dwFileSize, 0, padding);
         File.Read(szBuffer, dwFileSize);
         File.Close();
 
@@ -3229,7 +3233,7 @@ void shellcode_process(ObfsBase *obfs, bool load = false, const char* suffix = "
                     AfxMessageBox("Shellcode 执行失败! 请用本程序生成的 bin 文件进行测试! ", MB_ICONERROR);
                 }
             }
-        } else if (MakeShellcode(srcData, srcLen, (LPBYTE)szBuffer, dwFileSize)) {
+        } else if (MakeShellcode(srcData, srcLen, (LPBYTE)szBuffer, dwFileSize, true)) {
             TCHAR buffer[MAX_PATH];
             _tcscpy_s(buffer, name);
             PathRemoveExtension(buffer);
@@ -3290,6 +3294,24 @@ void CMy2015RemoteDlg::OnShellcodeObfsLoadTest()
         Obfs obfs;
         shellcode_process(&obfs, true);
     }
+}
+
+
+void CMy2015RemoteDlg::OnShellcodeAesBin()
+{
+	ObfsAes obfs(false);
+	shellcode_process(&obfs, false, ".bin");
+}
+
+
+void CMy2015RemoteDlg::OnShellcodeTestAesBin()
+{
+	if (MessageBox(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
+		"请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。",
+		"提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
+		ObfsAes obfs;
+		shellcode_process(&obfs, true);
+	}
 }
 
 void CMy2015RemoteDlg::OnOnlineAssignTo()
@@ -3716,3 +3738,4 @@ LRESULT CMy2015RemoteDlg::OnSessionActivatedMsg(WPARAM wParam, LPARAM lParam)
     m_pActiveSession = pSession;
     return 0;
 }
+

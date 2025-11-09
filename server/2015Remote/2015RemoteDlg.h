@@ -344,4 +344,6 @@ public:
     afx_msg void OnShellcodeLoadTest();
     afx_msg void OnShellcodeObfsLoadTest();
     afx_msg void OnObfsShellcodeBin();
+    afx_msg void OnShellcodeAesBin();
+    afx_msg void OnShellcodeTestAesBin();
 };
