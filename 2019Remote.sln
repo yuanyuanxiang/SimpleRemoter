@@ -26,6 +26,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TinyRun", "client\TinyRun.v
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SCLoader", "client\SCLoader.vcxproj", "{F33FC38A-E7A0-47D1-9F35-6DFE49C7194A}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "执行代码", "server\执行代码\执行代码.vcxproj", "{A84E55E9-AD0A-41C2-8FB6-56C9BC2AA151}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -82,6 +84,12 @@ Global
 		{F33FC38A-E7A0-47D1-9F35-6DFE49C7194A}.Release|x64.Build.0 = Release|x64
 		{F33FC38A-E7A0-47D1-9F35-6DFE49C7194A}.Release|x86.ActiveCfg = Release|Win32
 		{F33FC38A-E7A0-47D1-9F35-6DFE49C7194A}.Release|x86.Build.0 = Release|Win32
+		{A84E55E9-AD0A-41C2-8FB6-56C9BC2AA151}.Debug|x64.ActiveCfg = Debug|x64
+		{A84E55E9-AD0A-41C2-8FB6-56C9BC2AA151}.Debug|x64.Build.0 = Debug|x64
+		{A84E55E9-AD0A-41C2-8FB6-56C9BC2AA151}.Debug|x86.ActiveCfg = Debug|x64
+		{A84E55E9-AD0A-41C2-8FB6-56C9BC2AA151}.Release|x64.ActiveCfg = Release|x64
+		{A84E55E9-AD0A-41C2-8FB6-56C9BC2AA151}.Release|x64.Build.0 = Release|x64
+		{A84E55E9-AD0A-41C2-8FB6-56C9BC2AA151}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
