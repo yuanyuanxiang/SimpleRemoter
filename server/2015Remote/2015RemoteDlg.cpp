@@ -503,7 +503,8 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_OBFS_SHELLCODE_BIN, &CMy2015RemoteDlg::OnObfsShellcodeBin)
     ON_COMMAND(ID_SHELLCODE_AES_BIN, &CMy2015RemoteDlg::OnShellcodeAesBin)
     ON_COMMAND(ID_SHELLCODE_TEST_AES_BIN, &CMy2015RemoteDlg::OnShellcodeTestAesBin)
-END_MESSAGE_MAP()
+        ON_COMMAND(ID_TOOL_RELOAD_PLUGINS, &CMy2015RemoteDlg::OnToolReloadPlugins)
+        END_MESSAGE_MAP()
 
 
 // CMy2015RemoteDlg 消息处理程序
@@ -1119,6 +1120,9 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
         return FALSE;
     }
     THIS_CFG.SetStr("settings", "MainWnd", std::to_string((uint64_t)GetSafeHwnd()));
+    THIS_CFG.SetStr("settings", "SN", getDeviceID());
+    THIS_CFG.SetStr("settings", "PwdHash", GetPwdHash());
+    THIS_CFG.SetStr("settings", "MasterHash", GetMasterHash());
 
     return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -3739,3 +3743,15 @@ LRESULT CMy2015RemoteDlg::OnSessionActivatedMsg(WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
+
+
+void CMy2015RemoteDlg::OnToolReloadPlugins()
+{
+	if (IDYES!=MessageBoxA("请将64位的DLL放于主控程序的 'Plugins' 目录，是否继续?"
+		"\n执行未经测试的代码可能造成程序崩溃。", "提示", MB_ICONINFORMATION | MB_YESNO))
+        return;
+	char path[_MAX_PATH];
+	GetModuleFileNameA(NULL, path, _MAX_PATH);
+	GET_FILEPATH(path, "Plugins");
+	m_DllList = ReadAllDllFilesWindows(path);
+}

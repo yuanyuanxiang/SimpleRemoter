@@ -146,9 +146,9 @@ std::string deriveKey(const std::string& password, const std::string& hardwareID
 
 std::string getDeviceID()
 {
-    std::string hardwareID = getHardwareID();
-    std::string hashedID = hashSHA256(hardwareID);
-    std::string deviceID = getFixedLengthID(hashedID);
+    static std::string hardwareID = getHardwareID();
+    static std::string hashedID = hashSHA256(hardwareID);
+    static std::string deviceID = getFixedLengthID(hashedID);
     return deviceID;
 }
 

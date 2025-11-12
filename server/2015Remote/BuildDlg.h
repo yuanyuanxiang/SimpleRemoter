@@ -42,4 +42,6 @@ public:
     afx_msg void OnHelpFindden();
     CEdit m_EditGroup;
     CString m_sGroupName;
+    CString m_strEncryptIP;
+    afx_msg void OnMenuEncryptIp();
 };

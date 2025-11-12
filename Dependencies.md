@@ -17,6 +17,7 @@
 - [clip v1.11](https://github.com/dacap/clip)
 - [PrivateDesktop v0.0.1](https://github.com/yuanyuanxiang/SimplePlugins)
 - [FileUpload v0.0.1](https://github.com/yuanyuanxiang/SimplePlugins)
+- [libpeconv](https://github.com/hasherezade/libpeconv) (c7d1e48)
 
 ## *Note*
 
