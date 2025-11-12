@@ -201,6 +201,8 @@ BOOL CScreenSpyDlg::OnInitDialog()
     SetWindowText(strString);
 
     m_hFullDC = ::GetDC(m_hWnd);
+    SetStretchBltMode(m_hFullDC, HALFTONE);
+    SetBrushOrgEx(m_hFullDC, 0, 0, NULL);
     m_hFullMemDC = CreateCompatibleDC(m_hFullDC);
     m_BitmapHandle = CreateDIBSection(m_hFullDC, m_BitmapInfor_Full,
                                       DIB_RGB_COLORS, &m_BitmapData_Full, NULL, NULL);   //创建应用程序可以直接写入的、与设备无关的位图

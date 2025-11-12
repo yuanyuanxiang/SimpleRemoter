@@ -79,7 +79,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir);$(SolutionDir)common;$(IncludePath)</IncludePath>
+    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir);$(SolutionDir)common;$(ProjectDir)libpeconv;$(IncludePath)</IncludePath>
     <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(SolutionDir);$(SolutionDir)..\SimpleRemoter;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -90,7 +90,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <LibraryPath>$(VLDPATH)\lib\Win64\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter\lib;$(SolutionDir);$(SolutionDir)..\SimpleRemoter;$(LibraryPath)</LibraryPath>
-    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir);$(SolutionDir)common;$(IncludePath)</IncludePath>
+    <IncludePath>$(WindowsSDK_IncludePath);$(VLDPATH)\include\;$(SolutionDir)..\SimpleRemoter\compress;$(SolutionDir)..\SimpleRemoter;$(ProjectDir);$(SolutionDir)common;$(ProjectDir)libpeconv;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -250,6 +250,8 @@
     <None Include="res\rcedit.exe" />
     <None Include="res\string.ico" />
     <None Include="res\upx.exe" />
+    <None Include="stub2\stub32.bin" />
+    <None Include="stub2\stub64.bin" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
@@ -365,6 +367,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="proxy\ProxyConnectServer.cpp" />
     <ClCompile Include="proxy\ProxyMapDlg.cpp" />
     <ClCompile Include="pwd_gen.cpp">

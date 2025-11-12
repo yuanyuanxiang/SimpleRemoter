@@ -577,7 +577,8 @@ enum ProtocolEncType {
 enum ClientCompressType {
     CLIENT_COMPRESS_NONE = 0,
     CLIENT_COMPRESS_UPX = 1,
-    CLIENT_COMPRESS_SC = 2,
+    CLIENT_COMPRESS_SC_AES = 2,
+    CLIENT_PE_TO_SEHLLCODE = 3,
 };
 
 #pragma pack(push, 4)
