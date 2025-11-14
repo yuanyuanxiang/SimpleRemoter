@@ -17,6 +17,7 @@ public:
     void ShowWindowsList(void);
     void GetWindowsList(void);
     void OnReceiveComplete(void);
+    CWnd* m_pParent;
     BOOL   m_bHow;
 // 对话框数据
     enum { IDD = IDD_DIALOG_SYSTEM };
@@ -45,4 +46,5 @@ public:
     afx_msg void OnWlistMax();
     afx_msg void OnWlistMin();
     afx_msg void OnSize(UINT nType, int cx, int cy);
+    afx_msg void OnPlistInject();
 };

