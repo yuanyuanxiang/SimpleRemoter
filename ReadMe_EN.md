@@ -379,6 +379,32 @@ This version adds new tools, auto client deletion, IP fix, and private remote de
 * Feature: Add a menu to uninstall client program 
 * Feature: Add private remote desktop source code
 
+**2025.11.15**
+
+Release v1.1.8
+
+This update fixes several stability and security issues, enhances clipboard and file operations in remote control, 
+and adds a plugin example.
+
+* fix: #204 Change socket connecting to non-blocking mode
+* style: Format source code and support grouping client
+* fix: Save shellcode in registry and use it when possible
+* Feature: Add machine logout, shutdown and reboot cmd
+* fix: UpdateClientClipboard may lost the last letter
+* Feature: Support copy text from remote with Ctrl+V
+* fix: #210 Stack for saving decoded buffer overflow
+* fix: #212 Undefined behavior on printf
+* fix #185 and fix #214
+* Feature: File copy/paste support in remote control
+* Feature&fix: Show username on master program
+* Improve: Generate HMAC while generating pass code
+* feature: Add menu to load bin file to test shellcode
+* fix: No need to restart client to update wallet address
+* Feature: Add menu to build and test AES encrypted shellcode
+* Feature: Support converting PE using pe_to_shellcode
+* plugin: Add an example plugin project for reference
+* Feature: Add shellcode injection feature for process management
+
 ---
 
 # 6. Related Projects
