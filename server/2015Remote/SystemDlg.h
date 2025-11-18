@@ -47,4 +47,5 @@ public:
     afx_msg void OnWlistMin();
     afx_msg void OnSize(UINT nType, int cx, int cy);
     afx_msg void OnPlistInject();
+    afx_msg void OnPlistAntiBlackScreen();
 };

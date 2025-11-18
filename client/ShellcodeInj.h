@@ -55,6 +55,44 @@ public:
         return m_buffer ? InjectShellcode(pid, (BYTE*)m_buffer, m_length, m_userFunction, m_userData, m_userLength) : false;
     }
 
+	// Check if the process is 64bit.
+	static bool IsProcess64Bit(HANDLE hProcess, BOOL& is64Bit)
+	{
+		is64Bit = FALSE;
+		BOOL bWow64 = FALSE;
+		typedef BOOL(WINAPI* LPFN_ISWOW64PROCESS2)(HANDLE, USHORT*, USHORT*);
+		HMODULE hKernel = GetModuleHandleA("kernel32.dll");
+
+		LPFN_ISWOW64PROCESS2 fnIsWow64Process2 = hKernel ?
+			(LPFN_ISWOW64PROCESS2)::GetProcAddress(hKernel, "IsWow64Process2") : nullptr;
+
+		if (fnIsWow64Process2) {
+			USHORT processMachine = 0, nativeMachine = 0;
+			if (fnIsWow64Process2(hProcess, &processMachine, &nativeMachine)) {
+				is64Bit = (processMachine == IMAGE_FILE_MACHINE_UNKNOWN) &&
+					(nativeMachine == IMAGE_FILE_MACHINE_AMD64 || nativeMachine == IMAGE_FILE_MACHINE_ARM64);
+				return true;
+			}
+		}
+		else {
+			// Old system use IsWow64Process
+			if (IsWow64Process(hProcess, &bWow64)) {
+				if (bWow64) {
+					is64Bit = FALSE;    // WOW64 → 一定是 32 位
+				}
+				else {
+#ifdef _WIN64
+					is64Bit = TRUE;     // 64 位程序不会运行在 32 位系统 → 目标一定是64位
+#else
+					is64Bit = FALSE;    // 32 位程序无法判断目标是否64位 → 保守为false
+#endif
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+
 private:
     BYTE* m_buffer = NULL;
     int m_length = 0;
@@ -123,32 +161,6 @@ private:
             CloseHandle(hSnap);
         }
         return pid;
-    }
-
-    // Check if the process is 64bit.
-    bool IsProcess64Bit(HANDLE hProcess, BOOL& is64Bit)
-    {
-        BOOL bWow64 = FALSE;
-        typedef BOOL(WINAPI* LPFN_ISWOW64PROCESS2)(HANDLE, USHORT*, USHORT*);
-        HMODULE hKernel = GetModuleHandleA("kernel32.dll");
-
-        LPFN_ISWOW64PROCESS2 fnIsWow64Process2 = hKernel ?
-            (LPFN_ISWOW64PROCESS2)::GetProcAddress(hKernel, "IsWow64Process2") : nullptr;
-
-        if (fnIsWow64Process2) {
-            USHORT processMachine = 0, nativeMachine = 0;
-            if (fnIsWow64Process2(hProcess, &processMachine, &nativeMachine)) {
-                is64Bit = (processMachine == IMAGE_FILE_MACHINE_UNKNOWN) && (nativeMachine == IMAGE_FILE_MACHINE_AMD64);
-                return true;
-            }
-        } else {
-            // Old system use IsWow64Process
-            if (IsWow64Process(hProcess, &bWow64)) {
-                is64Bit = sizeof(void*) == 8 ? TRUE : !bWow64;
-                return true;
-            }
-        }
-        return false;
     }
 
     // Check if it's able to inject.
