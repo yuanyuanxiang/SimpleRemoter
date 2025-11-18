@@ -889,7 +889,8 @@ typedef struct DllExecuteInfo {
     char Name[32];							// DLL 名称
     char Md5[33];							// DLL MD5
 	int Pid;                                // 被注入进程ID
-	char Reseverd[19];
+    char Is32Bit;                           // 是否32位DLL
+	char Reseverd[18];
 } DllExecuteInfo;
 #pragma pack(pop)
 

