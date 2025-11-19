@@ -356,4 +356,5 @@ public:
     afx_msg void OnShellcodeAesBin();
     afx_msg void OnShellcodeTestAesBin();
     afx_msg void OnToolReloadPlugins();
+    afx_msg void OnShellcodeAesCArray();
 };

