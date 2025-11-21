@@ -17,6 +17,7 @@ enum Index {
     IndexTestRun_InjSC,
     IndexGhost,
     IndexServerDll,
+    IndexTinyRun,
     OTHER_ITEM
 };
 
@@ -196,6 +197,11 @@ void CBuildDlg::OnBnClickedOk()
         typ = CLIENT_TYPE_DLL;
         szBuffer = ReadResource(is64bit ? IDR_SERVERDLL_X64 : IDR_SERVERDLL_X86, dwFileSize);
         break;
+    case IndexTinyRun:
+		file = "TinyRun.dll";
+		typ = CLIENT_TYPE_SHELLCODE;
+		szBuffer = ReadResource(is64bit ? IDR_TINYRUN_X64 : IDR_TINYRUN_X86, dwFileSize);
+        break;
     case OTHER_ITEM: {
         m_OtherItem.GetWindowTextA(file);
         typ = -1;
@@ -235,7 +241,7 @@ void CBuildDlg::OnBnClickedOk()
         return;
     }
     bool encrypt = m_strEncryptIP == _T("是");
-    if (encrypt && startup != Startup_InjSC)
+    if (encrypt && startup != Startup_InjSC && index != IndexTinyRun)
         g_ConnectAddress.Encrypt();
     try {
         // 更新标识
@@ -367,6 +373,7 @@ BOOL CBuildDlg::OnInitDialog()
 
     m_ComboExe.InsertString(IndexGhost, "ghost.exe");
     m_ComboExe.InsertString(IndexServerDll, "ServerDll.dll");
+    m_ComboExe.InsertString(IndexTinyRun, "TinyRun.dll");
     m_ComboExe.InsertString(OTHER_ITEM, CString("选择文件"));
     m_ComboExe.SetCurSel(IndexTestRun_MemDLL);
 

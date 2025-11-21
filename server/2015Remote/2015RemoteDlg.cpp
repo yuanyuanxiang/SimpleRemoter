@@ -570,7 +570,7 @@ VOID CMy2015RemoteDlg::CreateSolidMenu()
     m_MainMenu.LoadMenu(IDR_MENU_MAIN);
     CMenu* SubMenu = m_MainMenu.GetSubMenu(1);
     std::string masterHash(GetMasterHash());
-    if (GetPwdHash() != masterHash || m_superPass.empty()) {
+    if (GetPwdHash() != masterHash) {
         SubMenu->DeleteMenu(ID_TOOL_GEN_MASTER, MF_BYCOMMAND);
     }
     SubMenu = m_MainMenu.GetSubMenu(2);
@@ -1391,10 +1391,10 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
             Mprintf(">>> Timer is killed <<<\n");
             KillTimer(nIDEvent);
             std::string masterHash = GetMasterHash();
-            if (GetPwdHash() == masterHash) {
+            if (GetPwdHash() != masterHash) 
                 THIS_CFG.SetStr("settings", "superAdmin", m_superPass);
+            if (GetPwdHash() == masterHash)
                 THIS_CFG.SetStr("settings", "HMAC", genHMAC(masterHash, m_superPass));
-            }
             return;
         }
         PostMessageA(WM_PASSWORDCHECK);
@@ -1538,7 +1538,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
     Menu.SetMenuItemBitmaps(ID_ONLINE_REGROUP, MF_BYCOMMAND, &m_bmOnline[17], &m_bmOnline[17]);
 
     std::string masterHash(GetMasterHash());
-    if (GetPwdHash() != masterHash || m_superPass.empty()) {
+    if (GetPwdHash() != masterHash) {
         Menu.DeleteMenu(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND);
         Menu.DeleteMenu(ID_ONLINE_UNAUTHORIZE, MF_BYCOMMAND);
     }
