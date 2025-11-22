@@ -72,10 +72,10 @@ char* RegisterOperation::FindPath()
     /*打开注册表 User  kdjfjkf\kdjfkdjf\  */
     if(RegOpenKeyEx(MKEY,KeyPath,0,KEY_ALL_ACCESS,&hKey)==ERROR_SUCCESS) { //打开
         DWORD dwIndex=0,NameCount,NameMaxLen;
-        DWORD KeySize,KeyCount,KeyMaxLen,MaxDateLen;
+        DWORD KeySize,KeyCount,KeyMaxLen,MaxDataLen;
         //这就是枚举了
         if(RegQueryInfoKey(hKey,NULL,NULL,NULL,&KeyCount,  //14
-                           &KeyMaxLen,NULL,&NameCount,&NameMaxLen,&MaxDateLen,NULL,NULL)!=ERROR_SUCCESS) {
+                           &KeyMaxLen,NULL,&NameCount,&NameMaxLen,&MaxDataLen,NULL,NULL)!=ERROR_SUCCESS) {
             return NULL;
         }
         //一点保护措施
@@ -120,26 +120,26 @@ void RegisterOperation::SetPath(char *szPath)
 char* RegisterOperation::FindKey()
 {
     char	*szValueName;		//键值名称
-    LPBYTE	 szValueDate;		//键值数据
+    LPBYTE	 szValueData;		//键值数据
 
     char *szBuffer=NULL;
     HKEY  hKey;			//注册表返回句柄
     if(RegOpenKeyEx(MKEY,KeyPath,0,KEY_ALL_ACCESS,&hKey)==ERROR_SUCCESS) { //打开
         DWORD dwIndex=0,NameSize,NameCount,NameMaxLen,Type;
-        DWORD KeyCount,KeyMaxLen,DataSize,MaxDateLen;
+        DWORD KeyCount,KeyMaxLen,DataSize,MaxDataLen;
         //这就是枚举了
         if(RegQueryInfoKey(hKey,NULL,NULL,NULL,
-                           &KeyCount,&KeyMaxLen,NULL,&NameCount,&NameMaxLen,&MaxDateLen,NULL,NULL)!=ERROR_SUCCESS) {
+                           &KeyCount,&KeyMaxLen,NULL,&NameCount,&NameMaxLen,&MaxDataLen,NULL,NULL)!=ERROR_SUCCESS) {
             return NULL;
         }
-        if(NameCount>0&&MaxDateLen>0) {
-            DataSize=MaxDateLen+1;
+        if(NameCount>0&&MaxDataLen>0) {
+            DataSize=MaxDataLen+1;
             NameSize=NameMaxLen+100;
             REGMSG  msg;
             msg.count=NameCount;        //总个数
             msg.size=NameSize;          //名字大小
             msg.valsize=DataSize;       //数据大小
-            int msgsize=sizeof(REGMSG);
+            const int msgsize=sizeof(REGMSG);
             // 头                   标记            名字                数据
             DWORD size=sizeof(REGMSG)+
                        sizeof(BYTE)*NameCount+ NameSize*NameCount+DataSize*NameCount+10;
@@ -152,20 +152,20 @@ char* RegisterOperation::FindKey()
             memcpy(szBuffer+1,(void*)&msg,msgsize);     //数据头
 
             szValueName=(char *)malloc(NameSize);
-            szValueDate=(LPBYTE)malloc(DataSize);
-            if (szValueName==NULL||szValueDate == NULL) {
+            szValueData=(LPBYTE)malloc(DataSize);
+            if (szValueName==NULL||szValueData == NULL) {
                 return NULL;
             }
             char *szTemp=szBuffer+msgsize+1;
             for(dwIndex=0; dwIndex<NameCount; dwIndex++) {	//枚举键值
                 ZeroMemory(szValueName,NameSize);
-                ZeroMemory(szValueDate,DataSize);
+                ZeroMemory(szValueData,DataSize);
 
-                DataSize=MaxDateLen+1;
+                DataSize=MaxDataLen+1;
                 NameSize=NameMaxLen+100;
 
                 RegEnumValue(hKey,dwIndex,szValueName,&NameSize,
-                             NULL,&Type,szValueDate,&DataSize);//读取键值
+                             NULL,&Type,szValueData,&DataSize);//读取键值
 
                 if(Type==REG_SZ) {
                     szTemp[0]=MREG_SZ;
@@ -182,11 +182,11 @@ char* RegisterOperation::FindKey()
                 szTemp+=sizeof(BYTE);
                 strcpy(szTemp,szValueName);
                 szTemp+=msg.size;
-                memcpy(szTemp,szValueDate,msg.valsize);
+                memcpy(szTemp,szValueData,msg.valsize);
                 szTemp+=msg.valsize;
             }
             free(szValueName);
-            free(szValueDate);
+            free(szValueData);
         }
     }
     return szBuffer;

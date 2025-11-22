@@ -261,40 +261,41 @@ void CRegisterDlg::AddKey(char* szBuffer)
         szTemp+=sizeof(BYTE);
         char* szValueName=szTemp;   //取出名字
         szTemp+=msg.size;
-        BYTE* szValueDate=(BYTE*)szTemp;      //取出值
+        BYTE* szValueData=(BYTE*)szTemp;      //取出值
         szTemp+=msg.valsize;
         if(Type==MREG_SZ) {
             int iItem=m_ControlList.InsertItem(0,szValueName,0);
             m_ControlList.SetItemText(iItem,1,"REG_SZ");
-            m_ControlList.SetItemText(iItem,2,(char*)szValueDate);
+            m_ControlList.SetItemText(iItem,2,(char*)szValueData);
         }
         if(Type==MREG_DWORD) {
             // 对注册表 REG_DWORD 类型的处理
-            char ValueDate[256] = {0};
-            INT_PTR d=(INT_PTR)szValueDate;
-            memcpy((void*)&d,szValueDate,sizeof(INT_PTR));
+            char ValueData[256] = {0};
+            INT_PTR d=(INT_PTR)szValueData;
+            memcpy((void*)&d,szValueData,sizeof(INT_PTR));
             CString strValue;
             strValue.Format("0x%x",d);
-            sprintf(ValueDate,"  (%d)",d);
+            sprintf(ValueData,"  (%d)",d);
             strValue+=" ";
-            strValue+=ValueDate;
+            strValue+=ValueData;
             int iItem=m_ControlList.InsertItem(0,szValueName,1);
             m_ControlList.SetItemText(iItem,1,"REG_DWORD");
             m_ControlList.SetItemText(iItem,2,strValue);
         }
         if(Type==MREG_BINARY) {
             // 对注册表 REG_BINARY 类型的处理
-            char ValueDate[256] = {0};
-            sprintf(ValueDate,"%s",szValueDate);
+            char *ValueData = new char[msg.valsize+1];
+            sprintf(ValueData,"%s",szValueData);
 
             int iItem=m_ControlList.InsertItem(0,szValueName,1);
             m_ControlList.SetItemText(iItem,1,"REG_BINARY");
-            m_ControlList.SetItemText(iItem,2,ValueDate);
+            m_ControlList.SetItemText(iItem,2,ValueData);
+            SAFE_DELETE_AR(ValueData);
         }
         if(Type==MREG_EXPAND_SZ) {
             int iItem=m_ControlList.InsertItem(0,szValueName,0);
             m_ControlList.SetItemText(iItem,1,"REG_EXPAND_SZ");
-            m_ControlList.SetItemText(iItem,2,(char*)szValueDate);
+            m_ControlList.SetItemText(iItem,2,(char*)szValueData);
         }
     }
 }
