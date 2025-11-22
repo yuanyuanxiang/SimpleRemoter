@@ -2688,7 +2688,8 @@ void CMy2015RemoteDlg::OnToolAuth()
     dlg.m_sUserPwd = m_superPass.c_str();
 
     dlg.DoModal();
-    if (!dlg.m_sUserPwd.IsEmpty()) {
+
+    if (!dlg.m_sUserPwd.IsEmpty() && !dlg.m_sPassword.IsEmpty()) {
         m_superPass = dlg.m_sUserPwd;
         if (deviceID.c_str() == dlg.m_sDeviceID) {
             m_nMaxConnection = dlg.m_nHostNum;
