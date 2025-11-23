@@ -95,7 +95,7 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(SolutionDir);./;$(WindowsSdkDir_81)Include\um;$(WindowsSdkDir_81)Include\shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>_CONSOLE;ZLIB_WINAPI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CONSOLE;ZLIB_WINAPI;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
@@ -114,7 +114,7 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(SolutionDir);./;$(WindowsSdkDir_81)Include\um;$(WindowsSdkDir_81)Include\shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
-      <PreprocessorDefinitions>_CONSOLE;ZLIB_WINAPI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_CONSOLE;ZLIB_WINAPI;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <MinimalRebuild>false</MinimalRebuild>
     </ClCompile>
@@ -199,6 +199,8 @@
     <ClCompile Include="ScreenManager.cpp" />
     <ClCompile Include="ScreenSpy.cpp" />
     <ClCompile Include="ServicesManager.cpp" />
+    <ClCompile Include="ServiceWrapper.c" />
+    <ClCompile Include="SessionMonitor.c" />
     <ClCompile Include="ShellManager.cpp" />
     <ClCompile Include="StdAfx.cpp" />
     <ClCompile Include="SystemManager.cpp" />
@@ -218,6 +220,7 @@
     <ClInclude Include="auto_start.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="CaptureVideo.h" />
+    <ClInclude Include="ClientApp.h" />
     <ClInclude Include="clip.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="CursorInfo.h" />
@@ -241,6 +244,8 @@
     <ClInclude Include="ScreenManager.h" />
     <ClInclude Include="ScreenSpy.h" />
     <ClInclude Include="ServicesManager.h" />
+    <ClInclude Include="ServiceWrapper.h" />
+    <ClInclude Include="SessionMonitor.h" />
     <ClInclude Include="ShellManager.h" />
     <ClInclude Include="StdAfx.h" />
     <ClInclude Include="SystemManager.h" />

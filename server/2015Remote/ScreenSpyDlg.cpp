@@ -288,6 +288,7 @@ VOID CScreenSpyDlg::OnClose()
 
 VOID CScreenSpyDlg::OnReceiveComplete()
 {
+    if (m_bIsClosed) return;
     assert (m_ContextObject);
     auto cmd = m_ContextObject->InDeCompressedBuffer.GetBYTE(0);
     LPBYTE szBuffer = m_ContextObject->InDeCompressedBuffer.GetBuffer();
@@ -357,6 +358,7 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(bool keyFrame)
     m_FrameID++;
 #endif
     LPVOID	FirstScreenData = m_BitmapData_Full;
+    if (FirstScreenData == NULL) return;
     LPVOID	NextScreenData = m_ContextObject->InDeCompressedBuffer.GetBuffer(ulHeadLength);
     ULONG	NextScreenLength = m_ContextObject->InDeCompressedBuffer.GetBufferLength() - ulHeadLength;
 

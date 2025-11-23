@@ -316,6 +316,8 @@
     <ClInclude Include="VideoDlg.h" />
     <ClInclude Include="zconf.h" />
     <ClInclude Include="zlib.h" />
+    <ClInclude Include="ServerServiceWrapper.h" />
+    <ClInclude Include="ServerSessionMonitor.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\client\Audio.cpp" />
@@ -398,6 +400,8 @@
     <ClCompile Include="TalkDlg.cpp" />
     <ClCompile Include="TrueColorToolBar.cpp" />
     <ClCompile Include="VideoDlg.cpp" />
+    <ClCompile Include="ServerServiceWrapper.cpp" />
+    <ClCompile Include="ServerSessionMonitor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />

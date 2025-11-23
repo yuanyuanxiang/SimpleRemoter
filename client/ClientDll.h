@@ -13,6 +13,7 @@
 #include <shellapi.h>
 #include <corecrt_io.h>
 #include "domain_pool.h"
+#include "ClientApp.h"
 
 BOOL IsProcessExit();
 
@@ -22,8 +23,11 @@ BOOL IsSharedRunning(void* thisApp);
 
 BOOL IsClientAppRunning(void* thisApp);
 
+DWORD WINAPI StartClientApp(LPVOID param);
+
 // 客户端类：将全局变量打包到一起.
-typedef struct ClientApp {
+class ClientApp : public App {
+public:
     State			g_bExit;			// 应用程序状态（1-被控端退出 2-主控端退出 3-其他条件）
     BOOL			g_bThreadExit;		// 工作线程状态
     HINSTANCE		g_hInstance;		// 进程句柄
@@ -36,10 +40,14 @@ typedef struct ClientApp {
     static CLock	m_Locker;
     ClientApp(CONNECT_ADDRESS*conn, IsRunning run, BOOL shared=FALSE)
     {
-        memset(this, 0, sizeof(ClientApp));
+        g_bExit = S_CLIENT_NORMAL;
+        g_bThreadExit = FALSE;
+        g_hInstance = NULL;
         g_Connection = new CONNECT_ADDRESS(*conn);
+        g_hEvent = NULL;
         m_bIsRunning = run;
         m_bShared = shared;
+        m_ID = 0;
         g_bThreadExit = TRUE;
     }
     std::vector<std::string> GetSharedMasterList()
@@ -94,7 +102,26 @@ typedef struct ClientApp {
         g_bExit = state;
         m_Locker.Unlock();
     }
-} ClientApp;
+    virtual bool Initialize() override {
+        g_Connection->SetType(CLIENT_TYPE_ONE);
+        return true;
+    }
+    virtual bool Start(bool block) override {
+        if (block) StartClientApp(this);
+        else CloseHandle(__CreateThread(0, 0, StartClientApp, this, 0, 0));
+        return true;
+    }
+    virtual bool Stop() override {
+        g_bExit = S_CLIENT_EXIT;
+        return true;
+    }
+    bool Run(bool block = true) {
+		if (!Initialize()) return false;		
+		if (!Start(block)) return false;		
+		if (block) Stop();
+		return true;
+    }
+};
 
 ClientApp* NewClientStartArg(const char* remoteAddr, IsRunning run = IsClientAppRunning, BOOL shared=FALSE);
 
