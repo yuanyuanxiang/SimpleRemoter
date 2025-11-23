@@ -962,6 +962,14 @@ inline std::string ToPekingTimeAsString(const time_t* t)
     return buffer;
 }
 
+inline std::string ToPekingDateTime(const time_t* t)
+{
+	auto pekingTime = ToPekingTime(t);
+	char buffer[20];
+	std::strftime(buffer, sizeof(buffer), "%Y%m%d%H%M%S", &pekingTime);
+	return buffer;
+}
+
 typedef struct Validation {
     char From[20];			// 开始日期
     char To[20];			// 结束日期
