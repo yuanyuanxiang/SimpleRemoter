@@ -1,34 +1,7 @@
 #pragma once
 
 #include "IOCPServer.h"
-
-
-#include <Vfw.h>
-
-#pragma comment(lib,"Vfw32.lib")
-
-/************************************************************************
-* @class CBmpToAvi
-* @brief 位图转AVI帧
-************************************************************************/
-class CBmpToAvi
-{
-public:
-    CBmpToAvi();
-    virtual ~CBmpToAvi();
-    bool Open(LPCTSTR szFile, LPBITMAPINFO lpbmi);
-    bool Open(HWND m_hWnd, LPCTSTR szFile, LPBITMAPINFO lpbmi, BOOL bIsWebCam = FALSE)
-    {
-        return FALSE;
-    }
-    bool Write(LPVOID lpBuffer);
-    void Close();
-private:
-    PAVIFILE m_pfile;
-    PAVISTREAM m_pavi;
-    int m_nFrames;
-    static AVISTREAMINFO m_si; // 这个参数需要是静态的
-};
+#include "Bmp2Video.h"
 
 class CVideoCodec
 {

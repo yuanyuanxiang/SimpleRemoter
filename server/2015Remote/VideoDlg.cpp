@@ -15,67 +15,6 @@ enum {
 
 IMPLEMENT_DYNAMIC(CVideoDlg, CDialog)
 
-AVISTREAMINFO CBmpToAvi::m_si;
-
-CBmpToAvi::CBmpToAvi()
-{
-    m_pfile = NULL;
-    m_pavi = NULL;
-    AVIFileInit();
-}
-
-CBmpToAvi::~CBmpToAvi()
-{
-    AVIFileExit();
-}
-
-bool CBmpToAvi::Open( LPCTSTR szFile, LPBITMAPINFO lpbmi )
-{
-    if (szFile == NULL)
-        return false;
-    m_nFrames = 0;
-
-    if (AVIFileOpen(&m_pfile, szFile, OF_WRITE | OF_CREATE, NULL))
-        return false;
-
-    m_si.fccType = streamtypeVIDEO;
-    m_si.fccHandler = BI_RGB;
-    m_si.dwScale = 1;
-    m_si.dwRate = 8; // 帧率
-    SetRect(&m_si.rcFrame, 0, 0, lpbmi->bmiHeader.biWidth, lpbmi->bmiHeader.biHeight);
-    m_si.dwSuggestedBufferSize = lpbmi->bmiHeader.biSizeImage;
-
-    if (AVIFileCreateStream(m_pfile, &m_pavi, &m_si))
-        return false;
-
-
-    if (AVIStreamSetFormat(m_pavi, 0, lpbmi, sizeof(BITMAPINFO)) != AVIERR_OK)
-        return false;
-
-    return true;
-}
-
-bool CBmpToAvi::Write(LPVOID lpBuffer)
-{
-    if (m_pfile == NULL || m_pavi == NULL)
-        return false;
-
-    return AVIStreamWrite(m_pavi, m_nFrames++, 1, lpBuffer, m_si.dwSuggestedBufferSize, AVIIF_KEYFRAME, NULL, NULL) == AVIERR_OK;
-}
-
-
-void CBmpToAvi::Close()
-{
-    if (m_pavi) {
-        AVIStreamRelease(m_pavi);
-        m_pavi = NULL;
-    }
-    if (m_pfile) {
-        AVIFileRelease(m_pfile);
-        m_pfile = NULL;
-    }
-}
-
 
 void CVideoDlg::SaveAvi(void)
 {
@@ -92,8 +31,9 @@ void CVideoDlg::SaveAvi(void)
     if(dlg.DoModal () != IDOK)
         return;
     m_aviFile = dlg.GetPathName();
-    if (!m_aviStream.Open(m_aviFile, m_BitmapInfor_Full)) {
-        MessageBox("创建录像文件失败:"+m_aviFile, "提示");
+    int code;
+    if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full)) {
+        MessageBox("创建录像文件失败:"+m_aviFile + "\r\n错误代码: " + CBmpToAvi::GetErrMsg(code).c_str(), "提示");
         m_aviFile.Empty();
     } else {
         pSysMenu->CheckMenuItem(IDM_SAVEAVI, MF_CHECKED);

@@ -1,6 +1,7 @@
 #pragma once
 #include "IOCPServer.h"
 #include "..\..\client\CursorInfo.h"
+#include "VideoDlg.h"
 
 extern "C"
 {
@@ -74,6 +75,7 @@ public:
     BOOL  m_bSend;
     ULONG m_ulMsgCount;
     int m_FrameID;
+    bool m_bHide = false;
 
     BOOL SaveSnapshot(void);
     // 对话框数据
@@ -95,6 +97,10 @@ public:
     CRect				m_CRect;
     double				m_wZoom=1, m_hZoom=1;
     bool				m_bMouseTracking = false;
+
+	CString             m_aviFile;
+	CBmpToAvi	        m_aviStream;
+    void OnTimer(UINT_PTR nIDEvent);
 
     bool Decode(LPBYTE Buffer, int size);
     void EnterFullScreen();
