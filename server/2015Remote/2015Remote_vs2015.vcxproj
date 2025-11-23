@@ -266,6 +266,7 @@
     <ClInclude Include="2015RemoteDlg.h" />
     <ClInclude Include="adapter.h" />
     <ClInclude Include="AudioDlg.h" />
+    <ClInclude Include="Bmp2Video.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="BuildDlg.h" />
     <ClInclude Include="CDrawingBoard.h" />
@@ -339,6 +340,7 @@
     <ClCompile Include="2015Remote.cpp" />
     <ClCompile Include="2015RemoteDlg.cpp" />
     <ClCompile Include="AudioDlg.cpp" />
+    <ClCompile Include="Bmp2Video.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="BuildDlg.cpp" />
     <ClCompile Include="CDrawingBoard.cpp" />

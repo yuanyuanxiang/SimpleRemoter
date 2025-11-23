@@ -56,6 +56,7 @@
     <ClCompile Include="CWalletDlg.cpp" />
     <ClCompile Include="CRcEditDlg.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Bmp2Video.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
@@ -125,6 +126,7 @@
     <ClInclude Include="CRcEditDlg.h" />
     <ClInclude Include="..\..\common\obfs.h" />
     <ClInclude Include="..\..\common\file_upload.h" />
+    <ClInclude Include="Bmp2Video.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />
