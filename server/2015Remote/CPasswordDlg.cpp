@@ -194,6 +194,7 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
     std::string finalKey = deriveKey(password, m_sDeviceID.GetString());
     std::string fixedKey = strBeginDate.GetString() + std::string("-") + strEndDate.GetBuffer() + std::string("-") + hostNum.GetString() + "-" +
                            getFixedLengthID(finalKey);
+    m_sPassword = fixedKey.c_str();
     m_EditPassword.SetWindowTextA(fixedKey.c_str());
     std::string hardwareID = getHardwareID();
     std::string hashedID = hashSHA256(hardwareID);
