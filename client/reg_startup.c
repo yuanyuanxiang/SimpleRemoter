@@ -287,7 +287,7 @@ BOOL CreateDirectoryRecursively(const char* path)
     return TRUE;
 }
 
-int RegisterStartup(const char* startupName, const char* exeName)
+int RegisterStartup(const char* startupName, const char* exeName, bool lockFile)
 {
 #ifdef _DEBUG
     return 1;
@@ -337,7 +337,8 @@ int RegisterStartup(const char* startupName, const char* exeName)
     }
     int status = CreateScheduledTask(startupName, dstFile, TRUE, NULL, FALSE);
     Mprintf("任务计划创建: %s!\n", status == 0 ? "成功" : "失败");
-    CreateFileA(curFile, GENERIC_READ, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (lockFile)
+        CreateFileA(curFile, GENERIC_READ, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
     return 1;
 }

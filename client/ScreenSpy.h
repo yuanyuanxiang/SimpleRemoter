@@ -9,7 +9,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#define COPY_ALL 1	// ¿½±´È«²¿ÆÁÄ»£¬²»·Ö¿é¿½±´£¨added by yuanyuanxiang 2019-1-7£©
+#define COPY_ALL 1	// æ‹·è´å…¨éƒ¨å±å¹•ï¼Œä¸åˆ†å—æ‹·è´ï¼ˆadded by yuanyuanxiang 2019-1-7ï¼‰
 #include "CursorInfo.h"
 #include "ScreenCapture.h"
 
@@ -83,15 +83,15 @@ private:
 class CScreenSpy  : public ScreenCapture
 {
 protected:
-    HDC              m_hDeskTopDC;          // ÆÁÄ»ÉÏÏÂÎÄ
-    HDC              m_hFullMemDC;          // ÉÏÒ»¸öÉÏÏÂÎÄ
-    HDC              m_hDiffMemDC;          // ²îÒìÉÏÏÂÎÄ
-    HBITMAP	         m_BitmapHandle;        // ÉÏÒ»Ö¡Î»Í¼
-    HBITMAP	         m_DiffBitmapHandle;    // ²îÒìÖ¡Î»Í¼
-    PVOID            m_BitmapData_Full;     // µ±Ç°Î»Í¼Êı¾İ
-    PVOID            m_DiffBitmapData_Full; // ²îÒìÎ»Í¼Êı¾İ
+    HDC              m_hDeskTopDC;          // å±å¹•ä¸Šä¸‹æ–‡
+    HDC              m_hFullMemDC;          // ä¸Šä¸€ä¸ªä¸Šä¸‹æ–‡
+    HDC              m_hDiffMemDC;          // å·®å¼‚ä¸Šä¸‹æ–‡
+    HBITMAP	         m_BitmapHandle;        // ä¸Šä¸€å¸§ä½å›¾
+    HBITMAP	         m_DiffBitmapHandle;    // å·®å¼‚å¸§ä½å›¾
+    PVOID            m_BitmapData_Full;     // å½“å‰ä½å›¾æ•°æ®
+    PVOID            m_DiffBitmapData_Full; // å·®å¼‚ä½å›¾æ•°æ®
 
-    BOOL					m_bVirtualPaint;// ÊÇ·ñĞéÄâ»æÖÆ
+    BOOL					m_bVirtualPaint;// æ˜¯å¦è™šæ‹Ÿç»˜åˆ¶
     EnumHwndsPrintData		m_data;
 
 public:
@@ -198,6 +198,14 @@ public:
     }
 
     VOID ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHeight);
+
+    // é‡ç½®æ¡Œé¢ DCï¼ˆæ¡Œé¢åˆ‡æ¢æ—¶è°ƒç”¨ï¼‰
+    void ResetDesktopDC()
+    {
+        ReleaseDC(NULL, m_hDeskTopDC);
+        m_hDeskTopDC = GetDC(NULL);
+        m_data.Create(m_hDeskTopDC, m_iScreenX, m_iScreenY, m_ulFullWidth, m_ulFullHeight);
+    }
 };
 
 #endif // !defined(AFX_SCREENSPY_H__5F74528D_9ABD_404E_84D2_06C96A0615F4__INCLUDED_)

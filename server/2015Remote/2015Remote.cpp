@@ -1,5 +1,5 @@
 
-// 2015Remote.cpp : ¶¨ÒåÓ¦ÓÃ³ÌĞòµÄÀàĞĞÎª¡£
+// 2015Remote.cpp : å®šä¹‰åº”ç”¨ç¨‹åºçš„ç±»è¡Œä¸ºã€‚
 //
 
 #include "stdafx.h"
@@ -10,11 +10,12 @@
 #define new DEBUG_NEW
 #endif
 
-// dumpÏà¹Ø
+// dumpç›¸å…³
 #include <io.h>
 #include <direct.h>
 #include <DbgHelp.h>
 #include "IOCPUDPServer.h"
+#include "ServerServiceWrapper.h"
 #pragma comment(lib, "Dbghelp.lib")
 
 CMy2015RemoteApp* GetThisApp()
@@ -35,24 +36,38 @@ std::string GetMasterHash()
 }
 
 /**
-* @brief ³ÌĞòÓöµ½Î´ÖªBUGµ¼ÖÂÖÕÖ¹Ê±µ÷ÓÃ´Ëº¯Êı£¬²»µ¯¿ò
-* ²¢ÇÒ×ª´¢dumpÎÄ¼şµ½dumpÄ¿Â¼.
+* @brief ç¨‹åºé‡åˆ°æœªçŸ¥BUGå¯¼è‡´ç»ˆæ­¢æ—¶è°ƒç”¨æ­¤å‡½æ•°ï¼Œä¸å¼¹æ¡†
+* å¹¶ä¸”è½¬å‚¨dumpæ–‡ä»¶åˆ°dumpç›®å½•.
 */
 long WINAPI whenbuged(_EXCEPTION_POINTERS *excp)
 {
-    // »ñÈ¡dumpÎÄ¼ş¼Ğ£¬Èô²»´æÔÚ£¬Ôò´´½¨Ö®
-    char dump[_MAX_PATH], *p = dump;
-    GetModuleFileNameA(NULL, dump, _MAX_PATH);
-    while (*p) ++p;
-    while ('\\' != *p) --p;
-    strcpy(p + 1, "dump");
-    if (_access(dump, 0) == -1)
-        _mkdir(dump);
-    char curTime[64];// µ±Ç°dumpÎÄ¼ş
-    time_t TIME(time(0));
-    strftime(curTime, 64, "\\YAMA_%Y-%m-%d %H%M%S.dmp", localtime(&TIME));
-    strcat(dump, curTime);
-    HANDLE hFile = ::CreateFileA(dump, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+    // è·å–dumpæ–‡ä»¶å¤¹ï¼Œè‹¥ä¸å­˜åœ¨ï¼Œåˆ™åˆ›å»ºä¹‹
+    char dumpDir[_MAX_PATH];
+    char dumpFile[_MAX_PATH + 64];
+
+    if (!GetModuleFileNameA(NULL, dumpDir, _MAX_PATH)) {
+        return EXCEPTION_EXECUTE_HANDLER;
+    }
+
+    char* p = strrchr(dumpDir, '\\');
+    if (p) {
+        strcpy_s(p + 1, _MAX_PATH - (p - dumpDir + 1), "dump");
+    } else {
+        strcpy_s(dumpDir, _MAX_PATH, "dump");
+    }
+
+    if (_access(dumpDir, 0) == -1)
+        _mkdir(dumpDir);
+
+    // æ„å»ºå®Œæ•´çš„dumpæ–‡ä»¶è·¯å¾„
+    char curTime[64];
+    time_t TIME = time(0);
+    struct tm localTime;
+    localtime_s(&localTime, &TIME);
+    strftime(curTime, sizeof(curTime), "\\YAMA_%Y-%m-%d %H%M%S.dmp", &localTime);
+    sprintf_s(dumpFile, sizeof(dumpFile), "%s%s", dumpDir, curTime);
+
+    HANDLE hFile = ::CreateFileA(dumpFile, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
                                  FILE_ATTRIBUTE_NORMAL, NULL);
     if(INVALID_HANDLE_VALUE != hFile) {
         MINIDUMP_EXCEPTION_INFORMATION einfo = {::GetCurrentThreadId(), excp, FALSE};
@@ -72,15 +87,15 @@ END_MESSAGE_MAP()
 
 std::string GetPwdHash();
 
-// CMy2015RemoteApp ¹¹Ôì
+// CMy2015RemoteApp æ„é€ 
 
 CMy2015RemoteApp::CMy2015RemoteApp()
 {
-    // Ö§³ÖÖØĞÂÆô¶¯¹ÜÀíÆ÷
+    // æ”¯æŒé‡æ–°å¯åŠ¨ç®¡ç†å™¨
     m_dwRestartManagerSupportFlags = AFX_RESTART_MANAGER_SUPPORT_RESTART;
 
-    // TODO: ÔÚ´Ë´¦Ìí¼Ó¹¹Ôì´úÂë£¬
-    // ½«ËùÓĞÖØÒªµÄ³õÊ¼»¯·ÅÖÃÔÚ InitInstance ÖĞ
+    // TODO: åœ¨æ­¤å¤„æ·»åŠ æ„é€ ä»£ç ï¼Œ
+    // å°†æ‰€æœ‰é‡è¦çš„åˆå§‹åŒ–æ”¾ç½®åœ¨ InitInstance ä¸­
     m_Mutex = NULL;
 #ifdef _DEBUG
     std::string masterHash(GetMasterHash());
@@ -93,15 +108,126 @@ CMy2015RemoteApp::CMy2015RemoteApp()
 }
 
 
-// Î¨Ò»µÄÒ»¸ö CMy2015RemoteApp ¶ÔÏó
+// å”¯ä¸€çš„ä¸€ä¸ª CMy2015RemoteApp å¯¹è±¡
 
 CMy2015RemoteApp theApp;
 
 
-// CMy2015RemoteApp ³õÊ¼»¯
+// ä»æœåŠ¡è·¯å¾„ä¸­æå–å¯æ‰§è¡Œæ–‡ä»¶è·¯å¾„ï¼ˆå»é™¤å¼•å·å’Œå‚æ•°ï¼‰
+static void ExtractExePathFromServicePath(const char* servicePath, char* exePath, size_t exePathSize)
+{
+    if (!servicePath || !exePath || exePathSize == 0) {
+        if (exePath && exePathSize > 0) exePath[0] = '\0';
+        return;
+    }
+
+    const char* src = servicePath;
+    char* dst = exePath;
+    size_t remaining = exePathSize - 1;
+
+    // è·³è¿‡å‰å¯¼ç©ºæ ¼
+    while (*src == ' ') src++;
+
+    if (*src == '"') {
+        // å¸¦å¼•å·çš„è·¯å¾„ï¼šæå–å¼•å·å†…çš„å†…å®¹
+        src++;  // è·³è¿‡å¼€å§‹å¼•å·
+        while (*src && *src != '"' && remaining > 0) {
+            *dst++ = *src++;
+            remaining--;
+        }
+    } else {
+        // ä¸å¸¦å¼•å·çš„è·¯å¾„ï¼šæå–åˆ°ç©ºæ ¼æˆ–ç»“æŸ
+        while (*src && *src != ' ' && remaining > 0) {
+            *dst++ = *src++;
+            remaining--;
+        }
+    }
+    *dst = '\0';
+}
+
+// å¤„ç†æœåŠ¡ç›¸å…³çš„å‘½ä»¤è¡Œå‚æ•°
+// è¿”å›å€¼: TRUE è¡¨ç¤ºå·²å¤„ç†æœåŠ¡å‘½ä»¤ï¼ˆç¨‹åºåº”é€€å‡ºï¼‰ï¼ŒFALSE è¡¨ç¤ºç»§ç»­æ­£å¸¸å¯åŠ¨
+static BOOL HandleServiceCommandLine()
+{
+    CString cmdLine = ::GetCommandLine();
+    cmdLine.MakeLower();
+
+    // -service: ä½œä¸ºæœåŠ¡è¿è¡Œ
+    if (cmdLine.Find(_T("-service")) != -1) {
+        ServerService_Run();
+        return TRUE;
+    }
+
+    // -install: å®‰è£…æœåŠ¡
+    if (cmdLine.Find(_T("-install")) != -1) {
+        ServerService_Install();
+        return TRUE;
+    }
+
+    // -uninstall: å¸è½½æœåŠ¡
+    if (cmdLine.Find(_T("-uninstall")) != -1) {
+        ServerService_Uninstall();
+        return TRUE;
+    }
+
+    // -agent: ç”±æœåŠ¡å¯åŠ¨çš„GUIä»£ç†æ¨¡å¼
+    // æ­¤æ¨¡å¼ä¸‹æ­£å¸¸è¿è¡ŒGUIï¼Œä½†ä½¿ç”¨ä¸åŒçš„äº’æ–¥é‡åç§°é¿å…å†²çª
+    if (cmdLine.Find(_T("-agent")) != -1) {
+        // ç»§ç»­æ­£å¸¸å¯åŠ¨GUIï¼Œä½†æ ‡è®°ä¸ºä»£ç†æ¨¡å¼
+        return FALSE;
+    }
+
+    // æ— å‚æ•°æ—¶ï¼Œä½œä¸ºæœåŠ¡å¯åŠ¨
+    BOOL registered = FALSE;
+    BOOL running = FALSE;
+    char servicePath[MAX_PATH] = { 0 };
+    ServerService_CheckStatus(&registered, &running, servicePath, MAX_PATH);
+    char curPath[MAX_PATH];
+    GetModuleFileNameA(NULL, curPath, MAX_PATH);
+
+    // ä»æœåŠ¡è·¯å¾„ä¸­æå–çº¯å¯æ‰§è¡Œæ–‡ä»¶è·¯å¾„ï¼ˆå»é™¤å¼•å·å’Œå‚æ•°ï¼‰
+    char serviceExePath[MAX_PATH] = { 0 };
+    ExtractExePathFromServicePath(servicePath, serviceExePath, MAX_PATH);
+
+    if (registered && _stricmp(curPath, serviceExePath) != 0) {
+        Mprintf("ServerService Uninstall: %s\n", servicePath);
+        ServerService_Uninstall();
+        registered = FALSE;
+    }
+    if (!registered) {
+        Mprintf("ServerService Install: %s\n", curPath);
+        return ServerService_Install();
+    }
+    else if (!running) {
+        int r = ServerService_Run();
+        Mprintf("ServerService Run '%s' %s\n", curPath, r == ERROR_SUCCESS ? "succeed" : "failed");
+        if (r) {
+            r = ServerService_StartSimple();
+            Mprintf("ServerService Start '%s' %s\n", curPath, r == ERROR_SUCCESS ? "succeed" : "failed");
+            return r == ERROR_SUCCESS;
+        }
+        return FALSE;
+    }
+    return TRUE;
+}
+
+// æ£€æŸ¥æ˜¯å¦ä»¥ä»£ç†æ¨¡å¼è¿è¡Œ
+static BOOL IsAgentMode()
+{
+    CString cmdLine = ::GetCommandLine();
+    cmdLine.MakeLower();
+    return cmdLine.Find(_T("-agent")) != -1;
+}
+
+// CMy2015RemoteApp åˆå§‹åŒ–
 
 BOOL CMy2015RemoteApp::InitInstance()
 {
+    // é¦–å…ˆå¤„ç†æœåŠ¡å‘½ä»¤è¡Œå‚æ•°
+    if (HandleServiceCommandLine()) {
+        return FALSE;  // æœåŠ¡å‘½ä»¤å·²å¤„ç†ï¼Œé€€å‡º
+    }
+
     std::string masterHash(GetMasterHash());
     std::string mu = GetPwdHash()==masterHash ? "MASTER.EXE" : "YAMA.EXE";
 #ifndef _DEBUG
@@ -110,7 +236,8 @@ BOOL CMy2015RemoteApp::InitInstance()
         if (ERROR_ALREADY_EXISTS == GetLastError()) {
             CloseHandle(m_Mutex);
             m_Mutex = NULL;
-            MessageBoxA(NULL, "Ò»¸öÖ÷¿Ø³ÌĞòÒÑ¾­ÔÚÔËĞĞ£¬Çë¼ì²éÈÎÎñ¹ÜÀíÆ÷¡£", "ÌáÊ¾", MB_ICONINFORMATION);
+            MessageBoxA(NULL, "A master program is already running, please check Task Manager.", 
+                "Info", MB_ICONINFORMATION);
             return FALSE;
         }
     }
@@ -124,13 +251,13 @@ BOOL CMy2015RemoteApp::InitInstance()
     hImageList = (HIMAGELIST)SHGetFileInfo((LPCTSTR)_T(""), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SMALLICON | SHGFI_SYSICONINDEX);
     m_pImageList_Small.Attach(hImageList);
 
-    // Èç¹ûÒ»¸öÔËĞĞÔÚ Windows XP ÉÏµÄÓ¦ÓÃ³ÌĞòÇåµ¥Ö¸¶¨Òª
-    // Ê¹ÓÃ ComCtl32.dll °æ±¾ 6 »ò¸ü¸ß°æ±¾À´ÆôÓÃ¿ÉÊÓ»¯·½Ê½£¬
-    //ÔòĞèÒª InitCommonControlsEx()¡£·ñÔò£¬½«ÎŞ·¨´´½¨´°¿Ú¡£
+    // å¦‚æœä¸€ä¸ªè¿è¡Œåœ¨ Windows XP ä¸Šçš„åº”ç”¨ç¨‹åºæ¸…å•æŒ‡å®šè¦
+    // ä½¿ç”¨ ComCtl32.dll ç‰ˆæœ¬ 6 æˆ–æ›´é«˜ç‰ˆæœ¬æ¥å¯ç”¨å¯è§†åŒ–æ–¹å¼ï¼Œ
+    //åˆ™éœ€è¦ InitCommonControlsEx()ã€‚å¦åˆ™ï¼Œå°†æ— æ³•åˆ›å»ºçª—å£ã€‚
     INITCOMMONCONTROLSEX InitCtrls;
     InitCtrls.dwSize = sizeof(InitCtrls);
-    // ½«ËüÉèÖÃÎª°üÀ¨ËùÓĞÒªÔÚÓ¦ÓÃ³ÌĞòÖĞÊ¹ÓÃµÄ
-    // ¹«¹²¿Ø¼şÀà¡£
+    // å°†å®ƒè®¾ç½®ä¸ºåŒ…æ‹¬æ‰€æœ‰è¦åœ¨åº”ç”¨ç¨‹åºä¸­ä½¿ç”¨çš„
+    // å…¬å…±æ§ä»¶ç±»ã€‚
     InitCtrls.dwICC = ICC_WIN95_CLASSES;
     InitCommonControlsEx(&InitCtrls);
 
@@ -138,37 +265,37 @@ BOOL CMy2015RemoteApp::InitInstance()
 
     AfxEnableControlContainer();
 
-    // ´´½¨ shell ¹ÜÀíÆ÷£¬ÒÔ·À¶Ô»°¿ò°üº¬
-    // ÈÎºÎ shell Ê÷ÊÓÍ¼¿Ø¼ş»ò shell ÁĞ±íÊÓÍ¼¿Ø¼ş¡£
+    // åˆ›å»º shell ç®¡ç†å™¨ï¼Œä»¥é˜²å¯¹è¯æ¡†åŒ…å«
+    // ä»»ä½• shell æ ‘è§†å›¾æ§ä»¶æˆ– shell åˆ—è¡¨è§†å›¾æ§ä»¶ã€‚
     CShellManager *pShellManager = new CShellManager;
 
-    // ±ê×¼³õÊ¼»¯
-    // Èç¹ûÎ´Ê¹ÓÃÕâĞ©¹¦ÄÜ²¢Ï£Íû¼õĞ¡
-    // ×îÖÕ¿ÉÖ´ĞĞÎÄ¼şµÄ´óĞ¡£¬ÔòÓ¦ÒÆ³ıÏÂÁĞ
-    // ²»ĞèÒªµÄÌØ¶¨³õÊ¼»¯Àı³Ì
-    // ¸ü¸ÄÓÃÓÚ´æ´¢ÉèÖÃµÄ×¢²á±íÏî
-    // TODO: Ó¦ÊÊµ±ĞŞ¸Ä¸Ã×Ö·û´®£¬
-    // ÀıÈçĞŞ¸ÄÎª¹«Ë¾»ò×éÖ¯Ãû
+    // æ ‡å‡†åˆå§‹åŒ–
+    // å¦‚æœæœªä½¿ç”¨è¿™äº›åŠŸèƒ½å¹¶å¸Œæœ›å‡å°
+    // æœ€ç»ˆå¯æ‰§è¡Œæ–‡ä»¶çš„å¤§å°ï¼Œåˆ™åº”ç§»é™¤ä¸‹åˆ—
+    // ä¸éœ€è¦çš„ç‰¹å®šåˆå§‹åŒ–ä¾‹ç¨‹
+    // æ›´æ”¹ç”¨äºå­˜å‚¨è®¾ç½®çš„æ³¨å†Œè¡¨é¡¹
+    // TODO: åº”é€‚å½“ä¿®æ”¹è¯¥å­—ç¬¦ä¸²ï¼Œ
+    // ä¾‹å¦‚ä¿®æ”¹ä¸ºå…¬å¸æˆ–ç»„ç»‡å
     SetRegistryKey(_T("YAMA"));
 
     CMy2015RemoteDlg dlg(nullptr);
     m_pMainWnd = &dlg;
     INT_PTR nResponse = dlg.DoModal();
     if (nResponse == IDOK) {
-        // TODO: ÔÚ´Ë·ÅÖÃ´¦ÀíºÎÊ±ÓÃ
-        //  ¡°È·¶¨¡±À´¹Ø±Õ¶Ô»°¿òµÄ´úÂë
+        // TODO: åœ¨æ­¤æ”¾ç½®å¤„ç†ä½•æ—¶ç”¨
+        //  â€œç¡®å®šâ€æ¥å…³é—­å¯¹è¯æ¡†çš„ä»£ç 
     } else if (nResponse == IDCANCEL) {
-        // TODO: ÔÚ´Ë·ÅÖÃ´¦ÀíºÎÊ±ÓÃ
-        //  ¡°È¡Ïû¡±À´¹Ø±Õ¶Ô»°¿òµÄ´úÂë
+        // TODO: åœ¨æ­¤æ”¾ç½®å¤„ç†ä½•æ—¶ç”¨
+        //  â€œå–æ¶ˆâ€æ¥å…³é—­å¯¹è¯æ¡†çš„ä»£ç 
     }
 
-    // É¾³ıÉÏÃæ´´½¨µÄ shell ¹ÜÀíÆ÷¡£
+    // åˆ é™¤ä¸Šé¢åˆ›å»ºçš„ shell ç®¡ç†å™¨ã€‚
     if (pShellManager != NULL) {
         delete pShellManager;
     }
 
-    // ÓÉÓÚ¶Ô»°¿òÒÑ¹Ø±Õ£¬ËùÒÔ½«·µ»Ø FALSE ÒÔ±ãÍË³öÓ¦ÓÃ³ÌĞò£¬
-    //  ¶ø²»ÊÇÆô¶¯Ó¦ÓÃ³ÌĞòµÄÏûÏ¢±Ã¡£
+    // ç”±äºå¯¹è¯æ¡†å·²å…³é—­ï¼Œæ‰€ä»¥å°†è¿”å› FALSE ä»¥ä¾¿é€€å‡ºåº”ç”¨ç¨‹åºï¼Œ
+    //  è€Œä¸æ˜¯å¯åŠ¨åº”ç”¨ç¨‹åºçš„æ¶ˆæ¯æ³µã€‚
     return FALSE;
 }
 
@@ -185,6 +312,11 @@ int CMy2015RemoteApp::ExitInstance()
     }
 
     SAFE_DELETE(m_iniFile);
+
+    // åªæœ‰åœ¨ä»£ç†æ¨¡å¼é€€å‡ºæ—¶æ‰åœæ­¢æœåŠ¡
+    if (IsAgentMode()) {
+        ServerService_Stop();
+    }
 
     return CWinApp::ExitInstance();
 }

