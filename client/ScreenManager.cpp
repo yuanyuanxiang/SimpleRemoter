@@ -111,6 +111,18 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
     m_hWorkThread = __CreateThread(NULL,0, WorkThreadProc,this,0,NULL);
 }
 
+bool CScreenManager::SwitchScreen() {
+    if (m_ScreenSpyObject == NULL || m_ScreenSpyObject->GetScreenCount() <= 1)
+        return false;
+	m_bIsWorking = FALSE;
+	DWORD s = WaitForSingleObject(m_hWorkThread, 3000);
+	if (s ==  WAIT_TIMEOUT) {
+		TerminateThread(m_hWorkThread, -1);
+	}
+    m_bIsWorking = TRUE;
+    m_hWorkThread = __CreateThread(NULL, 0, WorkThreadProc, this, 0, NULL);
+    return true;
+}
 
 std::wstring ConvertToWString(const std::string& multiByteStr)
 {
@@ -190,8 +202,8 @@ void CScreenManager::InitScreenSpy()
             DXGI = param->buffer[0];
             algo = param->length > 1 ? param->buffer[1] : algo;
             all = param->length > 2 ? param->buffer[2] : all;
-            delete param;
         }
+        m_pUserParam = param;
     } else {
         DXGI = (int)user;
     }
@@ -224,7 +236,7 @@ void CScreenManager::InitScreenSpy()
 			SetThreadDesktop(g_hDesk = hDesk);
 		}
     }
-
+    SAFE_DELETE(m_ScreenSpyObject);
     if ((USING_DXGI == DXGI && IsWindows8orHigher())) {
         m_isGDI = FALSE;
         auto s = new ScreenCapturerDXGI(algo, DEFAULT_GOP, all);
@@ -355,6 +367,7 @@ CScreenManager::~CScreenManager()
 
     delete m_ScreenSpyObject;
     m_ScreenSpyObject = NULL;
+    SAFE_DELETE(m_pUserParam);
 }
 
 void RunFileReceiver(CScreenManager *mgr, const std::string &folder)
@@ -404,6 +417,10 @@ void FinishSend(void* user)
 VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 {
     switch(szBuffer[0]) {
+    case COMMAND_SWITCH_SCREEN: {
+        SwitchScreen();
+        break;
+    }
     case COMMAND_NEXT: {
         NotifyDialogIsOpen();
         break;

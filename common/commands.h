@@ -195,6 +195,7 @@ enum {
     COMMAND_GET_FOLDER = 66,        // 获取目录
     COMMAND_GET_FILE = 67,          // 获取文件
     COMMAND_SEND_FILE = 68,         // 发送文件
+    COMMAND_SWITCH_SCREEN = 69,
 
     // 服务端发出的标识
     TOKEN_AUTH = 100,				// 要求验证

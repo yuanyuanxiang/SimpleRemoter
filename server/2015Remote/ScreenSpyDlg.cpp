@@ -26,6 +26,7 @@ enum {
     IDM_ADAPTIVE_SIZE,
     IDM_SAVEAVI,
     IDM_SAVEAVI_H264,
+    IDM_SWITCHSCREEN,
 };
 
 IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
@@ -83,6 +84,10 @@ extern "C" char* __imp_strtok(char* str, const char* delim)
 CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, Server* IOCPServer, CONTEXT_OBJECT* ContextObject)
     : DialogBase(CScreenSpyDlg::IDD, Parent, IOCPServer, ContextObject, 0)
 {
+    m_hFullDC = NULL;
+    m_hFullMemDC = NULL;
+    m_BitmapHandle = NULL;
+
     m_lastMouseMove = 0;
     m_lastMousePoint = {};
     m_pCodec = nullptr;
@@ -194,27 +199,38 @@ void CScreenSpyDlg::OnLButtonDblClk(UINT nFlags, CPoint point)
     CDialog::OnLButtonDblClk(nFlags, point);
 }
 
+void CScreenSpyDlg::PrepareDrawing(const LPBITMAPINFO bmp) {
+    if (m_hFullDC) ::ReleaseDC(m_hWnd, m_hFullDC);
+    if (m_hFullMemDC) ::DeleteDC(m_hFullMemDC);
+    if (m_BitmapHandle) ::DeleteObject(m_BitmapHandle);
+    m_BitmapData_Full = NULL;
+
+	CString strString;
+	strString.Format("%s - 远程桌面控制 %d×%d", m_IPAddress, bmp->bmiHeader.biWidth, bmp->bmiHeader.biHeight);
+	SetWindowText(strString);
+
+	m_hFullDC = ::GetDC(m_hWnd);
+	SetStretchBltMode(m_hFullDC, HALFTONE);
+	SetBrushOrgEx(m_hFullDC, 0, 0, NULL);
+	m_hFullMemDC = CreateCompatibleDC(m_hFullDC);
+	m_BitmapHandle = CreateDIBSection(m_hFullDC, bmp, DIB_RGB_COLORS, &m_BitmapData_Full, NULL, NULL); 
+
+	SelectObject(m_hFullMemDC, m_BitmapHandle);
+
+	SetScrollRange(SB_HORZ, 0, bmp->bmiHeader.biWidth);
+	SetScrollRange(SB_VERT, 0, bmp->bmiHeader.biHeight);
+
+	GetClientRect(&m_CRect);
+	m_wZoom = ((double)bmp->bmiHeader.biWidth) / ((double)(m_CRect.Width()));
+	m_hZoom = ((double)bmp->bmiHeader.biHeight) / ((double)(m_CRect.Height()));
+}
+
 BOOL CScreenSpyDlg::OnInitDialog()
 {
     CDialog::OnInitDialog();
     SetIcon(m_hIcon,FALSE);
 
-    CString strString;
-    strString.Format("%s - 远程桌面控制 %d×%d", m_IPAddress,
-                     m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
-    SetWindowText(strString);
-
-    m_hFullDC = ::GetDC(m_hWnd);
-    SetStretchBltMode(m_hFullDC, HALFTONE);
-    SetBrushOrgEx(m_hFullDC, 0, 0, NULL);
-    m_hFullMemDC = CreateCompatibleDC(m_hFullDC);
-    m_BitmapHandle = CreateDIBSection(m_hFullDC, m_BitmapInfor_Full,
-                                      DIB_RGB_COLORS, &m_BitmapData_Full, NULL, NULL);   //创建应用程序可以直接写入的、与设备无关的位图
-
-    SelectObject(m_hFullMemDC, m_BitmapHandle);//择一对象到指定的设备上下文环境
-
-    SetScrollRange(SB_HORZ, 0, m_BitmapInfor_Full->bmiHeader.biWidth);  //指定滚动条范围的最小值和最大值
-    SetScrollRange(SB_VERT, 0, m_BitmapInfor_Full->bmiHeader.biHeight);//1366  768
+    PrepareDrawing(m_BitmapInfor_Full);
 
     CMenu* SysMenu = GetSystemMenu(FALSE);
     if (SysMenu != NULL) {
@@ -231,7 +247,11 @@ BOOL CScreenSpyDlg::OnInitDialog()
         SysMenu->AppendMenu(MF_SEPARATOR);
         SysMenu->AppendMenu(MF_STRING, IDM_GET_CLIPBOARD, "获取剪贴板(&R)");
         SysMenu->AppendMenu(MF_STRING, IDM_SET_CLIPBOARD, "设置剪贴板(&L)");
+        SysMenu->AppendMenu(MF_STRING, IDM_SWITCHSCREEN, "切换显示器(&M)");
         SysMenu->AppendMenu(MF_SEPARATOR);
+
+        BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
+        SysMenu->EnableMenuItem(IDM_SWITCHSCREEN, all ? MF_ENABLED : MF_GRAYED);
     }
 
     m_bIsCtrl = THIS_CFG.GetInt("settings", "DXGI") == USING_VIRTUAL;
@@ -246,10 +266,6 @@ BOOL CScreenSpyDlg::OnInitDialog()
     SysMenu->CheckMenuItem(IDM_CONTROL, m_bIsCtrl ? MF_CHECKED : MF_UNCHECKED);
     SysMenu->CheckMenuItem(IDM_ADAPTIVE_SIZE, m_bAdaptiveSize ? MF_CHECKED : MF_UNCHECKED);
     SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
-
-    GetClientRect(&m_CRect);
-    m_wZoom = ((double)m_BitmapInfor_Full->bmiHeader.biWidth) / ((double)(m_CRect.Width()));
-    m_hZoom = ((double)m_BitmapInfor_Full->bmiHeader.biHeight) / ((double)(m_CRect.Height()));
     ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);
 
     SendNext();
@@ -321,6 +337,14 @@ VOID CScreenSpyDlg::OnReceiveComplete()
     case TOKEN_CLIPBOARD_TEXT: {
         Buffer str = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(1);
         UpdateServerClipboard(str.c_str(), str.length());
+        break;
+    }
+    case TOKEN_BITMAPINFO: {
+        SAFE_DELETE(m_BitmapInfor_Full);
+		ULONG	ulBitmapInforLength = m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1;
+		m_BitmapInfor_Full = (BITMAPINFO*) new BYTE[ulBitmapInforLength];
+		m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapInfor_Full, ulBitmapInforLength, 1);
+        PrepareDrawing(m_BitmapInfor_Full);
         break;
     }
     default: {
@@ -611,7 +635,13 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 		}
         break;
 	}
-	
+
+    case IDM_SWITCHSCREEN: {
+        BYTE	bToken[2] = { COMMAND_SWITCH_SCREEN  };
+		m_ContextObject->Send2Client(bToken, sizeof(bToken));
+        break;
+    }
+
     case IDM_TRACE_CURSOR: { // 跟踪被控端鼠标
         m_bIsTraceCursor = !m_bIsTraceCursor; //这里在改变数据
         SysMenu->CheckMenuItem(IDM_TRACE_CURSOR, m_bIsTraceCursor ? MF_CHECKED : MF_UNCHECKED);//在菜单打钩不打钩
