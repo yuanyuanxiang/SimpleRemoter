@@ -122,6 +122,7 @@ protected:
 
     DECLARE_MESSAGE_MAP()
 public:
+    void PrepareDrawing(const LPBITMAPINFO bmp);
     virtual BOOL OnInitDialog();
     afx_msg void OnClose();
     afx_msg void OnPaint();

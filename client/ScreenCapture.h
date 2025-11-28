@@ -133,6 +133,7 @@ public:
     int              m_GOP;              // ¹Ø¼üÖ¡¼ä¸ô
     bool		     m_SendKeyFrame;	 // ·¢ËÍ¹Ø¼üÖ¡
     CX264Encoder	 *m_encoder;		 // ±àÂëÆ÷
+    int             m_nScreenCount;      // ÆÁÄ»ÊýÁ¿
 
     ScreenCapture(int n = 32, BYTE algo = ALGORITHM_DIFF, BOOL all = FALSE) :
         m_ThreadPool(nullptr), m_FirstBuffer(nullptr), m_RectBuffer(nullptr),
@@ -141,11 +142,11 @@ public:
         m_FrameID(0), m_GOP(DEFAULT_GOP), m_iScreenX(0), m_iScreenY(0), m_biBitCount(n),
         m_SendKeyFrame(false), m_encoder(nullptr)
     {
-
         m_BlockNum = 8;
         m_ThreadPool = new ThreadPool(m_BlockNum);
         static auto monitors = GetAllMonitors();
         static int index = 0;
+        m_nScreenCount = monitors.size();
         if (all && !monitors.empty()) {
             int idx = index++ % (monitors.size()+1);
             if (idx == 0) {
@@ -205,6 +206,10 @@ public:
 
         SAFE_DELETE(m_ThreadPool);
         SAFE_DELETE(m_encoder);
+    }
+
+    virtual int GetScreenCount() const {
+        return m_nScreenCount;
     }
 
     virtual int SendQuality(int quality)
