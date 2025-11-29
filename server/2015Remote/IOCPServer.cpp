@@ -550,7 +550,7 @@ BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOr
             Buffer tmp(szBuffer, ulOriginalLength);
             szBuffer = tmp.Buf();
             ContextObject->Encode(szBuffer, ulOriginalLength);
-            if (!m_Cctx) ContextObject->Encode(szBuffer, usingZstd);
+            if (!m_Cctx) ContextObject->Encode(szBuffer, ulOriginalLength, usingZstd);
             size_t	iRet = usingZstd ?
                            Mcompress(CompressedBuffer, &ulCompressedLength, (LPBYTE)szBuffer, ulOriginalLength):
                            compress(CompressedBuffer, &ulCompressedLength, (LPBYTE)szBuffer, ulOriginalLength);

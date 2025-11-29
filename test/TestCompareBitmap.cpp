@@ -62,7 +62,7 @@ void ToGray_SSE2(LPBYTE dst, LPBYTE src, int biSizeImage)
 
 //============================== Original Version ==============================
 ULONG CompareBitmap_Original(LPBYTE CompareSourData, LPBYTE CompareDestData, LPBYTE szBuffer,
-                              DWORD ulCompareLength, BYTE algo, int startPostion = 0)
+                             DWORD ulCompareLength, BYTE algo, int startPostion = 0)
 {
     LPDWORD p1 = (LPDWORD)CompareDestData, p2 = (LPDWORD)CompareSourData;
     LPBYTE p = szBuffer;
@@ -98,7 +98,7 @@ ULONG CompareBitmap_Original(LPBYTE CompareSourData, LPBYTE CompareDestData, LPB
 
 //============================== SSE2 Version ==============================
 ULONG CompareBitmap_SSE2(LPBYTE CompareSourData, LPBYTE CompareDestData, LPBYTE szBuffer,
-                          DWORD ulCompareLength, BYTE algo, int startPostion = 0)
+                         DWORD ulCompareLength, BYTE algo, int startPostion = 0)
 {
     LPBYTE p = szBuffer;
     ULONG channel = algo == ALGORITHM_GRAY ? 1 : 4;

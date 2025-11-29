@@ -102,24 +102,27 @@ public:
     }
 };
 
-class ObfsAes : public ObfsBase {
+class ObfsAes : public ObfsBase
+{
 private:
     // Please change `aes_key` and `aes_iv`.
-	unsigned char aes_key[16] = "It is a example";
-	unsigned char aes_iv[16] = "It is a example";
+    unsigned char aes_key[16] = "It is a example";
+    unsigned char aes_iv[16] = "It is a example";
 
 public:
     ObfsAes(bool genCArray = true) : ObfsBase(genCArray) { }
 
-    virtual void ObfuscateBuffer(uint8_t* buf, size_t len, uint32_t seed) {
-		struct AES_ctx ctx;
-		AES_init_ctx_iv(&ctx, aes_key, aes_iv);
-		AES_CBC_encrypt_buffer(&ctx, buf, len);
+    virtual void ObfuscateBuffer(uint8_t* buf, size_t len, uint32_t seed)
+    {
+        struct AES_ctx ctx;
+        AES_init_ctx_iv(&ctx, aes_key, aes_iv);
+        AES_CBC_encrypt_buffer(&ctx, buf, len);
     }
 
-    virtual void DeobfuscateBuffer(uint8_t* buf, size_t len, uint32_t seed) {
-		struct AES_ctx ctx;
-		AES_init_ctx_iv(&ctx, aes_key, aes_iv);
-		AES_CBC_decrypt_buffer(&ctx, buf, len);
+    virtual void DeobfuscateBuffer(uint8_t* buf, size_t len, uint32_t seed)
+    {
+        struct AES_ctx ctx;
+        AES_init_ctx_iv(&ctx, aes_key, aes_iv);
+        AES_CBC_decrypt_buffer(&ctx, buf, len);
     }
 };

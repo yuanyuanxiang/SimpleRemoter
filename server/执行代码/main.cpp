@@ -4,11 +4,11 @@
 
 extern "C" __declspec(dllexport) DWORD WINAPI run(LPVOID param)
 {
-	PluginParam* p = reinterpret_cast<PluginParam*>(param);
+    PluginParam* p = reinterpret_cast<PluginParam*>(param);
 
-	char buf[200] = {};
-	sprintf(buf, "主控地址: %s:%d", p->IP, p->Port);
-	MessageBoxA(NULL, buf, "插件消息", MB_OK | MB_ICONINFORMATION);
+    char buf[200] = {};
+    sprintf(buf, "主控地址: %s:%d", p->IP, p->Port);
+    MessageBoxA(NULL, buf, "插件消息", MB_OK | MB_ICONINFORMATION);
 
-	return 0;
+    return 0;
 }

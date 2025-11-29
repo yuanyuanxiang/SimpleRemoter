@@ -35,7 +35,7 @@ enum {
     IDM_FPS_20,
     IDM_FPS_25,
     IDM_FPS_30,
-    IDM_SAVEAVI_H264 = 996, 
+    IDM_SAVEAVI_H264 = 996,
 };
 
 IMPLEMENT_DYNAMIC(CHideScreenSpyDlg, CDialog)
@@ -97,11 +97,11 @@ END_MESSAGE_MAP()
 // CHideScreenSpyDlg message handlers
 void CHideScreenSpyDlg::OnClose()
 {
-	if (!m_aviFile.IsEmpty()) {
-		KillTimer(TIMER_ID);
-		m_aviFile = "";
-		m_aviStream.Close();
-	}
+    if (!m_aviFile.IsEmpty()) {
+        KillTimer(TIMER_ID);
+        m_aviFile = "";
+        m_aviStream.Close();
+    }
     CancelIO();
     // 等待数据处理完毕
     if (IsProcessing()) {
@@ -144,13 +144,13 @@ void CHideScreenSpyDlg::OnReceiveComplete()
 
 bool CHideScreenSpyDlg::SaveSnapshot()
 {
-	auto path = GetScreenShotPath(this, m_IPAddress, "位图文件(*.bmp)|*.bmp|", "bmp");
-	if (path.empty())
-		return FALSE;
+    auto path = GetScreenShotPath(this, m_IPAddress, "位图文件(*.bmp)|*.bmp|", "bmp");
+    if (path.empty())
+        return FALSE;
 
-	WriteBitmap(m_BitmapInfor_Full, m_BitmapData_Full, path.c_str());
+    WriteBitmap(m_BitmapInfor_Full, m_BitmapData_Full, path.c_str());
 
-	return true;
+    return true;
 }
 
 BOOL CHideScreenSpyDlg::OnInitDialog()
@@ -451,7 +451,8 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
     case IDM_SAVEDIB:
         SaveSnapshot();
         break;
-    case IDM_SAVEAVI_S: case IDM_SAVEAVI_H264: {
+    case IDM_SAVEAVI_S:
+    case IDM_SAVEAVI_H264: {
         if (pSysMenu->GetMenuState(IDM_SAVEAVI_S, MF_BYCOMMAND) & MF_CHECKED) {
             KillTimer(TIMER_ID);
             pSysMenu->CheckMenuItem(IDM_SAVEAVI_S, MF_UNCHECKED);
@@ -462,12 +463,12 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
             return;
         }
         m_aviFile = GetScreenShotPath(this, m_IPAddress, "Video(*.avi)|*.avi|", "avi").c_str();
-		const int duration = 250, rate = 1000 / duration;
-		FCCHandler handler = nID == IDM_SAVEAVI_S ? ENCODER_MJPEG : ENCODER_H264;
-		int code;
+        const int duration = 250, rate = 1000 / duration;
+        FCCHandler handler = nID == IDM_SAVEAVI_S ? ENCODER_MJPEG : ENCODER_H264;
+        int code;
         if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full, rate, handler)) {
-            MessageBox(CString("Create Video(*.avi) Failed:\n") + m_aviFile + "\r\n错误代码: " + 
-                CBmpToAvi::GetErrMsg(code).c_str(), "提示");
+            MessageBox(CString("Create Video(*.avi) Failed:\n") + m_aviFile + "\r\n错误代码: " +
+                       CBmpToAvi::GetErrMsg(code).c_str(), "提示");
             m_aviFile = _T("");
         } else {
             ::SetTimer(m_hWnd, TIMER_ID, duration, NULL);

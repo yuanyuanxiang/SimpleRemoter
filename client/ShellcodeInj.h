@@ -14,9 +14,10 @@ BOOL ConvertToShellcode(LPVOID inBytes, DWORD length, DWORD userFunction, LPVOID
 class ShellcodeInj
 {
 public:
-    ShellcodeInj(BYTE* buf, int len, const char *func=0, LPVOID userData=0, DWORD userLength=0) {
-		m_buffer = buf;
-		m_length = len;
+    ShellcodeInj(BYTE* buf, int len, const char *func=0, LPVOID userData=0, DWORD userLength=0)
+    {
+        m_buffer = buf;
+        m_length = len;
         m_userFunction = func ? HashFunctionName((char*)func) : 0;
         m_userData = userData;
         m_userLength = userLength;
@@ -51,47 +52,46 @@ public:
         return 0;
     }
 
-    bool InjectProcess(int pid) {
+    bool InjectProcess(int pid)
+    {
         return m_buffer ? InjectShellcode(pid, (BYTE*)m_buffer, m_length, m_userFunction, m_userData, m_userLength) : false;
     }
 
-	// Check if the process is 64bit.
-	static bool IsProcess64Bit(HANDLE hProcess, BOOL& is64Bit)
-	{
-		is64Bit = FALSE;
-		BOOL bWow64 = FALSE;
-		typedef BOOL(WINAPI* LPFN_ISWOW64PROCESS2)(HANDLE, USHORT*, USHORT*);
-		HMODULE hKernel = GetModuleHandleA("kernel32.dll");
+    // Check if the process is 64bit.
+    static bool IsProcess64Bit(HANDLE hProcess, BOOL& is64Bit)
+    {
+        is64Bit = FALSE;
+        BOOL bWow64 = FALSE;
+        typedef BOOL(WINAPI* LPFN_ISWOW64PROCESS2)(HANDLE, USHORT*, USHORT*);
+        HMODULE hKernel = GetModuleHandleA("kernel32.dll");
 
-		LPFN_ISWOW64PROCESS2 fnIsWow64Process2 = hKernel ?
-			(LPFN_ISWOW64PROCESS2)::GetProcAddress(hKernel, "IsWow64Process2") : nullptr;
+        LPFN_ISWOW64PROCESS2 fnIsWow64Process2 = hKernel ?
+            (LPFN_ISWOW64PROCESS2)::GetProcAddress(hKernel, "IsWow64Process2") : nullptr;
 
-		if (fnIsWow64Process2) {
-			USHORT processMachine = 0, nativeMachine = 0;
-			if (fnIsWow64Process2(hProcess, &processMachine, &nativeMachine)) {
-				is64Bit = (processMachine == IMAGE_FILE_MACHINE_UNKNOWN) &&
-					(nativeMachine == IMAGE_FILE_MACHINE_AMD64 || nativeMachine == IMAGE_FILE_MACHINE_ARM64);
-				return true;
-			}
-		}
-		else {
-			// Old system use IsWow64Process
-			if (IsWow64Process(hProcess, &bWow64)) {
-				if (bWow64) {
-					is64Bit = FALSE;    // WOW64 → 一定是 32 位
-				}
-				else {
+        if (fnIsWow64Process2) {
+            USHORT processMachine = 0, nativeMachine = 0;
+            if (fnIsWow64Process2(hProcess, &processMachine, &nativeMachine)) {
+                is64Bit = (processMachine == IMAGE_FILE_MACHINE_UNKNOWN) &&
+                          (nativeMachine == IMAGE_FILE_MACHINE_AMD64 || nativeMachine == IMAGE_FILE_MACHINE_ARM64);
+                return true;
+            }
+        } else {
+            // Old system use IsWow64Process
+            if (IsWow64Process(hProcess, &bWow64)) {
+                if (bWow64) {
+                    is64Bit = FALSE;    // WOW64 → 一定是 32 位
+                } else {
 #ifdef _WIN64
-					is64Bit = TRUE;     // 64 位程序不会运行在 32 位系统 → 目标一定是64位
+                    is64Bit = TRUE;     // 64 位程序不会运行在 32 位系统 → 目标一定是64位
 #else
-					is64Bit = FALSE;    // 32 位程序无法判断目标是否64位 → 保守为false
+                    is64Bit = FALSE;    // 32 位程序无法判断目标是否64位 → 保守为false
 #endif
-				}
-				return true;
-			}
-		}
-		return false;
-	}
+                }
+                return true;
+            }
+        }
+        return false;
+    }
 
 private:
     BYTE* m_buffer = NULL;
@@ -192,8 +192,8 @@ private:
         return hProcess;
     }
 
-    bool MakeShellcode(LPBYTE& compressedBuffer, int& ulTotalSize, LPBYTE originBuffer, int ulOriginalLength, 
-        DWORD userFunction, LPVOID userData, DWORD userLength)
+    bool MakeShellcode(LPBYTE& compressedBuffer, int& ulTotalSize, LPBYTE originBuffer, int ulOriginalLength,
+                       DWORD userFunction, LPVOID userData, DWORD userLength)
     {
         if (originBuffer[0] == 'M' && originBuffer[1] == 'Z') {
             LPSTR finalShellcode = NULL;

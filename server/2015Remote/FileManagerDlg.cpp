@@ -847,11 +847,17 @@ void CFileManagerDlg::OnReceiveComplete()
                 m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - 1
             );
         } catch (CMemoryException* e) {
-            Mprintf("[ERROR] CMemoryException\n");
+            char err[256];
+            e->GetErrorMessage(err, sizeof(err));
+            Mprintf("[ERROR] CMemoryException: %s\n", err);
         } catch (CFileException* e) {
-            Mprintf("[ERROR] CFileException\n");
+            char err[256];
+            e->GetErrorMessage(err, sizeof(err));
+            Mprintf("[ERROR] CFileException: %s\n", err);
         } catch (CException* e) {
-            Mprintf("[ERROR] CException\n");
+            char err[256];
+            e->GetErrorMessage(err, sizeof(err));
+            Mprintf("[ERROR] CException: %s\n", err);
         } catch (...) {
             Mprintf("[ERROR] Other exception\n");
         }

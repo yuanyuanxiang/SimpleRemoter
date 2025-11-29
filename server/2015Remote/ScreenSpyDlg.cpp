@@ -200,30 +200,31 @@ void CScreenSpyDlg::OnLButtonDblClk(UINT nFlags, CPoint point)
     CDialog::OnLButtonDblClk(nFlags, point);
 }
 
-void CScreenSpyDlg::PrepareDrawing(const LPBITMAPINFO bmp) {
+void CScreenSpyDlg::PrepareDrawing(const LPBITMAPINFO bmp)
+{
     if (m_hFullDC) ::ReleaseDC(m_hWnd, m_hFullDC);
     if (m_hFullMemDC) ::DeleteDC(m_hFullMemDC);
     if (m_BitmapHandle) ::DeleteObject(m_BitmapHandle);
     m_BitmapData_Full = NULL;
 
-	CString strString;
-	strString.Format("%s - 远程桌面控制 %d×%d", m_IPAddress, bmp->bmiHeader.biWidth, bmp->bmiHeader.biHeight);
-	SetWindowText(strString);
+    CString strString;
+    strString.Format("%s - 远程桌面控制 %d×%d", m_IPAddress, bmp->bmiHeader.biWidth, bmp->bmiHeader.biHeight);
+    SetWindowText(strString);
 
-	m_hFullDC = ::GetDC(m_hWnd);
-	SetStretchBltMode(m_hFullDC, HALFTONE);
-	SetBrushOrgEx(m_hFullDC, 0, 0, NULL);
-	m_hFullMemDC = CreateCompatibleDC(m_hFullDC);
-	m_BitmapHandle = CreateDIBSection(m_hFullDC, bmp, DIB_RGB_COLORS, &m_BitmapData_Full, NULL, NULL); 
+    m_hFullDC = ::GetDC(m_hWnd);
+    SetStretchBltMode(m_hFullDC, HALFTONE);
+    SetBrushOrgEx(m_hFullDC, 0, 0, NULL);
+    m_hFullMemDC = CreateCompatibleDC(m_hFullDC);
+    m_BitmapHandle = CreateDIBSection(m_hFullDC, bmp, DIB_RGB_COLORS, &m_BitmapData_Full, NULL, NULL);
 
-	SelectObject(m_hFullMemDC, m_BitmapHandle);
+    SelectObject(m_hFullMemDC, m_BitmapHandle);
 
-	SetScrollRange(SB_HORZ, 0, bmp->bmiHeader.biWidth);
-	SetScrollRange(SB_VERT, 0, bmp->bmiHeader.biHeight);
+    SetScrollRange(SB_HORZ, 0, bmp->bmiHeader.biWidth);
+    SetScrollRange(SB_VERT, 0, bmp->bmiHeader.biHeight);
 
-	GetClientRect(&m_CRect);
-	m_wZoom = ((double)bmp->bmiHeader.biWidth) / ((double)(m_CRect.Width()));
-	m_hZoom = ((double)bmp->bmiHeader.biHeight) / ((double)(m_CRect.Height()));
+    GetClientRect(&m_CRect);
+    m_wZoom = ((double)bmp->bmiHeader.biWidth) / ((double)(m_CRect.Width()));
+    m_hZoom = ((double)bmp->bmiHeader.biHeight) / ((double)(m_CRect.Height()));
 }
 
 BOOL CScreenSpyDlg::OnInitDialog()
@@ -278,11 +279,11 @@ BOOL CScreenSpyDlg::OnInitDialog()
 
 VOID CScreenSpyDlg::OnClose()
 {
-	if (!m_aviFile.IsEmpty()) {
-		KillTimer(TIMER_ID);
-		m_aviFile = "";
-		m_aviStream.Close();
-	}
+    if (!m_aviFile.IsEmpty()) {
+        KillTimer(TIMER_ID);
+        m_aviFile = "";
+        m_aviStream.Close();
+    }
     CancelIO();
     // 恢复鼠标状态
     SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)LoadCursor(NULL, IDC_ARROW));
@@ -343,9 +344,9 @@ VOID CScreenSpyDlg::OnReceiveComplete()
     }
     case TOKEN_BITMAPINFO: {
         SAFE_DELETE(m_BitmapInfor_Full);
-		ULONG	ulBitmapInforLength = m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1;
-		m_BitmapInfor_Full = (BITMAPINFO*) new BYTE[ulBitmapInforLength];
-		m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapInfor_Full, ulBitmapInforLength, 1);
+        ULONG	ulBitmapInforLength = m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1;
+        m_BitmapInfor_Full = (BITMAPINFO*) new BYTE[ulBitmapInforLength];
+        m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapInfor_Full, ulBitmapInforLength, 1);
         PrepareDrawing(m_BitmapInfor_Full);
         break;
     }
@@ -560,33 +561,34 @@ VOID CScreenSpyDlg::DrawTipString(CString strString)
     SetTextColor(m_hFullDC, OldBackgroundColor);
 }
 
-bool DirectoryExists(const char* path) {
-	DWORD attr = GetFileAttributesA(path);
-	return (attr != INVALID_FILE_ATTRIBUTES &&
-		(attr & FILE_ATTRIBUTE_DIRECTORY));
+bool DirectoryExists(const char* path)
+{
+    DWORD attr = GetFileAttributesA(path);
+    return (attr != INVALID_FILE_ATTRIBUTES &&
+            (attr & FILE_ATTRIBUTE_DIRECTORY));
 }
 
-std::string GetScreenShotPath(CWnd *parent, const CString& ip, const CString &filter, const CString& suffix) {
+std::string GetScreenShotPath(CWnd *parent, const CString& ip, const CString &filter, const CString& suffix)
+{
     std::string path;
-	std::string folder = THIS_CFG.GetStr("settings", "ScreenShot", "");
-	if (folder.empty() || !DirectoryExists(folder.c_str())) {
-		CString	strFileName = ip + CTime::GetCurrentTime().Format(_T("_%Y%m%d%H%M%S.")) + suffix;
-		CFileDialog dlg(FALSE, suffix, strFileName, OFN_OVERWRITEPROMPT, filter, parent);
-		if (dlg.DoModal() != IDOK)
-			return "";
-		folder = dlg.GetFolderPath();
-		if (!folder.empty() && folder.back() != '\\') {
-			folder += '\\';
-		}
-		path = dlg.GetPathName();
-		THIS_CFG.SetStr("settings", "ScreenShot", folder);
-	}
-	else {
-		if (!folder.empty() && folder.back() != '\\') {
-			folder += '\\';
-		}
-		path = folder + std::string(ip) + "_" + ToPekingDateTime(0) + "." + std::string(suffix);
-	}
+    std::string folder = THIS_CFG.GetStr("settings", "ScreenShot", "");
+    if (folder.empty() || !DirectoryExists(folder.c_str())) {
+        CString	strFileName = ip + CTime::GetCurrentTime().Format(_T("_%Y%m%d%H%M%S.")) + suffix;
+        CFileDialog dlg(FALSE, suffix, strFileName, OFN_OVERWRITEPROMPT, filter, parent);
+        if (dlg.DoModal() != IDOK)
+            return "";
+        folder = dlg.GetFolderPath();
+        if (!folder.empty() && folder.back() != '\\') {
+            folder += '\\';
+        }
+        path = dlg.GetPathName();
+        THIS_CFG.SetStr("settings", "ScreenShot", folder);
+    } else {
+        if (!folder.empty() && folder.back() != '\\') {
+            folder += '\\';
+        }
+        path = folder + std::string(ip) + "_" + ToPekingDateTime(0) + "." + std::string(suffix);
+    }
     return path;
 }
 
@@ -611,44 +613,44 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         SaveSnapshot();
         break;
     }
-    case IDM_SAVEAVI: case IDM_SAVEAVI_H264: {
-		if (SysMenu->GetMenuState(nID, MF_BYCOMMAND) & MF_CHECKED) {
-			KillTimer(TIMER_ID);
-			SysMenu->CheckMenuItem(nID, MF_UNCHECKED);
-			SysMenu->EnableMenuItem(IDM_SAVEAVI, MF_ENABLED);
-			SysMenu->EnableMenuItem(IDM_SAVEAVI_H264, MF_ENABLED);
-			m_aviFile = "";
-			m_aviStream.Close();
-			return;
-		}
+    case IDM_SAVEAVI:
+    case IDM_SAVEAVI_H264: {
+        if (SysMenu->GetMenuState(nID, MF_BYCOMMAND) & MF_CHECKED) {
+            KillTimer(TIMER_ID);
+            SysMenu->CheckMenuItem(nID, MF_UNCHECKED);
+            SysMenu->EnableMenuItem(IDM_SAVEAVI, MF_ENABLED);
+            SysMenu->EnableMenuItem(IDM_SAVEAVI_H264, MF_ENABLED);
+            m_aviFile = "";
+            m_aviStream.Close();
+            return;
+        }
         m_aviFile = GetScreenShotPath(this, m_IPAddress, "Video(*.avi)|*.avi|", "avi").c_str();
         const int duration = 250, rate = 1000 / duration;
         FCCHandler handler = nID == IDM_SAVEAVI ? ENCODER_MJPEG : ENCODER_H264;
         int code;
-		if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full, rate, handler)) {
-			MessageBox(CString("Create Video(*.avi) Failed:\n") + m_aviFile + "\r\n错误代码: " + 
-                CBmpToAvi::GetErrMsg(code).c_str(), "提示");
-			m_aviFile = _T("");
-		}
-		else {
-			::SetTimer(m_hWnd, TIMER_ID, duration, NULL);
-			SysMenu->CheckMenuItem(nID, MF_CHECKED);
+        if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full, rate, handler)) {
+            MessageBox(CString("Create Video(*.avi) Failed:\n") + m_aviFile + "\r\n错误代码: " +
+                       CBmpToAvi::GetErrMsg(code).c_str(), "提示");
+            m_aviFile = _T("");
+        } else {
+            ::SetTimer(m_hWnd, TIMER_ID, duration, NULL);
+            SysMenu->CheckMenuItem(nID, MF_CHECKED);
             SysMenu->EnableMenuItem(nID == IDM_SAVEAVI ? IDM_SAVEAVI_H264 : IDM_SAVEAVI, MF_DISABLED);
-		}
-        break;
-	}
-
-    case IDM_SWITCHSCREEN: {
-        BYTE	bToken[2] = { COMMAND_SWITCH_SCREEN  };
-		m_ContextObject->Send2Client(bToken, sizeof(bToken));
+        }
         break;
     }
 
-    case IDM_MULTITHREAD_COMPRESS:{
+    case IDM_SWITCHSCREEN: {
+        BYTE	bToken[2] = { COMMAND_SWITCH_SCREEN  };
+        m_ContextObject->Send2Client(bToken, sizeof(bToken));
+        break;
+    }
+
+    case IDM_MULTITHREAD_COMPRESS: {
         static int threadNum = 0;
         threadNum = 4 - threadNum;
-		BYTE	bToken[2] = { CMD_MULTITHREAD_COMPRESS, (BYTE)threadNum };
-		m_ContextObject->Send2Client(bToken, sizeof(bToken));
+        BYTE	bToken[2] = { CMD_MULTITHREAD_COMPRESS, (BYTE)threadNum };
+        m_ContextObject->Send2Client(bToken, sizeof(bToken));
         SysMenu->CheckMenuItem(nID, threadNum ? MF_CHECKED : MF_UNCHECKED);
         break;
     }
@@ -694,16 +696,16 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 
 void CScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
 {
-	if (!m_aviFile.IsEmpty()) {
-		LPCTSTR	lpTipsString = _T("●");
+    if (!m_aviFile.IsEmpty()) {
+        LPCTSTR	lpTipsString = _T("●");
 
-		m_aviStream.Write((BYTE*)m_BitmapData_Full);
+        m_aviStream.Write((BYTE*)m_BitmapData_Full);
 
-		// 提示正在录像
-		SetTextColor(m_hFullDC, RGB(0xff, 0x00, 0x00));
-		TextOut(m_hFullDC, 0, 0, lpTipsString, lstrlen(lpTipsString));
-	}
-	CDialog::OnTimer(nIDEvent);
+        // 提示正在录像
+        SetTextColor(m_hFullDC, RGB(0xff, 0x00, 0x00));
+        TextOut(m_hFullDC, 0, 0, lpTipsString, lstrlen(lpTipsString));
+    }
+    CDialog::OnTimer(nIDEvent);
 }
 
 BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)

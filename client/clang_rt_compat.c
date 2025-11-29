@@ -10,29 +10,34 @@
 #pragma comment(linker, "/alternatename:__ultod3=_ultod3_impl")
 
 // unsigned long long to float
-float __cdecl ultof3_impl(unsigned long long a) {
+float __cdecl ultof3_impl(unsigned long long a)
+{
     return (float)a;
 }
 
 // double to unsigned long long
-unsigned long long __cdecl dtoul3_impl(double a) {
+unsigned long long __cdecl dtoul3_impl(double a)
+{
     if (a < 0) return 0;
     if (a >= 18446744073709551616.0) return 0xFFFFFFFFFFFFFFFFULL;
     return (unsigned long long)a;
 }
 
 // double to long long
-long long __cdecl dtol3_impl(double a) {
+long long __cdecl dtol3_impl(double a)
+{
     return (long long)a;
 }
 
 // long long to double
-double __cdecl ltod3_impl(long long a) {
+double __cdecl ltod3_impl(long long a)
+{
     return (double)a;
 }
 
 // unsigned long long to double
-double __cdecl ultod3_impl(unsigned long long a) {
+double __cdecl ultod3_impl(unsigned long long a)
+{
     return (double)a;
 }
 

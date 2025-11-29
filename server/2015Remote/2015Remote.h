@@ -86,8 +86,14 @@ public:
     CImageList m_pImageList_Small;  // 系统小图标
 
     // 获取启动画面指针
-    CSplashDlg* GetSplash() const { return m_pSplash; }
-    void SetSplash(CSplashDlg* pSplash) { m_pSplash = pSplash; }
+    CSplashDlg* GetSplash() const
+    {
+        return m_pSplash;
+    }
+    void SetSplash(CSplashDlg* pSplash)
+    {
+        m_pSplash = pSplash;
+    }
 
     virtual BOOL InitInstance();
 

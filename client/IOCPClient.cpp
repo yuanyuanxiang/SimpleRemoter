@@ -130,15 +130,16 @@ IOCPClient::IOCPClient(const State&bExit, bool exit_while_disconnect, int mask, 
 #endif
 }
 
-void IOCPClient::SetMultiThreadCompress(int threadNum) {
+void IOCPClient::SetMultiThreadCompress(int threadNum)
+{
 #if USING_CTX
     BOOL failed = TRUE;
     if (threadNum > 1) {
         failed = Z_FAILED(ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_nbWorkers, threadNum));
     }
-	if (failed) {
-		ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_nbWorkers, 0);
-	}
+    if (failed) {
+        ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_nbWorkers, 0);
+    }
 #endif
 }
 

@@ -465,27 +465,27 @@ void CSystemDlg::OnSize(UINT nType, int cx, int cy)
 
 void CSystemDlg::OnPlistInject()
 {
-	CListCtrl* ListCtrl = NULL;
-	if (m_ControlList.IsWindowVisible())
-		ListCtrl = &m_ControlList;
-	else
-		return;
+    CListCtrl* ListCtrl = NULL;
+    if (m_ControlList.IsWindowVisible())
+        ListCtrl = &m_ControlList;
+    else
+        return;
 
-	if (ListCtrl->GetSelectedCount() != 1) 
+    if (ListCtrl->GetSelectedCount() != 1)
         ::MessageBox(m_hWnd, "只能同时向一个进程进行代码注入!", "提示", MB_ICONINFORMATION);
 
-	if (::MessageBox(m_hWnd, "确定要向目标进程 (仅限64位) 进行代码注入吗?\n此操作可能被安全软件阻止，或导致进程崩溃!", 
-        "警告", MB_YESNO | MB_ICONQUESTION) == IDNO) 
-		return;
+    if (::MessageBox(m_hWnd, "确定要向目标进程 (仅限64位) 进行代码注入吗?\n此操作可能被安全软件阻止，或导致进程崩溃!",
+                     "警告", MB_YESNO | MB_ICONQUESTION) == IDNO)
+        return;
 
-	DWORD	dwOffset = 1, dwProcessID = 0;
-	POSITION Pos = ListCtrl->GetFirstSelectedItemPosition();
-	if (Pos) {
-		int	nItem = ListCtrl->GetNextSelectedItem(Pos);
-		auto data = (ItemData*)ListCtrl->GetItemData(nItem);
-		dwProcessID = data->ID;
-		dwOffset += sizeof(DWORD);
-	}
+    DWORD	dwOffset = 1, dwProcessID = 0;
+    POSITION Pos = ListCtrl->GetFirstSelectedItemPosition();
+    if (Pos) {
+        int	nItem = ListCtrl->GetNextSelectedItem(Pos);
+        auto data = (ItemData*)ListCtrl->GetItemData(nItem);
+        dwProcessID = data->ID;
+        dwOffset += sizeof(DWORD);
+    }
     ASSERT(m_pParent);
     m_pParent->PostMessageA(WM_INJECT_SHELLCODE, (WPARAM)new std::string(m_ContextObject->PeerName), dwProcessID);
 }
@@ -493,32 +493,32 @@ void CSystemDlg::OnPlistInject()
 
 void CSystemDlg::OnPlistAntiBlackScreen()
 {
-	CListCtrl* ListCtrl = NULL;
-	if (m_ControlList.IsWindowVisible())
-		ListCtrl = &m_ControlList;
-	else
-		return;
+    CListCtrl* ListCtrl = NULL;
+    if (m_ControlList.IsWindowVisible())
+        ListCtrl = &m_ControlList;
+    else
+        return;
 
-	if (ListCtrl->GetSelectedCount() != 1)
-		::MessageBox(m_hWnd, "只能同时向一个进程进行反黑屏操作!", "提示", MB_ICONINFORMATION);
+    if (ListCtrl->GetSelectedCount() != 1)
+        ::MessageBox(m_hWnd, "只能同时向一个进程进行反黑屏操作!", "提示", MB_ICONINFORMATION);
 
-	if (::MessageBox(m_hWnd, "确定要向目标进程进行反黑屏吗?\n请确保目标进程、DLL及被控端架构务必相同!",
-		"警告", MB_YESNO | MB_ICONQUESTION) == IDNO)
-		return;
+    if (::MessageBox(m_hWnd, "确定要向目标进程进行反黑屏吗?\n请确保目标进程、DLL及被控端架构务必相同!",
+                     "警告", MB_YESNO | MB_ICONQUESTION) == IDNO)
+        return;
 
-	DWORD	dwOffset = 1, dwProcessID = 0;
-	POSITION Pos = ListCtrl->GetFirstSelectedItemPosition();
+    DWORD	dwOffset = 1, dwProcessID = 0;
+    POSITION Pos = ListCtrl->GetFirstSelectedItemPosition();
     CString arch;
-	if (Pos) {
-		int	nItem = ListCtrl->GetNextSelectedItem(Pos);
-		auto data = (ItemData*)ListCtrl->GetItemData(nItem);
-		dwProcessID = data->ID;
+    if (Pos) {
+        int	nItem = ListCtrl->GetNextSelectedItem(Pos);
+        auto data = (ItemData*)ListCtrl->GetItemData(nItem);
+        dwProcessID = data->ID;
         arch = data->Arch;
-		dwOffset += sizeof(DWORD);
-	}
-	ASSERT(m_pParent);
+        dwOffset += sizeof(DWORD);
+    }
+    ASSERT(m_pParent);
     char *arg = new char[300]();
     memcpy(arg, m_ContextObject->PeerName.c_str(), m_ContextObject->PeerName.length());
     memcpy(arg + 256, arch, arch.GetLength());
-	m_pParent->PostMessageA(WM_ANTI_BLACKSCREEN, (WPARAM)arg, dwProcessID);
+    m_pParent->PostMessageA(WM_ANTI_BLACKSCREEN, (WPARAM)arg, dwProcessID);
 }

@@ -9,6 +9,6 @@
 #define LDS_ATTACHED 3
 
 typedef struct _min_hdr {
-	BYTE redir[MAX_REDIR_SIZE];
-	BYTE load_status;
+    BYTE redir[MAX_REDIR_SIZE];
+    BYTE load_status;
 } min_hdr_t;

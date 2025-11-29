@@ -53,7 +53,7 @@ static BOOL AgentArray_Add(AgentProcessArray* arr, const AgentProcessInfo* info)
     if (arr->count >= arr->capacity) {
         newCapacity = arr->capacity == 0 ? INITIAL_CAPACITY : arr->capacity * 2;
         newItems = (AgentProcessInfo*)realloc(
-            arr->items, newCapacity * sizeof(AgentProcessInfo));
+                       arr->items, newCapacity * sizeof(AgentProcessInfo));
         if (!newItems) {
             return FALSE;
         }
@@ -94,8 +94,8 @@ static void SessionMonitor_WriteLog(const char* message)
     if (f) {
         GetLocalTime(&st);
         fprintf(f, "[%04d-%02d-%02d %02d:%02d:%02d] %s\n",
-            st.wYear, st.wMonth, st.wDay,
-            st.wHour, st.wMinute, st.wSecond, message);
+                st.wYear, st.wMonth, st.wDay,
+                st.wHour, st.wMinute, st.wSecond, message);
         fclose(f);
     }
 }
@@ -200,7 +200,7 @@ static void MonitorLoop(SessionMonitor* self)
         dwCount = 0;
 
         if (WTSEnumerateSessions(WTS_CURRENT_SERVER_HANDLE, 0, 1,
-            &pSessionInfo, &dwCount)) {
+                                 &pSessionInfo, &dwCount)) {
 
             foundActiveSession = FALSE;
 
@@ -212,8 +212,8 @@ static void MonitorLoop(SessionMonitor* self)
                     // 记录活动会话（每5次循环记录一次，避免日志过多）
                     if (loopCount % 5 == 1) {
                         sprintf(buf, "Active session found: ID=%d, Name=%s",
-                            (int)sessionId,
-                            pSessionInfo[i].pWinStationName);
+                                (int)sessionId,
+                                pSessionInfo[i].pWinStationName);
                         SessionMonitor_WriteLog(buf);
                     }
 
@@ -226,8 +226,7 @@ static void MonitorLoop(SessionMonitor* self)
                             SessionMonitor_WriteLog("Agent launched successfully");
                             // 给进程一些时间启动
                             Sleep(2000);
-                        }
-                        else {
+                        } else {
                             SessionMonitor_WriteLog("Failed to launch agent");
                         }
                     }
@@ -242,8 +241,7 @@ static void MonitorLoop(SessionMonitor* self)
             }
 
             WTSFreeMemory(pSessionInfo);
-        }
-        else {
+        } else {
             if (loopCount % 5 == 1) {
                 SessionMonitor_WriteLog("WTSEnumerateSessions failed");
             }
@@ -279,8 +277,7 @@ static BOOL IsAgentRunningInSession(SessionMonitor* self, DWORD sessionId)
     pFileName = strrchr(currentExeName, '\\');
     if (pFileName) {
         pFileName++;
-    }
-    else {
+    } else {
         pFileName = currentExeName;
     }
 
@@ -338,7 +335,7 @@ static void TerminateAllAgents(SessionMonitor* self)
         info = &self->agentProcesses.items[i];
 
         sprintf(buf, "Terminating agent PID=%d (Session %d)",
-            (int)info->processId, (int)info->sessionId);
+                (int)info->processId, (int)info->sessionId);
         SessionMonitor_WriteLog(buf);
 
         // 检查进程是否还在运行
@@ -347,18 +344,16 @@ static void TerminateAllAgents(SessionMonitor* self)
                 // 进程还在运行，终止
                 if (!TerminateProcess(info->hProcess, 0)) {
                     sprintf(buf, "WARNING: Failed to terminate PID=%d, error=%d",
-                        (int)info->processId, (int)GetLastError());
+                            (int)info->processId, (int)GetLastError());
                     SessionMonitor_WriteLog(buf);
-                }
-                else {
+                } else {
                     SessionMonitor_WriteLog("Agent terminated successfully");
                     // 等待进程完全退出
                     WaitForSingleObject(info->hProcess, 5000);
                 }
-            }
-            else {
+            } else {
                 sprintf(buf, "Agent PID=%d already exited with code %d",
-                    (int)info->processId, (int)exitCode);
+                        (int)info->processId, (int)exitCode);
                 SessionMonitor_WriteLog(buf);
             }
         }
@@ -390,18 +385,17 @@ static void CleanupDeadProcesses(SessionMonitor* self)
             if (exitCode != STILL_ACTIVE) {
                 // 进程已退出
                 sprintf(buf, "Agent PID=%d exited with code %d, cleaning up",
-                    (int)info->processId, (int)exitCode);
+                        (int)info->processId, (int)exitCode);
                 SessionMonitor_WriteLog(buf);
 
                 CloseHandle(info->hProcess);
                 AgentArray_RemoveAt(&self->agentProcesses, i);
                 continue;  // 不增加 i，因为删除了元素
             }
-        }
-        else {
+        } else {
             // 无法获取退出代码，可能进程已不存在
             sprintf(buf, "Cannot query agent PID=%d, removing from list",
-                (int)info->processId);
+                    (int)info->processId);
             SessionMonitor_WriteLog(buf);
 
             CloseHandle(info->hProcess);
@@ -449,7 +443,7 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
 
     // 复制为可用于创建进程的主令牌
     if (!DuplicateTokenEx(hToken, MAXIMUM_ALLOWED, NULL,
-        SecurityImpersonation, TokenPrimary, &hDupToken)) {
+                          SecurityImpersonation, TokenPrimary, &hDupToken)) {
         sprintf(buf, "DuplicateTokenEx failed: %d", (int)GetLastError());
         SessionMonitor_WriteLog(buf);
         CloseHandle(hToken);
@@ -510,18 +504,18 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
 
     // 在用户会话中创建进程
     result = CreateProcessAsUser(
-        hDupToken,
-        NULL,           // 应用程序名（在命令行中解析）
-        cmdLine,        // 命令行参数：ghost.exe -agent
-        NULL,           // 进程安全属性
-        NULL,           // 线程安全属性
-        FALSE,          // 不继承句柄
-        NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT,  // 创建标志
-        lpEnvironment,  // 环境变量
-        NULL,           // 当前目录
-        &si,
-        &pi
-    );
+                 hDupToken,
+                 NULL,           // 应用程序名（在命令行中解析）
+                 cmdLine,        // 命令行参数：ghost.exe -agent
+                 NULL,           // 进程安全属性
+                 NULL,           // 线程安全属性
+                 FALSE,          // 不继承句柄
+                 NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT,  // 创建标志
+                 lpEnvironment,  // 环境变量
+                 NULL,           // 当前目录
+                 &si,
+                 &pi
+             );
 
     if (lpEnvironment) {
         DestroyEnvironmentBlock(lpEnvironment);
@@ -540,8 +534,7 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
         LeaveCriticalSection(&self->csProcessList);
 
         CloseHandle(pi.hThread);  // 线程句柄可以关闭
-    }
-    else {
+    } else {
         err = GetLastError();
         sprintf(buf, "CreateProcessAsUser failed: %d", (int)err);
         SessionMonitor_WriteLog(buf);
@@ -549,11 +542,9 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
         // 提供更详细的错误信息
         if (err == ERROR_FILE_NOT_FOUND) {
             SessionMonitor_WriteLog("ERROR: ghost_agent.exe not found");
-        }
-        else if (err == ERROR_ACCESS_DENIED) {
+        } else if (err == ERROR_ACCESS_DENIED) {
             SessionMonitor_WriteLog("ERROR: Access denied - service may not have sufficient privileges");
-        }
-        else if (err == 1314) {
+        } else if (err == 1314) {
             SessionMonitor_WriteLog("ERROR: Service does not have SE_INCREASE_QUOTA privilege");
         }
     }
