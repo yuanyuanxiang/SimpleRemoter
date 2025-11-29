@@ -5,7 +5,93 @@
 #define YAMA_PATH			"Software\\YAMA"
 #define CLIENT_PATH			"Software\\ServerD11"
 
-// ÅäÖÃ¶ÁÈ¡Àà: ÎÄ¼şÅäÖÃ.
+#define NO_CURRENTKEY 1
+
+#if NO_CURRENTKEY
+#include <wtsapi32.h>
+#include <sddl.h>
+#pragma comment(lib, "wtsapi32.lib")
+
+// è·å–å½“å‰ä¼šè¯ç”¨æˆ·çš„æ³¨å†Œè¡¨æ ¹é”®
+// SYSTEM è¿›ç¨‹æ— æ³•ä½¿ç”¨ HKEY_CURRENT_USERï¼Œéœ€è¦é€šè¿‡ HKEY_USERS\<SID> è®¿é—®
+// è¿”å›çš„ HKEY éœ€è¦è°ƒç”¨è€…åœ¨ä½¿ç”¨å®Œæ¯•åè°ƒç”¨ RegCloseKey å…³é—­
+inline HKEY GetCurrentUserRegistryKey()
+{
+    HKEY hUserKey = NULL;
+    // è·å–å½“å‰è¿›ç¨‹çš„ä¼šè¯ ID
+    DWORD sessionId = 0;
+    ProcessIdToSessionId(GetCurrentProcessId(), &sessionId);
+
+    // è·å–è¯¥ä¼šè¯çš„ç”¨æˆ·ä»¤ç‰Œ
+    HANDLE hUserToken = NULL;
+    if (!WTSQueryUserToken(sessionId, &hUserToken)) {
+        // å¦‚æœå¤±è´¥ï¼ˆå¯èƒ½ä¸æ˜¯æœåŠ¡è¿›ç¨‹ï¼‰ï¼Œå›é€€åˆ° HKEY_CURRENT_USER
+        return HKEY_CURRENT_USER;
+    }
+
+    // è·å–ä»¤ç‰Œä¸­çš„ç”¨æˆ·ä¿¡æ¯å¤§å°
+    DWORD dwSize = 0;
+    GetTokenInformation(hUserToken, TokenUser, NULL, 0, &dwSize);
+    if (dwSize == 0) {
+        CloseHandle(hUserToken);
+        return HKEY_CURRENT_USER;
+    }
+
+    // åˆ†é…å†…å­˜å¹¶è·å–ç”¨æˆ·ä¿¡æ¯
+    TOKEN_USER* pTokenUser = (TOKEN_USER*)malloc(dwSize);
+    if (!pTokenUser) {
+        CloseHandle(hUserToken);
+        return HKEY_CURRENT_USER;
+    }
+
+    if (!GetTokenInformation(hUserToken, TokenUser, pTokenUser, dwSize, &dwSize)) {
+        free(pTokenUser);
+        CloseHandle(hUserToken);
+        return HKEY_CURRENT_USER;
+    }
+
+    // å°† SID è½¬æ¢ä¸ºå­—ç¬¦ä¸²
+    LPSTR szSid = NULL;
+    if (!ConvertSidToStringSidA(pTokenUser->User.Sid, &szSid)) {
+        free(pTokenUser);
+        CloseHandle(hUserToken);
+        return HKEY_CURRENT_USER;
+    }
+
+    // æ‰“å¼€ HKEY_USERS\<SID>
+    if (RegOpenKeyExA(HKEY_USERS, szSid, 0, KEY_READ | KEY_WRITE, &hUserKey) != ERROR_SUCCESS) {
+        // å°è¯•åªè¯»æ–¹å¼
+        if (RegOpenKeyExA(HKEY_USERS, szSid, 0, KEY_READ, &hUserKey) != ERROR_SUCCESS) {
+            hUserKey = NULL;
+        }
+    }
+
+    LocalFree(szSid);
+    free(pTokenUser);
+    CloseHandle(hUserToken);
+
+    return hUserKey ? hUserKey : HKEY_CURRENT_USER;
+}
+
+// æ£€æŸ¥æ˜¯å¦éœ€è¦å…³é—­æ³¨å†Œè¡¨æ ¹é”®ï¼ˆéé¢„å®šä¹‰é”®éœ€è¦å…³é—­ï¼‰
+inline void CloseUserRegistryKeyIfNeeded(HKEY hKey)
+{
+	if (hKey != HKEY_CURRENT_USER &&
+		hKey != HKEY_LOCAL_MACHINE &&
+		hKey != HKEY_USERS &&
+		hKey != HKEY_CLASSES_ROOT &&
+		hKey != NULL) {
+		RegCloseKey(hKey);
+	}
+}
+
+#else
+#define GetCurrentUserRegistryKey() HKEY_CURRENT_USER
+#define CloseUserRegistryKeyIfNeeded(hKey) 
+#endif
+
+
+// é…ç½®è¯»å–ç±»: æ–‡ä»¶é…ç½®.
 class config
 {
 private:
@@ -29,7 +115,7 @@ public:
         return ::GetPrivateProfileIntA(MainKey.c_str(), SubKey.c_str(), nDef, m_IniFilePath);
     }
 
-    // »ñÈ¡ÅäÖÃÏîÖĞµÄµÚÒ»¸öÕûÊı
+    // è·å–é…ç½®é¡¹ä¸­çš„ç¬¬ä¸€ä¸ªæ•´æ•°
     virtual int Get1Int(const std::string& MainKey, const std::string& SubKey, char ch=';', int nDef=0)
     {
         std::string s = GetStr(MainKey, SubKey, "");
@@ -56,7 +142,7 @@ public:
     }
 };
 
-// ÅäÖÃ¶ÁÈ¡Àà: ×¢²á±íÅäÖÃ.
+// é…ç½®è¯»å–ç±»: æ³¨å†Œè¡¨é…ç½®.
 class iniFile : public config
 {
 private:
@@ -64,21 +150,24 @@ private:
     std::string m_SubKeyPath;
 
 public:
-    ~iniFile() {}
+    ~iniFile()
+    {
+        CloseUserRegistryKeyIfNeeded(m_hRootKey);
+    }
 
     iniFile(const std::string& path = YAMA_PATH)
     {
-        m_hRootKey = HKEY_CURRENT_USER;
+        m_hRootKey = GetCurrentUserRegistryKey();
         m_SubKeyPath = path;
     }
 
-    // Ğ´ÈëÕûÊı£¬Êµ¼ÊĞ´Îª×Ö·û´®
+    // å†™å…¥æ•´æ•°ï¼Œå®é™…å†™ä¸ºå­—ç¬¦ä¸²
     bool SetInt(const std::string& MainKey, const std::string& SubKey, int Data) override
     {
         return SetStr(MainKey, SubKey, std::to_string(Data));
     }
 
-    // Ğ´Èë×Ö·û´®
+    // å†™å…¥å­—ç¬¦ä¸²
     bool SetStr(const std::string& MainKey, const std::string& SubKey, const std::string& Data) override
     {
         std::string fullPath = m_SubKeyPath + "\\" + MainKey;
@@ -93,7 +182,7 @@ public:
         return bRet;
     }
 
-    // ¶ÁÈ¡×Ö·û´®
+    // è¯»å–å­—ç¬¦ä¸²
     std::string GetStr(const std::string& MainKey, const std::string& SubKey, const std::string& def = "") override
     {
         std::string fullPath = m_SubKeyPath + "\\" + MainKey;
@@ -113,7 +202,7 @@ public:
         return result;
     }
 
-    // ¶ÁÈ¡ÕûÊı£¬ÏÈ´Ó×Ö·û´®ÖĞ×ª»»
+    // è¯»å–æ•´æ•°ï¼Œå…ˆä»å­—ç¬¦ä¸²ä¸­è½¬æ¢
     int GetInt(const std::string& MainKey, const std::string& SubKey, int defVal = 0) override
     {
         std::string val = GetStr(MainKey, SubKey);
@@ -135,27 +224,30 @@ private:
     std::string m_SubKeyPath;
 
 public:
-    ~binFile() {}
+    ~binFile()
+    {
+        CloseUserRegistryKeyIfNeeded(m_hRootKey);
+    }
 
     binFile(const std::string& path = CLIENT_PATH)
     {
-        m_hRootKey = HKEY_CURRENT_USER;
+        m_hRootKey = GetCurrentUserRegistryKey();
         m_SubKeyPath = path;
     }
 
-    // Ğ´ÈëÕûÊı£¨Ğ´Îª¶ş½øÖÆ£©
+    // å†™å…¥æ•´æ•°ï¼ˆå†™ä¸ºäºŒè¿›åˆ¶ï¼‰
     bool SetInt(const std::string& MainKey, const std::string& SubKey, int Data) override
     {
         return SetBinary(MainKey, SubKey, reinterpret_cast<const BYTE*>(&Data), sizeof(int));
     }
 
-    // Ğ´Èë×Ö·û´®£¨ÒÔ¶ş½øÖÆ·½Ê½£©
+    // å†™å…¥å­—ç¬¦ä¸²ï¼ˆä»¥äºŒè¿›åˆ¶æ–¹å¼ï¼‰
     bool SetStr(const std::string& MainKey, const std::string& SubKey, const std::string& Data) override
     {
         return SetBinary(MainKey, SubKey, reinterpret_cast<const BYTE*>(Data.data()), static_cast<DWORD>(Data.size()));
     }
 
-    // ¶ÁÈ¡×Ö·û´®£¨´Ó¶ş½øÖÆÊı¾İ×ª»»£©
+    // è¯»å–å­—ç¬¦ä¸²ï¼ˆä»äºŒè¿›åˆ¶æ•°æ®è½¬æ¢ï¼‰
     std::string GetStr(const std::string& MainKey, const std::string& SubKey, const std::string& def = "") override
     {
         std::vector<BYTE> buffer;
@@ -165,7 +257,7 @@ public:
         return std::string(buffer.begin(), buffer.end());
     }
 
-    // ¶ÁÈ¡ÕûÊı£¨´Ó¶ş½øÖÆ½âÎö£©
+    // è¯»å–æ•´æ•°ï¼ˆä»äºŒè¿›åˆ¶è§£æï¼‰
     int GetInt(const std::string& MainKey, const std::string& SubKey, int defVal = 0) override
     {
         std::vector<BYTE> buffer;

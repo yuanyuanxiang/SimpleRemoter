@@ -9,7 +9,7 @@
 #include "InputDlg.h"
 #include <bcrypt.h>
 #include <wincrypt.h>
-#include <ntstatus.h>
+// #include <ntstatus.h>
 
 enum Index {
     IndexTestRun_DLL,
