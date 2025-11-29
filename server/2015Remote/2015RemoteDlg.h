@@ -1,5 +1,5 @@
-
-// 2015RemoteDlg.h : Í·ÎÄ¼ş
+ï»¿
+// 2015RemoteDlg.h : å¤´æ–‡ä»¶
 //
 
 #pragma once
@@ -8,9 +8,9 @@
 #include "IOCPServer.h"
 
 //////////////////////////////////////////////////////////////////////////
-// ÒÔÏÂÎªÌØÊâĞèÇóÊ¹ÓÃ
+// ä»¥ä¸‹ä¸ºç‰¹æ®Šéœ€æ±‚ä½¿ç”¨
 
-// ÊÇ·ñÔÚÍË³öÖ÷¿Ø¶ËÊ±Ò²ÍË³ö¿Í»§¶Ë
+// æ˜¯å¦åœ¨é€€å‡ºä¸»æ§ç«¯æ—¶ä¹Ÿé€€å‡ºå®¢æˆ·ç«¯
 #define CLIENT_EXIT_WITH_SERVER 0
 
 typedef struct DllInfo {
@@ -40,7 +40,7 @@ struct _ClientValue {
     char Note[64];
     char Location[64];
     char Level;
-    char Reserved[127]; // Ô¤Áô
+    char Reserved[127]; // é¢„ç•™
     _ClientValue()
     {
         memset(this, 0, sizeof(_ClientValue));
@@ -87,21 +87,23 @@ typedef _ClientValue ClientValue;
 
 typedef  std::unordered_map<ClientKey, ClientValue> ComputerNoteMap;
 
-// ±£´æ unordered_map µ½ÎÄ¼ş
+// ä¿å­˜ unordered_map åˆ°æ–‡ä»¶
 void SaveToFile(const ComputerNoteMap& data, const std::string& filename);
 
-// ´ÓÎÄ¼ş¶ÁÈ¡ unordered_map Êı¾İ
+// ä»æ–‡ä»¶è¯»å– unordered_map æ•°æ®
 void LoadFromFile(ComputerNoteMap& data, const std::string& filename);
 
 //////////////////////////////////////////////////////////////////////////
 
 enum {
-    PAYLOAD_DLL_X86 = 0,			// 32Î» DLL
-    PAYLOAD_DLL_X64 = 1,			// 64Î» DLL
+    PAYLOAD_DLL_X86 = 0,			// 32ä½ DLL
+    PAYLOAD_DLL_X64 = 1,			// 64ä½ DLL
     PAYLOAD_MAXTYPE
 };
 
-// CMy2015RemoteDlg ¶Ô»°¿ò
+class CSplashDlg;  // å‰å‘å£°æ˜
+
+// CMy2015RemoteDlg å¯¹è¯æ¡†
 class CMy2015RemoteDlg : public CDialogEx
 {
 protected:
@@ -141,21 +143,21 @@ protected:
         }
         LeaveCriticalSection(&m_cs);
     }
-    // ¹¹Ôì
+    // æ„é€ 
 public:
-    CMy2015RemoteDlg(CWnd* pParent = NULL);	// ±ê×¼¹¹Ôìº¯Êı
+    CMy2015RemoteDlg(CWnd* pParent = NULL);	// æ ‡å‡†æ„é€ å‡½æ•°
     ~CMy2015RemoteDlg();
-    // ¶Ô»°¿òÊı¾İ
+    // å¯¹è¯æ¡†æ•°æ®
     enum { IDD = IDD_MY2015REMOTE_DIALOG };
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV Ö§³Ö
-    // ÊµÏÖ
+    virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV æ”¯æŒ
+    // å®ç°
 protected:
     HICON m_hIcon;
     void* m_tinyDLL;
     std::string m_superPass;
 
-    // Éú³ÉµÄÏûÏ¢Ó³Éäº¯Êı
+    // ç”Ÿæˆçš„æ¶ˆæ¯æ˜ å°„å‡½æ•°
     virtual BOOL OnInitDialog();
     afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
     afx_msg void OnPaint();
@@ -176,7 +178,7 @@ public:
         if (ok) {
             m_gridDlg->AddChild((CDialog*)Dlg);
             LONG style = ::GetWindowLong(Dlg->GetSafeHwnd(), GWL_STYLE);
-            style &= ~(WS_CAPTION | WS_SIZEBOX);  // È¥µô±êÌâÀ¸ºÍµ÷Õû´óĞ¡
+            style &= ~(WS_CAPTION | WS_SIZEBOX);  // å»æ‰æ ‡é¢˜æ å’Œè°ƒæ•´å¤§å°
             ::SetWindowLong(Dlg->GetSafeHwnd(), GWL_STYLE, style);
             ::SetWindowPos(Dlg->GetSafeHwnd(), nullptr, 0, 0, 0, 0,
                            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
@@ -190,8 +192,8 @@ public:
 
         return 0;
     }
-    VOID InitControl();             //³õÊ¼¿Ø¼ş
-    VOID TestOnline();              //²âÊÔº¯Êı
+    VOID InitControl();             //åˆå§‹æ§ä»¶
+    VOID TestOnline();              //æµ‹è¯•å‡½æ•°
     VOID AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, CString strCPU, CString strVideo, CString strPing,
                  CString ver, CString startTime, const std::vector<std::string>& v, CONTEXT_OBJECT* ContextObject);
     VOID ShowMessage(CString strType, CString strMsg);
@@ -212,7 +214,7 @@ public:
     VOID MessageHandle(CONTEXT_OBJECT* ContextObject);
     VOID SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength);
     VOID SendAllCommand(PBYTE  szBuffer, ULONG ulLength);
-    // ÏÔÊ¾ÓÃ»§ÉÏÏßĞÅÏ¢
+    // æ˜¾ç¤ºç”¨æˆ·ä¸Šçº¿ä¿¡æ¯
     CWnd* m_pFloatingTip = nullptr;
     CListCtrl  m_CList_Online;
     CListCtrl  m_CList_Message;
@@ -222,7 +224,7 @@ public:
     void LoadListData(const std::string& group);
     void DeletePopupWindow();
 
-    CStatusBar m_StatusBar;          //×´Ì¬Ìõ
+    CStatusBar m_StatusBar;          //çŠ¶æ€æ¡
     CTrueColorToolBar m_ToolBar;
     CGridDialog * m_gridDlg = NULL;
     std::vector<DllInfo*> m_DllList;
@@ -238,7 +240,7 @@ public:
     std::map<HWND, CDialogBase *> m_RemoteWnds;
     CDialogBase* GetRemoteWindow(HWND hWnd);
     void RemoveRemoteWindow(HWND wnd);
-    CDialogBase* m_pActiveSession = nullptr; // µ±Ç°»î¶¯»á»°´°¿ÚÖ¸Õë / NULL ±íÊ¾ÎŞ
+    CDialogBase* m_pActiveSession = nullptr; // å½“å‰æ´»åŠ¨ä¼šè¯çª—å£æŒ‡é’ˆ / NULL è¡¨ç¤ºæ— 
     afx_msg LRESULT OnSessionActivatedMsg(WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
     HHOOK g_hKeyboardHook = NULL;

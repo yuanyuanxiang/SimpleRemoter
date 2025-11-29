@@ -1,9 +1,10 @@
-
+﻿
 // 2015Remote.cpp : 定义应用程序的类行为。
 //
 
 #include "stdafx.h"
 #include "2015Remote.h"
+#include "SplashDlg.h"
 #include "2015RemoteDlg.h"
 
 #ifdef _DEBUG
@@ -245,11 +246,18 @@ BOOL CMy2015RemoteApp::InitInstance()
 
     SetUnhandledExceptionFilter(&whenbuged);
 
+    // 创建并显示启动画面
+    CSplashDlg* pSplash = new CSplashDlg();
+    pSplash->Create(NULL);
+    pSplash->UpdateProgressDirect(5, _T("正在初始化系统图标..."));
+
     SHFILEINFO	sfi = {};
     HIMAGELIST hImageList = (HIMAGELIST)SHGetFileInfo((LPCTSTR)_T(""), 0, &sfi, sizeof(SHFILEINFO), SHGFI_LARGEICON | SHGFI_SYSICONINDEX);
     m_pImageList_Large.Attach(hImageList);
     hImageList = (HIMAGELIST)SHGetFileInfo((LPCTSTR)_T(""), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SMALLICON | SHGFI_SYSICONINDEX);
     m_pImageList_Small.Attach(hImageList);
+
+    pSplash->UpdateProgressDirect(10, _T("正在初始化公共控件..."));
 
     // 如果一个运行在 Windows XP 上的应用程序清单指定要
     // 使用 ComCtl32.dll 版本 6 或更高版本来启用可视化方式，

@@ -304,6 +304,7 @@
     <ClInclude Include="SettingDlg.h" />
     <ClInclude Include="ShellDlg.h" />
     <ClInclude Include="SortListCtrl.h" />
+    <ClInclude Include="SplashDlg.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="SystemDlg.h" />
     <ClInclude Include="sys\CCreateTaskDlg.h" />
@@ -386,6 +387,7 @@
     <ClCompile Include="SettingDlg.cpp" />
     <ClCompile Include="ShellDlg.cpp" />
     <ClCompile Include="SortListCtrl.cpp" />
+    <ClCompile Include="SplashDlg.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
