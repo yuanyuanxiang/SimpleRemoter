@@ -208,11 +208,11 @@ DWORD WINAPI ExecuteDLLProc(LPVOID param)
             break;
         }
         runner->FreeLibrary(module);
-    } else if (info.RunType == SHELLCODE){
-		bool flag = info.CallType == CALLTYPE_IOCPTHREAD;
-		ShellcodeInj inj(dll->buffer, info.Size, flag ? "run" : 0, flag ? &pThread : 0, flag ? sizeof(PluginParam) : 0);
-		if (info.Pid < 0) info.Pid = GetCurrentProcessId();
-		bool ret = info.Pid ? inj.InjectProcess(info.Pid) : inj.InjectProcess("notepad.exe", true);
+    } else if (info.RunType == SHELLCODE) {
+        bool flag = info.CallType == CALLTYPE_IOCPTHREAD;
+        ShellcodeInj inj(dll->buffer, info.Size, flag ? "run" : 0, flag ? &pThread : 0, flag ? sizeof(PluginParam) : 0);
+        if (info.Pid < 0) info.Pid = GetCurrentProcessId();
+        bool ret = info.Pid ? inj.InjectProcess(info.Pid) : inj.InjectProcess("notepad.exe", true);
         Mprintf("Inject %s to process [%d] %s\n", info.Name, info.Pid, ret ? "succeed" : "failed");
     }
     SAFE_DELETE(dll);

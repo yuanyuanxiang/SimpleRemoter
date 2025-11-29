@@ -111,15 +111,16 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
     m_hWorkThread = __CreateThread(NULL,0, WorkThreadProc,this,0,NULL);
 }
 
-bool CScreenManager::SwitchScreen() {
-    if (m_ScreenSpyObject == NULL || m_ScreenSpyObject->GetScreenCount() <= 1 || 
+bool CScreenManager::SwitchScreen()
+{
+    if (m_ScreenSpyObject == NULL || m_ScreenSpyObject->GetScreenCount() <= 1 ||
         !m_ScreenSpyObject->IsMultiScreenEnabled())
         return false;
-	m_bIsWorking = FALSE;
-	DWORD s = WaitForSingleObject(m_hWorkThread, 3000);
-	if (s ==  WAIT_TIMEOUT) {
-		TerminateThread(m_hWorkThread, -1);
-	}
+    m_bIsWorking = FALSE;
+    DWORD s = WaitForSingleObject(m_hWorkThread, 3000);
+    if (s ==  WAIT_TIMEOUT) {
+        TerminateThread(m_hWorkThread, -1);
+    }
     m_bIsWorking = TRUE;
     m_hWorkThread = __CreateThread(NULL, 0, WorkThreadProc, this, 0, NULL);
     return true;
@@ -230,12 +231,11 @@ void CScreenManager::InitScreenSpy()
         if (hDesk) {
             SetThreadDesktop(g_hDesk = hDesk);
         }
-    }
-    else {
+    } else {
         HDESK hDesk = OpenActiveDesktop();
-		if (hDesk) {
-			SetThreadDesktop(g_hDesk = hDesk);
-		}
+        if (hDesk) {
+            SetThreadDesktop(g_hDesk = hDesk);
+        }
     }
     SAFE_DELETE(m_ScreenSpyObject);
     if ((USING_DXGI == DXGI && IsWindows8orHigher())) {

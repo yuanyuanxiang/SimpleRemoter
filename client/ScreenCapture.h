@@ -211,11 +211,13 @@ public:
         SAFE_DELETE(m_encoder);
     }
 
-    virtual int GetScreenCount() const {
+    virtual int GetScreenCount() const
+    {
         return m_nScreenCount;
     }
 
-    virtual BOOL IsMultiScreenEnabled() const {
+    virtual BOOL IsMultiScreenEnabled() const
+    {
         return m_bEnableMultiScreen;
     }
 

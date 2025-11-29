@@ -37,7 +37,7 @@ extern BOOL g_ServiceDirectMode;
 //   exePathSize - exePath缓冲区大小
 // 返回: 成功返回TRUE
 BOOL ServiceWrapper_CheckStatus(BOOL* registered, BOOL* running,
-                                 char* exePath, size_t exePathSize);
+                                char* exePath, size_t exePathSize);
 
 // 简单启动服务
 // 返回: ERROR_SUCCESS 或错误码

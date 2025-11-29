@@ -56,7 +56,8 @@ public:
     {
         m_conn = conn;
     }
-    bool IsRunAsService() const {
+    bool IsRunAsService() const
+    {
         return m_conn ? m_conn->iStartup == Startup_GhostMsc : false;
     }
     bool SwitchScreen();

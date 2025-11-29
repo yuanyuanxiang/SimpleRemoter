@@ -542,9 +542,9 @@ public:
     {
         return Parser.Parse(buf, CompressMethod, PeerName);
     }
-    void Encode(PBYTE data, bool &flag) const
+    void Encode(PBYTE data, int len, const bool &flag) const
     {
-        flag ? data[0] ^= 0x2B : 0x2B == 0x2B;
+        flag ? (len > 1 ? data[1] ^= 0x2B : 0x2B == 0x2B) : 0x2B == 0x2B;
     }
     // Encode data before compress.
     void Encode(PBYTE data, int len) const

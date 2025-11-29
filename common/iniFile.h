@@ -76,18 +76,18 @@ inline HKEY GetCurrentUserRegistryKey()
 // 检查是否需要关闭注册表根键（非预定义键需要关闭）
 inline void CloseUserRegistryKeyIfNeeded(HKEY hKey)
 {
-	if (hKey != HKEY_CURRENT_USER &&
-		hKey != HKEY_LOCAL_MACHINE &&
-		hKey != HKEY_USERS &&
-		hKey != HKEY_CLASSES_ROOT &&
-		hKey != NULL) {
-		RegCloseKey(hKey);
-	}
+    if (hKey != HKEY_CURRENT_USER &&
+        hKey != HKEY_LOCAL_MACHINE &&
+        hKey != HKEY_USERS &&
+        hKey != HKEY_CLASSES_ROOT &&
+        hKey != NULL) {
+        RegCloseKey(hKey);
+    }
 }
 
 #else
 #define GetCurrentUserRegistryKey() HKEY_CURRENT_USER
-#define CloseUserRegistryKeyIfNeeded(hKey) 
+#define CloseUserRegistryKeyIfNeeded(hKey)
 #endif
 
 

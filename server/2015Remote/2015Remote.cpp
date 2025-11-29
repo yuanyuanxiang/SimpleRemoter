@@ -198,8 +198,7 @@ static BOOL HandleServiceCommandLine()
     if (!registered) {
         Mprintf("ServerService Install: %s\n", curPath);
         return ServerService_Install();
-    }
-    else if (!running) {
+    } else if (!running) {
         int r = ServerService_Run();
         Mprintf("ServerService Run '%s' %s\n", curPath, r == ERROR_SUCCESS ? "succeed" : "failed");
         if (r) {
@@ -237,8 +236,8 @@ BOOL CMy2015RemoteApp::InitInstance()
         if (ERROR_ALREADY_EXISTS == GetLastError()) {
             CloseHandle(m_Mutex);
             m_Mutex = NULL;
-            MessageBoxA(NULL, "A master program is already running, please check Task Manager.", 
-                "Info", MB_ICONINFORMATION);
+            MessageBoxA(NULL, "A master program is already running, please check Task Manager.",
+                        "Info", MB_ICONINFORMATION);
             return FALSE;
         }
     }

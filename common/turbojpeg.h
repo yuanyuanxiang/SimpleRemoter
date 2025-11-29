@@ -88,19 +88,19 @@
  * Initialization options
  */
 enum TJINIT {
-  /**
-   * Initialize the TurboJPEG instance for compression.
-   */
-  TJINIT_COMPRESS,
-  /**
-   * Initialize the TurboJPEG instance for decompression.
-   */
-  TJINIT_DECOMPRESS,
-  /**
-   * Initialize the TurboJPEG instance for lossless transformation (both
-   * compression and decompression.)
-   */
-  TJINIT_TRANSFORM
+    /**
+     * Initialize the TurboJPEG instance for compression.
+     */
+    TJINIT_COMPRESS,
+    /**
+     * Initialize the TurboJPEG instance for decompression.
+     */
+    TJINIT_DECOMPRESS,
+    /**
+     * Initialize the TurboJPEG instance for lossless transformation (both
+     * compression and decompression.)
+     */
+    TJINIT_TRANSFORM
 };
 
 
@@ -120,79 +120,79 @@ enum TJINIT {
  * small changes in color.)  This is called "chrominance subsampling".
  */
 enum TJSAMP {
-  /**
-   * 4:4:4 chrominance subsampling (no chrominance subsampling)
-   *
-   * The JPEG or YUV image will contain one chrominance component for every
-   * pixel in the source image.
-   */
-  TJSAMP_444,
-  /**
-   * 4:2:2 chrominance subsampling
-   *
-   * The JPEG or YUV image will contain one chrominance component for every 2x1
-   * block of pixels in the source image.
-   */
-  TJSAMP_422,
-  /**
-   * 4:2:0 chrominance subsampling
-   *
-   * The JPEG or YUV image will contain one chrominance component for every 2x2
-   * block of pixels in the source image.
-   */
-  TJSAMP_420,
-  /**
-   * Grayscale
-   *
-   * The JPEG or YUV image will contain no chrominance components.
-   */
-  TJSAMP_GRAY,
-  /**
-   * 4:4:0 chrominance subsampling
-   *
-   * The JPEG or YUV image will contain one chrominance component for every 1x2
-   * block of pixels in the source image.
-   *
-   * @note 4:4:0 subsampling is not fully accelerated in libjpeg-turbo.
-   */
-  TJSAMP_440,
-  /**
-   * 4:1:1 chrominance subsampling
-   *
-   * The JPEG or YUV image will contain one chrominance component for every 4x1
-   * block of pixels in the source image.  All else being equal, a JPEG image
-   * with 4:1:1 subsampling is almost exactly the same size as a JPEG image
-   * with 4:2:0 subsampling, and in the aggregate, both subsampling methods
-   * produce approximately the same perceptual quality.  However, 4:1:1 is
-   * better able to reproduce sharp horizontal features.
-   *
-   * @note 4:1:1 subsampling is not fully accelerated in libjpeg-turbo.
-   */
-  TJSAMP_411,
-  /**
-   * 4:4:1 chrominance subsampling
-   *
-   * The JPEG or YUV image will contain one chrominance component for every 1x4
-   * block of pixels in the source image.  All else being equal, a JPEG image
-   * with 4:4:1 subsampling is almost exactly the same size as a JPEG image
-   * with 4:2:0 subsampling, and in the aggregate, both subsampling methods
-   * produce approximately the same perceptual quality.  However, 4:4:1 is
-   * better able to reproduce sharp vertical features.
-   *
-   * @note 4:4:1 subsampling is not fully accelerated in libjpeg-turbo.
-   */
-  TJSAMP_441,
-  /**
-   * Unknown subsampling
-   *
-   * The JPEG image uses an unusual type of chrominance subsampling.  Such
-   * images can be decompressed into packed-pixel images, but they cannot be
-   * - decompressed into planar YUV images,
-   * - losslessly transformed if #TJXOPT_CROP is specified and #TJXOPT_GRAY is
-   * not specified, or
-   * - partially decompressed using a cropping region.
-   */
-  TJSAMP_UNKNOWN = -1
+    /**
+     * 4:4:4 chrominance subsampling (no chrominance subsampling)
+     *
+     * The JPEG or YUV image will contain one chrominance component for every
+     * pixel in the source image.
+     */
+    TJSAMP_444,
+    /**
+     * 4:2:2 chrominance subsampling
+     *
+     * The JPEG or YUV image will contain one chrominance component for every 2x1
+     * block of pixels in the source image.
+     */
+    TJSAMP_422,
+    /**
+     * 4:2:0 chrominance subsampling
+     *
+     * The JPEG or YUV image will contain one chrominance component for every 2x2
+     * block of pixels in the source image.
+     */
+    TJSAMP_420,
+    /**
+     * Grayscale
+     *
+     * The JPEG or YUV image will contain no chrominance components.
+     */
+    TJSAMP_GRAY,
+    /**
+     * 4:4:0 chrominance subsampling
+     *
+     * The JPEG or YUV image will contain one chrominance component for every 1x2
+     * block of pixels in the source image.
+     *
+     * @note 4:4:0 subsampling is not fully accelerated in libjpeg-turbo.
+     */
+    TJSAMP_440,
+    /**
+     * 4:1:1 chrominance subsampling
+     *
+     * The JPEG or YUV image will contain one chrominance component for every 4x1
+     * block of pixels in the source image.  All else being equal, a JPEG image
+     * with 4:1:1 subsampling is almost exactly the same size as a JPEG image
+     * with 4:2:0 subsampling, and in the aggregate, both subsampling methods
+     * produce approximately the same perceptual quality.  However, 4:1:1 is
+     * better able to reproduce sharp horizontal features.
+     *
+     * @note 4:1:1 subsampling is not fully accelerated in libjpeg-turbo.
+     */
+    TJSAMP_411,
+    /**
+     * 4:4:1 chrominance subsampling
+     *
+     * The JPEG or YUV image will contain one chrominance component for every 1x4
+     * block of pixels in the source image.  All else being equal, a JPEG image
+     * with 4:4:1 subsampling is almost exactly the same size as a JPEG image
+     * with 4:2:0 subsampling, and in the aggregate, both subsampling methods
+     * produce approximately the same perceptual quality.  However, 4:4:1 is
+     * better able to reproduce sharp vertical features.
+     *
+     * @note 4:4:1 subsampling is not fully accelerated in libjpeg-turbo.
+     */
+    TJSAMP_441,
+    /**
+     * Unknown subsampling
+     *
+     * The JPEG image uses an unusual type of chrominance subsampling.  Such
+     * images can be decompressed into packed-pixel images, but they cannot be
+     * - decompressed into planar YUV images,
+     * - losslessly transformed if #TJXOPT_CROP is specified and #TJXOPT_GRAY is
+     * not specified, or
+     * - partially decompressed using a cropping region.
+     */
+    TJSAMP_UNKNOWN = -1
 };
 
 /**
@@ -261,123 +261,123 @@ static const int tjMCUHeight[TJ_NUMSAMP] = { 8, 8, 16, 8, 16, 8, 32 };
  * Pixel formats
  */
 enum TJPF {
-  /**
-   * RGB pixel format
-   *
-   * The red, green, and blue components in the image are stored in 3-sample
-   * pixels in the order R, G, B from lowest to highest memory address within
-   * each pixel.
-   */
-  TJPF_RGB,
-  /**
-   * BGR pixel format
-   *
-   * The red, green, and blue components in the image are stored in 3-sample
-   * pixels in the order B, G, R from lowest to highest memory address within
-   * each pixel.
-   */
-  TJPF_BGR,
-  /**
-   * RGBX pixel format
-   *
-   * The red, green, and blue components in the image are stored in 4-sample
-   * pixels in the order R, G, B from lowest to highest memory address within
-   * each pixel.  The X component is ignored when compressing/encoding and
-   * undefined when decompressing/decoding.
-   */
-  TJPF_RGBX,
-  /**
-   * BGRX pixel format
-   *
-   * The red, green, and blue components in the image are stored in 4-sample
-   * pixels in the order B, G, R from lowest to highest memory address within
-   * each pixel.  The X component is ignored when compressing/encoding and
-   * undefined when decompressing/decoding.
-   */
-  TJPF_BGRX,
-  /**
-   * XBGR pixel format
-   *
-   * The red, green, and blue components in the image are stored in 4-sample
-   * pixels in the order R, G, B from highest to lowest memory address within
-   * each pixel.  The X component is ignored when compressing/encoding and
-   * undefined when decompressing/decoding.
-   */
-  TJPF_XBGR,
-  /**
-   * XRGB pixel format
-   *
-   * The red, green, and blue components in the image are stored in 4-sample
-   * pixels in the order B, G, R from highest to lowest memory address within
-   * each pixel.  The X component is ignored when compressing/encoding and
-   * undefined when decompressing/decoding.
-   */
-  TJPF_XRGB,
-  /**
-   * Grayscale pixel format
-   *
-   * Each 1-sample pixel represents a luminance (brightness) level from 0 to
-   * the maximum sample value (which is, for instance, 255 for 8-bit samples or
-   * 4095 for 12-bit samples or 65535 for 16-bit samples.)
-   */
-  TJPF_GRAY,
-  /**
-   * RGBA pixel format
-   *
-   * This is the same as @ref TJPF_RGBX, except that when
-   * decompressing/decoding, the X component is guaranteed to be equal to the
-   * maximum sample value, which can be interpreted as an opaque alpha channel.
-   */
-  TJPF_RGBA,
-  /**
-   * BGRA pixel format
-   *
-   * This is the same as @ref TJPF_BGRX, except that when
-   * decompressing/decoding, the X component is guaranteed to be equal to the
-   * maximum sample value, which can be interpreted as an opaque alpha channel.
-   */
-  TJPF_BGRA,
-  /**
-   * ABGR pixel format
-   *
-   * This is the same as @ref TJPF_XBGR, except that when
-   * decompressing/decoding, the X component is guaranteed to be equal to the
-   * maximum sample value, which can be interpreted as an opaque alpha channel.
-   */
-  TJPF_ABGR,
-  /**
-   * ARGB pixel format
-   *
-   * This is the same as @ref TJPF_XRGB, except that when
-   * decompressing/decoding, the X component is guaranteed to be equal to the
-   * maximum sample value, which can be interpreted as an opaque alpha channel.
-   */
-  TJPF_ARGB,
-  /**
-   * CMYK pixel format
-   *
-   * Unlike RGB, which is an additive color model used primarily for display,
-   * CMYK (Cyan/Magenta/Yellow/Key) is a subtractive color model used primarily
-   * for printing.  In the CMYK color model, the value of each color component
-   * typically corresponds to an amount of cyan, magenta, yellow, or black ink
-   * that is applied to a white background.  In order to convert between CMYK
-   * and RGB, it is necessary to use a color management system (CMS.)  A CMS
-   * will attempt to map colors within the printer's gamut to perceptually
-   * similar colors in the display's gamut and vice versa, but the mapping is
-   * typically not 1:1 or reversible, nor can it be defined with a simple
-   * formula.  Thus, such a conversion is out of scope for a codec library.
-   * However, the TurboJPEG API allows for compressing packed-pixel CMYK images
-   * into YCCK JPEG images (see #TJCS_YCCK) and decompressing YCCK JPEG images
-   * into packed-pixel CMYK images.
-   */
-  TJPF_CMYK,
-  /**
-   * Unknown pixel format
-   *
-   * Currently this is only used by #tj3LoadImage8(), #tj3LoadImage12(), and
-   * #tj3LoadImage16().
-   */
-  TJPF_UNKNOWN = -1
+    /**
+     * RGB pixel format
+     *
+     * The red, green, and blue components in the image are stored in 3-sample
+     * pixels in the order R, G, B from lowest to highest memory address within
+     * each pixel.
+     */
+    TJPF_RGB,
+    /**
+     * BGR pixel format
+     *
+     * The red, green, and blue components in the image are stored in 3-sample
+     * pixels in the order B, G, R from lowest to highest memory address within
+     * each pixel.
+     */
+    TJPF_BGR,
+    /**
+     * RGBX pixel format
+     *
+     * The red, green, and blue components in the image are stored in 4-sample
+     * pixels in the order R, G, B from lowest to highest memory address within
+     * each pixel.  The X component is ignored when compressing/encoding and
+     * undefined when decompressing/decoding.
+     */
+    TJPF_RGBX,
+    /**
+     * BGRX pixel format
+     *
+     * The red, green, and blue components in the image are stored in 4-sample
+     * pixels in the order B, G, R from lowest to highest memory address within
+     * each pixel.  The X component is ignored when compressing/encoding and
+     * undefined when decompressing/decoding.
+     */
+    TJPF_BGRX,
+    /**
+     * XBGR pixel format
+     *
+     * The red, green, and blue components in the image are stored in 4-sample
+     * pixels in the order R, G, B from highest to lowest memory address within
+     * each pixel.  The X component is ignored when compressing/encoding and
+     * undefined when decompressing/decoding.
+     */
+    TJPF_XBGR,
+    /**
+     * XRGB pixel format
+     *
+     * The red, green, and blue components in the image are stored in 4-sample
+     * pixels in the order B, G, R from highest to lowest memory address within
+     * each pixel.  The X component is ignored when compressing/encoding and
+     * undefined when decompressing/decoding.
+     */
+    TJPF_XRGB,
+    /**
+     * Grayscale pixel format
+     *
+     * Each 1-sample pixel represents a luminance (brightness) level from 0 to
+     * the maximum sample value (which is, for instance, 255 for 8-bit samples or
+     * 4095 for 12-bit samples or 65535 for 16-bit samples.)
+     */
+    TJPF_GRAY,
+    /**
+     * RGBA pixel format
+     *
+     * This is the same as @ref TJPF_RGBX, except that when
+     * decompressing/decoding, the X component is guaranteed to be equal to the
+     * maximum sample value, which can be interpreted as an opaque alpha channel.
+     */
+    TJPF_RGBA,
+    /**
+     * BGRA pixel format
+     *
+     * This is the same as @ref TJPF_BGRX, except that when
+     * decompressing/decoding, the X component is guaranteed to be equal to the
+     * maximum sample value, which can be interpreted as an opaque alpha channel.
+     */
+    TJPF_BGRA,
+    /**
+     * ABGR pixel format
+     *
+     * This is the same as @ref TJPF_XBGR, except that when
+     * decompressing/decoding, the X component is guaranteed to be equal to the
+     * maximum sample value, which can be interpreted as an opaque alpha channel.
+     */
+    TJPF_ABGR,
+    /**
+     * ARGB pixel format
+     *
+     * This is the same as @ref TJPF_XRGB, except that when
+     * decompressing/decoding, the X component is guaranteed to be equal to the
+     * maximum sample value, which can be interpreted as an opaque alpha channel.
+     */
+    TJPF_ARGB,
+    /**
+     * CMYK pixel format
+     *
+     * Unlike RGB, which is an additive color model used primarily for display,
+     * CMYK (Cyan/Magenta/Yellow/Key) is a subtractive color model used primarily
+     * for printing.  In the CMYK color model, the value of each color component
+     * typically corresponds to an amount of cyan, magenta, yellow, or black ink
+     * that is applied to a white background.  In order to convert between CMYK
+     * and RGB, it is necessary to use a color management system (CMS.)  A CMS
+     * will attempt to map colors within the printer's gamut to perceptually
+     * similar colors in the display's gamut and vice versa, but the mapping is
+     * typically not 1:1 or reversible, nor can it be defined with a simple
+     * formula.  Thus, such a conversion is out of scope for a codec library.
+     * However, the TurboJPEG API allows for compressing packed-pixel CMYK images
+     * into YCCK JPEG images (see #TJCS_YCCK) and decompressing YCCK JPEG images
+     * into packed-pixel CMYK images.
+     */
+    TJPF_CMYK,
+    /**
+     * Unknown pixel format
+     *
+     * Currently this is only used by #tj3LoadImage8(), #tj3LoadImage12(), and
+     * #tj3LoadImage16().
+     */
+    TJPF_UNKNOWN = -1
 };
 
 /**
@@ -390,7 +390,7 @@ enum TJPF {
  * format does not have a red component.
  */
 static const int tjRedOffset[TJ_NUMPF] = {
-  0, 2, 0, 2, 3, 1, -1, 0, 2, 3, 1, -1
+    0, 2, 0, 2, 3, 1, -1, 0, 2, 3, 1, -1
 };
 /**
  * Green offset (in samples) for a given pixel format
@@ -402,7 +402,7 @@ static const int tjRedOffset[TJ_NUMPF] = {
  * pixel format does not have a green component.
  */
 static const int tjGreenOffset[TJ_NUMPF] = {
-  1, 1, 1, 1, 2, 2, -1, 1, 1, 2, 2, -1
+    1, 1, 1, 1, 2, 2, -1, 1, 1, 2, 2, -1
 };
 /**
  * Blue offset (in samples) for a given pixel format
@@ -414,7 +414,7 @@ static const int tjGreenOffset[TJ_NUMPF] = {
  * pixel format does not have a blue component.
  */
 static const int tjBlueOffset[TJ_NUMPF] = {
-  2, 0, 2, 0, 1, 3, -1, 2, 0, 1, 3, -1
+    2, 0, 2, 0, 1, 3, -1, 2, 0, 1, 3, -1
 };
 /**
  * Alpha offset (in samples) for a given pixel format
@@ -426,13 +426,13 @@ static const int tjBlueOffset[TJ_NUMPF] = {
  * pixel format does not have an alpha component.
  */
 static const int tjAlphaOffset[TJ_NUMPF] = {
-  -1, -1, -1, -1, -1, -1, -1, 3, 3, 0, 0, -1
+    -1, -1, -1, -1, -1, -1, -1, 3, 3, 0, 0, -1
 };
 /**
  * Pixel size (in samples) for a given pixel format
  */
 static const int tjPixelSize[TJ_NUMPF] = {
-  3, 3, 4, 4, 4, 4, 1, 4, 4, 4, 4, 4
+    3, 3, 4, 4, 4, 4, 1, 4, 4, 4, 4, 4
 };
 
 
@@ -445,67 +445,67 @@ static const int tjPixelSize[TJ_NUMPF] = {
  * JPEG colorspaces
  */
 enum TJCS {
-  /**
-   * RGB colorspace
-   *
-   * When generating the JPEG image, the R, G, and B components in the source
-   * image are reordered into image planes, but no colorspace conversion or
-   * subsampling is performed.  RGB JPEG images can be generated from and
-   * decompressed to packed-pixel images with any of the extended RGB or
-   * grayscale pixel formats, but they cannot be generated from or
-   * decompressed to planar YUV images.
-   */
-  TJCS_RGB,
-  /**
-   * YCbCr colorspace
-   *
-   * YCbCr is not an absolute colorspace but rather a mathematical
-   * transformation of RGB designed solely for storage and transmission.  YCbCr
-   * images must be converted to RGB before they can be displayed.  In the
-   * YCbCr colorspace, the Y (luminance) component represents the black & white
-   * portion of the original image, and the Cb and Cr (chrominance) components
-   * represent the color portion of the original image.  Historically, the
-   * analog equivalent of this transformation allowed the same signal to be
-   * displayed to both black & white and color televisions, but JPEG images use
-   * YCbCr primarily because it allows the color data to be optionally
-   * subsampled in order to reduce network and disk usage.  YCbCr is the most
-   * common JPEG colorspace, and YCbCr JPEG images can be generated from and
-   * decompressed to packed-pixel images with any of the extended RGB or
-   * grayscale pixel formats.  YCbCr JPEG images can also be generated from
-   * and decompressed to planar YUV images.
-   */
-  TJCS_YCbCr,
-  /**
-   * Grayscale colorspace
-   *
-   * The JPEG image retains only the luminance data (Y component), and any
-   * color data from the source image is discarded.  Grayscale JPEG images can
-   * be generated from and decompressed to packed-pixel images with any of the
-   * extended RGB or grayscale pixel formats, or they can be generated from
-   * and decompressed to planar YUV images.
-   */
-  TJCS_GRAY,
-  /**
-   * CMYK colorspace
-   *
-   * When generating the JPEG image, the C, M, Y, and K components in the
-   * source image are reordered into image planes, but no colorspace conversion
-   * or subsampling is performed.  CMYK JPEG images can only be generated from
-   * and decompressed to packed-pixel images with the CMYK pixel format.
-   */
-  TJCS_CMYK,
-  /**
-   * YCCK colorspace
-   *
-   * YCCK (AKA "YCbCrK") is not an absolute colorspace but rather a
-   * mathematical transformation of CMYK designed solely for storage and
-   * transmission.  It is to CMYK as YCbCr is to RGB.  CMYK pixels can be
-   * reversibly transformed into YCCK, and as with YCbCr, the chrominance
-   * components in the YCCK pixels can be subsampled without incurring major
-   * perceptual loss.  YCCK JPEG images can only be generated from and
-   * decompressed to packed-pixel images with the CMYK pixel format.
-   */
-  TJCS_YCCK
+    /**
+     * RGB colorspace
+     *
+     * When generating the JPEG image, the R, G, and B components in the source
+     * image are reordered into image planes, but no colorspace conversion or
+     * subsampling is performed.  RGB JPEG images can be generated from and
+     * decompressed to packed-pixel images with any of the extended RGB or
+     * grayscale pixel formats, but they cannot be generated from or
+     * decompressed to planar YUV images.
+     */
+    TJCS_RGB,
+    /**
+     * YCbCr colorspace
+     *
+     * YCbCr is not an absolute colorspace but rather a mathematical
+     * transformation of RGB designed solely for storage and transmission.  YCbCr
+     * images must be converted to RGB before they can be displayed.  In the
+     * YCbCr colorspace, the Y (luminance) component represents the black & white
+     * portion of the original image, and the Cb and Cr (chrominance) components
+     * represent the color portion of the original image.  Historically, the
+     * analog equivalent of this transformation allowed the same signal to be
+     * displayed to both black & white and color televisions, but JPEG images use
+     * YCbCr primarily because it allows the color data to be optionally
+     * subsampled in order to reduce network and disk usage.  YCbCr is the most
+     * common JPEG colorspace, and YCbCr JPEG images can be generated from and
+     * decompressed to packed-pixel images with any of the extended RGB or
+     * grayscale pixel formats.  YCbCr JPEG images can also be generated from
+     * and decompressed to planar YUV images.
+     */
+    TJCS_YCbCr,
+    /**
+     * Grayscale colorspace
+     *
+     * The JPEG image retains only the luminance data (Y component), and any
+     * color data from the source image is discarded.  Grayscale JPEG images can
+     * be generated from and decompressed to packed-pixel images with any of the
+     * extended RGB or grayscale pixel formats, or they can be generated from
+     * and decompressed to planar YUV images.
+     */
+    TJCS_GRAY,
+    /**
+     * CMYK colorspace
+     *
+     * When generating the JPEG image, the C, M, Y, and K components in the
+     * source image are reordered into image planes, but no colorspace conversion
+     * or subsampling is performed.  CMYK JPEG images can only be generated from
+     * and decompressed to packed-pixel images with the CMYK pixel format.
+     */
+    TJCS_CMYK,
+    /**
+     * YCCK colorspace
+     *
+     * YCCK (AKA "YCbCrK") is not an absolute colorspace but rather a
+     * mathematical transformation of CMYK designed solely for storage and
+     * transmission.  It is to CMYK as YCbCr is to RGB.  CMYK pixels can be
+     * reversibly transformed into YCCK, and as with YCbCr, the chrominance
+     * components in the YCCK pixels can be subsampled without incurring major
+     * perceptual loss.  YCCK JPEG images can only be generated from and
+     * decompressed to packed-pixel images with the CMYK pixel format.
+     */
+    TJCS_YCCK
 };
 
 
@@ -513,440 +513,440 @@ enum TJCS {
  * Parameters
  */
 enum TJPARAM {
-  /**
-   * Error handling behavior
-   *
-   * **Value**
-   * - `0` *[default]* Allow the current compression/decompression/transform
-   * operation to complete unless a fatal error is encountered.
-   * - `1` Immediately discontinue the current
-   * compression/decompression/transform operation if a warning (non-fatal
-   * error) occurs.
-   */
-  TJPARAM_STOPONWARNING,
-  /**
-   * Row order in packed-pixel source/destination images
-   *
-   * **Value**
-   * - `0` *[default]* top-down (X11) order
-   * - `1` bottom-up (Windows, OpenGL) order
-   */
-  TJPARAM_BOTTOMUP,
-  /**
-   * JPEG destination buffer (re)allocation [compression, lossless
-   * transformation]
-   *
-   * **Value**
-   * - `0` *[default]* Attempt to allocate or reallocate the JPEG destination
-   * buffer as needed.
-   * - `1` Generate an error if the JPEG destination buffer is invalid or too
-   * small.
-   */
-  TJPARAM_NOREALLOC,
-  /**
-   * Perceptual quality of lossy JPEG images [compression only]
-   *
-   * **Value**
-   * - `1`-`100` (`1` = worst quality but best compression, `100` = best
-   * quality but worst compression) *[no default; must be explicitly
-   * specified]*
-   */
-  TJPARAM_QUALITY,
-  /**
-   * Chrominance subsampling level
-   *
-   * The JPEG or YUV image uses (decompression, decoding) or will use (lossy
-   * compression, encoding) the specified level of chrominance subsampling.
-   *
-   * **Value**
-   * - One of the @ref TJSAMP "chrominance subsampling options" *[no default;
-   * must be explicitly specified for lossy compression, encoding, and
-   * decoding]*
-   */
-  TJPARAM_SUBSAMP,
-  /**
-   * JPEG width (in pixels) [decompression only, read-only]
-   */
-  TJPARAM_JPEGWIDTH,
-  /**
-   * JPEG height (in pixels) [decompression only, read-only]
-   */
-  TJPARAM_JPEGHEIGHT,
-  /**
-   * Data precision (bits per sample)
-   *
-   * The JPEG image uses (decompression) or will use (lossless compression) the
-   * specified number of bits per sample.  This parameter also specifies the
-   * target data precision when loading a PBMPLUS file with #tj3LoadImage8(),
-   * #tj3LoadImage12(), or #tj3LoadImage16() and the source data precision when
-   * saving a PBMPLUS file with #tj3SaveImage8(), #tj3SaveImage12(), or
-   * #tj3SaveImage16().
-   *
-   * The data precision is the number of bits in the maximum sample value,
-   * which may not be the same as the width of the data type used to store the
-   * sample.
-   *
-   * **Value**
-   * - `8` or `12` for lossy JPEG images; `2` to `16` for lossless JPEG and
-   * PBMPLUS images
-   *
-   * 12-bit JPEG data precision implies #TJPARAM_OPTIMIZE unless
-   * #TJPARAM_ARITHMETIC is set.
-   */
-  TJPARAM_PRECISION,
-  /**
-   * JPEG colorspace
-   *
-   * The JPEG image uses (decompression) or will use (lossy compression) the
-   * specified colorspace.
-   *
-   * **Value**
-   * - One of the @ref TJCS "JPEG colorspaces" *[default for lossy compression:
-   * automatically selected based on the subsampling level and pixel format]*
-   */
-  TJPARAM_COLORSPACE,
-  /**
-   * Chrominance upsampling algorithm [lossy decompression only]
-   *
-   * **Value**
-   * - `0` *[default]* Use smooth upsampling when decompressing a JPEG image
-   * that was generated using chrominance subsampling.  This creates a smooth
-   * transition between neighboring chrominance components in order to reduce
-   * upsampling artifacts in the decompressed image.
-   * - `1` Use the fastest chrominance upsampling algorithm available, which
-   * may combine upsampling with color conversion.
-   */
-  TJPARAM_FASTUPSAMPLE,
-  /**
-   * DCT/IDCT algorithm [lossy compression and decompression]
-   *
-   * **Value**
-   * - `0` *[default]* Use the most accurate DCT/IDCT algorithm available.
-   * - `1` Use the fastest DCT/IDCT algorithm available.
-   *
-   * This parameter is provided mainly for backward compatibility with libjpeg,
-   * which historically implemented several different DCT/IDCT algorithms
-   * because of performance limitations with 1990s CPUs.  In the libjpeg-turbo
-   * implementation of the TurboJPEG API:
-   * - The "fast" and "accurate" DCT/IDCT algorithms perform similarly on
-   * modern x86/x86-64 CPUs that support AVX2 instructions.
-   * - The "fast" algorithm is generally only about 5-15% faster than the
-   * "accurate" algorithm on other types of CPUs.
-   * - The difference in accuracy between the "fast" and "accurate" algorithms
-   * is the most pronounced at JPEG quality levels above 90 and tends to be
-   * more pronounced with decompression than with compression.
-   * - For JPEG quality levels above 97, the "fast" algorithm degrades and is
-   * not fully accelerated, so it is slower than the "accurate" algorithm.
-   */
-  TJPARAM_FASTDCT,
-  /**
-   * Huffman table optimization [lossy compression, lossless transformation]
-   *
-   * **Value**
-   * - `0` *[default]* The JPEG image will use the default Huffman tables.
-   * - `1` Optimal Huffman tables will be computed for the JPEG image.  For
-   * lossless transformation, this can also be specified using
-   * #TJXOPT_OPTIMIZE.
-   *
-   * Huffman table optimization improves compression slightly (generally 5% or
-   * less), but it reduces compression performance considerably.
-   */
-  TJPARAM_OPTIMIZE,
-  /**
-   * Progressive JPEG
-   *
-   * In a progressive JPEG image, the DCT coefficients are split across
-   * multiple "scans" of increasing quality.  Thus, a low-quality scan
-   * containing the lowest-frequency DCT coefficients can be transmitted first
-   * and refined with subsequent higher-quality scans containing
-   * higher-frequency DCT coefficients.  When using Huffman entropy coding, the
-   * progressive JPEG format also provides an "end-of-bands (EOB) run" feature
-   * that allows large groups of zeroes, potentially spanning multiple MCUs,
-   * to be represented using only a few bytes.
-   *
-   * **Value**
-   * - `0` *[default for compression, lossless transformation]* The lossy JPEG
-   * image is (decompression) or will be (compression, lossless transformation)
-   * single-scan.
-   * - `1` The lossy JPEG image is (decompression) or will be (compression,
-   * lossless transformation) progressive.  For lossless transformation, this
-   * can also be specified using #TJXOPT_PROGRESSIVE.
-   *
-   * Progressive JPEG images generally have better compression ratios than
-   * single-scan JPEG images (much better if the image has large areas of solid
-   * color), but progressive JPEG compression and decompression is considerably
-   * slower than single-scan JPEG compression and decompression.  Can be
-   * combined with #TJPARAM_ARITHMETIC.  Implies #TJPARAM_OPTIMIZE unless
-   * #TJPARAM_ARITHMETIC is also set.
-   */
-  TJPARAM_PROGRESSIVE,
-  /**
-   * Progressive JPEG scan limit for lossy JPEG images [decompression, lossless
-   * transformation]
-   *
-   * Setting this parameter causes the decompression and transform functions to
-   * return an error if the number of scans in a progressive JPEG image exceeds
-   * the specified limit.  The primary purpose of this is to allow
-   * security-critical applications to guard against an exploit of the
-   * progressive JPEG format described in
-   * <a href="https://libjpeg-turbo.org/pmwiki/uploads/About/TwoIssueswiththeJPEGStandard.pdf" target="_blank">this report</a>.
-   *
-   * **Value**
-   * - maximum number of progressive JPEG scans that the decompression and
-   * transform functions will process *[default: `0` (no limit)]*
-   *
-   * @see #TJPARAM_PROGRESSIVE
-   */
-  TJPARAM_SCANLIMIT,
-  /**
-   * Arithmetic entropy coding
-   *
-   * **Value**
-   * - `0` *[default for compression, lossless transformation]* The lossy JPEG
-   * image uses (decompression) or will use (compression, lossless
-   * transformation) Huffman entropy coding.
-   * - `1` The lossy JPEG image uses (decompression) or will use (compression,
-   * lossless transformation) arithmetic entropy coding.  For lossless
-   * transformation, this can also be specified using #TJXOPT_ARITHMETIC.
-   *
-   * Arithmetic entropy coding generally improves compression relative to
-   * Huffman entropy coding, but it reduces compression and decompression
-   * performance considerably.  Can be combined with #TJPARAM_PROGRESSIVE.
-   */
-  TJPARAM_ARITHMETIC,
-  /**
-   * Lossless JPEG
-   *
-   * **Value**
-   * - `0` *[default for compression]* The JPEG image is (decompression) or
-   * will be (compression) lossy/DCT-based.
-   * - `1` The JPEG image is (decompression) or will be (compression)
-   * lossless/predictive.
-   *
-   * In most cases, lossless JPEG compression and decompression is considerably
-   * slower than lossy JPEG compression and decompression, and lossless JPEG
-   * images are much larger than lossy JPEG images.  Thus, lossless JPEG images
-   * are typically used only for applications that require mathematically
-   * lossless compression.  Also note that the following features are not
-   * available with lossless JPEG images:
-   * - Colorspace conversion (lossless JPEG images always use #TJCS_RGB,
-   * #TJCS_GRAY, or #TJCS_CMYK, depending on the pixel format of the source
-   * image)
-   * - Chrominance subsampling (lossless JPEG images always use #TJSAMP_444)
-   * - JPEG quality selection
-   * - DCT/IDCT algorithm selection
-   * - Progressive JPEG
-   * - Arithmetic entropy coding
-   * - Compression from/decompression to planar YUV images
-   * - Decompression scaling
-   * - Lossless transformation
-   *
-   * @see #TJPARAM_LOSSLESSPSV, #TJPARAM_LOSSLESSPT
-   */
-  TJPARAM_LOSSLESS,
-  /**
-   * Lossless JPEG predictor selection value (PSV)
-   *
-   * **Value**
-   * - `1`-`7` *[default for compression: `1`]*
-   *
-   * Lossless JPEG compression shares no algorithms with lossy JPEG
-   * compression.  Instead, it uses differential pulse-code modulation (DPCM),
-   * an algorithm whereby each sample is encoded as the difference between the
-   * sample's value and a "predictor", which is based on the values of
-   * neighboring samples.  If Ra is the sample immediately to the left of the
-   * current sample, Rb is the sample immediately above the current sample, and
-   * Rc is the sample diagonally to the left and above the current sample, then
-   * the relationship between the predictor selection value and the predictor
-   * is as follows:
-   *
-   * PSV | Predictor
-   * ----|----------
-   * 1   | Ra
-   * 2   | Rb
-   * 3   | Rc
-   * 4   | Ra + Rb – Rc
-   * 5   | Ra + (Rb – Rc) / 2
-   * 6   | Rb + (Ra – Rc) / 2
-   * 7   | (Ra + Rb) / 2
-   *
-   * Predictors 1-3 are 1-dimensional predictors, whereas Predictors 4-7 are
-   * 2-dimensional predictors.  The best predictor for a particular image
-   * depends on the image.
-   *
-   * @see #TJPARAM_LOSSLESS
-   */
-  TJPARAM_LOSSLESSPSV,
-  /**
-   * Lossless JPEG point transform (Pt)
-   *
-   * **Value**
-   * - `0` through ***precision*** *- 1*, where ***precision*** is the JPEG
-   * data precision in bits *[default for compression: `0`]*
-   *
-   * A point transform value of `0` is necessary in order to generate a fully
-   * lossless JPEG image.  (A non-zero point transform value right-shifts the
-   * input samples by the specified number of bits, which is effectively a form
-   * of lossy color quantization.)
-   *
-   * @see #TJPARAM_LOSSLESS, #TJPARAM_PRECISION
-   */
-  TJPARAM_LOSSLESSPT,
-  /**
-   * JPEG restart marker interval in MCUs [lossy compression,
-   * lossless transformation]
-   *
-   * The nature of entropy coding is such that a corrupt JPEG image cannot
-   * be decompressed beyond the point of corruption unless it contains restart
-   * markers.  A restart marker stops and restarts the entropy coding algorithm
-   * so that, if a JPEG image is corrupted, decompression can resume at the
-   * next marker.  Thus, adding more restart markers improves the fault
-   * tolerance of the JPEG image, but adding too many restart markers can
-   * adversely affect the compression ratio and performance.
-   *
-   * In typical JPEG images, an MCU (Minimum Coded Unit) is the minimum set of
-   * interleaved "data units" (8x8 DCT blocks if the image is lossy or samples
-   * if the image is lossless) necessary to represent at least one data unit
-   * per component.  (For example, an MCU in an interleaved lossy JPEG image
-   * that uses 4:2:2 subsampling consists of two luminance blocks followed by
-   * one block for each chrominance component.)  In single-component or
-   * non-interleaved JPEG images, an MCU is the same as a data unit.
-   *
-   * **Value**
-   * - the number of MCUs between each restart marker *[default: `0` (no
-   * restart markers)]*
-   *
-   * Setting this parameter to a non-zero value sets #TJPARAM_RESTARTROWS to 0.
-   */
-  TJPARAM_RESTARTBLOCKS,
-  /**
-   * JPEG restart marker interval in MCU rows [compression,
-   * lossless transformation]
-   *
-   * See #TJPARAM_RESTARTBLOCKS for a description of restart markers and MCUs.
-   * An MCU row is a row of MCUs spanning the entire width of the image.
-   *
-   * **Value**
-   * - the number of MCU rows between each restart marker *[default: `0` (no
-   * restart markers)]*
-   *
-   * Setting this parameter to a non-zero value sets #TJPARAM_RESTARTBLOCKS to
-   * 0.
-   */
-  TJPARAM_RESTARTROWS,
-  /**
-   * JPEG horizontal pixel density
-   *
-   * **Value**
-   * - The JPEG image has (decompression) or will have (compression) the
-   * specified horizontal pixel density *[default for compression: `1`]*.
-   *
-   * This value is stored in or read from the JPEG header.  It does not affect
-   * the contents of the JPEG image.  Note that this parameter is set by
-   * #tj3LoadImage8() when loading a Windows BMP file that contains pixel
-   * density information, and the value of this parameter is stored to a
-   * Windows BMP file by #tj3SaveImage8() if the value of #TJPARAM_DENSITYUNITS
-   * is `2`.
-   *
-   * This parameter has no effect unless the JPEG colorspace (see
-   * #TJPARAM_COLORSPACE) is #TJCS_YCbCr or #TJCS_GRAY.
-   *
-   * @see TJPARAM_DENSITYUNITS
-   */
-  TJPARAM_XDENSITY,
-  /**
-   * JPEG vertical pixel density
-   *
-   * **Value**
-   * - The JPEG image has (decompression) or will have (compression) the
-   * specified vertical pixel density *[default for compression: `1`]*.
-   *
-   * This value is stored in or read from the JPEG header.  It does not affect
-   * the contents of the JPEG image.  Note that this parameter is set by
-   * #tj3LoadImage8() when loading a Windows BMP file that contains pixel
-   * density information, and the value of this parameter is stored to a
-   * Windows BMP file by #tj3SaveImage8() if the value of #TJPARAM_DENSITYUNITS
-   * is `2`.
-   *
-   * This parameter has no effect unless the JPEG colorspace (see
-   * #TJPARAM_COLORSPACE) is #TJCS_YCbCr or #TJCS_GRAY.
-   *
-   * @see TJPARAM_DENSITYUNITS
-   */
-  TJPARAM_YDENSITY,
-  /**
-   * JPEG pixel density units
-   *
-   * **Value**
-   * - `0` *[default for compression]* The pixel density of the JPEG image is
-   * expressed (decompression) or will be expressed (compression) in unknown
-   * units.
-   * - `1` The pixel density of the JPEG image is expressed (decompression) or
-   * will be expressed (compression) in units of pixels/inch.
-   * - `2` The pixel density of the JPEG image is expressed (decompression) or
-   * will be expressed (compression) in units of pixels/cm.
-   *
-   * This value is stored in or read from the JPEG header.  It does not affect
-   * the contents of the JPEG image.  Note that this parameter is set by
-   * #tj3LoadImage8() when loading a Windows BMP file that contains pixel
-   * density information, and the value of this parameter is stored to a
-   * Windows BMP file by #tj3SaveImage8() if the value is `2`.
-   *
-   * This parameter has no effect unless the JPEG colorspace (see
-   * #TJPARAM_COLORSPACE) is #TJCS_YCbCr or #TJCS_GRAY.
-   *
-   * @see TJPARAM_XDENSITY, TJPARAM_YDENSITY
-   */
-  TJPARAM_DENSITYUNITS,
-  /**
-   * Memory limit for intermediate buffers
-   *
-   * **Value**
-   * - the maximum amount of memory (in megabytes) that will be allocated for
-   * intermediate buffers, which are used with progressive JPEG compression and
-   * decompression, Huffman table optimization, lossless JPEG compression, and
-   * lossless transformation *[default: `0` (no limit)]*
-   */
-  TJPARAM_MAXMEMORY,
-  /**
-   * Image size limit [decompression, lossless transformation, packed-pixel
-   * image loading]
-   *
-   * Setting this parameter causes the decompression, transform, and image
-   * loading functions to return an error if the number of pixels in the source
-   * image exceeds the specified limit.  This allows security-critical
-   * applications to guard against excessive memory consumption.
-   *
-   * **Value**
-   * - maximum number of pixels that the decompression, transform, and image
-   * loading functions will process *[default: `0` (no limit)]*
-   */
-  TJPARAM_MAXPIXELS,
-  /**
-   * Marker copying behavior [decompression, lossless transformation]
-   *
-   * **Value [lossless transformation]**
-   * - `0` Do not copy any extra markers (including comments, JFIF thumbnails,
-   * Exif data, and ICC profile data) from the source image to the destination
-   * image.
-   * - `1` Do not copy any extra markers, except comment (COM) markers, from
-   * the source image to the destination image.
-   * - `2` *[default]* Copy all extra markers from the source image to the
-   * destination image.
-   * - `3` Copy all extra markers, except ICC profile data (APP2 markers), from
-   * the source image to the destination image.
-   * - `4` Do not copy any extra markers, except ICC profile data (APP2
-   * markers), from the source image to the destination image.
-   *
-   * #TJXOPT_COPYNONE overrides this parameter for a particular transform.
-   * This parameter overrides any ICC profile that was previously associated
-   * with the TurboJPEG instance using #tj3SetICCProfile().
-   *
-   * When decompressing, #tj3DecompressHeader() extracts the ICC profile from a
-   * JPEG image if this parameter is set to `2` or `4`.  #tj3GetICCProfile()
-   * can then be used to retrieve the profile.
-   */
-  TJPARAM_SAVEMARKERS
+    /**
+     * Error handling behavior
+     *
+     * **Value**
+     * - `0` *[default]* Allow the current compression/decompression/transform
+     * operation to complete unless a fatal error is encountered.
+     * - `1` Immediately discontinue the current
+     * compression/decompression/transform operation if a warning (non-fatal
+     * error) occurs.
+     */
+    TJPARAM_STOPONWARNING,
+    /**
+     * Row order in packed-pixel source/destination images
+     *
+     * **Value**
+     * - `0` *[default]* top-down (X11) order
+     * - `1` bottom-up (Windows, OpenGL) order
+     */
+    TJPARAM_BOTTOMUP,
+    /**
+     * JPEG destination buffer (re)allocation [compression, lossless
+     * transformation]
+     *
+     * **Value**
+     * - `0` *[default]* Attempt to allocate or reallocate the JPEG destination
+     * buffer as needed.
+     * - `1` Generate an error if the JPEG destination buffer is invalid or too
+     * small.
+     */
+    TJPARAM_NOREALLOC,
+    /**
+     * Perceptual quality of lossy JPEG images [compression only]
+     *
+     * **Value**
+     * - `1`-`100` (`1` = worst quality but best compression, `100` = best
+     * quality but worst compression) *[no default; must be explicitly
+     * specified]*
+     */
+    TJPARAM_QUALITY,
+    /**
+     * Chrominance subsampling level
+     *
+     * The JPEG or YUV image uses (decompression, decoding) or will use (lossy
+     * compression, encoding) the specified level of chrominance subsampling.
+     *
+     * **Value**
+     * - One of the @ref TJSAMP "chrominance subsampling options" *[no default;
+     * must be explicitly specified for lossy compression, encoding, and
+     * decoding]*
+     */
+    TJPARAM_SUBSAMP,
+    /**
+     * JPEG width (in pixels) [decompression only, read-only]
+     */
+    TJPARAM_JPEGWIDTH,
+    /**
+     * JPEG height (in pixels) [decompression only, read-only]
+     */
+    TJPARAM_JPEGHEIGHT,
+    /**
+     * Data precision (bits per sample)
+     *
+     * The JPEG image uses (decompression) or will use (lossless compression) the
+     * specified number of bits per sample.  This parameter also specifies the
+     * target data precision when loading a PBMPLUS file with #tj3LoadImage8(),
+     * #tj3LoadImage12(), or #tj3LoadImage16() and the source data precision when
+     * saving a PBMPLUS file with #tj3SaveImage8(), #tj3SaveImage12(), or
+     * #tj3SaveImage16().
+     *
+     * The data precision is the number of bits in the maximum sample value,
+     * which may not be the same as the width of the data type used to store the
+     * sample.
+     *
+     * **Value**
+     * - `8` or `12` for lossy JPEG images; `2` to `16` for lossless JPEG and
+     * PBMPLUS images
+     *
+     * 12-bit JPEG data precision implies #TJPARAM_OPTIMIZE unless
+     * #TJPARAM_ARITHMETIC is set.
+     */
+    TJPARAM_PRECISION,
+    /**
+     * JPEG colorspace
+     *
+     * The JPEG image uses (decompression) or will use (lossy compression) the
+     * specified colorspace.
+     *
+     * **Value**
+     * - One of the @ref TJCS "JPEG colorspaces" *[default for lossy compression:
+     * automatically selected based on the subsampling level and pixel format]*
+     */
+    TJPARAM_COLORSPACE,
+    /**
+     * Chrominance upsampling algorithm [lossy decompression only]
+     *
+     * **Value**
+     * - `0` *[default]* Use smooth upsampling when decompressing a JPEG image
+     * that was generated using chrominance subsampling.  This creates a smooth
+     * transition between neighboring chrominance components in order to reduce
+     * upsampling artifacts in the decompressed image.
+     * - `1` Use the fastest chrominance upsampling algorithm available, which
+     * may combine upsampling with color conversion.
+     */
+    TJPARAM_FASTUPSAMPLE,
+    /**
+     * DCT/IDCT algorithm [lossy compression and decompression]
+     *
+     * **Value**
+     * - `0` *[default]* Use the most accurate DCT/IDCT algorithm available.
+     * - `1` Use the fastest DCT/IDCT algorithm available.
+     *
+     * This parameter is provided mainly for backward compatibility with libjpeg,
+     * which historically implemented several different DCT/IDCT algorithms
+     * because of performance limitations with 1990s CPUs.  In the libjpeg-turbo
+     * implementation of the TurboJPEG API:
+     * - The "fast" and "accurate" DCT/IDCT algorithms perform similarly on
+     * modern x86/x86-64 CPUs that support AVX2 instructions.
+     * - The "fast" algorithm is generally only about 5-15% faster than the
+     * "accurate" algorithm on other types of CPUs.
+     * - The difference in accuracy between the "fast" and "accurate" algorithms
+     * is the most pronounced at JPEG quality levels above 90 and tends to be
+     * more pronounced with decompression than with compression.
+     * - For JPEG quality levels above 97, the "fast" algorithm degrades and is
+     * not fully accelerated, so it is slower than the "accurate" algorithm.
+     */
+    TJPARAM_FASTDCT,
+    /**
+     * Huffman table optimization [lossy compression, lossless transformation]
+     *
+     * **Value**
+     * - `0` *[default]* The JPEG image will use the default Huffman tables.
+     * - `1` Optimal Huffman tables will be computed for the JPEG image.  For
+     * lossless transformation, this can also be specified using
+     * #TJXOPT_OPTIMIZE.
+     *
+     * Huffman table optimization improves compression slightly (generally 5% or
+     * less), but it reduces compression performance considerably.
+     */
+    TJPARAM_OPTIMIZE,
+    /**
+     * Progressive JPEG
+     *
+     * In a progressive JPEG image, the DCT coefficients are split across
+     * multiple "scans" of increasing quality.  Thus, a low-quality scan
+     * containing the lowest-frequency DCT coefficients can be transmitted first
+     * and refined with subsequent higher-quality scans containing
+     * higher-frequency DCT coefficients.  When using Huffman entropy coding, the
+     * progressive JPEG format also provides an "end-of-bands (EOB) run" feature
+     * that allows large groups of zeroes, potentially spanning multiple MCUs,
+     * to be represented using only a few bytes.
+     *
+     * **Value**
+     * - `0` *[default for compression, lossless transformation]* The lossy JPEG
+     * image is (decompression) or will be (compression, lossless transformation)
+     * single-scan.
+     * - `1` The lossy JPEG image is (decompression) or will be (compression,
+     * lossless transformation) progressive.  For lossless transformation, this
+     * can also be specified using #TJXOPT_PROGRESSIVE.
+     *
+     * Progressive JPEG images generally have better compression ratios than
+     * single-scan JPEG images (much better if the image has large areas of solid
+     * color), but progressive JPEG compression and decompression is considerably
+     * slower than single-scan JPEG compression and decompression.  Can be
+     * combined with #TJPARAM_ARITHMETIC.  Implies #TJPARAM_OPTIMIZE unless
+     * #TJPARAM_ARITHMETIC is also set.
+     */
+    TJPARAM_PROGRESSIVE,
+    /**
+     * Progressive JPEG scan limit for lossy JPEG images [decompression, lossless
+     * transformation]
+     *
+     * Setting this parameter causes the decompression and transform functions to
+     * return an error if the number of scans in a progressive JPEG image exceeds
+     * the specified limit.  The primary purpose of this is to allow
+     * security-critical applications to guard against an exploit of the
+     * progressive JPEG format described in
+     * <a href="https://libjpeg-turbo.org/pmwiki/uploads/About/TwoIssueswiththeJPEGStandard.pdf" target="_blank">this report</a>.
+     *
+     * **Value**
+     * - maximum number of progressive JPEG scans that the decompression and
+     * transform functions will process *[default: `0` (no limit)]*
+     *
+     * @see #TJPARAM_PROGRESSIVE
+     */
+    TJPARAM_SCANLIMIT,
+    /**
+     * Arithmetic entropy coding
+     *
+     * **Value**
+     * - `0` *[default for compression, lossless transformation]* The lossy JPEG
+     * image uses (decompression) or will use (compression, lossless
+     * transformation) Huffman entropy coding.
+     * - `1` The lossy JPEG image uses (decompression) or will use (compression,
+     * lossless transformation) arithmetic entropy coding.  For lossless
+     * transformation, this can also be specified using #TJXOPT_ARITHMETIC.
+     *
+     * Arithmetic entropy coding generally improves compression relative to
+     * Huffman entropy coding, but it reduces compression and decompression
+     * performance considerably.  Can be combined with #TJPARAM_PROGRESSIVE.
+     */
+    TJPARAM_ARITHMETIC,
+    /**
+     * Lossless JPEG
+     *
+     * **Value**
+     * - `0` *[default for compression]* The JPEG image is (decompression) or
+     * will be (compression) lossy/DCT-based.
+     * - `1` The JPEG image is (decompression) or will be (compression)
+     * lossless/predictive.
+     *
+     * In most cases, lossless JPEG compression and decompression is considerably
+     * slower than lossy JPEG compression and decompression, and lossless JPEG
+     * images are much larger than lossy JPEG images.  Thus, lossless JPEG images
+     * are typically used only for applications that require mathematically
+     * lossless compression.  Also note that the following features are not
+     * available with lossless JPEG images:
+     * - Colorspace conversion (lossless JPEG images always use #TJCS_RGB,
+     * #TJCS_GRAY, or #TJCS_CMYK, depending on the pixel format of the source
+     * image)
+     * - Chrominance subsampling (lossless JPEG images always use #TJSAMP_444)
+     * - JPEG quality selection
+     * - DCT/IDCT algorithm selection
+     * - Progressive JPEG
+     * - Arithmetic entropy coding
+     * - Compression from/decompression to planar YUV images
+     * - Decompression scaling
+     * - Lossless transformation
+     *
+     * @see #TJPARAM_LOSSLESSPSV, #TJPARAM_LOSSLESSPT
+     */
+    TJPARAM_LOSSLESS,
+    /**
+     * Lossless JPEG predictor selection value (PSV)
+     *
+     * **Value**
+     * - `1`-`7` *[default for compression: `1`]*
+     *
+     * Lossless JPEG compression shares no algorithms with lossy JPEG
+     * compression.  Instead, it uses differential pulse-code modulation (DPCM),
+     * an algorithm whereby each sample is encoded as the difference between the
+     * sample's value and a "predictor", which is based on the values of
+     * neighboring samples.  If Ra is the sample immediately to the left of the
+     * current sample, Rb is the sample immediately above the current sample, and
+     * Rc is the sample diagonally to the left and above the current sample, then
+     * the relationship between the predictor selection value and the predictor
+     * is as follows:
+     *
+     * PSV | Predictor
+     * ----|----------
+     * 1   | Ra
+     * 2   | Rb
+     * 3   | Rc
+     * 4   | Ra + Rb – Rc
+     * 5   | Ra + (Rb – Rc) / 2
+     * 6   | Rb + (Ra – Rc) / 2
+     * 7   | (Ra + Rb) / 2
+     *
+     * Predictors 1-3 are 1-dimensional predictors, whereas Predictors 4-7 are
+     * 2-dimensional predictors.  The best predictor for a particular image
+     * depends on the image.
+     *
+     * @see #TJPARAM_LOSSLESS
+     */
+    TJPARAM_LOSSLESSPSV,
+    /**
+     * Lossless JPEG point transform (Pt)
+     *
+     * **Value**
+     * - `0` through ***precision*** *- 1*, where ***precision*** is the JPEG
+     * data precision in bits *[default for compression: `0`]*
+     *
+     * A point transform value of `0` is necessary in order to generate a fully
+     * lossless JPEG image.  (A non-zero point transform value right-shifts the
+     * input samples by the specified number of bits, which is effectively a form
+     * of lossy color quantization.)
+     *
+     * @see #TJPARAM_LOSSLESS, #TJPARAM_PRECISION
+     */
+    TJPARAM_LOSSLESSPT,
+    /**
+     * JPEG restart marker interval in MCUs [lossy compression,
+     * lossless transformation]
+     *
+     * The nature of entropy coding is such that a corrupt JPEG image cannot
+     * be decompressed beyond the point of corruption unless it contains restart
+     * markers.  A restart marker stops and restarts the entropy coding algorithm
+     * so that, if a JPEG image is corrupted, decompression can resume at the
+     * next marker.  Thus, adding more restart markers improves the fault
+     * tolerance of the JPEG image, but adding too many restart markers can
+     * adversely affect the compression ratio and performance.
+     *
+     * In typical JPEG images, an MCU (Minimum Coded Unit) is the minimum set of
+     * interleaved "data units" (8x8 DCT blocks if the image is lossy or samples
+     * if the image is lossless) necessary to represent at least one data unit
+     * per component.  (For example, an MCU in an interleaved lossy JPEG image
+     * that uses 4:2:2 subsampling consists of two luminance blocks followed by
+     * one block for each chrominance component.)  In single-component or
+     * non-interleaved JPEG images, an MCU is the same as a data unit.
+     *
+     * **Value**
+     * - the number of MCUs between each restart marker *[default: `0` (no
+     * restart markers)]*
+     *
+     * Setting this parameter to a non-zero value sets #TJPARAM_RESTARTROWS to 0.
+     */
+    TJPARAM_RESTARTBLOCKS,
+    /**
+     * JPEG restart marker interval in MCU rows [compression,
+     * lossless transformation]
+     *
+     * See #TJPARAM_RESTARTBLOCKS for a description of restart markers and MCUs.
+     * An MCU row is a row of MCUs spanning the entire width of the image.
+     *
+     * **Value**
+     * - the number of MCU rows between each restart marker *[default: `0` (no
+     * restart markers)]*
+     *
+     * Setting this parameter to a non-zero value sets #TJPARAM_RESTARTBLOCKS to
+     * 0.
+     */
+    TJPARAM_RESTARTROWS,
+    /**
+     * JPEG horizontal pixel density
+     *
+     * **Value**
+     * - The JPEG image has (decompression) or will have (compression) the
+     * specified horizontal pixel density *[default for compression: `1`]*.
+     *
+     * This value is stored in or read from the JPEG header.  It does not affect
+     * the contents of the JPEG image.  Note that this parameter is set by
+     * #tj3LoadImage8() when loading a Windows BMP file that contains pixel
+     * density information, and the value of this parameter is stored to a
+     * Windows BMP file by #tj3SaveImage8() if the value of #TJPARAM_DENSITYUNITS
+     * is `2`.
+     *
+     * This parameter has no effect unless the JPEG colorspace (see
+     * #TJPARAM_COLORSPACE) is #TJCS_YCbCr or #TJCS_GRAY.
+     *
+     * @see TJPARAM_DENSITYUNITS
+     */
+    TJPARAM_XDENSITY,
+    /**
+     * JPEG vertical pixel density
+     *
+     * **Value**
+     * - The JPEG image has (decompression) or will have (compression) the
+     * specified vertical pixel density *[default for compression: `1`]*.
+     *
+     * This value is stored in or read from the JPEG header.  It does not affect
+     * the contents of the JPEG image.  Note that this parameter is set by
+     * #tj3LoadImage8() when loading a Windows BMP file that contains pixel
+     * density information, and the value of this parameter is stored to a
+     * Windows BMP file by #tj3SaveImage8() if the value of #TJPARAM_DENSITYUNITS
+     * is `2`.
+     *
+     * This parameter has no effect unless the JPEG colorspace (see
+     * #TJPARAM_COLORSPACE) is #TJCS_YCbCr or #TJCS_GRAY.
+     *
+     * @see TJPARAM_DENSITYUNITS
+     */
+    TJPARAM_YDENSITY,
+    /**
+     * JPEG pixel density units
+     *
+     * **Value**
+     * - `0` *[default for compression]* The pixel density of the JPEG image is
+     * expressed (decompression) or will be expressed (compression) in unknown
+     * units.
+     * - `1` The pixel density of the JPEG image is expressed (decompression) or
+     * will be expressed (compression) in units of pixels/inch.
+     * - `2` The pixel density of the JPEG image is expressed (decompression) or
+     * will be expressed (compression) in units of pixels/cm.
+     *
+     * This value is stored in or read from the JPEG header.  It does not affect
+     * the contents of the JPEG image.  Note that this parameter is set by
+     * #tj3LoadImage8() when loading a Windows BMP file that contains pixel
+     * density information, and the value of this parameter is stored to a
+     * Windows BMP file by #tj3SaveImage8() if the value is `2`.
+     *
+     * This parameter has no effect unless the JPEG colorspace (see
+     * #TJPARAM_COLORSPACE) is #TJCS_YCbCr or #TJCS_GRAY.
+     *
+     * @see TJPARAM_XDENSITY, TJPARAM_YDENSITY
+     */
+    TJPARAM_DENSITYUNITS,
+    /**
+     * Memory limit for intermediate buffers
+     *
+     * **Value**
+     * - the maximum amount of memory (in megabytes) that will be allocated for
+     * intermediate buffers, which are used with progressive JPEG compression and
+     * decompression, Huffman table optimization, lossless JPEG compression, and
+     * lossless transformation *[default: `0` (no limit)]*
+     */
+    TJPARAM_MAXMEMORY,
+    /**
+     * Image size limit [decompression, lossless transformation, packed-pixel
+     * image loading]
+     *
+     * Setting this parameter causes the decompression, transform, and image
+     * loading functions to return an error if the number of pixels in the source
+     * image exceeds the specified limit.  This allows security-critical
+     * applications to guard against excessive memory consumption.
+     *
+     * **Value**
+     * - maximum number of pixels that the decompression, transform, and image
+     * loading functions will process *[default: `0` (no limit)]*
+     */
+    TJPARAM_MAXPIXELS,
+    /**
+     * Marker copying behavior [decompression, lossless transformation]
+     *
+     * **Value [lossless transformation]**
+     * - `0` Do not copy any extra markers (including comments, JFIF thumbnails,
+     * Exif data, and ICC profile data) from the source image to the destination
+     * image.
+     * - `1` Do not copy any extra markers, except comment (COM) markers, from
+     * the source image to the destination image.
+     * - `2` *[default]* Copy all extra markers from the source image to the
+     * destination image.
+     * - `3` Copy all extra markers, except ICC profile data (APP2 markers), from
+     * the source image to the destination image.
+     * - `4` Do not copy any extra markers, except ICC profile data (APP2
+     * markers), from the source image to the destination image.
+     *
+     * #TJXOPT_COPYNONE overrides this parameter for a particular transform.
+     * This parameter overrides any ICC profile that was previously associated
+     * with the TurboJPEG instance using #tj3SetICCProfile().
+     *
+     * When decompressing, #tj3DecompressHeader() extracts the ICC profile from a
+     * JPEG image if this parameter is set to `2` or `4`.  #tj3GetICCProfile()
+     * can then be used to retrieve the profile.
+     */
+    TJPARAM_SAVEMARKERS
 };
 
 
@@ -959,15 +959,15 @@ enum TJPARAM {
  * Error codes
  */
 enum TJERR {
-  /**
-   * The error was non-fatal and recoverable, but the destination image may
-   * still be corrupt.
-   */
-  TJERR_WARNING,
-  /**
-   * The error was fatal and non-recoverable.
-   */
-  TJERR_FATAL
+    /**
+     * The error was non-fatal and recoverable, but the destination image may
+     * still be corrupt.
+     */
+    TJERR_WARNING,
+    /**
+     * The error was fatal and non-recoverable.
+     */
+    TJERR_FATAL
 };
 
 
@@ -980,46 +980,46 @@ enum TJERR {
  * Transform operations for #tj3Transform()
  */
 enum TJXOP {
-  /**
-   * Do not transform the position of the image pixels.
-   */
-  TJXOP_NONE,
-  /**
-   * Flip (mirror) image horizontally.  This transform is imperfect if there
-   * are any partial iMCUs on the right edge (see #TJXOPT_PERFECT.)
-   */
-  TJXOP_HFLIP,
-  /**
-   * Flip (mirror) image vertically.  This transform is imperfect if there are
-   * any partial iMCUs on the bottom edge (see #TJXOPT_PERFECT.)
-   */
-  TJXOP_VFLIP,
-  /**
-   * Transpose image (flip/mirror along upper left to lower right axis.)  This
-   * transform is always perfect.
-   */
-  TJXOP_TRANSPOSE,
-  /**
-   * Transverse transpose image (flip/mirror along upper right to lower left
-   * axis.)  This transform is imperfect if there are any partial iMCUs in the
-   * image (see #TJXOPT_PERFECT.)
-   */
-  TJXOP_TRANSVERSE,
-  /**
-   * Rotate image clockwise by 90 degrees.  This transform is imperfect if
-   * there are any partial iMCUs on the bottom edge (see #TJXOPT_PERFECT.)
-   */
-  TJXOP_ROT90,
-  /**
-   * Rotate image 180 degrees.  This transform is imperfect if there are any
-   * partial iMCUs in the image (see #TJXOPT_PERFECT.)
-   */
-  TJXOP_ROT180,
-  /**
-   * Rotate image counter-clockwise by 90 degrees.  This transform is imperfect
-   * if there are any partial iMCUs on the right edge (see #TJXOPT_PERFECT.)
-   */
-  TJXOP_ROT270
+    /**
+     * Do not transform the position of the image pixels.
+     */
+    TJXOP_NONE,
+    /**
+     * Flip (mirror) image horizontally.  This transform is imperfect if there
+     * are any partial iMCUs on the right edge (see #TJXOPT_PERFECT.)
+     */
+    TJXOP_HFLIP,
+    /**
+     * Flip (mirror) image vertically.  This transform is imperfect if there are
+     * any partial iMCUs on the bottom edge (see #TJXOPT_PERFECT.)
+     */
+    TJXOP_VFLIP,
+    /**
+     * Transpose image (flip/mirror along upper left to lower right axis.)  This
+     * transform is always perfect.
+     */
+    TJXOP_TRANSPOSE,
+    /**
+     * Transverse transpose image (flip/mirror along upper right to lower left
+     * axis.)  This transform is imperfect if there are any partial iMCUs in the
+     * image (see #TJXOPT_PERFECT.)
+     */
+    TJXOP_TRANSVERSE,
+    /**
+     * Rotate image clockwise by 90 degrees.  This transform is imperfect if
+     * there are any partial iMCUs on the bottom edge (see #TJXOPT_PERFECT.)
+     */
+    TJXOP_ROT90,
+    /**
+     * Rotate image 180 degrees.  This transform is imperfect if there are any
+     * partial iMCUs in the image (see #TJXOPT_PERFECT.)
+     */
+    TJXOP_ROT180,
+    /**
+     * Rotate image counter-clockwise by 90 degrees.  This transform is imperfect
+     * if there are any partial iMCUs on the right edge (see #TJXOPT_PERFECT.)
+     */
+    TJXOP_ROT270
 };
 
 
@@ -1088,43 +1088,43 @@ enum TJXOP {
  * Scaling factor
  */
 typedef struct {
-  /**
-   * Numerator
-   */
-  int num;
-  /**
-   * Denominator
-   */
-  int denom;
+    /**
+     * Numerator
+     */
+    int num;
+    /**
+     * Denominator
+     */
+    int denom;
 } tjscalingfactor;
 
 /**
  * Cropping region
  */
 typedef struct {
-  /**
-   * The left boundary of the cropping region.  For lossless transformation,
-   * this must be evenly divisible by the iMCU width (see #tjMCUWidth) of the
-   * destination image.  For decompression, this must be evenly divisible by
-   * the scaled iMCU width of the source image.
-   */
-  int x;
-  /**
-   * The upper boundary of the cropping region.  For lossless transformation,
-   * this must be evenly divisible by the iMCU height (see #tjMCUHeight) of the
-   * destination image.
-   */
-  int y;
-  /**
-   * The width of the cropping region.  Setting this to 0 is the equivalent of
-   * setting it to the width of the source JPEG image - x.
-   */
-  int w;
-  /**
-   * The height of the cropping region.  Setting this to 0 is the equivalent of
-   * setting it to the height of the source JPEG image - y.
-   */
-  int h;
+    /**
+     * The left boundary of the cropping region.  For lossless transformation,
+     * this must be evenly divisible by the iMCU width (see #tjMCUWidth) of the
+     * destination image.  For decompression, this must be evenly divisible by
+     * the scaled iMCU width of the source image.
+     */
+    int x;
+    /**
+     * The upper boundary of the cropping region.  For lossless transformation,
+     * this must be evenly divisible by the iMCU height (see #tjMCUHeight) of the
+     * destination image.
+     */
+    int y;
+    /**
+     * The width of the cropping region.  Setting this to 0 is the equivalent of
+     * setting it to the width of the source JPEG image - x.
+     */
+    int w;
+    /**
+     * The height of the cropping region.  Setting this to 0 is the equivalent of
+     * setting it to the height of the source JPEG image - y.
+     */
+    int h;
 } tjregion;
 
 /**
@@ -1136,60 +1136,60 @@ static const tjregion TJUNCROPPED = { 0, 0, 0, 0 };
  * Lossless transform
  */
 typedef struct tjtransform {
-  /**
-   * Cropping region
-   */
-  tjregion r;
-  /**
-   * One of the @ref TJXOP "transform operations"
-   */
-  int op;
-  /**
-   * The bitwise OR of one of more of the @ref TJXOPT_ARITHMETIC
-   * "transform options"
-   */
-  int options;
-  /**
-   * Arbitrary data that can be accessed within the body of the callback
-   * function
-   */
-  void *data;
-  /**
-   * A callback function that can be used to modify the DCT coefficients after
-   * they are losslessly transformed but before they are transcoded to a new
-   * JPEG image.  This allows for custom filters or other transformations to be
-   * applied in the frequency domain.
-   *
-   * @param coeffs pointer to an array of transformed DCT coefficients.  (NOTE:
-   * This pointer is not guaranteed to be valid once the callback returns, so
-   * applications wishing to hand off the DCT coefficients to another function
-   * or library should make a copy of them within the body of the callback.)
-   *
-   * @param arrayRegion #tjregion structure containing the width and height of
-   * the array pointed to by `coeffs` as well as its offset relative to the
-   * component plane.  TurboJPEG implementations may choose to split each
-   * component plane into multiple DCT coefficient arrays and call the callback
-   * function once for each array.
-   *
-   * @param planeRegion #tjregion structure containing the width and height of
-   * the component plane to which `coeffs` belongs
-   *
-   * @param componentID ID number of the component plane to which `coeffs`
-   * belongs.  (Y, Cb, and Cr have, respectively, ID's of 0, 1, and 2 in
-   * typical JPEG images.)
-   *
-   * @param transformID ID number of the transformed image to which `coeffs`
-   * belongs.  This is the same as the index of the transform in the
-   * `transforms` array that was passed to #tj3Transform().
-   *
-   * @param transform a pointer to a #tjtransform structure that specifies the
-   * parameters and/or cropping region for this transform
-   *
-   * @return 0 if the callback was successful, or -1 if an error occurred.
-   */
-  int (*customFilter) (short *coeffs, tjregion arrayRegion,
-                       tjregion planeRegion, int componentID, int transformID,
-                       struct tjtransform *transform);
+    /**
+     * Cropping region
+     */
+    tjregion r;
+    /**
+     * One of the @ref TJXOP "transform operations"
+     */
+    int op;
+    /**
+     * The bitwise OR of one of more of the @ref TJXOPT_ARITHMETIC
+     * "transform options"
+     */
+    int options;
+    /**
+     * Arbitrary data that can be accessed within the body of the callback
+     * function
+     */
+    void *data;
+    /**
+     * A callback function that can be used to modify the DCT coefficients after
+     * they are losslessly transformed but before they are transcoded to a new
+     * JPEG image.  This allows for custom filters or other transformations to be
+     * applied in the frequency domain.
+     *
+     * @param coeffs pointer to an array of transformed DCT coefficients.  (NOTE:
+     * This pointer is not guaranteed to be valid once the callback returns, so
+     * applications wishing to hand off the DCT coefficients to another function
+     * or library should make a copy of them within the body of the callback.)
+     *
+     * @param arrayRegion #tjregion structure containing the width and height of
+     * the array pointed to by `coeffs` as well as its offset relative to the
+     * component plane.  TurboJPEG implementations may choose to split each
+     * component plane into multiple DCT coefficient arrays and call the callback
+     * function once for each array.
+     *
+     * @param planeRegion #tjregion structure containing the width and height of
+     * the component plane to which `coeffs` belongs
+     *
+     * @param componentID ID number of the component plane to which `coeffs`
+     * belongs.  (Y, Cb, and Cr have, respectively, ID's of 0, 1, and 2 in
+     * typical JPEG images.)
+     *
+     * @param transformID ID number of the transformed image to which `coeffs`
+     * belongs.  This is the same as the index of the transform in the
+     * `transforms` array that was passed to #tj3Transform().
+     *
+     * @param transform a pointer to a #tjtransform structure that specifies the
+     * parameters and/or cropping region for this transform
+     *
+     * @return 0 if the callback was successful, or -1 if an error occurred.
+     */
+    int (*customFilter) (short *coeffs, tjregion arrayRegion,
+                         tjregion planeRegion, int componentID, int transformID,
+                         struct tjtransform *transform);
 } tjtransform;
 
 /**
@@ -2488,8 +2488,8 @@ DLLEXPORT short *tj3LoadImage12(tjhandle handle, const char *filename,
  * buffer should be freed using #tj3Free().
  */
 DLLEXPORT unsigned short *tj3LoadImage16(tjhandle handle, const char *filename,
-                                         int *width, int align, int *height,
-                                         int *pixelFormat);
+        int *width, int align, int *height,
+        int *pixelFormat);
 
 
 /**
@@ -2705,9 +2705,9 @@ DLLEXPORT tjscalingfactor *tjGetScalingFactors(int *numscalingfactors);
 DLLEXPORT tjhandle tjInitTransform(void);
 
 DLLEXPORT int tjTransform(tjhandle handle, const unsigned char *jpegBuf,
-                            unsigned long jpegSize, int n,
-                            unsigned char **dstBufs, unsigned long *dstSizes,
-                            tjtransform *transforms, int flags);
+                          unsigned long jpegSize, int n,
+                          unsigned char **dstBufs, unsigned long *dstSizes,
+                          tjtransform *transforms, int flags);
 
 /* TurboJPEG 1.2.1+ */
 

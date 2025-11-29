@@ -9,42 +9,45 @@
 #include <string>
 #include <map>
 
-namespace peconv {
+namespace peconv
+{
+/**
+A base class for functions resolver.
+*/
+class t_function_resolver
+{
+public:
     /**
-    A base class for functions resolver.
+    Get the address (VA) of the function with the given name, from the given DLL.
+    \param func_name : the name of the function
+    \param lib_name : the name of the DLL
+    \return Virtual Address of the exported function
     */
-    class t_function_resolver {
-        public:
-        /**
-        Get the address (VA) of the function with the given name, from the given DLL.
-        \param func_name : the name of the function
-        \param lib_name : the name of the DLL
-        \return Virtual Address of the exported function
-        */
-        virtual FARPROC resolve_func(LPCSTR lib_name, LPCSTR func_name) = 0;
-    };
+    virtual FARPROC resolve_func(LPCSTR lib_name, LPCSTR func_name) = 0;
+};
+
+/**
+A default functions resolver, using LoadLibraryA and GetProcAddress.
+*/
+class default_func_resolver : t_function_resolver
+{
+public:
+    /**
+    Get the address (VA) of the function with the given name, from the given DLL, using LoadLibraryA and GetProcAddress.
+    \param func_name : the name of the function
+    \param lib_name : the name of the DLL
+    \return Virtual Address of the exported function
+    */
+    virtual FARPROC resolve_func(LPCSTR lib_name, LPCSTR func_name);
 
     /**
-    A default functions resolver, using LoadLibraryA and GetProcAddress.
+    Load the DLL using LoadLibraryA.
+    \param lib_name : the name of the DLL
+    \return base of the loaded module
     */
-    class default_func_resolver : t_function_resolver {
-        public:
-        /**
-        Get the address (VA) of the function with the given name, from the given DLL, using LoadLibraryA and GetProcAddress.
-        \param func_name : the name of the function
-        \param lib_name : the name of the DLL
-        \return Virtual Address of the exported function
-        */
-        virtual FARPROC resolve_func(LPCSTR lib_name, LPCSTR func_name);
+    virtual HMODULE load_library(LPCSTR lib_name);
 
-        /**
-        Load the DLL using LoadLibraryA.
-        \param lib_name : the name of the DLL
-        \return base of the loaded module
-        */
-        virtual HMODULE load_library(LPCSTR lib_name);
-
-        std::map<std::string, HMODULE> nameToModule;
-    };
+    std::map<std::string, HMODULE> nameToModule;
+};
 
 }; //namespace peconv

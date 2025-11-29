@@ -1,12 +1,13 @@
 
 #pragma once
 
-class App {
+class App
+{
 public:
-	App(){}
-	virtual ~App(){}
+    App() {}
+    virtual ~App() {}
 
-	virtual bool Initialize() = 0;
-	virtual bool Start(bool block) = 0;
-	virtual bool Stop() = 0;
+    virtual bool Initialize() = 0;
+    virtual bool Start(bool block) = 0;
+    virtual bool Stop() = 0;
 };

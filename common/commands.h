@@ -895,9 +895,9 @@ typedef struct DllExecuteInfo {
     int CallType;							// 调用方式
     char Name[32];							// DLL 名称
     char Md5[33];							// DLL MD5
-	int Pid;                                // 被注入进程ID
+    int Pid;                                // 被注入进程ID
     char Is32Bit;                           // 是否32位DLL
-	char Reseverd[18];
+    char Reseverd[18];
 } DllExecuteInfo;
 #pragma pack(pop)
 
@@ -971,10 +971,10 @@ inline std::string ToPekingTimeAsString(const time_t* t)
 
 inline std::string ToPekingDateTime(const time_t* t)
 {
-	auto pekingTime = ToPekingTime(t);
-	char buffer[20];
-	std::strftime(buffer, sizeof(buffer), "%Y%m%d%H%M%S", &pekingTime);
-	return buffer;
+    auto pekingTime = ToPekingTime(t);
+    char buffer[20];
+    std::strftime(buffer, sizeof(buffer), "%Y%m%d%H%M%S", &pekingTime);
+    return buffer;
 }
 
 typedef struct Validation {

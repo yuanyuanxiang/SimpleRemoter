@@ -29,10 +29,10 @@ BOOL CSplashDlg::Create(CWnd* pParent)
 {
     // 注册窗口类
     CString strClassName = AfxRegisterWndClass(
-        CS_HREDRAW | CS_VREDRAW,
-        ::LoadCursor(NULL, IDC_ARROW),
-        (HBRUSH)(COLOR_WINDOW + 1),
-        NULL);
+                               CS_HREDRAW | CS_VREDRAW,
+                               ::LoadCursor(NULL, IDC_ARROW),
+                               (HBRUSH)(COLOR_WINDOW + 1),
+                               NULL);
 
     // 计算居中位置
     int screenWidth = GetSystemMetrics(SM_CXSCREEN);
@@ -45,9 +45,8 @@ BOOL CSplashDlg::Create(CWnd* pParent)
     DWORD dwExStyle = WS_EX_TOPMOST | WS_EX_TOOLWINDOW;
 
     if (!CreateEx(dwExStyle, strClassName, _T(""), dwStyle,
-        x, y, SPLASH_WIDTH, SPLASH_HEIGHT,
-        pParent ? pParent->GetSafeHwnd() : NULL, NULL))
-    {
+                  x, y, SPLASH_WIDTH, SPLASH_HEIGHT,
+                  pParent ? pParent->GetSafeHwnd() : NULL, NULL)) {
         return FALSE;
     }
 
@@ -79,16 +78,14 @@ void CSplashDlg::SetProgress(int nPercent)
     if (nPercent < 0) nPercent = 0;
     if (nPercent > 100) nPercent = 100;
 
-    if (GetSafeHwnd())
-    {
+    if (GetSafeHwnd()) {
         PostMessage(WM_SPLASH_PROGRESS, nPercent, 0);
     }
 }
 
 void CSplashDlg::SetStatusText(const CString& strText)
 {
-    if (GetSafeHwnd())
-    {
+    if (GetSafeHwnd()) {
         CString* pText = new CString(strText);
         PostMessage(WM_SPLASH_STATUS, (WPARAM)pText, 0);
     }
@@ -102,15 +99,13 @@ void CSplashDlg::UpdateProgressDirect(int nPercent, const CString& strText)
     m_nProgress = nPercent;
     m_strStatus = strText;
 
-    if (GetSafeHwnd())
-    {
+    if (GetSafeHwnd()) {
         InvalidateRect(NULL, FALSE);
         UpdateWindow();
 
         // 处理待处理的消息，确保界面响应
         MSG msg;
-        while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-        {
+        while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
             TranslateMessage(&msg);
             DispatchMessage(&msg);
         }
@@ -119,8 +114,7 @@ void CSplashDlg::UpdateProgressDirect(int nPercent, const CString& strText)
 
 void CSplashDlg::Close()
 {
-    if (GetSafeHwnd())
-    {
+    if (GetSafeHwnd()) {
         PostMessage(WM_SPLASH_CLOSE, 0, 0);
     }
 }
@@ -136,8 +130,7 @@ LRESULT CSplashDlg::OnUpdateProgress(WPARAM wParam, LPARAM lParam)
 LRESULT CSplashDlg::OnUpdateStatus(WPARAM wParam, LPARAM lParam)
 {
     CString* pText = (CString*)wParam;
-    if (pText)
-    {
+    if (pText) {
         m_strStatus = *pText;
         delete pText;
         InvalidateRect(NULL, FALSE);
@@ -167,8 +160,7 @@ void CSplashDlg::OnPaint()
     CBitmap* pOldBitmap = memDC.SelectObject(&memBitmap);
 
     // 绘制背景 - 渐变效果
-    for (int y = 0; y < rect.Height(); y++)
-    {
+    for (int y = 0; y < rect.Height(); y++) {
         int r = 45 + (y * 20 / rect.Height());
         int g = 45 + (y * 20 / rect.Height());
         int b = 55 + (y * 25 / rect.Height());
@@ -187,8 +179,7 @@ void CSplashDlg::OnPaint()
     memDC.SelectObject(pOldPen);
 
     // 绘制图标
-    if (m_hIcon)
-    {
+    if (m_hIcon) {
         DrawIconEx(memDC.GetSafeHdc(), 30, 30, m_hIcon, 48, 48, 0, NULL, DI_NORMAL);
     }
 
@@ -243,15 +234,13 @@ void CSplashDlg::DrawProgressBar(CDC* pDC, const CRect& rect)
     pDC->SelectObject(pOldPen);
 
     // 计算进度条填充区域
-    if (m_nProgress > 0)
-    {
+    if (m_nProgress > 0) {
         CRect fillRect = rect;
         fillRect.DeflateRect(2, 2);
         fillRect.right = fillRect.left + (fillRect.Width() * m_nProgress / 100);
 
         // 渐变填充
-        for (int x = fillRect.left; x < fillRect.right; x++)
-        {
+        for (int x = fillRect.left; x < fillRect.right; x++) {
             float ratio = (float)(x - fillRect.left) / (float)fillRect.Width();
             int r = (int)(50 + ratio * 50);
             int g = (int)(150 + ratio * 50);

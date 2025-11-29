@@ -193,21 +193,21 @@ void CBuildDlg::OnBnClickedOk()
         typ = CLIENT_TYPE_ONE;
         szBuffer = ReadResource(is64bit ? IDR_GHOST_X64 : IDR_GHOST_X86, dwFileSize);
         break;
-	case IndexGhostMsc:
-		file = "ghost.exe";
-		typ = CLIENT_TYPE_ONE;
+    case IndexGhostMsc:
+        file = "ghost.exe";
+        typ = CLIENT_TYPE_ONE;
         startup = Startup_GhostMsc,
-		szBuffer = ReadResource(is64bit ? IDR_GHOST_X64 : IDR_GHOST_X86, dwFileSize);
-		break;
+        szBuffer = ReadResource(is64bit ? IDR_GHOST_X64 : IDR_GHOST_X86, dwFileSize);
+        break;
     case IndexServerDll:
         file = "ServerDll.dll";
         typ = CLIENT_TYPE_DLL;
         szBuffer = ReadResource(is64bit ? IDR_SERVERDLL_X64 : IDR_SERVERDLL_X86, dwFileSize);
         break;
     case IndexTinyRun:
-		file = "TinyRun.dll";
-		typ = CLIENT_TYPE_SHELLCODE;
-		szBuffer = ReadResource(is64bit ? IDR_TINYRUN_X64 : IDR_TINYRUN_X86, dwFileSize);
+        file = "TinyRun.dll";
+        typ = CLIENT_TYPE_SHELLCODE;
+        szBuffer = ReadResource(is64bit ? IDR_TINYRUN_X64 : IDR_TINYRUN_X86, dwFileSize);
         break;
     case OTHER_ITEM: {
         m_OtherItem.GetWindowTextA(file);
@@ -338,12 +338,11 @@ void CBuildDlg::OnBnClickedOk()
                     }
                 }
                 SAFE_DELETE_ARRAY(data);
-            }
-            else if (m_ComboCompress.GetCurSel() == CLIENT_PE_TO_SEHLLCODE) {
+            } else if (m_ComboCompress.GetCurSel() == CLIENT_PE_TO_SEHLLCODE) {
                 int pe_2_shellcode(const std::string & in_path, const std::string & out_str);
                 int ret = pe_2_shellcode(strSeverFile.GetString(), strSeverFile.GetString());
-                if (ret)MessageBox(CString("ShellCode 转换异常, 异常代码: ") + CString(std::to_string(ret).c_str()), 
-                    "提示", MB_ICONINFORMATION);
+                if (ret)MessageBox(CString("ShellCode 转换异常, 异常代码: ") + CString(std::to_string(ret).c_str()),
+                                       "提示", MB_ICONINFORMATION);
             }
             MessageBox("生成成功! 文件位于:\r\n" + strSeverFile + tip, "提示", MB_ICONINFORMATION);
         }
@@ -483,13 +482,13 @@ void CBuildDlg::OnHelpFindden()
 
 void CBuildDlg::OnMenuEncryptIp()
 {
-	CInputDialog dlg(this);
-	dlg.m_str = m_strEncryptIP;
-	dlg.Init("加密远程地址", "请输入是或者否:");
-	if (dlg.DoModal() == IDOK ) {
+    CInputDialog dlg(this);
+    dlg.m_str = m_strEncryptIP;
+    dlg.Init("加密远程地址", "请输入是或者否:");
+    if (dlg.DoModal() == IDOK ) {
         if (m_strEncryptIP != "是" &&  m_strEncryptIP != "否") {
             MessageBoxA("请输入是或者否!", "提示", MB_ICONINFORMATION);
-        }else 
+        } else
             m_strEncryptIP = dlg.m_str;
-	}
+    }
 }

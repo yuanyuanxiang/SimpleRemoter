@@ -98,8 +98,8 @@ public:
     double				m_wZoom=1, m_hZoom=1;
     bool				m_bMouseTracking = false;
 
-	CString             m_aviFile;
-	CBmpToAvi	        m_aviStream;
+    CString             m_aviFile;
+    CBmpToAvi	        m_aviStream;
     void OnTimer(UINT_PTR nIDEvent);
 
     bool Decode(LPBYTE Buffer, int size);
