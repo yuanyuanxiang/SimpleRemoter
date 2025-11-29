@@ -168,6 +168,7 @@
     <ClCompile Include="AudioManager.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="CaptureVideo.cpp" />
+    <ClCompile Include="clang_rt_compat.c" />
     <ClCompile Include="ClientDll.cpp" />
     <ClCompile Include="Common.cpp" />
     <ClCompile Include="FileManager.cpp" />
