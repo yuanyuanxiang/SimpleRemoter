@@ -44,6 +44,7 @@
 #include "CRcEditDlg.h"
 #include <thread>
 #include "common/file_upload.h"
+#include "SplashDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -1000,13 +1001,37 @@ bool IsFunctionReallyHooked(const char* dllName, const char* funcName)
     return false; // 未发现 Hook
 }
 
+// 关闭启动画面的辅助函数
+static void CloseSplash()
+{
+    CSplashDlg* pSplash = THIS_APP->GetSplash();
+    if (pSplash) {
+        THIS_APP->SetSplash(nullptr);
+        if (pSplash->GetSafeHwnd()) {
+            pSplash->DestroyWindow();
+        }
+        delete pSplash;
+    }
+}
+
 BOOL CMy2015RemoteDlg::OnInitDialog()
 {
+#define UPDATE_SPLASH(percent, text) \
+    do { \
+        CSplashDlg* pSplash = THIS_APP->GetSplash(); \
+        if (pSplash && pSplash->GetSafeHwnd()) { \
+            pSplash->UpdateProgressDirect(percent, _T(text)); \
+        } \
+    } while(0)
+
     AUTO_TICK(500);
     CDialogEx::OnInitDialog();
+
+    UPDATE_SPLASH(20, "正在初始化文件上传模块...");
     int ret = InitFileUpload(GetHMAC());
     g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, AfxGetInstanceHandle(), 0);
 
+    UPDATE_SPLASH(25, "正在初始化视频墙...");
     m_GroupList = {"default"};
     // Grid 容器
     int size = THIS_CFG.GetInt("settings", "VideoWallSize");
@@ -1018,6 +1043,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
         m_gridDlg->SetGrid(size, size);
     }
 
+    UPDATE_SPLASH(30, "正在验证配置...");
     if (!IsPwdHashValid()) {
         THIS_CFG.SetStr("settings", "superAdmin", "");
         THIS_CFG.SetStr("settings", "Password", "");
@@ -1033,7 +1059,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
         }
     }
 
-    // 将“关于...”菜单项添加到系统菜单中。
+    UPDATE_SPLASH(35, "正在加载客户端数据库...");
+    // 将"关于..."菜单项添加到系统菜单中。
     SetWindowText(_T("Yama"));
     LoadFromFile(m_ClientMap, GetDbPath());
 
@@ -1052,6 +1079,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
             pSysMenu->AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
         }
     }
+
+    UPDATE_SPLASH(40, "正在加载授权模块...");
     // 主控程序公网IP
     std::string ip = THIS_CFG.GetStr("settings", "master", "");
     int port = THIS_CFG.Get1Int("settings", "ghost", ';', 6543);
@@ -1084,10 +1113,18 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
             SAFE_DELETE_ARRAY(data);
         }
     }
+
+    UPDATE_SPLASH(50, "正在加载内核模块 (x86 DLL)...");
     g_2015RemoteDlg = this;
     m_ServerDLL[PAYLOAD_DLL_X86] = ReadKernelDll(false, true, master);
+
+    UPDATE_SPLASH(55, "正在加载内核模块 (x64 DLL)...");
     m_ServerDLL[PAYLOAD_DLL_X64] = ReadKernelDll(true, true, master);
+
+    UPDATE_SPLASH(60, "正在加载内核模块 (x86 Bin)...");
     m_ServerBin[PAYLOAD_DLL_X86] = ReadKernelDll(false, false, master);
+
+    UPDATE_SPLASH(65, "正在加载内核模块 (x64 Bin)...");
     m_ServerBin[PAYLOAD_DLL_X64] = ReadKernelDll(true, false, master);
 
     // 设置此对话框的图标。当应用程序主窗口不是对话框时，框架将自动
@@ -1095,18 +1132,19 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     SetIcon(m_hIcon, TRUE);			// 设置大图标
     SetIcon(m_hIcon, FALSE);		// 设置小图标
 
+    UPDATE_SPLASH(70, "正在创建工具栏...");
     // TODO: 在此添加额外的初始化代码
     isClosed = FALSE;
 
     CreateToolBar();
     InitControl();
 
+    UPDATE_SPLASH(75, "正在创建界面组件...");
     CreatStatusBar();
-
     CreateNotifyBar();
-
     CreateSolidMenu();
 
+    UPDATE_SPLASH(80, "正在加载配置...");
     std::string nPort = THIS_CFG.GetStr("settings", "ghost", "6543");
     m_nMaxConnection = 2;
     std::string pwd = THIS_CFG.GetStr("settings", "Password");
@@ -1148,10 +1186,13 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     SetTimer(TIMER_CHECK, max(1, tm) * 60 * 1000, NULL);
 #endif
 
+    UPDATE_SPLASH(85, "正在启动FRP代理...");
     m_hFRPThread = CreateThread(NULL, 0, StartFrpClient, this, NULL, NULL);
 
+    UPDATE_SPLASH(90, "正在启动网络服务...");
     // 最后启动SOCKET
     if (!Activate(nPort, m_nMaxConnection, method)) {
+        CloseSplash();
         OnCancel();
         return FALSE;
     }
@@ -1159,6 +1200,9 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     THIS_CFG.SetStr("settings", "SN", getDeviceID());
     THIS_CFG.SetStr("settings", "PwdHash", GetPwdHash());
     THIS_CFG.SetStr("settings", "MasterHash", GetMasterHash());
+
+    UPDATE_SPLASH(100, "启动完成!");
+    CloseSplash();
 
     return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }

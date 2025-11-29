@@ -57,6 +57,9 @@
     <ClCompile Include="CRcEditDlg.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Bmp2Video.cpp" />
+    <ClCompile Include="ServerServiceWrapper.cpp" />
+    <ClCompile Include="ServerSessionMonitor.cpp" />
+    <ClCompile Include="SplashDlg.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
@@ -127,6 +130,9 @@
     <ClInclude Include="..\..\common\obfs.h" />
     <ClInclude Include="..\..\common\file_upload.h" />
     <ClInclude Include="Bmp2Video.h" />
+    <ClInclude Include="ServerServiceWrapper.h" />
+    <ClInclude Include="ServerSessionMonitor.h" />
+    <ClInclude Include="SplashDlg.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />

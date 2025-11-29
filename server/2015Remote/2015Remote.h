@@ -1,25 +1,25 @@
-
-// 2015Remote.h : PROJECT_NAME Ó¦ÓÃ³ÌĞòµÄÖ÷Í·ÎÄ¼ş
+ï»¿
+// 2015Remote.h : PROJECT_NAME åº”ç”¨ç¨‹åºçš„ä¸»å¤´æ–‡ä»¶
 //
 
 #pragma once
 
 #ifndef __AFXWIN_H__
-#error "ÔÚ°üº¬´ËÎÄ¼şÖ®Ç°°üº¬¡°stdafx.h¡±ÒÔÉú³É PCH ÎÄ¼ş"
+#error "åœ¨åŒ…å«æ­¤æ–‡ä»¶ä¹‹å‰åŒ…å«â€œstdafx.hâ€ä»¥ç”Ÿæˆ PCH æ–‡ä»¶"
 #endif
 
-#include "resource.h"		// Ö÷·ûºÅ
+#include "resource.h"		// ä¸»ç¬¦å·
 #include "common/iniFile.h"
 #include "IOCPServer.h"
 #include "IOCPUDPServer.h"
 #include "IOCPKCPServer.h"
 
 // CMy2015RemoteApp:
-// ÓĞ¹Ø´ËÀàµÄÊµÏÖ£¬Çë²ÎÔÄ 2015Remote.cpp
+// æœ‰å…³æ­¤ç±»çš„å®ç°ï¼Œè¯·å‚é˜… 2015Remote.cpp
 //
 
 // ServerPair:
-// Ò»¶ÔSOCKET·şÎñ¶Ë£¬¼àÌı¶Ë¿Ú: Í¬Ê±¼àÌıTCPºÍUDP.
+// ä¸€å¯¹SOCKETæœåŠ¡ç«¯ï¼Œç›‘å¬ç«¯å£: åŒæ—¶ç›‘å¬TCPå’ŒUDP.
 class ServerPair
 {
 private:
@@ -38,11 +38,11 @@ public:
     BOOL StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort)
     {
         UINT ret1 = m_tcpServer->StartServer(NotifyProc, OffProc, uPort);
-        if (ret1) MessageBox(NULL, CString("Æô¶¯TCP·şÎñÊ§°Ü: ") + std::to_string(uPort).c_str()
-                                 + CString("¡£´íÎóÂë: ") + std::to_string(ret1).c_str(), "ÌáÊ¾", MB_ICONINFORMATION);
+        if (ret1) MessageBox(NULL, CString("å¯åŠ¨TCPæœåŠ¡å¤±è´¥: ") + std::to_string(uPort).c_str()
+                                 + CString("ã€‚é”™è¯¯ç : ") + std::to_string(ret1).c_str(), "æç¤º", MB_ICONINFORMATION);
         UINT ret2 = m_udpServer->StartServer(NotifyProc, OffProc, uPort);
-        if (ret2) MessageBox(NULL, CString("Æô¶¯UDP·şÎñÊ§°Ü: ") + std::to_string(uPort).c_str()
-                                 + CString("¡£´íÎóÂë: ") + std::to_string(ret2).c_str(), "ÌáÊ¾", MB_ICONINFORMATION);
+        if (ret2) MessageBox(NULL, CString("å¯åŠ¨UDPæœåŠ¡å¤±è´¥: ") + std::to_string(uPort).c_str()
+                                 + CString("ã€‚é”™è¯¯ç : ") + std::to_string(ret2).c_str(), "æç¤º", MB_ICONINFORMATION);
         return (ret1 == 0 || ret2 == 0);
     }
 
@@ -65,21 +65,29 @@ public:
     }
 };
 
+class CSplashDlg;  // å‰å‘å£°æ˜
+
 class CMy2015RemoteApp : public CWinApp
 {
 private:
-    // ÅäÖÃÎÄ¼ş¶ÁÈ¡Æ÷
+    // é…ç½®æ–‡ä»¶è¯»å–å™¨
     config* m_iniFile = nullptr;
-    // ·şÎñ¶ËÈİÆ÷ÁĞ±í
+    // æœåŠ¡ç«¯å¯¹è±¡åˆ—è¡¨
     std::vector<ServerPair*> m_iocpServer;
-    // »¥³âËø
+    // äº’æ–¥é‡
     HANDLE m_Mutex = nullptr;
+    // å¯åŠ¨ç”»é¢
+    CSplashDlg* m_pSplash = nullptr;
 
 public:
     CMy2015RemoteApp();
 
-    CImageList m_pImageList_Large;  //ÏµÍ³´óÍ¼±ê
-    CImageList m_pImageList_Small;	//ÏµÍ³Ğ¡Í¼±ê
+    CImageList m_pImageList_Large;  // ç³»ç»Ÿå¤§å›¾æ ‡
+    CImageList m_pImageList_Small;  // ç³»ç»Ÿå°å›¾æ ‡
+
+    // è·å–å¯åŠ¨ç”»é¢æŒ‡é’ˆ
+    CSplashDlg* GetSplash() const { return m_pSplash; }
+    void SetSplash(CSplashDlg* pSplash) { m_pSplash = pSplash; }
 
     virtual BOOL InitInstance();
 
@@ -88,8 +96,8 @@ public:
         return m_iniFile;
     }
 
-    // Æô¶¯¶à¸ö·şÎñ¶Ë£¬³É¹¦·µ»Ø0
-    // nPortÊ¾Àı: 6543;7543
+    // å¯åŠ¨å¤šä¸ªæœåŠ¡ç«¯ï¼ŒæˆåŠŸè¿”å›0
+    // nPortç¤ºä¾‹: 6543;7543
     UINT StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, const std::string& uPort, int maxConn, const std::string& method)
     {
         bool succeed = false;
@@ -111,7 +119,7 @@ public:
         return succeed ? 0 : -1;
     }
 
-    // ÊÍ·Å·şÎñ¶Ë SOCKET
+    // é‡Šæ”¾æœåŠ¡ç«¯ SOCKET
     void Destroy()
     {
         for (int i=0; i<m_iocpServer.size(); ++i) {
@@ -119,7 +127,7 @@ public:
         }
     }
 
-    // ÊÍ·Å·şÎñ¶ËÖ¸Õë
+    // é‡Šæ”¾æœåŠ¡ç«¯æŒ‡é’ˆ
     void Delete()
     {
         for (int i = 0; i < m_iocpServer.size(); ++i) {
@@ -128,7 +136,7 @@ public:
         m_iocpServer.clear();
     }
 
-    // ¸üĞÂ×î´óÁ¬½ÓÊı
+    // æ›´æ–°æœ€å¤§è¿æ¥æ•°
     void UpdateMaxConnection(int maxConn)
     {
         for (int i = 0; i < m_iocpServer.size(); ++i) {
