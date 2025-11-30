@@ -171,7 +171,7 @@ public:
 
     static BOOL CALLBACK EnumHwndsPrint(HWND hWnd, LPARAM lParam)
     {
-        AUTO_TICK_C(100);
+        AUTO_TICK_C(100, "");
         if (FALSE == PaintWindow(hWnd, (EnumHwndsPrintData*)lParam)) {
             char text[_MAX_PATH] = {};
             GetWindowText(hWnd, text, sizeof(text));

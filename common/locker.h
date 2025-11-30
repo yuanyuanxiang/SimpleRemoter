@@ -113,6 +113,7 @@ private:
     int line;
     int span;
     clock_t tick;
+    std::string tag;
     __inline clock_t now() const
     {
         return clock();
@@ -123,8 +124,8 @@ private:
     }
 
 public:
-    auto_tick(const char* file_name, const char* func_name, int line_no, int th = 5) :
-        file(file_name), func(func_name), line(line_no), span(th), tick(now()) { }
+    auto_tick(const char* file_name, const char* func_name, int line_no, int th = 5, const std::string &tag="") :
+        file(file_name), func(func_name), line(line_no), span(th), tick(now()), tag(tag) { }
     ~auto_tick()
     {
         stop();
@@ -136,7 +137,8 @@ public:
             int s(this->time());
             if (s > span) {
                 char buf[1024];
-                sprintf_s(buf, "%s(%d) : [%s] cost [%d]ms.\n", file, line, func, s);
+                tag.empty() ? sprintf_s(buf, "%s(%d) : [%s] cost [%d]ms.\n", file, line, func, s) : 
+                    sprintf_s(buf, "%s(%d) : [%s] cost [%d]ms. Tag= %s. \n", file, line, func, s, tag.c_str());
                 OutputDebugStringA(buf);
             }
             span = 0;
@@ -146,10 +148,10 @@ public:
 
 #ifdef _DEBUG
 // 智能计算当前函数的耗时，超时会打印
-#define AUTO_TICK(thresh) auto_tick TICK(__FILE__, __FUNCTION__, __LINE__, thresh)
+#define AUTO_TICK(thresh, tag) auto_tick TICK(__FILE__, __FUNCTION__, __LINE__, thresh, tag)
 #define STOP_TICK TICK.stop()
 #else
-#define AUTO_TICK(thresh)
+#define AUTO_TICK(thresh, tag)
 #define STOP_TICK
 #endif
 

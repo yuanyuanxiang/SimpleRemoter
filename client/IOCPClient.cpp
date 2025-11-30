@@ -509,7 +509,7 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
 // 关闭压缩开关时，SendWithSplit比较耗时。
 BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength, PkgMask* mask)  //Hello
 {
-    AUTO_TICK(40);
+    AUTO_TICK(40, "");
     assert (ulOriginalLength > 0);
     {
         int cmd = BYTE(szBuffer[0]);
@@ -559,7 +559,7 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength, P
 //  5    2   //  2  2  1
 BOOL IOCPClient::SendWithSplit(const char* src, ULONG srcSize, ULONG ulSplitLength, int cmd, PkgMask* mask)
 {
-    AUTO_TICK(50);
+    AUTO_TICK(50, std::to_string(cmd));
     if (src == nullptr || srcSize == 0 || ulSplitLength == 0)
         return FALSE;
     // Mask

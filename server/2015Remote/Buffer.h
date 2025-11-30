@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 #include <Windows.h>
 #include <string>
 
-// Buffer �����ü����Ļ���.
+// Buffer 带引用计数的缓存.
 class Buffer
 {
 private:
@@ -82,7 +82,7 @@ public:
     ~CBuffer(void);
 
     ULONG ReadBuffer(PBYTE Buffer, ULONG ulLength);
-    ULONG GetBufferLength(); // �����Ч���ݳ���
+    ULONG GetBufferLength(); // 返回有效数据长度
     ULONG GetBufferLen()
     {
         return GetBufferLength();
@@ -104,11 +104,19 @@ public:
     ULONG RemoveCompletedBuffer(ULONG ulLength);
     std::string Skip(ULONG ulPos);
 
+    // 获取可直接写入的缓冲区指针，用于零拷贝接收
+    // 返回可写入的起始地址，availableSize 返回可用空间大小
+    LPBYTE GetWriteBuffer(ULONG requiredSize, ULONG& availableSize);
+    // 确认写入完成，更新内部指针
+    VOID CommitWrite(ULONG writtenSize);
+
 protected:
     PBYTE	m_Base;
     PBYTE	m_Ptr;
     ULONG	m_ulMaxLength;
+    ULONG   m_ulReadOffset;  // 读取偏移，用于延迟数据移动
     CRITICAL_SECTION  m_cs;
-    ULONG DeAllocateBuffer(ULONG ulLength); // ˽��
-    ULONG ReAllocateBuffer(ULONG ulLength); // ˽��
+    ULONG DeAllocateBuffer(ULONG ulLength); // 私有
+    ULONG ReAllocateBuffer(ULONG ulLength); // 私有
+    VOID CompactBuffer();  // 压缩缓冲区，移除已读取数据
 };

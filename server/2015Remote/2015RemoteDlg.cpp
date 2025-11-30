@@ -798,7 +798,7 @@ LRESULT CMy2015RemoteDlg::OnShowMessage(WPARAM wParam, LPARAM lParam)
 
 VOID CMy2015RemoteDlg::ShowMessage(CString strType, CString strMsg)
 {
-    AUTO_TICK(200);
+    AUTO_TICK(200, "");
     CTime Timer = CTime::GetCurrentTime();
     CString strTime= Timer.Format("%H:%M:%S");
 
@@ -1026,7 +1026,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
         } \
     } while(0)
 
-    AUTO_TICK(500);
+    AUTO_TICK(500, "");
     CDialogEx::OnInitDialog();
 
     UPDATE_SPLASH(20, "正在初始化文件上传模块...");
@@ -2034,7 +2034,7 @@ std::vector<std::string> splitByNewline(const std::string& input)
 
 BOOL CMy2015RemoteDlg::Activate(const std::string& nPort,int nMaxConnection, const std::string& method)
 {
-    AUTO_TICK(200);
+    AUTO_TICK(200, "");
     UINT ret = 0;
     if ( (ret = THIS_APP->StartServer(NotifyProc, OfflineProc, nPort, nMaxConnection, method)) !=0 ) {
         Mprintf("======> StartServer Failed \n");
@@ -2081,8 +2081,8 @@ BOOL CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
     if (!g_2015RemoteDlg || g_2015RemoteDlg->isClosed) {
         return FALSE;
     }
-
-    AUTO_TICK(50);
+    int cmd = ContextObject->GetBYTE(0);
+    AUTO_TICK(50, std::to_string(cmd));
 
     if (ContextObject->hWnd) {
         if (!IsWindow(ContextObject->hWnd))
@@ -2537,6 +2537,8 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
             return;
         }
     }
+    ctx->CancelIO();
+    Mprintf("UpdateActiveWindow failed: %s \n", ctx->GetPeerName().c_str());
 }
 
 
