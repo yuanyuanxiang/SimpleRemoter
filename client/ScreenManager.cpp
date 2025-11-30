@@ -1,4 +1,4 @@
-// ScreenManager.cpp: implementation of the CScreenManager class.
+﻿// ScreenManager.cpp: implementation of the CScreenManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -112,7 +112,8 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 }
 
 bool CScreenManager::SwitchScreen() {
-    if (m_ScreenSpyObject == NULL || m_ScreenSpyObject->GetScreenCount() <= 1)
+    if (m_ScreenSpyObject == NULL || m_ScreenSpyObject->GetScreenCount() <= 1 || 
+        !m_ScreenSpyObject->IsMultiScreenEnabled())
         return false;
 	m_bIsWorking = FALSE;
 	DWORD s = WaitForSingleObject(m_hWorkThread, 3000);
