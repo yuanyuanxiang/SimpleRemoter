@@ -1,4 +1,4 @@
-// IOCPClient.cpp: implementation of the IOCPClient class.
+ï»¿// IOCPClient.cpp: implementation of the IOCPClient class.
 //
 //////////////////////////////////////////////////////////////////////
 #ifdef _WIN32
@@ -51,27 +51,27 @@ inline int WSAGetLastError()
 #ifndef _WIN32
 BOOL SetKeepAliveOptions(int socket, int nKeepAliveSec = 180)
 {
-    // ÆôÓÃ TCP ±£»îÑ¡Ïî
+    // å¯ç”¨ TCP ä¿æ´»é€‰é¡¹
     int enable = 1;
     if (setsockopt(socket, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(enable)) < 0) {
         Mprintf("Failed to enable TCP keep-alive\n");
         return FALSE;
     }
 
-    // ÉèÖÃ TCP_KEEPIDLE (3·ÖÖÓ¿ÕÏĞºó¿ªÊ¼·¢ËÍ keep-alive °ü)
+    // è®¾ç½® TCP_KEEPIDLE (3åˆ†é’Ÿç©ºé—²åå¼€å§‹å‘é€ keep-alive åŒ…)
     if (setsockopt(socket, IPPROTO_TCP, TCP_KEEPIDLE, &nKeepAliveSec, sizeof(nKeepAliveSec)) < 0) {
         Mprintf("Failed to set TCP_KEEPIDLE\n");
         return FALSE;
     }
 
-    // ÉèÖÃ TCP_KEEPINTVL (5ÃëµÄÖØÊÔ¼ä¸ô)
-    int keepAliveInterval = 5;  // 5Ãë
+    // è®¾ç½® TCP_KEEPINTVL (5ç§’çš„é‡è¯•é—´éš”)
+    int keepAliveInterval = 5;  // 5ç§’
     if (setsockopt(socket, IPPROTO_TCP, TCP_KEEPINTVL, &keepAliveInterval, sizeof(keepAliveInterval)) < 0) {
         Mprintf("Failed to set TCP_KEEPINTVL\n");
         return FALSE;
     }
 
-    // ÉèÖÃ TCP_KEEPCNT (×î¶à5´ÎÌ½²â°üºóÈÏÎªÁ¬½Ó¶Ï¿ª)
+    // è®¾ç½® TCP_KEEPCNT (æœ€å¤š5æ¬¡æ¢æµ‹åŒ…åè®¤ä¸ºè¿æ¥æ–­å¼€)
     int keepAliveProbes = 5;
     if (setsockopt(socket, IPPROTO_TCP, TCP_KEEPCNT, &keepAliveProbes, sizeof(keepAliveProbes)) < 0) {
         Mprintf("Failed to set TCP_KEEPCNT\n");
@@ -169,7 +169,7 @@ IOCPClient::~IOCPClient()
     SAFE_DELETE(m_Encoder);
 }
 
-// ´ÓÓòÃû»ñÈ¡IPµØÖ·
+// ä»åŸŸåè·å–IPåœ°å€
 std::string GetIPAddress(const char *hostName)
 {
 #ifdef _WIN32
@@ -180,9 +180,9 @@ std::string GetIPAddress(const char *hostName)
     struct hostent *host = gethostbyname(hostName);
 #ifdef _DEBUG
     if (host == NULL) return "";
-    Mprintf("´ËÓòÃûµÄIPÀàĞÍÎª: %s.\n", host->h_addrtype == AF_INET ? "IPV4" : "IPV6");
+    Mprintf("æ­¤åŸŸåçš„IPç±»å‹ä¸º: %s.\n", host->h_addrtype == AF_INET ? "IPV4" : "IPV6");
     for (int i = 0; host->h_addr_list[i]; ++i)
-        Mprintf("»ñÈ¡µÄµÚ%d¸öIP: %s\n", i+1, inet_ntoa(*(struct in_addr*)host->h_addr_list[i]));
+        Mprintf("è·å–çš„ç¬¬%dä¸ªIP: %s\n", i+1, inet_ntoa(*(struct in_addr*)host->h_addr_list[i]));
 #endif
     if (host == NULL || host->h_addr_list == NULL)
         return "";
@@ -205,18 +205,18 @@ std::string GetIPAddress(const char *hostName)
 
     Mprintf("IP Address: %s \n", ip);
 
-    freeaddrinfo(res); // ²»ÒªÍü¼ÇÊÍ·ÅµØÖ·ĞÅÏ¢
+    freeaddrinfo(res); // ä¸è¦å¿˜è®°é‡Šæ”¾åœ°å€ä¿¡æ¯
     return ip;
 #endif
 }
 
 BOOL ConnectWithTimeout(SOCKET sock, SOCKADDR *addr, int timeout_sec=5)
 {
-    // ÁÙÊ±ÉèÎª·Ç×èÈû
+    // ä¸´æ—¶è®¾ä¸ºéé˜»å¡
     u_long mode = 1;
     ioctlsocket(sock, FIONBIO, &mode);
 
-    // ·¢ÆğÁ¬½Ó£¨·Ç×èÈû£©
+    // å‘èµ·è¿æ¥ï¼ˆéé˜»å¡ï¼‰
     int ret = connect(sock, addr, sizeof(*addr));
     if (ret == SOCKET_ERROR) {
         int err = WSAGetLastError();
@@ -225,7 +225,7 @@ BOOL ConnectWithTimeout(SOCKET sock, SOCKADDR *addr, int timeout_sec=5)
         }
     }
 
-    // µÈ´ı¿ÉĞ´£¨´ú±íÁ¬½ÓÍê³É»òÊ§°Ü£©
+    // ç­‰å¾…å¯å†™ï¼ˆä»£è¡¨è¿æ¥å®Œæˆæˆ–å¤±è´¥ï¼‰
     fd_set writefds;
     FD_ZERO(&writefds);
     FD_SET(sock, &writefds);
@@ -236,10 +236,10 @@ BOOL ConnectWithTimeout(SOCKET sock, SOCKADDR *addr, int timeout_sec=5)
 
     ret = select(0, NULL, &writefds, NULL, &tv);
     if (ret <= 0 || !FD_ISSET(sock, &writefds)) {
-        return FALSE; // ³¬Ê±»ò³ö´í
+        return FALSE; // è¶…æ—¶æˆ–å‡ºé”™
     }
 
-    // ¼ì²éÁ¬½ÓÊÇ·ñÕæÕı³É¹¦
+    // æ£€æŸ¥è¿æ¥æ˜¯å¦çœŸæ­£æˆåŠŸ
     int error = 0;
     int len = sizeof(error);
     getsockopt(sock, SOL_SOCKET, SO_ERROR, (char*)&error, &len);
@@ -247,7 +247,7 @@ BOOL ConnectWithTimeout(SOCKET sock, SOCKADDR *addr, int timeout_sec=5)
         return FALSE;
     }
 
-    // ¸Ä»Ø×èÈûÄ£Ê½
+    // æ”¹å›é˜»å¡æ¨¡å¼
     mode = 0;
     ioctlsocket(sock, FIONBIO, &mode);
 
@@ -263,7 +263,7 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
     m_masker->SetServer(m_sCurIP.c_str());
     unsigned short port = m_nHostPort;
 
-    m_sClientSocket = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);    //´«Êä²ã
+    m_sClientSocket = socket(AF_INET,SOCK_STREAM, IPPROTO_TCP);    //ä¼ è¾“å±‚
 
     if (m_sClientSocket == SOCKET_ERROR) {
         return FALSE;
@@ -284,45 +284,57 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 #else
     m_ServerAddr.sin_family = AF_INET;
     m_ServerAddr.sin_port = htons(port);
-    // ÈôszServerIP·ÇÊı×Ö¿ªÍ·£¬ÔòÈÏÎªÊÇÓòÃû£¬Ğè½øĞĞIP×ª»»
-    // Ê¹ÓÃ inet_pton Ìæ´ú inet_addr (inet_pton ¿ÉÒÔÖ§³Ö IPv4 ºÍ IPv6)
+    // è‹¥szServerIPéæ•°å­—å¼€å¤´ï¼Œåˆ™è®¤ä¸ºæ˜¯åŸŸåï¼Œéœ€è¿›è¡ŒIPè½¬æ¢
+    // ä½¿ç”¨ inet_pton æ›¿ä»£ inet_addr (inet_pton å¯ä»¥æ”¯æŒ IPv4 å’Œ IPv6)
     if (inet_pton(AF_INET, m_sCurIP.c_str(), &m_ServerAddr.sin_addr) <= 0) {
         Mprintf("Invalid address or address not supported\n");
         return false;
     }
 
-    // ´´½¨Ì×½Ó×Ö
+    // åˆ›å»ºå¥—æ¥å­—
     if (m_sClientSocket == -1) {
         Mprintf("Failed to create socket\n");
         return false;
     }
 
-    // Á¬½Óµ½·şÎñÆ÷
+    // è¿æ¥åˆ°æœåŠ¡å™¨
     if (connect(m_sClientSocket, (struct sockaddr*)&m_ServerAddr, sizeof(m_ServerAddr)) == -1) {
         Mprintf("Connection failed\n");
         close(m_sClientSocket);
-        m_sClientSocket = -1;  // ±ê¼ÇÌ×½Ó×ÖÎŞĞ§
+        m_sClientSocket = -1;  // æ ‡è®°å¥—æ¥å­—æ— æ•ˆ
         return false;
     }
 #endif
 
     const int chOpt = 1; // True
-    // Set KeepAlive ¿ªÆô±£»î»úÖÆ, ·ÀÖ¹·şÎñ¶Ë²úÉúËÀÁ¬½Ó
+
+    // å¯ç”¨ TCP_NODELAY ç¦ç”¨ Nagle ç®—æ³•ï¼Œå‡å°‘å°åŒ…å»¶è¿Ÿ
+    int nodelay = 1;
+    setsockopt(m_sClientSocket, IPPROTO_TCP, TCP_NODELAY, (char*)&nodelay, sizeof(nodelay));
+
+    // å¢å¤§å‘é€ç¼“å†²åŒºåˆ° 256KB
+    int sendBufSize = 256 * 1024;
+    setsockopt(m_sClientSocket, SOL_SOCKET, SO_SNDBUF, (char*)&sendBufSize, sizeof(sendBufSize));
+
+    // Set KeepAlive å¼€å¯ä¿æ´»æœºåˆ¶, é˜²æ­¢æœåŠ¡ç«¯äº§ç”Ÿæ­»è¿æ¥
     if (setsockopt(m_sClientSocket, SOL_SOCKET, SO_KEEPALIVE,
                    (char *)&chOpt, sizeof(chOpt)) == 0) {
 #ifdef _WIN32
-        // ÉèÖÃ³¬Ê±ÏêÏ¸ĞÅÏ¢
+        // è®¾ç½®è¶…æ—¶è¯¦ç»†ä¿¡æ¯
         tcp_keepalive	klive;
-        klive.onoff = 1; // ÆôÓÃ±£»î
-        klive.keepalivetime = 1000 * 60 * 3; // 3·ÖÖÓ³¬Ê± Keep Alive
-        klive.keepaliveinterval = 1000 * 5;  // ÖØÊÔ¼ä¸ôÎª5Ãë Resend if No-Reply
+        klive.onoff = 1; // å¯ç”¨ä¿æ´»
+        klive.keepalivetime = 1000 * 60 * 3; // 3åˆ†é’Ÿè¶…æ—¶ Keep Alive
+        klive.keepaliveinterval = 1000 * 5;  // é‡è¯•é—´éš”ä¸º5ç§’ Resend if No-Reply
         WSAIoctl(m_sClientSocket, SIO_KEEPALIVE_VALS,&klive,sizeof(tcp_keepalive),
                  NULL,	0,(unsigned long *)&chOpt,0,NULL);
 #else
-        // ÉèÖÃ±£»îÑ¡Ïî
+        // è®¾ç½®ä¿æ´»é€‰é¡¹
         SetKeepAliveOptions(m_sClientSocket);
 #endif
     }
+    m_bConnected = TRUE;
+    Mprintf("è¿æ¥æœåŠ¡ç«¯æˆåŠŸ.\n");
+
     if (m_hWorkThread == NULL) {
 #ifdef _WIN32
         m_hWorkThread = (HANDLE)__CreateThread(NULL, 0, WorkThreadProc,(LPVOID)this, 0, NULL);
@@ -332,8 +344,7 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
         m_hWorkThread = (HANDLE)pthread_create(&id, nullptr, (void* (*)(void*))IOCPClient::WorkThreadProc, this);
 #endif
     }
-    Mprintf("Á¬½Ó·şÎñ¶Ë³É¹¦.\n");
-    m_bConnected = TRUE;
+
     return TRUE;
 }
 
@@ -345,7 +356,7 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
     struct timeval tm = { 2, 0 };
     CBuffer m_CompressedBuffer;
 
-    while (This->IsRunning()) { // Ã»ÓĞÍË³ö£¬¾ÍÒ»Ö±ÏİÔÚÕâ¸öÑ­»·ÖĞ
+    while (This->IsRunning()) { // æ²¡æœ‰é€€å‡ºï¼Œå°±ä¸€ç›´é™·åœ¨è¿™ä¸ªå¾ªç¯ä¸­
         if(!This->IsConnected()) {
             Sleep(50);
             continue;
@@ -361,7 +372,7 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
             if (iRet == 0) Sleep(50);
             else {
                 Mprintf("[select] return %d, GetLastError= %d. \n", iRet, WSAGetLastError());
-                This->Disconnect(); //½ÓÊÕ´íÎó´¦Àí
+                This->Disconnect(); //æ¥æ”¶é”™è¯¯å¤„ç†
                 m_CompressedBuffer.ClearBuffer();
                 if(This->m_exit_while_disconnect)
                     break;
@@ -387,21 +398,21 @@ bool IOCPClient::ProcessRecvData(CBuffer *m_CompressedBuffer, char *szBuffer, in
     if (iReceivedLength <= 0) {
         int a = WSAGetLastError();
         Mprintf("[recv] return %d, GetLastError= %d. \n", iReceivedLength, a);
-        Disconnect(); //½ÓÊÕ´íÎó´¦Àí
+        Disconnect(); //æ¥æ”¶é”™è¯¯å¤„ç†
         m_CompressedBuffer->ClearBuffer();
         if (m_exit_while_disconnect)
             return false;
     } else {
         szBuffer[iReceivedLength] = 0;
-        //ÕıÈ·½ÓÊÕ¾Íµ÷ÓÃOnRead´¦Àí,×ªµ½OnRead
+        //æ­£ç¡®æ¥æ”¶å°±è°ƒç”¨OnReadå¤„ç†,è½¬åˆ°OnRead
         OnServerReceiving(m_CompressedBuffer, szBuffer, iReceivedLength);
     }
     return true;
 }
 
-// ´øÒì³£´¦ÀíµÄÊı¾İ´¦ÀíÂß¼­:
-// Èç¹û f Ö´ĞĞÊ± Ã»ÓĞ´¥·¢ÏµÍ³Òì³££¨Èç·ÃÎÊ³åÍ»£©£¬·µ»Ø 0
-// Èç¹û f Ö´ĞĞ¹ı³ÌÖĞ Å×³öÁËÒì³££¨±ÈÈç¿ÕÖ¸Õë·ÃÎÊ£©£¬½«±» __except ²¶»ñ£¬·µ»ØÒì³£Âë£¨Èç 0xC0000005 ±íÊ¾·ÃÎÊÎ¥¹æ£©
+// å¸¦å¼‚å¸¸å¤„ç†çš„æ•°æ®å¤„ç†é€»è¾‘:
+// å¦‚æœ f æ‰§è¡Œæ—¶ æ²¡æœ‰è§¦å‘ç³»ç»Ÿå¼‚å¸¸ï¼ˆå¦‚è®¿é—®å†²çªï¼‰ï¼Œè¿”å› 0
+// å¦‚æœ f æ‰§è¡Œè¿‡ç¨‹ä¸­ æŠ›å‡ºäº†å¼‚å¸¸ï¼ˆæ¯”å¦‚ç©ºæŒ‡é’ˆè®¿é—®ï¼‰ï¼Œå°†è¢« __except æ•è·ï¼Œè¿”å›å¼‚å¸¸ç ï¼ˆå¦‚ 0xC0000005 è¡¨ç¤ºè®¿é—®è¿è§„ï¼‰
 int DataProcessWithSEH(DataProcessCB f, void* manager, LPBYTE data, ULONG len)
 {
     __try {
@@ -417,12 +428,12 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
 {
     try {
         assert (ulLength > 0);
-        //ÒÔÏÂ½Óµ½Êı¾İ½øĞĞ½âÑ¹Ëõ
+        //ä»¥ä¸‹æ¥åˆ°æ•°æ®è¿›è¡Œè§£å‹ç¼©
         m_CompressedBuffer->WriteBuffer((LPBYTE)szBuffer, ulLength);
         int FLAG_LENGTH = m_Encoder->GetFlagLen();
         int HDR_LENGTH = m_Encoder->GetHeadLen();
 
-        //¼ì²âÊı¾İÊÇ·ñ´óÓÚÊı¾İÍ·´óĞ¡ Èç¹û²»ÊÇÄÇ¾Í²»ÊÇÕıÈ·µÄÊı¾İ
+        //æ£€æµ‹æ•°æ®æ˜¯å¦å¤§äºæ•°æ®å¤´å¤§å° å¦‚æœä¸æ˜¯é‚£å°±ä¸æ˜¯æ­£ç¡®çš„æ•°æ®
         while (m_CompressedBuffer->GetBufferLength() > HDR_LENGTH) {
             // UnMask
             char* src = (char*)m_CompressedBuffer->GetBuffer();
@@ -437,7 +448,7 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
             char szPacketFlag[32] = {0};
             src = (char*)m_CompressedBuffer->GetBuffer();
             CopyMemory(szPacketFlag, src, FLAG_LENGTH);
-            //ÅĞ¶ÏÊı¾İÍ·
+            //åˆ¤æ–­æ•°æ®å¤´
             HeaderEncType encType = HeaderEncUnknown;
             FlagType flagType = CheckHead(szPacketFlag, encType);
             if (flagType == FLAG_UNKNOWN) {
@@ -450,12 +461,12 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
             ULONG ulPackTotalLength = 0;
             CopyMemory(&ulPackTotalLength, m_CompressedBuffer->GetBuffer(FLAG_LENGTH), sizeof(ULONG));
 
-            //--- Êı¾İµÄ´óĞ¡ÕıÈ·ÅĞ¶Ï
+            //--- æ•°æ®çš„å¤§å°æ­£ç¡®åˆ¤æ–­
             ULONG len = m_CompressedBuffer->GetBufferLength();
             if (ulPackTotalLength && len >= ulPackTotalLength) {
                 ULONG ulOriginalLength = 0;
 
-                m_CompressedBuffer->ReadBuffer((PBYTE)szPacketFlag, FLAG_LENGTH);//¶ÁÈ¡¸÷ÖÖÍ·²¿ shine
+                m_CompressedBuffer->ReadBuffer((PBYTE)szPacketFlag, FLAG_LENGTH);//è¯»å–å„ç§å¤´éƒ¨ shine
                 m_CompressedBuffer->ReadBuffer((PBYTE) &ulPackTotalLength, sizeof(ULONG));
                 m_CompressedBuffer->ReadBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG));
 
@@ -469,9 +480,9 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
                 m_Encoder->Decode(CompressedBuffer, ulCompressedLength, (LPBYTE)szPacketFlag);
                 size_t	iRet = uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
 
-                if (Z_SUCCESS(iRet)) { //Èç¹û½âÑ¹³É¹¦
-                    //½âÑ¹ºÃµÄÊı¾İºÍ³¤¶È´«µİ¸ø¶ÔÏóManager½øĞĞ´¦Àí ×¢ÒâÕâÀïÊÇÓÃÁË¶àÌ¬
-                    //ÓÉÓÚm_pManagerÖĞµÄ×ÓÀà²»Ò»ÑùÔì³Éµ÷ÓÃµÄOnReceiveº¯Êı²»Ò»Ñù
+                if (Z_SUCCESS(iRet)) { //å¦‚æœè§£å‹æˆåŠŸ
+                    //è§£å‹å¥½çš„æ•°æ®å’Œé•¿åº¦ä¼ é€’ç»™å¯¹è±¡Managerè¿›è¡Œå¤„ç† æ³¨æ„è¿™é‡Œæ˜¯ç”¨äº†å¤šæ€
+                    //ç”±äºm_pManagerä¸­çš„å­ç±»ä¸ä¸€æ ·é€ æˆè°ƒç”¨çš„OnReceiveå‡½æ•°ä¸ä¸€æ ·
                     int ret = DataProcessWithSEH(m_DataProcess, m_Manager, DeCompressedBuffer, ulOriginalLength);
                     if (ret) {
                         Mprintf("[ERROR] DataProcessWithSEH return exception code: [0x%08X]\n", ret);
@@ -494,17 +505,17 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
 }
 
 
-// Ïòserver·¢ËÍÊı¾İ£¬Ñ¹Ëõ²Ù×÷±È½ÏºÄÊ±¡£
-// ¹Ø±ÕÑ¹Ëõ¿ª¹ØÊ±£¬SendWithSplit±È½ÏºÄÊ±¡£
+// å‘serverå‘é€æ•°æ®ï¼Œå‹ç¼©æ“ä½œæ¯”è¾ƒè€—æ—¶ã€‚
+// å…³é—­å‹ç¼©å¼€å…³æ—¶ï¼ŒSendWithSplitæ¯”è¾ƒè€—æ—¶ã€‚
 BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength, PkgMask* mask)  //Hello
 {
     AUTO_TICK(40);
     assert (ulOriginalLength > 0);
     {
         int cmd = BYTE(szBuffer[0]);
-        //³ËÒÔ1.001ÊÇÒÔ×î»µµÄÒ²¾ÍÊÇÊı¾İÑ¹ËõºóÕ¼ÓÃµÄÄÚ´æ¿Õ¼äºÍÔ­ÏÈÒ»Ñù +12
-        //·ÀÖ¹»º³åÇøÒç³ö//  HelloWorld  10   22
-        //Êı¾İÑ¹Ëõ Ñ¹ËõËã·¨ Î¢ÈíÌá¹©
+        //ä¹˜ä»¥1.001æ˜¯ä»¥æœ€åçš„ä¹Ÿå°±æ˜¯æ•°æ®å‹ç¼©åå ç”¨çš„å†…å­˜ç©ºé—´å’ŒåŸå…ˆä¸€æ · +12
+        //é˜²æ­¢ç¼“å†²åŒºæº¢å‡º//  HelloWorld  10   22
+        //æ•°æ®å‹ç¼© å‹ç¼©ç®—æ³• å¾®è½¯æä¾›
         //nSize   = 436
         //destLen = 448
 #if USING_ZLIB
@@ -540,7 +551,7 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength, P
         if (CompressedBuffer != buf) delete [] CompressedBuffer;
 
         STOP_TICK;
-        // ·Ö¿é·¢ËÍ
+        // åˆ†å—å‘é€
         return SendWithSplit((char*)m_WriteBuffer.GetBuffer(), m_WriteBuffer.GetBufferLength(), MAX_SEND_BUFFER, cmd, mask);
     }
 }
@@ -560,16 +571,26 @@ BOOL IOCPClient::SendWithSplit(const char* src, ULONG srcSize, ULONG ulSplitLeng
         Mprintf("SendWithSplit: %d bytes large packet may causes issues.\n", srcSize);
     }
     bool         isFail = false;
-    int			 iReturn = 0;   //ÕæÕı·¢ËÍÁË¶àÉÙ
+    int			 iReturn = 0;   //çœŸæ­£å‘é€äº†å¤šå°‘
     const char*  Travel = szBuffer;
     int			 i = 0;
     int			 ulSended = 0;
     const int	 ulSendRetry = 15;
-    // ÒÀ´Î·¢ËÍ
-    for (i = ulLength; i >= ulSplitLength; i -= ulSplitLength) {
+
+    // å¤§åŒ…ä¼˜åŒ–ï¼šå½“æ•°æ®é‡è¶…è¿‡é˜ˆå€¼æ—¶ï¼Œå°è¯•ä¸€æ¬¡æ€§å‘é€æ›´å¤§çš„å—
+    // SO_SNDBUF å·²è®¾ä¸º 256KBï¼Œå¯ä»¥å°è¯•ä¸€æ¬¡å‘é€æ›´å¤šæ•°æ®
+    const ULONG LARGE_PACKET_THRESHOLD = 256 * 1024;  // 256KB
+    ULONG actualSplitLength = ulSplitLength;
+    if (ulLength >= LARGE_PACKET_THRESHOLD) {
+        // å¤§åŒ…ä½¿ç”¨æ›´å¤§çš„åˆ†å—ï¼Œå‡å°‘ç³»ç»Ÿè°ƒç”¨æ¬¡æ•°
+        actualSplitLength = 256 * 1024;  // ä¸€æ¬¡å‘é€256KB
+    }
+
+    // ä¾æ¬¡å‘é€
+    for (i = ulLength; i >= (int)actualSplitLength; i -= actualSplitLength) {
         int j = 0;
         for (; j < ulSendRetry; ++j) {
-            iReturn = SendTo(Travel, ulSplitLength, 0);
+            iReturn = SendTo(Travel, actualSplitLength, 0);
             if (iReturn > 0) {
                 break;
             }
@@ -580,9 +601,9 @@ BOOL IOCPClient::SendWithSplit(const char* src, ULONG srcSize, ULONG ulSplitLeng
         }
 
         ulSended += iReturn;
-        Travel += ulSplitLength;
+        Travel += actualSplitLength;
     }
-    // ·¢ËÍ×îºóµÄ²¿·Ö
+    // å‘é€æœ€åçš„éƒ¨åˆ†
     if (!isFail && i>0) { //1024
         int j = 0;
         for (; j < ulSendRetry; j++) {

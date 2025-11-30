@@ -1,4 +1,4 @@
-// IOCPClient.h: interface for the IOCPClient class.
+ï»¿// IOCPClient.h: interface for the IOCPClient class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -22,7 +22,7 @@
 #include "IOCPBase.h"
 
 #define MAX_RECV_BUFFER  1024*32
-#define MAX_SEND_BUFFER  1024*32
+#define MAX_SEND_BUFFER  1024*128  // å¢å¤§åˆ†å—å¤§å°ä»¥æé«˜å‘é€æ•ˆç‡
 
 enum { S_STOP = 0, S_RUN, S_END };
 
@@ -115,7 +115,7 @@ public:
             Mprintf("IOCPManager DataProcess on NULL ptr: %d\n", unsigned(szBuffer[0]));
             return FALSE;
         }
-        // µÈ´ı×ÓÀà×¼±¸¾ÍĞ÷²ÅÄÜ´¦ÀíÊı¾İ, 1Ãë×ã¹»ÁË
+        // ç­‰å¾…å­ç±»å‡†å¤‡å°±ç»ªæ‰èƒ½å¤„ç†æ•°æ®, 1ç§’è¶³å¤Ÿäº†
         int i = 0;
         for (; i < 1000 && !m_Manager->IsReady(); ++i)
             Sleep(1);
@@ -212,11 +212,11 @@ public:
 protected:
     virtual int ReceiveData(char* buffer, int bufSize, int flags)
     {
-        // TCP°æ±¾µ÷ÓÃ recv
+        // TCPç‰ˆæœ¬è°ƒç”¨ recv
         return recv(m_sClientSocket, buffer, bufSize - 1, 0);
     }
     virtual bool ProcessRecvData(CBuffer* m_CompressedBuffer, char* szBuffer, int len, int flag);
-    virtual VOID Disconnect(); // º¯ÊıÖ§³Ö TCP/UDP
+    virtual VOID Disconnect(); // å‡½æ•°æ”¯æŒ TCP/UDP
     virtual int SendTo(const char* buf, int len, int flags)
     {
         return ::send(m_sClientSocket, buf, len, flags);
@@ -236,14 +236,14 @@ protected:
 
     CLock               m_Locker;
 #if USING_CTX
-    ZSTD_CCtx*			m_Cctx;						// Ñ¹ËõÉÏÏÂÎÄ
-    ZSTD_DCtx*			m_Dctx;						// ½âÑ¹ÉÏÏÂÎÄ
+    ZSTD_CCtx*			m_Cctx;						// å‹ç¼©ä¸Šä¸‹æ–‡
+    ZSTD_DCtx*			m_Dctx;						// è§£å‹ä¸Šä¸‹æ–‡
 #endif
 
-    const State&		g_bExit;					// È«¾Ö×´Ì¬Á¿
-    void*				m_Manager;					// ÓÃ»§Êı¾İ
-    DataProcessCB		m_DataProcess;				// ´¦ÀíÓÃ»§Êı¾İ
-    ProtocolEncoder*	m_Encoder;					// ¼ÓÃÜ
+    const State&		g_bExit;					// å…¨å±€çŠ¶æ€é‡
+    void*				m_Manager;					// ç”¨æˆ·æ•°æ®
+    DataProcessCB		m_DataProcess;				// å¤„ç†ç”¨æˆ·æ•°æ®
+    ProtocolEncoder*	m_Encoder;					// åŠ å¯†
     DomainPool			m_Domain;
     std::string			m_sCurIP;
     int					m_nHostPort;
