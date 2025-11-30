@@ -33,6 +33,8 @@ BOOL IOCPUDPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 #endif
 
     // UDP不调用 connect()，也不设置 TCP keep-alive 相关选项
+	Mprintf("UDP client socket created and ready to send.\n");
+	m_bConnected = TRUE;
 
     // 创建工作线程（如果需要）
     if (m_hWorkThread == NULL) {
@@ -45,8 +47,6 @@ BOOL IOCPUDPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 #endif
     }
 
-    Mprintf("UDP client socket created and ready to send.\n");
-    m_bConnected = TRUE;
     return TRUE;
 }
 
