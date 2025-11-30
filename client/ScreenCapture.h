@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "stdafx.h"
 #include <assert.h>
 #include "CursorInfo.h"
@@ -13,13 +13,14 @@
 #include <condition_variable>
 #include <functional>
 #include <future>
+#include <emmintrin.h>  // SSE2
 #include "X264Encoder.h"
 
 
 class ThreadPool
 {
 public:
-    // ¹¹Ôìº¯Êı£º´´½¨¹Ì¶¨ÊıÁ¿µÄÏß³Ì
+    // æ„é€ å‡½æ•°ï¼šåˆ›å»ºå›ºå®šæ•°é‡çš„çº¿ç¨‹
     ThreadPool(size_t numThreads) : stop(false)
     {
         for (size_t i = 0; i < numThreads; ++i) {
@@ -37,14 +38,14 @@ public:
                     try {
                         task();
                     } catch (...) {
-                        // ´¦ÀíÒì³£
+                        // å¤„ç†å¼‚å¸¸
                     }
                 }
             });
         }
     }
 
-    // Îö¹¹º¯Êı£ºÏú»ÙÏß³Ì³Ø
+    // ææ„å‡½æ•°ï¼šé”€æ¯çº¿ç¨‹æ± 
     ~ThreadPool()
     {
         {
@@ -56,7 +57,7 @@ public:
             worker.join();
     }
 
-    // ÈÎÎñÌá½»
+    // ä»»åŠ¡æäº¤
     template<typename F>
     auto enqueue(F&& f) -> std::future<decltype(f())>
     {
@@ -98,7 +99,7 @@ private:
         MONITORINFOEX mi;
         mi.cbSize = sizeof(MONITORINFOEX);
         if (GetMonitorInfo(hMonitor, &mi)) {
-            monitors->push_back(mi); // ±£´æÏÔÊ¾Æ÷ĞÅÏ¢
+            monitors->push_back(mi); // ä¿å­˜æ˜¾ç¤ºå™¨ä¿¡æ¯
         }
         return TRUE;
     }
@@ -109,31 +110,32 @@ private:
         return monitors;
     }
 public:
-    ThreadPool*      m_ThreadPool;		 // Ïß³Ì³Ø
-    BYTE*            m_FirstBuffer;		 // ÉÏÒ»Ö¡Êı¾İ
-    BYTE*			 m_RectBuffer;       // µ±Ç°»º´æÇø
-    LPBYTE*		     m_BlockBuffers;	 // ·Ö¿é»º´æ
-    ULONG*			 m_BlockSizes;       // ·Ö¿é²îÒìÏñËØÊı
-    int				 m_BlockNum;         // ·Ö¿é¸öÊı
-    int				 m_SendQuality;		 // ·¢ËÍÖÊÁ¿
+    ThreadPool*      m_ThreadPool;		 // çº¿ç¨‹æ± 
+    BYTE*            m_FirstBuffer;		 // ä¸Šä¸€å¸§æ•°æ®
+    BYTE*			 m_RectBuffer;       // å½“å‰ç¼“å­˜åŒº
+    LPBYTE*		     m_BlockBuffers;	 // åˆ†å—ç¼“å­˜
+    ULONG*			 m_BlockSizes;       // åˆ†å—å·®å¼‚åƒç´ æ•°
+    int				 m_BlockNum;         // åˆ†å—ä¸ªæ•°
+    int				 m_SendQuality;		 // å‘é€è´¨é‡
 
-    LPBITMAPINFO     m_BitmapInfor_Full; // BMPĞÅÏ¢
-    BYTE             m_bAlgorithm;       // ÆÁÄ»²îÒìËã·¨
+    LPBITMAPINFO     m_BitmapInfor_Full; // BMPä¿¡æ¯
+    BYTE             m_bAlgorithm;       // å±å¹•å·®å¼‚ç®—æ³•
 
-    int				 m_iScreenX;		 // ÆğÊ¼x×ø±ê
-    int				 m_iScreenY;		 // ÆğÊ¼y×ø±ê
-    ULONG            m_ulFullWidth;      // ÆÁÄ»¿í
-    ULONG            m_ulFullHeight;     // ÆÁÄ»¸ß
-    bool             m_bZoomed;          // ÆÁÄ»±»Ëõ·Å
-    double           m_wZoom;            // ÆÁÄ»ºáÏòËõ·Å±È
-    double           m_hZoom;            // ÆÁÄ»×İÏòËõ·Å±È
+    int				 m_iScreenX;		 // èµ·å§‹xåæ ‡
+    int				 m_iScreenY;		 // èµ·å§‹yåæ ‡
+    ULONG            m_ulFullWidth;      // å±å¹•å®½
+    ULONG            m_ulFullHeight;     // å±å¹•é«˜
+    bool             m_bZoomed;          // å±å¹•è¢«ç¼©æ”¾
+    double           m_wZoom;            // å±å¹•æ¨ªå‘ç¼©æ”¾æ¯”
+    double           m_hZoom;            // å±å¹•çºµå‘ç¼©æ”¾æ¯”
 
-    int			     m_biBitCount;		 // Ã¿ÏñËØ±ÈÌØÊı
-    int              m_FrameID;          // Ö¡ĞòºÅ
-    int              m_GOP;              // ¹Ø¼üÖ¡¼ä¸ô
-    bool		     m_SendKeyFrame;	 // ·¢ËÍ¹Ø¼üÖ¡
-    CX264Encoder	 *m_encoder;		 // ±àÂëÆ÷
-    int             m_nScreenCount;      // ÆÁÄ»ÊıÁ¿
+    int			     m_biBitCount;		 // æ¯åƒç´ æ¯”ç‰¹æ•°
+    int              m_FrameID;          // å¸§åºå·
+    int              m_GOP;              // å…³é”®å¸§é—´éš”
+    bool		     m_SendKeyFrame;	 // å‘é€å…³é”®å¸§
+    CX264Encoder	 *m_encoder;		 // ç¼–ç å™¨
+    int             m_nScreenCount;      // å±å¹•æ•°é‡
+    BOOL            m_bEnableMultiScreen;// å¤šæ˜¾ç¤ºå™¨æ”¯æŒ
 
     ScreenCapture(int n = 32, BYTE algo = ALGORITHM_DIFF, BOOL all = FALSE) :
         m_ThreadPool(nullptr), m_FirstBuffer(nullptr), m_RectBuffer(nullptr),
@@ -147,6 +149,7 @@ public:
         static auto monitors = GetAllMonitors();
         static int index = 0;
         m_nScreenCount = monitors.size();
+        m_bEnableMultiScreen = all;
         if (all && !monitors.empty()) {
             int idx = index++ % (monitors.size()+1);
             if (idx == 0) {
@@ -162,8 +165,8 @@ public:
                 m_ulFullHeight = rt.bottom - rt.top;
             }
         } else {
-            //::GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN)»ñÈ¡ÆÁÄ»´óĞ¡²»×¼
-            //ÀıÈçµ±ÆÁÄ»ÏÔÊ¾±ÈÀıÎª125%Ê±£¬»ñÈ¡µ½µÄÆÁÄ»´óĞ¡ĞèÒª³ËÒÔ1.25²Å¶Ô
+            //::GetSystemMetrics(SM_CXSCREEN/SM_CYSCREEN)è·å–å±å¹•å¤§å°ä¸å‡†
+            //ä¾‹å¦‚å½“å±å¹•æ˜¾ç¤ºæ¯”ä¾‹ä¸º125%æ—¶ï¼Œè·å–åˆ°çš„å±å¹•å¤§å°éœ€è¦ä¹˜ä»¥1.25æ‰å¯¹
             DEVMODE devmode;
             memset(&devmode, 0, sizeof(devmode));
             devmode.dmSize = sizeof(DEVMODE);
@@ -174,7 +177,7 @@ public:
             int w = GetSystemMetrics(SM_CXSCREEN), h = GetSystemMetrics(SM_CYSCREEN);
             m_bZoomed = (w != m_ulFullWidth) || (h != m_ulFullHeight);
             m_wZoom = double(m_ulFullWidth) / w, m_hZoom = double(m_ulFullHeight) / h;
-            Mprintf("=> ×ÀÃæËõ·Å±ÈÀı: %.2f, %.2f\t·Ö±æÂÊ£º%d x %d\n", m_wZoom, m_hZoom, m_ulFullWidth, m_ulFullHeight);
+            Mprintf("=> æ¡Œé¢ç¼©æ”¾æ¯”ä¾‹: %.2f, %.2f\tåˆ†è¾¨ç‡ï¼š%d x %d\n", m_wZoom, m_hZoom, m_ulFullWidth, m_ulFullHeight);
             m_wZoom = 1.0 / m_wZoom, m_hZoom = 1.0 / m_hZoom;
         }
         if (ALGORITHM_H264 == m_bAlgorithm) {
@@ -212,6 +215,10 @@ public:
         return m_nScreenCount;
     }
 
+    virtual BOOL IsMultiScreenEnabled() const {
+        return m_bEnableMultiScreen;
+    }
+
     virtual int SendQuality(int quality)
     {
         int old = m_SendQuality;
@@ -230,36 +237,134 @@ public:
     }
 
 public:
-    //*************************************** Í¼Ïñ²îÒìËã·¨£¨´®ĞĞ£© *************************************
+    //*************************************** å›¾åƒå·®å¼‚ç®—æ³• SSE2 ä¼˜åŒ–ç‰ˆ *************************************
     virtual ULONG CompareBitmap(LPBYTE CompareSourData, LPBYTE CompareDestData, LPBYTE szBuffer,
                                 DWORD ulCompareLength, BYTE algo, int startPostion = 0)
     {
-
-        // Windows¹æ¶¨Ò»¸öÉ¨ÃèĞĞËùÕ¼µÄ×Ö½ÚÊı±ØĞëÊÇ4µÄ±¶Êı, ËùÒÔÓÃDWORD±È½Ï
-        LPDWORD	p1 = (LPDWORD)CompareDestData, p2 = (LPDWORD)CompareSourData;
         LPBYTE p = szBuffer;
         ULONG channel = algo == ALGORITHM_GRAY ? 1 : 4;
         ULONG ratio = algo == ALGORITHM_GRAY ? 4 : 1;
-        for (ULONG i = 0; i < ulCompareLength; i += 4, ++p1, ++p2) {
-            if (*p1 == *p2)
-                continue;
-            ULONG index = i;
-            LPDWORD pos1 = p1++, pos2 = p2++;
-            // ¼ÆËãÓĞ¼¸¸öÏñËØÖµ²»Í¬
-            for (i += 4; i < ulCompareLength && *p1 != *p2; i += 4, ++p1, ++p2);
-            ULONG ulCount = i - index;
-            memcpy(pos1, pos2, ulCount); // ¸üĞÂÄ¿±êÏñËØ
 
+        // SSE2: æ¯æ¬¡æ¯”è¾ƒ 16 å­—èŠ‚ (4 ä¸ªåƒç´ )
+        const ULONG SSE_BLOCK = 16;
+        const ULONG alignedLength = ulCompareLength & ~(SSE_BLOCK - 1);
+
+        __m128i* v1 = (__m128i*)CompareDestData;
+        __m128i* v2 = (__m128i*)CompareSourData;
+
+        ULONG i = 0;
+        while (i < alignedLength) {
+            // SSE2 å¿«é€Ÿæ¯”è¾ƒ: ä¸€æ¬¡æ¯”è¾ƒ 16 å­—èŠ‚
+            __m128i cmp = _mm_cmpeq_epi32(*v1, *v2);
+            int mask = _mm_movemask_epi8(cmp);
+
+            if (mask == 0xFFFF) {
+                // 16 å­—èŠ‚å®Œå…¨ç›¸åŒï¼Œè·³è¿‡
+                i += SSE_BLOCK;
+                ++v1;
+                ++v2;
+                continue;
+            }
+
+            // å‘ç°å·®å¼‚ï¼Œè®°å½•èµ·å§‹ä½ç½®
+            ULONG index = i;
+            LPBYTE pos1 = (LPBYTE)v1;
+            LPBYTE pos2 = (LPBYTE)v2;
+
+            // ç»§ç»­æ‰«æè¿ç»­çš„å·®å¼‚åŒºåŸŸï¼ˆå¸¦é—´éš™å®¹å¿ï¼‰
+            // GAP_TOLERANCE: å…è®¸çš„æœ€å¤§é—´éš™ï¼Œå°äºæ­¤å€¼çš„ç›¸åŒåŒºåŸŸä¼šè¢«åˆå¹¶
+            // è®¾ä¸º 32 å­—èŠ‚ï¼ˆ8åƒç´ ï¼‰ï¼Œå› ä¸ºæ¯ä¸ªå·®å¼‚åŒºåŸŸå¤´éƒ¨å¼€é”€æ˜¯ 8 å­—èŠ‚
+            const ULONG GAP_TOLERANCE = 32;
+
+            // é¦–å…ˆå¿…é¡»å‰è¿›ä¸€ä¸ªå—ï¼ˆå½“å‰å—å·²çŸ¥æœ‰å·®å¼‚ï¼‰
+            i += SSE_BLOCK;
+            ++v1;
+            ++v2;
+
+            // ç»§ç»­æ‰«ææ›´å¤šå·®å¼‚ï¼Œåº”ç”¨é—´éš™å®¹å¿
+            ULONG gapCount = 0;
+            while (i < alignedLength) {
+                cmp = _mm_cmpeq_epi32(*v1, *v2);
+                mask = _mm_movemask_epi8(cmp);
+
+                if (mask == 0xFFFF) {
+                    // ç›¸åŒå— - ç´¯è®¡é—´éš™
+                    gapCount += SSE_BLOCK;
+                    if (gapCount > GAP_TOLERANCE) {
+                        // é—´éš™å¤ªå¤§ - åœæ­¢ï¼ˆä¸åŒ…å«é—´éš™ï¼‰
+                        break;
+                    }
+                    // é—´éš™ä»å¯æ¥å— - ç»§ç»­æ‰«æ
+                    i += SSE_BLOCK;
+                    ++v1;
+                    ++v2;
+                } else {
+                    // å·®å¼‚å— - é‡ç½®é—´éš™å¹¶åŒ…å«å®ƒ
+                    gapCount = 0;
+                    i += SSE_BLOCK;
+                    ++v1;
+                    ++v2;
+                }
+            }
+
+            // æ’é™¤æœ«å°¾ç´¯ç§¯çš„é—´éš™
+            if (gapCount > 0 && gapCount <= GAP_TOLERANCE) {
+                i -= gapCount;
+                v1 = (__m128i*)((LPBYTE)v1 - gapCount);
+                v2 = (__m128i*)((LPBYTE)v2 - gapCount);
+            }
+
+            ULONG ulCount = i - index;
+
+            // æ›´æ–°ç›®æ ‡ç¼“å†²åŒº
+            memcpy(pos1, pos2, ulCount);
+
+            // å†™å…¥å·®å¼‚ä¿¡æ¯: [ä½ç½®][é•¿åº¦][æ•°æ®]
             *(LPDWORD)(p) = index + startPostion;
             *(LPDWORD)(p + sizeof(ULONG)) = ulCount / ratio;
             p += 2 * sizeof(ULONG);
+
             if (channel != 1) {
                 memcpy(p, pos2, ulCount);
                 p += ulCount;
             } else {
-                for (LPBYTE end = p + ulCount / ratio; p < end; p += channel, ++pos2) {
-                    LPBYTE src = (LPBYTE)pos2;
-                    *p = (306 * src[2] + 601 * src[0] + 117 * src[1]) >> 10;
+                // ç°åº¦è½¬æ¢ï¼šä½¿ç”¨ä¼˜åŒ–çš„æ‰¹é‡å¤„ç†
+                ConvertToGray_SSE2(p, pos2, ulCount);
+                p += ulCount / ratio;
+            }
+        }
+
+        // å¤„ç†å‰©ä½™çš„éå¯¹é½éƒ¨åˆ† (0-12 å­—èŠ‚)
+        if (i < ulCompareLength) {
+            LPDWORD p1 = (LPDWORD)((LPBYTE)CompareDestData + i);
+            LPDWORD p2 = (LPDWORD)((LPBYTE)CompareSourData + i);
+
+            for (; i < ulCompareLength; i += 4, ++p1, ++p2) {
+                if (*p1 == *p2)
+                    continue;
+
+                ULONG index = i;
+                LPDWORD pos1 = p1++;
+                LPDWORD pos2 = p2++;
+
+                for (i += 4; i < ulCompareLength && *p1 != *p2; i += 4, ++p1, ++p2);
+                ULONG ulCount = i - index;
+                memcpy(pos1, pos2, ulCount);
+
+                *(LPDWORD)(p) = index + startPostion;
+                *(LPDWORD)(p + sizeof(ULONG)) = ulCount / ratio;
+                p += 2 * sizeof(ULONG);
+
+                if (channel != 1) {
+                    memcpy(p, pos2, ulCount);
+                    p += ulCount;
+                } else {
+                    // å‰©ä½™éƒ¨åˆ†ç”¨æ ‡é‡å¤„ç†
+                    LPDWORD srcPtr = pos2;
+                    for (LPBYTE end = p + ulCount / ratio; p < end; ++p, ++srcPtr) {
+                        LPBYTE src = (LPBYTE)srcPtr;
+                        *p = (306 * src[2] + 601 * src[0] + 117 * src[1]) >> 10;
+                    }
                 }
             }
         }
@@ -267,20 +372,20 @@ public:
         return p - szBuffer;
     }
 
-    //*************************************** Í¼Ïñ²îÒìËã·¨£¨²¢ĞĞ£© *************************************
+    //*************************************** å›¾åƒå·®å¼‚ç®—æ³•ï¼ˆå¹¶è¡Œï¼‰ *************************************
     ULONG MultiCompareBitmap(LPBYTE srcData, LPBYTE dstData, LPBYTE szBuffer,
                              DWORD ulCompareLength, BYTE algo)
     {
 
         int N = m_BlockNum;
-        ULONG blockLength = ulCompareLength / N;  // Ã¿¸öÈÎÎñµÄ»ù±¾×Ö½ÚÊı
-        ULONG remainingLength = ulCompareLength % N;  // Ê£ÓàµÄ×Ö½ÚÊı
+        ULONG blockLength = ulCompareLength / N;  // æ¯ä¸ªä»»åŠ¡çš„åŸºæœ¬å­—èŠ‚æ•°
+        ULONG remainingLength = ulCompareLength % N;  // å‰©ä½™çš„å­—èŠ‚æ•°
 
         std::vector<std::future<ULONG>> futures;
         for (int blockY = 0; blockY < N; ++blockY) {
-            // ¼ÆËãµ±Ç°ÈÎÎñµÄ×Ö½ÚÊı
+            // è®¡ç®—å½“å‰ä»»åŠ¡çš„å­—èŠ‚æ•°
             ULONG currentBlockLength = blockLength + (blockY == N - 1 ? remainingLength : 0);
-            // ¼ÆËãµ±Ç°ÈÎÎñµÄÆğÊ¼Î»ÖÃ
+            // è®¡ç®—å½“å‰ä»»åŠ¡çš„èµ·å§‹ä½ç½®
             ULONG startPosition = blockY * blockLength;
 
             futures.emplace_back(m_ThreadPool->enqueue([=]() -> ULONG {
@@ -288,24 +393,24 @@ public:
                 LPBYTE dstBlock = dstData + startPosition;
                 LPBYTE blockBuffer = m_BlockBuffers[blockY];
 
-                // ´¦Àíµ±Ç°ÈÎÎñ²¢·µ»Ø±È¶ÔÊı¾İ´óĞ¡
+                // å¤„ç†å½“å‰ä»»åŠ¡å¹¶è¿”å›æ¯”å¯¹æ•°æ®å¤§å°
                 return m_BlockSizes[blockY] = CompareBitmap(srcBlock, dstBlock, blockBuffer, currentBlockLength, algo, startPosition);
             }));
         }
 
-        // µÈ´ıËùÓĞÈÎÎñÍê³É²¢»ñÈ¡·µ»ØÖµ
+        // ç­‰å¾…æ‰€æœ‰ä»»åŠ¡å®Œæˆå¹¶è·å–è¿”å›å€¼
         for (auto& future : futures) {
             future.get();
         }
 
-        // ºÏ²¢ËùÓĞ¿éµÄ²îÒìĞÅÏ¢µ½ szBuffer
+        // åˆå¹¶æ‰€æœ‰å—çš„å·®å¼‚ä¿¡æ¯åˆ° szBuffer
         ULONG offset = 0;
         for (int blockY = 0; blockY < N; ++blockY) {
             memcpy(szBuffer + offset, m_BlockBuffers[blockY], m_BlockSizes[blockY]);
             offset += m_BlockSizes[blockY];
         }
 
-        return offset;  // ·µ»Ø»º³åÇøµÄ´óĞ¡
+        return offset;  // è¿”å›ç¼“å†²åŒºçš„å¤§å°
     }
 
     virtual int GetFrameID() const {
@@ -321,10 +426,41 @@ public:
         return m_BitmapInfor_Full->bmiHeader.biSizeImage;
     }
 
+    // SSE2 ä¼˜åŒ–ï¼šBGRA è½¬å•é€šé“ç°åº¦ï¼Œä¸€æ¬¡å¤„ç† 4 ä¸ªåƒç´ ï¼Œè¾“å‡º 4 å­—èŠ‚
+    // ç°åº¦å…¬å¼: Y = 0.299*R + 0.587*G + 0.114*B â‰ˆ (306*R + 601*G + 117*B) >> 10
+    // è¾“å…¥: BGRA åƒç´ æ•°æ® (æ¯åƒç´  4 å­—èŠ‚)
+    // è¾“å‡º: ç°åº¦å€¼ (æ¯åƒç´  1 å­—èŠ‚)
+    // count: è¾“å…¥æ•°æ®çš„å­—èŠ‚æ•° (å¿…é¡»æ˜¯ 4 çš„å€æ•°)
+    inline void ConvertToGray_SSE2(LPBYTE dst, LPBYTE src, ULONG count)
+    {
+        ULONG pixels = count / 4;
+        ULONG i = 0;
+        ULONG aligned = pixels & ~3;  // 4 åƒç´ å¯¹é½
+
+        // ä¸€æ¬¡å¤„ç† 4 ä¸ªåƒç´ 
+        for (; i < aligned; i += 4, src += 16, dst += 4) {
+            // è®¡ç®— 4 ä¸ªç°åº¦å€¼
+            dst[0] = (306 * src[2]  + 601 * src[0]  + 117 * src[1])  >> 10;
+            dst[1] = (306 * src[6]  + 601 * src[4]  + 117 * src[5])  >> 10;
+            dst[2] = (306 * src[10] + 601 * src[8]  + 117 * src[9])  >> 10;
+            dst[3] = (306 * src[14] + 601 * src[12] + 117 * src[13]) >> 10;
+        }
+
+        // å¤„ç†å‰©ä½™åƒç´ 
+        for (; i < pixels; i++, src += 4, dst++) {
+            *dst = (306 * src[2] + 601 * src[0] + 117 * src[1]) >> 10;
+        }
+    }
+
+    // ToGray: BGRA è½¬ BGRA ç°åº¦ (ä¸‰é€šé“ç›¸åŒå€¼)ï¼Œç”¨äºå…³é”®å¸§
+    // ç›´æ¥æ ‡é‡å¤„ç†ï¼Œç¼–è¯‘å™¨ä¼šè‡ªåŠ¨å‘é‡åŒ–
     void ToGray(LPBYTE dst, LPBYTE src, int biSizeImage)
     {
-        for (ULONG i = 0; i < biSizeImage; i += 4, dst += 4, src += 4) {
-            dst[0] = dst[1] = dst[2] = (306 * src[2] + 601 * src[0] + 117 * src[1]) >> 10;
+        ULONG pixels = biSizeImage / 4;
+        for (ULONG i = 0; i < pixels; i++, src += 4, dst += 4) {
+            BYTE g = (306 * src[2] + 601 * src[0] + 117 * src[1]) >> 10;
+            dst[0] = dst[1] = dst[2] = g;
+            dst[3] = 0xFF;
         }
     }
 
@@ -342,7 +478,7 @@ public:
         return bmpInfo;
     }
 
-    // Ëã·¨+¹â±êÎ»ÖÃ+¹â±êÀàĞÍ
+    // ç®—æ³•+å…‰æ ‡ä½ç½®+å…‰æ ‡ç±»å‹
     virtual LPBYTE GetNextScreenData(ULONG* ulNextSendLength)
     {
         BYTE algo = m_bAlgorithm;
@@ -350,26 +486,26 @@ public:
         bool keyFrame = (frameID % m_GOP == 0);
         m_RectBuffer[0] = keyFrame ? TOKEN_KEYFRAME : TOKEN_NEXTSCREEN;
         LPBYTE data = m_RectBuffer + 1;
-        // Ğ´ÈëÊ¹ÓÃÁËÄÄÖÖËã·¨
+        // å†™å…¥ä½¿ç”¨äº†å“ªç§ç®—æ³•
         memcpy(data, (LPBYTE)&algo, sizeof(BYTE));
 
-        // Ğ´Èë¹â±êÎ»ÖÃ
+        // å†™å…¥å…‰æ ‡ä½ç½®
         POINT	CursorPos;
         GetCursorPos(&CursorPos);
         CursorPos.x /= m_wZoom;
         CursorPos.y /= m_hZoom;
         memcpy(data + sizeof(BYTE), (LPBYTE)&CursorPos, sizeof(POINT));
 
-        // Ğ´Èëµ±Ç°¹â±êÀàĞÍ
+        // å†™å…¥å½“å‰å…‰æ ‡ç±»å‹
         static CCursorInfo m_CursorInfor;
         BYTE	bCursorIndex = m_CursorInfor.getCurrentCursorIndex();
         memcpy(data + sizeof(BYTE) + sizeof(POINT), &bCursorIndex, sizeof(BYTE));
         ULONG offset = sizeof(BYTE) + sizeof(POINT) + sizeof(BYTE);
 
-        // ·Ö¶ÎÉ¨ÃèÈ«ÆÁÄ»  ½«ĞÂµÄÎ»Í¼·ÅÈëµ½m_hDiffMemDCÖĞ
+        // åˆ†æ®µæ‰«æå…¨å±å¹•  å°†æ–°çš„ä½å›¾æ”¾å…¥åˆ°m_hDiffMemDCä¸­
         LPBYTE nextData = ScanNextScreen();
         if (nullptr == nextData) {
-            // É¨ÃèÏÂÒ»Ö¡Ê§°ÜÒ²ĞèÒª·¢ËÍ¹â±êĞÅÏ¢µ½¿ØÖÆ¶Ë
+            // æ‰«æä¸‹ä¸€å¸§å¤±è´¥ä¹Ÿéœ€è¦å‘é€å…‰æ ‡ä¿¡æ¯åˆ°æ§åˆ¶ç«¯
             *ulNextSendLength = 1 + offset;
             return m_RectBuffer;
         }
@@ -439,7 +575,7 @@ public:
         return m_RectBuffer;
     }
 
-    // ÉèÖÃÆÁÄ»´«ÊäËã·¨
+    // è®¾ç½®å±å¹•ä¼ è¾“ç®—æ³•
     virtual BYTE SetAlgorithm(int algo)
     {
         BYTE oldAlgo = m_bAlgorithm;
@@ -447,7 +583,7 @@ public:
         return oldAlgo;
     }
 
-    // Êó±êÎ»ÖÃ×ª»»
+    // é¼ æ ‡ä½ç½®è½¬æ¢
     virtual void PointConversion(POINT& pt) const
     {
         if (m_bZoomed) {
@@ -458,17 +594,17 @@ public:
         pt.y += m_iScreenY;
     }
 
-    // »ñÈ¡Î»Í¼½á¹¹ĞÅÏ¢
+    // è·å–ä½å›¾ç»“æ„ä¿¡æ¯
     virtual const LPBITMAPINFO& GetBIData() const
     {
         return m_BitmapInfor_Full;
     }
 
-public: // ´¿Ğé½Ó¿Ú
+public: // çº¯è™šæ¥å£
 
-    // »ñÈ¡µÚÒ»Ö¡ÆÁÄ»
+    // è·å–ç¬¬ä¸€å¸§å±å¹•
     virtual LPBYTE GetFirstScreenData(ULONG* ulFirstScreenLength) = 0;
 
-    // »ñÈ¡ÏÂÒ»Ö¡ÆÁÄ»
+    // è·å–ä¸‹ä¸€å¸§å±å¹•
     virtual LPBYTE ScanNextScreen() = 0;
 };
