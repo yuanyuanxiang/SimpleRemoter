@@ -27,6 +27,7 @@ enum {
     IDM_SAVEAVI,
     IDM_SAVEAVI_H264,
     IDM_SWITCHSCREEN,
+    IDM_MULTITHREAD_COMPRESS,
 };
 
 IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
@@ -247,7 +248,8 @@ BOOL CScreenSpyDlg::OnInitDialog()
         SysMenu->AppendMenu(MF_SEPARATOR);
         SysMenu->AppendMenu(MF_STRING, IDM_GET_CLIPBOARD, "获取剪贴板(&R)");
         SysMenu->AppendMenu(MF_STRING, IDM_SET_CLIPBOARD, "设置剪贴板(&L)");
-        SysMenu->AppendMenu(MF_STRING, IDM_SWITCHSCREEN, "切换显示器(&M)");
+        SysMenu->AppendMenu(MF_STRING, IDM_SWITCHSCREEN, "切换显示器(&1)");
+        SysMenu->AppendMenu(MF_STRING, IDM_MULTITHREAD_COMPRESS, "多线程压缩(&2)");
         SysMenu->AppendMenu(MF_SEPARATOR);
 
         BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
@@ -639,6 +641,15 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
     case IDM_SWITCHSCREEN: {
         BYTE	bToken[2] = { COMMAND_SWITCH_SCREEN  };
 		m_ContextObject->Send2Client(bToken, sizeof(bToken));
+        break;
+    }
+
+    case IDM_MULTITHREAD_COMPRESS:{
+        static int threadNum = 0;
+        threadNum = 4 - threadNum;
+		BYTE	bToken[2] = { CMD_MULTITHREAD_COMPRESS, (BYTE)threadNum };
+		m_ContextObject->Send2Client(bToken, sizeof(bToken));
+        SysMenu->CheckMenuItem(nID, threadNum ? MF_CHECKED : MF_UNCHECKED);
         break;
     }
 
