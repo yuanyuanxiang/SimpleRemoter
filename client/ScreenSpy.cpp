@@ -106,7 +106,7 @@ VOID CScreenSpy::ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHei
         }
         return;
     }
-    AUTO_TICK(70);
+    AUTO_TICK(70, "");
 #if COPY_ALL
     BitBlt(hdcDest, 0, 0, ulWidth, ulHeight, hdcSour, m_iScreenX, m_iScreenY, SRCCOPY);
 #else

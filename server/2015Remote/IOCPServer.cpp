@@ -1,11 +1,11 @@
-#include "StdAfx.h"
+ï»¿#include "StdAfx.h"
 #include "IOCPServer.h"
 #include "2015Remote.h"
 
 #include <iostream>
 #include <ws2tcpip.h>
 
-// ¸ù¾İ socket »ñÈ¡¿Í»§¶ËIPµØÖ·.
+// æ ¹æ® socket è·å–å®¢æˆ·ç«¯IPåœ°å€.
 std::string GetPeerName(SOCKET sock)
 {
     sockaddr_in  ClientAddr = {};
@@ -14,7 +14,7 @@ std::string GetPeerName(SOCKET sock)
     return s != INVALID_SOCKET ? inet_ntoa(ClientAddr.sin_addr) : "";
 }
 
-// ¸ù¾İ socket »ñÈ¡¿Í»§¶ËIPµØÖ·.
+// æ ¹æ® socket è·å–å®¢æˆ·ç«¯IPåœ°å€.
 std::string GetRemoteIP(SOCKET sock)
 {
     sockaddr_in addr;
@@ -23,10 +23,10 @@ std::string GetRemoteIP(SOCKET sock)
     if (getpeername(sock, (sockaddr*)&addr, &addrLen) == 0) {
         char ipStr[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &addr.sin_addr, ipStr, sizeof(ipStr));
-        TRACE(">>> ¶Ô¶Ë IP µØÖ·: %s\n", ipStr);
+        TRACE(">>> å¯¹ç«¯ IP åœ°å€: %s\n", ipStr);
         return ipStr;
     }
-    TRACE(">>> »ñÈ¡¶Ô¶Ë IP Ê§°Ü, ´íÎóÂë: %d\n", WSAGetLastError());
+    TRACE(">>> è·å–å¯¹ç«¯ IP å¤±è´¥, é”™è¯¯ç : %d\n", WSAGetLastError());
     char buf[10];
     sprintf_s(buf, "%d", sock);
     return buf;
@@ -108,7 +108,7 @@ IOCPServer::~IOCPServer(void)
 
     while (!m_ContextFreePoolList.IsEmpty()) {
         CONTEXT_OBJECT *ContextObject = m_ContextFreePoolList.RemoveHead();
-        // ÏÂÊöÓï¾äÓĞ±ÀÀ£¸ÅÂÊ£¬2019.1.14
+        // ä¸‹è¿°è¯­å¥æœ‰å´©æºƒæ¦‚ç‡ï¼Œ2019.1.14
         //SAFE_DELETE(ContextObject->olps);
         delete ContextObject;
     }
@@ -127,7 +127,7 @@ IOCPServer::~IOCPServer(void)
     WSACleanup();
 }
 
-// ·µ»Ø´íÎóÂë0´ú±í³É¹¦£¬·ñÔò´ú±í´íÎóĞÅÏ¢.
+// è¿”å›é”™è¯¯ç 0ä»£è¡¨æˆåŠŸï¼Œå¦åˆ™ä»£è¡¨é”™è¯¯ä¿¡æ¯.
 UINT IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort)
 {
     m_nPort = uPort;
@@ -139,7 +139,7 @@ UINT IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
         return 1;
     }
 
-    m_sListenSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);     //´´½¨¼àÌıÌ×½Ó×Ö
+    m_sListenSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0, WSA_FLAG_OVERLAPPED);     //åˆ›å»ºç›‘å¬å¥—æ¥å­—
 
     if (m_sListenSocket == INVALID_SOCKET) {
         return 2;
@@ -154,7 +154,7 @@ UINT IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
         return 3;
     }
 
-    int iRet = WSAEventSelect(m_sListenSocket,	//½«¼àÌıÌ×½Ó×ÖÓëÊÂ¼ş½øĞĞ¹ØÁª²¢ÊÚÓèFD_ACCEPTµÄÊôĞÔ
+    int iRet = WSAEventSelect(m_sListenSocket,	//å°†ç›‘å¬å¥—æ¥å­—ä¸äº‹ä»¶è¿›è¡Œå…³è”å¹¶æˆäºˆFD_ACCEPTçš„å±æ€§
                               m_hListenEvent,
                               FD_ACCEPT);
 
@@ -173,9 +173,9 @@ UINT IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
     SOCKADDR_IN	ServerAddr;
     ServerAddr.sin_port   = htons(uPort);
     ServerAddr.sin_family = AF_INET;
-    ServerAddr.sin_addr.s_addr = INADDR_ANY; //³õÊ¼»¯±¾µØÍø¿¨
+    ServerAddr.sin_addr.s_addr = INADDR_ANY; //åˆå§‹åŒ–æœ¬åœ°ç½‘å¡
 
-    //½«¼àÌıÌ×»ú×ÖºÍÍø¿¨½øĞĞbind
+    //å°†ç›‘å¬å¥—æœºå­—å’Œç½‘å¡è¿›è¡Œbind
     iRet = bind(m_sListenSocket,
                 (sockaddr*)&ServerAddr,
                 sizeof(ServerAddr));
@@ -210,7 +210,7 @@ UINT IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
         (HANDLE)CreateThread(NULL,
                              0,
                              ListenThreadProc,
-                             (void*)this,	      //ÏòThread»Øµ÷º¯Êı´«Èëthis ·½±ãÎÒÃÇµÄÏß³Ì»Øµ÷·ÃÎÊÀàÖĞµÄ³ÉÔ±
+                             (void*)this,	      //å‘Threadå›è°ƒå‡½æ•°ä¼ å…¥this æ–¹ä¾¿æˆ‘ä»¬çš„çº¿ç¨‹å›è°ƒè®¿é—®ç±»ä¸­çš„æˆå‘˜
                              0,
                              NULL);
     if (m_hListenThread==NULL) {
@@ -224,14 +224,14 @@ UINT IOCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
         return a;
     }
 
-    //Æô¶¯¹¤×÷Ïß³Ì  1  2
+    //å¯åŠ¨å·¥ä½œçº¿ç¨‹  1  2
     InitializeIOCP();
     return 0;
 }
 
 
-//1´´½¨Íê³É¶Ë¿Ú
-//2´´½¨¹¤×÷Ïß³Ì
+//1åˆ›å»ºå®Œæˆç«¯å£
+//2åˆ›å»ºå·¥ä½œçº¿ç¨‹
 BOOL IOCPServer::InitializeIOCP(VOID)
 {
     m_hCompletionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0 );
@@ -244,7 +244,7 @@ BOOL IOCPServer::InitializeIOCP(VOID)
     }
 
     SYSTEM_INFO SystemInfo;
-    GetSystemInfo(&SystemInfo);  //»ñµÃPCÖĞÓĞ¼¸ºË
+    GetSystemInfo(&SystemInfo);  //è·å¾—PCä¸­æœ‰å‡ æ ¸
 
     m_ulThreadPoolMin  = 1;
     m_ulThreadPoolMax  = SystemInfo.dwNumberOfProcessors * 2;
@@ -255,7 +255,7 @@ BOOL IOCPServer::InitializeIOCP(VOID)
 
     HANDLE hWorkThread = NULL;
     for (int i=0; i<ulWorkThreadCount; ++i) {
-        hWorkThread = (HANDLE)CreateThread(NULL, //´´½¨¹¤×÷Ïß³ÌÄ¿µÄÊÇ´¦ÀíÍ¶µİµ½Íê³É¶Ë¿ÚÖĞµÄÈÎÎñ
+        hWorkThread = (HANDLE)CreateThread(NULL, //åˆ›å»ºå·¥ä½œçº¿ç¨‹ç›®çš„æ˜¯å¤„ç†æŠ•é€’åˆ°å®Œæˆç«¯å£ä¸­çš„ä»»åŠ¡
                                            0,
                                            WorkThreadProc,
                                            (void*)this,
@@ -279,7 +279,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 {
     Mprintf("======> IOCPServer WorkThreadProc begin \n");
 
-    ZSTD_DCtx* m_Dctx = ZSTD_createDCtx(); // ½âÑ¹ÉÏÏÂÎÄ
+    ZSTD_DCtx* m_Dctx = ZSTD_createDCtx(); // è§£å‹ä¸Šä¸‹æ–‡
 
     IOCPServer* This = (IOCPServer*)(lParam);
 
@@ -297,7 +297,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
     timeBeginPeriod(1);
     while (This->m_bTimeToKill==FALSE) {
         InterlockedDecrement(&This->m_ulBusyThread);
-        // GetQueuedCompletionStatusºÄÊ±±È½Ï³¤£¬µ¼ÖÂ¿Í»§¶Ë·¢ËÍÊı¾İµÄËÙÂÊÌá¸ß²»ÁË
+        // GetQueuedCompletionStatusè€—æ—¶æ¯”è¾ƒé•¿ï¼Œå¯¼è‡´å®¢æˆ·ç«¯å‘é€æ•°æ®çš„é€Ÿç‡æé«˜ä¸äº†
         BOOL bOk = GetQueuedCompletionStatus(
                        hCompletionPort,
                        &dwTrans,
@@ -306,7 +306,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
         DWORD dwIOError = GetLastError();
         OverlappedPlus = CONTAINING_RECORD(Overlapped, OVERLAPPEDPLUS, m_ol);
         ulBusyThread = InterlockedIncrement(&This->m_ulBusyThread); //1 1
-        if ( !bOk && dwIOError != WAIT_TIMEOUT ) { //µ±¶Ô·½µÄÌ×»úÖÆ·¢ÉúÁË¹Ø±Õ
+        if ( !bOk && dwIOError != WAIT_TIMEOUT ) { //å½“å¯¹æ–¹çš„å¥—æœºåˆ¶å‘ç”Ÿäº†å…³é—­
             if (ContextObject && This->m_bTimeToKill == FALSE &&dwTrans==0) {
                 ContextObject->olps = NULL;
                 Mprintf("!!! RemoveStaleContext: %d \n", WSAGetLastError());
@@ -316,7 +316,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
             continue;
         }
         if (!bError) {
-            //·ÖÅäÒ»¸öĞÂµÄÏß³Ìµ½Ïß³Ìµ½Ïß³Ì³Ø
+            //åˆ†é…ä¸€ä¸ªæ–°çš„çº¿ç¨‹åˆ°çº¿ç¨‹åˆ°çº¿ç¨‹æ± 
             if (ulBusyThread == This->m_ulCurrentThread) {
                 if (ulBusyThread < This->m_ulThreadPoolMax) {
                     if (ContextObject != NULL) {
@@ -376,7 +376,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
     return 0;
 }
 
-//ÔÚ¹¤×÷Ïß³ÌÖĞ±»µ÷ÓÃ
+//åœ¨å·¥ä½œçº¿ç¨‹ä¸­è¢«è°ƒç”¨
 BOOL IOCPServer::HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx)
 {
     BOOL bRet = FALSE;
@@ -410,15 +410,15 @@ BOOL IOCPServer::OnClientInitializing(PCONTEXT_OBJECT  ContextObject, DWORD dwTr
 // May be this function should be a member of `CONTEXT_OBJECT`.
 BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyProc m_NotifyProc, ZSTD_DCtx* m_Dctx)
 {
-    AUTO_TICK(40);
+    AUTO_TICK(40, "");
     BOOL ret = 1;
     try {
-        if (dwTrans == 0) {  //¶Ô·½¹Ø±ÕÁËÌ×½Ó×Ö
+        if (dwTrans == 0) {  //å¯¹æ–¹å…³é—­äº†å¥—æ¥å­—
             return FALSE;
         }
-        //½«½ÓÊÕµ½µÄÊı¾İ¿½±´µ½ÎÒÃÇ×Ô¼ºµÄÄÚ´æÖĞwsabuff    8192
+        //å°†æ¥æ”¶åˆ°çš„æ•°æ®æ‹·è´åˆ°æˆ‘ä»¬è‡ªå·±çš„å†…å­˜ä¸­wsabuff    8192
         ContextObject->InCompressedBuffer.WriteBuffer((PBYTE)ContextObject->szBuffer,dwTrans);
-        //²é¿´Êı¾İ°üÀïµÄÊı¾İ
+        //æŸ¥çœ‹æ•°æ®åŒ…çš„å®Œæ•´æ€§
         while (true) {
             PR pr = ContextObject->Parse(ContextObject->InCompressedBuffer);
             if (pr.IsFailed()) {
@@ -434,20 +434,20 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
                 ContextObject->InDeCompressedBuffer.WriteBuffer(CompressedBuffer, ulCompressedLength);
                 if (m_NotifyProc(ContextObject))
                     ret = CompressedBuffer[0] == TOKEN_LOGIN ? 999 : 1;
-                SAFE_DELETE_ARRAY(CompressedBuffer);
+                // CompressedBuffer ç”± CONTEXT_OBJECT ç®¡ç†ï¼Œä¸åœ¨æ­¤å¤„é‡Šæ”¾
                 break;
             }
 
             ULONG ulPackTotalLength = 0;
             ContextObject->InCompressedBuffer.CopyBuffer(&ulPackTotalLength, sizeof(ULONG), pr.Result);
-            //È¡³öÊı¾İ°üµÄ×Ü³¤£º5×Ö½Ú±êÊ¶+4×Ö½ÚÊı¾İ°ü×Ü³¤¶È+4×Ö½ÚÔ­Ê¼Êı¾İ³¤¶È
+            //å–å‡ºæ•°æ®åŒ…çš„æ€»é•¿åº¦5å­—èŠ‚æ ‡è¯†+4å­—èŠ‚æ•°æ®åŒ…æ€»é•¿åº¦+4å­—èŠ‚åŸå§‹æ•°æ®é•¿åº¦
             int bufLen = ContextObject->InCompressedBuffer.GetBufferLength();
             if (ulPackTotalLength && bufLen >= ulPackTotalLength) {
                 ULONG ulCompressedLength = 0;
                 ULONG ulOriginalLength = 0;
                 PBYTE CompressedBuffer = ContextObject->ReadBuffer(ulCompressedLength, ulOriginalLength);
                 if (ContextObject->CompressMethod == COMPRESS_UNKNOWN) {
-                    delete[] CompressedBuffer;
+                    // CompressedBuffer ç”± CONTEXT_OBJECT ç®¡ç†ï¼Œä¸åœ¨æ­¤å¤„é‡Šæ”¾
                     throw "Unknown method";
                 } else if (ContextObject->CompressMethod == COMPRESS_NONE) {
                     ContextObject->InDeCompressedBuffer.ClearBuffer();
@@ -455,11 +455,12 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
                     ContextObject->InDeCompressedBuffer.WriteBuffer(CompressedBuffer, ulOriginalLength);
                     if (m_NotifyProc(ContextObject))
                         ret = CompressedBuffer[0] == TOKEN_LOGIN ? 999 : 1;
-                    SAFE_DELETE_ARRAY(CompressedBuffer);
+                    // CompressedBuffer ç”± CONTEXT_OBJECT ç®¡ç†ï¼Œä¸åœ¨æ­¤å¤„é‡Šæ”¾
                     continue;
                 }
                 bool usingZstd = ContextObject->CompressMethod == COMPRESS_ZSTD, zlibFailed = false;
-                PBYTE DeCompressedBuffer = new BYTE[ulOriginalLength];  //½âÑ¹¹ıµÄÄÚ´æ
+                // ä½¿ç”¨é¢„åˆ†é…ç¼“å†²åŒºï¼Œé¿å…é¢‘ç¹å†…å­˜åˆ†é…
+                PBYTE DeCompressedBuffer = ContextObject->GetDecompressBuffer(ulOriginalLength);
                 size_t	iRet = usingZstd ?
                                Muncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength) :
                                uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
@@ -470,7 +471,7 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
                     if (m_NotifyProc(ContextObject))
                         ret = DeCompressedBuffer[0] == TOKEN_LOGIN ? 999 : 1;
                 } else if (usingZstd) {
-                    // ³¢ÊÔÓÃzlib½âÑ¹Ëõ
+                    // å°è¯•ç”¨zlibè§£å‹ç¼©
                     if (Z_OK == uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength)) {
                         ContextObject->CompressMethod = COMPRESS_ZLIB;
                         ContextObject->InDeCompressedBuffer.ClearBuffer();
@@ -485,8 +486,7 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
                 } else {
                     zlibFailed = true;
                 }
-                delete [] CompressedBuffer;
-                delete [] DeCompressedBuffer;
+                // CompressedBuffer å’Œ DeCompressedBuffer éƒ½ç”± CONTEXT_OBJECT ç®¡ç†ï¼Œä¸åœ¨æ­¤å¤„é‡Šæ”¾
                 if (zlibFailed) {
                     Mprintf("[ERROR] ZLIB uncompress failed \n");
                     throw "Bad Buffer";
@@ -510,7 +510,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
         return FALSE;
     }
 
-    PostRecv(ContextObject); //Í¶µİĞÂµÄ½ÓÊÕÊı¾İµÄÇëÇó
+    PostRecv(ContextObject); //æŠ•é€’æ–°çš„æ¥æ”¶æ•°æ®çš„è¯·æ±‚
 
     return TRUE;
 }
@@ -518,7 +518,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
 BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength, ZSTD_CCtx* m_Cctx)
 {
     assert(ContextObject);
-    // Êä³ö·şÎñ¶ËËù·¢ËÍµÄÃüÁî
+    // è¾“å‡ºæœåŠ¡ç«¯æ‰€å‘é€çš„å‘½ä»¤
     int cmd = szBuffer[0];
     if (ulOriginalLength < 100 && cmd != COMMAND_SCREEN_CONTROL && cmd != CMD_HEARTBEAT_ACK &&
         cmd != CMD_DRAW_POINT && cmd != CMD_MOVEWINDOW && cmd != CMD_SET_SIZE) {
@@ -544,9 +544,9 @@ BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOr
             }
             bool usingZstd = ContextObject->CompressMethod == COMPRESS_ZSTD;
             unsigned long	ulCompressedLength = usingZstd ?
-                                                ZSTD_compressBound(ulOriginalLength) : (double)ulOriginalLength * 1.001 + 12;
-            BYTE			buf[1024];
-            LPBYTE			CompressedBuffer = ulCompressedLength>1024 ? new BYTE[ulCompressedLength]:buf;
+                                                ZSTD_compressBound(ulOriginalLength) : (unsigned long)((double)ulOriginalLength * 1.001 + 12);
+            // ä½¿ç”¨é¢„åˆ†é…ç¼“å†²åŒºæ›¿ä»£æ¯æ¬¡ new
+            LPBYTE			CompressedBuffer = ContextObject->GetSendCompressBuffer(ulCompressedLength);
             Buffer tmp(szBuffer, ulOriginalLength);
             szBuffer = tmp.Buf();
             ContextObject->Encode(szBuffer, ulOriginalLength);
@@ -557,14 +557,14 @@ BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOr
 
             if (usingZstd ? C_FAILED(iRet) : (S_OK != iRet)) {
                 Mprintf("[ERROR] compress failed \n");
-                if (CompressedBuffer != buf) delete [] CompressedBuffer;
+                // SendCompressBuffer ç”± CONTEXT_OBJECT ç®¡ç†ï¼Œä¸åœ¨æ­¤å¤„é‡Šæ”¾
                 return FALSE;
             }
 
             ulCompressedLength =  usingZstd ? iRet : ulCompressedLength;
 
             ContextObject->WriteBuffer(CompressedBuffer, ulCompressedLength, ulOriginalLength, cmd);
-            if (CompressedBuffer != buf) delete [] CompressedBuffer;
+            // SendCompressBuffer ç”± CONTEXT_OBJECT ç®¡ç†ï¼Œä¸åœ¨æ­¤å¤„é‡Šæ”¾
         } while (false);
 
         return TRUE;
@@ -579,9 +579,9 @@ BOOL IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffe
     if (WriteContextData(ContextObject, szBuffer, ulOriginalLength)) {
         OVERLAPPEDPLUS* OverlappedPlus = new OVERLAPPEDPLUS(IOWrite);
         BOOL bOk = PostQueuedCompletionStatus(m_hCompletionPort, 0, (ULONG_PTR)ContextObject, &OverlappedPlus->m_ol);
-        if ( (!bOk && GetLastError() != ERROR_IO_PENDING) ) { //Èç¹ûÍ¶µİÊ§°Ü
+        if ( (!bOk && GetLastError() != ERROR_IO_PENDING) ) { //å¦‚æœæŠ•é€’å¤±è´¥
             int a = GetLastError();
-            Mprintf("!!! OnClientPreSending Í¶µİÏûÏ¢Ê§°Ü\n");
+            Mprintf("!!! OnClientPreSending æŠ•é€’æ¶ˆæ¯å¤±è´¥\n");
             RemoveStaleContext(ContextObject);
             SAFE_DELETE(OverlappedPlus);
             return FALSE;
@@ -597,12 +597,12 @@ BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompl
     try {
         DWORD ulFlags = MSG_PARTIAL;
 
-        ContextObject->OutCompressedBuffer.RemoveCompletedBuffer(ulCompletedLength); //½«Íê³ÉµÄÊı¾İ´ÓÊı¾İ½á¹¹ÖĞÈ¥³ı
+        ContextObject->OutCompressedBuffer.RemoveCompletedBuffer(ulCompletedLength); //å°†å®Œæˆçš„æ•°æ®ä»æ•°æ®ç»“æ„ä¸­å»é™¤
         if (ContextObject->OutCompressedBuffer.GetBufferLength() == 0) {
             ContextObject->OutCompressedBuffer.ClearBuffer();
-            return true;		                             //×ßµ½ÕâÀïËµÃ÷ÎÒÃÇµÄÊı¾İÕæÕıÍêÈ«·¢ËÍ
+            return true;		                             //èµ°åˆ°è¿™é‡Œè¯´æ˜æˆ‘ä»¬çš„æ•°æ®çœŸæ­£å®Œå…¨å‘é€
         } else {
-            OVERLAPPEDPLUS * OverlappedPlus = new OVERLAPPEDPLUS(IOWrite); //Êı¾İÃ»ÓĞÍê³É  ÎÒÃÇ¼ÌĞøÍ¶µİ ·¢ËÍÇëÇó
+            OVERLAPPEDPLUS * OverlappedPlus = new OVERLAPPEDPLUS(IOWrite); //æ•°æ®æ²¡æœ‰å®Œæˆ  æˆ‘ä»¬ç»§ç»­æŠ•é€’ å‘é€è¯·æ±‚
 
             ContextObject->wsaOutBuffer.buf = (char*)ContextObject->OutCompressedBuffer.GetBuffer(0);
             ContextObject->wsaOutBuffer.len = ContextObject->OutCompressedBuffer.GetBufferLength();
@@ -610,7 +610,7 @@ BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompl
                               NULL, ulFlags,&OverlappedPlus->m_ol, NULL);
             if ( iOk == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING ) {
                 int a = GetLastError();
-                Mprintf("!!! OnClientPostSending Í¶µİÏûÏ¢Ê§°Ü: %d\n", a);
+                Mprintf("!!! OnClientPostSending æŠ•é€’æ¶ˆæ¯å¤±è´¥: %d\n", a);
                 RemoveStaleContext(ContextObject);
                 SAFE_DELETE(OverlappedPlus);
                 return FALSE;
@@ -624,7 +624,7 @@ BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompl
     return FALSE;
 }
 
-DWORD IOCPServer::ListenThreadProc(LPVOID lParam)   //¼àÌıÏß³Ì
+DWORD IOCPServer::ListenThreadProc(LPVOID lParam)   //ç›‘å¬çº¿ç¨‹
 {
     IOCPServer* This = (IOCPServer*)(lParam);
     WSANETWORKEVENTS NetWorkEvents;
@@ -639,7 +639,7 @@ DWORD IOCPServer::ListenThreadProc(LPVOID lParam)   //¼àÌıÏß³Ì
             continue;
 
         int iRet = WSAEnumNetworkEvents(This->m_sListenSocket,
-                                        //Èç¹ûÊÂ¼şÊÚĞÅ ÎÒÃÇ¾Í½«¸ÃÊÂ¼ş×ª»»³ÉÒ»¸öÍøÂçÊÂ¼ş ½øĞĞ ÅĞ¶Ï
+                                        //å¦‚æœäº‹ä»¶æˆä¿¡ æˆ‘ä»¬å°±å°†è¯¥äº‹ä»¶è½¬æ¢æˆä¸€ä¸ªç½‘ç»œäº‹ä»¶ è¿›è¡Œ åˆ¤æ–­
                                         This->m_hListenEvent,
                                         &NetWorkEvents);
 
@@ -666,12 +666,12 @@ void IOCPServer::OnAccept()
     int iLen = sizeof(SOCKADDR_IN);
     sClientSocket = accept(m_sListenSocket,
                            (sockaddr*)&ClientAddr,
-                           &iLen);                     //Í¨¹ıÎÒÃÇµÄ¼àÌıÌ×½Ó×ÖÀ´Éú³ÉÒ»¸öÓëÖ®ĞÅºÅÍ¨ĞÅµÄÌ×½Ó×Ö
+                           &iLen);                     //é€šè¿‡æˆ‘ä»¬çš„ç›‘å¬å¥—æ¥å­—æ¥ç”Ÿæˆä¸€ä¸ªä¸ä¹‹ä¿¡å·é€šä¿¡çš„å¥—æ¥å­—
     if (sClientSocket == SOCKET_ERROR) {
         return;
     }
 
-    //ÎÒÃÇÔÚÕâÀïÎªÃ¿Ò»¸öµ½´ïµÄĞÅºÅÎ¬»¤ÁËÒ»¸öÓëÖ®¹ØÁªµÄÊı¾İ½á¹¹ÕâÀï¼ò³ÆÎªÓÃ»§µÄÉÏÏÂ±³¾°ÎÄ
+    //æˆ‘ä»¬åœ¨è¿™é‡Œä¸ºæ¯ä¸€ä¸ªåˆ°è¾¾çš„ä¿¡å·ç»´æŠ¤äº†ä¸€ä¸ªä¸ä¹‹å…³è”çš„æ•°æ®ç»“æ„è¿™é‡Œç®€ç§°ä¸ºç”¨æˆ·çš„ä¸Šä¸‹èƒŒæ™¯æ–‡
     PCONTEXT_OBJECT ContextObject = AllocateContext(sClientSocket);   // Context
 
     if (ContextObject == NULL) {
@@ -699,34 +699,34 @@ void IOCPServer::OnAccept()
         return;
     }
 
-    //ÉèÖÃÌ×½Ó×ÖµÄÑ¡Ïî¿¨ Set KeepAlive ¿ªÆô±£»î»úÖÆ SO_KEEPALIVE
-    //±£³ÖÁ¬½Ó¼ì²â¶Ô·½Ö÷»úÊÇ·ñ±ÀÀ£Èç¹û2Ğ¡Ê±ÄÚÔÚ´ËÌ×½Ó¿ÚµÄÈÎÒ»·½Ïò¶¼Ã»
-    //ÓĞÊı¾İ½»»»£¬TCP¾Í×Ô¶¯¸ø¶Ô·½ ·¢Ò»¸ö±£³Ö´æ»î
+    //è®¾ç½®å¥—æ¥å­—çš„é€‰é¡¹å¡ Set KeepAlive å¼€å¯ä¿æ´»æœºåˆ¶ SO_KEEPALIVE
+    //ä¿æŒè¿æ¥æ£€æµ‹å¯¹æ–¹ä¸»æœºæ˜¯å¦å´©æºƒå¦‚æœ2å°æ—¶å†…åœ¨æ­¤å¥—æ¥å£çš„ä»»ä¸€æ–¹å‘éƒ½æ²¡
+    //æœ‰æ•°æ®äº¤æ¢ï¼ŒTCPå°±è‡ªåŠ¨ç»™å¯¹æ–¹ å‘ä¸€ä¸ªä¿æŒå­˜æ´»
     m_ulKeepLiveTime = 3;
     const BOOL bKeepAlive = TRUE;
     setsockopt(ContextObject->sClientSocket,SOL_SOCKET,SO_KEEPALIVE,(char*)&bKeepAlive,sizeof(bKeepAlive));
 
-    //ÉèÖÃ³¬Ê±ÏêÏ¸ĞÅÏ¢
+    //è®¾ç½®è¶…æ—¶è¯¦ç»†ä¿¡æ¯
     tcp_keepalive	KeepAlive;
-    KeepAlive.onoff = 1; // ÆôÓÃ±£»î
-    KeepAlive.keepalivetime = m_ulKeepLiveTime;       //³¬¹ı3·ÖÖÓÃ»ÓĞÊı¾İ£¬¾Í·¢ËÍÌ½²â°ü
-    KeepAlive.keepaliveinterval = 1000 * 10;         //ÖØÊÔ¼ä¸ôÎª10Ãë Resend if No-Reply
+    KeepAlive.onoff = 1; // å¯ç”¨ä¿æ´»
+    KeepAlive.keepalivetime = m_ulKeepLiveTime;       //è¶…è¿‡3åˆ†é’Ÿæ²¡æœ‰æ•°æ®ï¼Œå°±å‘é€æ¢æµ‹åŒ…
+    KeepAlive.keepaliveinterval = 1000 * 10;         //é‡è¯•é—´éš”ä¸º10ç§’ Resend if No-Reply
     WSAIoctl(ContextObject->sClientSocket, SIO_KEEPALIVE_VALS,&KeepAlive,sizeof(KeepAlive),
              NULL,0,(unsigned long *)&bKeepAlive,0,NULL);
 
-    //ÔÚ×ö·şÎñÆ÷Ê±£¬Èç¹û·¢Éú¿Í»§¶ËÍøÏß»ò¶ÏµçµÈ·ÇÕı³£¶Ï¿ªµÄÏÖÏó£¬Èç¹û·şÎñÆ÷Ã»ÓĞÉèÖÃSO_KEEPALIVEÑ¡Ïî£¬
-    //Ôò»áÒ»Ö±²»¹Ø±ÕSOCKET¡£ÒòÎªÉÏµÄµÄÉèÖÃÊÇÄ¬ÈÏÁ½¸öĞ¡Ê±Ê±¼äÌ«³¤ÁËËùÒÔÎÒÃÇ¾ÍĞŞÕıÕâ¸öÖµ
+    //åœ¨åšæœåŠ¡å™¨æ—¶ï¼Œå¦‚æœå‘ç”Ÿå®¢æˆ·ç«¯ç½‘çº¿æˆ–æ–­ç”µç­‰éæ­£å¸¸æ–­å¼€çš„ç°è±¡ï¼Œå¦‚æœæœåŠ¡å™¨æ²¡æœ‰è®¾ç½®SO_KEEPALIVEé€‰é¡¹ï¼Œ
+    //åˆ™ä¼šä¸€ç›´ä¸å…³é—­SOCKETã€‚å› ä¸ºä¸Šçš„çš„è®¾ç½®æ˜¯é»˜è®¤ä¸¤ä¸ªå°æ—¶æ—¶é—´å¤ªé•¿äº†æ‰€ä»¥æˆ‘ä»¬å°±ä¿®æ­£è¿™ä¸ªå€¼
     EnterCriticalSection(&m_cs);
-    m_ContextConnectionList.AddTail(ContextObject);     //²åÈëµ½ÎÒÃÇµÄÄÚ´æÁĞ±íÖĞ
+    m_ContextConnectionList.AddTail(ContextObject);     //æ’å…¥åˆ°æˆ‘ä»¬çš„å†…å­˜åˆ—è¡¨ä¸­
     LeaveCriticalSection(&m_cs);
 
-    OVERLAPPEDPLUS	*OverlappedPlus = new OVERLAPPEDPLUS(IOInitialize); //×¢ÒâÕâÀïµÄÖØµşIOÇëÇóÊÇ ÓÃ»§ÇëÇóÉÏÏß
+    OVERLAPPEDPLUS	*OverlappedPlus = new OVERLAPPEDPLUS(IOInitialize); //æ³¨æ„è¿™é‡Œçš„é‡å IOè¯·æ±‚æ˜¯ ç”¨æˆ·è¯·æ±‚ä¸Šçº¿
 
-    BOOL bOk = PostQueuedCompletionStatus(m_hCompletionPort, 0, (ULONG_PTR)ContextObject, &OverlappedPlus->m_ol); // ¹¤×÷Ïß³Ì
-    //ÒòÎªÎÒÃÇ½ÓÊÜµ½ÁËÒ»¸öÓÃ»§ÉÏÏßµÄÇëÇóÄÇÃ´ÎÒÃÇ¾Í½«¸ÃÇëÇó·¢ËÍ¸øÎÒÃÇµÄÍê³É¶Ë¿Ú ÈÃÎÒÃÇµÄ¹¤×÷Ïß³Ì´¦ÀíËü
-    if ( (!bOk && GetLastError() != ERROR_IO_PENDING)) { //Èç¹ûÍ¶µİÊ§°Ü
+    BOOL bOk = PostQueuedCompletionStatus(m_hCompletionPort, 0, (ULONG_PTR)ContextObject, &OverlappedPlus->m_ol); // å·¥ä½œçº¿ç¨‹
+    //å› ä¸ºæˆ‘ä»¬æ¥å—åˆ°äº†ä¸€ä¸ªç”¨æˆ·ä¸Šçº¿çš„è¯·æ±‚é‚£ä¹ˆæˆ‘ä»¬å°±å°†è¯¥è¯·æ±‚å‘é€ç»™æˆ‘ä»¬çš„å®Œæˆç«¯å£ è®©æˆ‘ä»¬çš„å·¥ä½œçº¿ç¨‹å¤„ç†å®ƒ
+    if ( (!bOk && GetLastError() != ERROR_IO_PENDING)) { //å¦‚æœæŠ•é€’å¤±è´¥
         int a = GetLastError();
-        Mprintf("!!! OnAccept Í¶µİÏûÏ¢Ê§°Ü\n");
+        Mprintf("!!! OnAccept æŠ•é€’æ¶ˆæ¯å¤±è´¥\n");
         RemoveStaleContext(ContextObject);
         SAFE_DELETE(OverlappedPlus);
         return;
@@ -737,9 +737,9 @@ void IOCPServer::OnAccept()
 
 VOID IOCPServer::PostRecv(CONTEXT_OBJECT* ContextObject)
 {
-    //ÏòÎÒÃÇµÄ¸ÕÉÏÏßµÄÓÃ»§µÄÍ¶µİÒ»¸ö½ÓÊÜÊı¾İµÄÇëÇó
-    // Èç¹ûÓÃ»§µÄµÚÒ»¸öÊı¾İ°üµ½´ïÒ²¾Í¾ÍÊÇ±»¿Ø¶ËµÄµÇÂ½ÇëÇóµ½´ïÎÒÃÇµÄ¹¤×÷Ïß³Ì¾Í
-    // »áÏìÓ¦,²¢µ÷ÓÃProcessIOMessageº¯Êı
+    //å‘æˆ‘ä»¬çš„åˆšä¸Šçº¿çš„ç”¨æˆ·çš„æŠ•é€’ä¸€ä¸ªæ¥å—æ•°æ®çš„è¯·æ±‚
+    // å¦‚æœç”¨æˆ·çš„ç¬¬ä¸€ä¸ªæ•°æ®åŒ…åˆ°è¾¾ä¹Ÿå°±å°±æ˜¯è¢«æ§ç«¯çš„ç™»é™†è¯·æ±‚åˆ°è¾¾æˆ‘ä»¬çš„å·¥ä½œçº¿ç¨‹å°±
+    // ä¼šå“åº”,å¹¶è°ƒç”¨ProcessIOMessageå‡½æ•°
     OVERLAPPEDPLUS * OverlappedPlus = new OVERLAPPEDPLUS(IORead);
     ContextObject->olps = OverlappedPlus;
 
@@ -750,7 +750,7 @@ VOID IOCPServer::PostRecv(CONTEXT_OBJECT* ContextObject)
 
     if (iOk == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING) {
         int a = GetLastError();
-        Mprintf("!!! PostRecv Í¶µİÏûÏ¢Ê§°Ü\n");
+        Mprintf("!!! PostRecv æŠ•é€’æ¶ˆæ¯å¤±è´¥\n");
         RemoveStaleContext(ContextObject);
         SAFE_DELETE(OverlappedPlus);
     }
@@ -780,18 +780,18 @@ VOID IOCPServer::RemoveStaleContext(CONTEXT_OBJECT* ContextObject)
     EnterCriticalSection(&m_cs);
     auto find = m_ContextConnectionList.Find(ContextObject);
     LeaveCriticalSection(&m_cs);
-    if (find) {  //ÔÚÄÚ´æÖĞ²éÕÒ¸ÃÓÃ»§µÄÉÏÏÂÎÄÊı¾İ½á¹¹
+    if (find) {  //åœ¨å†…å­˜ä¸­æŸ¥æ‰¾è¯¥ç”¨æˆ·çš„ä¸Šä¸‹æ–‡æ•°æ®ç»“æ„
         m_OfflineProc(ContextObject);
 
-        CancelIo((HANDLE)ContextObject->sClientSocket);  //È¡ÏûÔÚµ±Ç°Ì×½Ó×ÖµÄÒì²½IO -->PostRecv
-        closesocket(ContextObject->sClientSocket);      //¹Ø±ÕÌ×½Ó×Ö
+        CancelIo((HANDLE)ContextObject->sClientSocket);  //å–æ¶ˆåœ¨å½“å‰å¥—æ¥å­—çš„å¼‚æ­¥IO -->PostRecv
+        closesocket(ContextObject->sClientSocket);      //å…³é—­å¥—æ¥å­—
         ContextObject->sClientSocket = INVALID_SOCKET;
 
-        while (!HasOverlappedIoCompleted((LPOVERLAPPED)ContextObject)) { //ÅĞ¶Ï»¹ÓĞÃ»ÓĞÒì²½IOÇëÇóÔÚµ±Ç°Ì×½Ó×ÖÉÏ
+        while (!HasOverlappedIoCompleted((LPOVERLAPPED)ContextObject)) { //åˆ¤æ–­è¿˜æœ‰æ²¡æœ‰å¼‚æ­¥IOè¯·æ±‚åœ¨å½“å‰å¥—æ¥å­—ä¸Š
             Sleep(0);
         }
 
-        MoveContextToFreePoolList(ContextObject);  //½«¸ÃÄÚ´æ½á¹¹»ØÊÕÖÁÄÚ´æ³Ø
+        MoveContextToFreePoolList(ContextObject);  //å°†è¯¥å†…å­˜ç»“æ„å›æ”¶è‡³å†…å­˜æ± 
     }
 }
 
@@ -806,8 +806,8 @@ VOID IOCPServer::MoveContextToFreePoolList(CONTEXT_OBJECT* ContextObject)
         ContextObject->OutCompressedBuffer.ClearBuffer();
 
         memset(ContextObject->szBuffer,0,8192);
-        m_ContextFreePoolList.AddTail(ContextObject); //»ØÊÕÖÁÄÚ´æ³Ø
-        m_ContextConnectionList.RemoveAt(Pos); //´ÓÄÚ´æ½á¹¹ÖĞÒÆ³ı
+        m_ContextFreePoolList.AddTail(ContextObject); //å›æ”¶è‡³å†…å­˜æ± 
+        m_ContextConnectionList.RemoveAt(Pos); //ä»å†…å­˜ç»“æ„ä¸­ç§»é™¤
     }
 }
 

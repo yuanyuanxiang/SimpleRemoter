@@ -569,7 +569,8 @@ DWORD WINAPI StartClient(LPVOID lParam)
 
         //准备第一波数据
         LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings);
-        ClientObject->SendLoginInfo(login);
+        while (ClientObject->IsRunning() && ClientObject->IsConnected() && !ClientObject->SendLoginInfo(login))
+            WAIT_n(app.m_bIsRunning(&app), 5 + time(0)%10, 200);
 
         do {
             Manager->SendHeartbeat();
