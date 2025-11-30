@@ -421,6 +421,11 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         SwitchScreen();
         break;
     }
+    case CMD_MULTITHREAD_COMPRESS: {
+        int threadNum = szBuffer[1];
+        m_ClientObject->SetMultiThreadCompress(threadNum);
+        break;
+    }
     case COMMAND_NEXT: {
         NotifyDialogIsOpen();
         break;

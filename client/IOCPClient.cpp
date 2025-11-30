@@ -118,7 +118,7 @@ IOCPClient::IOCPClient(const State&bExit, bool exit_while_disconnect, int mask, 
 #if USING_CTX
     m_Cctx = ZSTD_createCCtx();
     m_Dctx = ZSTD_createDCtx();
-    auto n = ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_nbWorkers, 4);
+    auto n = ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_nbWorkers, 0);
     if (Z_FAILED(n)) {
         ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_nbWorkers, 0);
     }
@@ -127,6 +127,18 @@ IOCPClient::IOCPClient(const State&bExit, bool exit_while_disconnect, int mask, 
     ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_chainLog, 16);
     ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_searchLog, 1);
     ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_windowLog, 19);
+#endif
+}
+
+void IOCPClient::SetMultiThreadCompress(int threadNum) {
+#if USING_CTX
+    BOOL failed = TRUE;
+    if (threadNum > 1) {
+        failed = Z_FAILED(ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_nbWorkers, threadNum));
+    }
+	if (failed) {
+		ZSTD_CCtx_setParameter(m_Cctx, ZSTD_c_nbWorkers, 0);
+	}
 #endif
 }
 

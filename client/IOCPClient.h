@@ -208,6 +208,7 @@ public:
     {
         return g_bExit;
     }
+    void SetMultiThreadCompress(int threadNum=0);
 protected:
     virtual int ReceiveData(char* buffer, int bufSize, int flags)
     {
