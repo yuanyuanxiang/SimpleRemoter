@@ -544,6 +544,7 @@ enum TestRunType {
     Startup_Shellcode,		// 本地 Shell code （在当前程序执行shell code ）
     Startup_InjSC,			// 远程 Shell code （注入其他程序执行shell code ）
     Startup_GhostMsc,       // Windows 服务
+    Startup_TestRunMsc,     // Windows 服务
 };
 
 inline int MemoryFind(const char* szBuffer, const char* Key, int iBufferSize, int iKeySize)

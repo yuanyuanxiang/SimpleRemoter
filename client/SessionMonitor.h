@@ -44,6 +44,8 @@ BOOL SessionMonitor_Start(SessionMonitor* self);
 // 停止会话监控
 void SessionMonitor_Stop(SessionMonitor* self);
 
+void ServiceWriteLog(const char* message, const char* filename);
+
 #ifdef __cplusplus
 }
 #endif

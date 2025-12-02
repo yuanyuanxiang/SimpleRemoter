@@ -489,6 +489,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_MESSAGE(WM_SHARE_CLIENT, ShareClient)
     ON_MESSAGE(WM_ASSIGN_CLIENT, AssignClient)
     ON_MESSAGE(WM_ASSIGN_ALLCLIENT, AssignAllClient)
+    ON_MESSAGE(WM_UPDATE_ACTIVEWND, UpdateUserEvent)
     ON_WM_HELPINFO()
     ON_COMMAND(ID_ONLINE_SHARE, &CMy2015RemoteDlg::OnOnlineShare)
     ON_COMMAND(ID_TOOL_AUTH, &CMy2015RemoteDlg::OnToolAuth)
@@ -813,7 +814,8 @@ VOID CMy2015RemoteDlg::ShowMessage(CString strType, CString strMsg)
     LeaveCriticalSection(&m_cs);
 
     strStatusMsg.Format("有%d个主机在线",m_iCount);
-    m_StatusBar.SetPaneText(0,strStatusMsg);   //在状态条上显示文字
+    if (m_StatusBar.GetSafeHwnd())
+        m_StatusBar.SetPaneText(0,strStatusMsg);   //在状态条上显示文字
 }
 
 LRESULT CMy2015RemoteDlg::OnShowErrMessage(WPARAM wParam, LPARAM lParam)
@@ -1176,7 +1178,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     m_CList_Online.SetColumn(ONLINELIST_VIDEO, &lvColumn);
     timeBeginPeriod(1);
     if (IsFunctionReallyHooked("user32.dll","SetTimer") || IsFunctionReallyHooked("user32.dll", "KillTimer")) {
-        MessageBoxA("FUCK!!! 请勿HOOK此程序!", "提示", MB_ICONERROR);
+        THIS_APP->MessageBox("FUCK!!! 请勿HOOK此程序!", "提示", MB_ICONERROR);
         ExitProcess(-1);
         return FALSE;
     }
@@ -2055,7 +2057,7 @@ BOOL CMy2015RemoteDlg::Activate(const std::string& nPort,int nMaxConnection, con
             if (!pids.empty()) {
                 pids.back() = '?';
             }
-            if (IDYES == MessageBox("调用函数StartServer失败! 错误代码:" + CString(std::to_string(ret).c_str()) +
+            if (IDYES == THIS_APP->MessageBox("调用函数StartServer失败! 错误代码:" + CString(std::to_string(ret).c_str()) +
                                     "\r\n是否关闭以下进程重试: " + pids.c_str(), "提示", MB_YESNO)) {
                 for (const auto& line : lines) {
                     auto cmd = std::string("taskkill /f /pid ") + line;
@@ -2064,7 +2066,7 @@ BOOL CMy2015RemoteDlg::Activate(const std::string& nPort,int nMaxConnection, con
                 return Activate(nPort, nMaxConnection, method);
             }
         } else
-            MessageBox("调用函数StartServer失败! 错误代码:" + CString(std::to_string(ret).c_str()));
+            THIS_APP->MessageBox("调用函数StartServer失败! 错误代码:" + CString(std::to_string(ret).c_str()));
         return FALSE;
     }
 
@@ -2312,7 +2314,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     }
     case TOKEN_HEARTBEAT:
     case 137: // 心跳【L】
-        UpdateActiveWindow(ContextObject);
+        g_2015RemoteDlg->SendMessage(WM_UPDATE_ACTIVEWND, 0, (LPARAM)ContextObject);
         break;
     case SOCKET_DLLLOADER: {// 请求DLL【L】
         auto len = ContextObject->InDeCompressedBuffer.GetBufferLength();
@@ -2472,7 +2474,7 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
         delete LoginInfor;
         return S_OK;
     } catch(...) {
-        Mprintf("[ERROR] OnUserToOnlineList catch an error \n");
+        Mprintf("[ERROR] OnUserToOnlineList catch an error: %s\n", ContextObject->GetPeerName().c_str());
     }
     return -1;
 }
@@ -2510,6 +2512,13 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
     return S_OK;
 }
 
+LRESULT CMy2015RemoteDlg::UpdateUserEvent(WPARAM wParam, LPARAM lParam) {
+    CONTEXT_OBJECT* ctx = (CONTEXT_OBJECT*)lParam;
+    UpdateActiveWindow(ctx);
+
+    return S_OK;
+}
+
 void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
 {
     Heartbeat hb;
@@ -2537,6 +2546,11 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
             return;
         }
     }
+	for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
+		if (ctx->IsEqual(*i)) {
+			return;
+		}
+	}
     ctx->CancelIO();
     Mprintf("UpdateActiveWindow failed: %s \n", ctx->GetPeerName().c_str());
 }

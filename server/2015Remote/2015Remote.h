@@ -35,16 +35,7 @@ public:
         SAFE_DELETE(m_udpServer);
     }
 
-    BOOL StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort)
-    {
-        UINT ret1 = m_tcpServer->StartServer(NotifyProc, OffProc, uPort);
-        if (ret1) MessageBox(NULL, CString("启动TCP服务失败: ") + std::to_string(uPort).c_str()
-                                 + CString("。错误码: ") + std::to_string(ret1).c_str(), "提示", MB_ICONINFORMATION);
-        UINT ret2 = m_udpServer->StartServer(NotifyProc, OffProc, uPort);
-        if (ret2) MessageBox(NULL, CString("启动UDP服务失败: ") + std::to_string(uPort).c_str()
-                                 + CString("。错误码: ") + std::to_string(ret2).c_str(), "提示", MB_ICONINFORMATION);
-        return (ret1 == 0 || ret2 == 0);
-    }
+    BOOL StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort);
 
     void UpdateMaxConnection(int maxConn)
     {
@@ -65,7 +56,7 @@ public:
     }
 };
 
-class CSplashDlg;  // 前向声明
+#include "SplashDlg.h"
 
 class CMy2015RemoteApp : public CWinApp
 {
@@ -101,6 +92,11 @@ public:
     {
         return m_iniFile;
     }
+
+    int MessageBox(const CString& strText, const CString& strCaption = NULL, UINT nType = 0)
+    {
+        return m_pSplash ? m_pSplash->SafeMessageBox(strText, strCaption, nType) : ::MessageBox(NULL, strText, strCaption, nType);
+	}
 
     // 启动多个服务端，成功返回0
     // nPort示例: 6543;7543

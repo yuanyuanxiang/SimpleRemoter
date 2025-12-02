@@ -25,6 +25,17 @@ CSplashDlg::~CSplashDlg()
         m_fontStatus.DeleteObject();
 }
 
+int CSplashDlg::SafeMessageBox(LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType)
+{
+    SetWindowPos(&wndNoTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+    int result = MessageBox(lpszText, lpszCaption, nType);
+
+    SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+
+    return result;
+}
+
 BOOL CSplashDlg::Create(CWnd* pParent)
 {
     // 注册窗口类

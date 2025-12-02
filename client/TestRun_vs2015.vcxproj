@@ -163,6 +163,8 @@
     <ClCompile Include="Loader.cpp" />
     <ClCompile Include="MemoryModule.c" />
     <ClCompile Include="reg_startup.c" />
+    <ClCompile Include="ServiceWrapper.c" />
+    <ClCompile Include="SessionMonitor.c" />
     <ClCompile Include="test.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -170,6 +172,8 @@
     <ClInclude Include="MemoryModule.h" />
     <ClInclude Include="reg_startup.h" />
     <ClInclude Include="resource1.h" />
+    <ClInclude Include="ServiceWrapper.h" />
+    <ClInclude Include="SessionMonitor.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="TestRun.rc" />
