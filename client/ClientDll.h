@@ -108,10 +108,9 @@ public:
         g_Connection->SetType(CLIENT_TYPE_ONE);
         return true;
     }
-    virtual bool Start(bool block) override
+    virtual bool Start() override
     {
-        if (block) StartClientApp(this);
-        else CloseHandle(__CreateThread(0, 0, StartClientApp, this, 0, 0));
+        StartClientApp(this);
         return true;
     }
     virtual bool Stop() override
@@ -119,11 +118,11 @@ public:
         g_bExit = S_CLIENT_EXIT;
         return true;
     }
-    bool Run(bool block = true)
+    bool Run()
     {
         if (!Initialize()) return false;
-        if (!Start(block)) return false;
-        if (block) Stop();
+        if (!Start()) return false;
+        if (!Stop()) return false;
         return true;
     }
 };

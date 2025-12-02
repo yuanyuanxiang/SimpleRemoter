@@ -307,6 +307,7 @@ public:
     LRESULT assignFunction(WPARAM wParam, LPARAM lParam, BOOL all);
     afx_msg LRESULT AssignClient(WPARAM wParam, LPARAM lParam);
     afx_msg LRESULT AssignAllClient(WPARAM wParam, LPARAM lParam);
+    afx_msg LRESULT UpdateUserEvent(WPARAM wParam, LPARAM lParam);
     afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
     virtual BOOL PreTranslateMessage(MSG* pMsg);
     afx_msg void OnOnlineShare();

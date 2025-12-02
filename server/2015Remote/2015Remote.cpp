@@ -19,6 +19,17 @@
 #include "ServerServiceWrapper.h"
 #pragma comment(lib, "Dbghelp.lib")
 
+BOOL ServerPair::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort)
+{
+    UINT ret1 = m_tcpServer->StartServer(NotifyProc, OffProc, uPort);
+    if (ret1) THIS_APP->MessageBox(CString("启动TCP服务失败: ") + std::to_string(uPort).c_str()
+        + CString("。错误码: ") + std::to_string(ret1).c_str(), "提示", MB_ICONINFORMATION);
+    UINT ret2 = m_udpServer->StartServer(NotifyProc, OffProc, uPort);
+    if (ret2) THIS_APP->MessageBox(CString("启动UDP服务失败: ") + std::to_string(uPort).c_str()
+        + CString("。错误码: ") + std::to_string(ret2).c_str(), "提示", MB_ICONINFORMATION);
+    return (ret1 == 0 || ret2 == 0);
+}
+
 CMy2015RemoteApp* GetThisApp()
 {
     return ((CMy2015RemoteApp*)AfxGetApp());
@@ -236,8 +247,8 @@ BOOL CMy2015RemoteApp::InitInstance()
         if (ERROR_ALREADY_EXISTS == GetLastError()) {
             CloseHandle(m_Mutex);
             m_Mutex = NULL;
-            MessageBoxA(NULL, "A master program is already running, please check Task Manager.",
-                        "Info", MB_ICONINFORMATION);
+            MessageBox("一个主控程序已经在运行，请检查任务管理器。",
+                        "提示", MB_ICONINFORMATION);
             return FALSE;
         }
     }

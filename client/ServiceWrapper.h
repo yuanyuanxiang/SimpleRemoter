@@ -3,14 +3,15 @@
 
 #include <windows.h>
 
+typedef struct MyService {
+	char Name[256];
+	char Display[256];
+	char Description[512];
+} MyService;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// 服务配置：根据需要可修改这些参数
-#define SERVICE_NAME        "RemoteControlService"
-#define SERVICE_DISPLAY     "Remote Control Service"
-#define SERVICE_DESC        "Provides remote desktop control functionality"
 
 /*
 # 停止服务
@@ -26,8 +27,11 @@ net start RemoteControlService
 sc query RemoteControlService
 */
 
-// 直接模式标志
-extern BOOL g_ServiceDirectMode;
+// 自定义服务信息
+void InitWindowsService(MyService info);
+
+// 以Windows服务模式运行程序
+BOOL RunAsWindowsService(int argc, const char* argv[]);
 
 // 检查服务状态
 // 参数:
@@ -48,7 +52,7 @@ int ServiceWrapper_StartSimple(void);
 int ServiceWrapper_Run(void);
 
 // 安装服务
-void ServiceWrapper_Install(void);
+BOOL ServiceWrapper_Install(void);
 
 // 卸载服务
 void ServiceWrapper_Uninstall(void);

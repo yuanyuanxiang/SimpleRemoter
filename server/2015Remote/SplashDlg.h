@@ -1,7 +1,5 @@
 ﻿#pragma once
 
-#include <afxwin.h>
-
 // 启动画面对话框 - 显示加载进度
 class CSplashDlg : public CWnd
 {
@@ -11,6 +9,8 @@ public:
 
     // 创建并显示启动画面
     BOOL Create(CWnd* pParent = NULL);
+
+    int SafeMessageBox(LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType);
 
     // 更新进度 (0-100) - 通过消息队列（用于跨线程）
     void SetProgress(int nPercent);
