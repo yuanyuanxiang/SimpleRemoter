@@ -627,22 +627,26 @@ public:
     // Encode data before compress.
     void Encode(PBYTE data, int len) const
     {
-        Parser.GetEncoder()->Encode((unsigned char*)data, len);
+        auto enc = Parser.GetEncoder();
+        if (enc) enc->Encode((unsigned char*)data, len);
     }
     // Decode data after uncompress.
     void Decode(PBYTE data, int len) const
     {
-        Parser.GetEncoder()->Decode((unsigned char*)data, len);
+        auto enc = Parser.GetEncoder();
+        if (enc) enc->Decode((unsigned char*)data, len);
     }
     // Encode data after compress.
     void Encode2(PBYTE data, int len, PBYTE param) const
     {
-        Parser.GetEncoder2()->Encode((unsigned char*)data, len, param);
+        auto enc = Parser.GetEncoder2();
+        if (enc) enc->Encode((unsigned char*)data, len, param);
     }
     // Decode data before uncompress.
     void Decode2(PBYTE data, int len, PBYTE param) const
     {
-        Parser.GetEncoder2()->Decode((unsigned char*)data, len, param);
+        auto enc = Parser.GetEncoder2();
+        if (enc) enc->Decode((unsigned char*)data, len, param);
     }
     std::string RemoteAddr() const
     {

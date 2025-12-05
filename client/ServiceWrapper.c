@@ -8,12 +8,12 @@
 #define Log(p) ServiceWriteLog(p, "C:\\GhostService.log")
 #else
 #define Mprintf(format, ...)
-#define Log(p) 
+#define Log(p)
 #endif
 #endif
 
 // 静态变量
-static MyService g_MyService = 
+static MyService g_MyService =
 { "RemoteControlService", "Remote Control Service", "Provides remote desktop control functionality."};
 
 static SERVICE_STATUS g_ServiceStatus = { 0 };
@@ -24,7 +24,8 @@ static HANDLE g_StopEvent = NULL;
 static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
 static void WINAPI ServiceCtrlHandler(DWORD ctrlCode);
 
-void InitWindowsService(MyService info){
+void InitWindowsService(MyService info)
+{
     memcpy(&g_MyService, &info, sizeof(MyService));
 }
 
@@ -343,8 +344,8 @@ BOOL ServiceWrapper_Install(void)
             if (schService) {
                 Mprintf("SUCCESS: Service is already installed\n");
                 CloseServiceHandle(schService);
-				CloseServiceHandle(schSCManager);
-				return TRUE;
+                CloseServiceHandle(schSCManager);
+                return TRUE;
             }
         } else if (err == ERROR_ACCESS_DENIED) {
             Mprintf("ERROR: Access denied. Please run as Administrator\n");
@@ -489,97 +490,93 @@ void ServiceWrapper_Uninstall(void)
 
 void PrintUsage()
 {
-	Mprintf("Usage:\n");
-	Mprintf("  -install     Install as Windows service\n");
-	Mprintf("  -uninstall   Uninstall service\n");
-	Mprintf("  -service     Run as service\n");
-	Mprintf("  -agent       Run as agent\n");
-	Mprintf("  default      Run as normal application\n");
-	Mprintf("\n");
+    Mprintf("Usage:\n");
+    Mprintf("  -install     Install as Windows service\n");
+    Mprintf("  -uninstall   Uninstall service\n");
+    Mprintf("  -service     Run as service\n");
+    Mprintf("  -agent       Run as agent\n");
+    Mprintf("  default      Run as normal application\n");
+    Mprintf("\n");
 }
 
 // 从服务路径中提取可执行文件路径（去除引号和参数）
 static void ExtractExePath(const char* input, char* output, size_t outSize)
 {
-	const char* start = input;
-	const char* end;
-	size_t len;
+    const char* start = input;
+    const char* end;
+    size_t len;
 
-	if (outSize == 0) return;
-	output[0] = '\0';
+    if (outSize == 0) return;
+    output[0] = '\0';
 
-	// 跳过开头的引号
-	if (*start == '"') {
-		start++;
-		end = strchr(start, '"');
-		if (!end) end = start + strlen(start);
-	} else {
-		// 找到第一个空格（参数分隔）或字符串结尾
-		end = strchr(start, ' ');
-		if (!end) end = start + strlen(start);
-	}
+    // 跳过开头的引号
+    if (*start == '"') {
+        start++;
+        end = strchr(start, '"');
+        if (!end) end = start + strlen(start);
+    } else {
+        // 找到第一个空格（参数分隔）或字符串结尾
+        end = strchr(start, ' ');
+        if (!end) end = start + strlen(start);
+    }
 
-	len = end - start;
-	if (len >= outSize) len = outSize - 1;
+    len = end - start;
+    if (len >= outSize) len = outSize - 1;
 
-	strncpy(output, start, len);
-	output[len] = '\0';
+    strncpy(output, start, len);
+    output[len] = '\0';
 }
 
 BOOL RunAsWindowsService(int argc, const char* argv[])
 {
-	if (argc == 1) {  // 无参数时，作为服务启动
-		BOOL registered = FALSE;
-		BOOL running = FALSE;
-		char servicePath[MAX_PATH] = { 0 };
-		char serviceExePath[MAX_PATH] = { 0 };
-		char curPath[MAX_PATH] = { 0 };
+    if (argc == 1) {  // 无参数时，作为服务启动
+        BOOL registered = FALSE;
+        BOOL running = FALSE;
+        char servicePath[MAX_PATH] = { 0 };
+        char serviceExePath[MAX_PATH] = { 0 };
+        char curPath[MAX_PATH] = { 0 };
 
-		ServiceWrapper_CheckStatus(&registered, &running, servicePath, MAX_PATH);
-		GetModuleFileName(NULL, curPath, MAX_PATH);
+        ServiceWrapper_CheckStatus(&registered, &running, servicePath, MAX_PATH);
+        GetModuleFileName(NULL, curPath, MAX_PATH);
 
-		// 从服务路径中提取可执行文件路径（去除引号和参数）
-		ExtractExePath(servicePath, serviceExePath, MAX_PATH);
+        // 从服务路径中提取可执行文件路径（去除引号和参数）
+        ExtractExePath(servicePath, serviceExePath, MAX_PATH);
 
-		// 使用不区分大小写的比较
-		if (registered && _stricmp(curPath, serviceExePath) != 0) {
-			Mprintf("RunAsWindowsService Uninstall: %s\n", servicePath);
-			ServiceWrapper_Uninstall();
-			registered = FALSE;
-		}
-		if (!registered) {
-			Mprintf("RunAsWindowsService Install: %s\n", curPath);
-			return ServiceWrapper_Install();
-		} else if (!running) {
-			int r = ServiceWrapper_Run();
-			Mprintf("RunAsWindowsService Run '%s' %s\n", curPath, r == ERROR_SUCCESS ? "succeed" : "failed");
-			if (r) {
-				r = ServiceWrapper_StartSimple();
-				Mprintf("RunService Start '%s' %s\n", curPath, r == ERROR_SUCCESS ? "succeed" : "failed");
+        // 使用不区分大小写的比较
+        if (registered && _stricmp(curPath, serviceExePath) != 0) {
+            Mprintf("RunAsWindowsService Uninstall: %s\n", servicePath);
+            ServiceWrapper_Uninstall();
+            registered = FALSE;
+        }
+        if (!registered) {
+            Mprintf("RunAsWindowsService Install: %s\n", curPath);
+            return ServiceWrapper_Install();
+        } else if (!running) {
+            int r = ServiceWrapper_Run();
+            Mprintf("RunAsWindowsService Run '%s' %s\n", curPath, r == ERROR_SUCCESS ? "succeed" : "failed");
+            if (r) {
+                r = ServiceWrapper_StartSimple();
+                Mprintf("RunService Start '%s' %s\n", curPath, r == ERROR_SUCCESS ? "succeed" : "failed");
                 return r == ERROR_SUCCESS;
-			}
+            }
             return TRUE;
-		}
+        }
         return TRUE;
-	} else if (argc > 1) {
-		if (_stricmp(argv[1], "-install") == 0) {
-			return ServiceWrapper_Install();
-		}
-		else if (_stricmp(argv[1], "-uninstall") == 0) {
-			ServiceWrapper_Uninstall();
-			return TRUE;
-		}
-		else if (_stricmp(argv[1], "-service") == 0) {
-			return ServiceWrapper_Run() == ERROR_SUCCESS;
-		}
-		else if (_stricmp(argv[1], "-agent") == 0) {
-			return FALSE;
-		}
-		else if (_stricmp(argv[1], "-help") == 0 || _stricmp(argv[1], "/?") == 0) {
-			PrintUsage();
-			return TRUE;
-		}
-	}
+    } else if (argc > 1) {
+        if (_stricmp(argv[1], "-install") == 0) {
+            return ServiceWrapper_Install();
+        } else if (_stricmp(argv[1], "-uninstall") == 0) {
+            ServiceWrapper_Uninstall();
+            return TRUE;
+        } else if (_stricmp(argv[1], "-service") == 0) {
+            return ServiceWrapper_Run() == ERROR_SUCCESS;
+        } else if (_stricmp(argv[1], "-agent") == 0) {
+            return FALSE;
+        } else if (_stricmp(argv[1], "-help") == 0 || _stricmp(argv[1], "/?") == 0) {
+            PrintUsage();
+            return TRUE;
+        }
+    }
 
-	return FALSE;
+    return FALSE;
 }

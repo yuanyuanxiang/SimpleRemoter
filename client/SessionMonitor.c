@@ -11,7 +11,7 @@
 #ifdef _DEBUG
 #define SessionLog(p) ServiceWriteLog(p, "C:\\SessionMonitor.log")
 #else
-#define SessionLog(p) 
+#define SessionLog(p)
 #endif
 
 // Ç°ÏòÉùÃ÷
@@ -91,18 +91,18 @@ static void AgentArray_RemoveAt(AgentProcessArray* arr, size_t index)
 // ============================================
 void ServiceWriteLog(const char* message, const char* filename)
 {
-	FILE* f;
-	SYSTEMTIME st;
+    FILE* f;
+    SYSTEMTIME st;
 
-	f = fopen(filename, "a");
-	if (f) {
-		GetLocalTime(&st);
-		fprintf(f, "[%04d-%02d-%02d %02d:%02d:%02d] %s\n",
-			st.wYear, st.wMonth, st.wDay,
-			st.wHour, st.wMinute, st.wSecond,
-			message);
-		fclose(f);
-	}
+    f = fopen(filename, "a");
+    if (f) {
+        GetLocalTime(&st);
+        fprintf(f, "[%04d-%02d-%02d %02d:%02d:%02d] %s\n",
+                st.wYear, st.wMonth, st.wDay,
+                st.wHour, st.wMinute, st.wSecond,
+                message);
+        fclose(f);
+    }
 }
 
 // ============================================

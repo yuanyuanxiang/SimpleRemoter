@@ -410,7 +410,7 @@ BOOL IOCPServer::OnClientInitializing(PCONTEXT_OBJECT  ContextObject, DWORD dwTr
 // May be this function should be a member of `CONTEXT_OBJECT`.
 BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyProc m_NotifyProc, ZSTD_DCtx* m_Dctx)
 {
-    AUTO_TICK(40, "");
+    AUTO_TICK(50, ContextObject->GetPeerName());
     BOOL ret = 1;
     try {
         if (dwTrans == 0) {  //对方关闭了套接字

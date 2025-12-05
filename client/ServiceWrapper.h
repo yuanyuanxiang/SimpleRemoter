@@ -4,9 +4,9 @@
 #include <windows.h>
 
 typedef struct MyService {
-	char Name[256];
-	char Display[256];
-	char Description[512];
+    char Name[256];
+    char Display[256];
+    char Description[512];
 } MyService;
 
 #ifdef __cplusplus
