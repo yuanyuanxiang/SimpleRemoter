@@ -7,6 +7,7 @@
 #include "pwd_gen.h"
 #include "2015Remote.h"
 #include "common/skCrypter.h"
+#include "2015RemoteDlg.h"
 
 // CPasswordDlg 对话框
 
@@ -196,7 +197,7 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
                            getFixedLengthID(finalKey);
     m_sPassword = fixedKey.c_str();
     m_EditPassword.SetWindowTextA(fixedKey.c_str());
-    std::string hardwareID = getHardwareID();
+    std::string hardwareID = getHardwareID(getHwFallback);
     std::string hashedID = hashSHA256(hardwareID);
     std::string deviceID = getFixedLengthID(hashedID);
     std::string hmac = genHMAC(pwdHash, m_sUserPwd.GetString());

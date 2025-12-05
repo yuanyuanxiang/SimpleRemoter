@@ -1030,6 +1030,12 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     AUTO_TICK(500, "");
     CDialogEx::OnInitDialog();
 
+	UPDATE_SPLASH(15, "正在注册主控信息...");
+	THIS_CFG.SetStr("settings", "MainWnd", std::to_string((uint64_t)GetSafeHwnd()));
+	THIS_CFG.SetStr("settings", "SN", getDeviceID(getHwFallback));
+	THIS_CFG.SetStr("settings", "PwdHash", GetPwdHash());
+	THIS_CFG.SetStr("settings", "MasterHash", GetMasterHash());
+
     UPDATE_SPLASH(20, "正在初始化文件上传模块...");
     int ret = InitFileUpload(GetHMAC());
     g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, AfxGetInstanceHandle(), 0);
@@ -1199,10 +1205,6 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
         OnCancel();
         return FALSE;
     }
-    THIS_CFG.SetStr("settings", "MainWnd", std::to_string((uint64_t)GetSafeHwnd()));
-    THIS_CFG.SetStr("settings", "SN", getDeviceID());
-    THIS_CFG.SetStr("settings", "PwdHash", GetPwdHash());
-    THIS_CFG.SetStr("settings", "MasterHash", GetMasterHash());
 
     UPDATE_SPLASH(100, "启动完成!");
     CloseSplash();
@@ -1790,7 +1792,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
         auto settings = "settings", pwdKey = "Password";
         // 验证口令
         CPasswordDlg dlg(this);
-        static std::string hardwareID = getHardwareID();
+        static std::string hardwareID = getHardwareID(getHwFallback);
         static std::string hashedID = hashSHA256(hardwareID);
         static std::string deviceID = getFixedLengthID(hashedID);
         CString pwd = THIS_CFG.GetStr(settings, pwdKey, "").c_str();
@@ -2771,7 +2773,7 @@ LRESULT CMy2015RemoteDlg::ShareClient(WPARAM wParam, LPARAM lParam)
 void CMy2015RemoteDlg::OnToolAuth()
 {
     CPwdGenDlg dlg;
-    std::string hardwareID = getHardwareID();
+    std::string hardwareID = getHardwareID(getHwFallback);
     std::string hashedID = hashSHA256(hardwareID);
     std::string deviceID = getFixedLengthID(hashedID);
     dlg.m_sDeviceID = deviceID.c_str();

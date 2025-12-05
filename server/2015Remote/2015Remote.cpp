@@ -232,8 +232,45 @@ static BOOL IsAgentMode()
 
 // CMy2015RemoteApp 初始化
 
+BOOL IsRunningAsAdmin()
+{
+	BOOL isAdmin = FALSE;
+	PSID administratorsGroup = NULL;
+
+	SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
+	if (AllocateAndInitializeSid(&NtAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS,
+		0, 0, 0, 0, 0, 0, &administratorsGroup)) {
+		if (!CheckTokenMembership(NULL, administratorsGroup, &isAdmin)) {
+			isAdmin = FALSE;
+		}
+
+		FreeSid(administratorsGroup);
+	}
+
+	return isAdmin;
+}
+
+BOOL LaunchAsAdmin(const char* szFilePath, const char* verb)
+{
+	SHELLEXECUTEINFOA shExecInfo;
+	ZeroMemory(&shExecInfo, sizeof(SHELLEXECUTEINFOA));
+	shExecInfo.cbSize = sizeof(SHELLEXECUTEINFOA);
+	shExecInfo.fMask = SEE_MASK_DEFAULT;
+	shExecInfo.hwnd = NULL;
+	shExecInfo.lpVerb = verb;
+	shExecInfo.lpFile = szFilePath;
+	shExecInfo.nShow = SW_NORMAL;
+
+	return ShellExecuteExA(&shExecInfo);
+}
+
 BOOL CMy2015RemoteApp::InitInstance()
 {
+	char curFile[MAX_PATH] = { 0 };
+	GetModuleFileNameA(NULL, curFile, MAX_PATH);
+	if (!IsRunningAsAdmin() && LaunchAsAdmin(curFile, "runas"))
+        return FALSE;
+
     // 首先处理服务命令行参数
     if (HandleServiceCommandLine()) {
         return FALSE;  // 服务命令已处理，退出
