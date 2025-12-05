@@ -137,8 +137,8 @@ public:
             int s(this->time());
             if (s > span) {
                 char buf[1024];
-                tag.empty() ? sprintf_s(buf, "%s(%d) : [%s] cost [%d]ms.\n", file, line, func, s) : 
-                    sprintf_s(buf, "%s(%d) : [%s] cost [%d]ms. Tag= %s. \n", file, line, func, s, tag.c_str());
+                tag.empty() ? sprintf_s(buf, "%s(%d) : [%s] cost [%d]ms.\n", file, line, func, s) :
+                   sprintf_s(buf, "%s(%d) : [%s] cost [%d]ms. Tag= %s. \n", file, line, func, s, tag.c_str());
                 OutputDebugStringA(buf);
             }
             span = 0;

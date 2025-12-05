@@ -96,7 +96,7 @@ public:
     int MessageBox(const CString& strText, const CString& strCaption = NULL, UINT nType = 0)
     {
         return m_pSplash ? m_pSplash->SafeMessageBox(strText, strCaption, nType) : ::MessageBox(NULL, strText, strCaption, nType);
-	}
+    }
 
     // 启动多个服务端，成功返回0
     // nPort示例: 6543;7543

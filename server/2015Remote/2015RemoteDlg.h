@@ -13,6 +13,9 @@
 // 是否在退出主控端时也退出客户端
 #define CLIENT_EXIT_WITH_SERVER 0
 
+// 是否使用同步事件处理消息
+#define USING_EVENT 0
+
 typedef struct DllInfo {
     std::string Name;
     Buffer* Data;
@@ -205,7 +208,7 @@ public:
     BOOL Activate(const std::string& nPort, int nMaxConnection, const std::string& method);
     void UpdateActiveWindow(CONTEXT_OBJECT* ctx);
     void SendMasterSettings(CONTEXT_OBJECT* ctx);
-    VOID SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, bool is64Bit);
+    BOOL SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, bool is64Bit);
     Buffer* m_ServerDLL[PAYLOAD_MAXTYPE];
     Buffer* m_ServerBin[PAYLOAD_MAXTYPE];
     MasterSettings m_settings;
@@ -223,6 +226,8 @@ public:
     std::string m_selectedGroup;
     void LoadListData(const std::string& group);
     void DeletePopupWindow();
+    context* FindHost(context* ctx);
+    context* FindHost(int port);
 
     CStatusBar m_StatusBar;          //状态条
     CTrueColorToolBar m_ToolBar;

@@ -200,12 +200,12 @@ void CBuildDlg::OnBnClickedOk()
         startup = Startup_GhostMsc;
         szBuffer = ReadResource(is64bit ? IDR_GHOST_X64 : IDR_GHOST_X86, dwFileSize);
         break;
-	case IndexTestRunMsc:
-		file = "TestRun.exe";
-		typ = CLIENT_TYPE_MEMDLL;
+    case IndexTestRunMsc:
+        file = "TestRun.exe";
+        typ = CLIENT_TYPE_MEMDLL;
         startup = Startup_TestRunMsc;
-		szBuffer = ReadResource(is64bit ? IDR_TESTRUN_X64 : IDR_TESTRUN_X86, dwFileSize);
-		break;
+        szBuffer = ReadResource(is64bit ? IDR_TESTRUN_X64 : IDR_TESTRUN_X86, dwFileSize);
+        break;
     case IndexServerDll:
         file = "ServerDll.dll";
         typ = CLIENT_TYPE_DLL;

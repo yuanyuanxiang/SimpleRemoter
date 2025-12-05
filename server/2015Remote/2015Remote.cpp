@@ -23,10 +23,10 @@ BOOL ServerPair::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, U
 {
     UINT ret1 = m_tcpServer->StartServer(NotifyProc, OffProc, uPort);
     if (ret1) THIS_APP->MessageBox(CString("启动TCP服务失败: ") + std::to_string(uPort).c_str()
-        + CString("。错误码: ") + std::to_string(ret1).c_str(), "提示", MB_ICONINFORMATION);
+                                       + CString("。错误码: ") + std::to_string(ret1).c_str(), "提示", MB_ICONINFORMATION);
     UINT ret2 = m_udpServer->StartServer(NotifyProc, OffProc, uPort);
     if (ret2) THIS_APP->MessageBox(CString("启动UDP服务失败: ") + std::to_string(uPort).c_str()
-        + CString("。错误码: ") + std::to_string(ret2).c_str(), "提示", MB_ICONINFORMATION);
+                                       + CString("。错误码: ") + std::to_string(ret2).c_str(), "提示", MB_ICONINFORMATION);
     return (ret1 == 0 || ret2 == 0);
 }
 
@@ -248,7 +248,7 @@ BOOL CMy2015RemoteApp::InitInstance()
             CloseHandle(m_Mutex);
             m_Mutex = NULL;
             MessageBox("一个主控程序已经在运行，请检查任务管理器。",
-                        "提示", MB_ICONINFORMATION);
+                       "提示", MB_ICONINFORMATION);
             return FALSE;
         }
     }
