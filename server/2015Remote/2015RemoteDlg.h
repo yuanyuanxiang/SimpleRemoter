@@ -6,6 +6,7 @@
 #include "afxcmn.h"
 #include "TrueColorToolBar.h"
 #include "IOCPServer.h"
+#include <common/location.h>
 
 //////////////////////////////////////////////////////////////////////////
 // 以下为特殊需求使用
@@ -105,6 +106,11 @@ enum {
 };
 
 class CSplashDlg;  // 前向声明
+
+inline std::string getHwFallback() {
+	IPConverter cvt;
+	return cvt.getPublicIP();
+}
 
 // CMy2015RemoteDlg 对话框
 class CMy2015RemoteDlg : public CDialogEx

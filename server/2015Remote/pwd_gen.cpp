@@ -89,13 +89,16 @@ std::string execCommand(const char* cmd)
 }
 
 // 获取硬件 ID（CPU + 主板 + 硬盘）
-std::string getHardwareID()
+std::string getHardwareID(fallback fb)
 {
     std::string cpuID = execCommand("wmic cpu get processorid");
     std::string boardID = execCommand("wmic baseboard get serialnumber");
     std::string diskID = execCommand("wmic diskdrive get serialnumber");
 
     std::string combinedID = cpuID + "|" + boardID + "|" + diskID;
+    if (fb && combinedID.find("ERROR") != std::string::npos) {
+        return fb();
+    }
     return combinedID;
 }
 
@@ -144,9 +147,9 @@ std::string deriveKey(const std::string& password, const std::string& hardwareID
     return hashSHA256(password + " + " + hardwareID);
 }
 
-std::string getDeviceID()
+std::string getDeviceID(fallback fb)
 {
-    static std::string hardwareID = getHardwareID();
+    static std::string hardwareID = getHardwareID(fb);
     static std::string hashedID = hashSHA256(hardwareID);
     static std::string deviceID = getFixedLengthID(hashedID);
     return deviceID;

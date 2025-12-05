@@ -2,10 +2,11 @@
 
 #include <string>
 
+typedef std::string(*fallback)();
 
 // 对生成服务端功能进行加密
 
-std::string getHardwareID();
+std::string getHardwareID(fallback fb = NULL);
 
 std::string hashSHA256(const std::string& data);
 
@@ -15,7 +16,7 @@ std::string getFixedLengthID(const std::string& hash);
 
 std::string deriveKey(const std::string& password, const std::string& hardwareID);
 
-std::string getDeviceID();
+std::string getDeviceID(fallback fb = NULL);
 
 // Use HMAC to sign a message.
 uint64_t SignMessage(const std::string& pwd, BYTE* msg, int len);
