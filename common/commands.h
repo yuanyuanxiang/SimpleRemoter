@@ -1128,4 +1128,24 @@ public:
 #define MYMSG MSG64
 #endif
 
+typedef struct CharMsg {
+    char data[256];
+    bool needFree;
+    CharMsg(const char* msg, bool free = true) {
+        memset(data, 0, sizeof(data));
+        strcpy_s(data, msg);
+        needFree = free;
+    }
+    CharMsg(int len, bool free = true) {
+        memset(data, 0, sizeof(data));
+        needFree = free;
+    }
+    char& operator[](int index) {
+        return data[index];
+    }
+    operator const char* () const {
+        return data;
+    }
+}CharMsg;
+
 #endif
