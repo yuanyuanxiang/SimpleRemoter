@@ -779,9 +779,9 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 LRESULT CMy2015RemoteDlg::OnShowMessage(WPARAM wParam, LPARAM lParam)
 {
     if (wParam && !lParam) {
-        CString* text = (CString*)wParam;
-        ShowMessage("提示信息", *text);
-        delete text;
+        CharMsg* msg = (CharMsg*)wParam;
+        ShowMessage("提示信息", msg->data);
+        if (msg->needFree) delete msg;
         return S_OK;
     }
     std::string pwd = THIS_CFG.GetStr("settings", "Password");
@@ -1222,7 +1222,8 @@ DWORD WINAPI CMy2015RemoteDlg::StartFrpClient(LPVOID param)
     CString tip = !ip.empty() && ip != cvt.getPublicIP() ?
                   CString(ip.c_str()) + " 必须是\"公网IP\"或反向代理服务器IP" :
                   "请设置\"公网IP\"，或使用反向代理服务器的IP";
-    This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CString(tip), NULL);
+    CharMsg* msg = new CharMsg(tip);
+    This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
     int usingFRP = 0;
 #ifdef _WIN64
     usingFRP = ip.empty() ? 0 : THIS_CFG.GetInt("frp", "UseFrp");
@@ -2213,6 +2214,32 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     // 【L】：主机上下线和授权
     // 【x】：对话框相关功能
     switch (cmd) {
+    case TOKEN_AUTH: {
+        BOOL valid = FALSE;
+        if (len > 20) {
+            std::string sn(szBuffer + 1, szBuffer + 20); // length: 19
+            std::string passcode(szBuffer + 20, szBuffer + len);
+            auto v = splitString(passcode, '-');
+            if (v.size() == 6 || v.size() == 7) {
+				std::vector<std::string> subvector(v.end() - 4, v.end());
+				std::string password = v[0] + " - " + v[1] + ": " + GetPwdHash() + (v.size() == 6 ? "" : ": " + v[2]);
+				std::string finalKey = deriveKey(password, sn);
+				std::string hash256 = joinString(subvector, '-');
+				std::string fixedKey = getFixedLengthID(finalKey);
+				valid = (hash256 == fixedKey);
+            }
+            if (valid) {
+                std::string tip = passcode + " 校验成功: " + sn;
+                CharMsg* msg = new CharMsg(tip.c_str());
+                PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+            }
+        }
+        char resp[100] = { valid };
+        const char* msg = valid ? "此程序已获授权，请遵守授权协议，感谢合作" : "未获授权";
+        memcpy(resp + 4, msg, strlen(msg));
+        ContextObject->Send2Client((PBYTE)resp, sizeof(resp));
+        break;
+    }
     case COMMAND_GET_FILE: {
         // 发送文件
         int result;
@@ -2758,22 +2785,22 @@ void CMy2015RemoteDlg::OnOnlineShare()
         MessageBox("字符串长度超出[0, 250]范围限制!", "提示", MB_ICONINFORMATION);
         return;
     }
-    char* buf = new char[dlg.m_str.GetLength()+1];
-    memcpy(buf, dlg.m_str, dlg.m_str.GetLength());
+    CharMsg* buf = new CharMsg(dlg.m_str.GetLength()+1);
+    memcpy(buf->data, dlg.m_str, dlg.m_str.GetLength());
     buf[dlg.m_str.GetLength()] = 0;
     PostMessageA(WM_SHARE_CLIENT, (WPARAM)buf, NULL);
 }
 
 LRESULT CMy2015RemoteDlg::ShareClient(WPARAM wParam, LPARAM lParam)
 {
-    char* buf = (char*)wParam;
-    int len = strlen(buf);
+    CharMsg* buf = (CharMsg*)wParam;
+    int len = strlen(*buf);
     BYTE bToken[_MAX_PATH] = { COMMAND_SHARE };
     // 目标主机类型
     bToken[1] = SHARE_TYPE_YAMA;
-    memcpy(bToken + 2, buf, len);
+    memcpy(bToken + 2, buf->data, len);
     lParam ? SendAllCommand(bToken, sizeof(bToken)) : SendSelectedCommand(bToken, sizeof(bToken));
-    SAFE_DELETE_AR(buf);
+    if(buf->needFree) delete buf;
     return S_OK;
 }
 
@@ -3511,10 +3538,10 @@ void CMy2015RemoteDlg::OnOnlineAssignTo()
         MessageBox("超出使用时间可输入的字符数限制!", "提示", MB_ICONINFORMATION);
         return;
     }
-    char* buf1 = new char[dlg.m_str.GetLength() + 1];
-    char *buf2 = new char[dlg.m_sSecondInput.GetLength() + 1];
-    memcpy(buf1, dlg.m_str, dlg.m_str.GetLength());
-    memcpy(buf2, dlg.m_sSecondInput, dlg.m_sSecondInput.GetLength());
+    CharMsg* buf1 = new CharMsg(dlg.m_str.GetLength() + 1);
+    CharMsg* buf2 = new CharMsg(dlg.m_sSecondInput.GetLength() + 1);
+    memcpy(buf1->data, dlg.m_str, dlg.m_str.GetLength());
+    memcpy(buf2->data, dlg.m_sSecondInput, dlg.m_sSecondInput.GetLength());
     buf1[dlg.m_str.GetLength()] = 0;
     buf2[dlg.m_sSecondInput.GetLength()] = 0;
     PostMessageA(WM_ASSIGN_CLIENT, (WPARAM)buf1, (LPARAM)buf2);
@@ -3522,17 +3549,17 @@ void CMy2015RemoteDlg::OnOnlineAssignTo()
 
 LRESULT CMy2015RemoteDlg::assignFunction(WPARAM wParam, LPARAM lParam, BOOL all)
 {
-    char* buf1 = (char*)wParam, * buf2 = (char*)lParam;
-    int len1 = strlen(buf1), len2 = strlen(buf2);
+    CharMsg* buf1 = (CharMsg*)wParam, *buf2 = (CharMsg*)lParam;
+    int len1 = strlen(*buf1), len2 = strlen(*buf2);
     BYTE bToken[_MAX_PATH] = { COMMAND_ASSIGN_MASTER };
     // 目标主机类型
     bToken[1] = SHARE_TYPE_YAMA_FOREVER;
-    memcpy(bToken + 2, buf1, len1);
+    memcpy(bToken + 2, buf1->data, len1);
     bToken[2 + len1] = ':';
-    memcpy(bToken + 2 + len1 + 1, buf2, len2);
+    memcpy(bToken + 2 + len1 + 1, buf2->data, len2);
     all ? SendAllCommand(bToken, sizeof(bToken)) : SendSelectedCommand(bToken, sizeof(bToken));
-    SAFE_DELETE_AR(buf1);
-    SAFE_DELETE_AR(buf2);
+    if(buf1->needFree) delete buf1;
+    if(buf2->needFree) delete buf2;
     return S_OK;
 }
 
