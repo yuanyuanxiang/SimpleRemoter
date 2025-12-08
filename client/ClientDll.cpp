@@ -1,4 +1,4 @@
-// ClientDll.cpp : Defines the entry point for the DLL application.
+﻿// ClientDll.cpp : Defines the entry point for the DLL application.
 //
 
 #include "stdafx.h"
@@ -217,7 +217,7 @@ int main(int argc, const char *argv[])
     }
 
     SetConsoleCtrlHandler(&callback, TRUE);
-    const char* ip = argc > 1 ? argv[1] : NULL;
+    const char* ip = (argc > 1 && argv[1][0] != '-') ? argv[1] : NULL;
     int port = argc > 2 ? atoi(argv[2]) : 6543;
     ClientApp& app(g_MyApp);
     app.g_Connection->SetType(CLIENT_TYPE_ONE);

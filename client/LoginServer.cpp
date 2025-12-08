@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+ï»¿#include "StdAfx.h"
 #include "LoginServer.h"
 #include "Common.h"
 #include <string>
@@ -30,16 +30,16 @@ bool IsWindows11()
 
 /************************************************************************
 ---------------------
-×÷Õß£ºIT1995
-À´Ô´£ºCSDN
-Ô­ÎÄ£ºhttps://blog.csdn.net/qq78442761/article/details/64440535
-°æÈ¨ÉùÃ÷£º±¾ÎÄÎª²©Ö÷Ô­´´ÎÄÕÂ£¬×ªÔØÇë¸½ÉÏ²©ÎÄÁ´½Ó£¡
-ĞŞ¸ÄËµÃ÷£º2019.3.29ÓÉÔ¬ãäÏéĞŞ¸Ä
+ä½œè€…ï¼šIT1995
+æ¥æºï¼šCSDN
+åŸæ–‡ï¼šhttps://blog.csdn.net/qq78442761/article/details/64440535
+ç‰ˆæƒå£°æ˜ï¼šæœ¬æ–‡ä¸ºåšä¸»åŸåˆ›æ–‡ç« ï¼Œè½¬è½½è¯·é™„ä¸Šåšæ–‡é“¾æ¥ï¼
+ä¿®æ”¹è¯´æ˜ï¼š2019.3.29ç”±è¢æ²…ç¥¥ä¿®æ”¹
 ************************************************************************/
 std::string getSystemName()
 {
-    std::string vname("Î´Öª²Ù×÷ÏµÍ³");
-    //ÏÈÅĞ¶ÏÊÇ·ñÎªwin8.1»òwin10
+    std::string vname("æœªçŸ¥æ“ä½œç³»ç»Ÿ");
+    //å…ˆåˆ¤æ–­æ˜¯å¦ä¸ºwin8.1æˆ–win10
     typedef void(__stdcall*NTPROC)(DWORD*, DWORD*, DWORD*);
     HINSTANCE hinst = LoadLibrary("ntdll.dll");
     if (hinst == NULL) {
@@ -47,7 +47,7 @@ std::string getSystemName()
     }
     if (IsWindows11()) {
         vname = "Windows 11";
-        Mprintf("´ËµçÄÔµÄ°æ±¾Îª:%s\n", vname.c_str());
+        Mprintf("æ­¤ç”µè„‘çš„ç‰ˆæœ¬ä¸º:%s\n", vname.c_str());
         return vname;
     }
     DWORD dwMajor, dwMinor, dwBuildNumber;
@@ -58,31 +58,31 @@ std::string getSystemName()
     proc(&dwMajor, &dwMinor, &dwBuildNumber);
     if (dwMajor == 6 && dwMinor == 3) {	//win 8.1
         vname = "Windows 8.1";
-        Mprintf("´ËµçÄÔµÄ°æ±¾Îª:%s\n", vname.c_str());
+        Mprintf("æ­¤ç”µè„‘çš„ç‰ˆæœ¬ä¸º:%s\n", vname.c_str());
         return vname;
     }
     if (dwMajor == 10 && dwMinor == 0) {	//win 10
         vname = "Windows 10";
-        Mprintf("´ËµçÄÔµÄ°æ±¾Îª:%s\n", vname.c_str());
+        Mprintf("æ­¤ç”µè„‘çš„ç‰ˆæœ¬ä¸º:%s\n", vname.c_str());
         return vname;
     }
-    //ÏÂÃæ²»ÄÜÅĞ¶ÏWin Server£¬ÒòÎª±¾ÈË»¹Î´ÓĞÕâÖÖÏµÍ³µÄ»ú×Ó£¬ÔİÊ±²»¸ø³ö
+    //ä¸‹é¢ä¸èƒ½åˆ¤æ–­Win Serverï¼Œå› ä¸ºæœ¬äººè¿˜æœªæœ‰è¿™ç§ç³»ç»Ÿçš„æœºå­ï¼Œæš‚æ—¶ä¸ç»™å‡º
 
-    //ÅĞ¶Ïwin8.1ÒÔÏÂµÄ°æ±¾
-    SYSTEM_INFO info;                //ÓÃSYSTEM_INFO½á¹¹ÅĞ¶Ï64Î»AMD´¦ÀíÆ÷
-    GetSystemInfo(&info);            //µ÷ÓÃGetSystemInfoº¯ÊıÌî³ä½á¹¹
+    //åˆ¤æ–­win8.1ä»¥ä¸‹çš„ç‰ˆæœ¬
+    SYSTEM_INFO info;                //ç”¨SYSTEM_INFOç»“æ„åˆ¤æ–­64ä½AMDå¤„ç†å™¨
+    GetSystemInfo(&info);            //è°ƒç”¨GetSystemInfoå‡½æ•°å¡«å……ç»“æ„
     OSVERSIONINFOEX os;
     os.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
     if (GetVersionEx((OSVERSIONINFO *)&os)) {
-        //ÏÂÃæ¸ù¾İ°æ±¾ĞÅÏ¢ÅĞ¶Ï²Ù×÷ÏµÍ³Ãû³Æ
+        //ä¸‹é¢æ ¹æ®ç‰ˆæœ¬ä¿¡æ¯åˆ¤æ–­æ“ä½œç³»ç»Ÿåç§°
         switch (os.dwMajorVersion) {
-        //ÅĞ¶ÏÖ÷°æ±¾ºÅ
+        //åˆ¤æ–­ä¸»ç‰ˆæœ¬å·
         case 4:
             switch (os.dwMinorVersion) {
-            //ÅĞ¶Ï´Î°æ±¾ºÅ
+            //åˆ¤æ–­æ¬¡ç‰ˆæœ¬å·
             case 0:
                 if (os.dwPlatformId == VER_PLATFORM_WIN32_NT)
-                    vname ="Windows NT 4.0";  //1996Äê7ÔÂ·¢²¼
+                    vname ="Windows NT 4.0";  //1996å¹´7æœˆå‘å¸ƒ
                 else if (os.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
                     vname = "Windows 95";
                 break;
@@ -96,19 +96,19 @@ std::string getSystemName()
             break;
         case 5:
             switch (os.dwMinorVersion) {
-            //ÔÙ±È½ÏdwMinorVersionµÄÖµ
+            //å†æ¯”è¾ƒdwMinorVersionçš„å€¼
             case 0:
-                vname = "Windows 2000";    //1999Äê12ÔÂ·¢²¼
+                vname = "Windows 2000";    //1999å¹´12æœˆå‘å¸ƒ
                 break;
             case 1:
-                vname = "Windows XP";      //2001Äê8ÔÂ·¢²¼
+                vname = "Windows XP";      //2001å¹´8æœˆå‘å¸ƒ
                 break;
             case 2:
                 if (os.wProductType == VER_NT_WORKSTATION &&
                     info.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64)
                     vname = "Windows XP Professional x64 Edition";
                 else if (GetSystemMetrics(SM_SERVERR2) == 0)
-                    vname = "Windows Server 2003";   //2003Äê3ÔÂ·¢²¼
+                    vname = "Windows Server 2003";   //2003å¹´3æœˆå‘å¸ƒ
                 else if (GetSystemMetrics(SM_SERVERR2) != 0)
                     vname = "Windows Server 2003 R2";
                 break;
@@ -120,7 +120,7 @@ std::string getSystemName()
                 if (os.wProductType == VER_NT_WORKSTATION)
                     vname = "Windows Vista";
                 else
-                    vname = "Windows Server 2008";   //·şÎñÆ÷°æ±¾
+                    vname = "Windows Server 2008";   //æœåŠ¡å™¨ç‰ˆæœ¬
                 break;
             case 1:
                 if (os.wProductType == VER_NT_WORKSTATION)
@@ -137,25 +137,25 @@ std::string getSystemName()
             }
             break;
         default:
-            vname = "Î´Öª²Ù×÷ÏµÍ³";
+            vname = "æœªçŸ¥æ“ä½œç³»ç»Ÿ";
         }
-        Mprintf("´ËµçÄÔµÄ°æ±¾Îª:%s\n", vname.c_str());
+        Mprintf("æ­¤ç”µè„‘çš„ç‰ˆæœ¬ä¸º:%s\n", vname.c_str());
     } else
-        Mprintf("°æ±¾»ñÈ¡Ê§°Ü\n");
+        Mprintf("ç‰ˆæœ¬è·å–å¤±è´¥\n");
     return vname;
 }
 
 std::string formatTime(const FILETIME& fileTime)
 {
-    // ×ª»»Îª 64 Î»Ê±¼ä
+    // è½¬æ¢ä¸º 64 ä½æ—¶é—´
     ULARGE_INTEGER ull;
     ull.LowPart = fileTime.dwLowDateTime;
     ull.HighPart = fileTime.dwHighDateTime;
 
-    // ×ª»»ÎªÃë¼¶Ê±¼ä´Á
+    // è½¬æ¢ä¸ºç§’çº§æ—¶é—´æˆ³
     std::time_t startTime = static_cast<std::time_t>((ull.QuadPart / 10000000ULL) - 11644473600ULL);
 
-    // ¸ñÊ½»¯Êä³ö
+    // æ ¼å¼åŒ–è¾“å‡º
     std::tm* localTime = std::localtime(&startTime);
     char buffer[100];
     std::strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", localTime);
@@ -166,7 +166,7 @@ std::string getProcessTime()
 {
     FILETIME creationTime, exitTime, kernelTime, userTime;
 
-    // »ñÈ¡µ±Ç°½ø³ÌµÄÊ±¼äĞÅÏ¢
+    // è·å–å½“å‰è¿›ç¨‹çš„æ—¶é—´ä¿¡æ¯
     if (GetProcessTimes(GetCurrentProcess(), &creationTime, &exitTime, &kernelTime, &userTime)) {
         return formatTime(creationTime);
     }
@@ -190,25 +190,25 @@ int getOSBits()
     }
 }
 
-// ¼ì²éCPUºËĞÄÊı
+// æ£€æŸ¥CPUæ ¸å¿ƒæ•°
 // SYSTEM_INFO.dwNumberOfProcessors
 int GetCPUCores()
 {
     INT i = 0;
 #ifdef _WIN64
-    // ÔÚ x64 ÏÂ£¬ÎÒÃÇĞèÒªÊ¹ÓÃ `NtQuerySystemInformation`
+    // åœ¨ x64 ä¸‹ï¼Œæˆ‘ä»¬éœ€è¦ä½¿ç”¨ `NtQuerySystemInformation`
     SYSTEM_INFO sysInfo;
     GetSystemInfo(&sysInfo);
-    i = sysInfo.dwNumberOfProcessors; // »ñÈ¡ CPU ºËĞÄÊı
+    i = sysInfo.dwNumberOfProcessors; // è·å– CPU æ ¸å¿ƒæ•°
 #else
-    _asm { // x64±àÒëÄ£Ê½ÏÂ²»Ö§³Ö__asmµÄ»ã±àÇ¶Èë
+    _asm { // x64ç¼–è¯‘æ¨¡å¼ä¸‹ä¸æ”¯æŒ__asmçš„æ±‡ç¼–åµŒå…¥
         mov eax, dword ptr fs : [0x18] ; // TEB
         mov eax, dword ptr ds : [eax + 0x30] ; // PEB
         mov eax, dword ptr ds : [eax + 0x64] ;
         mov i, eax;
     }
 #endif
-    Mprintf("´Ë¼ÆËã»úCPUºËĞÄ: %d\n", i);
+    Mprintf("æ­¤è®¡ç®—æœºCPUæ ¸å¿ƒ: %d\n", i);
     return i;
 }
 
@@ -218,7 +218,7 @@ double GetMemorySizeGB()
     mst.dwLength = sizeof(mst);
     GlobalMemoryStatusEx(&mst);
     double GB = mst.ullTotalPhys / (1024.0 * 1024 * 1024);
-    Mprintf("´Ë¼ÆËã»úÄÚ´æ: %fGB\n", GB);
+    Mprintf("æ­¤è®¡ç®—æœºå†…å­˜: %fGB\n", GB);
     return GB;
 }
 
@@ -277,11 +277,11 @@ std::string GetCurrentUserNameA()
 LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
 {
     LOGIN_INFOR  LoginInfor;
-    LoginInfor.bToken = TOKEN_LOGIN; // ÁîÅÆÎªµÇÂ¼
-    //»ñµÃ²Ù×÷ÏµÍ³ĞÅÏ¢
+    LoginInfor.bToken = TOKEN_LOGIN; // ä»¤ç‰Œä¸ºç™»å½•
+    //è·å¾—æ“ä½œç³»ç»Ÿä¿¡æ¯
     strcpy_s(LoginInfor.OsVerInfoEx, getSystemName().c_str());
 
-    //»ñµÃPCName
+    //è·å¾—PCName
     char szPCName[MAX_PATH] = {0};
     gethostname(szPCName, MAX_PATH);
 
@@ -297,13 +297,13 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
     LoginInfor.dwCPUMHz = dwCPUMHz;
     LoginInfor.bWebCamIsExist = bWebCamIsExist;
     strcpy_s(LoginInfor.szStartTime, getProcessTime().c_str());
-    LoginInfor.AddReserved(GetClientType(conn.ClientType())); // ÀàĞÍ
-    LoginInfor.AddReserved(getOSBits());                // ÏµÍ³Î»Êı
-    LoginInfor.AddReserved(GetCPUCores());              // CPUºËÊı
-    LoginInfor.AddReserved(GetMemorySizeGB());          // ÏµÍ³ÄÚ´æ
+    LoginInfor.AddReserved(GetClientType(conn.ClientType())); // ç±»å‹
+    LoginInfor.AddReserved(getOSBits());                // ç³»ç»Ÿä½æ•°
+    LoginInfor.AddReserved(GetCPUCores());              // CPUæ ¸æ•°
+    LoginInfor.AddReserved(GetMemorySizeGB());          // ç³»ç»Ÿå†…å­˜
     char buf[_MAX_PATH] = {};
     GetModuleFileNameA(NULL, buf, sizeof(buf));
-    LoginInfor.AddReserved(buf);                        // ÎÄ¼şÂ·¾¶
+    LoginInfor.AddReserved(buf);                        // æ–‡ä»¶è·¯å¾„
     LoginInfor.AddReserved("?");						// test
     iniFile cfg(CLIENT_PATH);
     std::string installTime = cfg.GetStr("settings", "install_time");
@@ -311,9 +311,9 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
         installTime = ToPekingTimeAsString(nullptr);
         cfg.SetStr("settings", "install_time", installTime);
     }
-    LoginInfor.AddReserved(installTime.c_str());		// °²×°Ê±¼ä
-    LoginInfor.AddReserved("?");						// °²×°ĞÅÏ¢
-    LoginInfor.AddReserved(sizeof(void*)==4 ? 32 : 64); // ³ÌĞòÎ»Êı
+    LoginInfor.AddReserved(installTime.c_str());		// å®‰è£…æ—¶é—´
+    LoginInfor.AddReserved("?");						// å®‰è£…ä¿¡æ¯
+    LoginInfor.AddReserved(sizeof(void*)==4 ? 32 : 64); // ç¨‹åºä½æ•°
     std::string str;
     std::string masterHash(skCrypt(MASTER_HASH));
     HANDLE hMutex = OpenMutex(SYNCHRONIZE, FALSE, "MASTER.EXE");
@@ -331,7 +331,7 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
         auto list = StringToVector(str, '-', 3);
         str = list[1].empty() ? "Unknown" : list[1];
     }
-    LoginInfor.AddReserved(str.c_str());			   // ÊÚÈ¨ĞÅÏ¢
+    LoginInfor.AddReserved(str.c_str());			   // æˆæƒä¿¡æ¯
     bool isDefault = strlen(conn.szFlag) == 0 || strcmp(conn.szFlag, skCrypt(FLAG_GHOST)) == 0 ||
                      strcmp(conn.szFlag, skCrypt("Happy New Year!")) == 0;
     const char* id = isDefault ? masterHash.c_str() : conn.szFlag;
@@ -379,7 +379,7 @@ BOOL WebCamIsExist()
     char	szDeviceName[100], szVer[50];
     for (int i = 0; i < 10 && !bOk; ++i) {
         bOk = capGetDriverDescription(i, szDeviceName, sizeof(szDeviceName),
-                                      //ÏµÍ³µÄAPIº¯Êı
+                                      //ç³»ç»Ÿçš„APIå‡½æ•°
                                       szVer, sizeof(szVer));
     }
     return bOk;
