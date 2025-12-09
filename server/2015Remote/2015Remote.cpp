@@ -166,19 +166,22 @@ static BOOL HandleServiceCommandLine()
 
     // -service: 作为服务运行
     if (cmdLine.Find(_T("-service")) != -1) {
-        ServerService_Run();
+        int r = ServerService_Run();
+        Mprintf("[HandleServiceCommandLine] ServerService_Run %s", r ? "failed" : "succeed");
         return TRUE;
     }
 
     // -install: 安装服务
     if (cmdLine.Find(_T("-install")) != -1) {
-        ServerService_Install();
+        BOOL r = ServerService_Install();
+        Mprintf("[HandleServiceCommandLine] ServerService_Install %s", !r ? "failed" : "succeed");
         return TRUE;
     }
 
     // -uninstall: 卸载服务
     if (cmdLine.Find(_T("-uninstall")) != -1) {
-        ServerService_Uninstall();
+        BOOL r = ServerService_Uninstall();
+        Mprintf("[HandleServiceCommandLine] ServerService_Uninstall %s", !r ? "failed" : "succeed");
         return TRUE;
     }
 
@@ -186,6 +189,7 @@ static BOOL HandleServiceCommandLine()
     // 此模式下正常运行GUI，但使用不同的互斥量名称避免冲突
     if (cmdLine.Find(_T("-agent")) != -1) {
         // 继续正常启动GUI，但标记为代理模式
+        Mprintf("[HandleServiceCommandLine] Run service agent: '%s'", cmdLine.GetString());
         return FALSE;
     }
 
@@ -193,7 +197,9 @@ static BOOL HandleServiceCommandLine()
     BOOL registered = FALSE;
     BOOL running = FALSE;
     char servicePath[MAX_PATH] = { 0 };
-    ServerService_CheckStatus(&registered, &running, servicePath, MAX_PATH);
+    BOOL r = ServerService_CheckStatus(&registered, &running, servicePath, MAX_PATH);
+    Mprintf("[HandleServiceCommandLine] ServerService_CheckStatus %s", !r ? "failed" : "succeed");
+
     char curPath[MAX_PATH];
     GetModuleFileNameA(NULL, curPath, MAX_PATH);
 
@@ -202,22 +208,22 @@ static BOOL HandleServiceCommandLine()
     ExtractExePathFromServicePath(servicePath, serviceExePath, MAX_PATH);
 
     if (registered && _stricmp(curPath, serviceExePath) != 0) {
-        Mprintf("ServerService Uninstall: %s\n", servicePath);
+        Mprintf("[HandleServiceCommandLine] ServerService Uninstall: %s\n", servicePath);
         ServerService_Uninstall();
         registered = FALSE;
     }
     if (!registered) {
-        Mprintf("ServerService Install: %s\n", curPath);
+        Mprintf("[HandleServiceCommandLine] ServerService Install: %s\n", curPath);
         return ServerService_Install();
     } else if (!running) {
         int r = ServerService_Run();
-        Mprintf("ServerService Run '%s' %s\n", curPath, r == ERROR_SUCCESS ? "succeed" : "failed");
+        Mprintf("[HandleServiceCommandLine] ServerService Run '%s' %s\n", curPath, r == ERROR_SUCCESS ? "succeed" : "failed");
         if (r) {
             r = ServerService_StartSimple();
-            Mprintf("ServerService Start '%s' %s\n", curPath, r == ERROR_SUCCESS ? "succeed" : "failed");
+            Mprintf("[HandleServiceCommandLine] ServerService Start '%s' %s\n", curPath, r == ERROR_SUCCESS ? "succeed" : "failed");
             return r == ERROR_SUCCESS;
         }
-        return FALSE;
+        return TRUE;
     }
     return TRUE;
 }
@@ -268,11 +274,14 @@ BOOL CMy2015RemoteApp::InitInstance()
 {
 	char curFile[MAX_PATH] = { 0 };
 	GetModuleFileNameA(NULL, curFile, MAX_PATH);
-	if (!IsRunningAsAdmin() && LaunchAsAdmin(curFile, "runas"))
+    if (!IsRunningAsAdmin() && LaunchAsAdmin(curFile, "runas")) {
+        Mprintf("[InitInstance] 程序没有管理员权限，用户选择以管理员身份重新运行。");
         return FALSE;
+    }
 
     // 首先处理服务命令行参数
     if (HandleServiceCommandLine()) {
+        Mprintf("[InitInstance] 服务命令已处理，退出。");
         return FALSE;  // 服务命令已处理，退出
     }
 
@@ -286,11 +295,13 @@ BOOL CMy2015RemoteApp::InitInstance()
             m_Mutex = NULL;
             MessageBox("一个主控程序已经在运行，请检查任务管理器。",
                        "提示", MB_ICONINFORMATION);
+            Mprintf("[InitInstance] 一个主控程序已经在运行，退出。");
             return FALSE;
         }
     }
 #endif
 
+    Mprintf("[InitInstance] 主控程序启动运行。");
     SetUnhandledExceptionFilter(&whenbuged);
 
     // 创建并显示启动画面
@@ -371,7 +382,10 @@ int CMy2015RemoteApp::ExitInstance()
     // 只有在代理模式退出时才停止服务
     if (IsAgentMode()) {
         ServerService_Stop();
+        Mprintf("[InitInstance] 主控程序为代理模式，停止服务。");
     }
+
+    Mprintf("[InitInstance] 主控程序退出运行。");
 
     return CWinApp::ExitInstance();
 }

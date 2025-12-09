@@ -2215,12 +2215,16 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     switch (cmd) {
     case COMMAND_GET_FILE: {
         // 发送文件
-        auto files = GetClipboardFiles();
+        int result;
+        auto files = GetClipboardFiles(result);
         if (!files.empty()) {
             std::string dir = (char*)(szBuffer + 1);
             std::string hash = GetPwdHash(), hmac = GetHMAC(100);
             std::thread(FileBatchTransferWorker, files, dir, ContextObject, SendData, FinishSend,
                         hash, hmac).detach();
+        }
+        else {
+			Mprintf("GetClipboardFiles failed: %d\n", result);
         }
         break;
     }
@@ -3857,6 +3861,9 @@ void CMy2015RemoteDlg::RemoveRemoteWindow(HWND wnd)
 
 LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
+    if (g_2015RemoteDlg == NULL)
+        return S_OK;
+
     if (nCode == HC_ACTION) {
         do {
             static CDialogBase* operateWnd = nullptr;
@@ -3883,7 +3890,8 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                             break;
                         }
                         // [1] 本地 -> 远程
-                        auto files = GetClipboardFiles();
+                        int result;
+                        auto files = GetClipboardFiles(result);
                         if (!files.empty()) {
                             // 获取远程目录
                             BYTE szBuffer[100] = { COMMAND_GET_FOLDER };
@@ -3891,6 +3899,7 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                             memcpy((char*)szBuffer + 1, masterId.c_str(), masterId.length());
                             memcpy((char*)szBuffer + 1 + masterId.length(), hmac.c_str(), hmac.length());
                             dlg->m_ContextObject->Send2Client(szBuffer, sizeof(szBuffer));
+                            Mprintf("【Ctrl+V】 从本地拷贝文件到远程 \n");
                         } else {
                             CString strText = GetClipboardText();
                             if (!strText.IsEmpty()) {
@@ -3898,8 +3907,11 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                                 szBuffer[0] = COMMAND_SCREEN_SET_CLIPBOARD;
                                 memcpy(szBuffer + 1, strText.GetString(), strText.GetLength());
                                 dlg->m_ContextObject->Send2Client(szBuffer, strText.GetLength() + 1);
-                                Mprintf("【Ctrl+V】 从本地拷贝到远程 \n");
+                                Mprintf("【Ctrl+V】 从本地拷贝文本到远程 \n");
                                 SAFE_DELETE_ARRAY(szBuffer);
+                            }
+                            else {
+								Mprintf("【Ctrl+V】 本地剪贴板没有文本或文件: %d \n", result);
                             }
                         }
                     } else if (g_2015RemoteDlg->m_pActiveSession && operateWnd) {
@@ -3913,12 +3925,9 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                         std::string masterId = GetPwdHash(), hmac = GetHMAC(100);
                         memcpy((char*)bToken + 1, masterId.c_str(), masterId.length());
                         memcpy((char*)bToken + 1 + masterId.length(), hmac.c_str(), hmac.length());
-                        auto files = GetClipboardFiles();
-                        if (!files.empty()) {
-                            if (::OpenClipboard(nullptr)) {
-                                EmptyClipboard();
-                                CloseClipboard();
-                            }
+                        if (::OpenClipboard(nullptr)) {
+                            EmptyClipboard();
+                            CloseClipboard();
                         }
                         g_2015RemoteDlg->m_pActiveSession->m_ContextObject->Send2Client(bToken, sizeof(bToken));
                         Mprintf("【Ctrl+V】 从远程拷贝到本地 \n");
