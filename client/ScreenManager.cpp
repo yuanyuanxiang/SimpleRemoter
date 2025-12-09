@@ -38,7 +38,7 @@ int UninitFileUpload()
 {
     return 0;
 }
-std::vector<std::string> GetClipboardFiles()
+std::vector<std::string> GetClipboardFiles(int &result)
 {
     return{};
 }
@@ -446,7 +446,8 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         break;
     }
     case COMMAND_SCREEN_GET_CLIPBOARD: {
-        auto files = GetClipboardFiles();
+        int result = 0;
+        auto files = GetClipboardFiles(result);
         if (!files.empty()) {
             char h[100] = {};
             memcpy(h, szBuffer + 1, ulLength - 1);
@@ -481,7 +482,8 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     }
     case COMMAND_GET_FILE: {
         // 发送文件
-        auto files = GetClipboardFiles();
+        int result = 0;
+        auto files = GetClipboardFiles(result);
         std::string dir = (char*)(szBuffer + 1);
         if (!files.empty() && !dir.empty()) {
             IOCPClient* pClient = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());

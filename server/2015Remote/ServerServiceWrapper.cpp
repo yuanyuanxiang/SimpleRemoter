@@ -451,7 +451,7 @@ BOOL ServerService_Install(void)
     return err == 0;
 }
 
-void ServerService_Uninstall(void)
+BOOL ServerService_Uninstall(void)
 {
     SC_HANDLE schSCManager = OpenSCManager(
                                  NULL,
@@ -461,7 +461,7 @@ void ServerService_Uninstall(void)
 
     if (schSCManager == NULL) {
         Mprintf("ERROR: OpenSCManager failed (%d)\n", (int)GetLastError());
-        return;
+        return FALSE;
     }
 
     SC_HANDLE schService = OpenServiceA(
@@ -473,7 +473,7 @@ void ServerService_Uninstall(void)
     if (schService == NULL) {
         Mprintf("ERROR: OpenService failed (%d)\n", (int)GetLastError());
         CloseServiceHandle(schSCManager);
-        return;
+        return FALSE;
     }
 
     // 停止服务
@@ -501,14 +501,17 @@ void ServerService_Uninstall(void)
         }
     }
 
+	BOOL r = FALSE;
     // 删除服务
     Mprintf("Deleting service...\n");
     if (DeleteService(schService)) {
         Mprintf("SUCCESS: Service uninstalled successfully\n");
+        r = TRUE;
     } else {
         Mprintf("ERROR: DeleteService failed (%d)\n", (int)GetLastError());
     }
 
     CloseServiceHandle(schService);
     CloseServiceHandle(schSCManager);
+    return r;
 }

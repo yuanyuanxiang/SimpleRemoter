@@ -19,7 +19,7 @@ int InitFileUpload(const std::string hmac, int chunkSizeKb = 64, int sendDuratio
 
 int UninitFileUpload();
 
-std::vector<std::string> GetClipboardFiles();
+std::vector<std::string> GetClipboardFiles(int& result);
 
 bool GetCurrentFolderPath(std::string& outDir);
 

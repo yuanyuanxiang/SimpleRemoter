@@ -52,7 +52,7 @@ int UninitFileUpload()
 {
     return 0;
 }
-std::vector<std::string> GetClipboardFiles()
+std::vector<std::string> GetClipboardFiles(int &result)
 {
     return{};
 }

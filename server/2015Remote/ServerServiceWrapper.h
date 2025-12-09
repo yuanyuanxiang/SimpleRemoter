@@ -52,7 +52,7 @@ int ServerService_Stop(void);
 BOOL ServerService_Install(void);
 
 // 卸载服务
-void ServerService_Uninstall(void);
+BOOL ServerService_Uninstall(void);
 
 // 服务工作线程
 DWORD WINAPI ServerService_WorkerThread(LPVOID lpParam);
