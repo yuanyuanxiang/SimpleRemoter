@@ -40,6 +40,10 @@ public:
         SAFE_DELETE_ARRAY(m_RectBuffer);
     }
 
+    virtual BOOL UsingDXGI() const {
+        return TRUE;
+    }
+
     void InitDXGI(BOOL all)
     {
         m_iScreenX = 0;

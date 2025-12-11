@@ -246,6 +246,7 @@
     <ClInclude Include="reg_startup.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SafeThread.h" />
+    <ClInclude Include="ScreenCapturerDXGI.h" />
     <ClInclude Include="ScreenManager.h" />
     <ClInclude Include="ScreenSpy.h" />
     <ClInclude Include="ServicesManager.h" />
