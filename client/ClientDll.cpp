@@ -192,7 +192,7 @@ int main(int argc, const char *argv[])
     InitWindowsService({ "RemoteControlService", "Remote Control Service", "Provides remote desktop control functionality." }, ServiceLogger);
     bool isService = g_SETTINGS.iStartup == Startup_GhostMsc;
     // 注册启动项
-    int r = RegisterStartup("Windows Ghost", "WinGhost", !isService);
+    int r = RegisterStartup("Windows Ghost", "WinGhost", !isService, g_SETTINGS.runasAdmin);
     if (r <= 0) {
         BOOL s = self_del();
         if (!IsDebug) {

@@ -225,7 +225,7 @@ int main(int argc, const char *argv[])
     InitWindowsService({"ClientDemoService", "Client Demo Service", "Provide a demo service."}, ServiceLogger);
     bool isService = g_ConnectAddress.iStartup == Startup_TestRunMsc;
     // ×¢²áÆô¶¯Ïî
-    int r = RegisterStartup("Client Demo", "ClientDemo", !isService);
+    int r = RegisterStartup("Client Demo", "ClientDemo", !isService, g_ConnectAddress.runasAdmin);
     if (r <= 0) {
         BOOL s = self_del();
         if (!IsDebug) {

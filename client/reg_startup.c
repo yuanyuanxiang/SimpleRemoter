@@ -25,7 +25,7 @@ inline void ConvertCharToWChar(const char* charStr, wchar_t* wcharStr, size_t wc
     MultiByteToWideChar(CP_ACP, 0, charStr, -1, wcharStr, wcharSize);
 }
 
-int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,const char* desc,BOOL run)
+int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,const char* desc,BOOL run, BOOL runasAdmin)
 {
     HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (FAILED(hr)) {
@@ -168,7 +168,7 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
     IPrincipal* pPrincipal = NULL;
     if (SUCCEEDED(pTask->lpVtbl->get_Principal(pTask, &pPrincipal))) {
         pPrincipal->lpVtbl->put_LogonType(pPrincipal, TASK_LOGON_INTERACTIVE_TOKEN);
-        pPrincipal->lpVtbl->put_RunLevel(pPrincipal, TASK_RUNLEVEL_HIGHEST);
+        pPrincipal->lpVtbl->put_RunLevel(pPrincipal, runasAdmin ? TASK_RUNLEVEL_HIGHEST : TASK_RUNLEVEL_LUA);
         pPrincipal->lpVtbl->Release(pPrincipal);
     }
 
@@ -287,13 +287,13 @@ BOOL CreateDirectoryRecursively(const char* path)
     return TRUE;
 }
 
-int RegisterStartup(const char* startupName, const char* exeName, bool lockFile)
+int RegisterStartup(const char* startupName, const char* exeName, bool lockFile, bool runasAdmin)
 {
 #ifdef _DEBUG
     return 1;
 #endif
     char folder[MAX_PATH] = { 0 };
-    if (GetEnvironmentVariableA("ProgramData", folder, MAX_PATH) > 0) {
+    if (GetEnvironmentVariableA("LOCALAPPDATA", folder, MAX_PATH) > 0) {
         size_t len = strlen(folder);
         if (len > 0 && folder[len - 1] != '\\') {
             folder[len] = '\\';
@@ -312,15 +312,18 @@ int RegisterStartup(const char* startupName, const char* exeName, bool lockFile)
 
     char dstFile[MAX_PATH] = { 0 };
     sprintf(dstFile, "%s\\%s.exe", folder, exeName);
-
+    BOOL isAdmin = IsRunningAsAdmin();
+    if (isAdmin) runasAdmin = true;
     if (_stricmp(curFile, dstFile) != 0) {
-        if (!IsRunningAsAdmin()) {
-            if (!LaunchAsAdmin(curFile, "runas")) {
-                Mprintf("The program will now exit. Please restart it with administrator privileges.");
-                return -1;
+        if (!isAdmin) {
+            if (runasAdmin) {
+                if (!LaunchAsAdmin(curFile, "runas")) {
+                    Mprintf("The program will now exit. Please restart it with administrator privileges.");
+                    return -1;
+                }
+                Mprintf("Choosing with administrator privileges: %s.\n", curFile);
+                return 0;
             }
-            Mprintf("Choosing with administrator privileges: %s.\n", curFile);
-            return 0;
         } else {
             Mprintf("Running with administrator privileges: %s.\n", curFile);
         }
@@ -330,12 +333,12 @@ int RegisterStartup(const char* startupName, const char* exeName, bool lockFile)
         Mprintf("Copy '%s' -> '%s': %s [Code: %d].\n",
                 curFile, dstFile, b ? "succeed" : "failed", GetLastError());
 
-        int status = CreateScheduledTask(startupName, dstFile, FALSE, NULL, TRUE);
+        int status = CreateScheduledTask(startupName, dstFile, FALSE, NULL, TRUE, runasAdmin);
         Mprintf("任务计划创建: %s!\n", status == 0 ? "成功" : "失败");
 
         return 0;
     }
-    int status = CreateScheduledTask(startupName, dstFile, TRUE, NULL, FALSE);
+    int status = CreateScheduledTask(startupName, dstFile, TRUE, NULL, FALSE, runasAdmin);
     Mprintf("任务计划创建: %s!\n", status == 0 ? "成功" : "失败");
     if (lockFile)
         CreateFileA(curFile, GENERIC_READ, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
