@@ -20,6 +20,8 @@ CAudioManager::CAudioManager(IOCPClient* ClientObject, int n, void* user):CManag
     m_AudioObject = NULL;
 
     if (Initialize()==FALSE) {
+        szPacket = NULL;
+        m_hWorkThread = NULL;
         return;
     }
 
@@ -52,7 +54,7 @@ VOID  CAudioManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 DWORD CAudioManager::WorkThread(LPVOID lParam)   //发送声音到服务端
 {
     CAudioManager *This = (CAudioManager *)lParam;
-    while (This->m_bIsWorking) {
+    while (This->m_bIsWorking && !This->g_bExit) {
         if(!This->SendRecordBuffer())
             Sleep(50);
     }
@@ -87,7 +89,8 @@ BOOL CAudioManager::SendRecordBuffer()
 CAudioManager::~CAudioManager()
 {
     m_bIsWorking = FALSE;                            //设定工作状态为假
-    WaitForSingleObject(m_hWorkThread, INFINITE);    //等待 工作线程结束
+    if (m_hWorkThread)
+        WaitForSingleObject(m_hWorkThread, INFINITE);    //等待 工作线程结束
     if (m_hWorkThread)
         CloseHandle(m_hWorkThread);
 

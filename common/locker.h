@@ -146,7 +146,7 @@ public:
     }
 };
 
-#ifdef _DEBUG
+#if defined (_DEBUG) || defined (WINDOWS)
 // 智能计算当前函数的耗时，超时会打印
 #define AUTO_TICK(thresh, tag) auto_tick TICK(__FILE__, __FUNCTION__, __LINE__, thresh, tag)
 #define STOP_TICK TICK.stop()

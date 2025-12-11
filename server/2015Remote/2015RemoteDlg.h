@@ -194,7 +194,6 @@ public:
             m_gridDlg->ShowWindow(isGrid ? SW_SHOWMAXIMIZED : SW_HIDE);
         }
 
-        ContextObject->hWnd = Dlg->GetSafeHwnd();
         ContextObject->hDlg = Dlg;
         if(id == IDD_DIALOG_SCREEN_SPY)
             m_RemoteWnds[Dlg->GetSafeHwnd()]=(CDialogBase*)Dlg;

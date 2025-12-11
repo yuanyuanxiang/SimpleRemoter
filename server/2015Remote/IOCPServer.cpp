@@ -277,8 +277,6 @@ BOOL IOCPServer::InitializeIOCP(VOID)
 
 DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 {
-    Mprintf("======> IOCPServer WorkThreadProc begin \n");
-
     ZSTD_DCtx* m_Dctx = ZSTD_createDCtx(); // 解压上下文
 
     IOCPServer* This = (IOCPServer*)(lParam);
@@ -370,8 +368,6 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
     }
 
     ZSTD_freeDCtx(m_Dctx);
-
-    Mprintf("======> IOCPServer WorkThreadProc end \n");
 
     return 0;
 }

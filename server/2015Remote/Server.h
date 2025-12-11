@@ -367,8 +367,7 @@ public:
     CBuffer				InCompressedBuffer;	        // 接收到的压缩的数据
     CBuffer				InDeCompressedBuffer;	    // 解压后的数据
     CBuffer             OutCompressedBuffer;
-    HWND				hWnd;
-    HANDLE              hDlg;
+    HANDLE              hDlg;                       // 对话框指针
     OVERLAPPEDPLUS*		olps;						// OVERLAPPEDPLUS
     int					CompressMethod;				// 压缩算法
     HeaderParser		Parser;						// 解析数据协议
@@ -464,7 +463,6 @@ public:
     VOID InitMember(SOCKET s, Server *svr)
     {
         memset(szBuffer, 0, sizeof(char) * PACKET_LENGTH);
-        hWnd = NULL;
         hDlg = NULL;
         sClientSocket = s;
         PeerName = ::GetPeerName(sClientSocket);
