@@ -9,6 +9,8 @@ typedef struct MyService {
     char Description[512];
 } MyService;
 
+typedef void (*ServiceLogFunc)(const char* message);
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -28,7 +30,7 @@ sc query RemoteControlService
 */
 
 // 自定义服务信息
-void InitWindowsService(MyService info);
+void InitWindowsService(MyService info, ServiceLogFunc log);
 
 // 以Windows服务模式运行程序
 BOOL RunAsWindowsService(int argc, const char* argv[]);
@@ -55,7 +57,7 @@ int ServiceWrapper_Run(void);
 BOOL ServiceWrapper_Install(void);
 
 // 卸载服务
-void ServiceWrapper_Uninstall(void);
+BOOL ServiceWrapper_Uninstall(void);
 
 // 服务工作线程
 DWORD WINAPI ServiceWrapper_WorkerThread(LPVOID lpParam);

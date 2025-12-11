@@ -124,39 +124,6 @@ CMy2015RemoteApp::CMy2015RemoteApp()
 
 CMy2015RemoteApp theApp;
 
-
-// 从服务路径中提取可执行文件路径（去除引号和参数）
-static void ExtractExePathFromServicePath(const char* servicePath, char* exePath, size_t exePathSize)
-{
-    if (!servicePath || !exePath || exePathSize == 0) {
-        if (exePath && exePathSize > 0) exePath[0] = '\0';
-        return;
-    }
-
-    const char* src = servicePath;
-    char* dst = exePath;
-    size_t remaining = exePathSize - 1;
-
-    // 跳过前导空格
-    while (*src == ' ') src++;
-
-    if (*src == '"') {
-        // 带引号的路径：提取引号内的内容
-        src++;  // 跳过开始引号
-        while (*src && *src != '"' && remaining > 0) {
-            *dst++ = *src++;
-            remaining--;
-        }
-    } else {
-        // 不带引号的路径：提取到空格或结束
-        while (*src && *src != ' ' && remaining > 0) {
-            *dst++ = *src++;
-            remaining--;
-        }
-    }
-    *dst = '\0';
-}
-
 // 处理服务相关的命令行参数
 // 返回值: TRUE 表示已处理服务命令（程序应退出），FALSE 表示继续正常启动
 static BOOL HandleServiceCommandLine()
@@ -203,18 +170,18 @@ static BOOL HandleServiceCommandLine()
     char curPath[MAX_PATH];
     GetModuleFileNameA(NULL, curPath, MAX_PATH);
 
-    // 从服务路径中提取纯可执行文件路径（去除引号和参数）
-    char serviceExePath[MAX_PATH] = { 0 };
-    ExtractExePathFromServicePath(servicePath, serviceExePath, MAX_PATH);
-
-    if (registered && _stricmp(curPath, serviceExePath) != 0) {
-        Mprintf("[HandleServiceCommandLine] ServerService Uninstall: %s\n", servicePath);
-        ServerService_Uninstall();
+    _strlwr(servicePath);
+    _strlwr(curPath);
+    BOOL same = (strstr(servicePath, curPath) != 0);
+    if (registered && !same) {
+        BOOL r = ServerService_Uninstall();
+        Mprintf("[HandleServiceCommandLine] ServerService Uninstall %s: %s\n", r ? "succeed" : "failed", servicePath);
         registered = FALSE;
     }
     if (!registered) {
-        Mprintf("[HandleServiceCommandLine] ServerService Install: %s\n", curPath);
-        return ServerService_Install();
+        BOOL r = ServerService_Install();
+        Mprintf("[HandleServiceCommandLine] ServerService Install: %s\n", r ? "succeed" : "failed", curPath);
+        return r;
     } else if (!running) {
         int r = ServerService_Run();
         Mprintf("[HandleServiceCommandLine] ServerService Run '%s' %s\n", curPath, r == ERROR_SUCCESS ? "succeed" : "failed");

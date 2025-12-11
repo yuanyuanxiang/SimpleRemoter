@@ -16,7 +16,6 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId);
 static BOOL IsGuiRunningInSession(ServerSessionMonitor* self, DWORD sessionId);
 static void TerminateAllGui(ServerSessionMonitor* self);
 static void CleanupDeadProcesses(ServerSessionMonitor* self);
-static void ServerMonitor_WriteLog(const char* message);
 
 // 动态数组辅助函数
 static void AgentArray_Init(ServerAgentProcessArray* arr);
@@ -78,46 +77,6 @@ static void AgentArray_RemoveAt(ServerAgentProcessArray* arr, size_t index)
 }
 
 // ============================================
-// 日志函数
-// ============================================
-
-// 获取日志文件路径（程序所在目录）
-static void GetMonitorLogPath(char* logPath, size_t size)
-{
-    char exePath[MAX_PATH];
-    if (GetModuleFileNameA(NULL, exePath, MAX_PATH)) {
-        char* lastSlash = strrchr(exePath, '\\');
-        if (lastSlash) {
-            *lastSlash = '\0';
-            sprintf_s(logPath, size, "%s\\YamaSessionMonitor.log", exePath);
-            return;
-        }
-    }
-    // 备用路径：Windows临时目录
-    char tempPath[MAX_PATH];
-    if (GetTempPathA(MAX_PATH, tempPath)) {
-        sprintf_s(logPath, size, "%sYamaSessionMonitor.log", tempPath);
-    } else {
-        strncpy_s(logPath, size, "YamaSessionMonitor.log", _TRUNCATE);
-    }
-}
-
-static void ServerMonitor_WriteLog(const char* message)
-{
-    char logPath[MAX_PATH];
-    GetMonitorLogPath(logPath, sizeof(logPath));
-    FILE* f = fopen(logPath, "a");
-    if (f) {
-        SYSTEMTIME st;
-        GetLocalTime(&st);
-        fprintf(f, "[%04d-%02d-%02d %02d:%02d:%02d] %s\n",
-                st.wYear, st.wMonth, st.wDay,
-                st.wHour, st.wMinute, st.wSecond, message);
-        fclose(f);
-    }
-}
-
-// ============================================
 // 公共接口实现
 // ============================================
 
@@ -139,23 +98,23 @@ void ServerSessionMonitor_Cleanup(ServerSessionMonitor* self)
 BOOL ServerSessionMonitor_Start(ServerSessionMonitor* self)
 {
     if (self->running) {
-        ServerMonitor_WriteLog("Monitor already running");
+        Mprintf("Monitor already running");
         return TRUE;
     }
 
-    ServerMonitor_WriteLog("========================================");
-    ServerMonitor_WriteLog("Starting server session monitor...");
+    Mprintf("========================================");
+    Mprintf("Starting server session monitor...");
 
     self->running = TRUE;
     self->monitorThread = CreateThread(NULL, 0, MonitorThreadProc, self, 0, NULL);
 
     if (!self->monitorThread) {
-        ServerMonitor_WriteLog("ERROR: Failed to create monitor thread");
+        Mprintf("ERROR: Failed to create monitor thread");
         self->running = FALSE;
         return FALSE;
     }
 
-    ServerMonitor_WriteLog("Server session monitor thread created");
+    Mprintf("Server session monitor thread created");
     return TRUE;
 }
 
@@ -165,14 +124,14 @@ void ServerSessionMonitor_Stop(ServerSessionMonitor* self)
         return;
     }
 
-    ServerMonitor_WriteLog("Stopping server session monitor...");
+    Mprintf("Stopping server session monitor...");
     self->running = FALSE;
 
     if (self->monitorThread) {
         DWORD waitResult = WaitForSingleObject(self->monitorThread, 10000);
         if (waitResult == WAIT_TIMEOUT) {
             // 线程未在规定时间内退出，强制终止
-            ServerMonitor_WriteLog("WARNING: Monitor thread did not exit in time, terminating...");
+            Mprintf("WARNING: Monitor thread did not exit in time, terminating...");
             TerminateThread(self->monitorThread, 1);
         }
         CloseHandle(self->monitorThread);
@@ -180,11 +139,11 @@ void ServerSessionMonitor_Stop(ServerSessionMonitor* self)
     }
 
     // 终止所有GUI进程
-    ServerMonitor_WriteLog("Terminating all GUI processes...");
+    Mprintf("Terminating all GUI processes...");
     // TerminateAllGui(self);
 
-    ServerMonitor_WriteLog("Server session monitor stopped");
-    ServerMonitor_WriteLog("========================================");
+    Mprintf("Server session monitor stopped");
+    Mprintf("========================================");
 }
 
 // ============================================
@@ -203,7 +162,7 @@ static void MonitorLoop(ServerSessionMonitor* self)
     int loopCount = 0;
     char buf[256];
 
-    ServerMonitor_WriteLog("Monitor loop started");
+    Mprintf("Monitor loop started");
 
     while (self->running) {
         loopCount++;
@@ -230,20 +189,20 @@ static void MonitorLoop(ServerSessionMonitor* self)
                         sprintf_s(buf, sizeof(buf), "Active session found: ID=%d, Name=%s",
                                   (int)sessionId,
                                   pSessionInfo[i].pWinStationName);
-                        ServerMonitor_WriteLog(buf);
+                        Mprintf(buf);
                     }
 
                     // 检查GUI是否在该会话中运行
                     if (!IsGuiRunningInSession(self, sessionId)) {
                         sprintf_s(buf, sizeof(buf), "GUI not running in session %d, launching...", (int)sessionId);
-                        ServerMonitor_WriteLog(buf);
+                        Mprintf(buf);
 
                         if (LaunchGuiInSession(self, sessionId)) {
-                            ServerMonitor_WriteLog("GUI launched successfully");
+                            Mprintf("GUI launched successfully");
                             // 给程序一些时间启动
                             Sleep(2000);
                         } else {
-                            ServerMonitor_WriteLog("Failed to launch GUI");
+                            Mprintf("Failed to launch GUI");
                         }
                     }
 
@@ -253,13 +212,13 @@ static void MonitorLoop(ServerSessionMonitor* self)
             }
 
             if (!foundActiveSession && loopCount % 5 == 1) {
-                ServerMonitor_WriteLog("No active sessions found");
+                Mprintf("No active sessions found");
             }
 
             WTSFreeMemory(pSessionInfo);
         } else {
             if (loopCount % 5 == 1) {
-                ServerMonitor_WriteLog("WTSEnumerateSessions failed");
+                Mprintf("WTSEnumerateSessions failed");
             }
         }
 
@@ -269,7 +228,7 @@ static void MonitorLoop(ServerSessionMonitor* self)
         }
     }
 
-    ServerMonitor_WriteLog("Monitor loop exited");
+    Mprintf("Monitor loop exited");
 }
 
 static BOOL IsGuiRunningInSession(ServerSessionMonitor* self, DWORD sessionId)
@@ -296,7 +255,7 @@ static BOOL IsGuiRunningInSession(ServerSessionMonitor* self, DWORD sessionId)
     // 创建进程快照
     HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hSnapshot == INVALID_HANDLE_VALUE) {
-        ServerMonitor_WriteLog("CreateToolhelp32Snapshot failed");
+        Mprintf("CreateToolhelp32Snapshot failed");
         return FALSE;
     }
 
@@ -338,14 +297,14 @@ static void TerminateAllGui(ServerSessionMonitor* self)
     EnterCriticalSection(&self->csProcessList);
 
     sprintf_s(buf, sizeof(buf), "Terminating %d GUI process(es)", (int)self->agentProcesses.count);
-    ServerMonitor_WriteLog(buf);
+    Mprintf(buf);
 
     for (size_t i = 0; i < self->agentProcesses.count; i++) {
         ServerAgentProcessInfo* info = &self->agentProcesses.items[i];
 
         sprintf_s(buf, sizeof(buf), "Terminating GUI PID=%d (Session %d)",
                   (int)info->processId, (int)info->sessionId);
-        ServerMonitor_WriteLog(buf);
+        Mprintf(buf);
 
         // 检查进程是否还活着
         DWORD exitCode;
@@ -355,16 +314,16 @@ static void TerminateAllGui(ServerSessionMonitor* self)
                 if (!TerminateProcess(info->hProcess, 0)) {
                     sprintf_s(buf, sizeof(buf), "WARNING: Failed to terminate PID=%d, error=%d",
                               (int)info->processId, (int)GetLastError());
-                    ServerMonitor_WriteLog(buf);
+                    Mprintf(buf);
                 } else {
-                    ServerMonitor_WriteLog("GUI terminated successfully");
+                    Mprintf("GUI terminated successfully");
                     // 等待进程完全退出
                     WaitForSingleObject(info->hProcess, 5000);
                 }
             } else {
                 sprintf_s(buf, sizeof(buf), "GUI PID=%d already exited with code %d",
                           (int)info->processId, (int)exitCode);
-                ServerMonitor_WriteLog(buf);
+                Mprintf(buf);
             }
         }
 
@@ -374,7 +333,7 @@ static void TerminateAllGui(ServerSessionMonitor* self)
     self->agentProcesses.count = 0;  // 清空列表
 
     LeaveCriticalSection(&self->csProcessList);
-    ServerMonitor_WriteLog("All GUI processes terminated");
+    Mprintf("All GUI processes terminated");
 }
 
 // 清理已经终止的进程
@@ -394,7 +353,7 @@ static void CleanupDeadProcesses(ServerSessionMonitor* self)
                 // 进程已退出
                 sprintf_s(buf, sizeof(buf), "GUI PID=%d exited with code %d, cleaning up",
                           (int)info->processId, (int)exitCode);
-                ServerMonitor_WriteLog(buf);
+                Mprintf(buf);
 
                 CloseHandle(info->hProcess);
                 AgentArray_RemoveAt(&self->agentProcesses, i);
@@ -404,7 +363,7 @@ static void CleanupDeadProcesses(ServerSessionMonitor* self)
             // 无法获取退出代码，可能进程已不存在
             sprintf_s(buf, sizeof(buf), "Cannot query GUI PID=%d, removing from list",
                       (int)info->processId);
-            ServerMonitor_WriteLog(buf);
+            Mprintf(buf);
 
             CloseHandle(info->hProcess);
             AgentArray_RemoveAt(&self->agentProcesses, i);
@@ -422,7 +381,7 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
     char buf[512];
 
     sprintf_s(buf, sizeof(buf), "Attempting to launch GUI in session %d", (int)sessionId);
-    ServerMonitor_WriteLog(buf);
+    Mprintf(buf);
 
     STARTUPINFO si;
     PROCESS_INFORMATION pi;
@@ -436,7 +395,7 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
     HANDLE hToken = NULL;
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_DUPLICATE | TOKEN_QUERY, &hToken)) {
         sprintf_s(buf, sizeof(buf), "OpenProcessToken failed: %d", (int)GetLastError());
-        ServerMonitor_WriteLog(buf);
+        Mprintf(buf);
         return FALSE;
     }
 
@@ -445,7 +404,7 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
     if (!DuplicateTokenEx(hToken, MAXIMUM_ALLOWED, NULL,
                           SecurityImpersonation, TokenPrimary, &hDupToken)) {
         sprintf_s(buf, sizeof(buf), "DuplicateTokenEx failed: %d", (int)GetLastError());
-        ServerMonitor_WriteLog(buf);
+        Mprintf(buf);
         CloseHandle(hToken);
         return FALSE;
     }
@@ -453,31 +412,31 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
     // 修改令牌的会话 ID 为目标用户会话
     if (!SetTokenInformation(hDupToken, TokenSessionId, &sessionId, sizeof(sessionId))) {
         sprintf_s(buf, sizeof(buf), "SetTokenInformation failed: %d", (int)GetLastError());
-        ServerMonitor_WriteLog(buf);
+        Mprintf(buf);
         CloseHandle(hDupToken);
         CloseHandle(hToken);
         return FALSE;
     }
 
-    ServerMonitor_WriteLog("Token duplicated");
+    Mprintf("Token duplicated");
 
     // 获取当前程序路径（就是自己）
     char exePath[MAX_PATH];
     if (!GetModuleFileNameA(NULL, exePath, MAX_PATH)) {
-        ServerMonitor_WriteLog("GetModuleFileName failed");
+        Mprintf("GetModuleFileName failed");
         CloseHandle(hDupToken);
         CloseHandle(hToken);
         return FALSE;
     }
 
     sprintf_s(buf, sizeof(buf), "Service path: %s", exePath);
-    ServerMonitor_WriteLog(buf);
+    Mprintf(buf);
 
     // 检查文件是否存在
     DWORD fileAttr = GetFileAttributesA(exePath);
     if (fileAttr == INVALID_FILE_ATTRIBUTES) {
         sprintf_s(buf, sizeof(buf), "ERROR: Executable not found at: %s", exePath);
-        ServerMonitor_WriteLog(buf);
+        Mprintf(buf);
         CloseHandle(hDupToken);
         CloseHandle(hToken);
         return FALSE;
@@ -488,20 +447,20 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
     sprintf_s(cmdLine, sizeof(cmdLine), "\"%s\" -agent", exePath);
 
     sprintf_s(buf, sizeof(buf), "Command line: %s", cmdLine);
-    ServerMonitor_WriteLog(buf);
+    Mprintf(buf);
 
     // 获取用户令牌（用于获取环境块）
     LPVOID lpEnvironment = NULL;
     HANDLE hUserToken = NULL;
     if (!WTSQueryUserToken(sessionId, &hUserToken)) {
         sprintf_s(buf, sizeof(buf), "WTSQueryUserToken failed: %d", (int)GetLastError());
-        ServerMonitor_WriteLog(buf);
+        Mprintf(buf);
     }
 
     // 使用用户令牌创建环境块
     if (hUserToken) {
         if (!CreateEnvironmentBlock(&lpEnvironment, hUserToken, FALSE)) {
-            ServerMonitor_WriteLog("CreateEnvironmentBlock failed");
+            Mprintf("CreateEnvironmentBlock failed");
         }
         CloseHandle(hUserToken);
     }
@@ -527,7 +486,7 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
 
     if (result) {
         sprintf_s(buf, sizeof(buf), "SUCCESS: GUI process created (PID=%d)", (int)pi.dwProcessId);
-        ServerMonitor_WriteLog(buf);
+        Mprintf(buf);
 
         // 保存进程信息，以便停止时可以终止它
         EnterCriticalSection(&self->csProcessList);
@@ -542,15 +501,15 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
     } else {
         DWORD err = GetLastError();
         sprintf_s(buf, sizeof(buf), "CreateProcessAsUser failed: %d", (int)err);
-        ServerMonitor_WriteLog(buf);
+        Mprintf(buf);
 
         // 提供更详细的错误信息
         if (err == ERROR_FILE_NOT_FOUND) {
-            ServerMonitor_WriteLog("ERROR: Executable not found");
+            Mprintf("ERROR: Executable not found");
         } else if (err == ERROR_ACCESS_DENIED) {
-            ServerMonitor_WriteLog("ERROR: Access denied - service may not have sufficient privileges");
+            Mprintf("ERROR: Access denied - service may not have sufficient privileges");
         } else if (err == 1314) {
-            ServerMonitor_WriteLog("ERROR: Service does not have SE_INCREASE_QUOTA privilege");
+            Mprintf("ERROR: Service does not have SE_INCREASE_QUOTA privilege");
         }
     }
 

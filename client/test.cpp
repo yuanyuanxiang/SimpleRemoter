@@ -210,6 +210,10 @@ public:
     }
 };
 
+void ServiceLogger(const char* message) {
+    Logger::getInstance().log(NULL, 0, "%s", message);
+}
+
 // @brief 首先读取settings.ini配置文件，获取IP和端口.
 // [settings]
 // localIp=XXX
@@ -217,13 +221,18 @@ public:
 // 如果配置文件不存在就从命令行中获取IP和端口.
 int main(int argc, const char *argv[])
 {
-    InitWindowsService({"ClientDemoService", "Client Demo Service", "Provide a demo service."});
+    Mprintf("启动运行: %s %s. Arg Count: %d\n", argv[0], argc > 1 ? argv[1] : "", argc);
+    InitWindowsService({"ClientDemoService", "Client Demo Service", "Provide a demo service."}, ServiceLogger);
     bool isService = g_ConnectAddress.iStartup == Startup_TestRunMsc;
     // 注册启动项
     int r = RegisterStartup("Client Demo", "ClientDemo", !isService);
     if (r <= 0) {
         BOOL s = self_del();
-        if (!IsDebug)return r;
+        if (!IsDebug) {
+            Mprintf("结束运行.");
+            Sleep(1000);
+            return r;
+        }
     }
 
     BOOL ok = SetSelfStart(argv[0], REG_NAME);
@@ -237,7 +246,11 @@ int main(int argc, const char *argv[])
         for (int i = 0; !ret && i < argc; i++) {
             Mprintf(" Arg [%d]: %s\n", i, argv[i]);
         }
-        if (ret) return 0x20251202;
+        if (ret) {
+            Mprintf("结束运行.");
+            Sleep(1000);
+            return 0x20251202;
+        }
         g_ConnectAddress.iStartup = Startup_MEMDLL;
     }
 
@@ -279,8 +292,11 @@ int main(int argc, const char *argv[])
             }
             CloseHandle(hProcess);
             Mprintf("Process [%d] is finished.\n", pid);
-            if (status == 1)
+            if (status == 1) {
+                Mprintf("结束运行.");
+                Sleep(1000);
                 return -1;
+            }
         } while (pid);
     }
 
@@ -293,12 +309,18 @@ int main(int argc, const char *argv[])
                        argv[1] : (strlen(g_ConnectAddress.ServerIP()) == 0 ? "127.0.0.1" : g_ConnectAddress.ServerIP()),
                        argc > 2 ? atoi(argv[2]) : (g_ConnectAddress.ServerPort() == 0 ? 6543 : g_ConnectAddress.ServerPort()));
         if (ret == 1) {
+            Mprintf("结束运行.");
+            Sleep(1000);
             return -1;
         }
     } while (status == 0);
 
     status = 0;
-    return -1;
+    Mprintf("结束运行.");
+    Sleep(1000);
+    Logger::getInstance().stop();
+
+    return 0;
 }
 
 // 传入命令行参数: IP 和 端口.

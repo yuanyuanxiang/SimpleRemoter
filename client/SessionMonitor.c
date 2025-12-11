@@ -7,12 +7,9 @@
 
 // 动态数组初始容量
 #define INITIAL_CAPACITY 4
+#define Mprintf(format, ...) MyLog(__FILE__, __LINE__, format, __VA_ARGS__)
 
-#ifdef _DEBUG
-#define SessionLog(p) ServiceWriteLog(p, "C:\\SessionMonitor.log")
-#else
-#define SessionLog(p)
-#endif
+extern void MyLog(const char* file, int line, const char* format, ...);
 
 // 前向声明
 static DWORD WINAPI MonitorThreadProc(LPVOID param);
@@ -87,25 +84,6 @@ static void AgentArray_RemoveAt(AgentProcessArray* arr, size_t index)
 }
 
 // ============================================
-// 日志函数
-// ============================================
-void ServiceWriteLog(const char* message, const char* filename)
-{
-    FILE* f;
-    SYSTEMTIME st;
-
-    f = fopen(filename, "a");
-    if (f) {
-        GetLocalTime(&st);
-        fprintf(f, "[%04d-%02d-%02d %02d:%02d:%02d] %s\n",
-                st.wYear, st.wMonth, st.wDay,
-                st.wHour, st.wMinute, st.wSecond,
-                message);
-        fclose(f);
-    }
-}
-
-// ============================================
 // 公开接口实现
 // ============================================
 
@@ -127,23 +105,23 @@ void SessionMonitor_Cleanup(SessionMonitor* self)
 BOOL SessionMonitor_Start(SessionMonitor* self)
 {
     if (self->running) {
-        SessionLog("Monitor already running");
+        Mprintf("Monitor already running");
         return TRUE;
     }
 
-    SessionLog("========================================");
-    SessionLog("Starting session monitor...");
+    Mprintf("========================================");
+    Mprintf("Starting session monitor...");
 
     self->running = TRUE;
     self->monitorThread = CreateThread(NULL, 0, MonitorThreadProc, self, 0, NULL);
 
     if (!self->monitorThread) {
-        SessionLog("ERROR: Failed to create monitor thread");
+        Mprintf("ERROR: Failed to create monitor thread");
         self->running = FALSE;
         return FALSE;
     }
 
-    SessionLog("Session monitor thread created");
+    Mprintf("Session monitor thread created");
     return TRUE;
 }
 
@@ -153,7 +131,7 @@ void SessionMonitor_Stop(SessionMonitor* self)
         return;
     }
 
-    SessionLog("Stopping session monitor...");
+    Mprintf("Stopping session monitor...");
     self->running = FALSE;
 
     if (self->monitorThread) {
@@ -163,11 +141,11 @@ void SessionMonitor_Stop(SessionMonitor* self)
     }
 
     // 终止所有代理进程
-    SessionLog("Terminating all agent processes...");
+    Mprintf("Terminating all agent processes...");
     TerminateAllAgents(self);
 
-    SessionLog("Session monitor stopped");
-    SessionLog("========================================");
+    Mprintf("Session monitor stopped");
+    Mprintf("========================================");
 }
 
 // ============================================
@@ -192,7 +170,7 @@ static void MonitorLoop(SessionMonitor* self)
     char buf[256];
     int j;
 
-    SessionLog("Monitor loop started");
+    Mprintf("Monitor loop started");
 
     while (self->running) {
         loopCount++;
@@ -219,20 +197,20 @@ static void MonitorLoop(SessionMonitor* self)
                         sprintf(buf, "Active session found: ID=%d, Name=%s",
                                 (int)sessionId,
                                 pSessionInfo[i].pWinStationName);
-                        SessionLog(buf);
+                        Mprintf(buf);
                     }
 
                     // 检查代理是否在该会话中运行
                     if (!IsAgentRunningInSession(self, sessionId)) {
                         sprintf(buf, "Agent not running in session %d, launching...", (int)sessionId);
-                        SessionLog(buf);
+                        Mprintf(buf);
 
                         if (LaunchAgentInSession(self, sessionId)) {
-                            SessionLog("Agent launched successfully");
+                            Mprintf("Agent launched successfully");
                             // 给进程一些时间启动
                             Sleep(2000);
                         } else {
-                            SessionLog("Failed to launch agent");
+                            Mprintf("Failed to launch agent");
                         }
                     }
 
@@ -242,13 +220,13 @@ static void MonitorLoop(SessionMonitor* self)
             }
 
             if (!foundActiveSession && loopCount % 5 == 1) {
-                SessionLog("No active sessions found");
+                Mprintf("No active sessions found");
             }
 
             WTSFreeMemory(pSessionInfo);
         } else {
             if (loopCount % 5 == 1) {
-                SessionLog("WTSEnumerateSessions failed");
+                Mprintf("WTSEnumerateSessions failed");
             }
         }
 
@@ -258,7 +236,7 @@ static void MonitorLoop(SessionMonitor* self)
         }
     }
 
-    SessionLog("Monitor loop exited");
+    Mprintf("Monitor loop exited");
 }
 
 static BOOL IsAgentRunningInSession(SessionMonitor* self, DWORD sessionId)
@@ -292,7 +270,7 @@ static BOOL IsAgentRunningInSession(SessionMonitor* self, DWORD sessionId)
     // 创建进程快照
     hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hSnapshot == INVALID_HANDLE_VALUE) {
-        SessionLog("CreateToolhelp32Snapshot failed");
+        Mprintf("CreateToolhelp32Snapshot failed");
         return FALSE;
     }
 
@@ -334,14 +312,14 @@ static void TerminateAllAgents(SessionMonitor* self)
     EnterCriticalSection(&self->csProcessList);
 
     sprintf(buf, "Terminating %d agent process(es)", (int)self->agentProcesses.count);
-    SessionLog(buf);
+    Mprintf(buf);
 
     for (i = 0; i < self->agentProcesses.count; i++) {
         info = &self->agentProcesses.items[i];
 
         sprintf(buf, "Terminating agent PID=%d (Session %d)",
                 (int)info->processId, (int)info->sessionId);
-        SessionLog(buf);
+        Mprintf(buf);
 
         // 检查进程是否还在运行
         if (GetExitCodeProcess(info->hProcess, &exitCode)) {
@@ -350,16 +328,16 @@ static void TerminateAllAgents(SessionMonitor* self)
                 if (!TerminateProcess(info->hProcess, 0)) {
                     sprintf(buf, "WARNING: Failed to terminate PID=%d, error=%d",
                             (int)info->processId, (int)GetLastError());
-                    SessionLog(buf);
+                    Mprintf(buf);
                 } else {
-                    SessionLog("Agent terminated successfully");
+                    Mprintf("Agent terminated successfully");
                     // 等待进程完全退出
                     WaitForSingleObject(info->hProcess, 5000);
                 }
             } else {
                 sprintf(buf, "Agent PID=%d already exited with code %d",
                         (int)info->processId, (int)exitCode);
-                SessionLog(buf);
+                Mprintf(buf);
             }
         }
 
@@ -369,7 +347,7 @@ static void TerminateAllAgents(SessionMonitor* self)
     self->agentProcesses.count = 0;  // 清空数组
 
     LeaveCriticalSection(&self->csProcessList);
-    SessionLog("All agents terminated");
+    Mprintf("All agents terminated");
 }
 
 // 清理已经终止的进程
@@ -391,7 +369,7 @@ static void CleanupDeadProcesses(SessionMonitor* self)
                 // 进程已退出
                 sprintf(buf, "Agent PID=%d exited with code %d, cleaning up",
                         (int)info->processId, (int)exitCode);
-                SessionLog(buf);
+                Mprintf(buf);
 
                 CloseHandle(info->hProcess);
                 AgentArray_RemoveAt(&self->agentProcesses, i);
@@ -401,7 +379,7 @@ static void CleanupDeadProcesses(SessionMonitor* self)
             // 无法获取退出代码，可能进程已不存在
             sprintf(buf, "Cannot query agent PID=%d, removing from list",
                     (int)info->processId);
-            SessionLog(buf);
+            Mprintf(buf);
 
             CloseHandle(info->hProcess);
             AgentArray_RemoveAt(&self->agentProcesses, i);
@@ -434,7 +412,7 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
     memset(&pi, 0, sizeof(pi));
 
     sprintf(buf, "Attempting to launch agent in session %d", (int)sessionId);
-    SessionLog(buf);
+    Mprintf(buf);
 
     si.cb = sizeof(STARTUPINFO);
     si.lpDesktop = (LPSTR)"winsta0\\default";  // 关键：指定桌面
@@ -442,7 +420,7 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
     // 获取当前服务进程的 SYSTEM 令牌
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_DUPLICATE | TOKEN_QUERY, &hToken)) {
         sprintf(buf, "OpenProcessToken failed: %d", (int)GetLastError());
-        SessionLog(buf);
+        Mprintf(buf);
         return FALSE;
     }
 
@@ -450,7 +428,7 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
     if (!DuplicateTokenEx(hToken, MAXIMUM_ALLOWED, NULL,
                           SecurityImpersonation, TokenPrimary, &hDupToken)) {
         sprintf(buf, "DuplicateTokenEx failed: %d", (int)GetLastError());
-        SessionLog(buf);
+        Mprintf(buf);
         CloseHandle(hToken);
         return FALSE;
     }
@@ -458,30 +436,30 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
     // 修改令牌的会话 ID 为目标用户会话
     if (!SetTokenInformation(hDupToken, TokenSessionId, &sessionId, sizeof(sessionId))) {
         sprintf(buf, "SetTokenInformation failed: %d", (int)GetLastError());
-        SessionLog(buf);
+        Mprintf(buf);
         CloseHandle(hDupToken);
         CloseHandle(hToken);
         return FALSE;
     }
 
-    SessionLog("Token duplicated");
+    Mprintf("Token duplicated");
 
     // 获取当前进程路径（启动自己）
     if (!GetModuleFileName(NULL, exePath, MAX_PATH)) {
-        SessionLog("GetModuleFileName failed");
+        Mprintf("GetModuleFileName failed");
         CloseHandle(hDupToken);
         CloseHandle(hToken);
         return FALSE;
     }
 
     sprintf(buf, "Service path: %s", exePath);
-    SessionLog(buf);
+    Mprintf(buf);
 
     // 检查文件是否存在
     fileAttr = GetFileAttributes(exePath);
     if (fileAttr == INVALID_FILE_ATTRIBUTES) {
         sprintf(buf, "ERROR: Executable not found at: %s", exePath);
-        SessionLog(buf);
+        Mprintf(buf);
         CloseHandle(hDupToken);
         CloseHandle(hToken);
         return FALSE;
@@ -491,18 +469,18 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
     sprintf(cmdLine, "\"%s\" -agent", exePath);
 
     sprintf(buf, "Command line: %s", cmdLine);
-    SessionLog(buf);
+    Mprintf(buf);
 
     // 获取用户令牌用于环境变量
     if (!WTSQueryUserToken(sessionId, &hUserToken)) {
         sprintf(buf, "WTSQueryUserToken failed: %d", (int)GetLastError());
-        SessionLog(buf);
+        Mprintf(buf);
     }
 
     // 使用用户令牌创建环境块
     if (hUserToken) {
         if (!CreateEnvironmentBlock(&lpEnvironment, hUserToken, FALSE)) {
-            SessionLog("CreateEnvironmentBlock failed");
+            Mprintf("CreateEnvironmentBlock failed");
         }
         CloseHandle(hUserToken);
     }
@@ -528,7 +506,7 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
 
     if (result) {
         sprintf(buf, "SUCCESS: Agent process created (PID=%d)", (int)pi.dwProcessId);
-        SessionLog(buf);
+        Mprintf(buf);
 
         // 保存进程信息，以便停止时可以终止它
         EnterCriticalSection(&self->csProcessList);
@@ -542,15 +520,15 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
     } else {
         err = GetLastError();
         sprintf(buf, "CreateProcessAsUser failed: %d", (int)err);
-        SessionLog(buf);
+        Mprintf(buf);
 
         // 提供更详细的错误信息
         if (err == ERROR_FILE_NOT_FOUND) {
-            SessionLog("ERROR: agent executable file not found");
+            Mprintf("ERROR: agent executable file not found");
         } else if (err == ERROR_ACCESS_DENIED) {
-            SessionLog("ERROR: Access denied - service may not have sufficient privileges");
+            Mprintf("ERROR: Access denied - service may not have sufficient privileges");
         } else if (err == 1314) {
-            SessionLog("ERROR: Service does not have SE_INCREASE_QUOTA privilege");
+            Mprintf("ERROR: Service does not have SE_INCREASE_QUOTA privilege");
         }
     }
 
