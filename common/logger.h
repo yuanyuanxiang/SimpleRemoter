@@ -43,7 +43,9 @@ public:
             char buf[16] = {};
             sprintf_s(buf, "%d", GetCurrentProcessId());
             instance.pid = buf;
-            instance.InitLogFile("C:\\Windows\\Temp", instance.pid);
+            char logPath[MAX_PATH] = { 0 };
+            GetEnvironmentVariableA("TEMP", logPath, MAX_PATH);
+            instance.InitLogFile(logPath, instance.pid);
 #ifdef _WINDOWS
             instance.enable = true; // 主控日志默认打开
 #else
