@@ -13,45 +13,6 @@ static HANDLE g_StopEvent = INVALID_HANDLE_VALUE;
 // 前向声明
 static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
 static void WINAPI ServiceCtrlHandler(DWORD ctrlCode);
-static void ServiceWriteLog(const char* message);
-
-// 获取日志文件路径（程序所在目录）
-static void GetServiceLogPath(char* logPath, size_t size)
-{
-    char exePath[MAX_PATH];
-    if (GetModuleFileNameA(NULL, exePath, MAX_PATH)) {
-        char* lastSlash = strrchr(exePath, '\\');
-        if (lastSlash) {
-            *lastSlash = '\0';
-            sprintf_s(logPath, size, "%s\\YamaService.log", exePath);
-            return;
-        }
-    }
-    // 备用路径：Windows临时目录
-    char tempPath[MAX_PATH];
-    if (GetTempPathA(MAX_PATH, tempPath)) {
-        sprintf_s(logPath, size, "%sYamaService.log", tempPath);
-    } else {
-        strncpy_s(logPath, size, "YamaService.log", _TRUNCATE);
-    }
-}
-
-// 日志函数
-static void ServiceWriteLog(const char* message)
-{
-    char logPath[MAX_PATH];
-    GetServiceLogPath(logPath, sizeof(logPath));
-    FILE* f = fopen(logPath, "a");
-    if (f) {
-        SYSTEMTIME st;
-        GetLocalTime(&st);
-        fprintf(f, "[%04d-%02d-%02d %02d:%02d:%02d] %s\n",
-                st.wYear, st.wMonth, st.wDay,
-                st.wHour, st.wMinute, st.wSecond,
-                message);
-        fclose(f);
-    }
-}
 
 BOOL ServerService_CheckStatus(BOOL* registered, BOOL* running,
                                char* exePath, size_t exePathSize)
@@ -148,14 +109,14 @@ int ServerService_Run(void)
     ServiceTable[1].lpServiceName = NULL;
     ServiceTable[1].lpServiceProc = NULL;
 
-    ServiceWriteLog("========================================");
-    ServiceWriteLog("ServerService_Run() called");
+    Mprintf("========================================");
+    Mprintf("ServerService_Run() called");
 
     if (StartServiceCtrlDispatcher(ServiceTable) == FALSE) {
         DWORD err = GetLastError();
         char buffer[256];
         sprintf_s(buffer, sizeof(buffer), "StartServiceCtrlDispatcher failed: %d", (int)err);
-        ServiceWriteLog(buffer);
+        Mprintf(buffer);
         return (int)err;
     }
     return ERROR_SUCCESS;
@@ -226,7 +187,7 @@ static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
     (void)argc;
     (void)argv;
 
-    ServiceWriteLog("ServiceMain() called");
+    Mprintf("ServiceMain() called");
 
     g_StatusHandle = RegisterServiceCtrlHandler(
                          SERVER_SERVICE_NAME,
@@ -234,7 +195,7 @@ static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
                      );
 
     if (g_StatusHandle == NULL) {
-        ServiceWriteLog("RegisterServiceCtrlHandler failed");
+        Mprintf("RegisterServiceCtrlHandler failed");
         return;
     }
 
@@ -251,7 +212,7 @@ static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
 
     g_StopEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (g_StopEvent == NULL) {
-        ServiceWriteLog("CreateEvent failed");
+        Mprintf("CreateEvent failed");
         g_ServiceStatus.dwCurrentState = SERVICE_STOPPED;
         g_ServiceStatus.dwWin32ExitCode = GetLastError();
         SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
@@ -264,7 +225,7 @@ static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
     g_ServiceStatus.dwCheckPoint = 0;
 
     SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
-    ServiceWriteLog("Service is now running");
+    Mprintf("Service is now running");
 
     HANDLE hThread = CreateThread(NULL, 0, ServerService_WorkerThread, NULL, 0, NULL);
     if (hThread) {
@@ -280,14 +241,14 @@ static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
     g_ServiceStatus.dwCheckPoint = 3;
 
     SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
-    ServiceWriteLog("Service stopped");
+    Mprintf("Service stopped");
 }
 
 static void WINAPI ServiceCtrlHandler(DWORD ctrlCode)
 {
     switch (ctrlCode) {
     case SERVICE_CONTROL_STOP:
-        ServiceWriteLog("SERVICE_CONTROL_STOP received");
+        Mprintf("SERVICE_CONTROL_STOP received");
 
         if (g_ServiceStatus.dwCurrentState != SERVICE_RUNNING)
             break;
@@ -318,39 +279,39 @@ DWORD WINAPI ServerService_WorkerThread(LPVOID lpParam)
     int heartbeatCount = 0;
     char buf[128];
 
-    ServiceWriteLog("========================================");
-    ServiceWriteLog("Worker thread started");
-    ServiceWriteLog("Service will launch Yama GUI in user sessions");
+    Mprintf("========================================");
+    Mprintf("Worker thread started");
+    Mprintf("Service will launch Yama GUI in user sessions");
 
     // 初始化会话监控器
     ServerSessionMonitor monitor;
     ServerSessionMonitor_Init(&monitor);
 
     if (!ServerSessionMonitor_Start(&monitor)) {
-        ServiceWriteLog("ERROR: Failed to start session monitor");
+        Mprintf("ERROR: Failed to start session monitor");
         ServerSessionMonitor_Cleanup(&monitor);
         return ERROR_SERVICE_SPECIFIC_ERROR;
     }
 
-    ServiceWriteLog("Session monitor started successfully");
-    ServiceWriteLog("Yama GUI will be launched automatically in user sessions");
+    Mprintf("Session monitor started successfully");
+    Mprintf("Yama GUI will be launched automatically in user sessions");
 
     // 主循环，只等待停止信号
     while (WaitForSingleObject(g_StopEvent, 10000) != WAIT_OBJECT_0) {
         heartbeatCount++;
         if (heartbeatCount % 6 == 0) {  // 每60秒记录一次（10秒 * 6 = 60秒）
             sprintf_s(buf, sizeof(buf), "Service heartbeat - uptime: %d minutes", heartbeatCount / 6);
-            ServiceWriteLog(buf);
+            Mprintf(buf);
         }
     }
 
-    ServiceWriteLog("Stop signal received");
-    ServiceWriteLog("Stopping session monitor...");
+    Mprintf("Stop signal received");
+    Mprintf("Stopping session monitor...");
     ServerSessionMonitor_Stop(&monitor);
     ServerSessionMonitor_Cleanup(&monitor);
 
-    ServiceWriteLog("Worker thread exiting");
-    ServiceWriteLog("========================================");
+    Mprintf("Worker thread exiting");
+    Mprintf("========================================");
     return ERROR_SUCCESS;
 }
 

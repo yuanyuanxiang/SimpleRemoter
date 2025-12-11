@@ -87,7 +87,9 @@ public:
         auto timestamp = getCurrentTimestamp();
         std::string id = pid.empty() ? "" : "[" + pid + "]";
 
-        std::string logEntry = id + "[" + timestamp + "] [" + file + ":" + std::to_string(line) + "] " + message;
+        std::string logEntry = file && line ? 
+            id + "[" + timestamp + "] [" + file + ":" + std::to_string(line) + "] " + message:
+            id + "[" + timestamp + "] "  + message;
         if (enable) {
             if (running) {
                 std::lock_guard<std::mutex> lock(queueMutex);

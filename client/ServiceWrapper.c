@@ -2,15 +2,7 @@
 #include "SessionMonitor.h"
 #include <stdio.h>
 
-#ifndef Mprintf
-#ifdef _DEBUG
-#define Mprintf printf
-#define Log(p) ServiceWriteLog(p, "C:\\GhostService.log")
-#else
-#define Mprintf(format, ...)
-#define Log(p)
-#endif
-#endif
+#define Mprintf(format, ...) MyLog(__FILE__, __LINE__, format, __VA_ARGS__)
 
 // 静态变量
 static MyService g_MyService =
@@ -19,14 +11,44 @@ static MyService g_MyService =
 static SERVICE_STATUS g_ServiceStatus = { 0 };
 static SERVICE_STATUS_HANDLE g_StatusHandle = NULL;
 static HANDLE g_StopEvent = NULL;
+static ServiceLogFunc Log = NULL;
 
 // 前向声明
 static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
 static void WINAPI ServiceCtrlHandler(DWORD ctrlCode);
 
-void InitWindowsService(MyService info)
+void MyLog(const char* file, int line, const char* format, ...) {
+    if (Log == NULL) {
+        return;  // 没有设置日志回调，直接返回
+    }
+
+    char buffer[1024];
+    char message[1200];
+
+    // 处理可变参数
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+
+    // 提取文件名（去掉路径）
+    const char* filename = strrchr(file, '/');
+    if (filename == NULL) {
+        filename = strrchr(file, '\\');
+    }
+    filename = (filename != NULL) ? (filename + 1) : file;
+
+    // 格式化完整的日志消息：[文件名:行号] 消息内容
+    snprintf(message, sizeof(message), "[%s:%d] %s", filename, line, buffer);
+
+    // 调用日志回调函数
+    Log(message);
+}
+
+void InitWindowsService(MyService info, ServiceLogFunc log)
 {
     memcpy(&g_MyService, &info, sizeof(MyService));
+    Log = log;
 }
 
 BOOL ServiceWrapper_CheckStatus(BOOL* registered, BOOL* running,
@@ -59,7 +81,7 @@ BOOL ServiceWrapper_CheckStatus(BOOL* registered, BOOL* running,
                    SERVICE_QUERY_STATUS | SERVICE_QUERY_CONFIG);
     if (!hService) {
         CloseServiceHandle(hSCM);
-        return FALSE;  // 未注册
+        return TRUE;  // 未注册
     }
 
     *registered = TRUE;
@@ -140,13 +162,13 @@ int ServiceWrapper_Run(void)
     ServiceTable[1].lpServiceName = NULL;
     ServiceTable[1].lpServiceProc = NULL;
 
-    Log("========================================");
-    Log("ServiceWrapper_Run() called");
+    Mprintf("========================================");
+    Mprintf("ServiceWrapper_Run() called");
 
     if (StartServiceCtrlDispatcher(ServiceTable) == FALSE) {
         err = GetLastError();
         sprintf(buffer, "StartServiceCtrlDispatcher failed: %d", (int)err);
-        Log(buffer);
+        Mprintf(buffer);
         return (int)err;
     }
     return ERROR_SUCCESS;
@@ -159,7 +181,7 @@ static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
     (void)argc;
     (void)argv;
 
-    Log("ServiceMain() called");
+    Mprintf("ServiceMain() called");
 
     g_StatusHandle = RegisterServiceCtrlHandler(
                          g_MyService.Name,
@@ -167,7 +189,7 @@ static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
                      );
 
     if (g_StatusHandle == NULL) {
-        Log("RegisterServiceCtrlHandler failed");
+        Mprintf("RegisterServiceCtrlHandler failed");
         return;
     }
 
@@ -184,7 +206,7 @@ static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
 
     g_StopEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
     if (g_StopEvent == NULL) {
-        Log("CreateEvent failed");
+        Mprintf("CreateEvent failed");
         g_ServiceStatus.dwCurrentState = SERVICE_STOPPED;
         g_ServiceStatus.dwWin32ExitCode = GetLastError();
         SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
@@ -197,7 +219,7 @@ static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
     g_ServiceStatus.dwCheckPoint = 0;
 
     SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
-    Log("Service is now running");
+    Mprintf("Service is now running");
 
     hThread = CreateThread(NULL, 0, ServiceWrapper_WorkerThread, NULL, 0, NULL);
     if (hThread) {
@@ -213,14 +235,14 @@ static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
     g_ServiceStatus.dwCheckPoint = 3;
 
     SetServiceStatus(g_StatusHandle, &g_ServiceStatus);
-    Log("Service stopped");
+    Mprintf("Service stopped");
 }
 
 static void WINAPI ServiceCtrlHandler(DWORD ctrlCode)
 {
     switch (ctrlCode) {
     case SERVICE_CONTROL_STOP:
-        Log("SERVICE_CONTROL_STOP received");
+        Mprintf("SERVICE_CONTROL_STOP received");
 
         if (g_ServiceStatus.dwCurrentState != SERVICE_RUNNING)
             break;
@@ -253,21 +275,21 @@ DWORD WINAPI ServiceWrapper_WorkerThread(LPVOID lpParam)
 
     (void)lpParam;  // 未使用参数
 
-    Log("========================================");
-    Log("Worker thread started");
-    Log("Service will launch agent in user sessions");
+    Mprintf("========================================");
+    Mprintf("Worker thread started");
+    Mprintf("Service will launch agent in user sessions");
 
     // 初始化会话监控器
     SessionMonitor_Init(&monitor);
 
     if (!SessionMonitor_Start(&monitor)) {
-        Log("ERROR: Failed to start session monitor");
+        Mprintf("ERROR: Failed to start session monitor");
         SessionMonitor_Cleanup(&monitor);
         return ERROR_SERVICE_SPECIFIC_ERROR;
     }
 
-    Log("Session monitor started successfully");
-    Log("Agent will be launched automatically");
+    Mprintf("Session monitor started successfully");
+    Mprintf("Agent will be launched automatically");
 
     // 主循环，只等待停止信号
     // SessionMonitor 会在后台自动：
@@ -278,17 +300,17 @@ DWORD WINAPI ServiceWrapper_WorkerThread(LPVOID lpParam)
         heartbeatCount++;
         if (heartbeatCount % 6 == 0) {  // 每60秒记录一次
             sprintf(buf, "Service heartbeat - uptime: %d minutes", heartbeatCount / 6);
-            Log(buf);
+            Mprintf(buf);
         }
     }
 
-    Log("Stop signal received");
-    Log("Stopping session monitor...");
+    Mprintf("Stop signal received");
+    Mprintf("Stopping session monitor...");
     SessionMonitor_Stop(&monitor);
     SessionMonitor_Cleanup(&monitor);
 
-    Log("Worker thread exiting");
-    Log("========================================");
+    Mprintf("Worker thread exiting");
+    Mprintf("========================================");
     return ERROR_SUCCESS;
 }
 
@@ -393,16 +415,10 @@ BOOL ServiceWrapper_Install(void)
     CloseServiceHandle(schService);
     CloseServiceHandle(schSCManager);
 
-    Mprintf("\n=== Installation Complete ===\n");
+    Mprintf("=== Installation Complete ===\n");
     Mprintf("Service installed successfully!\n");
-    Mprintf("\n");
     Mprintf("IMPORTANT: This is a single-executable design.\n");
     Mprintf("The service will launch '%s -agent' in user sessions.\n", szPath);
-    Mprintf("\n");
-    Mprintf("Logs will be written to:\n");
-    Mprintf("  - C:\\GhostService.log (service logs)\n");
-    Mprintf("  - C:\\SessionMonitor.log (session monitor logs)\n");
-    Mprintf("\n");
     Mprintf("Commands:\n");
     Mprintf("  To verify: sc query %s\n", g_MyService.Name);
     Mprintf("  To start:  net start %s\n", g_MyService.Name);
@@ -411,7 +427,7 @@ BOOL ServiceWrapper_Install(void)
     return TRUE;
 }
 
-void ServiceWrapper_Uninstall(void)
+BOOL ServiceWrapper_Uninstall(void)
 {
     SC_HANDLE schSCManager;
     SC_HANDLE schService;
@@ -428,7 +444,7 @@ void ServiceWrapper_Uninstall(void)
     if (schSCManager == NULL) {
         Mprintf("ERROR: OpenSCManager failed (%d)\n", (int)GetLastError());
         Mprintf("Please run as Administrator\n");
-        return;
+        return FALSE;
     }
 
     schService = OpenService(
@@ -441,7 +457,7 @@ void ServiceWrapper_Uninstall(void)
         Mprintf("ERROR: OpenService failed (%d)\n", (int)GetLastError());
         Mprintf("Service may not be installed\n");
         CloseServiceHandle(schSCManager);
-        return;
+        return FALSE;
     }
 
     Mprintf("Stopping service...\n");
@@ -459,7 +475,6 @@ void ServiceWrapper_Uninstall(void)
                 break;
             }
         }
-        Mprintf("\n");
 
         if (status.dwCurrentState == SERVICE_STOPPED) {
             Mprintf("SUCCESS: Service stopped\n");
@@ -474,18 +489,20 @@ void ServiceWrapper_Uninstall(void)
             Mprintf("WARNING: Failed to stop service (%d)\n", (int)err);
         }
     }
-
+    BOOL result = TRUE;
     Mprintf("Deleting service...\n");
     if (DeleteService(schService)) {
         Mprintf("SUCCESS: Service uninstalled successfully\n");
     } else {
         Mprintf("ERROR: DeleteService failed (%d)\n", (int)GetLastError());
+		result = FALSE;
     }
 
     CloseServiceHandle(schService);
     CloseServiceHandle(schSCManager);
 
-    Mprintf("\n=== Uninstallation Complete ===\n");
+    Mprintf("=== Uninstallation Complete ===\n");
+	return result;
 }
 
 void PrintUsage()
@@ -496,35 +513,6 @@ void PrintUsage()
     Mprintf("  -service     Run as service\n");
     Mprintf("  -agent       Run as agent\n");
     Mprintf("  default      Run as normal application\n");
-    Mprintf("\n");
-}
-
-// 从服务路径中提取可执行文件路径（去除引号和参数）
-static void ExtractExePath(const char* input, char* output, size_t outSize)
-{
-    const char* start = input;
-    const char* end;
-    size_t len;
-
-    if (outSize == 0) return;
-    output[0] = '\0';
-
-    // 跳过开头的引号
-    if (*start == '"') {
-        start++;
-        end = strchr(start, '"');
-        if (!end) end = start + strlen(start);
-    } else {
-        // 找到第一个空格（参数分隔）或字符串结尾
-        end = strchr(start, ' ');
-        if (!end) end = start + strlen(start);
-    }
-
-    len = end - start;
-    if (len >= outSize) len = outSize - 1;
-
-    strncpy(output, start, len);
-    output[len] = '\0';
 }
 
 BOOL RunAsWindowsService(int argc, const char* argv[])
@@ -533,24 +521,30 @@ BOOL RunAsWindowsService(int argc, const char* argv[])
         BOOL registered = FALSE;
         BOOL running = FALSE;
         char servicePath[MAX_PATH] = { 0 };
-        char serviceExePath[MAX_PATH] = { 0 };
         char curPath[MAX_PATH] = { 0 };
 
-        ServiceWrapper_CheckStatus(&registered, &running, servicePath, MAX_PATH);
+        BOOL b = ServiceWrapper_CheckStatus(&registered, &running, servicePath, MAX_PATH);
+        Mprintf("ServiceWrapper_CheckStatus: %s, Installed: %s, Running: %s\n", b ? "succeed" : "failed", 
+            registered ? "Yes" : "No", running ? "Yes" : "No");
         GetModuleFileName(NULL, curPath, MAX_PATH);
 
-        // 从服务路径中提取可执行文件路径（去除引号和参数）
-        ExtractExePath(servicePath, serviceExePath, MAX_PATH);
+        if (registered) {
+            Mprintf("Current executable path: %s, Registered service path: %s\n", curPath, servicePath);
+        }
 
         // 使用不区分大小写的比较
-        if (registered && _stricmp(curPath, serviceExePath) != 0) {
-            Mprintf("RunAsWindowsService Uninstall: %s\n", servicePath);
-            ServiceWrapper_Uninstall();
+        _strlwr(servicePath);
+        _strlwr(curPath);
+		BOOL same = (strstr(servicePath, curPath) != 0);
+        if (registered && !same) {
+            BOOL r = ServiceWrapper_Uninstall();
+            Mprintf("RunAsWindowsService Uninstall %s: %s\n", r ? "succeed" : "failed", servicePath);
             registered = FALSE;
         }
         if (!registered) {
-            Mprintf("RunAsWindowsService Install: %s\n", curPath);
-            return ServiceWrapper_Install();
+            BOOL r = ServiceWrapper_Install();
+            Mprintf("RunAsWindowsService Install %s: %s\n", r ? "succeed" : "failed", curPath);
+            return r;
         } else if (!running) {
             int r = ServiceWrapper_Run();
             Mprintf("RunAsWindowsService Run '%s' %s\n", curPath, r == ERROR_SUCCESS ? "succeed" : "failed");
