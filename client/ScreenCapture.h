@@ -239,10 +239,53 @@ public:
     }
 
 public:
+    virtual BOOL UsingDXGI() const {
+        return FALSE;
+    }
+    //*************************************** 图像差异算法（串行） *************************************
+    ULONG CompareBitmapDXGI(LPBYTE CompareSourData, LPBYTE CompareDestData, LPBYTE szBuffer,
+        DWORD ulCompareLength, BYTE algo, int startPostion = 0)
+    {
+        // Windows规定一个扫描行所占的字节数必须是4的倍数, 所以用DWORD比较
+        LPDWORD	p1 = (LPDWORD)CompareDestData, p2 = (LPDWORD)CompareSourData;
+        LPBYTE p = szBuffer;
+        ULONG channel = algo == ALGORITHM_GRAY ? 1 : 4;
+        ULONG ratio = algo == ALGORITHM_GRAY ? 4 : 1;
+        for (ULONG i = 0; i < ulCompareLength; i += 4, ++p1, ++p2) {
+            if (*p1 == *p2)
+                continue;
+            ULONG index = i;
+            LPDWORD pos1 = p1++, pos2 = p2++;
+            // 计算有几个像素值不同
+            for (i += 4; i < ulCompareLength && *p1 != *p2; i += 4, ++p1, ++p2);
+            ULONG ulCount = i - index;
+            memcpy(pos1, pos2, ulCount); // 更新目标像素
+
+            *(LPDWORD)(p) = index + startPostion;
+            *(LPDWORD)(p + sizeof(ULONG)) = ulCount / ratio;
+            p += 2 * sizeof(ULONG);
+            if (channel != 1) {
+                memcpy(p, pos2, ulCount);
+                p += ulCount;
+            }
+            else {
+                for (LPBYTE end = p + ulCount / ratio; p < end; p += channel, ++pos2) {
+                    LPBYTE src = (LPBYTE)pos2;
+                    *p = (306 * src[2] + 601 * src[0] + 117 * src[1]) >> 10;
+                }
+            }
+        }
+
+        return p - szBuffer;
+    }
+
     //*************************************** 图像差异算法 SSE2 优化版 *************************************
     virtual ULONG CompareBitmap(LPBYTE CompareSourData, LPBYTE CompareDestData, LPBYTE szBuffer,
                                 DWORD ulCompareLength, BYTE algo, int startPostion = 0)
     {
+        if (UsingDXGI()) 
+            return CompareBitmapDXGI(CompareSourData, CompareDestData, szBuffer, ulCompareLength, algo, startPostion);
+
         LPBYTE p = szBuffer;
         ULONG channel = algo == ALGORITHM_GRAY ? 1 : 4;
         ULONG ratio = algo == ALGORITHM_GRAY ? 4 : 1;
