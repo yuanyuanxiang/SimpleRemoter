@@ -192,7 +192,7 @@ int main(int argc, const char *argv[])
     if (r <= 0) {
         BOOL s = self_del();
         if (!IsDebug) {
-            Mprintf("结束运行.");
+            Mprintf("结束运行.\n");
 			Sleep(1000);
             return r;
         }
@@ -209,7 +209,7 @@ int main(int argc, const char *argv[])
             Mprintf(" Arg [%d]: %s\n", i, argv[i]);
         }
         if (ret) {
-            Mprintf("结束运行.");
+            Mprintf("结束运行.\n");
             Sleep(1000);
             return 0x20251123;
         }
@@ -222,7 +222,7 @@ int main(int argc, const char *argv[])
         CloseHandle(hMutex);
         hMutex = NULL;
 #ifndef _DEBUG
-        Mprintf("结束运行.");
+        Mprintf("结束运行.\n");
         Sleep(1000);
         return -2;
 #endif
@@ -258,7 +258,7 @@ int main(int argc, const char *argv[])
     status = E_STOP;
 
     CloseHandle(hMutex);
-    Mprintf("结束运行.");
+    Mprintf("结束运行.\n");
     Logger::getInstance().stop();
 
     return 0;
