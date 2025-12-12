@@ -457,7 +457,7 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
             SendData(szBuffer, sizeof(szBuffer));
             break;
         }
-        SendClientClipboard();
+        SendClientClipboard(ulLength > 1);
         break;
     }
     case COMMAND_SCREEN_SET_CLIPBOARD: {
@@ -531,26 +531,48 @@ VOID CScreenManager::UpdateClientClipboard(char *szBuffer, ULONG ulLength)
     CloseClipboard();
 }
 
-VOID CScreenManager::SendClientClipboard()
+VOID CScreenManager::SendClientClipboard(BOOL fast)
 {
-    if (!::OpenClipboard(NULL))  //打开剪切板设备
-        return;
-    HGLOBAL hGlobal = GetClipboardData(CF_TEXT);   //代表着一个内存
-    if (hGlobal == NULL) {
-        ::CloseClipboard();
-        return;
-    }
-    size_t	  iPacketLength = GlobalSize(hGlobal) + 1;
-    char*   szClipboardVirtualAddress = (LPSTR) GlobalLock(hGlobal); //锁定
-    LPBYTE	szBuffer = new BYTE[iPacketLength];
+	if (!::OpenClipboard(NULL))
+		return;
 
+	// 改为获取 Unicode 格式
+	HGLOBAL hGlobal = GetClipboardData(CF_UNICODETEXT);
+	if (hGlobal == NULL) {
+		::CloseClipboard();
+		return;
+	}
 
-    szBuffer[0] = TOKEN_CLIPBOARD_TEXT;
-    memcpy(szBuffer + 1, szClipboardVirtualAddress, iPacketLength - 1);
-    ::GlobalUnlock(hGlobal);
-    ::CloseClipboard();
-    m_ClientObject->Send2Server((char*)szBuffer, iPacketLength);
-    delete[] szBuffer;
+	wchar_t* pWideStr = (wchar_t*)GlobalLock(hGlobal);
+	if (pWideStr == NULL) {
+		::CloseClipboard();
+		return;
+	}
+
+	// Unicode 转 UTF-8
+	int utf8Len = WideCharToMultiByte(CP_UTF8, 0, pWideStr, -1, NULL, 0, NULL, NULL);
+	if (utf8Len <= 0) {
+		GlobalUnlock(hGlobal);
+		::CloseClipboard();
+		return;
+	}
+
+	if (fast && utf8Len > 200 * 1024) {
+		Mprintf("剪切板文本太长, 无法快速拷贝: %d\n", utf8Len);
+		GlobalUnlock(hGlobal);
+		::CloseClipboard();
+		return;
+	}
+
+	LPBYTE szBuffer = new BYTE[utf8Len + 1];
+	szBuffer[0] = TOKEN_CLIPBOARD_TEXT;
+	WideCharToMultiByte(CP_UTF8, 0, pWideStr, -1, (char*)(szBuffer + 1), utf8Len, NULL, NULL);
+
+	GlobalUnlock(hGlobal);
+	::CloseClipboard();
+
+	m_ClientObject->Send2Server((char*)szBuffer, utf8Len + 1);
+	delete[] szBuffer;
 }
 
 

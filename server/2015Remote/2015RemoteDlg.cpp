@@ -3809,53 +3809,56 @@ void CMy2015RemoteDlg::OnDestroy()
 
 CString GetClipboardText()
 {
-    if (!OpenClipboard(nullptr)) return _T("");
+	if (!OpenClipboard(nullptr)) return _T("");
 
+	CString strText;
+
+	// 优先获取 Unicode 格式
+	HANDLE hData = GetClipboardData(CF_UNICODETEXT);
+	if (hData) {
+		wchar_t* pszText = static_cast<wchar_t*>(GlobalLock(hData));
+		if (pszText) {
 #ifdef UNICODE
-    HANDLE hData = GetClipboardData(CF_UNICODETEXT);
+			strText = pszText;
 #else
-    HANDLE hData = GetClipboardData(CF_TEXT);
+			// 将 Unicode 转换为多字节（使用系统默认代码页）
+			int len = WideCharToMultiByte(CP_ACP, 0, pszText, -1, nullptr, 0, nullptr, nullptr);
+			if (len > 0) {
+				char* pBuf = strText.GetBuffer(len);
+				WideCharToMultiByte(CP_ACP, 0, pszText, -1, pBuf, len, nullptr, nullptr);
+				strText.ReleaseBuffer();
+			}
 #endif
+		}
+		GlobalUnlock(hData);
+	}
 
-    if (!hData) {
-        CloseClipboard();
-        return _T("");
-    }
-
-#ifdef UNICODE
-    wchar_t* pszText = static_cast<wchar_t*>(GlobalLock(hData));
-#else
-    char* pszText = static_cast<char*>(GlobalLock(hData));
-#endif
-
-    CString strText = pszText ? pszText : _T("");
-    GlobalUnlock(hData);
-    CloseClipboard();
-    return strText;
+	CloseClipboard();
+	return strText;
 }
 
-void SetClipboardText(const CString& text)
+void SetClipboardText(const char* utf8Text)
 {
-    if (!OpenClipboard(nullptr)) return;
-    EmptyClipboard();
+	if (!OpenClipboard(nullptr)) return;
+	EmptyClipboard();
 
-#ifdef UNICODE
-    HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, (text.GetLength() + 1) * sizeof(wchar_t));
-    wchar_t* p = static_cast<wchar_t*>(GlobalLock(hGlob));
-    if (p) wcscpy_s(p, text.GetLength() + 1, text);
-#else
-    HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, (text.GetLength() + 1) * sizeof(char));
-    char* p = static_cast<char*>(GlobalLock(hGlob));
-    if (p) strcpy_s(p, text.GetLength() + 1, CT2A(text)); // CT2A 宏把 CString 转成 char*
-#endif
-
-    GlobalUnlock(hGlob);
-#ifdef UNICODE
-    SetClipboardData(CF_UNICODETEXT, hGlob);
-#else
-    SetClipboardData(CF_TEXT, hGlob);
-#endif
-    CloseClipboard();
+	// UTF-8 转 Unicode
+	int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8Text, -1, nullptr, 0);
+	if (wlen > 0) {
+		HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, wlen * sizeof(wchar_t));
+		if (hGlob) {
+			wchar_t* p = static_cast<wchar_t*>(GlobalLock(hGlob));
+			if (p) {
+				MultiByteToWideChar(CP_UTF8, 0, utf8Text, -1, p, wlen);
+				GlobalUnlock(hGlob);
+				SetClipboardData(CF_UNICODETEXT, hGlob);
+			}
+			else {
+				GlobalFree(hGlob);
+			}
+		}
+	}
+	CloseClipboard();
 }
 
 CDialogBase* CMy2015RemoteDlg::GetRemoteWindow(HWND hWnd)
@@ -3919,10 +3922,15 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                         } else {
                             CString strText = GetClipboardText();
                             if (!strText.IsEmpty()) {
+                                if (strText.GetLength() > 200*1024) {
+                                    Mprintf("【Ctrl+V】 从本地拷贝文本到远程失败, 文本太长: %d \n", strText.GetLength());
+                                    break;
+                                }
                                 BYTE* szBuffer = new BYTE[strText.GetLength() + 1];
                                 szBuffer[0] = COMMAND_SCREEN_SET_CLIPBOARD;
                                 memcpy(szBuffer + 1, strText.GetString(), strText.GetLength());
-                                dlg->m_ContextObject->Send2Client(szBuffer, strText.GetLength() + 1);
+                                if (dlg->m_ContextObject->Send2Client(szBuffer, strText.GetLength() + 1))
+                                    Sleep(100);
                                 Mprintf("【Ctrl+V】 从本地拷贝文本到远程 \n");
                                 SAFE_DELETE_ARRAY(szBuffer);
                             }
@@ -3945,7 +3953,8 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                             EmptyClipboard();
                             CloseClipboard();
                         }
-                        g_2015RemoteDlg->m_pActiveSession->m_ContextObject->Send2Client(bToken, sizeof(bToken));
+                        if (g_2015RemoteDlg->m_pActiveSession->m_ContextObject->Send2Client(bToken, sizeof(bToken)))
+                            Sleep(200);
                         Mprintf("【Ctrl+V】 从远程拷贝到本地 \n");
                     } else {
                         Mprintf("[Ctrl+V] 没有活动的远程桌面会话 \n");

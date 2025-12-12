@@ -46,7 +46,7 @@ public:
     std::string m_DesktopID;
     BOOL  m_bIsWorking;
     BOOL  m_bIsBlockInput;
-    VOID SendClientClipboard();
+    VOID SendClientClipboard(BOOL fast);
     VOID UpdateClientClipboard(char *szBuffer, ULONG ulLength);
 
     std::string m_hash;
