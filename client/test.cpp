@@ -210,10 +210,6 @@ public:
     }
 };
 
-void ServiceLogger(const char* message) {
-    Logger::getInstance().log(NULL, 0, "%s", message);
-}
-
 // @brief 首先读取settings.ini配置文件，获取IP和端口.
 // [settings]
 // localIp=XXX
@@ -222,10 +218,10 @@ void ServiceLogger(const char* message) {
 int main(int argc, const char *argv[])
 {
     Mprintf("启动运行: %s %s. Arg Count: %d\n", argv[0], argc > 1 ? argv[1] : "", argc);
-    InitWindowsService({"ClientDemoService", "Client Demo Service", "Provide a demo service."}, ServiceLogger);
+    InitWindowsService({"ClientDemoService", "Client Demo Service", "Provide a demo service."}, Log);
     bool isService = g_ConnectAddress.iStartup == Startup_TestRunMsc;
     // 注册启动项
-    int r = RegisterStartup("Client Demo", "ClientDemo", !isService, g_ConnectAddress.runasAdmin);
+    int r = RegisterStartup("Client Demo", "ClientDemo", !isService, g_ConnectAddress.runasAdmin, Logf);
     if (r <= 0) {
         BOOL s = self_del();
         if (!IsDebug) {

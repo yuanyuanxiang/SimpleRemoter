@@ -13,12 +13,15 @@
 #include <shlwapi.h>
 #include <stdio.h>
 #include <stddef.h>
-#define Mprintf printf
 
 #pragma comment(lib, "taskschd.lib")
 #pragma comment(lib, "comsupp.lib")
 #pragma comment(lib, "userenv.lib")
 #pragma comment(lib, "shlwapi.lib")
+
+static StartupLogFunc Log = NULL;
+
+#define Mprintf(format, ...) if (Log) Log(__FILE__, __LINE__, format, __VA_ARGS__)
 
 inline void ConvertCharToWChar(const char* charStr, wchar_t* wcharStr, size_t wcharSize)
 {
@@ -103,6 +106,9 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
         pSettings->lpVtbl->put_StopIfGoingOnBatteries(pSettings, VARIANT_FALSE);
         pSettings->lpVtbl->Release(pSettings);
     }
+    else {
+        Mprintf("获取配置设置失败，错误代码：%ld\n", hr);
+    }
 
     IRegistrationInfo* pRegInfo = NULL;
     hr = pTask->lpVtbl->get_RegistrationInfo(pTask, &pRegInfo);
@@ -125,6 +131,9 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
         SysFreeString(bDesc);
         pRegInfo->lpVtbl->Release(pRegInfo);
     }
+    else {
+        Mprintf("获取注册信息失败，错误代码：%ld\n", hr);
+    }
 
     ITriggerCollection* pTriggerCollection = NULL;
     hr = pTask->lpVtbl->get_Triggers(pTask, &pTriggerCollection);
@@ -132,14 +141,35 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
         ITrigger* pTrigger = NULL;
         hr = pTriggerCollection->lpVtbl->Create(pTriggerCollection, TASK_TRIGGER_LOGON, &pTrigger);
         pTriggerCollection->lpVtbl->Release(pTriggerCollection);
-        if (FAILED(hr)) {
+        if (SUCCEEDED(hr)) {
+            // 普通用户需要指定具体用户
+            if (!runasAdmin) {
+                ILogonTrigger* pLogonTrigger = NULL;
+                hr = pTrigger->lpVtbl->QueryInterface(pTrigger, &IID_ILogonTrigger, (void**)&pLogonTrigger);
+                if (SUCCEEDED(hr)) {
+                    char userName[UNLEN + 1] = { 0 };
+                    DWORD nameLen = UNLEN + 1;
+                    GetUserNameA(userName, &nameLen);
+                    WCHAR wUser[MAX_PATH] = { 0 };
+                    ConvertCharToWChar(userName, wUser, MAX_PATH);
+                    BSTR bstrUser = SysAllocString(wUser);
+                    pLogonTrigger->lpVtbl->put_UserId(pLogonTrigger, bstrUser);
+                    SysFreeString(bstrUser);
+                    pLogonTrigger->lpVtbl->Release(pLogonTrigger);
+                }
+            }
+            pTrigger->lpVtbl->Release(pTrigger);
+        }
+        else {
             Mprintf("无法设置任务触发器，错误代码：%ld\n", hr);
             pTask->lpVtbl->Release(pTask);
             pService->lpVtbl->Release(pService);
             CoUninitialize();
             return 6;
         }
-        pTrigger->lpVtbl->Release(pTrigger);
+    }
+    else {
+        Mprintf("获取任务触发失败，错误代码：%ld\n", hr);
     }
 
     // 设置操作
@@ -159,17 +189,31 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
                 SysFreeString(path);
                 pExecAction->lpVtbl->Release(pExecAction);
             }
+            else {
+                Mprintf("QueryInterface 调用失败，错误代码：%ld\n", hr);
+            }
             pAction->lpVtbl->Release(pAction);
         }
+        else {
+            Mprintf("创建任务动作失败，错误代码：%ld\n", hr);
+        }
         pActionCollection->lpVtbl->Release(pActionCollection);
+    }
+    else {
+        Mprintf("获取任务动作失败，错误代码：%ld\n", hr);
     }
 
     // 权限配置
     IPrincipal* pPrincipal = NULL;
-    if (SUCCEEDED(pTask->lpVtbl->get_Principal(pTask, &pPrincipal))) {
-        pPrincipal->lpVtbl->put_LogonType(pPrincipal, TASK_LOGON_INTERACTIVE_TOKEN);
-        pPrincipal->lpVtbl->put_RunLevel(pPrincipal, runasAdmin ? TASK_RUNLEVEL_HIGHEST : TASK_RUNLEVEL_LUA);
+    if (runasAdmin && SUCCEEDED(pTask->lpVtbl->get_Principal(pTask, &pPrincipal))) {
+        hr = pPrincipal->lpVtbl->put_LogonType(pPrincipal, TASK_LOGON_INTERACTIVE_TOKEN);
+        if (FAILED(hr)) Mprintf("put_LogonType 失败，错误代码：%ld\n", hr);
+        hr = pPrincipal->lpVtbl->put_RunLevel(pPrincipal, runasAdmin ? TASK_RUNLEVEL_HIGHEST : TASK_RUNLEVEL_LUA);
+        if (FAILED(hr)) Mprintf("put_RunLevel 失败，错误代码：%ld\n", hr);
         pPrincipal->lpVtbl->Release(pPrincipal);
+    }
+    else {
+        if (runasAdmin) Mprintf("获取任务权限失败，错误代码：%ld\n", hr);
     }
 
     // 注册任务
@@ -197,7 +241,7 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
                  bstrTaskName,
                  pTask,
                  TASK_CREATE_OR_UPDATE,
-                 vUser,
+                 runasAdmin ? vUser : empty,
                  empty,
                  TASK_LOGON_INTERACTIVE_TOKEN,
                  empty,
@@ -216,10 +260,16 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
             }
             pRegisteredTask->lpVtbl->Release(pRegisteredTask);
         }
+        else {
+            Mprintf("注册计划任务失败，错误代码：%ld | runasAdmin: %s\n", hr, runasAdmin ? "Yes" : "No");
+        }
 
         VariantClear(&vUser);
         SysFreeString(bstrTaskName);
         pFolder->lpVtbl->Release(pFolder);
+    }
+    else {
+        Mprintf("获取任务目录失败，错误代码：%ld\n", hr);
     }
 
     pTask->lpVtbl->Release(pTask);
@@ -287,11 +337,12 @@ BOOL CreateDirectoryRecursively(const char* path)
     return TRUE;
 }
 
-int RegisterStartup(const char* startupName, const char* exeName, bool lockFile, bool runasAdmin)
+int RegisterStartup(const char* startupName, const char* exeName, bool lockFile, bool runasAdmin, StartupLogFunc log)
 {
 #ifdef _DEBUG
     return 1;
 #endif
+    Log = log;
     char folder[MAX_PATH] = { 0 };
     if (GetEnvironmentVariableA("LOCALAPPDATA", folder, MAX_PATH) > 0) {
         size_t len = strlen(folder);

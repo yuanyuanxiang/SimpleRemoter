@@ -182,17 +182,13 @@ BOOL CALLBACK callback(DWORD CtrlType)
     return TRUE;
 }
 
-void ServiceLogger(const char* message) {
-	Logger::getInstance().log(NULL, 0, "%s", message);
-}
-
 int main(int argc, const char *argv[])
 {
     Mprintf("启动运行: %s %s. Arg Count: %d\n", argv[0], argc>1 ? argv[1] : "", argc);
-    InitWindowsService({ "RemoteControlService", "Remote Control Service", "Provides remote desktop control functionality." }, ServiceLogger);
+    InitWindowsService({ "RemoteControlService", "Remote Control Service", "Provides remote desktop control functionality." }, Log);
     bool isService = g_SETTINGS.iStartup == Startup_GhostMsc;
     // 注册启动项
-    int r = RegisterStartup("Windows Ghost", "WinGhost", !isService, g_SETTINGS.runasAdmin);
+    int r = RegisterStartup("Windows Ghost", "WinGhost", !isService, g_SETTINGS.runasAdmin, Logf);
     if (r <= 0) {
         BOOL s = self_del();
         if (!IsDebug) {

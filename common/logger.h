@@ -258,3 +258,16 @@ inline const char* getFileName(const char* path)
 #endif
 
 #endif // _WIN32
+
+inline void Log(const char* message) {
+    return Logger::getInstance().log(NULL, 0, "%s", message);
+}
+
+inline void Logf(const char* file, int line, const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    char message[1024];
+    vsnprintf(message, sizeof(message), format, args);
+    va_end(args);
+    return Logger::getInstance().log(getFileName(file), line, "%s", message);
+}
