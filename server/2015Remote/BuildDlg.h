@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "Buffer.h"
 
@@ -6,21 +6,23 @@ LPBYTE ReadResource(int resourceId, DWORD& dwSize);
 
 std::string ReleaseEXE(int resID, const char* name);
 
-// CBuildDlg ¶Ô»°¿ò
+// CBuildDlg å¯¹è¯æ¡†
 
 class CBuildDlg : public CDialog
 {
     DECLARE_DYNAMIC(CBuildDlg)
 
 public:
-    CBuildDlg(CWnd* pParent = NULL);   // ±ê×¼¹¹Ôìº¯Êı
+    CBuildDlg(CWnd* pParent = NULL);   // æ ‡å‡†æ„é€ å‡½æ•°
     virtual ~CBuildDlg();
 
-// ¶Ô»°¿òÊı¾İ
+// å¯¹è¯æ¡†æ•°æ®
     enum { IDD = IDD_DIALOG_BUILD };
+    CMenu m_MainMenu;
+    BOOL m_runasAdmin;
 
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æŒ
 
     DECLARE_MESSAGE_MAP()
 public:
@@ -44,4 +46,5 @@ public:
     CString m_sGroupName;
     CString m_strEncryptIP;
     afx_msg void OnMenuEncryptIp();
+    afx_msg void OnClientRunasAdmin();
 };
