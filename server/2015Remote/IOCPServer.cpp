@@ -605,7 +605,7 @@ BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompl
             int iOk = WSASend(ContextObject->sClientSocket, &ContextObject->wsaOutBuffer,1,
                               NULL, ulFlags,&OverlappedPlus->m_ol, NULL);
             if ( iOk == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING ) {
-                int a = GetLastError();
+                int a = WSAGetLastError();
                 Mprintf("!!! OnClientPostSending 投递消息失败: %d\n", a);
                 RemoveStaleContext(ContextObject);
                 SAFE_DELETE(OverlappedPlus);

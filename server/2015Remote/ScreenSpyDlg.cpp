@@ -797,22 +797,36 @@ BOOL CScreenSpyDlg::SaveSnapshot(void)
 }
 
 
-VOID CScreenSpyDlg::UpdateServerClipboard(char *szBuffer,ULONG ulLength)
+VOID CScreenSpyDlg::UpdateServerClipboard(char* szBuffer, ULONG ulLength)
 {
-    if (!::OpenClipboard(NULL))
-        return;
+	if (!::OpenClipboard(NULL))
+		return;
 
-    ::EmptyClipboard();
-    HGLOBAL hGlobal = GlobalAlloc(GPTR, ulLength);
-    if (hGlobal != NULL) {
+	::EmptyClipboard();
 
-        char*  szClipboardVirtualAddress  = (LPTSTR) GlobalLock(hGlobal);
-        memcpy(szClipboardVirtualAddress,szBuffer,ulLength);
-        GlobalUnlock(hGlobal);
-        if(NULL==SetClipboardData(CF_TEXT, hGlobal))
-            GlobalFree(hGlobal);
-    }
-    CloseClipboard();
+	// UTF-8 转 Unicode
+	int wlen = MultiByteToWideChar(CP_UTF8, 0, szBuffer, ulLength, nullptr, 0);
+	if (wlen > 0) {
+		// 分配 Unicode 缓冲区（+1 确保 null 结尾）
+		HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, (wlen + 1) * sizeof(wchar_t));
+		if (hGlobal != NULL) {
+			wchar_t* pWideStr = (wchar_t*)GlobalLock(hGlobal);
+			if (pWideStr) {
+				MultiByteToWideChar(CP_UTF8, 0, szBuffer, ulLength, pWideStr, wlen);
+				pWideStr[wlen] = L'\0';  // 确保 null 结尾
+				GlobalUnlock(hGlobal);
+
+				if (SetClipboardData(CF_UNICODETEXT, hGlobal) == NULL) {
+					GlobalFree(hGlobal);
+				}
+			}
+			else {
+				GlobalFree(hGlobal);
+			}
+		}
+	}
+
+	CloseClipboard();
 }
 
 VOID CScreenSpyDlg::SendServerClipboard(void)
