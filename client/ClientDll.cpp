@@ -18,8 +18,8 @@ extern "C" {
 // 远程地址
 CONNECT_ADDRESS g_SETTINGS = {
     FLAG_GHOST, "127.0.0.1", "6543", CLIENT_TYPE_DLL, false, DLL_VERSION,
-    FALSE, Startup_DLL, PROTOCOL_HELL, PROTO_TCP, RUNNING_RANDOM, "default", {},
-    0, 7057226198541618915, {},
+    FALSE, Startup_DLL, PROTOCOL_HELL, PROTO_TCP, RUNNING_RANDOM, "default", 0, {},
+    0, 0, 7057226198541618915, {},
 };
 
 // 最终客户端只有2个全局变量: g_SETTINGS、g_MyApp，而g_SETTINGS作为g_MyApp的成员.

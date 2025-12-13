@@ -118,7 +118,7 @@ CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, Server* IOCPServer, CONTEXT_OBJECT* C
     m_ulHScrollPos = 0;
     m_ulVScrollPos = 0;
 
-    ULONG	ulBitmapInforLength = m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1;
+    const ULONG	ulBitmapInforLength = sizeof(BITMAPINFOHEADER);
     m_BitmapInfor_Full = (BITMAPINFO *) new BYTE[ulBitmapInforLength];
     m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapInfor_Full, ulBitmapInforLength, 1);
 
@@ -344,14 +344,14 @@ VOID CScreenSpyDlg::OnReceiveComplete()
     }
     case TOKEN_BITMAPINFO: {
         SAFE_DELETE(m_BitmapInfor_Full);
-        ULONG	ulBitmapInforLength = m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1;
+        const ULONG	ulBitmapInforLength = sizeof(BITMAPINFOHEADER);
         m_BitmapInfor_Full = (BITMAPINFO*) new BYTE[ulBitmapInforLength];
         m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapInfor_Full, ulBitmapInforLength, 1);
         PrepareDrawing(m_BitmapInfor_Full);
         break;
     }
     default: {
-        TRACE("CScreenSpyDlg unknown command: %d!!!\n", int(cmd));
+        Mprintf("CScreenSpyDlg unknown command: %d!!!\n", int(cmd));
     }
     }
 }

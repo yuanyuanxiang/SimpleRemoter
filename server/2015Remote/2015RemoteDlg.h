@@ -233,6 +233,7 @@ public:
     void DeletePopupWindow();
     context* FindHost(context* ctx);
     context* FindHost(int port);
+    context* FindHost(uint64_t port);
 
     CStatusBar m_StatusBar;          //状态条
     CTrueColorToolBar m_ToolBar;

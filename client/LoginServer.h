@@ -5,6 +5,6 @@
 
 #pragma comment(lib,"Vfw32.lib")
 
-LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS &conn);
+LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS &conn);
 DWORD CPUClockMHz();
 BOOL WebCamIsExist();
