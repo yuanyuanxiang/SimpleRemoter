@@ -30,6 +30,7 @@ enum {
     ONLINELIST_LOGINTIME,       // 活动窗口
     ONLINELIST_CLIENTTYPE,		// 客户端类型
     ONLINELIST_PATH,			// 文件路径
+    ONLINELIST_PUBIP,
     ONLINELIST_MAX,
 };
 
@@ -514,6 +515,9 @@ public:
     {
         return PeerName;
     }
+    void SetPeerName(const std::string& peer) {
+        PeerName = peer;
+    }
     virtual int GetPort() const
     {
         return sClientSocket;
@@ -655,7 +659,7 @@ public:
     }
     static uint64_t CalculateID(const CString(&data)[ONLINELIST_MAX])
     {
-        int idx[] = { ONLINELIST_IP, ONLINELIST_COMPUTER_NAME, ONLINELIST_OS, ONLINELIST_CPU, ONLINELIST_PATH, };
+        int idx[] = { ONLINELIST_PUBIP, ONLINELIST_COMPUTER_NAME, ONLINELIST_OS, ONLINELIST_CPU, ONLINELIST_PATH, };
         CString s;
         for (int i = 0; i < 5; i++) {
             s += data[idx[i]] + "|";

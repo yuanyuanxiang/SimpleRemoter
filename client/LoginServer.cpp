@@ -274,7 +274,19 @@ std::string GetCurrentUserNameA()
     }
 }
 
-LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
+#define XXH_INLINE_ALL
+#include "server/2015Remote/xxhash.h"
+// 基于客户端信息计算唯一ID: { IP, PC, OS, CPU, PATH }
+uint64_t CalcalateID(const std::vector<std::string>& clientInfo) {
+	std::string s;
+	for (int i = 0; i < 5; i++) {
+		s += clientInfo[i] + "|";
+	}
+	s.erase(s.length()-1);
+	return XXH64(s.c_str(), s.length(), 0);
+}
+
+LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn)
 {
     LOGIN_INFOR  LoginInfor;
     LoginInfor.bToken = TOKEN_LOGIN; // 令牌为登录
@@ -354,7 +366,10 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, const CONNECT_ADDRESS& conn)
     BOOL IsRunningAsAdmin();
     LoginInfor.AddReserved(GetCurrentUserNameA().c_str());
     LoginInfor.AddReserved(IsRunningAsAdmin());
-
+    char cpuInfo[32];
+    sprintf(cpuInfo, "%dMHz", dwCPUMHz);
+    conn.clientID = CalcalateID({ pubIP, szPCName, LoginInfor.OsVerInfoEx, cpuInfo, buf });
+    Mprintf("此客户端的唯一标识为: %s\n", std::to_string(conn.clientID).c_str());
     return LoginInfor;
 }
 
