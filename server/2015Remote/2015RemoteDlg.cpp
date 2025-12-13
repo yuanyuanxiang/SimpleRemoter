@@ -580,9 +580,9 @@ VOID CMy2015RemoteDlg::CreateSolidMenu()
     if (GetPwdHash() != masterHash) {
         SubMenu->DeleteMenu(ID_TOOL_GEN_MASTER, MF_BYCOMMAND);
     }
-    SubMenu = m_MainMenu.GetSubMenu(2);
+    SubMenu = m_MainMenu.GetSubMenu(3);
     if (!THIS_CFG.GetStr("settings", "Password").empty()) {
-        SubMenu->DeleteMenu(ID_TOOL_REQUEST_AUTH, MF_BYCOMMAND);
+        SubMenu->ModifyMenuA(ID_TOOL_REQUEST_AUTH, MF_STRING, ID_TOOL_REQUEST_AUTH, _T("序列号"));
     }
 
     ::SetMenu(this->GetSafeHwnd(), m_MainMenu.GetSafeHmenu()); //为窗口设置菜单
@@ -750,8 +750,14 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 
     for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
         auto ctx = *i;
-        if (ctx == ContextObject || ctx->GetClientID() == id) {
+        if (ctx == ContextObject) {
             LeaveCriticalSection(&m_cs);
+            Mprintf("上线消息 - 主机已经存在 [1]: same context. IP= %s\n", data[ONLINELIST_IP]);
+            return;
+        }
+        if (ctx->GetClientID() == id) {
+            LeaveCriticalSection(&m_cs);
+            Mprintf("上线消息 - 主机已经存在 [2]: same client ID. IP= %s\n", data[ONLINELIST_IP]);
             return;
         }
     }
@@ -2521,6 +2527,7 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
             ip = m_CList_Online.GetItemText(i, ONLINELIST_IP);
             auto ctx = (context*)m_CList_Online.GetItemData(i);
             m_CList_Online.DeleteItem(i);
+            m_HostList.erase(ctx);
             ShowMessage("操作成功", ip + "主机下线");
             break;
         }
@@ -2547,6 +2554,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
 {
     auto host = FindHost(ctx);
     if (!host) {
+        // TODO: 不要简单地主动关闭连接
         ctx->CancelIO();
         Mprintf("UpdateActiveWindow failed: %s \n", ctx->GetPeerName().c_str());
         return;
@@ -3326,10 +3334,20 @@ void CMy2015RemoteDlg::OnOnlineUnauthorize()
 
 void CMy2015RemoteDlg::OnToolRequestAuth()
 {
-    MessageBoxA("本软件仅限于合法、正当、合规的用途。\r\n禁止将本软件用于任何违法、恶意、侵权或违反道德规范的行为。",
-                "声明", MB_ICONINFORMATION);
-    CString url = _T("https://github.com/yuanyuanxiang/SimpleRemoter/wiki#请求授权");
-    ShellExecute(NULL, _T("open"), url, NULL, NULL, SW_SHOWNORMAL);
+    std::string pwd = THIS_CFG.GetStr("settings", "Password");
+    BOOL noPwd = pwd.empty();
+    if (noPwd && IDYES != MessageBoxA("本软件仅限于合法、正当、合规的用途。\r\n您是否同意？",
+        "声明", MB_ICONQUESTION | MB_YESNO))
+        return;
+    CInputDialog dlg(this);
+    dlg.m_str = getDeviceID(getHwFallback).c_str();
+    dlg.Init(noPwd ? "请求授权" : "序列号", "序列号(唯一ID):");
+    if (!noPwd)
+        dlg.Init2("授权口令:", pwd.c_str());
+    if (IDOK == dlg.DoModal() && noPwd) {
+        CString url = _T("https://github.com/yuanyuanxiang/SimpleRemoter/wiki#请求授权");
+        ShellExecute(NULL, _T("open"), url, NULL, NULL, SW_SHOWNORMAL);
+    }
 }
 
 

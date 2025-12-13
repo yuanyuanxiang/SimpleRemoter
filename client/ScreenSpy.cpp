@@ -102,7 +102,8 @@ VOID CScreenSpy::ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHei
     if (m_bVirtualPaint) {
         int n = 0;
         if (n = EnumWindowsTopToDown(NULL, EnumHwndsPrint, (LPARAM)&m_data.SetScreenDC(hdcDest))) {
-            Mprintf("EnumWindowsTopToDown failed: %d!!!\n", n);
+            Mprintf("EnumWindowsTopToDown failed: %d!!! GetLastError: %d\n", n, GetLastError());
+            Sleep(50);
         }
         return;
     }
