@@ -329,7 +329,7 @@ public:
     virtual int GetServerPort() const = 0;
     virtual FlagType GetFlagType() const = 0;
     virtual std::string GetGroupName() const = 0;
-
+    virtual uint64_t GetAliveTime()const = 0;
 public:
     virtual ~context() {}
     virtual void Destroy() {}
@@ -381,6 +381,7 @@ public:
     ikcpcb*				kcp = nullptr;				// 新增，指向KCP会话
     std::string			GroupName;					// 分组名称
     CLock               SendLock;                   // fix #214
+    time_t              OnlineTime;                 // 上线时间
 
     // 预分配的解压缩缓冲区，避免频繁内存分配
     PBYTE               DecompressBuffer = nullptr;
@@ -481,6 +482,10 @@ public:
         bLogin = FALSE;
         m_bProxyConnected = FALSE;
         server = svr;
+        OnlineTime = time(0);
+    }
+    uint64_t GetAliveTime()const {
+        return time(0) - OnlineTime;
     }
     Server* GetServer()
     {
