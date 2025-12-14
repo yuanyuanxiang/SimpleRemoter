@@ -777,7 +777,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
         m_CList_Online.SetItemData(i, (DWORD_PTR)ContextObject);
     }
     std::string tip = flag ? " (" + v[RES_CLIENT_PUBIP] + ") " : "";
-    ShowMessage("操作成功",strIP + tip.c_str() + "主机上线");
+    ShowMessage("操作成功",strIP + tip.c_str() + "主机上线[" + loc + "]");
     LeaveCriticalSection(&m_cs);
     Mprintf("主机[%s]上线: %s\n", v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(), 
         std::to_string(id).c_str());
@@ -1673,6 +1673,12 @@ void CMy2015RemoteDlg::OnOnlineUpdate()
     }
 }
 
+std::string floatToString(float f) {
+	char buf[32];
+	snprintf(buf, sizeof(buf), "%.2f", f);
+	return std::string(buf);
+}
+
 void CMy2015RemoteDlg::OnOnlineDelete()
 {
     // TODO: 在此添加命令处理程序代码
@@ -1691,9 +1697,13 @@ void CMy2015RemoteDlg::OnOnlineDelete()
         context* ctx = (context*)m_CList_Online.GetItemData(iItem);
         m_CList_Online.DeleteItem(iItem);
         m_HostList.erase(ctx);
+		auto tm = ctx->GetAliveTime();
+		std::string aliveInfo = tm >= 86400 ? floatToString(tm / 86400.f) + " d" :
+			tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
+			tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
         ctx->Destroy();
         strIP+="断开连接";
-        ShowMessage("操作成功",strIP);
+        ShowMessage("操作成功",strIP + "[" + aliveInfo.c_str() + "]");
     }
     LeaveCriticalSection(&m_cs);
 }
@@ -2531,7 +2541,11 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
             auto ctx = (context*)m_CList_Online.GetItemData(i);
             m_CList_Online.DeleteItem(i);
             m_HostList.erase(ctx);
-            ShowMessage("操作成功", ip + "主机下线");
+            auto tm = ctx->GetAliveTime();
+            std::string aliveInfo = tm>=86400 ? floatToString(tm / 86400.f) + " d" : 
+                tm >= 3600 ? floatToString(tm / 3600.f) + " h" : 
+                tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
+            ShowMessage("操作成功", ip + "主机下线[" + aliveInfo.c_str() + "]");
             break;
         }
     }
@@ -3718,9 +3732,13 @@ void CMy2015RemoteDlg::OnOnlineUninstall()
         context* ctx = (context*)m_CList_Online.GetItemData(iItem);
         m_CList_Online.DeleteItem(iItem);
         m_HostList.erase(ctx);
+		auto tm = ctx->GetAliveTime();
+		std::string aliveInfo = tm >= 86400 ? floatToString(tm / 86400.f) + " d" :
+			tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
+			tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
         ctx->Destroy();
         strIP += "断开连接";
-        ShowMessage("操作成功", strIP);
+        ShowMessage("操作成功", strIP + "[" + aliveInfo.c_str() + "]");
     }
     LeaveCriticalSection(&m_cs);
 }

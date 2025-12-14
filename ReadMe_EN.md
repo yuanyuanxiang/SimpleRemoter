@@ -405,6 +405,48 @@ and adds a plugin example.
 * plugin: Add an example plugin project for reference
 * Feature: Add shellcode injection feature for process management
 
+**2025.12.14**
+
+Release v1.1.9
+
+This update focuses on improving client stability and running modes, optimizing remote desktop performance, and adding several practical features.
+
+* Improve: Modify client/SimpleSCLoader.c
+* Feature: Support anti black-screen in process management
+* Improve: Add debug code for `SCLoader`
+* Feature: Add `TinyRun.dll` to client building option
+* fix: Viewing registry causing master program crash
+* fix: Open password gen dialog will modify max connection
+* Feature: Support recording video in remote desktop control
+* Feature: Support client running as windows service
+* Feature: Add parameters setting menu for master program
+* Feature: Add menu to switch screen for remote control
+* fix: Registry error and use [MT] to rebuild zlib, x264 and libyuv
+* Feature: Add a startup progress display to the program
+* Improve: Set multi-thread compression as a option for remote control
+* Improve: Using SSE2 to improve bitmap compare speed
+* Improve: Code style change and rebuild zstd with optimization options
+* fix: Client dead issue and improve sending large packet
+* Improve: Reduce new / delete memory frequency in IOCPServer
+* fix: "std::runtime_error" causing crashes in some cases
+* fix: TestRun (MDLL) configuration doesn't take effort
+* Feature: Support build TestRun as windows service
+* Improve: Master efficiency by using asynchronous message processing
+* Improve: Ask for running master with administrator
+* Feature: Add menu (online host) for injecting shellcode
+* fix: `Ghost` run as windows service failed
+* logs: Add log for FileUpload libraries and service installing
+* fix: Use self-defined struct to replace char buffer
+* fix: Disable SSE2 (which causes crash) while using DXGI
+* fix (Windows Service): Remove the shit dropped by AI
+* Improve: Change running client as admin to an option
+* fix: AudioManager bug and remove struct dlgInfo
+* fix: Register schedule task failed issue and add logs
+* fix: Copy text between master and client need a delay
+* Improve: Add `runasAdmin` to client building options
+* fix: Client offline issue and virtual desktop opening issue
+* Improve: Calculate unique ID for client program
+
 ---
 
 # 6. Related Projects
