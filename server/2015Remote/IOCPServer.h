@@ -63,7 +63,7 @@ private:
     BOOL InitializeIOCP(VOID);
     VOID OnAccept();
     PCONTEXT_OBJECT AllocateContext(SOCKET s);
-    VOID RemoveStaleContext(CONTEXT_OBJECT* ContextObject);
+    BOOL RemoveStaleContext(CONTEXT_OBJECT* ContextObject);
     VOID MoveContextToFreePoolList(CONTEXT_OBJECT* ContextObject);
     VOID PostRecv(CONTEXT_OBJECT* ContextObject);
     BOOL HandleIO(IOType PacketFlags, PCONTEXT_OBJECT ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx);
@@ -130,6 +130,12 @@ public:
         m_IPAddress = pContext->GetPeerName().c_str();
         m_hIcon = nIcon > 0 ? LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(nIcon)) : NULL;
     }
+    int UpdateContext(CONTEXT_OBJECT* pContext) {
+        m_ContextObject = pContext;
+        m_iocpServer = pContext->GetServer();
+        m_ContextObject->hDlg = this;
+        return 0;
+    }
     virtual ~CDialogBase() {}
 
 public:
@@ -169,12 +175,22 @@ public:
     {
         delete this;
     }
+    virtual BOOL ShouldReconnect() {
+        return FALSE;
+    }
     // 取消 SOCKET 读取，该函数可以被多次调用
     void CancelIO()
     {
         m_bIsClosed = TRUE;
 
         m_ContextObject->CancelIO();
+	}
+    BOOL IsClosed() const {
+        return m_bIsClosed;
+    }
+    BOOL SayByeBye() {
+		BYTE bToken = COMMAND_BYE;
+		return m_ContextObject->Send2Client(&bToken, 1);
     }
 };
 

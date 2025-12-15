@@ -28,6 +28,7 @@ enum { S_STOP = 0, S_RUN, S_END };
 
 typedef int (*DataProcessCB)(void* userData, PBYTE szBuffer, ULONG ulLength);
 
+typedef int (*OnDisconnectCB)(void* userData);
 
 class ProtocolEncoder
 {
@@ -108,6 +109,9 @@ public:
     }
     virtual VOID OnReceive(PBYTE szBuffer, ULONG ulLength) { }
 
+    // Tip: 在派生类实现该函数以便支持断线重连
+    virtual BOOL OnReconnect() { return FALSE;  }
+
     static int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength)
     {
         IOCPManager* m_Manager = (IOCPManager*)user;
@@ -128,6 +132,13 @@ public:
         }
         m_Manager->OnReceive(szBuffer, ulLength);
         return TRUE;
+    }
+    static int ReconnectProcess(void* user) {
+        IOCPManager* m_Manager = (IOCPManager*)user;
+        if (nullptr == m_Manager) {
+            return FALSE;
+        }
+        return m_Manager->OnReconnect();
     }
 };
 
@@ -185,13 +196,11 @@ public:
     {
         return m_bIsRunning;
     }
-
-    void SetExit()
-    {
+    VOID StopRunning() {
+        m_ReconnectFunc = NULL;
         m_bIsRunning = FALSE;
     }
-
-    VOID setManagerCallBack(void* Manager, DataProcessCB dataProcess);
+    VOID setManagerCallBack(void* Manager, DataProcessCB dataProcess, OnDisconnectCB reconnect);
     VOID RunEventLoop(TrailCheck checker);
     VOID RunEventLoop(const BOOL &bCondition);
     bool IsConnected() const
@@ -243,6 +252,7 @@ protected:
     const State&		g_bExit;					// 全局状态量
     void*				m_Manager;					// 用户数据
     DataProcessCB		m_DataProcess;				// 处理用户数据
+    OnDisconnectCB      m_ReconnectFunc;            // 断线重连逻辑
     ProtocolEncoder*	m_Encoder;					// 加密
     DomainPool			m_Domain;
     std::string			m_sCurIP;

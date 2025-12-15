@@ -605,9 +605,8 @@ BOOL IOCPServer::OnClientPostSending(CONTEXT_OBJECT* ContextObject,ULONG ulCompl
             int iOk = WSASend(ContextObject->sClientSocket, &ContextObject->wsaOutBuffer,1,
                               NULL, ulFlags,&OverlappedPlus->m_ol, NULL);
             if ( iOk == SOCKET_ERROR && WSAGetLastError() != WSA_IO_PENDING ) {
-                int a = WSAGetLastError();
-                Mprintf("!!! OnClientPostSending 投递消息失败: %d\n", a);
-                RemoveStaleContext(ContextObject);
+                if (RemoveStaleContext(ContextObject))
+                    Mprintf("!!! OnClientPostSending 投递消息失败: %d\n", WSAGetLastError());
                 SAFE_DELETE(OverlappedPlus);
                 return FALSE;
             }
@@ -771,7 +770,7 @@ PCONTEXT_OBJECT IOCPServer::AllocateContext(SOCKET s)
     return ContextObject;
 }
 
-VOID IOCPServer::RemoveStaleContext(CONTEXT_OBJECT* ContextObject)
+BOOL IOCPServer::RemoveStaleContext(CONTEXT_OBJECT* ContextObject)
 {
     EnterCriticalSection(&m_cs);
     auto find = m_ContextConnectionList.Find(ContextObject);
@@ -788,7 +787,9 @@ VOID IOCPServer::RemoveStaleContext(CONTEXT_OBJECT* ContextObject)
         }
 
         MoveContextToFreePoolList(ContextObject);  //将该内存结构回收至内存池
+        return TRUE;
     }
+    return FALSE;
 }
 
 VOID IOCPServer::MoveContextToFreePoolList(CONTEXT_OBJECT* ContextObject)

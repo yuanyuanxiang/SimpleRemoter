@@ -229,7 +229,7 @@ CManager::CManager(IOCPClient* ClientObject) : g_bExit(ClientObject->GetState())
 {
     m_bReady = TRUE;
     m_ClientObject = ClientObject;
-    m_ClientObject->setManagerCallBack(this, IOCPManager::DataProcess);
+    m_ClientObject->setManagerCallBack(this, IOCPManager::DataProcess, IOCPManager::ReconnectProcess);
 
     m_hEventDlgOpen = CreateEvent(NULL,TRUE,FALSE,NULL);
 }
