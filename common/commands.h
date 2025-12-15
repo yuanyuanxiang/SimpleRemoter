@@ -268,6 +268,7 @@ enum {
     TOKEN_ERROR = 230,              // 错误提示
     TOKEN_SHELL_DATA = 231,         // 终端结果
     CMD_EXECUTE_DLL = 240,			// 执行代码
+    TOKEN_CLIENT_MSG = 241,         // 客户端消息
 };
 
 enum MachineCommand {
@@ -1153,5 +1154,17 @@ typedef struct CharMsg {
         return data;
     }
 }CharMsg;
+
+typedef struct ClientMsg {
+    char cmd;
+    char title[31];
+    char text[512];
+    ClientMsg() { memset(this, 0, sizeof(*this)); }
+    ClientMsg(const char* title, const char* text) {
+        cmd = TOKEN_CLIENT_MSG;
+        strcpy_s(this->title, title ? title : "提示信息");
+        strcpy_s(this->text, text ? text : "");
+    }
+}ClientMsg;
 
 #endif

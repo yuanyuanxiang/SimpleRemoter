@@ -337,8 +337,10 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 
     if (m_hWorkThread == NULL) {
 #ifdef _WIN32
+        m_bIsRunning = TRUE;
         m_hWorkThread = (HANDLE)__CreateThread(NULL, 0, WorkThreadProc,(LPVOID)this, 0, NULL);
         m_bWorkThread = m_hWorkThread ? S_RUN : S_STOP;
+        m_bIsRunning = m_hWorkThread ? TRUE : FALSE;
 #else
         pthread_t id = 0;
         m_hWorkThread = (HANDLE)pthread_create(&id, nullptr, (void* (*)(void*))IOCPClient::WorkThreadProc, this);

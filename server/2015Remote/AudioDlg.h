@@ -21,7 +21,7 @@ public:
 
     static DWORD WINAPI WorkThread(LPVOID lParam);
 
-    void CAudioDlg::OnReceiveComplete(void);
+    void OnReceiveComplete(void);
 // 对话框数据
     enum { IDD = IDD_DIALOG_AUDIO };
 

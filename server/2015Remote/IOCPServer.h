@@ -133,6 +133,16 @@ public:
     virtual ~CDialogBase() {}
 
 public:
+    virtual BOOL ReceiveCommonMsg() {
+        switch (m_ContextObject->InDeCompressedBuffer.GetBYTE(0)) {
+        case TOKEN_CLIENT_MSG: {
+            ClientMsg* msg = (ClientMsg*)m_ContextObject->InDeCompressedBuffer.GetBuffer(0);
+            PostMessageA(WM_SHOWERRORMSG, (WPARAM)new CString(msg->text), (LPARAM)new CString(msg->title));
+            return TRUE;
+        }
+        }
+        return FALSE;
+    }
     virtual void OnReceiveComplete(void) = 0;
     // 标记为是否正在接受数据
     void MarkReceiving(bool recv = true)

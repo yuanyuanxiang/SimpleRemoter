@@ -139,6 +139,12 @@ BOOL CSettingDlg::OnInitDialog()
     BOOL frp = THIS_CFG.GetInt("frp", "UseFrp");
     ((CButton*)GetDlgItem(IDC_RADIO_FRP_OFF))->SetCheck(!frp);
     ((CButton*)GetDlgItem(IDC_RADIO_FRP_ON))->SetCheck(frp);
+#ifndef _WIN64
+    GetDlgItem(IDC_RADIO_FRP_OFF)->EnableWindow(FALSE);
+    GetDlgItem(IDC_RADIO_FRP_ON)->EnableWindow(FALSE);
+    GetDlgItem(IDC_EDIT_FRP_PORT)->EnableWindow(FALSE);
+    GetDlgItem(IDC_EDIT_FRP_TOKEN)->EnableWindow(FALSE);
+#endif
     m_nFrpPort = THIS_CFG.GetInt("frp", "server_port", 7000);
     m_sFrpToken = THIS_CFG.GetStr("frp", "token").c_str();
 

