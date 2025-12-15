@@ -46,6 +46,9 @@ class CScreenSpyDlg : public DialogBase
 public:
     CScreenSpyDlg(CWnd* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);
     virtual ~CScreenSpyDlg();
+	virtual BOOL ShouldReconnect() {
+		return TRUE;
+	}
 
     VOID SendNext(void);
     VOID OnReceiveComplete();

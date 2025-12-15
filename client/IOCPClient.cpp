@@ -83,11 +83,13 @@ BOOL SetKeepAliveOptions(int socket, int nKeepAliveSec = 180)
 }
 #endif
 
-VOID IOCPClient::setManagerCallBack(void* Manager,  DataProcessCB dataProcess)
+VOID IOCPClient::setManagerCallBack(void* Manager,  DataProcessCB dataProcess, OnDisconnectCB reconnect)
 {
     m_Manager = Manager;
 
     m_DataProcess = dataProcess;
+
+    m_ReconnectFunc = m_exit_while_disconnect ? reconnect : NULL;
 }
 
 
@@ -115,6 +117,7 @@ IOCPClient::IOCPClient(const State&bExit, bool exit_while_disconnect, int mask, 
     m_bConnected = FALSE;
 
     m_exit_while_disconnect = exit_while_disconnect;
+    m_ReconnectFunc = NULL;
 #if USING_CTX
     m_Cctx = ZSTD_createCCtx();
     m_Dctx = ZSTD_createDCtx();
@@ -402,7 +405,7 @@ bool IOCPClient::ProcessRecvData(CBuffer *m_CompressedBuffer, char *szBuffer, in
         Mprintf("[recv] return %d, GetLastError= %d. \n", iReceivedLength, a);
         Disconnect(); //接收错误处理
         m_CompressedBuffer->ClearBuffer();
-        if (m_exit_while_disconnect)
+        if (m_ReconnectFunc && !m_ReconnectFunc(m_Manager))
             return false;
     } else {
         szBuffer[iReceivedLength] = 0;
@@ -650,7 +653,7 @@ VOID IOCPClient::RunEventLoop(const BOOL &bCondition)
     Mprintf("======> RunEventLoop begin\n");
     while ((m_bIsRunning && bCondition) || bCondition == FOREVER_RUN)
         Sleep(200);
-    setManagerCallBack(NULL, NULL);
+    setManagerCallBack(NULL, NULL, NULL);
     Mprintf("======> RunEventLoop end\n");
 }
 
@@ -669,6 +672,6 @@ VOID IOCPClient::RunEventLoop(TrailCheck checker)
 #endif
     while (m_bIsRunning && checker())
         Sleep(200);
-    setManagerCallBack(NULL, NULL);
+    setManagerCallBack(NULL, NULL, NULL);
     Mprintf("======> RunEventLoop end\n");
 }

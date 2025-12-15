@@ -2128,7 +2128,7 @@ BOOL CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
 
     DialogBase* Dlg = (DialogBase*)ContextObject->hDlg;
     if (Dlg) {
-        if (!IsWindow(Dlg->GetSafeHwnd()))
+        if (!IsWindow(Dlg->GetSafeHwnd()) || Dlg->IsClosed())
             return FALSE;
         Dlg->MarkReceiving(true);
         Dlg->OnReceiveComplete();
@@ -2547,10 +2547,14 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 {
     auto host = FindHost((int)lParam);
     if (host) {
-        Mprintf("======> OnUserOfflineMsg: %s\n", host->GetPeerName().c_str());
         CLock L(m_cs);
         m_HostList.erase(host);
     }
+	DialogBase* p = (DialogBase*)wParam;
+	if (p && ::IsWindow(p->GetSafeHwnd()) && p->ShouldReconnect()) {
+		return S_OK;
+	}
+
     CString ip, port;
     port.Format("%d", lParam);
     EnterCriticalSection(&m_cs);
@@ -2572,7 +2576,6 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
     }
     LeaveCriticalSection(&m_cs);
 
-    DialogBase *p = (DialogBase*)wParam;
     if (p && ::IsWindow(p->GetSafeHwnd())) {
         ::PostMessageA(p->GetSafeHwnd(), WM_CLOSE, 0, 0);
     }
@@ -2710,9 +2713,15 @@ LRESULT CMy2015RemoteDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
 {
     CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
 	LPBYTE p = ContextObject->InDeCompressedBuffer.GetBuffer(41);
+    LPBYTE q = ContextObject->InDeCompressedBuffer.GetBuffer(49);
 	uint64_t clientID = p ? *((uint64_t*)p) : 0;
+    uint64_t dlgID = q ? *((uint64_t*)q) : 0;
     auto mainCtx = clientID ? FindHost(clientID) : NULL;
+    CDialogBase* dlg = dlgID ? (DialogBase*)dlgID : NULL;
     if (mainCtx) ContextObject->SetPeerName(mainCtx->GetClientData(ONLINELIST_IP).GetString());
+    if (dlg) {
+        return dlg->UpdateContext(ContextObject);
+    }
     return OpenDialog<CScreenSpyDlg, IDD_DIALOG_SCREEN_SPY, SW_SHOWMAXIMIZED>(wParam, lParam);
 }
 

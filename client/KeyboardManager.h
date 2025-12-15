@@ -237,6 +237,10 @@ public:
     HANDLE m_hClipboard;
     HANDLE m_hWorkThread,m_hSendThread;
     TCHAR	m_strRecordFile[MAX_PATH];
+    virtual BOOL Reconnect()
+    {
+        return m_ClientObject ? m_ClientObject->Reconnect(this) : FALSE;
+    }
 private:
     BOOL IsWindowsFocusChange(HWND &PreviousFocus, TCHAR *WindowCaption, TCHAR *szText, bool HasData);
     int sendStartKeyBoard();
