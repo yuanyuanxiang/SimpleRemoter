@@ -2849,14 +2849,14 @@ void CMy2015RemoteDlg::OnOnlineShare()
     }
     CharMsg* buf = new CharMsg(dlg.m_str.GetLength()+1);
     memcpy(buf->data, dlg.m_str, dlg.m_str.GetLength());
-    buf[dlg.m_str.GetLength()] = 0;
+    buf->data[dlg.m_str.GetLength()] = 0;
     PostMessageA(WM_SHARE_CLIENT, (WPARAM)buf, NULL);
 }
 
 LRESULT CMy2015RemoteDlg::ShareClient(WPARAM wParam, LPARAM lParam)
 {
     CharMsg* buf = (CharMsg*)wParam;
-    int len = strlen(*buf);
+    int len = strlen(buf->data);
     BYTE bToken[_MAX_PATH] = { COMMAND_SHARE };
     // 目标主机类型
     bToken[1] = SHARE_TYPE_YAMA;
@@ -3614,15 +3614,15 @@ void CMy2015RemoteDlg::OnOnlineAssignTo()
     CharMsg* buf2 = new CharMsg(dlg.m_sSecondInput.GetLength() + 1);
     memcpy(buf1->data, dlg.m_str, dlg.m_str.GetLength());
     memcpy(buf2->data, dlg.m_sSecondInput, dlg.m_sSecondInput.GetLength());
-    buf1[dlg.m_str.GetLength()] = 0;
-    buf2[dlg.m_sSecondInput.GetLength()] = 0;
+    buf1->data[dlg.m_str.GetLength()] = 0;
+    buf2->data[dlg.m_sSecondInput.GetLength()] = 0;
     PostMessageA(WM_ASSIGN_CLIENT, (WPARAM)buf1, (LPARAM)buf2);
 }
 
 LRESULT CMy2015RemoteDlg::assignFunction(WPARAM wParam, LPARAM lParam, BOOL all)
 {
     CharMsg* buf1 = (CharMsg*)wParam, *buf2 = (CharMsg*)lParam;
-    int len1 = strlen(*buf1), len2 = strlen(*buf2);
+    int len1 = strlen(buf1->data), len2 = strlen(buf2->data);
     BYTE bToken[_MAX_PATH] = { COMMAND_ASSIGN_MASTER };
     // 目标主机类型
     bToken[1] = SHARE_TYPE_YAMA_FOREVER;

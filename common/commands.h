@@ -1147,12 +1147,6 @@ typedef struct CharMsg {
         memset(data, 0, sizeof(data));
         needFree = free;
     }
-    char& operator[](int index) {
-        return data[index];
-    }
-    operator const char* () const {
-        return data;
-    }
 }CharMsg;
 
 typedef struct ClientMsg {
