@@ -1306,7 +1306,9 @@ void CMy2015RemoteDlg::ApplyFrpSettings()
     auto master = THIS_CFG.GetStr("settings", "master");
     if (master.empty()) return;
 
-    config cfg(GetFrpSettingsPath());
+    std::string path = GetFrpSettingsPath();
+    DeleteFileA(path.c_str());
+    config cfg(path);
     cfg.SetStr("common", "server_addr", master);
     cfg.SetInt("common", "server_port", THIS_CFG.GetInt("frp", "server_port", 7000));
     cfg.SetStr("common", "token", THIS_CFG.GetStr("frp", "token"));
@@ -2719,7 +2721,7 @@ LRESULT CMy2015RemoteDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
     auto mainCtx = clientID ? FindHost(clientID) : NULL;
     CDialogBase* dlg = dlgID ? (DialogBase*)dlgID : NULL;
     if (mainCtx) ContextObject->SetPeerName(mainCtx->GetClientData(ONLINELIST_IP).GetString());
-    if (dlg) {
+    if (dlg && GetRemoteWindow(dlg->GetSafeHwnd())) {
         return dlg->UpdateContext(ContextObject);
     }
     return OpenDialog<CScreenSpyDlg, IDD_DIALOG_SCREEN_SPY, SW_SHOWMAXIMIZED>(wParam, lParam);
@@ -3948,7 +3950,7 @@ void SetClipboardText(const char* utf8Text)
 
 CDialogBase* CMy2015RemoteDlg::GetRemoteWindow(HWND hWnd)
 {
-    if (!::IsWindow(hWnd)) return FALSE;
+    if (!::IsWindow(hWnd)) return NULL;
     EnterCriticalSection(&m_cs);
     auto find = m_RemoteWnds.find(hWnd);
     auto ret = find == m_RemoteWnds.end() ? NULL : find->second;

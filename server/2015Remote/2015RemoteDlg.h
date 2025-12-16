@@ -195,8 +195,11 @@ public:
         }
 
         ContextObject->hDlg = Dlg;
-        if(id == IDD_DIALOG_SCREEN_SPY)
-            m_RemoteWnds[Dlg->GetSafeHwnd()]=(CDialogBase*)Dlg;
+        if (id == IDD_DIALOG_SCREEN_SPY) {
+            EnterCriticalSection(&m_cs);
+            m_RemoteWnds[Dlg->GetSafeHwnd()] = (CDialogBase*)Dlg;
+            LeaveCriticalSection(&m_cs);
+        }
 
         return 0;
     }
