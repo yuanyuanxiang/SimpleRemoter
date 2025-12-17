@@ -378,4 +378,6 @@ public:
     afx_msg void OnShellcodeAesCArray();
     afx_msg void OnParamKblogger();
     afx_msg void OnOnlineInjNotepad();
+    afx_msg void OnParamLoginNotify();
+    afx_msg void OnParamEnableLog();
 };

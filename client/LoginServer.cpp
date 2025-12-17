@@ -288,6 +288,7 @@ uint64_t CalcalateID(const std::vector<std::string>& clientInfo) {
 
 LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn)
 {
+    iniFile cfg(CLIENT_PATH);
     LOGIN_INFOR  LoginInfor;
     LoginInfor.bToken = TOKEN_LOGIN; // 令牌为登录
     //获得操作系统信息
@@ -301,6 +302,9 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn)
     dwCPUMHz = CPUClockMHz();
 
     BOOL bWebCamIsExist = WebCamIsExist();
+    std::string group = cfg.GetStr("settings", "group_name");
+    if (!group.empty())
+        strcpy_s(conn.szGroupName, group.c_str());
     if (conn.szGroupName[0] == 0)
         memcpy(LoginInfor.szPCName, szPCName, sizeof(LoginInfor.szPCName));
     else
@@ -317,7 +321,6 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn)
     GetModuleFileNameA(NULL, buf, sizeof(buf));
     LoginInfor.AddReserved(buf);                        // 文件路径
     LoginInfor.AddReserved("?");						// test
-    iniFile cfg(CLIENT_PATH);
     std::string installTime = cfg.GetStr("settings", "install_time");
     if (installTime.empty()) {
         installTime = ToPekingTimeAsString(nullptr);
