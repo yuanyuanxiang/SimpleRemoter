@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <iostream>
 #include <ctime>
@@ -6,7 +6,7 @@
 #include <Windows.h>
 #pragma comment(lib, "ws2_32.lib")
 
-// ÖĞ¹ú´óÂ½ÓÅ»¯µÄNTP·şÎñÆ÷ÁĞ±í
+// ä¸­å›½å¤§é™†ä¼˜åŒ–çš„NTPæœåŠ¡å™¨åˆ—è¡¨
 const char* CN_NTP_SERVERS[] = {
     "ntp.aliyun.com",
     "time1.aliyun.com",
@@ -19,18 +19,24 @@ const int CN_NTP_COUNT = sizeof(CN_NTP_SERVERS) / sizeof(CN_NTP_SERVERS[0]);
 const int NTP_PORT = 123;
 const uint64_t NTP_EPOCH_OFFSET = 2208988800ULL;
 
-// ¼ì²â³ÌĞòÊÇ·ñ´¦ÓÚÊÔÓÃÆÚ
+// æ£€æµ‹ç¨‹åºæ˜¯å¦å¤„äºè¯•ç”¨æœŸ
 class DateVerify
 {
 private:
-    // ³õÊ¼»¯Winsock
+	bool m_hasVerified = false;
+	bool m_lastVerifyResult = true;
+	time_t m_lastVerifyLocalTime = 0;
+	time_t m_lastNetworkTime = 0;
+	static const int VERIFY_INTERVAL = 6 * 3600;  // 6å°æ—¶
+
+    // åˆå§‹åŒ–Winsock
     bool initWinsock()
     {
         WSADATA wsaData;
         return WSAStartup(MAKEWORD(2, 2), &wsaData) == 0;
     }
 
-    // ´ÓÖ¸¶¨NTP·şÎñÆ÷»ñÈ¡Ê±¼ä
+    // ä»æŒ‡å®šNTPæœåŠ¡å™¨è·å–æ—¶é—´
     time_t getTimeFromServer(const char* server)
     {
         SOCKET sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -40,7 +46,7 @@ private:
         serverAddr.sin_family = AF_INET;
         serverAddr.sin_port = htons(NTP_PORT);
 
-        // ½âÎöÖ÷»úÃû
+        // è§£æä¸»æœºå
         hostent* host = gethostbyname(server);
         if (!host) {
             closesocket(sock);
@@ -48,22 +54,22 @@ private:
         }
         serverAddr.sin_addr.s_addr = *((unsigned long*)host->h_addr_list[0]);
 
-        // ÉèÖÃ³¬Ê±
-        DWORD timeout = 2000; // 2Ãë³¬Ê±
+        // è®¾ç½®è¶…æ—¶
+        DWORD timeout = 2000; // 2ç§’è¶…æ—¶
         setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
 
-        // ×¼±¸NTPÇëÇó°ü
+        // å‡†å¤‡NTPè¯·æ±‚åŒ…
         char ntpPacket[48] = { 0 };
         ntpPacket[0] = 0x1B; // LI=0, VN=3, Mode=3
 
-        // ·¢ËÍÇëÇó
+        // å‘é€è¯·æ±‚
         if (sendto(sock, ntpPacket, sizeof(ntpPacket), 0,
                    (sockaddr*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
             closesocket(sock);
             return 0;
         }
 
-        // ½ÓÊÕÏìÓ¦
+        // æ¥æ”¶å“åº”
         if (recv(sock, ntpPacket, sizeof(ntpPacket), 0) <= 0) {
             closesocket(sock);
             return 0;
@@ -71,12 +77,12 @@ private:
 
         closesocket(sock);
 
-        // ½âÎöNTPÊ±¼ä
+        // è§£æNTPæ—¶é—´
         uint32_t ntpTime = ntohl(*((uint32_t*)(ntpPacket + 40)));
         return ntpTime - NTP_EPOCH_OFFSET;
     }
 
-    // »ñÈ¡ÍøÂçÊ±¼ä£¨³¢ÊÔ¶à¸ö·şÎñÆ÷£©
+    // è·å–ç½‘ç»œæ—¶é—´ï¼ˆå°è¯•å¤šä¸ªæœåŠ¡å™¨ï¼‰
     time_t getNetworkTimeInChina()
     {
         if (!initWinsock()) return 0;
@@ -93,7 +99,7 @@ private:
         return result;
     }
 
-    // ½«ÔÂ·İËõĞ´×ª»»ÎªÊı×Ö(1-12)
+    // å°†æœˆä»½ç¼©å†™è½¬æ¢ä¸ºæ•°å­—(1-12)
     int monthAbbrevToNumber(const std::string& month)
     {
         static const std::map<std::string, int> months = {
@@ -105,7 +111,7 @@ private:
         return (it != months.end()) ? it->second : 0;
     }
 
-    // ½âÎö__DATE__×Ö·û´®Îªtm½á¹¹
+    // è§£æ__DATE__å­—ç¬¦ä¸²ä¸ºtmç»“æ„
     tm parseCompileDate(const char* compileDate)
     {
         tm tmCompile = { 0 };
@@ -120,7 +126,7 @@ private:
         return tmCompile;
     }
 
-    // ¼ÆËãÁ½¸öÈÕÆÚÖ®¼äµÄÌìÊı²î
+    // è®¡ç®—ä¸¤ä¸ªæ—¥æœŸä¹‹é—´çš„å¤©æ•°å·®
     int daysBetweenDates(const tm& date1, const tm& date2)
     {
         auto timeToTimePoint = [](const tm& tmTime) {
@@ -135,7 +141,7 @@ private:
         return std::chrono::duration_cast<std::chrono::hours>(duration).count() / 24;
     }
 
-    // »ñÈ¡µ±Ç°ÈÕÆÚ
+    // è·å–å½“å‰æ—¥æœŸ
     tm getCurrentDate()
     {
         std::time_t now = std::time(nullptr);
@@ -146,24 +152,48 @@ private:
         return tmNow;
     }
 
-    // ÑéÖ¤±¾µØÈÕÆÚÊÇ·ñ±»ĞŞ¸Ä
-    bool isLocalDateModified()
-    {
-        time_t networkTime = getNetworkTimeInChina();
-        if (networkTime == 0) {
-            return true; // ÎŞ·¨ÑéÖ¤
-        }
+    // éªŒè¯æœ¬åœ°æ—¥æœŸæ˜¯å¦è¢«ä¿®æ”¹
+	bool isLocalDateModified()
+	{
+		time_t currentLocalTime = time(nullptr);
 
-        time_t localTime = time(nullptr);
-        double diffDays = difftime(networkTime, localTime) / 86400.0;
+		// æ£€æŸ¥æ˜¯å¦å¯ä»¥ä½¿ç”¨ç¼“å­˜
+		if (m_hasVerified) {
+			time_t localElapsed = currentLocalTime - m_lastVerifyLocalTime;
 
-        // ÔÊĞí¡À1ÌìµÄÎó²î£¨¿¼ÂÇÍøÂçÑÓ³ÙºÍÊ±ÇøµÈÒòËØ£©
-        if (fabs(diffDays) > 1.0) {
-            return true;
-        }
+			// æœ¬åœ°æ—¶é—´åœ¨åˆç†èŒƒå›´å†…å‰è¿›ï¼Œä½¿ç”¨ç¼“å­˜æ¨ç®—
+			if (localElapsed >= 0 && localElapsed < VERIFY_INTERVAL) {
+				time_t estimatedNetworkTime = m_lastNetworkTime + localElapsed;
+				double diffDays = difftime(estimatedNetworkTime, currentLocalTime) / 86400.0;
+				if (fabs(diffDays) <= 1.0) {
+					return false;
+				}
+			}
+		}
 
-        return false;
-    }
+		// æ‰§è¡Œç½‘ç»œéªŒè¯
+		time_t networkTime = getNetworkTimeInChina();
+		if (networkTime == 0) {
+			// ç½‘ç»œä¸å¯ç”¨ï¼šå¦‚æœä¹‹å‰éªŒè¯é€šè¿‡ä¸”æœ¬åœ°æ—¶é—´æ²¡å¼‚å¸¸ï¼Œæš‚æ—¶ä¿¡ä»»
+			if (m_hasVerified && !m_lastVerifyResult) {
+				time_t localElapsed = currentLocalTime - m_lastVerifyLocalTime;
+				if (localElapsed >= -300 && localElapsed < 24 * 3600) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		// æ›´æ–°ç¼“å­˜
+		m_hasVerified = true;
+		m_lastVerifyLocalTime = currentLocalTime;
+		m_lastNetworkTime = networkTime;
+
+		double diffDays = difftime(networkTime, currentLocalTime) / 86400.0;
+		m_lastVerifyResult = fabs(diffDays) > 1.0;
+
+		return m_lastVerifyResult;
+	}
 
 public:
 
@@ -174,7 +204,7 @@ public:
 
         tm tmCompile = parseCompileDate(__DATE__), tmCurrent = getCurrentDate();
 
-        // ¼ÆËãÌìÊı²î
+        // è®¡ç®—å¤©æ•°å·®
         int daysDiff = daysBetweenDates(tmCompile, tmCurrent);
 
         return daysDiff <= trailDays;

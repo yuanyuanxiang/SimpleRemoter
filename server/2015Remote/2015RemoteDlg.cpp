@@ -1821,7 +1821,7 @@ std::string joinString(const std::vector<std::string>& tokens, char delimiter)
 
 bool CMy2015RemoteDlg::CheckValid(int trail)
 {
-    DateVerify verify;
+    static DateVerify verify;
     BOOL isTrail = verify.isTrail(trail);
 
     if (!isTrail) {
