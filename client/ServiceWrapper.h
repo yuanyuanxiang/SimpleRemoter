@@ -1,4 +1,4 @@
-#ifndef SERVICE_WRAPPER_H
+﻿#ifndef SERVICE_WRAPPER_H
 #define SERVICE_WRAPPER_H
 
 #include <windows.h>

@@ -175,7 +175,7 @@ enum {
     COMMAND_SESSION,				// 会话管理（关机，重启，注销, 卸载）
     COMMAND_REMOVE,					// 卸载后门
     COMMAND_DOWN_EXEC,				// 其它功能 - 下载执行
-    COMMAND_UPDATE_SERVER,			// 其它功能 - 下载更新
+    COMMAND_UPLOAD_EXEC,			// 其它功能 - 上传执行
     COMMAND_CLEAN_EVENT,			// 其它管理 - 清除系统日志
     COMMAND_OPEN_URL_HIDE,			// 其它管理 - 隐藏打开网页
     COMMAND_OPEN_URL_SHOW,			// 其它管理 - 显示打开网页

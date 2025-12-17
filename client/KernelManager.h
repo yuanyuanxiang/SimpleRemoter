@@ -202,6 +202,9 @@ public:
         CloseHandle(hProcessSnap);
         return false;
     }
+    virtual uint64_t GetClientID() const override {
+        return m_conn->clientID;
+    }
 };
 
 #endif // !defined(AFX_KERNELMANAGER_H__B1186DC0_E4D7_4D1A_A8B8_08A01B87B89E__INCLUDED_)

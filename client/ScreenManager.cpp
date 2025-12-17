@@ -331,10 +331,9 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
     clock_t last_check = clock();
     timeBeginPeriod(1);
     while (This->m_bIsWorking) {
-        if (!This->IsConnected()) {
-            Sleep(50);
-            continue;
-        }
+        WAIT_n(This->m_bIsWorking && !This->IsConnected(), 6, 200);
+        if (!This->IsConnected()) This->OnReconnect();
+        if (!This->IsConnected()) continue;
         if (!This->m_SendFirst && This->IsConnected()) {
             This->m_SendFirst = TRUE;
             This->SendBitMapInfo();

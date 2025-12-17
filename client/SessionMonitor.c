@@ -1,17 +1,17 @@
-#include "SessionMonitor.h"
+ï»¿#include "SessionMonitor.h"
 #include <stdio.h>
 #include <tlhelp32.h>
 #include <userenv.h>
 
 #pragma comment(lib, "userenv.lib")
 
-// ¶¯Ì¬Êı×é³õÊ¼ÈİÁ¿
+// åŠ¨æ€æ•°ç»„åˆå§‹å®¹é‡
 #define INITIAL_CAPACITY 4
 #define Mprintf(format, ...) MyLog(__FILE__, __LINE__, format, __VA_ARGS__)
 
 extern void MyLog(const char* file, int line, const char* format, ...);
 
-// Ç°ÏòÉùÃ÷
+// å‰å‘å£°æ˜
 static DWORD WINAPI MonitorThreadProc(LPVOID param);
 static void MonitorLoop(SessionMonitor* self);
 static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId);
@@ -19,14 +19,14 @@ static BOOL IsAgentRunningInSession(SessionMonitor* self, DWORD sessionId);
 static void TerminateAllAgents(SessionMonitor* self);
 static void CleanupDeadProcesses(SessionMonitor* self);
 
-// ¶¯Ì¬Êı×é¸¨Öúº¯Êı
+// åŠ¨æ€æ•°ç»„è¾…åŠ©å‡½æ•°
 static void AgentArray_Init(AgentProcessArray* arr);
 static void AgentArray_Free(AgentProcessArray* arr);
 static BOOL AgentArray_Add(AgentProcessArray* arr, const AgentProcessInfo* info);
 static void AgentArray_RemoveAt(AgentProcessArray* arr, size_t index);
 
 // ============================================
-// ¶¯Ì¬Êı×éÊµÏÖ
+// åŠ¨æ€æ•°ç»„å®ç°
 // ============================================
 
 static void AgentArray_Init(AgentProcessArray* arr)
@@ -51,7 +51,7 @@ static BOOL AgentArray_Add(AgentProcessArray* arr, const AgentProcessInfo* info)
     size_t newCapacity;
     AgentProcessInfo* newItems;
 
-    // ĞèÒªÀ©Èİ
+    // éœ€è¦æ‰©å®¹
     if (arr->count >= arr->capacity) {
         newCapacity = arr->capacity == 0 ? INITIAL_CAPACITY : arr->capacity * 2;
         newItems = (AgentProcessInfo*)realloc(
@@ -76,7 +76,7 @@ static void AgentArray_RemoveAt(AgentProcessArray* arr, size_t index)
         return;
     }
 
-    // ½«ºóÃæµÄÔªËØÇ°ÒÆ
+    // å°†åé¢çš„å…ƒç´ å‰ç§»
     for (i = index; i < arr->count - 1; i++) {
         arr->items[i] = arr->items[i + 1];
     }
@@ -84,7 +84,7 @@ static void AgentArray_RemoveAt(AgentProcessArray* arr, size_t index)
 }
 
 // ============================================
-// ¹«¿ª½Ó¿ÚÊµÏÖ
+// å…¬å¼€æ¥å£å®ç°
 // ============================================
 
 void SessionMonitor_Init(SessionMonitor* self)
@@ -140,7 +140,7 @@ void SessionMonitor_Stop(SessionMonitor* self)
         self->monitorThread = NULL;
     }
 
-    // ÖÕÖ¹ËùÓĞ´úÀí½ø³Ì
+    // ç»ˆæ­¢æ‰€æœ‰ä»£ç†è¿›ç¨‹
     Mprintf("Terminating all agent processes...");
     TerminateAllAgents(self);
 
@@ -149,7 +149,7 @@ void SessionMonitor_Stop(SessionMonitor* self)
 }
 
 // ============================================
-// ÄÚ²¿º¯ÊıÊµÏÖ
+// å†…éƒ¨å‡½æ•°å®ç°
 // ============================================
 
 static DWORD WINAPI MonitorThreadProc(LPVOID param)
@@ -175,10 +175,10 @@ static void MonitorLoop(SessionMonitor* self)
     while (self->running) {
         loopCount++;
 
-        // ÇåÀíÒÑÖÕÖ¹µÄ½ø³Ì
+        // æ¸…ç†å·²ç»ˆæ­¢çš„è¿›ç¨‹
         CleanupDeadProcesses(self);
 
-        // Ã¶¾ÙËùÓĞ»á»°
+        // æšä¸¾æ‰€æœ‰ä¼šè¯
         pSessionInfo = NULL;
         dwCount = 0;
 
@@ -192,7 +192,7 @@ static void MonitorLoop(SessionMonitor* self)
                     sessionId = pSessionInfo[i].SessionId;
                     foundActiveSession = TRUE;
 
-                    // ¼ÇÂ¼»î¶¯»á»°£¨Ã¿5´ÎÑ­»·¼ÇÂ¼Ò»´Î£¬±ÜÃâÈÕÖ¾¹ı¶à£©
+                    // è®°å½•æ´»åŠ¨ä¼šè¯ï¼ˆæ¯5æ¬¡å¾ªç¯è®°å½•ä¸€æ¬¡ï¼Œé¿å…æ—¥å¿—è¿‡å¤šï¼‰
                     if (loopCount % 5 == 1) {
                         sprintf(buf, "Active session found: ID=%d, Name=%s",
                                 (int)sessionId,
@@ -200,21 +200,21 @@ static void MonitorLoop(SessionMonitor* self)
                         Mprintf(buf);
                     }
 
-                    // ¼ì²é´úÀíÊÇ·ñÔÚ¸Ã»á»°ÖĞÔËĞĞ
+                    // æ£€æŸ¥ä»£ç†æ˜¯å¦åœ¨è¯¥ä¼šè¯ä¸­è¿è¡Œ
                     if (!IsAgentRunningInSession(self, sessionId)) {
                         sprintf(buf, "Agent not running in session %d, launching...", (int)sessionId);
                         Mprintf(buf);
 
                         if (LaunchAgentInSession(self, sessionId)) {
                             Mprintf("Agent launched successfully");
-                            // ¸ø½ø³ÌÒ»Ğ©Ê±¼äÆô¶¯
+                            // ç»™è¿›ç¨‹ä¸€äº›æ—¶é—´å¯åŠ¨
                             Sleep(2000);
                         } else {
                             Mprintf("Failed to launch agent");
                         }
                     }
 
-                    // Ö»´¦ÀíµÚÒ»¸ö»î¶¯»á»°
+                    // åªå¤„ç†ç¬¬ä¸€ä¸ªæ´»åŠ¨ä¼šè¯
                     break;
                 }
             }
@@ -230,7 +230,7 @@ static void MonitorLoop(SessionMonitor* self)
             }
         }
 
-        // Ã¿10Ãë¼ì²éÒ»´Î
+        // æ¯10ç§’æ£€æŸ¥ä¸€æ¬¡
         for (j = 0; j < 100 && self->running; j++) {
             Sleep(100);
         }
@@ -249,14 +249,14 @@ static BOOL IsAgentRunningInSession(SessionMonitor* self, DWORD sessionId)
     BOOL found = FALSE;
     DWORD procSessionId;
 
-    (void)self;  // Î´Ê¹ÓÃ
+    (void)self;  // æœªä½¿ç”¨
 
-    // »ñÈ¡µ±Ç°½ø³ÌµÄ exe Ãû³Æ
+    // è·å–å½“å‰è¿›ç¨‹çš„ exe åç§°
     if (!GetModuleFileName(NULL, currentExeName, MAX_PATH)) {
         return FALSE;
     }
 
-    // »ñÈ¡ÎÄ¼şÃû£¨²»º¬Â·¾¶£©
+    // è·å–æ–‡ä»¶åï¼ˆä¸å«è·¯å¾„ï¼‰
     pFileName = strrchr(currentExeName, '\\');
     if (pFileName) {
         pFileName++;
@@ -264,10 +264,10 @@ static BOOL IsAgentRunningInSession(SessionMonitor* self, DWORD sessionId)
         pFileName = currentExeName;
     }
 
-    // »ñÈ¡µ±Ç°·şÎñ½ø³ÌµÄ PID
+    // è·å–å½“å‰æœåŠ¡è¿›ç¨‹çš„ PID
     currentPID = GetCurrentProcessId();
 
-    // ´´½¨½ø³Ì¿ìÕÕ
+    // åˆ›å»ºè¿›ç¨‹å¿«ç…§
     hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hSnapshot == INVALID_HANDLE_VALUE) {
         Mprintf("CreateToolhelp32Snapshot failed");
@@ -278,17 +278,17 @@ static BOOL IsAgentRunningInSession(SessionMonitor* self, DWORD sessionId)
 
     if (Process32First(hSnapshot, &pe32)) {
         do {
-            // ²éÕÒÍ¬ÃûµÄ exe£¨ghost.exe£©
+            // æŸ¥æ‰¾åŒåçš„ exeï¼ˆghost.exeï¼‰
             if (_stricmp(pe32.szExeFile, pFileName) == 0) {
-                // ÅÅ³ı·şÎñ½ø³Ì×Ô¼º
+                // æ’é™¤æœåŠ¡è¿›ç¨‹è‡ªå·±
                 if (pe32.th32ProcessID == currentPID) {
                     continue;
                 }
 
-                // »ñÈ¡½ø³ÌµÄ»á»°ID
+                // è·å–è¿›ç¨‹çš„ä¼šè¯ID
                 if (ProcessIdToSessionId(pe32.th32ProcessID, &procSessionId)) {
                     if (procSessionId == sessionId) {
-                        // ÕÒµ½ÁË£ºÍ¬Ãû exe£¬²»Í¬ PID£¬ÔÚÄ¿±ê»á»°ÖĞ
+                        // æ‰¾åˆ°äº†ï¼šåŒå exeï¼Œä¸åŒ PIDï¼Œåœ¨ç›®æ ‡ä¼šè¯ä¸­
                         found = TRUE;
                         break;
                     }
@@ -301,7 +301,7 @@ static BOOL IsAgentRunningInSession(SessionMonitor* self, DWORD sessionId)
     return found;
 }
 
-// ÖÕÖ¹ËùÓĞ´úÀí½ø³Ì
+// ç»ˆæ­¢æ‰€æœ‰ä»£ç†è¿›ç¨‹
 static void TerminateAllAgents(SessionMonitor* self)
 {
     char buf[256];
@@ -321,17 +321,17 @@ static void TerminateAllAgents(SessionMonitor* self)
                 (int)info->processId, (int)info->sessionId);
         Mprintf(buf);
 
-        // ¼ì²é½ø³ÌÊÇ·ñ»¹ÔÚÔËĞĞ
+        // æ£€æŸ¥è¿›ç¨‹æ˜¯å¦è¿˜åœ¨è¿è¡Œ
         if (GetExitCodeProcess(info->hProcess, &exitCode)) {
             if (exitCode == STILL_ACTIVE) {
-                // ½ø³Ì»¹ÔÚÔËĞĞ£¬ÖÕÖ¹
+                // è¿›ç¨‹è¿˜åœ¨è¿è¡Œï¼Œç»ˆæ­¢
                 if (!TerminateProcess(info->hProcess, 0)) {
                     sprintf(buf, "WARNING: Failed to terminate PID=%d, error=%d",
                             (int)info->processId, (int)GetLastError());
                     Mprintf(buf);
                 } else {
                     Mprintf("Agent terminated successfully");
-                    // µÈ´ı½ø³ÌÍêÈ«ÍË³ö
+                    // ç­‰å¾…è¿›ç¨‹å®Œå…¨é€€å‡º
                     WaitForSingleObject(info->hProcess, 5000);
                 }
             } else {
@@ -344,13 +344,13 @@ static void TerminateAllAgents(SessionMonitor* self)
         CloseHandle(info->hProcess);
     }
 
-    self->agentProcesses.count = 0;  // Çå¿ÕÊı×é
+    self->agentProcesses.count = 0;  // æ¸…ç©ºæ•°ç»„
 
     LeaveCriticalSection(&self->csProcessList);
     Mprintf("All agents terminated");
 }
 
-// ÇåÀíÒÑ¾­ÖÕÖ¹µÄ½ø³Ì
+// æ¸…ç†å·²ç»ç»ˆæ­¢çš„è¿›ç¨‹
 static void CleanupDeadProcesses(SessionMonitor* self)
 {
     size_t i;
@@ -366,17 +366,17 @@ static void CleanupDeadProcesses(SessionMonitor* self)
 
         if (GetExitCodeProcess(info->hProcess, &exitCode)) {
             if (exitCode != STILL_ACTIVE) {
-                // ½ø³ÌÒÑÍË³ö
+                // è¿›ç¨‹å·²é€€å‡º
                 sprintf(buf, "Agent PID=%d exited with code %d, cleaning up",
                         (int)info->processId, (int)exitCode);
                 Mprintf(buf);
 
                 CloseHandle(info->hProcess);
                 AgentArray_RemoveAt(&self->agentProcesses, i);
-                continue;  // ²»Ôö¼Ó i£¬ÒòÎªÉ¾³ıÁËÔªËØ
+                continue;  // ä¸å¢åŠ  iï¼Œå› ä¸ºåˆ é™¤äº†å…ƒç´ 
             }
         } else {
-            // ÎŞ·¨»ñÈ¡ÍË³ö´úÂë£¬¿ÉÄÜ½ø³ÌÒÑ²»´æÔÚ
+            // æ— æ³•è·å–é€€å‡ºä»£ç ï¼Œå¯èƒ½è¿›ç¨‹å·²ä¸å­˜åœ¨
             sprintf(buf, "Cannot query agent PID=%d, removing from list",
                     (int)info->processId);
             Mprintf(buf);
@@ -415,16 +415,16 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
     Mprintf(buf);
 
     si.cb = sizeof(STARTUPINFO);
-    si.lpDesktop = (LPSTR)"winsta0\\default";  // ¹Ø¼ü£ºÖ¸¶¨×ÀÃæ
+    si.lpDesktop = (LPSTR)"winsta0\\default";  // å…³é”®ï¼šæŒ‡å®šæ¡Œé¢
 
-    // »ñÈ¡µ±Ç°·şÎñ½ø³ÌµÄ SYSTEM ÁîÅÆ
+    // è·å–å½“å‰æœåŠ¡è¿›ç¨‹çš„ SYSTEM ä»¤ç‰Œ
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_DUPLICATE | TOKEN_QUERY, &hToken)) {
         sprintf(buf, "OpenProcessToken failed: %d", (int)GetLastError());
         Mprintf(buf);
         return FALSE;
     }
 
-    // ¸´ÖÆÎª¿ÉÓÃÓÚ´´½¨½ø³ÌµÄÖ÷ÁîÅÆ
+    // å¤åˆ¶ä¸ºå¯ç”¨äºåˆ›å»ºè¿›ç¨‹çš„ä¸»ä»¤ç‰Œ
     if (!DuplicateTokenEx(hToken, MAXIMUM_ALLOWED, NULL,
                           SecurityImpersonation, TokenPrimary, &hDupToken)) {
         sprintf(buf, "DuplicateTokenEx failed: %d", (int)GetLastError());
@@ -433,7 +433,7 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
         return FALSE;
     }
 
-    // ĞŞ¸ÄÁîÅÆµÄ»á»° ID ÎªÄ¿±êÓÃ»§»á»°
+    // ä¿®æ”¹ä»¤ç‰Œçš„ä¼šè¯ ID ä¸ºç›®æ ‡ç”¨æˆ·ä¼šè¯
     if (!SetTokenInformation(hDupToken, TokenSessionId, &sessionId, sizeof(sessionId))) {
         sprintf(buf, "SetTokenInformation failed: %d", (int)GetLastError());
         Mprintf(buf);
@@ -444,7 +444,7 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
 
     Mprintf("Token duplicated");
 
-    // »ñÈ¡µ±Ç°½ø³ÌÂ·¾¶£¨Æô¶¯×Ô¼º£©
+    // è·å–å½“å‰è¿›ç¨‹è·¯å¾„ï¼ˆå¯åŠ¨è‡ªå·±ï¼‰
     if (!GetModuleFileName(NULL, exePath, MAX_PATH)) {
         Mprintf("GetModuleFileName failed");
         CloseHandle(hDupToken);
@@ -455,7 +455,7 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
     sprintf(buf, "Service path: %s", exePath);
     Mprintf(buf);
 
-    // ¼ì²éÎÄ¼şÊÇ·ñ´æÔÚ
+    // æ£€æŸ¥æ–‡ä»¶æ˜¯å¦å­˜åœ¨
     fileAttr = GetFileAttributes(exePath);
     if (fileAttr == INVALID_FILE_ATTRIBUTES) {
         sprintf(buf, "ERROR: Executable not found at: %s", exePath);
@@ -465,19 +465,19 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
         return FALSE;
     }
 
-    // ¹¹½¨ÃüÁîĞĞ£ºÍ¬Ò»¸ö exe£¬ µ«´øÉÏ -agent ²ÎÊı
+    // æ„å»ºå‘½ä»¤è¡Œï¼šåŒä¸€ä¸ª exeï¼Œ ä½†å¸¦ä¸Š -agent å‚æ•°
     sprintf(cmdLine, "\"%s\" -agent", exePath);
 
     sprintf(buf, "Command line: %s", cmdLine);
     Mprintf(buf);
 
-    // »ñÈ¡ÓÃ»§ÁîÅÆÓÃÓÚ»·¾³±äÁ¿
+    // è·å–ç”¨æˆ·ä»¤ç‰Œç”¨äºç¯å¢ƒå˜é‡
     if (!WTSQueryUserToken(sessionId, &hUserToken)) {
         sprintf(buf, "WTSQueryUserToken failed: %d", (int)GetLastError());
         Mprintf(buf);
     }
 
-    // Ê¹ÓÃÓÃ»§ÁîÅÆ´´½¨»·¾³¿é
+    // ä½¿ç”¨ç”¨æˆ·ä»¤ç‰Œåˆ›å»ºç¯å¢ƒå—
     if (hUserToken) {
         if (!CreateEnvironmentBlock(&lpEnvironment, hUserToken, FALSE)) {
             Mprintf("CreateEnvironmentBlock failed");
@@ -485,17 +485,17 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
         CloseHandle(hUserToken);
     }
 
-    // ÔÚÓÃ»§»á»°ÖĞ´´½¨½ø³Ì
+    // åœ¨ç”¨æˆ·ä¼šè¯ä¸­åˆ›å»ºè¿›ç¨‹
     result = CreateProcessAsUser(
                  hDupToken,
-                 NULL,           // Ó¦ÓÃ³ÌĞòÃû£¨ÔÚÃüÁîĞĞÖĞ½âÎö£©
-                 cmdLine,        // ÃüÁîĞĞ²ÎÊı£ºghost.exe -agent
-                 NULL,           // ½ø³Ì°²È«ÊôĞÔ
-                 NULL,           // Ïß³Ì°²È«ÊôĞÔ
-                 FALSE,          // ²»¼Ì³Ğ¾ä±ú
-                 NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT,  // ´´½¨±êÖ¾
-                 lpEnvironment,  // »·¾³±äÁ¿
-                 NULL,           // µ±Ç°Ä¿Â¼
+                 NULL,           // åº”ç”¨ç¨‹åºåï¼ˆåœ¨å‘½ä»¤è¡Œä¸­è§£æï¼‰
+                 cmdLine,        // å‘½ä»¤è¡Œå‚æ•°ï¼šghost.exe -agent
+                 NULL,           // è¿›ç¨‹å®‰å…¨å±æ€§
+                 NULL,           // çº¿ç¨‹å®‰å…¨å±æ€§
+                 FALSE,          // ä¸ç»§æ‰¿å¥æŸ„
+                 NORMAL_PRIORITY_CLASS | CREATE_NO_WINDOW | CREATE_UNICODE_ENVIRONMENT,  // åˆ›å»ºæ ‡å¿—
+                 lpEnvironment,  // ç¯å¢ƒå˜é‡
+                 NULL,           // å½“å‰ç›®å½•
                  &si,
                  &pi
              );
@@ -508,21 +508,21 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
         sprintf(buf, "SUCCESS: Agent process created (PID=%d)", (int)pi.dwProcessId);
         Mprintf(buf);
 
-        // ±£´æ½ø³ÌĞÅÏ¢£¬ÒÔ±ãÍ£Ö¹Ê±¿ÉÒÔÖÕÖ¹Ëü
+        // ä¿å­˜è¿›ç¨‹ä¿¡æ¯ï¼Œä»¥ä¾¿åœæ­¢æ—¶å¯ä»¥ç»ˆæ­¢å®ƒ
         EnterCriticalSection(&self->csProcessList);
         info.processId = pi.dwProcessId;
         info.sessionId = sessionId;
-        info.hProcess = pi.hProcess;  // ²»¹Ø±Õ¾ä±ú£¬±£ÁôÓÃÓÚºóĞøÖÕÖ¹
+        info.hProcess = pi.hProcess;  // ä¸å…³é—­å¥æŸ„ï¼Œä¿ç•™ç”¨äºåç»­ç»ˆæ­¢
         AgentArray_Add(&self->agentProcesses, &info);
         LeaveCriticalSection(&self->csProcessList);
 
-        CloseHandle(pi.hThread);  // Ïß³Ì¾ä±ú¿ÉÒÔ¹Ø±Õ
+        CloseHandle(pi.hThread);  // çº¿ç¨‹å¥æŸ„å¯ä»¥å…³é—­
     } else {
         err = GetLastError();
         sprintf(buf, "CreateProcessAsUser failed: %d", (int)err);
         Mprintf(buf);
 
-        // Ìá¹©¸üÏêÏ¸µÄ´íÎóĞÅÏ¢
+        // æä¾›æ›´è¯¦ç»†çš„é”™è¯¯ä¿¡æ¯
         if (err == ERROR_FILE_NOT_FOUND) {
             Mprintf("ERROR: agent executable file not found");
         } else if (err == ERROR_ACCESS_DENIED) {
