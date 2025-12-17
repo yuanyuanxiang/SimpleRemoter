@@ -1,4 +1,4 @@
-#ifndef SESSION_MONITOR_H
+﻿#ifndef SESSION_MONITOR_H
 #define SESSION_MONITOR_H
 
 #include <windows.h>

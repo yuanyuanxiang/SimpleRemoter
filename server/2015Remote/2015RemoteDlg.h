@@ -324,6 +324,8 @@ public:
     afx_msg LRESULT UpdateUserEvent(WPARAM wParam, LPARAM lParam);
     afx_msg BOOL OnHelpInfo(HELPINFO* pHelpInfo);
     virtual BOOL PreTranslateMessage(MSG* pMsg);
+    int m_TraceTime = 1000;
+    virtual LRESULT WindowProc(UINT message, WPARAM wParam, LPARAM lParam);
     afx_msg void OnOnlineShare();
     afx_msg void OnToolAuth();
     afx_msg void OnToolGenMaster();

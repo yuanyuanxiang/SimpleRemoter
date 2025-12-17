@@ -65,6 +65,9 @@ public:
     {
         m_bReady = ready;
     }
+    virtual uint64_t GetClientID() const {
+        return 0;
+    }
 };
 
 #endif // !defined(AFX_MANAGER_H__32F1A4B3_8EA6_40C5_B1DF_E469F03FEC30__INCLUDED_)

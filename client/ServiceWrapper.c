@@ -1,4 +1,4 @@
-#include "ServiceWrapper.h"
+﻿#include "ServiceWrapper.h"
 #include "SessionMonitor.h"
 #include <stdio.h>
 
