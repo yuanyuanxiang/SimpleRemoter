@@ -1205,6 +1205,9 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     m_settings.EnableLog = THIS_CFG.GetInt("settings", "EnableLog", 0);
     CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
     SubMenu->CheckMenuItem(ID_PARAM_KBLOGGER, m_settings.EnableKBLogger ? MF_CHECKED : MF_UNCHECKED);
+    BOOL notify = THIS_CFG.GetInt("settings", "LoginNotify", 0);
+    SubMenu->CheckMenuItem(ID_PARAM_LOGIN_NOTIFY, notify ? MF_CHECKED : MF_UNCHECKED);
+    SubMenu->CheckMenuItem(ID_PARAM_ENABLE_LOG, m_settings.EnableLog ? MF_CHECKED : MF_UNCHECKED);
     std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "摄像头"}, {SOFTWARE_TELEGRAM, "电报" }};
     std::string str = myMap[n];
     LVCOLUMN lvColumn;
@@ -3821,7 +3824,8 @@ void CMy2015RemoteDlg::LoadListData(const std::string& group)
     m_CList_Online.DeleteAllItems();
     int iCount = 0;
     for (auto& ctx : m_HostList) {
-        if (group == _T("default") || ctx->GetGroupName() == group) {
+        auto g = ctx->GetGroupName();
+        if ((group == _T("default") && g.empty()) || g == group) {
             CString strIP=ctx->GetClientData(ONLINELIST_IP);
             auto& m = m_ClientMap[ctx->GetClientID()];
             auto pubIP = ctx->GetAdditionalData(RES_CLIENT_PUBIP);
