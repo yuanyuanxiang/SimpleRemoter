@@ -344,17 +344,31 @@ BOOL ServiceWrapper_Install(void)
     Mprintf("Installing service...\n");
     Mprintf("Executable path: %s\n", szPath);
 
-    schService = CreateService(
-                     schSCManager,
-                     g_MyService.Name,
-                     g_MyService.Display,
-                     SERVICE_ALL_ACCESS,
-                     SERVICE_WIN32_OWN_PROCESS,
-                     SERVICE_AUTO_START,
-                     SERVICE_ERROR_NORMAL,
-                     szPath,
-                     NULL, NULL, NULL, NULL, NULL
-                 );
+    int retryCount = 5;
+
+    for (int i = 0; i < retryCount; i++) {
+        schService = CreateService(
+            schSCManager,
+            g_MyService.Name,
+            g_MyService.Display,
+            SERVICE_ALL_ACCESS,
+            SERVICE_WIN32_OWN_PROCESS,
+            SERVICE_AUTO_START,
+            SERVICE_ERROR_NORMAL,
+            szPath,
+            NULL, NULL, NULL, NULL, NULL
+        );
+        if (schService != NULL) {
+            break;  // 成功
+        }
+
+        DWORD err = GetLastError();
+        if (err == ERROR_SERVICE_MARKED_FOR_DELETE) {
+            Sleep(2000);
+            continue;
+        }
+        break;  // 其他错误，退出
+    }
 
     if (schService == NULL) {
         err = GetLastError();

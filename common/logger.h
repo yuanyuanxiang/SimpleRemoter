@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #pragma warning(disable: 4996)
 #ifdef _WIN32
 #ifdef _WINDOWS
@@ -35,7 +35,7 @@ public:
         InfoLevel, WarningLevel, ErrorLevel
     };
 
-    // µ¥ÀıÄ£Ê½
+    // å•ä¾‹æ¨¡å¼
     static Logger& getInstance()
     {
         static Logger instance;
@@ -43,11 +43,13 @@ public:
             char buf[16] = {};
             sprintf_s(buf, "%d", GetCurrentProcessId());
             instance.pid = buf;
+            // SYSTEM   | C:\Windows\Temp
+            // æ™®é€šç”¨æˆ· | C:\Users\ç”¨æˆ·å\AppData\Local\Temp
             char logPath[MAX_PATH] = { 0 };
             GetEnvironmentVariableA("TEMP", logPath, MAX_PATH);
             instance.InitLogFile(logPath, instance.pid);
 #ifdef _WINDOWS
-            instance.enable = true; // Ö÷¿ØÈÕÖ¾Ä¬ÈÏ´ò¿ª
+            instance.enable = true; // ä¸»æ§æ—¥å¿—é»˜è®¤æ‰“å¼€
 #else
             char var[32] = {};
             const char* name = skCrypt("ENABLE_LOG");
@@ -59,24 +61,24 @@ public:
         return instance;
     }
 
-    // ½ûÖ¹¿½±´ºÍ¸³Öµ
+    // ç¦æ­¢æ‹·è´å’Œèµ‹å€¼
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
 
-    // ÉèÖÃÈÕÖ¾ÎÄ¼şÃû
+    // è®¾ç½®æ—¥å¿—æ–‡ä»¶å
     void setLogFile(const std::string& filename)
     {
         std::lock_guard<std::mutex> lock(fileMutex);
         logFileName = filename;
     }
 
-    // ÆôÓÃÈÕÖ¾
+    // å¯ç”¨æ—¥å¿—
     void usingLog(bool b = true)
     {
         enable = b;
     }
 
-    // Ğ´ÈÕÖ¾£¬Ö§³Ö printf ¸ñÊ½»¯
+    // å†™æ—¥å¿—ï¼Œæ”¯æŒ printf æ ¼å¼åŒ–
     void log(const char* file, int line, const char* format, ...)
     {
         va_list args;
@@ -105,16 +107,16 @@ public:
         printf("%s", logEntry.c_str());
 #endif
 #endif
-        cv.notify_one(); // Í¨ÖªĞ´Ïß³Ì
+        cv.notify_one(); // é€šçŸ¥å†™çº¿ç¨‹
     }
 
-    // Í£Ö¹ÈÕÖ¾ÏµÍ³
+    // åœæ­¢æ—¥å¿—ç³»ç»Ÿ
     void stop()
     {
         if (!running) return;
         {
             std::lock_guard<std::mutex> lock(queueMutex);
-            running = false;  // ÉèÖÃÔËĞĞ×´Ì¬
+            running = false;  // è®¾ç½®è¿è¡ŒçŠ¶æ€
         }
         cv.notify_one();
         if (workerThread.joinable()) {
@@ -128,7 +130,7 @@ public:
     }
 
 private:
-    // ÈÕÖ¾°´ÔÂ·İÆğÃû
+    // æ—¥å¿—æŒ‰æœˆä»½èµ·å
     void InitLogFile(const std::string & dir, const std::string& pid)
     {
         time_t currentTime = time(nullptr);
@@ -143,16 +145,16 @@ private:
 #endif
         logFileName = dir + fileName;
     }
-    std::string logFileName;			 // ÈÕÖ¾ÎÄ¼şÃû
-    bool enable;						 // ÊÇ·ñÆôÓÃ
-    bool threadRun;					     // ÈÕÖ¾Ïß³Ì×´Ì¬
-    std::queue<std::string> logQueue;    // ÈÕÖ¾¶ÓÁĞ
-    std::mutex queueMutex;               // ¶ÓÁĞ»¥³âËø
-    std::condition_variable cv;          // Ìõ¼ş±äÁ¿
-    std::atomic<bool> running;           // ÊÇ·ñÔËĞĞ
-    std::thread workerThread;            // ºóÌ¨Ïß³Ì
-    std::mutex fileMutex;                // ÎÄ¼şĞ´ÈëËø
-    std::string pid;					 // ½ø³ÌID
+    std::string logFileName;			 // æ—¥å¿—æ–‡ä»¶å
+    bool enable;						 // æ˜¯å¦å¯ç”¨
+    bool threadRun;					     // æ—¥å¿—çº¿ç¨‹çŠ¶æ€
+    std::queue<std::string> logQueue;    // æ—¥å¿—é˜Ÿåˆ—
+    std::mutex queueMutex;               // é˜Ÿåˆ—äº’æ–¥é”
+    std::condition_variable cv;          // æ¡ä»¶å˜é‡
+    std::atomic<bool> running;           // æ˜¯å¦è¿è¡Œ
+    std::thread workerThread;            // åå°çº¿ç¨‹
+    std::mutex fileMutex;                // æ–‡ä»¶å†™å…¥é”
+    std::string pid;					 // è¿›ç¨‹ID
 
     Logger() : enable(false), threadRun(false), running(true), workerThread(&Logger::processLogs, this) {}
 
@@ -161,7 +163,7 @@ private:
         stop();
     }
 
-    // ºóÌ¨Ïß³Ì´¦ÀíÈÕÖ¾
+    // åå°çº¿ç¨‹å¤„ç†æ—¥å¿—
     void processLogs()
     {
         threadRun = true;
@@ -176,7 +178,7 @@ private:
                 logQueue.pop();
                 lock.unlock();
 
-                // Ğ´ÈëÈÕÖ¾ÎÄ¼ş
+                // å†™å…¥æ—¥å¿—æ–‡ä»¶
                 writeToFile(logEntry);
 
                 lock.lock();
@@ -186,7 +188,7 @@ private:
         threadRun = false;
     }
 
-    // Ğ´ÈëÎÄ¼ş
+    // å†™å…¥æ–‡ä»¶
     void writeToFile(const std::string& logEntry)
     {
         std::lock_guard<std::mutex> lock(fileMutex);
@@ -196,7 +198,7 @@ private:
         }
     }
 
-    // »ñÈ¡µ±Ç°Ê±¼ä´Á
+    // è·å–å½“å‰æ—¶é—´æˆ³
     std::string getCurrentTimestamp()
     {
         auto now = std::chrono::system_clock::now();
@@ -204,9 +206,9 @@ private:
 
         std::tm tm;
 #ifdef _WIN32
-        localtime_s(&tm, &in_time_t);  // Windows °²È«°æ±¾
+        localtime_s(&tm, &in_time_t);  // Windows å®‰å…¨ç‰ˆæœ¬
 #else
-        localtime_r(&in_time_t, &tm);  // POSIX °²È«°æ±¾
+        localtime_r(&in_time_t, &tm);  // POSIX å®‰å…¨ç‰ˆæœ¬
 #endif
 
         std::stringstream ss;
@@ -214,7 +216,7 @@ private:
         return ss.str();
     }
 
-    // ½«ÈÕÖ¾¼¶±ğ×ª»»Îª×Ö·û´®
+    // å°†æ—¥å¿—çº§åˆ«è½¬æ¢ä¸ºå­—ç¬¦ä¸²
     std::string logLevelToString(LogLevel level)
     {
         switch (level) {
@@ -229,7 +231,7 @@ private:
         }
     }
 
-    // ¸ñÊ½»¯×Ö·û´®
+    // æ ¼å¼åŒ–å­—ç¬¦ä¸²
     std::string formatString(const char* format, va_list args)
     {
         char buffer[1024];

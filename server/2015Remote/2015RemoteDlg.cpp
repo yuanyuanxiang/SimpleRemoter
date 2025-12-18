@@ -1825,7 +1825,7 @@ std::string joinString(const std::vector<std::string>& tokens, char delimiter)
 bool CMy2015RemoteDlg::CheckValid(int trail)
 {
     static DateVerify verify;
-    BOOL isTrail = verify.isTrail(trail);
+    BOOL isTrail = trail < 0 ? FALSE : verify.isTrail(trail);
 
     if (!isTrail) {
         const Validation *verify = GetValidation();
@@ -2725,8 +2725,10 @@ LRESULT CMy2015RemoteDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
     auto mainCtx = clientID ? FindHost(clientID) : NULL;
     CDialogBase* dlg = dlgID ? (DialogBase*)dlgID : NULL;
     if (mainCtx) ContextObject->SetPeerName(mainCtx->GetClientData(ONLINELIST_IP).GetString());
-    if (dlg && GetRemoteWindow(dlg->GetSafeHwnd())) {
-        return dlg->UpdateContext(ContextObject);
+    if (dlg) {
+        if (GetRemoteWindow(dlg->GetSafeHwnd()))
+            return dlg->UpdateContext(ContextObject);
+        Mprintf("收到远程桌面打开消息, 对话框已经销毁: %lld\n", dlgID);
     }
     return OpenDialog<CScreenSpyDlg, IDD_DIALOG_SCREEN_SPY, SW_SHOWMAXIMIZED>(wParam, lParam);
 }
@@ -2841,6 +2843,11 @@ BOOL CMy2015RemoteDlg::PreTranslateMessage(MSG* pMsg)
 }
 
 LRESULT CMy2015RemoteDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam) {
+    // WM_COMMAND 不计时
+    if (message == WM_COMMAND) {
+        return CDialogEx::WindowProc(message, wParam, lParam);
+    }
+
     auto start = std::chrono::steady_clock::now();
 
     LRESULT result = CDialogEx::WindowProc(message, wParam, lParam);
