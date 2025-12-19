@@ -172,12 +172,60 @@ public:
     }
 
 private:
+    // 重新初始化 Desktop Duplication
+    BOOL ReinitDuplication()
+    {
+        if (deskDupl) {
+            deskDupl->Release();
+            deskDupl = nullptr;
+        }
+
+        if (!d3dDevice) return FALSE;
+
+        IDXGIDevice* dxgiDevice = nullptr;
+        IDXGIAdapter* dxgiAdapter = nullptr;
+        IDXGIOutput* dxgiOutput = nullptr;
+        IDXGIOutput1* dxgiOutput1 = nullptr;
+
+        HRESULT hr = d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
+        if (FAILED(hr)) return FALSE;
+
+        hr = dxgiDevice->GetAdapter(&dxgiAdapter);
+        dxgiDevice->Release();
+        if (FAILED(hr)) return FALSE;
+
+        hr = dxgiAdapter->EnumOutputs(0, &dxgiOutput);
+        dxgiAdapter->Release();
+        if (FAILED(hr)) return FALSE;
+
+        hr = dxgiOutput->QueryInterface(__uuidof(IDXGIOutput1), (void**)&dxgiOutput1);
+        dxgiOutput->Release();
+        if (FAILED(hr)) return FALSE;
+
+        Sleep(100);
+
+        hr = dxgiOutput1->DuplicateOutput(d3dDevice, &deskDupl);
+        dxgiOutput1->Release();
+
+        return SUCCEEDED(hr) && deskDupl;
+    }
     int CaptureFrame(LPBYTE buffer, ULONG* frameSize, int reservedBytes)
     {
+        if (!deskDupl) {
+            if (!ReinitDuplication()) return -10;
+        }
+
         // 1. 获取下一帧
         IDXGIResource* desktopResource = nullptr;
         DXGI_OUTDUPL_FRAME_INFO frameInfo;
         HRESULT hr = deskDupl->AcquireNextFrame(100, &frameInfo, &desktopResource);
+        // 处理全屏切换导致的访问丢失
+        if (hr == DXGI_ERROR_ACCESS_LOST) {
+            if (ReinitDuplication()) {
+                hr = deskDupl->AcquireNextFrame(100, &frameInfo, &desktopResource);
+            }
+        }
+
         if (FAILED(hr)) {
             return -1;
         }
