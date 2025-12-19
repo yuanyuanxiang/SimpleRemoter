@@ -1,0 +1,30 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Server",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}/cmd",
+            "cwd": "${workspaceFolder}",
+            "args": [],
+            "env": {},
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Debug Server",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceFolder}/cmd",
+            "cwd": "${workspaceFolder}",
+            "args": [
+                "-port=9090"
+            ],
+            "env": {},
+            "console": "integratedTerminal",
+            "buildFlags": "-gcflags='all=-N -l'"
+        }
+    ]
+}
