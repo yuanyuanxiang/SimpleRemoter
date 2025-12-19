@@ -2260,7 +2260,8 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
         BOOL valid = FALSE;
         if (len > 20) {
             std::string sn(szBuffer + 1, szBuffer + 20); // length: 19
-            std::string passcode(szBuffer + 20, szBuffer + len);
+            std::string passcode(szBuffer + 20, szBuffer + 62); // length: 42
+            uint64_t hmac = len > 64 ? *((uint64_t*)(szBuffer+62)) : 0;
             auto v = splitString(passcode, '-');
             if (v.size() == 6 || v.size() == 7) {
 				std::vector<std::string> subvector(v.end() - 4, v.end());
@@ -2271,13 +2272,22 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 				valid = (hash256 == fixedKey);
             }
             if (valid) {
-                std::string tip = passcode + " 校验成功: " + sn;
-                CharMsg* msg = new CharMsg(tip.c_str());
-                PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+                static const char* superAdmin = getenv("YAMA_PWD");
+                std::string pwd = superAdmin ? superAdmin : m_superPass;
+                if (VerifyMessage(pwd, (BYTE*)passcode.c_str(), passcode.length(), hmac)) {
+                    Mprintf("%s 校验成功, HMAC 校验成功: %s\n", passcode.c_str(), sn.c_str());
+					std::string tip = passcode + " 校验成功: " + sn;
+					CharMsg* msg = new CharMsg(tip.c_str());
+					PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+                }
+                else {
+                    valid = FALSE;
+                    Mprintf("%s 校验成功, HMAC 校验失败: %s\n", passcode.c_str(), sn.c_str());
+                }
             }
         }
         char resp[100] = { valid };
-        const char* msg = valid ? "此程序已获授权，请遵守授权协议，感谢合作" : "未获授权";
+        const char* msg = valid ? "此程序已获授权，请遵守授权协议，感谢合作" : "未获授权或消息哈希校验失败";
         memcpy(resp + 4, msg, strlen(msg));
         ContextObject->Send2Client((PBYTE)resp, sizeof(resp));
         break;
@@ -3460,10 +3470,10 @@ void CMy2015RemoteDlg::OnToolInputPassword()
             CInputDialog dlg(this);
             dlg.m_str = pwd;
             dlg.Init("更改口令", "请输入新的口令:");
-            dlg.Init2("HMAC (非必须):", THIS_CFG.GetStr("settings", "HMAC", "").c_str());
+            dlg.Init2("校验码 (HMAC):", THIS_CFG.GetStr("settings", "PwdHmac", "").c_str());
             if (dlg.DoModal() == IDOK) {
                 THIS_CFG.SetStr("settings", "Password", dlg.m_str.GetString());
-                THIS_CFG.SetStr("settings", "HMAC", dlg.m_sSecondInput.GetString());
+                THIS_CFG.SetStr("settings", "PwdHmac", dlg.m_sSecondInput.GetString());
 #ifdef _DEBUG
                 SetTimer(TIMER_CHECK, 10 * 1000, NULL);
 #else
