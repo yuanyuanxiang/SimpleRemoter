@@ -201,11 +201,13 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
     std::string hashedID = hashSHA256(hardwareID);
     std::string deviceID = getFixedLengthID(hashedID);
     std::string hmac = genHMAC(pwdHash, m_sUserPwd.GetString());
-    m_EditHMAC.SetWindowTextA(hmac.c_str());
+    uint64_t pwdHmac = SignMessage(m_sUserPwd.GetString(), (BYTE*)fixedKey.c_str(), fixedKey.length());
+    m_EditHMAC.SetWindowTextA(std::to_string(pwdHmac).c_str());
     if (deviceID == m_sDeviceID.GetString()) { // 授权的是当前主控程序
         auto settings = "settings", pwdKey = "Password";
         THIS_CFG.SetStr(settings, pwdKey, fixedKey.c_str());
         THIS_CFG.SetStr(settings, "HMAC", hmac);
+        THIS_CFG.SetStr(settings, "PwdHmac", std::to_string(pwdHmac));
     }
 }
 
