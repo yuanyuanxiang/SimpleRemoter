@@ -4,6 +4,7 @@
     <LocalDebuggerCommand>$(SolutionDir)Bin\$(TargetName)_x86d$(TargetExt)</LocalDebuggerCommand>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerCommandArguments>-agent</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArgumentsHistory>-agent|</LocalDebuggerCommandArgumentsHistory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LocalDebuggerCommand>$(SolutionDir)Bin\$(TargetName)_x86$(TargetExt)</LocalDebuggerCommand>
