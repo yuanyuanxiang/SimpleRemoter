@@ -88,9 +88,32 @@ std::string execCommand(const char* cmd)
     return result;
 }
 
+std::string getHardwareID_PS() {
+    // Get-WmiObject 在 PowerShell 2.0+ 都可用 (>=Win7)
+    const char* psScript =
+        "(Get-WmiObject Win32_Processor).ProcessorId + '|' + "
+        "(Get-WmiObject Win32_BaseBoard).SerialNumber + '|' + "
+        "(Get-WmiObject Win32_DiskDrive | Select -First 1).SerialNumber";
+
+    std::string cmd = "powershell -NoProfile -Command \"";
+    cmd += psScript;
+    cmd += "\"";
+
+    std::string combinedID = execCommand(cmd.c_str());
+    if ((combinedID.empty() || combinedID.find("ERROR") != std::string::npos)) {
+        return "";
+    }
+    return combinedID;
+}
+
 // 获取硬件 ID（CPU + 主板 + 硬盘）
 std::string getHardwareID(fallback fb)
 {
+	// 优先使用 PowerShell 方法
+	std::string psID = getHardwareID_PS();
+	if (!psID.empty()) {
+		return psID;
+	}
     std::string cpuID = execCommand("wmic cpu get processorid");
     std::string boardID = execCommand("wmic baseboard get serialnumber");
     std::string diskID = execCommand("wmic diskdrive get serialnumber");
