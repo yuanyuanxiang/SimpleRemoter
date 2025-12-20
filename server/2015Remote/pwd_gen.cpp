@@ -85,10 +85,11 @@ std::string execCommand(const char* cmd)
     result.erase(remove(result.begin(), result.end(), '\r'), result.end());
 
     // 返回命令的输出结果
-    return result;
+    return result.empty() ? "ERROR" : result;
 }
 
-std::string getHardwareID_PS() {
+std::string getHardwareID_PS()
+{
     // Get-WmiObject 在 PowerShell 2.0+ 都可用 (>=Win7)
     const char* psScript =
         "(Get-WmiObject Win32_Processor).ProcessorId + '|' + "
@@ -107,20 +108,23 @@ std::string getHardwareID_PS() {
 }
 
 // 获取硬件 ID（CPU + 主板 + 硬盘）
-std::string getHardwareID(fallback fb)
+std::string getHardwareID()
 {
-	// 优先使用 PowerShell 方法
-	std::string psID = getHardwareID_PS();
-	if (!psID.empty()) {
-		return psID;
-	}
+    // wmic在新系统可能被移除了
     std::string cpuID = execCommand("wmic cpu get processorid");
     std::string boardID = execCommand("wmic baseboard get serialnumber");
     std::string diskID = execCommand("wmic diskdrive get serialnumber");
-
     std::string combinedID = cpuID + "|" + boardID + "|" + diskID;
-    if (fb && combinedID.find("ERROR") != std::string::npos) {
-        return fb();
+    if (combinedID.find("ERROR") != std::string::npos) {
+        // 失败再使用 PowerShell 方法
+        std::string psID = getHardwareID_PS();
+        if (!psID.empty()) {
+            Mprintf("Get hardware info with PowerShell: %s\n", psID.c_str());
+            return psID;
+        }
+        Mprintf("Get hardware info FAILED!!! \n");
+        Sleep(1234);
+        TerminateProcess(GetCurrentProcess(), 0);
     }
     return combinedID;
 }
@@ -170,11 +174,10 @@ std::string deriveKey(const std::string& password, const std::string& hardwareID
     return hashSHA256(password + " + " + hardwareID);
 }
 
-std::string getDeviceID(fallback fb)
+std::string getDeviceID(const std::string &hardwareId)
 {
-    static std::string hardwareID = getHardwareID(fb);
-    static std::string hashedID = hashSHA256(hardwareID);
-    static std::string deviceID = getFixedLengthID(hashedID);
+    std::string hashedID = hashSHA256(hardwareId);
+    std::string deviceID = getFixedLengthID(hashedID);
     return deviceID;
 }
 

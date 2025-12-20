@@ -277,13 +277,14 @@ std::string GetCurrentUserNameA()
 #define XXH_INLINE_ALL
 #include "server/2015Remote/xxhash.h"
 // 基于客户端信息计算唯一ID: { IP, PC, OS, CPU, PATH }
-uint64_t CalcalateID(const std::vector<std::string>& clientInfo) {
-	std::string s;
-	for (int i = 0; i < 5; i++) {
-		s += clientInfo[i] + "|";
-	}
-	s.erase(s.length()-1);
-	return XXH64(s.c_str(), s.length(), 0);
+uint64_t CalcalateID(const std::vector<std::string>& clientInfo)
+{
+    std::string s;
+    for (int i = 0; i < 5; i++) {
+        s += clientInfo[i] + "|";
+    }
+    s.erase(s.length()-1);
+    return XXH64(s.c_str(), s.length(), 0);
 }
 
 LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn)

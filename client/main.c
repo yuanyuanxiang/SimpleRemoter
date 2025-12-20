@@ -41,8 +41,8 @@ struct CONNECT_ADDRESS {
     char			runningType;	 // 运行方式
     char			szGroupName[24]; // 分组名称
     char            runasAdmin;      // 是否提升权限运行
-	char            szReserved[11];  // 占位，使结构体占据300字节
-	uint64_t        clientID;        // 客户端唯一标识
+    char            szReserved[11];  // 占位，使结构体占据300字节
+    uint64_t        clientID;        // 客户端唯一标识
     uint64_t		parentHwnd;		 // 父进程窗口句柄
     uint64_t		superAdmin;		 // 管理员主控ID
     char			pwdHash[64];	 // 密码哈希

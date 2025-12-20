@@ -130,7 +130,8 @@ public:
         m_IPAddress = pContext->GetPeerName().c_str();
         m_hIcon = nIcon > 0 ? LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(nIcon)) : NULL;
     }
-    int UpdateContext(CONTEXT_OBJECT* pContext) {
+    int UpdateContext(CONTEXT_OBJECT* pContext)
+    {
         m_ContextObject = pContext;
         m_iocpServer = pContext->GetServer();
         m_ContextObject->hDlg = this;
@@ -139,7 +140,8 @@ public:
     virtual ~CDialogBase() {}
 
 public:
-    virtual BOOL ReceiveCommonMsg() {
+    virtual BOOL ReceiveCommonMsg()
+    {
         switch (m_ContextObject->InDeCompressedBuffer.GetBYTE(0)) {
         case TOKEN_CLIENT_MSG: {
             ClientMsg* msg = (ClientMsg*)m_ContextObject->InDeCompressedBuffer.GetBuffer(0);
@@ -175,7 +177,8 @@ public:
     {
         delete this;
     }
-    virtual BOOL ShouldReconnect() {
+    virtual BOOL ShouldReconnect()
+    {
         return FALSE;
     }
     // 取消 SOCKET 读取，该函数可以被多次调用
@@ -184,13 +187,15 @@ public:
         m_bIsClosed = TRUE;
 
         m_ContextObject->CancelIO();
-	}
-    BOOL IsClosed() const {
+    }
+    BOOL IsClosed() const
+    {
         return m_bIsClosed;
     }
-    BOOL SayByeBye() {
-		BYTE bToken = COMMAND_BYE;
-		return m_ContextObject->Send2Client(&bToken, 1);
+    BOOL SayByeBye()
+    {
+        BYTE bToken = COMMAND_BYE;
+        return m_ContextObject->Send2Client(&bToken, 1);
     }
 };
 

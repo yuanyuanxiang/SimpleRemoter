@@ -105,8 +105,7 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
         pSettings->lpVtbl->put_DisallowStartIfOnBatteries(pSettings, VARIANT_FALSE);
         pSettings->lpVtbl->put_StopIfGoingOnBatteries(pSettings, VARIANT_FALSE);
         pSettings->lpVtbl->Release(pSettings);
-    }
-    else {
+    } else {
         Mprintf("获取配置设置失败，错误代码：%ld\n", hr);
     }
 
@@ -130,8 +129,7 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
         pRegInfo->lpVtbl->put_Description(pRegInfo, bDesc);
         SysFreeString(bDesc);
         pRegInfo->lpVtbl->Release(pRegInfo);
-    }
-    else {
+    } else {
         Mprintf("获取注册信息失败，错误代码：%ld\n", hr);
     }
 
@@ -159,16 +157,14 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
                 }
             }
             pTrigger->lpVtbl->Release(pTrigger);
-        }
-        else {
+        } else {
             Mprintf("无法设置任务触发器，错误代码：%ld\n", hr);
             pTask->lpVtbl->Release(pTask);
             pService->lpVtbl->Release(pService);
             CoUninitialize();
             return 6;
         }
-    }
-    else {
+    } else {
         Mprintf("获取任务触发失败，错误代码：%ld\n", hr);
     }
 
@@ -188,18 +184,15 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
                 pExecAction->lpVtbl->put_Path(pExecAction, path);
                 SysFreeString(path);
                 pExecAction->lpVtbl->Release(pExecAction);
-            }
-            else {
+            } else {
                 Mprintf("QueryInterface 调用失败，错误代码：%ld\n", hr);
             }
             pAction->lpVtbl->Release(pAction);
-        }
-        else {
+        } else {
             Mprintf("创建任务动作失败，错误代码：%ld\n", hr);
         }
         pActionCollection->lpVtbl->Release(pActionCollection);
-    }
-    else {
+    } else {
         Mprintf("获取任务动作失败，错误代码：%ld\n", hr);
     }
 
@@ -211,8 +204,7 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
         hr = pPrincipal->lpVtbl->put_RunLevel(pPrincipal, runasAdmin ? TASK_RUNLEVEL_HIGHEST : TASK_RUNLEVEL_LUA);
         if (FAILED(hr)) Mprintf("put_RunLevel 失败，错误代码：%ld\n", hr);
         pPrincipal->lpVtbl->Release(pPrincipal);
-    }
-    else {
+    } else {
         if (runasAdmin) Mprintf("获取任务权限失败，错误代码：%ld\n", hr);
     }
 
@@ -259,16 +251,14 @@ int CreateScheduledTask(const char* taskName,const char* exePath,BOOL check,cons
                 }
             }
             pRegisteredTask->lpVtbl->Release(pRegisteredTask);
-        }
-        else {
+        } else {
             Mprintf("注册计划任务失败，错误代码：%ld | runasAdmin: %s\n", hr, runasAdmin ? "Yes" : "No");
         }
 
         VariantClear(&vUser);
         SysFreeString(bstrTaskName);
         pFolder->lpVtbl->Release(pFolder);
-    }
-    else {
+    } else {
         Mprintf("获取任务目录失败，错误代码：%ld\n", hr);
     }
 

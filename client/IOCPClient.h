@@ -110,7 +110,10 @@ public:
     virtual VOID OnReceive(PBYTE szBuffer, ULONG ulLength) { }
 
     // Tip: 在派生类实现该函数以便支持断线重连
-    virtual BOOL OnReconnect() { return FALSE;  }
+    virtual BOOL OnReconnect()
+    {
+        return FALSE;
+    }
 
     static int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength)
     {
@@ -133,7 +136,8 @@ public:
         m_Manager->OnReceive(szBuffer, ulLength);
         return TRUE;
     }
-    static int ReconnectProcess(void* user) {
+    static int ReconnectProcess(void* user)
+    {
         IOCPManager* m_Manager = (IOCPManager*)user;
         if (nullptr == m_Manager) {
             return FALSE;
@@ -196,7 +200,8 @@ public:
     {
         return m_bIsRunning;
     }
-    VOID StopRunning() {
+    VOID StopRunning()
+    {
         m_ReconnectFunc = NULL;
         m_bIsRunning = FALSE;
     }

@@ -207,40 +207,40 @@ static BOOL IsAgentMode()
 
 BOOL IsRunningAsAdmin()
 {
-	BOOL isAdmin = FALSE;
-	PSID administratorsGroup = NULL;
+    BOOL isAdmin = FALSE;
+    PSID administratorsGroup = NULL;
 
-	SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
-	if (AllocateAndInitializeSid(&NtAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS,
-		0, 0, 0, 0, 0, 0, &administratorsGroup)) {
-		if (!CheckTokenMembership(NULL, administratorsGroup, &isAdmin)) {
-			isAdmin = FALSE;
-		}
+    SID_IDENTIFIER_AUTHORITY NtAuthority = SECURITY_NT_AUTHORITY;
+    if (AllocateAndInitializeSid(&NtAuthority, 2, SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS,
+                                 0, 0, 0, 0, 0, 0, &administratorsGroup)) {
+        if (!CheckTokenMembership(NULL, administratorsGroup, &isAdmin)) {
+            isAdmin = FALSE;
+        }
 
-		FreeSid(administratorsGroup);
-	}
+        FreeSid(administratorsGroup);
+    }
 
-	return isAdmin;
+    return isAdmin;
 }
 
 BOOL LaunchAsAdmin(const char* szFilePath, const char* verb)
 {
-	SHELLEXECUTEINFOA shExecInfo;
-	ZeroMemory(&shExecInfo, sizeof(SHELLEXECUTEINFOA));
-	shExecInfo.cbSize = sizeof(SHELLEXECUTEINFOA);
-	shExecInfo.fMask = SEE_MASK_DEFAULT;
-	shExecInfo.hwnd = NULL;
-	shExecInfo.lpVerb = verb;
-	shExecInfo.lpFile = szFilePath;
-	shExecInfo.nShow = SW_NORMAL;
+    SHELLEXECUTEINFOA shExecInfo;
+    ZeroMemory(&shExecInfo, sizeof(SHELLEXECUTEINFOA));
+    shExecInfo.cbSize = sizeof(SHELLEXECUTEINFOA);
+    shExecInfo.fMask = SEE_MASK_DEFAULT;
+    shExecInfo.hwnd = NULL;
+    shExecInfo.lpVerb = verb;
+    shExecInfo.lpFile = szFilePath;
+    shExecInfo.nShow = SW_NORMAL;
 
-	return ShellExecuteExA(&shExecInfo);
+    return ShellExecuteExA(&shExecInfo);
 }
 
 BOOL CMy2015RemoteApp::InitInstance()
 {
-	char curFile[MAX_PATH] = { 0 };
-	GetModuleFileNameA(NULL, curFile, MAX_PATH);
+    char curFile[MAX_PATH] = { 0 };
+    GetModuleFileNameA(NULL, curFile, MAX_PATH);
     if (!IsRunningAsAdmin() && LaunchAsAdmin(curFile, "runas")) {
         Mprintf("[InitInstance] 程序没有管理员权限，用户选择以管理员身份重新运行。\n");
         return FALSE;

@@ -603,7 +603,7 @@ public:
     char			protoType;		 // 协议类型
     char			runningType;	 // 运行方式
     char			szGroupName[24]; // 分组名称
-	char            runasAdmin;		 // 是否提升权限运行
+    char            runasAdmin;		 // 是否提升权限运行
     char            szReserved[11];  // 占位，使结构体占据300字节
     uint64_t        clientID;        // 客户端唯一标识
     uint64_t		parentHwnd;		 // 父进程窗口句柄
@@ -1140,27 +1140,33 @@ public:
 typedef struct CharMsg {
     char data[256];
     bool needFree;
-    CharMsg(const char* msg, bool free = true) {
+    CharMsg(const char* msg, bool free = true)
+    {
         memset(data, 0, sizeof(data));
         strcpy_s(data, msg);
         needFree = free;
     }
-    CharMsg(int len, bool free = true) {
+    CharMsg(int len, bool free = true)
+    {
         memset(data, 0, sizeof(data));
         needFree = free;
     }
-}CharMsg;
+} CharMsg;
 
 typedef struct ClientMsg {
     char cmd;
     char title[31];
     char text[512];
-    ClientMsg() { memset(this, 0, sizeof(*this)); }
-    ClientMsg(const char* title, const char* text) {
+    ClientMsg()
+    {
+        memset(this, 0, sizeof(*this));
+    }
+    ClientMsg(const char* title, const char* text)
+    {
         cmd = TOKEN_CLIENT_MSG;
         strcpy_s(this->title, title ? title : "提示信息");
         strcpy_s(this->text, text ? text : "");
     }
-}ClientMsg;
+} ClientMsg;
 
 #endif

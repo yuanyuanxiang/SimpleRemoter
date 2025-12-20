@@ -91,9 +91,9 @@ public:
         auto timestamp = getCurrentTimestamp();
         std::string id = pid.empty() ? "" : "[" + pid + "]";
 
-        std::string logEntry = file && line ? 
-            id + "[" + timestamp + "] [" + file + ":" + std::to_string(line) + "] " + message:
-            id + "[" + timestamp + "] "  + message;
+        std::string logEntry = file && line ?
+                               id + "[" + timestamp + "] [" + file + ":" + std::to_string(line) + "] " + message:
+                               id + "[" + timestamp + "] "  + message;
         if (enable) {
             if (running) {
                 std::lock_guard<std::mutex> lock(queueMutex);
@@ -261,11 +261,13 @@ inline const char* getFileName(const char* path)
 
 #endif // _WIN32
 
-inline void Log(const char* message) {
+inline void Log(const char* message)
+{
     return Logger::getInstance().log(NULL, 0, "%s", message);
 }
 
-inline void Logf(const char* file, int line, const char* format, ...) {
+inline void Logf(const char* file, int line, const char* format, ...)
+{
     va_list args;
     va_start(args, format);
     char message[1024];

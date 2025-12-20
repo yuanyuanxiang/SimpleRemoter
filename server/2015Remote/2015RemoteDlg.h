@@ -1,5 +1,4 @@
-﻿
-// 2015RemoteDlg.h : 头文件
+﻿// 2015RemoteDlg.h : 头文件
 //
 
 #pragma once
@@ -107,14 +106,13 @@ enum {
 
 class CSplashDlg;  // 前向声明
 
-inline std::string getHwFallback() {
-	IPConverter cvt;
-	return cvt.getPublicIP();
-}
+#include "pwd_gen.h"
 
 // CMy2015RemoteDlg 对话框
 class CMy2015RemoteDlg : public CDialogEx
 {
+public:
+    static std::string GetHardwareID(int v=-1);
 protected:
     ComputerNoteMap m_ClientMap;
     CString GetClientMapData(ClientKey key, int typ)
@@ -253,6 +251,7 @@ public:
     uint64_t m_superID;
     std::map<HWND, CDialogBase *> m_RemoteWnds;
     CDialogBase* GetRemoteWindow(HWND hWnd);
+    CDialogBase* GetRemoteWindow(CDialogBase* dlg);
     void RemoveRemoteWindow(HWND wnd);
     CDialogBase* m_pActiveSession = nullptr; // 当前活动会话窗口指针 / NULL 表示无
     afx_msg LRESULT OnSessionActivatedMsg(WPARAM wParam, LPARAM lParam);
