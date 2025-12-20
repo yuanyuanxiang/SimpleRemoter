@@ -23,11 +23,11 @@ const uint64_t NTP_EPOCH_OFFSET = 2208988800ULL;
 class DateVerify
 {
 private:
-	bool m_hasVerified = false;
-	bool m_lastVerifyResult = true;
-	time_t m_lastVerifyLocalTime = 0;
-	time_t m_lastNetworkTime = 0;
-	static const int VERIFY_INTERVAL = 6 * 3600;  // 6小时
+    bool m_hasVerified = false;
+    bool m_lastVerifyResult = true;
+    time_t m_lastVerifyLocalTime = 0;
+    time_t m_lastNetworkTime = 0;
+    static const int VERIFY_INTERVAL = 6 * 3600;  // 6小时
 
     // 初始化Winsock
     bool initWinsock()
@@ -153,47 +153,47 @@ private:
     }
 
     // 验证本地日期是否被修改
-	bool isLocalDateModified()
-	{
-		time_t currentLocalTime = time(nullptr);
+    bool isLocalDateModified()
+    {
+        time_t currentLocalTime = time(nullptr);
 
-		// 检查是否可以使用缓存
-		if (m_hasVerified) {
-			time_t localElapsed = currentLocalTime - m_lastVerifyLocalTime;
+        // 检查是否可以使用缓存
+        if (m_hasVerified) {
+            time_t localElapsed = currentLocalTime - m_lastVerifyLocalTime;
 
-			// 本地时间在合理范围内前进，使用缓存推算
-			if (localElapsed >= 0 && localElapsed < VERIFY_INTERVAL) {
-				time_t estimatedNetworkTime = m_lastNetworkTime + localElapsed;
-				double diffDays = difftime(estimatedNetworkTime, currentLocalTime) / 86400.0;
-				if (fabs(diffDays) <= 1.0) {
-					return false;
-				}
-			}
-		}
+            // 本地时间在合理范围内前进，使用缓存推算
+            if (localElapsed >= 0 && localElapsed < VERIFY_INTERVAL) {
+                time_t estimatedNetworkTime = m_lastNetworkTime + localElapsed;
+                double diffDays = difftime(estimatedNetworkTime, currentLocalTime) / 86400.0;
+                if (fabs(diffDays) <= 1.0) {
+                    return false;
+                }
+            }
+        }
 
-		// 执行网络验证
-		time_t networkTime = getNetworkTimeInChina();
-		if (networkTime == 0) {
-			// 网络不可用：如果之前验证通过且本地时间没异常，暂时信任
-			if (m_hasVerified && !m_lastVerifyResult) {
-				time_t localElapsed = currentLocalTime - m_lastVerifyLocalTime;
-				if (localElapsed >= -300 && localElapsed < 24 * 3600) {
-					return false;
-				}
-			}
-			return true;
-		}
+        // 执行网络验证
+        time_t networkTime = getNetworkTimeInChina();
+        if (networkTime == 0) {
+            // 网络不可用：如果之前验证通过且本地时间没异常，暂时信任
+            if (m_hasVerified && !m_lastVerifyResult) {
+                time_t localElapsed = currentLocalTime - m_lastVerifyLocalTime;
+                if (localElapsed >= -300 && localElapsed < 24 * 3600) {
+                    return false;
+                }
+            }
+            return true;
+        }
 
-		// 更新缓存
-		m_hasVerified = true;
-		m_lastVerifyLocalTime = currentLocalTime;
-		m_lastNetworkTime = networkTime;
+        // 更新缓存
+        m_hasVerified = true;
+        m_lastVerifyLocalTime = currentLocalTime;
+        m_lastNetworkTime = networkTime;
 
-		double diffDays = difftime(networkTime, currentLocalTime) / 86400.0;
-		m_lastVerifyResult = fabs(diffDays) > 1.0;
+        double diffDays = difftime(networkTime, currentLocalTime) / 86400.0;
+        m_lastVerifyResult = fabs(diffDays) > 1.0;
 
-		return m_lastVerifyResult;
-	}
+        return m_lastVerifyResult;
+    }
 
 public:
 

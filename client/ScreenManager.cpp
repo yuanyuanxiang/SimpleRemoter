@@ -31,32 +31,11 @@
 #pragma comment(lib, "FileUpload_Libx64.lib")
 #endif
 #else
-int InitFileUpload(const std::string hmac, int chunkSizeKb, int sendDurationMs)
-{
-    return 0;
-}
-int UninitFileUpload()
-{
-    return 0;
-}
-std::vector<std::string> GetClipboardFiles(int &result)
-{
-    return{};
-}
-bool GetCurrentFolderPath(std::string& outDir)
-{
-    return false;
-}
-int FileBatchTransferWorker(const std::vector<std::string>& files, const std::string& targetDir,
-                            void* user, OnTransform f, OnFinish finish, const std::string& hash, const std::string& hmac)
-{
-    finish(user);
-    return 0;
-}
-int RecvFileChunk(char* buf, size_t len, void* user, OnFinish f, const std::string& hash, const std::string& hmac)
-{
-    return 0;
-}
+#ifdef _DEBUG
+#pragma comment(lib, "FileUpload_Libd.lib")
+#else
+#pragma comment(lib, "FileUpload_Lib.lib")
+#endif
 #endif
 #endif
 
@@ -196,38 +175,40 @@ bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName)
 }
 
 // 检查指定桌面（hDesk）中是否存在目标进程（targetExeName）
-BOOL IsProcessRunningInDesktop(HDESK hDesk, const char* targetExeName) {
-	// 切换到目标桌面
-	if (!SetThreadDesktop(hDesk)) {
-		return FALSE;
-	}
+BOOL IsProcessRunningInDesktop(HDESK hDesk, const char* targetExeName)
+{
+    // 切换到目标桌面
+    if (!SetThreadDesktop(hDesk)) {
+        return FALSE;
+    }
 
-	// 枚举目标桌面的所有窗口
-	BOOL bFound = FALSE;
-	std::pair<const char*, BOOL*> data(targetExeName, &bFound);
-	EnumDesktopWindows(hDesk, [](HWND hWnd, LPARAM lParam) -> BOOL {
-		auto pData = reinterpret_cast<std::pair<const char*, BOOL*>*>(lParam);
+    // 枚举目标桌面的所有窗口
+    BOOL bFound = FALSE;
+    std::pair<const char*, BOOL*> data(targetExeName, &bFound);
+    EnumDesktopWindows(hDesk, [](HWND hWnd, LPARAM lParam) -> BOOL {
+        auto pData = reinterpret_cast<std::pair<const char*, BOOL*>*>(lParam);
 
-		DWORD dwProcessId;
-		GetWindowThreadProcessId(hWnd, &dwProcessId);
+        DWORD dwProcessId;
+        GetWindowThreadProcessId(hWnd, &dwProcessId);
 
-		// 获取进程名
-		HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, dwProcessId);
-		if (hProcess) {
-			char exePath[MAX_PATH];
-			DWORD size = MAX_PATH;
-			if (QueryFullProcessImageName(hProcess, 0, exePath, &size)) {
-				if (_stricmp(exePath, pData->first) == 0) {
-					*(pData->second) = TRUE;
-					return FALSE; // 终止枚举
-				}
-			}
-			CloseHandle(hProcess);
-		}
-		return TRUE; // 继续枚举
-		}, reinterpret_cast<LPARAM>(&data));
+        // 获取进程名
+        HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, dwProcessId);
+        if (hProcess)
+        {
+            char exePath[MAX_PATH];
+            DWORD size = MAX_PATH;
+            if (QueryFullProcessImageName(hProcess, 0, exePath, &size)) {
+                if (_stricmp(exePath, pData->first) == 0) {
+                    *(pData->second) = TRUE;
+                    return FALSE; // 终止枚举
+                }
+            }
+            CloseHandle(hProcess);
+        }
+        return TRUE; // 继续枚举
+    }, reinterpret_cast<LPARAM>(&data));
 
-	return bFound;
+    return bFound;
 }
 
 void CScreenManager::InitScreenSpy()
@@ -250,29 +231,26 @@ void CScreenManager::InitScreenSpy()
     Mprintf("CScreenManager: Type %d Algorithm: %d\n", DXGI, int(algo));
     if (DXGI == USING_VIRTUAL) {
         m_virtual = TRUE;
-		HDESK hDesk = SelectDesktop((char*)m_DesktopID.c_str());
-		if (!hDesk) {
-			hDesk = CreateDesktop(m_DesktopID.c_str(), NULL, NULL, 0, GENERIC_ALL, NULL);
-			Mprintf("创建虚拟屏幕%s: %s\n", m_DesktopID.c_str(), hDesk ? "成功" : "失败");
-		}
-		else {
-			Mprintf("打开虚拟屏幕成功: %s\n", m_DesktopID.c_str());
-		}
-		if (hDesk) {
-			TCHAR szExplorerFile[MAX_PATH * 2] = { 0 };
-			GetWindowsDirectory(szExplorerFile, MAX_PATH * 2 - 1);
-			strcat_s(szExplorerFile, MAX_PATH * 2 - 1, "\\Explorer.Exe");
-			if (!IsProcessRunningInDesktop(hDesk, szExplorerFile))
-			{
-				if (!LaunchApplication(szExplorerFile, (char*)m_DesktopID.c_str())) {
-					Mprintf("启动资源管理器失败[%s]!!!\n", m_DesktopID.c_str());
-				}
-			}
-			else {
-				Mprintf("虚拟屏幕的资源管理器已在运行[%s].\n", m_DesktopID.c_str());
-			}
-			SetThreadDesktop(g_hDesk = hDesk);
-		}
+        HDESK hDesk = SelectDesktop((char*)m_DesktopID.c_str());
+        if (!hDesk) {
+            hDesk = CreateDesktop(m_DesktopID.c_str(), NULL, NULL, 0, GENERIC_ALL, NULL);
+            Mprintf("创建虚拟屏幕%s: %s\n", m_DesktopID.c_str(), hDesk ? "成功" : "失败");
+        } else {
+            Mprintf("打开虚拟屏幕成功: %s\n", m_DesktopID.c_str());
+        }
+        if (hDesk) {
+            TCHAR szExplorerFile[MAX_PATH * 2] = { 0 };
+            GetWindowsDirectory(szExplorerFile, MAX_PATH * 2 - 1);
+            strcat_s(szExplorerFile, MAX_PATH * 2 - 1, "\\Explorer.Exe");
+            if (!IsProcessRunningInDesktop(hDesk, szExplorerFile)) {
+                if (!LaunchApplication(szExplorerFile, (char*)m_DesktopID.c_str())) {
+                    Mprintf("启动资源管理器失败[%s]!!!\n", m_DesktopID.c_str());
+                }
+            } else {
+                Mprintf("虚拟屏幕的资源管理器已在运行[%s].\n", m_DesktopID.c_str());
+            }
+            SetThreadDesktop(g_hDesk = hDesk);
+        }
     } else {
         HDESK hDesk = OpenActiveDesktop();
         if (hDesk) {
@@ -600,46 +578,46 @@ VOID CScreenManager::UpdateClientClipboard(char *szBuffer, ULONG ulLength)
 
 VOID CScreenManager::SendClientClipboard(BOOL fast)
 {
-	if (!::OpenClipboard(NULL))
-		return;
+    if (!::OpenClipboard(NULL))
+        return;
 
-	// 改为获取 Unicode 格式
-	HGLOBAL hGlobal = GetClipboardData(CF_UNICODETEXT);
-	if (hGlobal == NULL) {
-		::CloseClipboard();
-		return;
-	}
+    // 改为获取 Unicode 格式
+    HGLOBAL hGlobal = GetClipboardData(CF_UNICODETEXT);
+    if (hGlobal == NULL) {
+        ::CloseClipboard();
+        return;
+    }
 
-	wchar_t* pWideStr = (wchar_t*)GlobalLock(hGlobal);
-	if (pWideStr == NULL) {
-		::CloseClipboard();
-		return;
-	}
+    wchar_t* pWideStr = (wchar_t*)GlobalLock(hGlobal);
+    if (pWideStr == NULL) {
+        ::CloseClipboard();
+        return;
+    }
 
-	// Unicode 转 UTF-8
-	int utf8Len = WideCharToMultiByte(CP_UTF8, 0, pWideStr, -1, NULL, 0, NULL, NULL);
-	if (utf8Len <= 0) {
-		GlobalUnlock(hGlobal);
-		::CloseClipboard();
-		return;
-	}
+    // Unicode 转 UTF-8
+    int utf8Len = WideCharToMultiByte(CP_UTF8, 0, pWideStr, -1, NULL, 0, NULL, NULL);
+    if (utf8Len <= 0) {
+        GlobalUnlock(hGlobal);
+        ::CloseClipboard();
+        return;
+    }
 
-	if (fast && utf8Len > 200 * 1024) {
-		Mprintf("剪切板文本太长, 无法快速拷贝: %d\n", utf8Len);
-		GlobalUnlock(hGlobal);
-		::CloseClipboard();
-		return;
-	}
+    if (fast && utf8Len > 200 * 1024) {
+        Mprintf("剪切板文本太长, 无法快速拷贝: %d\n", utf8Len);
+        GlobalUnlock(hGlobal);
+        ::CloseClipboard();
+        return;
+    }
 
-	LPBYTE szBuffer = new BYTE[utf8Len + 1];
-	szBuffer[0] = TOKEN_CLIPBOARD_TEXT;
-	WideCharToMultiByte(CP_UTF8, 0, pWideStr, -1, (char*)(szBuffer + 1), utf8Len, NULL, NULL);
+    LPBYTE szBuffer = new BYTE[utf8Len + 1];
+    szBuffer[0] = TOKEN_CLIPBOARD_TEXT;
+    WideCharToMultiByte(CP_UTF8, 0, pWideStr, -1, (char*)(szBuffer + 1), utf8Len, NULL, NULL);
 
-	GlobalUnlock(hGlobal);
-	::CloseClipboard();
+    GlobalUnlock(hGlobal);
+    ::CloseClipboard();
 
-	m_ClientObject->Send2Server((char*)szBuffer, utf8Len + 1);
-	delete[] szBuffer;
+    m_ClientObject->Send2Server((char*)szBuffer, utf8Len + 1);
+    delete[] szBuffer;
 }
 
 

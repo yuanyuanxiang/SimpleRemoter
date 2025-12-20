@@ -40,7 +40,8 @@ public:
         SAFE_DELETE_ARRAY(m_RectBuffer);
     }
 
-    virtual BOOL UsingDXGI() const {
+    virtual BOOL UsingDXGI() const
+    {
         return TRUE;
     }
 

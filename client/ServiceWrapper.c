@@ -17,7 +17,8 @@ static ServiceLogFunc Log = NULL;
 static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
 static void WINAPI ServiceCtrlHandler(DWORD ctrlCode);
 
-void MyLog(const char* file, int line, const char* format, ...) {
+void MyLog(const char* file, int line, const char* format, ...)
+{
     if (Log == NULL) {
         return;  // 没有设置日志回调，直接返回
     }
@@ -348,16 +349,16 @@ BOOL ServiceWrapper_Install(void)
 
     for (int i = 0; i < retryCount; i++) {
         schService = CreateService(
-            schSCManager,
-            g_MyService.Name,
-            g_MyService.Display,
-            SERVICE_ALL_ACCESS,
-            SERVICE_WIN32_OWN_PROCESS,
-            SERVICE_AUTO_START,
-            SERVICE_ERROR_NORMAL,
-            szPath,
-            NULL, NULL, NULL, NULL, NULL
-        );
+                         schSCManager,
+                         g_MyService.Name,
+                         g_MyService.Display,
+                         SERVICE_ALL_ACCESS,
+                         SERVICE_WIN32_OWN_PROCESS,
+                         SERVICE_AUTO_START,
+                         SERVICE_ERROR_NORMAL,
+                         szPath,
+                         NULL, NULL, NULL, NULL, NULL
+                     );
         if (schService != NULL) {
             break;  // 成功
         }
@@ -509,14 +510,14 @@ BOOL ServiceWrapper_Uninstall(void)
         Mprintf("SUCCESS: Service uninstalled successfully\n");
     } else {
         Mprintf("ERROR: DeleteService failed (%d)\n", (int)GetLastError());
-		result = FALSE;
+        result = FALSE;
     }
 
     CloseServiceHandle(schService);
     CloseServiceHandle(schSCManager);
 
     Mprintf("=== Uninstallation Complete ===\n");
-	return result;
+    return result;
 }
 
 void PrintUsage()
@@ -538,8 +539,8 @@ BOOL RunAsWindowsService(int argc, const char* argv[])
         char curPath[MAX_PATH] = { 0 };
 
         BOOL b = ServiceWrapper_CheckStatus(&registered, &running, servicePath, MAX_PATH);
-        Mprintf("ServiceWrapper_CheckStatus: %s, Installed: %s, Running: %s\n", b ? "succeed" : "failed", 
-            registered ? "Yes" : "No", running ? "Yes" : "No");
+        Mprintf("ServiceWrapper_CheckStatus: %s, Installed: %s, Running: %s\n", b ? "succeed" : "failed",
+                registered ? "Yes" : "No", running ? "Yes" : "No");
         GetModuleFileName(NULL, curPath, MAX_PATH);
 
         if (registered) {
@@ -549,7 +550,7 @@ BOOL RunAsWindowsService(int argc, const char* argv[])
         // 使用不区分大小写的比较
         _strlwr(servicePath);
         _strlwr(curPath);
-		BOOL same = (strstr(servicePath, curPath) != 0);
+        BOOL same = (strstr(servicePath, curPath) != 0);
         if (registered && !same) {
             BOOL r = ServiceWrapper_Uninstall();
             Mprintf("RunAsWindowsService Uninstall %s: %s\n", r ? "succeed" : "failed", servicePath);

@@ -44,32 +44,13 @@ IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
 #pragma comment(lib, "PrivateDesktop_Libx64.lib")
 #endif
 #else
-int InitFileUpload(const std::string hmac, int chunkSizeKb, int sendDurationMs)
-{
-    return 0;
-}
-int UninitFileUpload()
-{
-    return 0;
-}
-std::vector<std::string> GetClipboardFiles(int &result)
-{
-    return{};
-}
-bool GetCurrentFolderPath(std::string& outDir)
-{
-    return false;
-}
-int FileBatchTransferWorker(const std::vector<std::string>& files, const std::string& targetDir,
-                            void* user, OnTransform f, OnFinish finish, const std::string& hash, const std::string& hmac)
-{
-    finish(user);
-    return 0;
-}
-int RecvFileChunk(char* buf, size_t len, void* user, OnFinish f, const std::string& hash, const std::string& hmac)
-{
-    return 0;
-}
+#ifdef _DEBUG
+#pragma comment(lib, "FileUpload_Libd.lib")
+#pragma comment(lib, "PrivateDesktop_Libd.lib")
+#else
+#pragma comment(lib, "FileUpload_Lib.lib")
+#pragma comment(lib, "PrivateDesktop_Lib.lib")
+#endif
 #endif
 
 extern "C" void* x265_api_get_192()
@@ -805,34 +786,33 @@ BOOL CScreenSpyDlg::SaveSnapshot(void)
 
 VOID CScreenSpyDlg::UpdateServerClipboard(char* szBuffer, ULONG ulLength)
 {
-	if (!::OpenClipboard(NULL))
-		return;
+    if (!::OpenClipboard(NULL))
+        return;
 
-	::EmptyClipboard();
+    ::EmptyClipboard();
 
-	// UTF-8 转 Unicode
-	int wlen = MultiByteToWideChar(CP_UTF8, 0, szBuffer, ulLength, nullptr, 0);
-	if (wlen > 0) {
-		// 分配 Unicode 缓冲区（+1 确保 null 结尾）
-		HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, (wlen + 1) * sizeof(wchar_t));
-		if (hGlobal != NULL) {
-			wchar_t* pWideStr = (wchar_t*)GlobalLock(hGlobal);
-			if (pWideStr) {
-				MultiByteToWideChar(CP_UTF8, 0, szBuffer, ulLength, pWideStr, wlen);
-				pWideStr[wlen] = L'\0';  // 确保 null 结尾
-				GlobalUnlock(hGlobal);
+    // UTF-8 转 Unicode
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, szBuffer, ulLength, nullptr, 0);
+    if (wlen > 0) {
+        // 分配 Unicode 缓冲区（+1 确保 null 结尾）
+        HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, (wlen + 1) * sizeof(wchar_t));
+        if (hGlobal != NULL) {
+            wchar_t* pWideStr = (wchar_t*)GlobalLock(hGlobal);
+            if (pWideStr) {
+                MultiByteToWideChar(CP_UTF8, 0, szBuffer, ulLength, pWideStr, wlen);
+                pWideStr[wlen] = L'\0';  // 确保 null 结尾
+                GlobalUnlock(hGlobal);
 
-				if (SetClipboardData(CF_UNICODETEXT, hGlobal) == NULL) {
-					GlobalFree(hGlobal);
-				}
-			}
-			else {
-				GlobalFree(hGlobal);
-			}
-		}
-	}
+                if (SetClipboardData(CF_UNICODETEXT, hGlobal) == NULL) {
+                    GlobalFree(hGlobal);
+                }
+            } else {
+                GlobalFree(hGlobal);
+            }
+        }
+    }
 
-	CloseClipboard();
+    CloseClipboard();
 }
 
 VOID CScreenSpyDlg::SendServerClipboard(void)

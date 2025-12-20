@@ -65,7 +65,8 @@ public:
     {
         m_bReady = ready;
     }
-    virtual uint64_t GetClientID() const {
+    virtual uint64_t GetClientID() const
+    {
         return 0;
     }
 };

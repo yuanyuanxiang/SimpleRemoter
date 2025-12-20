@@ -25,7 +25,8 @@ public:
     {
         for (size_t i = 0; i < numThreads; ++i) {
             workers.emplace_back([this] {
-                while (true) {
+                while (true)
+                {
                     std::function<void()> task;
                     {
                         std::unique_lock<std::mutex> lock(this->queueMutex);
@@ -239,12 +240,13 @@ public:
     }
 
 public:
-    virtual BOOL UsingDXGI() const {
+    virtual BOOL UsingDXGI() const
+    {
         return FALSE;
     }
     //*************************************** 图像差异算法（串行） *************************************
     ULONG CompareBitmapDXGI(LPBYTE CompareSourData, LPBYTE CompareDestData, LPBYTE szBuffer,
-        DWORD ulCompareLength, BYTE algo, int startPostion = 0)
+                            DWORD ulCompareLength, BYTE algo, int startPostion = 0)
     {
         // Windows规定一个扫描行所占的字节数必须是4的倍数, 所以用DWORD比较
         LPDWORD	p1 = (LPDWORD)CompareDestData, p2 = (LPDWORD)CompareSourData;
@@ -267,8 +269,7 @@ public:
             if (channel != 1) {
                 memcpy(p, pos2, ulCount);
                 p += ulCount;
-            }
-            else {
+            } else {
                 for (LPBYTE end = p + ulCount / ratio; p < end; p += channel, ++pos2) {
                     LPBYTE src = (LPBYTE)pos2;
                     *p = (306 * src[2] + 601 * src[0] + 117 * src[1]) >> 10;
@@ -283,7 +284,7 @@ public:
     virtual ULONG CompareBitmap(LPBYTE CompareSourData, LPBYTE CompareDestData, LPBYTE szBuffer,
                                 DWORD ulCompareLength, BYTE algo, int startPostion = 0)
     {
-        if (UsingDXGI()) 
+        if (UsingDXGI())
             return CompareBitmapDXGI(CompareSourData, CompareDestData, szBuffer, ulCompareLength, algo, startPostion);
 
         LPBYTE p = szBuffer;
@@ -458,15 +459,18 @@ public:
         return offset;  // 返回缓冲区的大小
     }
 
-    virtual int GetFrameID() const {
+    virtual int GetFrameID() const
+    {
         return m_FrameID;
     }
 
-    virtual LPBYTE GetFirstBuffer() const {
+    virtual LPBYTE GetFirstBuffer() const
+    {
         return m_FirstBuffer;
     }
 
-    virtual int GetBMPSize() const {
+    virtual int GetBMPSize() const
+    {
         assert(m_BitmapInfor_Full);
         return m_BitmapInfor_Full->bmiHeader.biSizeImage;
     }

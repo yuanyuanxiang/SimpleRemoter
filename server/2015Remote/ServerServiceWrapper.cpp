@@ -462,7 +462,7 @@ BOOL ServerService_Uninstall(void)
         }
     }
 
-	BOOL r = FALSE;
+    BOOL r = FALSE;
     // 删除服务
     Mprintf("Deleting service...\n");
     if (DeleteService(schService)) {

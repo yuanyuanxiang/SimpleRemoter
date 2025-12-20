@@ -423,12 +423,12 @@ BOOL CBuildDlg::OnInitDialog()
     m_OtherItem.ShowWindow(SW_HIDE);
 
     m_runasAdmin = FALSE;
-	m_MainMenu.LoadMenuA(IDR_MENU_BUILD);
-	CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
+    m_MainMenu.LoadMenuA(IDR_MENU_BUILD);
+    CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
     SubMenu->CheckMenuItem(ID_MENU_ENCRYPT_IP, MF_CHECKED);
     SubMenu->CheckMenuItem(ID_CLIENT_RUNAS_ADMIN, MF_UNCHECKED);
-	::SetMenu(this->GetSafeHwnd(), m_MainMenu.GetSafeHmenu()); // 为窗口设置菜单
-	::DrawMenuBar(this->GetSafeHwnd());                        // 显示菜单
+    ::SetMenu(this->GetSafeHwnd(), m_MainMenu.GetSafeHmenu()); // 为窗口设置菜单
+    ::DrawMenuBar(this->GetSafeHwnd());                        // 显示菜单
 
     return TRUE;  // return TRUE unless you set the focus to a control
     // 异常: OCX 属性页应返回 FALSE
@@ -502,14 +502,14 @@ void CBuildDlg::OnHelpFindden()
 void CBuildDlg::OnMenuEncryptIp()
 {
     m_strEncryptIP = m_strEncryptIP == "是" ? "否" : "是";
-	CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
-	SubMenu->CheckMenuItem(ID_MENU_ENCRYPT_IP, m_strEncryptIP == "是" ? MF_CHECKED : MF_UNCHECKED);
+    CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
+    SubMenu->CheckMenuItem(ID_MENU_ENCRYPT_IP, m_strEncryptIP == "是" ? MF_CHECKED : MF_UNCHECKED);
 }
 
 
 void CBuildDlg::OnClientRunasAdmin()
 {
     m_runasAdmin = !m_runasAdmin;
-	CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
-	SubMenu->CheckMenuItem(ID_CLIENT_RUNAS_ADMIN, m_runasAdmin ? MF_CHECKED : MF_UNCHECKED);
+    CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
+    SubMenu->CheckMenuItem(ID_CLIENT_RUNAS_ADMIN, m_runasAdmin ? MF_CHECKED : MF_UNCHECKED);
 }

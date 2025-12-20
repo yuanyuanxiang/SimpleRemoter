@@ -89,6 +89,8 @@ CPasswordDlg::CPasswordDlg(CWnd* pParent /*=nullptr*/)
     : CDialogEx(IDD_DIALOG_PASSWORD, pParent)
     , m_sDeviceID(_T(""))
     , m_sPassword(_T(""))
+    , m_sPasscodeHmac(THIS_CFG.GetStr("settings", "PwdHmac", "").c_str())
+    , m_nBindType(THIS_CFG.GetInt("settings", "BindType", 0))
 {
     m_hIcon = nullptr;
 }
@@ -106,10 +108,15 @@ void CPasswordDlg::DoDataExchange(CDataExchange* pDX)
     DDV_MaxChars(pDX, m_sDeviceID, 19);
     DDX_Text(pDX, IDC_EDIT_DEVICEPWD, m_sPassword);
     DDV_MaxChars(pDX, m_sPassword, 42);
+    DDX_Control(pDX, IDC_COMBO_BIND, m_ComboBinding);
+    DDX_Control(pDX, IDC_EDIT_PASSCODE_HMAC, m_EditPasscodeHmac);
+    DDX_Text(pDX, IDC_EDIT_PASSCODE_HMAC, m_sPasscodeHmac);
+    DDX_CBIndex(pDX, IDC_COMBO_BIND, m_nBindType);
 }
 
 
 BEGIN_MESSAGE_MAP(CPasswordDlg, CDialogEx)
+    ON_CBN_SELCHANGE(IDC_COMBO_BIND, &CPasswordDlg::OnCbnSelchangeComboBind)
 END_MESSAGE_MAP()
 
 
@@ -121,10 +128,32 @@ BOOL CPasswordDlg::OnInitDialog()
     m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_PASSWORD));
     SetIcon(m_hIcon, FALSE);
 
+    m_ComboBinding.InsertString(0, "计算机硬件信息");
+    m_ComboBinding.InsertString(1, "主控IP或域名信息");
+    m_ComboBinding.SetCurSel(m_nBindType);
+
     return TRUE;  // return TRUE unless you set the focus to a control
     // 异常: OCX 属性页应返回 FALSE
 }
 
+void CPasswordDlg::OnCbnSelchangeComboBind()
+{
+    m_nBindType = m_ComboBinding.GetCurSel();
+    std::string hardwareID = CMy2015RemoteDlg::GetHardwareID(m_nBindType);
+    m_sDeviceID = getFixedLengthID(hashSHA256(hardwareID)).c_str();
+    m_EditDeviceID.SetWindowTextA(m_sDeviceID);
+}
+
+void CPasswordDlg::OnOK()
+{
+    UpdateData(TRUE);
+    if (!m_sDeviceID.IsEmpty()) {
+        THIS_CFG.SetInt("settings", "BindType", m_nBindType);
+        THIS_CFG.SetStr("settings", "PwdHmac", m_sPasscodeHmac.GetString());
+    }
+
+    CDialogEx::OnOK();
+}
 
 // CPasswordDlg 消息处理程序
 
@@ -197,7 +226,7 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
                            getFixedLengthID(finalKey);
     m_sPassword = fixedKey.c_str();
     m_EditPassword.SetWindowTextA(fixedKey.c_str());
-    std::string hardwareID = getHardwareID(getHwFallback);
+    std::string hardwareID = CMy2015RemoteDlg::GetHardwareID();
     std::string hashedID = hashSHA256(hardwareID);
     std::string deviceID = getFixedLengthID(hashedID);
     std::string hmac = genHMAC(pwdHash, m_sUserPwd.GetString());

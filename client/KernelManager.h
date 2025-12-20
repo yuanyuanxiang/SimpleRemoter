@@ -202,7 +202,8 @@ public:
         CloseHandle(hProcessSnap);
         return false;
     }
-    virtual uint64_t GetClientID() const override {
+    virtual uint64_t GetClientID() const override
+    {
         return m_conn->clientID;
     }
 };

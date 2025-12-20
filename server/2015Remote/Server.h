@@ -484,7 +484,8 @@ public:
         server = svr;
         OnlineTime = time(0);
     }
-    uint64_t GetAliveTime()const {
+    uint64_t GetAliveTime()const
+    {
         return time(0) - OnlineTime;
     }
     Server* GetServer()
@@ -520,7 +521,8 @@ public:
     {
         return PeerName;
     }
-    void SetPeerName(const std::string& peer) {
+    void SetPeerName(const std::string& peer)
+    {
         PeerName = peer;
     }
     virtual int GetPort() const

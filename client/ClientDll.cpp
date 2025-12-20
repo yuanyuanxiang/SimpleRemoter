@@ -193,7 +193,7 @@ int main(int argc, const char *argv[])
         BOOL s = self_del();
         if (!IsDebug) {
             Mprintf("结束运行.\n");
-			Sleep(1000);
+            Sleep(1000);
             return r;
         }
     }
