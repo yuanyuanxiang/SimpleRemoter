@@ -519,6 +519,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_MESSAGE(WM_UPXTASKRESULT, UPXProcResult)
     ON_MESSAGE(WM_PASSWORDCHECK, OnPasswordCheck)
     ON_MESSAGE(WM_SHOWMESSAGE, OnShowMessage)
+    ON_MESSAGE(WM_SHOWNOTIFY, OnShowNotify)
     ON_MESSAGE(WM_SHOWERRORMSG, OnShowErrMessage)
     ON_MESSAGE(WM_INJECT_SHELLCODE, InjectShellcode)
     ON_MESSAGE(WM_ANTI_BLACKSCREEN, AntiBlackScreen)
@@ -816,31 +817,35 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     std::string tip = flag ? " (" + v[RES_CLIENT_PUBIP] + ") " : "";
     ShowMessage("操作成功",strIP + tip.c_str() + "主机上线[" + loc + "]");
 
-    bool needNotify = false;
-    NOTIFYICONDATA nidCopy = {};
-    CString infoTitle;
-    CString infoText;
-    if (m_Nid.cbSize == sizeof(NOTIFYICONDATA) && ::IsWindow(m_Nid.hWnd)) {
-        nidCopy = m_Nid; // 复制结构
-        nidCopy.cbSize = sizeof(NOTIFYICONDATA);
-        nidCopy.uFlags |= NIF_INFO;
-        infoTitle = _T("主机上线");
-        infoText = strIP + CString(tip.c_str()) + _T(" 主机上线 [") + loc + _T("]");
-        needNotify = true;
-    }
+	CharMsg *title =  new CharMsg("主机上线");
+	CharMsg *text = new CharMsg(strIP + CString(tip.c_str()) + _T(" 主机上线 [") + loc + _T("]"));
     LeaveCriticalSection(&m_cs);
     Mprintf("主机[%s]上线: %s\n", v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(),
             std::to_string(id).c_str());
-    // 在临界区外填充字符串并调用 Shell_NotifyIcon（避免长时间持有 m_cs）
-    if (needNotify) {
-        CStringA titleA(infoTitle);
-        CStringA textA(infoText);
-        lstrcpynA(nidCopy.szInfoTitle, titleA.GetString(), sizeof(nidCopy.szInfoTitle));
-        lstrcpynA(nidCopy.szInfo, textA.GetString(), sizeof(nidCopy.szInfo));
-        nidCopy.uTimeout = 5000;
+    SendMasterSettings(ContextObject);
+    if (m_needNotify)
+        PostMessageA(WM_SHOWNOTIFY, WPARAM(title), LPARAM(text));
+    else {
+        delete title;
+        delete text;
+    }
+}
+
+LRESULT CMy2015RemoteDlg::OnShowNotify(WPARAM wParam, LPARAM lParam) {
+    CharMsg* title = (CharMsg*)wParam, * text = (CharMsg*)lParam;
+
+    if (::IsWindow(m_Nid.hWnd)) {
+        NOTIFYICONDATA nidCopy = m_Nid;
+        nidCopy.cbSize = sizeof(NOTIFYICONDATA);
+        nidCopy.uFlags |= NIF_INFO;
+        lstrcpynA(nidCopy.szInfoTitle, title->data, sizeof(nidCopy.szInfoTitle));
+        lstrcpynA(nidCopy.szInfo, text->data, sizeof(nidCopy.szInfo));
+        nidCopy.uTimeout = 3000;
         Shell_NotifyIcon(NIM_MODIFY, &nidCopy);
     }
-    SendMasterSettings(ContextObject);
+	if (title->needFree) delete title;
+	if (text->needFree) delete text;
+    return S_OK;
 }
 
 LRESULT CMy2015RemoteDlg::OnShowMessage(WPARAM wParam, LPARAM lParam)
@@ -1244,8 +1249,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     m_settings.EnableLog = THIS_CFG.GetInt("settings", "EnableLog", 0);
     CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
     SubMenu->CheckMenuItem(ID_PARAM_KBLOGGER, m_settings.EnableKBLogger ? MF_CHECKED : MF_UNCHECKED);
-    BOOL notify = THIS_CFG.GetInt("settings", "LoginNotify", 0);
-    SubMenu->CheckMenuItem(ID_PARAM_LOGIN_NOTIFY, notify ? MF_CHECKED : MF_UNCHECKED);
+    m_needNotify = THIS_CFG.GetInt("settings", "LoginNotify", 0);
+    SubMenu->CheckMenuItem(ID_PARAM_LOGIN_NOTIFY, m_needNotify ? MF_CHECKED : MF_UNCHECKED);
     SubMenu->CheckMenuItem(ID_PARAM_ENABLE_LOG, m_settings.EnableLog ? MF_CHECKED : MF_UNCHECKED);
     std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "摄像头"}, {SOFTWARE_TELEGRAM, "电报" }};
     std::string str = myMap[n];
@@ -4331,11 +4336,10 @@ void CMy2015RemoteDlg::OnOnlineInjNotepad()
 
 void CMy2015RemoteDlg::OnParamLoginNotify()
 {
-    static BOOL notify = THIS_CFG.GetInt("settings", "LoginNotify", 0);
-    notify = !notify;
-    THIS_CFG.SetInt("settings", "LoginNotify", notify);
+    m_needNotify = !m_needNotify;
+    THIS_CFG.SetInt("settings", "LoginNotify", m_needNotify);
     CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
-    SubMenu->CheckMenuItem(ID_PARAM_LOGIN_NOTIFY, notify ? MF_CHECKED : MF_UNCHECKED);
+    SubMenu->CheckMenuItem(ID_PARAM_LOGIN_NOTIFY, m_needNotify ? MF_CHECKED : MF_UNCHECKED);
 }
 
 

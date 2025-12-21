@@ -163,6 +163,7 @@ protected:
     HICON m_hIcon;
     void* m_tinyDLL;
     std::string m_superPass;
+    BOOL m_needNotify = FALSE;
 
     // 生成的消息映射函数
     virtual BOOL OnInitDialog();
@@ -344,6 +345,7 @@ public:
     afx_msg void OnToolRequestAuth();
     afx_msg LRESULT OnPasswordCheck(WPARAM wParam, LPARAM lParam);
     afx_msg void OnToolInputPassword();
+    afx_msg LRESULT OnShowNotify(WPARAM wParam, LPARAM lParam);
     afx_msg LRESULT OnShowMessage(WPARAM wParam, LPARAM lParam);
     afx_msg void OnToolGenShellcode();
     afx_msg void OnOnlineAssignTo();
