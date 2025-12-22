@@ -164,6 +164,7 @@ protected:
     void* m_tinyDLL;
     std::string m_superPass;
     BOOL m_needNotify = FALSE;
+    DWORD g_StartTick;
 
     // 生成的消息映射函数
     virtual BOOL OnInitDialog();

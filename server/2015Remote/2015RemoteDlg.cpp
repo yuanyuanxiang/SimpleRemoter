@@ -53,6 +53,7 @@
 #define UM_ICONNOTIFY WM_USER+100
 #define TIMER_CHECK 1
 #define TIMER_CLOSEWND 2
+#define TIMER_CLEAR_BALLOON 3
 #define TODO_NOTICE MessageBoxA("This feature has not been implemented!\nPlease contact: 962914132@qq.com", "提示", MB_ICONINFORMATION);
 #define TINY_DLL_NAME "TinyRun.dll"
 #define FRPC_DLL_NAME "Frpc.dll"
@@ -414,6 +415,7 @@ std::string CMy2015RemoteDlg::GetHardwareID(int v)
 
 CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::IDD, pParent)
 {
+    g_StartTick = GetTickCount();
     auto s = GetMasterHash();
     char buf[17] = { 0 };
     std::strncpy(buf, s.c_str(), 16);
@@ -666,6 +668,7 @@ VOID CMy2015RemoteDlg::CreatStatusBar()
 
 VOID CMy2015RemoteDlg::CreateNotifyBar()
 {
+    m_Nid.uVersion = NOTIFYICON_VERSION_4;
     m_Nid.cbSize = sizeof(NOTIFYICONDATA);     //大小赋值
     m_Nid.hWnd = m_hWnd;           //父窗口    是被定义在父类CWnd类中
     m_Nid.uID = IDR_MAINFRAME;     //icon  ID
@@ -846,7 +849,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     Mprintf("主机[%s]上线: %s\n", v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(),
             std::to_string(id).c_str());
     SendMasterSettings(ContextObject);
-    if (m_needNotify)
+    if (m_needNotify && (GetTickCount() - g_StartTick > 30*1000))
         PostMessageA(WM_SHOWNOTIFY, WPARAM(title), LPARAM(text));
     else {
         delete title;
@@ -861,10 +864,12 @@ LRESULT CMy2015RemoteDlg::OnShowNotify(WPARAM wParam, LPARAM lParam) {
         NOTIFYICONDATA nidCopy = m_Nid;
         nidCopy.cbSize = sizeof(NOTIFYICONDATA);
         nidCopy.uFlags |= NIF_INFO;
+        nidCopy.dwInfoFlags = NIIF_INFO;
         lstrcpynA(nidCopy.szInfoTitle, title->data, sizeof(nidCopy.szInfoTitle));
         lstrcpynA(nidCopy.szInfo, text->data, sizeof(nidCopy.szInfo));
         nidCopy.uTimeout = 3000;
         Shell_NotifyIcon(NIM_MODIFY, &nidCopy);
+        SetTimer(TIMER_CLEAR_BALLOON, nidCopy.uTimeout, nullptr);
     }
 	if (title->needFree) delete title;
 	if (text->needFree) delete text;
@@ -1559,6 +1564,18 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
     }
     if (nIDEvent == TIMER_CLOSEWND) {
         DeletePopupWindow();
+    }
+    if (nIDEvent == TIMER_CLEAR_BALLOON)
+    {
+        KillTimer(TIMER_CLEAR_BALLOON);
+
+        // 清除气球通知
+        NOTIFYICONDATA nid = m_Nid;
+        nid.cbSize = sizeof(NOTIFYICONDATA);
+        nid.uFlags = NIF_INFO;
+        nid.szInfo[0] = '\0';
+        nid.szInfoTitle[0] = '\0';
+        Shell_NotifyIcon(NIM_MODIFY, &nid);
     }
 
     CDialogEx::OnTimer(nIDEvent);
