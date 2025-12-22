@@ -4192,7 +4192,33 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
         do {
             static CDialogBase* operateWnd = nullptr;
             KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
+			if (pKey->vkCode == VK_LWIN || pKey->vkCode == VK_RWIN) {
+                HWND hFore = ::GetForegroundWindow();
+				auto screen = (CScreenSpyDlg*)g_2015RemoteDlg->GetRemoteWindow(hFore);
+                if (screen) {
+					MSG msg = { 0 };
+					msg.hwnd = hFore;
+					msg.message = (UINT)wParam;
+					msg.wParam = pKey->vkCode;
+					msg.lParam = (pKey->scanCode << 16) | 1;
 
+					if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
+						msg.lParam |= (1 << 31) | (1 << 30);
+					}
+
+					// 扩展键标志 (bit 24)
+					if (pKey->flags & LLKHF_EXTENDED) {
+						msg.lParam |= (1 << 24);
+					}
+
+					msg.time = pKey->time;
+					msg.pt.x = 0;
+					msg.pt.y = 0;
+                    screen->SendScaledMouseMessage(&msg, false);
+                }
+				// 返回 1 阻止本地系统处理
+				return 1;
+			}
             // 只在按下时处理
             if (wParam == WM_KEYDOWN) {
                 // 检测 Ctrl+C / Ctrl+X
