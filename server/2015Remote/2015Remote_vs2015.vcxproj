@@ -319,6 +319,7 @@
     <ClInclude Include="sys\ServiceInfoDlg.h" />
     <ClInclude Include="TalkDlg.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="ToolbarDlg.h" />
     <ClInclude Include="TrueColorToolBar.h" />
     <ClInclude Include="VideoDlg.h" />
     <ClInclude Include="zconf.h" />
@@ -406,6 +407,7 @@
     <ClCompile Include="sys\MachineDlg.cpp" />
     <ClCompile Include="sys\ServiceInfoDlg.cpp" />
     <ClCompile Include="TalkDlg.cpp" />
+    <ClCompile Include="ToolbarDlg.cpp" />
     <ClCompile Include="TrueColorToolBar.cpp" />
     <ClCompile Include="VideoDlg.cpp" />
     <ClCompile Include="ServerServiceWrapper.cpp" />

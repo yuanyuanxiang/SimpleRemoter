@@ -2,6 +2,7 @@
 #include "IOCPServer.h"
 #include "..\..\client\CursorInfo.h"
 #include "VideoDlg.h"
+#include "ToolbarDlg.h"
 
 extern "C"
 {
@@ -42,6 +43,7 @@ extern "C"
 class CScreenSpyDlg : public DialogBase
 {
     DECLARE_DYNAMIC(CScreenSpyDlg)
+	CToolbarDlg* m_pToolbar = nullptr;
 
 public:
     CScreenSpyDlg(CWnd* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);
@@ -120,6 +122,9 @@ public:
     afx_msg void OnKillFocus(CWnd* pNewWnd);
     afx_msg void OnSize(UINT nType, int cx, int cy);
     afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
+	afx_msg void OnExitFullscreen() {
+        LeaveFullScreen();
+	}
 
 protected:
     virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö

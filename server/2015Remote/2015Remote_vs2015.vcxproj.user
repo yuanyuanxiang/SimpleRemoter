@@ -22,5 +22,6 @@
   </PropertyGroup>
   <PropertyGroup>
     <RESOURCE_FILE>2015Remote.rc</RESOURCE_FILE>
+    <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
 </Project>

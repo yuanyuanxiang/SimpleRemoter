@@ -139,6 +139,8 @@ CScreenSpyDlg::~CScreenSpyDlg()
     m_pCodec = 0;
     // AVFrame需要清除
     av_frame_unref(&m_AVFrame);
+
+    SAFE_DELETE(m_pToolbar);
 }
 
 void CScreenSpyDlg::DoDataExchange(CDataExchange* pDX)
@@ -163,6 +165,7 @@ BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialog)
     ON_WM_LBUTTONDBLCLK()
     ON_WM_ACTIVATE()
     ON_WM_TIMER()
+    ON_COMMAND(ID_EXIT_FULLSCREEN, &CScreenSpyDlg::OnExitFullscreen)
 END_MESSAGE_MAP()
 
 
@@ -692,6 +695,9 @@ void CScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
         SetTextColor(m_hFullDC, RGB(0xff, 0x00, 0x00));
         TextOut(m_hFullDC, 0, 0, lpTipsString, lstrlen(lpTipsString));
     }
+	if (nIDEvent == 1 && m_bFullScreen && m_pToolbar) {
+		m_pToolbar->CheckMousePosition();
+	}
     CDialog::OnTimer(nIDEvent);
 }
 
@@ -717,8 +723,15 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
     case WM_KEYUP:
     case WM_SYSKEYDOWN:
     case WM_SYSKEYUP:
-        if (pMsg->wParam == VK_F11 && LeaveFullScreen()) // F11: 退出全屏
-            return TRUE;
+		if (pMsg->message == WM_KEYDOWN && m_bFullScreen) {
+			// Ctrl+Alt+Home 退出全屏（备用）
+			if (pMsg->wParam == VK_HOME &&
+				(GetKeyState(VK_CONTROL) & 0x8000) &&
+				(GetKeyState(VK_MENU) & 0x8000)) {
+				LeaveFullScreen();
+				return TRUE;
+			}
+		}
         if (pMsg->wParam != VK_LWIN && pMsg->wParam != VK_RWIN) {
             SendScaledMouseMessage(pMsg, true);
         }
@@ -957,8 +970,18 @@ void CScreenSpyDlg::EnterFullScreen()
         SetWindowPos(&CWnd::wndTop, rcMonitor.left, rcMonitor.top, rcMonitor.right - rcMonitor.left,
                      rcMonitor.bottom - rcMonitor.top, SWP_NOZORDER | SWP_FRAMECHANGED);
 
+		if (!m_pToolbar) {
+			m_pToolbar = new CToolbarDlg(this);
+			m_pToolbar->Create(IDD_TOOLBAR_DLG, this);
+			int cx = GetSystemMetrics(SM_CXSCREEN);
+			int cy = GetSystemMetrics(SM_CYSCREEN);
+			m_pToolbar->SetWindowPos(&wndTopMost, 0, -40, cx, 40, SWP_HIDEWINDOW);
+		}
+
         // 7. 标记全屏模式
         m_bFullScreen = true;
+
+        SetTimer(1, 200, NULL);
     }
 }
 
@@ -966,6 +989,13 @@ void CScreenSpyDlg::EnterFullScreen()
 bool CScreenSpyDlg::LeaveFullScreen()
 {
     if (m_bFullScreen) {
+        KillTimer(1);
+		if (m_pToolbar) {
+			m_pToolbar->DestroyWindow();
+			delete m_pToolbar;
+			m_pToolbar = nullptr;
+		}
+
         // 1. 恢复窗口样式
         LONG lStyle = GetWindowLong(m_hWnd, GWL_STYLE);
         lStyle |= (WS_CAPTION | WS_THICKFRAME | WS_BORDER);

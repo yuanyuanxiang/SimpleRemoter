@@ -60,6 +60,7 @@
     <ClCompile Include="ServerServiceWrapper.cpp" />
     <ClCompile Include="ServerSessionMonitor.cpp" />
     <ClCompile Include="SplashDlg.cpp" />
+    <ClCompile Include="ToolbarDlg.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
@@ -133,6 +134,7 @@
     <ClInclude Include="ServerServiceWrapper.h" />
     <ClInclude Include="ServerSessionMonitor.h" />
     <ClInclude Include="SplashDlg.h" />
+    <ClInclude Include="ToolbarDlg.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />
