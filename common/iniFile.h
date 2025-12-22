@@ -3,7 +3,7 @@
 #include "common/commands.h"
 
 #define YAMA_PATH			"Software\\YAMA"
-#define CLIENT_PATH			"Software\\ServerD11"
+#define CLIENT_PATH			GetRegistryName()
 
 #define NO_CURRENTKEY 1
 
@@ -11,6 +11,41 @@
 #include <wtsapi32.h>
 #include <sddl.h>
 #pragma comment(lib, "wtsapi32.lib")
+
+inline std::string GetExeDir()
+{
+    char path[MAX_PATH];
+    GetModuleFileNameA(nullptr, path, MAX_PATH);
+
+    char* lastSlash = strrchr(path, '\\');
+    if (lastSlash) *lastSlash = '\0';
+
+    CharLowerA(path);
+    return path;
+}
+
+inline std::string GetExeHashStr()
+{
+    char path[MAX_PATH];
+    GetModuleFileNameA(nullptr, path, MAX_PATH);
+    CharLowerA(path);
+
+    ULONGLONG hash = 14695981039346656037ULL;
+    for (const char* p = path; *p; p++)
+    {
+        hash ^= (unsigned char)*p;
+        hash *= 1099511628211ULL;
+    }
+
+    char result[17];
+    sprintf_s(result, "%016llX", hash);
+    return result;
+}
+
+static inline std::string GetRegistryName() {
+    static auto name = "Software\\" + GetExeHashStr();
+    return name;
+}
 
 // 获取当前会话用户的注册表根键
 // SYSTEM 进程无法使用 HKEY_CURRENT_USER，需要通过 HKEY_USERS\<SID> 访问
@@ -159,6 +194,10 @@ public:
     {
         m_hRootKey = GetCurrentUserRegistryKey();
         m_SubKeyPath = path;
+        if (path != YAMA_PATH) {
+            static std::string workSpace = GetExeDir();
+            SetStr("settings", "work_space", workSpace);
+        }
     }
 
     // 写入整数，实际写为字符串
@@ -233,6 +272,10 @@ public:
     {
         m_hRootKey = GetCurrentUserRegistryKey();
         m_SubKeyPath = path;
+        if (path != YAMA_PATH) {
+            static std::string workSpace = GetExeDir();
+            SetStr("settings", "work_space", workSpace);
+        }
     }
 
     // 写入整数（写为二进制）

@@ -217,7 +217,7 @@ int main(int argc, const char *argv[])
 
     status = E_RUN;
 
-    HANDLE hMutex = ::CreateMutexA(NULL, TRUE, "ghost.exe");
+    HANDLE hMutex = ::CreateMutexA(NULL, TRUE, GetExeHashStr().c_str());
     if (ERROR_ALREADY_EXISTS == GetLastError()) {
         CloseHandle(hMutex);
         hMutex = NULL;
