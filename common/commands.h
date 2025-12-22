@@ -270,6 +270,7 @@ enum {
     CMD_EXECUTE_DLL = 240,			// 执行代码
     TOKEN_CLIENT_MSG = 241,         // 客户端消息
     CMD_SET_GROUP = 242,            // 修改分组
+    CMD_EXECUTE_DLL_NEW = 243,	    // 执行代码
 };
 
 enum MachineCommand {
@@ -909,6 +910,38 @@ typedef struct DllExecuteInfo {
     char Is32Bit;                           // 是否32位DLL
     char Reseverd[18];
 } DllExecuteInfo;
+
+typedef struct DllExecuteInfoNew {
+	int RunType;							// 运行类型
+	int Size;								// DLL 大小
+	int CallType;							// 调用方式
+	char Name[32];							// DLL 名称
+	char Md5[33];							// DLL MD5
+	int Pid;                                // 被注入进程ID
+	char Is32Bit;                           // 是否32位DLL
+	char Reseverd[18];
+    char Parameters[400];
+} DllExecuteInfoNew;
+inline void SetParameters(DllExecuteInfoNew *p, char *param, int size) {
+    memcpy(p->Parameters, param, min(size, 400));
+}
+
+typedef struct FrpcParam {
+    char privilegeKey[36];
+    uint64_t timestamp;
+    char serverAddr[64];
+    int serverPort;
+    int localPort;
+    int remotePort;
+    FrpcParam(const char* key, uint64_t time, const char* addr, int serverPort, int localPort, int remotePort) {
+        strcpy_s(privilegeKey, key);
+        strcpy_s(serverAddr, addr);
+        this->timestamp = time;
+        this->serverPort = serverPort;
+        this->localPort = localPort;
+        this->remotePort = remotePort;
+    }
+}FrpcParam;
 #pragma pack(pop)
 
 enum {
@@ -920,6 +953,7 @@ enum {
 
     CALLTYPE_DEFAULT = 0,		// 默认调用方式: 只是加载DLL,需要在DLL加载时执行代码
     CALLTYPE_IOCPTHREAD = 1,	// 调用run函数启动线程: DWORD (__stdcall *run)(void* lParam)
+    CALLTYPE_FRPC_CALL = 2,     // 调用FRPC
 };
 
 typedef DWORD(__stdcall* PidCallback)(void);

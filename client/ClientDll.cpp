@@ -536,6 +536,10 @@ DWORD WINAPI StartClient(LPVOID lParam)
         CloseHandle(app.g_hEvent);
         app.g_hEvent = NULL;
     }
+    if (app.g_bExit == S_CLIENT_EXIT) {
+        CKernelManager::g_IsAppExit = 2;
+        Sleep(200);
+    }
 
     Mprintf("StartClient end\n");
     delete ClientObject;

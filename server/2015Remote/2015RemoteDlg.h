@@ -248,7 +248,7 @@ public:
     CRITICAL_SECTION m_cs;
     BOOL       isClosed;
     CMenu	   m_MainMenu;
-    CBitmap m_bmOnline[19];
+    CBitmap m_bmOnline[20];
     uint64_t m_superID;
     std::map<HWND, CDialogBase *> m_RemoteWnds;
     CDialogBase* GetRemoteWindow(HWND hWnd);
@@ -381,4 +381,5 @@ public:
     afx_msg void OnOnlineInjNotepad();
     afx_msg void OnParamLoginNotify();
     afx_msg void OnParamEnableLog();
+    afx_msg void OnProxyPort();
 };

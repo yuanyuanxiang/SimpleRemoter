@@ -139,6 +139,7 @@ public:
     ULONG   m_ulThreadCount;
     UINT	GetAvailableIndex();
     State& g_bExit; // Hide base class variable
+    static int g_IsAppExit;
     MasterSettings m_settings;
     RttEstimator m_nNetPing; // ÍøÂç×´¿ö
     // ·¢ËÍĞÄÌø
