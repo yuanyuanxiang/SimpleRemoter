@@ -24,7 +24,7 @@ protected:
 
 public:
 	afx_msg void OnBnClickedExitFullscreen();
-	afx_msg void OnBnClickedMinimize();
+	afx_msg void OnBnClickedCtrl();
 	afx_msg void OnBnClickedClose();
 	virtual BOOL OnInitDialog();
 };

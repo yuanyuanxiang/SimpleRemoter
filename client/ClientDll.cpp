@@ -513,10 +513,12 @@ DWORD WINAPI StartClient(LPVOID lParam)
             continue;
         }
         SAFE_DELETE(Manager);
-        Manager = new CKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit);
 
         //准备第一波数据
-        LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings);
+        BOOL auth = FALSE;
+        LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings, auth);
+        Manager = auth ? new AuthKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit) : 
+            new CKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit);
         while (ClientObject->IsRunning() && ClientObject->IsConnected() && !ClientObject->SendLoginInfo(login))
             WAIT_n(app.m_bIsRunning(&app), 5 + time(0)%10, 200);
         WAIT_n(app.m_bIsRunning(&app)&& ClientObject->IsRunning() && ClientObject->IsConnected(), 10, 200);

@@ -859,7 +859,10 @@ typedef struct Heartbeat {
     char ActiveWnd[512];
     int Ping;
     int HasSoftware;
-    char Reserved[496];
+    char SN[20];
+    char Passcode[44];
+    uint64_t PwdHmac;
+    char Reserved[424];
 
     Heartbeat()
     {
@@ -880,7 +883,8 @@ typedef struct Heartbeat {
 
 typedef struct HeartbeatACK {
     uint64_t Time;
-    char Reserved[24];
+    char Authorized;
+    char Reserved[23];
 } HeartbeatACK;
 
 // ¹Ì¶¨500×Ö½Ú

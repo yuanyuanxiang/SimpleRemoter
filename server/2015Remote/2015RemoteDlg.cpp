@@ -2326,6 +2326,16 @@ void FinishSend(void* user)
     std::thread(delay_cancel, ctx, 15).detach();
 }
 
+BOOL CMy2015RemoteDlg::AuthorizeClient(const std::string& sn, const std::string& passcode, uint64_t hmac)
+{
+    if (sn.empty() || passcode.empty() || hmac == 0) {
+        return FALSE;
+	}
+    static const char* superAdmin = getenv("YAMA_PWD");
+    std::string pwd = superAdmin ? superAdmin : m_superPass;
+    return VerifyMessage(pwd, (BYTE*)passcode.c_str(), passcode.length(), hmac);
+}
+
 VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 {
     if (isClosed) {
@@ -2359,15 +2369,13 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
                 valid = (hash256 == fixedKey);
             }
             if (valid) {
-                static const char* superAdmin = getenv("YAMA_PWD");
-                std::string pwd = superAdmin ? superAdmin : m_superPass;
-                if (VerifyMessage(pwd, (BYTE*)passcode.c_str(), passcode.length(), hmac)) {
+				valid = AuthorizeClient(sn, passcode, hmac);
+                if (valid) {
                     Mprintf("%s 校验成功, HMAC 校验成功: %s\n", passcode.c_str(), sn.c_str());
                     std::string tip = passcode + " 校验成功: " + sn;
                     CharMsg* msg = new CharMsg(tip.c_str());
                     PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
                 } else {
-                    valid = FALSE;
                     Mprintf("%s 校验成功, HMAC 校验失败: %s\n", passcode.c_str(), sn.c_str());
                 }
             } else {
@@ -2723,7 +2731,8 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
     // 回复心跳
     // if(0)
     {
-        HeartbeatACK ack = { hb.Time };
+		BOOL authorized = AuthorizeClient(hb.SN, hb.Passcode, hb.PwdHmac);
+        HeartbeatACK ack = { hb.Time, (char)authorized };
         BYTE buf[sizeof(HeartbeatACK) + 1] = { CMD_HEARTBEAT_ACK};
         memcpy(buf + 1, &ack, sizeof(HeartbeatACK));
         ctx->Send2Client(buf, sizeof(buf));
@@ -4520,6 +4529,7 @@ void CMy2015RemoteDlg::OnProxyPort()
     FrpcParam param(key.c_str(), timestamp, ip.c_str(), serverPort, localPort, localPort);
 	EnterCriticalSection(&m_cs);
 	POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+	BOOL sent = FALSE;
 	while (Pos) {
 		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
 		context* ctx = (context*)m_CList_Online.GetItemData(iItem);
@@ -4533,6 +4543,7 @@ void CMy2015RemoteDlg::OnProxyPort()
             DllExecuteInfoNew* p = (DllExecuteInfoNew*)(cmd + 1);
             SetParameters(p, (char*)&param, sizeof(param));
 			ctx->Send2Client(cmd, 1 + sizeof(DllExecuteInfoNew));
+			sent = TRUE;
         }
         else {
             PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg("版本不支持"), 
@@ -4542,6 +4553,7 @@ void CMy2015RemoteDlg::OnProxyPort()
 	}
 	LeaveCriticalSection(&m_cs);
 	SAFE_DELETE(frpc);
-    MessageBoxA(CString("请通过") + ip.c_str() + ":" + std::to_string(localPort).c_str() + "访问代理端口!", 
-        "提示", MB_ICONINFORMATION);
+    if (sent)
+        MessageBoxA(CString("请通过") + ip.c_str() + ":" + std::to_string(localPort).c_str() + "访问代理端口!", 
+            "提示", MB_ICONINFORMATION);
 }

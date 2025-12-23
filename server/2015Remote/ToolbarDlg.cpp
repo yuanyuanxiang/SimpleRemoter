@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "ToolbarDlg.h"
 #include "2015RemoteDlg.h"
+#include <ScreenSpyDlg.h>
 
 IMPLEMENT_DYNAMIC(CToolbarDlg, CDialogEx)
 
@@ -20,7 +21,7 @@ void CToolbarDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CToolbarDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BTN_EXIT_FULLSCREEN, &CToolbarDlg::OnBnClickedExitFullscreen)
-	ON_BN_CLICKED(IDC_BTN_MINIMIZE, &CToolbarDlg::OnBnClickedMinimize)
+	ON_BN_CLICKED(CONTROL_BTN_ID, &CToolbarDlg::OnBnClickedCtrl)
 	ON_BN_CLICKED(IDC_BTN_CLOSE, &CToolbarDlg::OnBnClickedClose)
 END_MESSAGE_MAP()
 
@@ -45,7 +46,7 @@ void CToolbarDlg::SlideIn()
 	int cx = GetSystemMetrics(SM_CXSCREEN);
 	for (int y = -m_nHeight; y <= 0; y += 8) {
 		SetWindowPos(&wndTopMost, 0, y, cx, m_nHeight, SWP_NOACTIVATE);
-		Sleep(10);
+		Sleep(100);
 	}
 	SetWindowPos(&wndTopMost, 0, 0, cx, m_nHeight, SWP_NOACTIVATE);
 }
@@ -55,7 +56,7 @@ void CToolbarDlg::SlideOut()
 	int cx = GetSystemMetrics(SM_CXSCREEN);
 	for (int y = 0; y >= -m_nHeight; y -= 8) {
 		SetWindowPos(&wndTopMost, 0, y, cx, m_nHeight, SWP_NOACTIVATE);
-		Sleep(10);
+		Sleep(100);
 	}
 	ShowWindow(SW_HIDE);
 	m_bVisible = false;
@@ -67,10 +68,12 @@ void CToolbarDlg::OnBnClickedExitFullscreen()
 	GetParent()->PostMessage(WM_COMMAND, ID_EXIT_FULLSCREEN, 0);
 }
 
-void CToolbarDlg::OnBnClickedMinimize()
+void CToolbarDlg::OnBnClickedCtrl()
 {
-	GetParent()->ShowWindow(SW_MINIMIZE);
-	SlideOut();
+	CScreenSpyDlg* pParent = (CScreenSpyDlg*)GetParent();
+	pParent->m_bIsCtrl = !pParent->m_bIsCtrl;
+	pParent->UpdateCtrlStatus(pParent->m_bIsCtrl);
+	GetDlgItem(CONTROL_BTN_ID)->SetWindowTextA(pParent->m_bIsCtrl ? "暂停控制" : "控制屏幕");
 }
 
 void CToolbarDlg::OnBnClickedClose()
@@ -99,7 +102,7 @@ BOOL CToolbarDlg::OnInitDialog()
 
 	GetDlgItem(IDC_BTN_EXIT_FULLSCREEN)->SetWindowPos(NULL,
 		startX, y, btnWidth, btnHeight, SWP_NOZORDER);
-	GetDlgItem(IDC_BTN_MINIMIZE)->SetWindowPos(NULL,
+	GetDlgItem(CONTROL_BTN_ID)->SetWindowPos(NULL,
 		startX + btnWidth + btnSpacing, y, btnWidth, btnHeight, SWP_NOZORDER);
 	GetDlgItem(IDC_BTN_CLOSE)->SetWindowPos(NULL,
 		startX + (btnWidth + btnSpacing) * 2, y, btnWidth, btnHeight, SWP_NOZORDER);

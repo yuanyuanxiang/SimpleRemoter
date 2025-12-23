@@ -981,7 +981,7 @@ void CScreenSpyDlg::EnterFullScreen()
         // 7. 标记全屏模式
         m_bFullScreen = true;
 
-        SetTimer(1, 200, NULL);
+        SetTimer(1, 100, NULL);
     }
 }
 
@@ -1086,4 +1086,9 @@ void CScreenSpyDlg::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
         // 通知主窗口：远程窗口获得焦点
         ::PostMessage(pMain->GetSafeHwnd(), WM_SESSION_ACTIVATED, (WPARAM)this, 0);
     }
+}
+
+void CScreenSpyDlg::UpdateCtrlStatus(BOOL ctrl) {
+	m_bIsCtrl = ctrl;
+	SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
 }

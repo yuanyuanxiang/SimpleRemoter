@@ -806,11 +806,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         break;
 
     case CMD_HEARTBEAT_ACK:
-        if (ulLength > 8) {
-            uint64_t n = 0;
-            memcpy(&n, szBuffer + 1, sizeof(uint64_t));
-            m_nNetPing.update_from_sample(GetUnixMs() - n);
-        }
+        OnHeatbeatResponse(szBuffer, ulLength);
         break;
     case CMD_MASTERSETTING:
         if (ulLength > MasterSettingsOldSize) {
@@ -961,5 +957,69 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         Mprintf("!!! Unknown command: %d\n", unsigned(szBuffer[0]));
         break;
     }
+    }
+}
+
+void CKernelManager::OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength) {
+    if (ulLength > 8) {
+        uint64_t n = 0;
+        memcpy(&n, szBuffer + 1, sizeof(uint64_t));
+        m_nNetPing.update_from_sample(GetUnixMs() - n);
+    }
+}
+
+int AuthKernelManager::SendHeartbeat()
+{
+    for (int i = 0; i < m_settings.ReportInterval && !g_bExit && m_ClientObject->IsConnected(); ++i)
+        Sleep(1000);
+    if (!m_bFirstHeartbeat && m_settings.ReportInterval <= 0) { // 关闭上报信息（含心跳）
+        for (int i = rand() % 120; i && !g_bExit && m_ClientObject->IsConnected() && m_settings.ReportInterval <= 0; --i)
+            Sleep(1000);
+        return 0;
+    }
+    if (g_bExit || !m_ClientObject->IsConnected())
+        return -1;
+
+    if (m_bFirstHeartbeat) {
+        m_bFirstHeartbeat = false;
+    }
+
+    ActivityWindow checker;
+    auto s = checker.Check();
+    Heartbeat a(s, m_nNetPing.srtt);
+    a.HasSoftware = SoftwareCheck(m_settings.DetectSoftware);
+
+    iniFile THIS_CFG;
+    auto SN = THIS_CFG.GetStr("settings", "SN", "");
+    auto passCode = THIS_CFG.GetStr("settings", "Password", "");
+    auto pwdHmac = THIS_CFG.GetStr("settings", "PwdHmac", "");
+    uint64_t value = std::strtoull(pwdHmac.c_str(), nullptr, 10);
+	strcpy_s(a.SN, SN.c_str());
+	strcpy_s(a.Passcode, passCode.c_str());
+    memcpy(&a.PwdHmac, &value, 8);
+
+    BYTE buf[sizeof(Heartbeat) + 1];
+    buf[0] = TOKEN_HEARTBEAT;
+    memcpy(buf + 1, &a, sizeof(Heartbeat));
+    m_ClientObject->Send2Server((char*)buf, sizeof(buf));
+    return 0;
+}
+
+void AuthKernelManager::OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength) {
+    if (ulLength > sizeof(HeartbeatACK)) {
+        HeartbeatACK n = { 0 };
+        memcpy(&n, szBuffer + 1, sizeof(HeartbeatACK));
+        m_nNetPing.update_from_sample(GetUnixMs() - n.Time);
+        if (n.Authorized == TRUE) {
+			Mprintf("======> Client authorized successfully.\n");
+			// Once the client is authorized, authentication is no longer needed
+			// So we can set exit flag to terminate the AuthKernelManager
+            g_bExit = S_CLIENT_EXIT;
+        }
+    }
+    else if (ulLength > 8) {
+        uint64_t n = 0;
+        memcpy(&n, szBuffer + 1, sizeof(uint64_t));
+        m_nNetPing.update_from_sample(GetUnixMs() - n);
     }
 }

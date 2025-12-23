@@ -311,6 +311,18 @@ BOOL CMy2015RemoteApp::InitInstance()
     // 例如修改为公司或组织名
     SetRegistryKey(_T("YAMA"));
 
+	// 注册一个事件，用于进程间通信
+	// 请勿修改此事件名称，否则可能导致无法启动程序、鉴权失败等问题
+    char eventName[64] = { 0 };
+    sprintf(eventName, "YAMA_%d", GetCurrentProcessId());
+    HANDLE hEvent = CreateEventA(NULL, TRUE, FALSE, eventName);
+    if (hEvent == NULL) {
+        Mprintf("[InitInstance] 创建事件失败，错误码: %d\n", GetLastError());
+    }
+    else {
+        Mprintf("[InitInstance] 创建事件成功，事件名: %s\n", eventName);
+    }
+
     CMy2015RemoteDlg dlg(nullptr);
     m_pMainWnd = &dlg;
     INT_PTR nResponse = dlg.DoModal();
@@ -326,6 +338,11 @@ BOOL CMy2015RemoteApp::InitInstance()
     if (pShellManager != NULL) {
         delete pShellManager;
     }
+
+    if (hEvent) {
+        CloseHandle(hEvent);
+        Mprintf("[InitInstance] 关闭事件句柄。\n");
+	}
 
     // 由于对话框已关闭，所以将返回 FALSE 以便退出应用程序，
     //  而不是启动应用程序的消息泵。

