@@ -604,6 +604,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_PARAM_LOGIN_NOTIFY, &CMy2015RemoteDlg::OnParamLoginNotify)
     ON_COMMAND(ID_PARAM_ENABLE_LOG, &CMy2015RemoteDlg::OnParamEnableLog)
         ON_COMMAND(ID_PROXY_PORT, &CMy2015RemoteDlg::OnProxyPort)
+        ON_COMMAND(ID_HOOK_WIN, &CMy2015RemoteDlg::OnHookWin)
         END_MESSAGE_MAP()
 
 
@@ -1280,6 +1281,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     m_needNotify = THIS_CFG.GetInt("settings", "LoginNotify", 0);
     SubMenu->CheckMenuItem(ID_PARAM_LOGIN_NOTIFY, m_needNotify ? MF_CHECKED : MF_UNCHECKED);
     SubMenu->CheckMenuItem(ID_PARAM_ENABLE_LOG, m_settings.EnableLog ? MF_CHECKED : MF_UNCHECKED);
+    m_bHookWIN = THIS_CFG.GetInt("settings", "HookWIN", 0);
+    SubMenu->CheckMenuItem(ID_HOOK_WIN, m_bHookWIN ? MF_CHECKED : MF_UNCHECKED);
     std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "摄像头"}, {SOFTWARE_TELEGRAM, "电报" }};
     std::string str = myMap[n];
     LVCOLUMN lvColumn;
@@ -4201,10 +4204,10 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
         do {
             static CDialogBase* operateWnd = nullptr;
             KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
-			if (pKey->vkCode == VK_LWIN || pKey->vkCode == VK_RWIN) {
+			if (g_2015RemoteDlg->m_bHookWIN && (pKey->vkCode == VK_LWIN || pKey->vkCode == VK_RWIN)) {
                 HWND hFore = ::GetForegroundWindow();
 				auto screen = (CScreenSpyDlg*)g_2015RemoteDlg->GetRemoteWindow(hFore);
-                if (screen) {
+                if (screen && screen->m_bIsCtrl) {
 					MSG msg = { 0 };
 					msg.hwnd = hFore;
 					msg.message = (UINT)wParam;
@@ -4224,9 +4227,9 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
 					msg.pt.x = 0;
 					msg.pt.y = 0;
                     screen->SendScaledMouseMessage(&msg, false);
+					// 返回 1 阻止本地系统处理
+					return 1;
                 }
-				// 返回 1 阻止本地系统处理
-				return 1;
 			}
             // 只在按下时处理
             if (wParam == WM_KEYDOWN) {
@@ -4465,13 +4468,6 @@ bool IsDateGreaterOrEqual(const char* date1, const char* date2)
 	return d1 >= d2;
 }
 
-#include <string>
-#include <cstdio>
-#include <windows.h>
-#include <wincrypt.h>
-
-#pragma comment(lib, "advapi32.lib")
-
 std::string GetAuthKey(const char* token, long long timestamp)
 {
 	char tsStr[32];
@@ -4556,4 +4552,13 @@ void CMy2015RemoteDlg::OnProxyPort()
     if (sent)
         MessageBoxA(CString("请通过") + ip.c_str() + ":" + std::to_string(localPort).c_str() + "访问代理端口!", 
             "提示", MB_ICONINFORMATION);
+}
+
+
+void CMy2015RemoteDlg::OnHookWin()
+{
+	m_bHookWIN = !m_bHookWIN;
+	THIS_CFG.SetInt("settings", "HookWIN", m_bHookWIN);
+	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
+	SubMenu->CheckMenuItem(ID_HOOK_WIN, m_bHookWIN ? MF_CHECKED : MF_UNCHECKED);
 }

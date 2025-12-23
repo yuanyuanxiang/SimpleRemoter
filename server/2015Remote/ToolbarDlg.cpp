@@ -107,5 +107,8 @@ BOOL CToolbarDlg::OnInitDialog()
 	GetDlgItem(IDC_BTN_CLOSE)->SetWindowPos(NULL,
 		startX + (btnWidth + btnSpacing) * 2, y, btnWidth, btnHeight, SWP_NOZORDER);
 
+	CScreenSpyDlg* pParent = (CScreenSpyDlg*)GetParent();
+	GetDlgItem(CONTROL_BTN_ID)->SetWindowTextA(pParent->m_bIsCtrl ? "暂停控制" : "控制屏幕");
+
 	return TRUE;
 }
