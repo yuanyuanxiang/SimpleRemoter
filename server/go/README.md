@@ -7,6 +7,8 @@
 ```
 server/go/
 ├── go.mod                    # Go 模块定义
+├── auth/
+│   └── auth.go              # 授权验证模块 (TOKEN_AUTH + Heartbeat HMAC)
 ├── buffer/
 │   └── buffer.go            # 线程安全的动态缓冲区
 ├── connection/
@@ -32,6 +34,7 @@ server/go/
 - **高并发**: 基于 Goroutine 池管理并发连接
 - **协议兼容**: 支持原有 C++ 客户端的多种协议标识 (Hell/Hello/Shine/Fuck)
 - **协议头解密**: 支持8种协议头加密方式 (V0-V6 + Default)
+- **授权验证**: 支持 TOKEN_AUTH 和 Heartbeat HMAC-SHA256 双重授权验证
 - **XOR编码**: 支持 XOREncoder16 数据编码/解码
 - **ZSTD 压缩**: 使用高效的 ZSTD 算法进行数据压缩
 - **GBK编码**: 自动将 Windows 客户端的 GBK 编码转换为 UTF-8
@@ -46,9 +49,10 @@ server/go/
 
 | 命令 | 值 | 说明 |
 |------|-----|------|
-| TOKEN_AUTH | 100 | 授权请求 |
-| TOKEN_HEARTBEAT | 101 | 心跳包 |
+| TOKEN_AUTH | 100 | 授权请求 (验证 SN + Passcode + HMAC) |
+| TOKEN_HEARTBEAT | 101 | 心跳包 (支持 HMAC 授权验证，返回 Authorized 状态) |
 | TOKEN_LOGIN | 102 | 客户端登录 |
+| CMD_HEARTBEAT_ACK | 216 | 心跳响应 (包含 Authorized 字段) |
 
 其他命令会被记录为 Debug 日志，可按需扩展。
 
@@ -74,6 +78,25 @@ go build -o simpleremoter-server ./cmd
 ```
 
 服务器默认监听 6543 端口，日志输出到 `logs/server.log`。
+
+### 环境变量
+
+| 变量 | 说明 | 示例 |
+|------|------|------|
+| `YAMA_PWDHASH` | 密码的 SHA256 哈希值 (64位十六进制) | `61f04dd6...` |
+| `YAMA_PWD` | 超级密码，用于 HMAC 签名验证 | `your_super_password` |
+
+```bash
+# Linux/macOS
+export YAMA_PWDHASH="61f04dd637a74ee34493fc1025de2c131022536da751c29e3ff4e9024d8eec43"
+export YAMA_PWD="your_super_password"
+./simpleremoter-server
+
+# Windows PowerShell
+$env:YAMA_PWDHASH="61f04dd637a74ee34493fc1025de2c131022536da751c29e3ff4e9024d8eec43"
+$env:YAMA_PWD="your_super_password"
+.\simpleremoter-server.exe
+```
 
 ## 使用示例
 
@@ -228,6 +251,46 @@ func main() {
 | dwSpeed | 452 | 4 | 网速 |
 | szStartTime | 456 | 20 | 启动时间 |
 | szReserved | 476 | 512 | 扩展字段 (用`|`分隔) |
+
+### Heartbeat 结构
+
+客户端心跳包结构 (1024 字节)：
+
+| 字段 | 偏移 | 大小 | 说明 |
+|------|------|------|------|
+| Time | 0 | 8 | 时间戳 (uint64) |
+| ActiveWnd | 8 | 512 | 当前活动窗口 |
+| Ping | 520 | 4 | 延迟 (int) |
+| HasSoftware | 524 | 4 | 软件标识 (int) |
+| SN | 528 | 20 | 序列号 (用于授权验证) |
+| Passcode | 548 | 44 | 授权码 (格式: v0-v1-v2-v3-v4-v5) |
+| PwdHmac | 592 | 8 | HMAC 签名 (uint64) |
+| Reserved | 600 | 424 | 保留字段 |
+
+### HeartbeatACK 结构
+
+服务端心跳响应结构 (32 字节)：
+
+| 字段 | 偏移 | 大小 | 说明 |
+|------|------|------|------|
+| Time | 0 | 8 | 原始时间戳 (uint64) |
+| Authorized | 8 | 1 | 授权状态 (1=已授权, 0=未授权) |
+| Reserved | 9 | 23 | 保留字段 |
+
+### 授权验证流程
+
+```
+客户端 Heartbeat                     服务端
+    │                                   │
+    │  SN + Passcode + PwdHmac          │
+    │ ────────────────────────────────► │
+    │                                   │ 1. 验证 Passcode 格式
+    │                                   │ 2. 验证 Passcode 哈希
+    │                                   │ 3. 验证 HMAC 签名
+    │          HeartbeatACK             │
+    │ ◄──────────────────────────────── │
+    │       (Authorized=1 或 0)         │
+```
 
 ## API 参考
 

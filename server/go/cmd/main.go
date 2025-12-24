@@ -132,6 +132,19 @@ func (h *MyHandler) handleAuth(ctx *connection.Context, data []byte) {
 }
 
 // handleHeartbeat handles heartbeat from client (TOKEN_HEARTBEAT = 101)
+// Heartbeat structure (after command byte):
+//   - offset 0: Time (8 bytes, uint64)
+//   - offset 8: ActiveWnd (512 bytes)
+//   - offset 520: Ping (4 bytes, int)
+//   - offset 524: HasSoftware (4 bytes, int)
+//   - offset 528: SN (20 bytes)
+//   - offset 548: Passcode (44 bytes)
+//   - offset 592: PwdHmac (8 bytes, uint64)
+//
+// HeartbeatACK structure:
+//   - offset 0: Time (8 bytes, uint64)
+//   - offset 8: Authorized (1 byte, char)
+//   - offset 9: Reserved (23 bytes)
 func (h *MyHandler) handleHeartbeat(ctx *connection.Context, data []byte) {
 
 	// Parse Time from heartbeat request (offset 1, 8 bytes)
@@ -139,6 +152,23 @@ func (h *MyHandler) handleHeartbeat(ctx *connection.Context, data []byte) {
 	if len(data) >= 9 {
 		hbTime = uint64(data[1]) | uint64(data[2])<<8 | uint64(data[3])<<16 | uint64(data[4])<<24 |
 			uint64(data[5])<<32 | uint64(data[6])<<40 | uint64(data[7])<<48 | uint64(data[8])<<56
+	}
+
+	// Authenticate heartbeat if it contains authorization info
+	// data[1:] skips the command byte to get the raw Heartbeat structure
+	var authorized byte = 0
+	if len(data) > 1 {
+		authResult := h.auth.AuthenticateHeartbeat(data[1:])
+		if authResult.Authorized {
+			authorized = 1
+			// Log authorization success (only log once per connection to avoid spam)
+			if !ctx.IsAuthorized.Load() {
+				ctx.IsAuthorized.Store(true)
+				info := ctx.GetInfo()
+				h.log.Info("Heartbeat auth success: clientID=%s computer=%s ip=%s sn=%s passcode=%s pwdHmac=%d",
+					info.ClientID, info.ComputerName, ctx.GetPeerIP(), authResult.SN, authResult.Passcode, authResult.PwdHmac)
+			}
+		}
 	}
 
 	// Build HeartbeatACK response: CMD_HEARTBEAT_ACK(1) + HeartbeatACK(32)
@@ -153,7 +183,9 @@ func (h *MyHandler) handleHeartbeat(ctx *connection.Context, data []byte) {
 	resp[6] = byte(hbTime >> 40)
 	resp[7] = byte(hbTime >> 48)
 	resp[8] = byte(hbTime >> 56)
-	// Reserved[24] at offset 9 is already zero
+	// Authorized at offset 9 (1 byte)
+	resp[9] = authorized
+	// Reserved[23] at offset 10 is already zero
 
 	if err := h.srv.Send(ctx, resp); err != nil {
 		h.log.Error("Failed to send heartbeat ACK to client %d: %v", ctx.ID, err)

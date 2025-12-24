@@ -37,8 +37,9 @@ type Context struct {
 	OutBuffer *buffer.Buffer // Decompressed data for processing
 
 	// Client info
-	Info      ClientInfo
-	IsLoggedIn atomic.Bool
+	Info         ClientInfo
+	IsLoggedIn   atomic.Bool
+	IsAuthorized atomic.Bool // Whether client is authorized via heartbeat
 
 	// Connection state
 	OnlineTime   time.Time
