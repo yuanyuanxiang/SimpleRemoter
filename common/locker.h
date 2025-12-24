@@ -164,7 +164,7 @@ public:
 #define Sleep_m(ms) { Sleep(ms); }
 
 // 以步长n毫秒在条件C下等待T秒(n是步长，必须能整除1000)
-#define WAIT_n(C, T, n) { int s=(1000*(T))/(n); s=max(s,1); do{Sleep(n);}while((C)&&(--s)); }
+#define WAIT_n(C, T, n) { int s=(1000*(T))/(n); s=max(s,1); while((C)&&(s--))Sleep(n); }
 
 // 在条件C成立时等待T秒(步长10ms)
 #define WAIT(C, T) { WAIT_n(C, T, 10); }

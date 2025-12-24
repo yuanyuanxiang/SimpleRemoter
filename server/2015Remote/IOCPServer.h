@@ -120,18 +120,20 @@ public:
     bool m_bIsClosed;
     bool m_bIsProcessing;
     HICON m_hIcon;
+    BOOL m_bConnected;
     CDialogBase(UINT nIDTemplate, CWnd* pParent, Server* pIOCPServer, CONTEXT_OBJECT* pContext, int nIcon) :
         m_bIsClosed(false), m_bIsProcessing(false),
         m_ContextObject(pContext),
         m_iocpServer(pIOCPServer),
         CDialog(nIDTemplate, pParent)
     {
-
+        m_bConnected = TRUE;
         m_IPAddress = pContext->GetPeerName().c_str();
         m_hIcon = nIcon > 0 ? LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(nIcon)) : NULL;
     }
     int UpdateContext(CONTEXT_OBJECT* pContext)
     {
+        m_bConnected = TRUE;
         m_ContextObject = pContext;
         m_iocpServer = pContext->GetServer();
         m_ContextObject->hDlg = this;
@@ -163,6 +165,7 @@ public:
     }
     void OnClose()
     {
+        m_bConnected = FALSE;
         m_bIsClosed = true;
         while (m_bIsProcessing)
             Sleep(200);
@@ -194,6 +197,9 @@ public:
     }
     BOOL SayByeBye()
     {
+        if (!m_bConnected) return FALSE;
+
+        Mprintf("%s SayByeBye: %s\n", ToPekingTimeAsString(0).c_str(), m_ContextObject->GetPeerName().c_str());
         BYTE bToken = COMMAND_BYE;
         return m_ContextObject->Send2Client(&bToken, 1);
     }

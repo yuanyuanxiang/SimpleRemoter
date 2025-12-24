@@ -16,17 +16,16 @@ CScreenSpy::CScreenSpy(ULONG ulbiBitCount, BYTE algo, BOOL vDesk, int gop, BOOL 
 {
     m_GOP = gop;
 
-    m_BitmapInfor_Full = new BITMAPINFO();
-    memset(m_BitmapInfor_Full, 0, sizeof(BITMAPINFO));
-    BITMAPINFOHEADER* BitmapInforHeader = &(m_BitmapInfor_Full->bmiHeader);
-    BitmapInforHeader->biSize = sizeof(BITMAPINFOHEADER);
-    BitmapInforHeader->biWidth = m_ulFullWidth; //1080
-    BitmapInforHeader->biHeight = m_ulFullHeight; //1920
-    BitmapInforHeader->biPlanes = 1;
-    BitmapInforHeader->biBitCount = ulbiBitCount; //通常为32
-    BitmapInforHeader->biCompression = BI_RGB;
-    BitmapInforHeader->biSizeImage =
-        ((BitmapInforHeader->biWidth * BitmapInforHeader->biBitCount + 31) / 32) * 4 * BitmapInforHeader->biHeight;
+    m_BitmapInfor_Full = ConstructBitmapInfo(ulbiBitCount, m_ulFullWidth, m_ulFullHeight);
+    
+    m_BitmapInfor_Send = new BITMAPINFO(*m_BitmapInfor_Full);
+    if (m_bAlgorithm != ALGORITHM_H264) {
+        m_BitmapInfor_Send->bmiHeader.biWidth = min(1920, m_BitmapInfor_Send->bmiHeader.biWidth);
+        m_BitmapInfor_Send->bmiHeader.biHeight = min(1080, m_BitmapInfor_Send->bmiHeader.biHeight);
+        m_BitmapInfor_Send->bmiHeader.biSizeImage =
+            ((m_BitmapInfor_Send->bmiHeader.biWidth * m_BitmapInfor_Send->bmiHeader.biBitCount + 31) / 32) * 
+            4 * m_BitmapInfor_Send->bmiHeader.biHeight;
+    }
 
     m_hDeskTopDC = GetDC(NULL);
 
@@ -42,6 +41,9 @@ CScreenSpy::CScreenSpy(ULONG ulbiBitCount, BYTE algo, BOOL vDesk, int gop, BOOL 
     ::SelectObject(m_hDiffMemDC, m_DiffBitmapHandle);
 
     m_RectBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage * 2 + 12];
+    m_BmpZoomBuffer = new BYTE[m_BitmapInfor_Send->bmiHeader.biSizeImage * 2 + 12];
+    m_BmpZoomFirst = new BYTE[m_BitmapInfor_Send->bmiHeader.biSizeImage * 2 + 12];
+    m_FirstBuffer = scaleBitmap(m_BmpZoomFirst, m_FirstBuffer);
 
     m_bVirtualPaint = vDesk;
     m_data.Create(m_hDeskTopDC, m_iScreenX, m_iScreenY, m_ulFullWidth, m_ulFullHeight);
@@ -87,11 +89,12 @@ LPBYTE CScreenSpy::GetFirstScreenData(ULONG* ulFirstScreenLength)
 {
     ScanScreen(m_hFullMemDC, m_hDeskTopDC, m_ulFullWidth, m_ulFullHeight);
     m_RectBuffer[0] = TOKEN_FIRSTSCREEN;
-    memcpy(1 + m_RectBuffer, m_BitmapData_Full, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+    LPBYTE bmp = scaleBitmap(m_BmpZoomBuffer, (LPBYTE)m_BitmapData_Full);
+    memcpy(1 + m_RectBuffer, bmp, m_BitmapInfor_Send->bmiHeader.biSizeImage);
     if (m_bAlgorithm == ALGORITHM_GRAY) {
-        ToGray(1 + m_RectBuffer, 1 + m_RectBuffer, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+        ToGray(1 + m_RectBuffer, 1 + m_RectBuffer, m_BitmapInfor_Send->bmiHeader.biSizeImage);
     }
-    *ulFirstScreenLength = m_BitmapInfor_Full->bmiHeader.biSizeImage;
+    *ulFirstScreenLength = m_BitmapInfor_Send->bmiHeader.biSizeImage;
 
     return m_RectBuffer;  //内存
 }

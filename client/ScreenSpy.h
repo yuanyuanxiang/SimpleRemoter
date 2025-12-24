@@ -126,12 +126,12 @@ public:
 
     const LPBITMAPINFO& GetBIData() const
     {
-        return m_BitmapInfor_Full;
+        return m_BitmapInfor_Send;
     }
 
     ULONG GetFirstScreenLength() const
     {
-        return m_BitmapInfor_Full->bmiHeader.biSizeImage;
+        return m_BitmapInfor_Send->bmiHeader.biSizeImage;
     }
 
     static BOOL PaintWindow(HWND hWnd, EnumHwndsPrintData* data)
@@ -194,7 +194,8 @@ public:
     virtual LPBYTE ScanNextScreen()
     {
         ScanScreen(m_hDiffMemDC, m_hDeskTopDC, m_ulFullWidth, m_ulFullHeight);
-        return (LPBYTE)m_DiffBitmapData_Full;
+        LPBYTE bmp = scaleBitmap(m_BmpZoomBuffer, (LPBYTE)m_DiffBitmapData_Full);
+        return (LPBYTE)bmp;
     }
 
     VOID ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHeight);

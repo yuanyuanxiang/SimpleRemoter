@@ -107,20 +107,22 @@ public:
             d3dDevice->CreateTexture2D(&desc, NULL, &cpuTexture);
 
             // 9. 初始化 BITMAPINFO
-            m_BitmapInfor_Full = (BITMAPINFO*)new char[sizeof(BITMAPINFO)];
-            memset(m_BitmapInfor_Full, 0, sizeof(BITMAPINFO));
-            m_BitmapInfor_Full->bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-            m_BitmapInfor_Full->bmiHeader.biWidth = m_ulFullWidth;
-            m_BitmapInfor_Full->bmiHeader.biHeight = m_ulFullHeight;
-            m_BitmapInfor_Full->bmiHeader.biPlanes = 1;
-            m_BitmapInfor_Full->bmiHeader.biBitCount = 32;
-            m_BitmapInfor_Full->bmiHeader.biCompression = BI_RGB;
-            m_BitmapInfor_Full->bmiHeader.biSizeImage = m_ulFullWidth * m_ulFullHeight * 4;
+            m_BitmapInfor_Full = ConstructBitmapInfo(32, m_ulFullWidth, m_ulFullHeight);
+            m_BitmapInfor_Send = new BITMAPINFO(*m_BitmapInfor_Full);
+			if (m_bAlgorithm != ALGORITHM_H264) {
+				m_BitmapInfor_Send->bmiHeader.biWidth = min(1920, m_BitmapInfor_Send->bmiHeader.biWidth);
+				m_BitmapInfor_Send->bmiHeader.biHeight = min(1080, m_BitmapInfor_Send->bmiHeader.biHeight);
+				m_BitmapInfor_Send->bmiHeader.biSizeImage =
+					((m_BitmapInfor_Send->bmiHeader.biWidth * m_BitmapInfor_Send->bmiHeader.biBitCount + 31) / 32) *
+					4 * m_BitmapInfor_Send->bmiHeader.biHeight;
+			}
 
             // 10. 分配屏幕缓冲区
             m_FirstBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage + 1];
             m_NextBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage + 1];
             m_RectBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage * 2 + 12];
+			m_BmpZoomBuffer = new BYTE[m_BitmapInfor_Send->bmiHeader.biSizeImage * 2 + 12];
+			m_BmpZoomFirst = nullptr;
 
             break;
         } while (true);
@@ -145,13 +147,24 @@ public:
         if (d3dDevice) d3dDevice->Release();
     }
 
+	virtual LPBYTE scaleBitmap(LPBYTE target, LPBYTE bitmap) override {
+        if (m_ulFullWidth == m_BitmapInfor_Send->bmiHeader.biWidth && m_ulFullHeight == m_BitmapInfor_Send->bmiHeader.biHeight) {
+            memcpy(target, bitmap, m_BitmapInfor_Send->bmiHeader.biSizeImage);
+            return bitmap;
+        }
+		return ScaleBitmap(target, (uint8_t*)bitmap, m_ulFullWidth, m_ulFullHeight, m_BitmapInfor_Send->bmiHeader.biWidth,
+			m_BitmapInfor_Send->bmiHeader.biHeight);
+	}
+
     LPBYTE GetFirstScreenData(ULONG* ulFirstScreenLength) override
     {
         int ret = CaptureFrame(m_FirstBuffer, ulFirstScreenLength, 1);
+        scaleBitmap(m_BmpZoomBuffer, m_FirstBuffer);
+        memcpy(m_FirstBuffer, m_BmpZoomBuffer, m_BitmapInfor_Send->bmiHeader.biSizeImage);
         if (ret)
             return nullptr;
         if (m_bAlgorithm == ALGORITHM_GRAY) {
-            ToGray(1 + m_RectBuffer, 1 + m_RectBuffer, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+            ToGray(1 + m_RectBuffer, 1 + m_RectBuffer, m_BitmapInfor_Send->bmiHeader.biSizeImage);
         }
         m_FirstBuffer[0] = TOKEN_FIRSTSCREEN;
         return m_FirstBuffer;
@@ -161,6 +174,8 @@ public:
     {
         ULONG ulNextScreenLength = 0;
         int ret = CaptureFrame(m_NextBuffer, &ulNextScreenLength, 0);
+		scaleBitmap(m_BmpZoomBuffer, m_NextBuffer);
+		memcpy(m_NextBuffer, m_BmpZoomBuffer, m_BitmapInfor_Send->bmiHeader.biSizeImage);
         if (ret)
             return nullptr;
 

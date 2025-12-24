@@ -388,7 +388,7 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
             }
         }
     }
-    CloseHandle(This->m_hWorkThread);
+    SAFE_CLOSE_HANDLE(This->m_hWorkThread);
     This->m_hWorkThread = NULL;
     This->m_bWorkThread = S_STOP;
     This->m_bIsRunning = FALSE;
@@ -514,7 +514,7 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
 // 关闭压缩开关时，SendWithSplit比较耗时。
 BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength, PkgMask* mask)  //Hello
 {
-    AUTO_TICK(40, "");
+    AUTO_TICK(100, std::to_string(ulOriginalLength));
     assert (ulOriginalLength > 0);
     {
         int cmd = BYTE(szBuffer[0]);

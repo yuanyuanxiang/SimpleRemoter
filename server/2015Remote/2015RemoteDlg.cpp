@@ -2079,7 +2079,9 @@ void CMy2015RemoteDlg::OnMainSet()
         m_frpStatus = STATUS_RUN;
     }
     if (use && use_new && m_hFRPThread == NULL) {
+#ifdef _WIN64
         MessageBoxA("FRP代理服务异常，需要重启当前应用程序进行重试。", "提示", MB_ICONINFORMATION);
+#endif
     }
     int m = atoi(THIS_CFG.GetStr("settings", "ReportInterval", "5").c_str());
     int n = THIS_CFG.GetInt("settings", "SoftwareDetect");
@@ -2679,6 +2681,7 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
     }
     DialogBase* p = (DialogBase*)wParam;
     if (p && ::IsWindow(p->GetSafeHwnd()) && p->ShouldReconnect()) {
+        ::PostMessageA(p->GetSafeHwnd(), WM_DISCONNECT, 0, 0);
         return S_OK;
     }
 

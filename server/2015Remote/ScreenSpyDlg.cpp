@@ -166,6 +166,7 @@ BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialog)
     ON_WM_ACTIVATE()
     ON_WM_TIMER()
     ON_COMMAND(ID_EXIT_FULLSCREEN, &CScreenSpyDlg::OnExitFullscreen)
+    ON_MESSAGE(WM_DISCONNECT, &CScreenSpyDlg::OnDisconnect)
 END_MESSAGE_MAP()
 
 
@@ -272,7 +273,7 @@ VOID CScreenSpyDlg::OnClose()
         m_aviFile = "";
         m_aviStream.Close();
     }
-    if (SayByeBye()) Sleep(500);
+    if (ShouldReconnect() && SayByeBye()) Sleep(500);
     CancelIO();
     // 恢复鼠标状态
     SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)LoadCursor(NULL, IDC_ARROW));
@@ -292,6 +293,11 @@ VOID CScreenSpyDlg::OnClose()
     }
 
     DialogBase::OnClose();
+}
+
+afx_msg LRESULT CScreenSpyDlg::OnDisconnect(WPARAM wParam, LPARAM lParam) {
+    m_bConnected = FALSE;
+    return S_OK;
 }
 
 VOID CScreenSpyDlg::OnReceiveComplete()
@@ -746,7 +752,7 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
 
 void CScreenSpyDlg::SendScaledMouseMessage(MSG* pMsg, bool makeLP)
 {
-    if (!m_bIsCtrl)
+    if (!m_bIsCtrl || !m_bConnected)
         return;
 
     MYMSG msg(*pMsg);

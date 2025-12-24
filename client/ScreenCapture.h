@@ -15,7 +15,7 @@
 #include <future>
 #include <emmintrin.h>  // SSE2
 #include "X264Encoder.h"
-
+#include "common/file_upload.h"
 
 class ThreadPool
 {
@@ -120,6 +120,9 @@ public:
     int				 m_SendQuality;		 // 发送质量
 
     LPBITMAPINFO     m_BitmapInfor_Full; // BMP信息
+    LPBITMAPINFO     m_BitmapInfor_Send; // 发送的BMP信息
+    BYTE             *m_BmpZoomFirst;    // 第一个缩放帧
+    BYTE             *m_BmpZoomBuffer;   // 缩放缓存
     BYTE             m_bAlgorithm;       // 屏幕差异算法
 
     int				 m_iScreenX;		 // 起始x坐标
@@ -145,6 +148,9 @@ public:
         m_FrameID(0), m_GOP(DEFAULT_GOP), m_iScreenX(0), m_iScreenY(0), m_biBitCount(n),
         m_SendKeyFrame(false), m_encoder(nullptr)
     {
+        m_BitmapInfor_Send = nullptr;
+        m_BmpZoomBuffer = nullptr;
+        m_BmpZoomFirst = nullptr;
         m_BlockNum = 8;
         m_ThreadPool = new ThreadPool(m_BlockNum);
         static auto monitors = GetAllMonitors();
@@ -201,6 +207,9 @@ public:
             m_BitmapInfor_Full = NULL;
         }
         SAFE_DELETE_ARRAY(m_RectBuffer);
+        SAFE_DELETE(m_BitmapInfor_Send);
+        SAFE_DELETE_ARRAY(m_BmpZoomBuffer);
+        SAFE_DELETE_ARRAY(m_BmpZoomFirst);
 
         for (int blockY = 0; blockY < m_BlockNum; ++blockY) {
             SAFE_DELETE_ARRAY(m_BlockBuffers[blockY]);
@@ -471,8 +480,8 @@ public:
 
     virtual int GetBMPSize() const
     {
-        assert(m_BitmapInfor_Full);
-        return m_BitmapInfor_Full->bmiHeader.biSizeImage;
+        assert(m_BitmapInfor_Send);
+        return m_BitmapInfor_Send->bmiHeader.biSizeImage;
     }
 
     // SSE2 优化：BGRA 转单通道灰度，一次处理 4 个像素，输出 4 字节
@@ -521,7 +530,7 @@ public:
         bmpInfo->bmiHeader.biWidth = biWidth;
         bmpInfo->bmiHeader.biHeight = biHeight;
         bmpInfo->bmiHeader.biPlanes = 1;
-        bmpInfo->bmiHeader.biBitCount = 32;
+        bmpInfo->bmiHeader.biBitCount = biBitCount;
         bmpInfo->bmiHeader.biCompression = BI_RGB;
         bmpInfo->bmiHeader.biSizeImage = biWidth * biHeight * 4;
         return bmpInfo;
@@ -563,7 +572,7 @@ public:
         memcpy(data + offset, &++m_FrameID, sizeof(int));
         offset += sizeof(int);
 #if SCREENSPY_WRITE
-        WriteBitmap(m_BitmapInfor_Full, nextData, "GHOST", m_FrameID);
+        WriteBitmap(m_BitmapInfor_Send, nextData, "GHOST", m_FrameID);
 #endif
 #else
         m_FrameID++;
@@ -572,20 +581,20 @@ public:
         if (keyFrame) {
             switch (algo) {
             case ALGORITHM_DIFF: {
-                *ulNextSendLength = 1 + offset + m_BitmapInfor_Full->bmiHeader.biSizeImage;
-                memcpy(data + offset, nextData, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+                *ulNextSendLength = 1 + offset + m_BitmapInfor_Send->bmiHeader.biSizeImage;
+                memcpy(data + offset, nextData, m_BitmapInfor_Send->bmiHeader.biSizeImage);
                 break;
             }
             case ALGORITHM_GRAY: {
-                *ulNextSendLength = 1 + offset + m_BitmapInfor_Full->bmiHeader.biSizeImage;
-                ToGray(data + offset, nextData, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+                *ulNextSendLength = 1 + offset + m_BitmapInfor_Send->bmiHeader.biSizeImage;
+                ToGray(data + offset, nextData, m_BitmapInfor_Send->bmiHeader.biSizeImage);
                 break;
             }
             case ALGORITHM_H264: {
                 uint8_t* encoded_data = nullptr;
                 uint32_t  encoded_size = 0;
-                int err = m_encoder->encode(nextData, 32, 4*m_BitmapInfor_Full->bmiHeader.biWidth,
-                                            m_ulFullWidth, m_ulFullHeight, &encoded_data, &encoded_size);
+                int err = m_encoder->encode(nextData, 32, 4* m_BitmapInfor_Send->bmiHeader.biWidth,
+                    m_BitmapInfor_Send->bmiHeader.biWidth, m_BitmapInfor_Send->bmiHeader.biHeight, &encoded_data, &encoded_size);
                 if (err) {
                     return nullptr;
                 }
@@ -596,7 +605,7 @@ public:
             default:
                 break;
             }
-            memcpy(GetFirstBuffer(), nextData, m_BitmapInfor_Full->bmiHeader.biSizeImage);
+            memcpy(GetFirstBuffer(), nextData, m_BitmapInfor_Send->bmiHeader.biSizeImage);
         } else {
             switch (algo) {
             case ALGORITHM_DIFF:
@@ -607,8 +616,8 @@ public:
             case ALGORITHM_H264: {
                 uint8_t* encoded_data = nullptr;
                 uint32_t  encoded_size = 0;
-                int err = m_encoder->encode(nextData, 32, 4 * m_BitmapInfor_Full->bmiHeader.biWidth,
-                                            m_ulFullWidth, m_ulFullHeight, &encoded_data, &encoded_size);
+                int err = m_encoder->encode(nextData, 32, 4 * m_BitmapInfor_Send->bmiHeader.biWidth,
+                    m_BitmapInfor_Send->bmiHeader.biWidth, m_BitmapInfor_Send->bmiHeader.biHeight, &encoded_data, &encoded_size);
                 if (err) {
                     return nullptr;
                 }
@@ -646,7 +655,7 @@ public:
     // 获取位图结构信息
     virtual const LPBITMAPINFO& GetBIData() const
     {
-        return m_BitmapInfor_Full;
+        return m_BitmapInfor_Send;
     }
 
 public: // 纯虚接口
@@ -656,4 +665,11 @@ public: // 纯虚接口
 
     // 获取下一帧屏幕
     virtual LPBYTE ScanNextScreen() = 0;
+
+    virtual LPBYTE scaleBitmap(LPBYTE target, LPBYTE bitmap) {
+        if (m_ulFullWidth == m_BitmapInfor_Send->bmiHeader.biWidth && m_ulFullHeight == m_BitmapInfor_Send->bmiHeader.biHeight)
+            return bitmap;
+        return ScaleBitmap(target, (uint8_t*)bitmap, m_ulFullWidth, m_ulFullHeight, m_BitmapInfor_Send->bmiHeader.biWidth,
+            m_BitmapInfor_Send->bmiHeader.biHeight);
+    }
 };
