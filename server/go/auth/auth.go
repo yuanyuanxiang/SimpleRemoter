@@ -206,3 +206,102 @@ func GenHMAC(pwdHash, superPass string) string {
 	}
 	return result
 }
+
+// HeartbeatAuthResult contains the result of heartbeat authentication
+type HeartbeatAuthResult struct {
+	Authorized bool
+	SN         string
+	Passcode   string
+	PwdHmac    uint64
+}
+
+// AuthenticateHeartbeat validates authorization info from a Heartbeat message
+// Data format (after TOKEN_HEARTBEAT byte):
+//   - offset 0: Time (8 bytes, uint64)
+//   - offset 8: ActiveWnd (512 bytes)
+//   - offset 520: Ping (4 bytes, int)
+//   - offset 524: HasSoftware (4 bytes, int)
+//   - offset 528: SN (20 bytes)
+//   - offset 548: Passcode (44 bytes)
+//   - offset 592: PwdHmac (8 bytes, uint64)
+func (a *Authenticator) AuthenticateHeartbeat(data []byte) *HeartbeatAuthResult {
+	result := &HeartbeatAuthResult{
+		Authorized: false,
+	}
+
+	// Minimum length check: need at least SN + Passcode + PwdHmac
+	// Offset 528 + 20 (SN) + 44 (Passcode) + 8 (PwdHmac) = 600 bytes
+	if len(data) < 600 {
+		return result
+	}
+
+	// Extract SN (offset 528, 20 bytes)
+	snBytes := data[528:548]
+	// Find null terminator
+	snEnd := bytes.IndexByte(snBytes, 0)
+	if snEnd == -1 {
+		snEnd = len(snBytes)
+	}
+	sn := string(snBytes[:snEnd])
+	result.SN = sn
+
+	// Extract Passcode (offset 548, 44 bytes)
+	passcodeBytes := data[548:592]
+	passcodeEnd := bytes.IndexByte(passcodeBytes, 0)
+	if passcodeEnd == -1 {
+		passcodeEnd = len(passcodeBytes)
+	}
+	passcode := string(passcodeBytes[:passcodeEnd])
+	result.Passcode = passcode
+
+	// Extract PwdHmac (offset 592, 8 bytes)
+	pwdHmac := binary.LittleEndian.Uint64(data[592:600])
+	result.PwdHmac = pwdHmac
+
+	// If SN, Passcode, or PwdHmac is empty/zero, not authorized
+	if sn == "" || passcode == "" || pwdHmac == 0 {
+		return result
+	}
+
+	// Split passcode by '-'
+	parts := strings.Split(passcode, "-")
+	if len(parts) != 6 && len(parts) != 7 {
+		return result
+	}
+
+	// Get last 4 parts as subvector
+	subvector := parts[len(parts)-4:]
+
+	// Build password string: v[0] + " - " + v[1] + ": " + PwdHash + (optional: ": " + v[2])
+	password := parts[0] + " - " + parts[1] + ": " + a.config.PwdHash
+	if len(parts) == 7 {
+		password += ": " + parts[2]
+	}
+
+	// Derive key from password and SN
+	finalKey := DeriveKey(password, sn)
+
+	// Get fixed length ID
+	hash256 := strings.Join(subvector, "-")
+	fixedKey := GetFixedLengthID(finalKey)
+
+	// Compare passcode
+	if hash256 != fixedKey {
+		return result
+	}
+
+	// Passcode validation successful, now verify HMAC
+	superPass := os.Getenv("YAMA_PWD")
+	if superPass == "" {
+		superPass = a.config.SuperPass
+	}
+
+	if superPass != "" {
+		verified := VerifyMessage(superPass, []byte(passcode), pwdHmac)
+		if verified {
+			result.Authorized = true
+		}
+	}
+
+	return result
+}

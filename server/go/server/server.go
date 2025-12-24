@@ -260,7 +260,28 @@ func (s *Server) processData(ctx *connection.Context) {
 			if err == protocol.ErrNeedMore {
 				return
 			}
-			s.logger.Error("Parse error for connection %d: %v", ctx.ID, err)
+			// Log more details for unsupported protocol errors
+			if err == protocol.ErrUnsupported {
+				// Get first 32 bytes for debugging
+				peekLen := 32
+				if ctx.InBuffer.Len() < peekLen {
+					peekLen = ctx.InBuffer.Len()
+				}
+				rawData := ctx.InBuffer.Peek(peekLen)
+				// Sanitize for safe logging (replace non-printable chars)
+				ascii := make([]byte, len(rawData))
+				for i, b := range rawData {
+					if b >= 32 && b < 127 {
+						ascii[i] = b
+					} else {
+						ascii[i] = '.'
+					}
+				}
+				s.logger.Warn("Unsupported protocol from ip=%s conn=%d raw=%x ascii=%s",
+					ctx.GetPeerIP(), ctx.ID, rawData, string(ascii))
+			} else {
+				s.logger.Error("Parse error for connection %d: %v", ctx.ID, err)
+			}
 			_ = ctx.Close()
 			return
 		}
