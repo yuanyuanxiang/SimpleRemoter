@@ -18,7 +18,7 @@ extern "C" {
 #pragma comment(lib, "ws2_32.lib")
 
 // 自动启动注册表中的值
-#define REG_NAME "ClientDemo"
+#define REG_NAME GetExeHashStr().c_str()
 
 typedef void (*StopRun)();
 

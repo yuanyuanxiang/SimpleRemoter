@@ -2738,6 +2738,13 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
     // if(0)
     {
 		BOOL authorized = AuthorizeClient(hb.SN, hb.Passcode, hb.PwdHmac);
+		if (authorized) {
+			Mprintf("%s HMAC 校验成功: %lld\n", hb.Passcode, hb.PwdHmac);
+			std::string tip = std::string(hb.Passcode) + " 授权成功: ";
+			tip += std::to_string(hb.PwdHmac) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
+			CharMsg* msg = new CharMsg(tip.c_str());
+			PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+		}
         HeartbeatACK ack = { hb.Time, (char)authorized };
         BYTE buf[sizeof(HeartbeatACK) + 1] = { CMD_HEARTBEAT_ACK};
         memcpy(buf + 1, &ack, sizeof(HeartbeatACK));
