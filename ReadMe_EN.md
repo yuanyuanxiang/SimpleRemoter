@@ -447,6 +447,36 @@ This update focuses on improving client stability and running modes, optimizing 
 * fix: Client offline issue and virtual desktop opening issue
 * Improve: Calculate unique ID for client program
 
+
+**2025.12.25**
+
+Release v1.2.0
+
+This update focuses on remote desktop optimization, Go language server framework, authorization system improvements, and various bug fixes.
+
+* Feature: Add Go TCP server framework
+* Feature: Use `frpc.dll` to proxy client's TCP port
+* Feature: Support upload/download executable file and run it
+* Feature: Add reconnect logic for remote desktop control
+* Feature: Complete re-group logic and add log control
+* Feature: Add command for client sending msg to master
+* Feature: Support gen pass code binding with domain
+* Improve: Scale 4K desktop screen to 1080P (#267)
+* Improve: Remove F11 to leave full screen (Use popup dialog)
+* Improve: Send `WIN` key press action to remote desktop
+* Improve: Change registry/mutex name of client program
+* Improve: Move host online notification to `PostMessage`
+* Improve: Add HMAC to verify master's Passcode
+* fix: Small issues related to remote desktop control
+* fix: Use PowerShell to get hardware info (>=Win7)
+* fix: Remote screen black if the window doesn't use DWM to render
+* fix: Non default group client showing in default list
+* fix: DateVerify causes master program UI blocked
+* fix: Stack overflow when operating `CharMsg`
+* fix: Remove FRPC settings file before re-write it
+* fix: Revert copy and run client program in `ProgramData`
+* Server/go: Authorization client automatically exit if verify succeed
+
 ---
 
 # 6. Related Projects

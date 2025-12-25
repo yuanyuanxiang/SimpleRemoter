@@ -10,7 +10,7 @@ extern "C" {
 }
 
 // 自动启动注册表中的值
-#define REG_NAME "a_ghost"
+#define REG_NAME GetExeHashStr().c_str()
 
 // 启动的客户端个数
 #define CLIENT_PARALLEL_NUM 1
