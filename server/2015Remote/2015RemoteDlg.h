@@ -166,6 +166,7 @@ protected:
     BOOL m_needNotify = FALSE;
     DWORD g_StartTick;
     BOOL m_bHookWIN = TRUE;
+    BOOL m_runNormal = FALSE;
     // 生成的消息映射函数
     virtual BOOL OnInitDialog();
     afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
@@ -385,4 +386,5 @@ public:
     afx_msg void OnParamEnableLog();
     afx_msg void OnProxyPort();
     afx_msg void OnHookWin();
+    afx_msg void OnRunasService();
 };

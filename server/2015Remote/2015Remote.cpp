@@ -239,15 +239,16 @@ BOOL LaunchAsAdmin(const char* szFilePath, const char* verb)
 
 BOOL CMy2015RemoteApp::InitInstance()
 {
+    BOOL runNormal = THIS_CFG.GetInt("settings", "RunNormal", 0);
     char curFile[MAX_PATH] = { 0 };
     GetModuleFileNameA(NULL, curFile, MAX_PATH);
-    if (!IsRunningAsAdmin() && LaunchAsAdmin(curFile, "runas")) {
+    if (!runNormal && !IsRunningAsAdmin() && LaunchAsAdmin(curFile, "runas")) {
         Mprintf("[InitInstance] 程序没有管理员权限，用户选择以管理员身份重新运行。\n");
         return FALSE;
     }
 
     // 首先处理服务命令行参数
-    if (HandleServiceCommandLine()) {
+    if (!runNormal && HandleServiceCommandLine()) {
         Mprintf("[InitInstance] 服务命令已处理，退出。\n");
         return FALSE;  // 服务命令已处理，退出
     }

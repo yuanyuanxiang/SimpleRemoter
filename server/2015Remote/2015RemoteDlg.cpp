@@ -45,6 +45,7 @@
 #include <thread>
 #include "common/file_upload.h"
 #include "SplashDlg.h"
+#include <ServerServiceWrapper.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -605,6 +606,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_PARAM_ENABLE_LOG, &CMy2015RemoteDlg::OnParamEnableLog)
         ON_COMMAND(ID_PROXY_PORT, &CMy2015RemoteDlg::OnProxyPort)
         ON_COMMAND(ID_HOOK_WIN, &CMy2015RemoteDlg::OnHookWin)
+        ON_COMMAND(ID_RUNAS_SERVICE, &CMy2015RemoteDlg::OnRunasService)
         END_MESSAGE_MAP()
 
 
@@ -1283,6 +1285,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     SubMenu->CheckMenuItem(ID_PARAM_ENABLE_LOG, m_settings.EnableLog ? MF_CHECKED : MF_UNCHECKED);
     m_bHookWIN = THIS_CFG.GetInt("settings", "HookWIN", 0);
     SubMenu->CheckMenuItem(ID_HOOK_WIN, m_bHookWIN ? MF_CHECKED : MF_UNCHECKED);
+	m_runNormal = THIS_CFG.GetInt("settings", "RunNormal", 0);
+    SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, !m_runNormal ? MF_CHECKED : MF_UNCHECKED);
     std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "摄像头"}, {SOFTWARE_TELEGRAM, "电报" }};
     std::string str = myMap[n];
     LVCOLUMN lvColumn;
@@ -4571,4 +4575,14 @@ void CMy2015RemoteDlg::OnHookWin()
 	THIS_CFG.SetInt("settings", "HookWIN", m_bHookWIN);
 	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
 	SubMenu->CheckMenuItem(ID_HOOK_WIN, m_bHookWIN ? MF_CHECKED : MF_UNCHECKED);
+}
+
+
+void CMy2015RemoteDlg::OnRunasService()
+{
+    m_runNormal = !m_runNormal;
+	THIS_CFG.SetInt("settings", "RunNormal", m_runNormal);
+	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
+	SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, !m_runNormal ? MF_CHECKED : MF_UNCHECKED);
+    BOOL r = m_runNormal ? ServerService_Uninstall() : ServerService_Install();
 }
