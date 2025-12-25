@@ -741,6 +741,9 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
         if (pMsg->wParam != VK_LWIN && pMsg->wParam != VK_RWIN) {
             SendScaledMouseMessage(pMsg, true);
         }
+		if (pMsg->message == WM_SYSKEYDOWN && pMsg->wParam == VK_F4) {
+			return TRUE; // 屏蔽 Alt + F4
+		}
         if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE)
             return TRUE;// 屏蔽Enter和ESC关闭对话
         break;
@@ -987,7 +990,7 @@ void CScreenSpyDlg::EnterFullScreen()
         // 7. 标记全屏模式
         m_bFullScreen = true;
 
-        SetTimer(1, 100, NULL);
+        SetTimer(1, 50, NULL);
     }
 }
 

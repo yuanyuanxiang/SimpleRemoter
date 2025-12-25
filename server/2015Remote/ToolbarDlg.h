@@ -4,6 +4,8 @@
 class CToolbarDlg : public CDialogEx
 {
 	DECLARE_DYNAMIC(CToolbarDlg)
+private:
+	int m_lastY = 0; // 记录上一次的 Y 坐标
 
 public:
 	CToolbarDlg(CWnd* pParent = nullptr);
@@ -25,6 +27,8 @@ protected:
 public:
 	afx_msg void OnBnClickedExitFullscreen();
 	afx_msg void OnBnClickedCtrl();
+	afx_msg void OnBnClickedMinimize();
 	afx_msg void OnBnClickedClose();
+	afx_msg BOOL OnEraseBkgnd(CDC* pDC);
 	virtual BOOL OnInitDialog();
 };
