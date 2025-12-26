@@ -19,6 +19,7 @@
 #include <cstdarg>
 #include "skCrypter.h"
 #include <iomanip>
+#include <algorithm>
 
 
 inline bool stringToBool(const std::string& str)

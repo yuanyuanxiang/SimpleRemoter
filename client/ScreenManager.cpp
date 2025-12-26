@@ -68,7 +68,7 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 #ifndef PLUGIN
     extern ClientApp g_MyApp;
     m_conn = g_MyApp.g_Connection;
-    InitFileUpload("");
+    InitFileUpload("", 64, 50, Logf);
 #endif
     m_isGDI = TRUE;
     m_virtual = FALSE;
@@ -102,6 +102,7 @@ bool CScreenManager::SwitchScreen()
         TerminateThread(m_hWorkThread, -1);
     }
     m_bIsWorking = TRUE;
+    m_SendFirst = FALSE;
     m_hWorkThread = __CreateThread(NULL, 0, WorkThreadProc, this, 0, NULL);
     return true;
 }
@@ -409,7 +410,7 @@ CScreenManager::~CScreenManager()
     SAFE_DELETE(m_pUserParam);
 }
 
-void RunFileReceiver(CScreenManager *mgr, const std::string &folder)
+void RunFileReceiver(CScreenManager *mgr, const std::string &folder, const std::string& files)
 {
     auto start = time(0);
     Mprintf("Enter thread RunFileReceiver: %d\n", GetCurrentThreadId());
@@ -417,9 +418,15 @@ void RunFileReceiver(CScreenManager *mgr, const std::string &folder)
     if (pClient->ConnectServer(mgr->m_ClientObject->ServerIP().c_str(), mgr->m_ClientObject->ServerPort())) {
         pClient->setManagerCallBack(mgr, CManager::DataProcess, CManager::ReconnectProcess);
         // 发送目录并准备接收文件
-        char cmd[300] = { COMMAND_GET_FILE };
+        int len = 1 + folder.length() + files.length() + 2;
+        char* cmd = new char[len];
+        cmd[0] = COMMAND_GET_FILE;
         memcpy(cmd + 1, folder.c_str(), folder.length());
-        pClient->Send2Server(cmd, sizeof(cmd));
+        cmd[1 + folder.length()] = 0;
+        memcpy(cmd + 1 + folder.length() + 1, files.data(), files.length());
+        cmd[1 + folder.length() + files.length() + 1] = 0;
+        pClient->Send2Server(cmd, len);
+        SAFE_DELETE_ARRAY(cmd);
         pClient->RunEventLoop(TRUE);
     }
     delete pClient;
@@ -511,17 +518,18 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     }
     case COMMAND_GET_FOLDER: {
         std::string folder;
-        if (GetCurrentFolderPath(folder)) {
-            char h[100] = {};
+        if ((GetCurrentFolderPath(folder) || IsDebug) && ulLength - 1 > 80) {
+            char *h = new char[ulLength-1];
             memcpy(h, szBuffer + 1, ulLength - 1);
             m_hash = std::string(h, h + 64);
             m_hmac = std::string(h + 64, h + 80);
-
+			std::string files = h[80] ? std::string(h + 80, h + ulLength - 1) : "";
+			SAFE_DELETE_ARRAY(h);
             if (OpenClipboard(nullptr)) {
                 EmptyClipboard();
                 CloseClipboard();
             }
-            std::thread(RunFileReceiver, this, folder).detach();
+            std::thread(RunFileReceiver, this, folder, files).detach();
         }
         break;
     }

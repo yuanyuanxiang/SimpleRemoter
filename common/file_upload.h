@@ -15,7 +15,9 @@ struct FileChunkPacket {
 };
 #pragma pack(pop)
 
-int InitFileUpload(const std::string hmac, int chunkSizeKb = 64, int sendDurationMs = 50);
+typedef void (*LogFunc)(const char* file, int line, const char* format, ...);
+
+int InitFileUpload(const std::string hmac, int chunkSizeKb = 64, int sendDurationMs = 50, LogFunc logFunc = NULL);
 
 int UninitFileUpload();
 

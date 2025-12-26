@@ -1142,7 +1142,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     THIS_CFG.SetStr("settings", "MasterHash", GetMasterHash());
 
     UPDATE_SPLASH(20, "正在初始化文件上传模块...");
-    int ret = InitFileUpload(GetHMAC());
+    int ret = InitFileUpload(GetHMAC(), 64, 50, Logf);
     g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, AfxGetInstanceHandle(), 0);
 
     UPDATE_SPLASH(25, "正在初始化视频墙...");
@@ -2345,6 +2345,27 @@ BOOL CMy2015RemoteDlg::AuthorizeClient(const std::string& sn, const std::string&
     return VerifyMessage(pwd, (BYTE*)passcode.c_str(), passcode.length(), hmac);
 }
 
+// 从char数组解析出多个路径
+std::vector<std::string> ParseMultiStringPath(const char* buffer, size_t size)
+{
+	std::vector<std::string> paths;
+
+	const char* p = buffer;
+	const char* end = buffer + size;
+
+	while (p < end)
+	{
+		size_t len = strlen(p);
+		if (len > 0)
+		{
+			paths.emplace_back(p, len);
+		}
+		p += len + 1;
+	}
+
+	return paths;
+}
+
 VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 {
     if (isClosed) {
@@ -2401,14 +2422,17 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     }
     case COMMAND_GET_FILE: {
         // 发送文件
-        int result;
-        auto files = GetClipboardFiles(result);
+		std::string dir = (char*)(szBuffer + 1);
+		char* ptr = (char*)szBuffer + 1 + dir.length() + 1;
+        auto specified = *ptr ? ParseMultiStringPath(ptr, len - 2 - dir.length()) : std::vector<std::string>{};
+        int result = 0;
+        auto files = specified.empty() ? GetClipboardFiles(result): specified;
         if (!files.empty()) {
-            std::string dir = (char*)(szBuffer + 1);
             std::string hash = GetPwdHash(), hmac = GetHMAC(100);
             std::thread(FileBatchTransferWorker, files, dir, ContextObject, SendData, FinishSend,
                         hash, hmac).detach();
         } else {
+            ContextObject->CancelIO();
             Mprintf("GetClipboardFiles failed: %d\n", result);
         }
         break;
