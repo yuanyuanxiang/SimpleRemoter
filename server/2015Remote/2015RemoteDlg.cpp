@@ -4218,7 +4218,45 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
         do {
             static CDialogBase* operateWnd = nullptr;
             KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
-			if (g_2015RemoteDlg->m_bHookWIN && (pKey->vkCode == VK_LWIN || pKey->vkCode == VK_RWIN)) {
+			// 先判断是否需要处理的热键
+			bool bNeedCheck = false;
+
+			// Win 键 (开始菜单、Win+D/E/R/L 等)
+			if (pKey->vkCode == VK_LWIN || pKey->vkCode == VK_RWIN) {
+				bNeedCheck = true;
+			}
+			// Alt+Tab (切换窗口)
+			else if (pKey->vkCode == VK_TAB && (pKey->flags & LLKHF_ALTDOWN)) {
+				bNeedCheck = true;
+			}
+			// Alt+Esc (循环切换窗口)
+			else if (pKey->vkCode == VK_ESCAPE && (pKey->flags & LLKHF_ALTDOWN)) {
+				bNeedCheck = true;
+			}
+			// Ctrl+Shift+Esc (任务管理器)
+			else if (pKey->vkCode == VK_ESCAPE &&
+				(GetAsyncKeyState(VK_CONTROL) & 0x8000) &&
+				(GetAsyncKeyState(VK_SHIFT) & 0x8000)) {
+				bNeedCheck = true;
+			}
+			// Ctrl+Esc (开始菜单)
+			else if (pKey->vkCode == VK_ESCAPE && (GetAsyncKeyState(VK_CONTROL) & 0x8000)) {
+				bNeedCheck = true;
+			}
+			// F12 (调试器热键)
+			else if (pKey->vkCode == VK_F12) {
+				bNeedCheck = true;
+			}
+			// Print Screen (截图)
+			else if (pKey->vkCode == VK_SNAPSHOT) {
+				bNeedCheck = true;
+			}
+			// Win+Tab (任务视图)
+			else if (pKey->vkCode == VK_TAB &&
+				(GetAsyncKeyState(VK_LWIN) & 0x8000 || GetAsyncKeyState(VK_RWIN) & 0x8000)) {
+				bNeedCheck = true;
+			}
+			if (bNeedCheck && g_2015RemoteDlg->m_bHookWIN) {
                 HWND hFore = ::GetForegroundWindow();
 				auto screen = (CScreenSpyDlg*)g_2015RemoteDlg->GetRemoteWindow(hFore);
                 if (screen && screen->m_bIsCtrl) {
@@ -4572,6 +4610,8 @@ void CMy2015RemoteDlg::OnProxyPort()
 void CMy2015RemoteDlg::OnHookWin()
 {
 	m_bHookWIN = !m_bHookWIN;
+	MessageBoxA(CString("远程控制时，") + (m_bHookWIN ? "" : "不") + CString("转发系统热键到远程桌面。"),
+		"提示", MB_ICONINFORMATION);
 	THIS_CFG.SetInt("settings", "HookWIN", m_bHookWIN);
 	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
 	SubMenu->CheckMenuItem(ID_HOOK_WIN, m_bHookWIN ? MF_CHECKED : MF_UNCHECKED);
@@ -4581,6 +4621,9 @@ void CMy2015RemoteDlg::OnHookWin()
 void CMy2015RemoteDlg::OnRunasService()
 {
     m_runNormal = !m_runNormal;
+	MessageBoxA(m_runNormal ? CString("以传统方式启动主控程序，没有守护进程。") : 
+        CString("以“服务+代理”形式启动主控程序，会开机自启及被守护。"),
+		"提示", MB_ICONINFORMATION);
 	THIS_CFG.SetInt("settings", "RunNormal", m_runNormal);
 	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
 	SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, !m_runNormal ? MF_CHECKED : MF_UNCHECKED);
