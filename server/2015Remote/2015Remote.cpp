@@ -85,7 +85,7 @@ long WINAPI whenbuged(_EXCEPTION_POINTERS *excp)
         MINIDUMP_EXCEPTION_INFORMATION einfo = {::GetCurrentThreadId(), excp, FALSE};
         ::MiniDumpWriteDump(::GetCurrentProcess(), ::GetCurrentProcessId(),
                             hFile, MiniDumpWithFullMemory, &einfo, NULL, NULL);
-        ::CloseHandle(hFile);
+        SAFE_CLOSE_HANDLE(hFile);
     }
 
     return EXCEPTION_EXECUTE_HANDLER;
@@ -259,7 +259,7 @@ BOOL CMy2015RemoteApp::InitInstance()
     {
         m_Mutex = CreateMutex(NULL, FALSE, mu.c_str());
         if (ERROR_ALREADY_EXISTS == GetLastError()) {
-            CloseHandle(m_Mutex);
+            SAFE_CLOSE_HANDLE(m_Mutex);
             m_Mutex = NULL;
             MessageBox("一个主控程序已经在运行，请检查任务管理器。",
                        "提示", MB_ICONINFORMATION);
@@ -341,7 +341,7 @@ BOOL CMy2015RemoteApp::InitInstance()
     }
 
     if (hEvent) {
-        CloseHandle(hEvent);
+        SAFE_CLOSE_HANDLE(hEvent);
         Mprintf("[InitInstance] 关闭事件句柄。\n");
 	}
 
@@ -354,7 +354,7 @@ BOOL CMy2015RemoteApp::InitInstance()
 int CMy2015RemoteApp::ExitInstance()
 {
     if (m_Mutex) {
-        CloseHandle(m_Mutex);
+        SAFE_CLOSE_HANDLE(m_Mutex);
         m_Mutex = NULL;
     }
     __try {

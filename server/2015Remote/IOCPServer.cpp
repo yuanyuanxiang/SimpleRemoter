@@ -73,7 +73,7 @@ void IOCPServer::Destroy()
 
     if (m_hKillEvent != NULL) {
         SetEvent(m_hKillEvent);
-        CloseHandle(m_hKillEvent);
+        SAFE_CLOSE_HANDLE(m_hKillEvent);
         m_hKillEvent = NULL;
     }
 
@@ -83,12 +83,12 @@ void IOCPServer::Destroy()
     }
 
     if (m_hCompletionPort != INVALID_HANDLE_VALUE) {
-        CloseHandle(m_hCompletionPort);
+        SAFE_CLOSE_HANDLE(m_hCompletionPort);
         m_hCompletionPort = INVALID_HANDLE_VALUE;
     }
 
     if (m_hListenEvent != WSA_INVALID_EVENT) {
-        CloseHandle(m_hListenEvent);
+        SAFE_CLOSE_HANDLE(m_hListenEvent);
         m_hListenEvent = WSA_INVALID_EVENT;
     }
 }
@@ -262,13 +262,13 @@ BOOL IOCPServer::InitializeIOCP(VOID)
                                            0,
                                            NULL);
         if (hWorkThread == NULL ) {
-            CloseHandle(m_hCompletionPort);
+            SAFE_CLOSE_HANDLE(m_hCompletionPort);
             return FALSE;
         }
 
         AddWorkThread(1);
 
-        CloseHandle(hWorkThread);
+        SAFE_CLOSE_HANDLE(hWorkThread);
     }
 
     return TRUE;
@@ -327,7 +327,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 
                         This->AddWorkThread(hThread ? 1:0);
 
-                        CloseHandle(hThread);
+                        SAFE_CLOSE_HANDLE(hThread);
                     }
                 }
             }

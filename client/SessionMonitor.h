@@ -4,6 +4,10 @@
 #include <windows.h>
 #include <wtsapi32.h>
 
+#ifndef SAFE_CLOSE_HANDLE
+#define SAFE_CLOSE_HANDLE(h) do{if((h)!=NULL&&(h)!=INVALID_HANDLE_VALUE){CloseHandle(h);(h)=NULL;}}while(0)
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif

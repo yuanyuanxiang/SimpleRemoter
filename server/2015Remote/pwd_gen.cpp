@@ -6,6 +6,10 @@
 #define Mprintf
 #endif
 
+#ifndef SAFE_CLOSE_HANDLE
+#define SAFE_CLOSE_HANDLE(h) do{if((h)!=NULL&&(h)!=INVALID_HANDLE_VALUE){CloseHandle(h);(h)=NULL;}}while(0)
+#endif
+
 #include "pwd_gen.h"
 #include <vector>
 #include <sstream>
@@ -60,7 +64,7 @@ std::string execCommand(const char* cmd)
     }
 
     // 关闭写入端句柄
-    CloseHandle(hStdOutWrite);
+    SAFE_CLOSE_HANDLE(hStdOutWrite);
 
     // 读取命令输出
     char buffer[128];
@@ -71,14 +75,14 @@ std::string execCommand(const char* cmd)
     }
 
     // 关闭读取端句柄
-    CloseHandle(hStdOutRead);
+    SAFE_CLOSE_HANDLE(hStdOutRead);
 
     // 等待进程完成
     WaitForSingleObject(pi.hProcess, INFINITE);
 
     // 关闭进程和线程句柄
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
+    SAFE_CLOSE_HANDLE(pi.hProcess);
+    SAFE_CLOSE_HANDLE(pi.hThread);
 
     // 去除换行符和空格
     result.erase(remove(result.begin(), result.end(), '\n'), result.end());

@@ -185,7 +185,7 @@ void IOCPKCPServer::Destroy()
 
     if (m_hThread) {
         WaitForSingleObject(m_hThread, INFINITE);
-        CloseHandle(m_hThread);
+        SAFE_CLOSE_HANDLE(m_hThread);
         m_hThread = NULL;
     }
 
@@ -193,7 +193,7 @@ void IOCPKCPServer::Destroy()
         m_kcpUpdateThread.join();
 
     if (m_hIOCP) {
-        CloseHandle(m_hIOCP);
+        SAFE_CLOSE_HANDLE(m_hIOCP);
         m_hIOCP = NULL;
     }
 

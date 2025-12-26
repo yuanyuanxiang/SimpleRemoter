@@ -194,14 +194,14 @@ public:
                 for (const auto& processName : processNames) {
                     // 如果进程名称匹配，则返回 true
                     if (_stricmp(pe32.szExeFile, processName.c_str()) == 0) {
-                        CloseHandle(hProcessSnap);
+                        SAFE_CLOSE_HANDLE(hProcessSnap);
                         return true;
                     }
                 }
             } while (Process32Next(hProcessSnap, &pe32));
         }
 
-        CloseHandle(hProcessSnap);
+        SAFE_CLOSE_HANDLE(hProcessSnap);
         return false;
     }
     virtual uint64_t GetClientID() const override

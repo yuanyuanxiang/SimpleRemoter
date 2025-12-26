@@ -92,7 +92,7 @@ CAudioManager::~CAudioManager()
     if (m_hWorkThread)
         WaitForSingleObject(m_hWorkThread, INFINITE);    //等待 工作线程结束
     if (m_hWorkThread)
-        CloseHandle(m_hWorkThread);
+        SAFE_CLOSE_HANDLE(m_hWorkThread);
 
     if (m_AudioObject!=NULL) {
         delete m_AudioObject;

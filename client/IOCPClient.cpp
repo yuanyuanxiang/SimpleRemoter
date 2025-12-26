@@ -152,7 +152,7 @@ IOCPClient::~IOCPClient()
     Disconnect();
 
     if (m_hWorkThread!=NULL) {
-        CloseHandle(m_hWorkThread);
+        SAFE_CLOSE_HANDLE(m_hWorkThread);
         m_hWorkThread = NULL;
     }
 

@@ -136,7 +136,7 @@ void SessionMonitor_Stop(SessionMonitor* self)
 
     if (self->monitorThread) {
         WaitForSingleObject(self->monitorThread, 10000);
-        CloseHandle(self->monitorThread);
+        SAFE_CLOSE_HANDLE(self->monitorThread);
         self->monitorThread = NULL;
     }
 
@@ -297,7 +297,7 @@ static BOOL IsAgentRunningInSession(SessionMonitor* self, DWORD sessionId)
         } while (Process32Next(hSnapshot, &pe32));
     }
 
-    CloseHandle(hSnapshot);
+    SAFE_CLOSE_HANDLE(hSnapshot);
     return found;
 }
 
@@ -341,7 +341,7 @@ static void TerminateAllAgents(SessionMonitor* self)
             }
         }
 
-        CloseHandle(info->hProcess);
+        SAFE_CLOSE_HANDLE(info->hProcess);
     }
 
     self->agentProcesses.count = 0;  // 清空数组
@@ -371,7 +371,7 @@ static void CleanupDeadProcesses(SessionMonitor* self)
                         (int)info->processId, (int)exitCode);
                 Mprintf(buf);
 
-                CloseHandle(info->hProcess);
+                SAFE_CLOSE_HANDLE(info->hProcess);
                 AgentArray_RemoveAt(&self->agentProcesses, i);
                 continue;  // 不增加 i，因为删除了元素
             }
@@ -381,7 +381,7 @@ static void CleanupDeadProcesses(SessionMonitor* self)
                     (int)info->processId);
             Mprintf(buf);
 
-            CloseHandle(info->hProcess);
+            SAFE_CLOSE_HANDLE(info->hProcess);
             AgentArray_RemoveAt(&self->agentProcesses, i);
             continue;
         }
@@ -429,7 +429,7 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
                           SecurityImpersonation, TokenPrimary, &hDupToken)) {
         sprintf(buf, "DuplicateTokenEx failed: %d", (int)GetLastError());
         Mprintf(buf);
-        CloseHandle(hToken);
+        SAFE_CLOSE_HANDLE(hToken);
         return FALSE;
     }
 
@@ -437,8 +437,8 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
     if (!SetTokenInformation(hDupToken, TokenSessionId, &sessionId, sizeof(sessionId))) {
         sprintf(buf, "SetTokenInformation failed: %d", (int)GetLastError());
         Mprintf(buf);
-        CloseHandle(hDupToken);
-        CloseHandle(hToken);
+        SAFE_CLOSE_HANDLE(hDupToken);
+        SAFE_CLOSE_HANDLE(hToken);
         return FALSE;
     }
 
@@ -447,8 +447,8 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
     // 获取当前进程路径（启动自己）
     if (!GetModuleFileName(NULL, exePath, MAX_PATH)) {
         Mprintf("GetModuleFileName failed");
-        CloseHandle(hDupToken);
-        CloseHandle(hToken);
+        SAFE_CLOSE_HANDLE(hDupToken);
+        SAFE_CLOSE_HANDLE(hToken);
         return FALSE;
     }
 
@@ -460,8 +460,8 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
     if (fileAttr == INVALID_FILE_ATTRIBUTES) {
         sprintf(buf, "ERROR: Executable not found at: %s", exePath);
         Mprintf(buf);
-        CloseHandle(hDupToken);
-        CloseHandle(hToken);
+        SAFE_CLOSE_HANDLE(hDupToken);
+        SAFE_CLOSE_HANDLE(hToken);
         return FALSE;
     }
 
@@ -482,7 +482,7 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
         if (!CreateEnvironmentBlock(&lpEnvironment, hUserToken, FALSE)) {
             Mprintf("CreateEnvironmentBlock failed");
         }
-        CloseHandle(hUserToken);
+        SAFE_CLOSE_HANDLE(hUserToken);
     }
 
     // 在用户会话中创建进程
@@ -516,7 +516,7 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
         AgentArray_Add(&self->agentProcesses, &info);
         LeaveCriticalSection(&self->csProcessList);
 
-        CloseHandle(pi.hThread);  // 线程句柄可以关闭
+        SAFE_CLOSE_HANDLE(pi.hThread);  // 线程句柄可以关闭
     } else {
         err = GetLastError();
         sprintf(buf, "CreateProcessAsUser failed: %d", (int)err);
@@ -532,8 +532,8 @@ static BOOL LaunchAgentInSession(SessionMonitor* self, DWORD sessionId)
         }
     }
 
-    CloseHandle(hDupToken);
-    CloseHandle(hToken);
+    SAFE_CLOSE_HANDLE(hDupToken);
+    SAFE_CLOSE_HANDLE(hToken);
 
     return result;
 }

@@ -969,7 +969,7 @@ void CMachineDlg::ShowProcessList_menu()
                 memcpy(lpBuffer+1, p_InjectData, sizeof(InjectData));
                 DWORD wr = 0;
                 ReadFile(hFile, lpBuffer + sizeof(InjectData)+1, p_InjectData->datasize, &wr, NULL);
-                CloseHandle(hFile);
+                SAFE_CLOSE_HANDLE(hFile);
                 m_ContextObject->Send2Client(lpBuffer, allsize);
                 SAFE_DELETE_AR(lpBuffer);
             }
@@ -1656,10 +1656,10 @@ void CMachineDlg::ShowHostsList_menu()
         lpBuffer = (LPBYTE)LocalAlloc(LPTR, dwSize + 2);
         if (!ReadFile(hFile, lpBuffer, dwSize, &dwRead, NULL)) {
             LocalFree(lpBuffer);
-            CloseHandle(hFile);
+            SAFE_CLOSE_HANDLE(hFile);
             return;
         }
-        CloseHandle(hFile);
+        SAFE_CLOSE_HANDLE(hFile);
 
         DeleteList();
         int i = 0;

@@ -153,8 +153,8 @@ bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName)
                                     &sInfo,
                                     &pInfo);
         DWORD err = GetLastError();
-        CloseHandle(pInfo.hProcess);
-        CloseHandle(pInfo.hThread);
+        SAFE_CLOSE_HANDLE(pInfo.hProcess);
+        SAFE_CLOSE_HANDLE(pInfo.hThread);
         TCHAR* pszError = NULL;
         FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
                       NULL, err, 0, reinterpret_cast<LPTSTR>(&pszError), 0, NULL);
@@ -203,7 +203,7 @@ BOOL IsProcessRunningInDesktop(HDESK hDesk, const char* targetExeName)
                     return FALSE; // 终止枚举
                 }
             }
-            CloseHandle(hProcess);
+            SAFE_CLOSE_HANDLE(hProcess);
         }
         return TRUE; // 继续枚举
     }, reinterpret_cast<LPARAM>(&data));
@@ -401,7 +401,7 @@ CScreenManager::~CScreenManager()
 
     WaitForSingleObject(m_hWorkThread, INFINITE);
     if (m_hWorkThread!=NULL) {
-        CloseHandle(m_hWorkThread);
+        SAFE_CLOSE_HANDLE(m_hWorkThread);
     }
 
     delete m_ScreenSpyObject;

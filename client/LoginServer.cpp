@@ -340,8 +340,8 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn, BOOL& isAuthKerne
     {
         Mprintf("Check event handle: %d, %d\n", hEvent1 != NULL, hEvent2 != NULL);
 		isAuthKernel = TRUE;
-        CloseHandle(hEvent1);
-		CloseHandle(hEvent2);
+        SAFE_CLOSE_HANDLE(hEvent1);
+		SAFE_CLOSE_HANDLE(hEvent2);
         config*cfg = conn.pwdHash == masterHash ? new config : new iniFile;
         str = cfg->GetStr("settings", "Password", "");
         delete cfg;

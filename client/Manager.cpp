@@ -48,7 +48,7 @@ HANDLE MyCreateThread(LPSECURITY_ATTRIBUTES lpThreadAttributes, // SD
     arg.hEventTransferArg = CreateEvent(NULL, false, false, NULL);
     hThread = (HANDLE)_beginthreadex((void*)lpThreadAttributes, dwStackSize, ThreadLoader, &arg, dwCreationFlags, (unsigned*)lpThreadId);
     WaitForSingleObject(arg.hEventTransferArg, INFINITE);
-    CloseHandle(arg.hEventTransferArg);
+    SAFE_CLOSE_HANDLE(arg.hEventTransferArg);
 
     return hThread;
 }
@@ -237,7 +237,7 @@ CManager::CManager(IOCPClient* ClientObject) : g_bExit(ClientObject->GetState())
 CManager::~CManager()
 {
     if (m_hEventDlgOpen!=NULL) {
-        CloseHandle(m_hEventDlgOpen);
+        SAFE_CLOSE_HANDLE(m_hEventDlgOpen);
         m_hEventDlgOpen = NULL;
     }
 }

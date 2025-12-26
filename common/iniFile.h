@@ -68,20 +68,20 @@ inline HKEY GetCurrentUserRegistryKey()
     DWORD dwSize = 0;
     GetTokenInformation(hUserToken, TokenUser, NULL, 0, &dwSize);
     if (dwSize == 0) {
-        CloseHandle(hUserToken);
+        SAFE_CLOSE_HANDLE(hUserToken);
         return HKEY_CURRENT_USER;
     }
 
     // 分配内存并获取用户信息
     TOKEN_USER* pTokenUser = (TOKEN_USER*)malloc(dwSize);
     if (!pTokenUser) {
-        CloseHandle(hUserToken);
+        SAFE_CLOSE_HANDLE(hUserToken);
         return HKEY_CURRENT_USER;
     }
 
     if (!GetTokenInformation(hUserToken, TokenUser, pTokenUser, dwSize, &dwSize)) {
         free(pTokenUser);
-        CloseHandle(hUserToken);
+        SAFE_CLOSE_HANDLE(hUserToken);
         return HKEY_CURRENT_USER;
     }
 
@@ -89,7 +89,7 @@ inline HKEY GetCurrentUserRegistryKey()
     LPSTR szSid = NULL;
     if (!ConvertSidToStringSidA(pTokenUser->User.Sid, &szSid)) {
         free(pTokenUser);
-        CloseHandle(hUserToken);
+        SAFE_CLOSE_HANDLE(hUserToken);
         return HKEY_CURRENT_USER;
     }
 
@@ -103,7 +103,7 @@ inline HKEY GetCurrentUserRegistryKey()
 
     LocalFree(szSid);
     free(pTokenUser);
-    CloseHandle(hUserToken);
+    SAFE_CLOSE_HANDLE(hUserToken);
 
     return hUserKey ? hUserKey : HKEY_CURRENT_USER;
 }
