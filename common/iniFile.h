@@ -12,6 +12,10 @@
 #include <sddl.h>
 #pragma comment(lib, "wtsapi32.lib")
 
+#ifndef SAFE_CLOSE_HANDLE
+#define SAFE_CLOSE_HANDLE(h) do{if((h)!=NULL&&(h)!=INVALID_HANDLE_VALUE){CloseHandle(h);(h)=NULL;}}while(0)
+#endif
+
 inline std::string GetExeDir()
 {
     char path[MAX_PATH];

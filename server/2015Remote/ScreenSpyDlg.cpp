@@ -167,6 +167,7 @@ BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialog)
     ON_WM_TIMER()
     ON_COMMAND(ID_EXIT_FULLSCREEN, &CScreenSpyDlg::OnExitFullscreen)
     ON_MESSAGE(WM_DISCONNECT, &CScreenSpyDlg::OnDisconnect)
+    ON_WM_DROPFILES()
 END_MESSAGE_MAP()
 
 
@@ -220,6 +221,9 @@ BOOL CScreenSpyDlg::OnInitDialog()
 {
     CDialog::OnInitDialog();
     SetIcon(m_hIcon,FALSE);
+    DragAcceptFiles(TRUE);
+	ChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
+	ChangeWindowMessageFilter(0x0049, MSGFLT_ADD);
 
     PrepareDrawing(m_BitmapInfor_Full);
 
@@ -1100,4 +1104,51 @@ void CScreenSpyDlg::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
 void CScreenSpyDlg::UpdateCtrlStatus(BOOL ctrl) {
 	m_bIsCtrl = ctrl;
 	SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
+}
+
+// 将多个路径组合成单\0分隔的char数组
+// 格式: "path1\0path2\0path3\0"
+std::vector<char> BuildMultiStringPath(const std::vector<std::string>& paths)
+{
+	std::vector<char> result;
+
+	for (const auto& path : paths)
+	{
+		result.insert(result.end(), path.begin(), path.end());
+		result.push_back('\0');
+	}
+
+	return result;
+}
+
+void CScreenSpyDlg::OnDropFiles(HDROP hDropInfo)
+{
+    if (m_bIsCtrl && m_bConnected) {
+        UINT nFiles = DragQueryFile(hDropInfo, 0xFFFFFFFF, NULL, 0);
+        std::vector<std::string> list;
+        for (UINT i = 0; i < nFiles; i++)
+        {
+            TCHAR szPath[MAX_PATH];
+            DragQueryFile(hDropInfo, i, szPath, MAX_PATH);
+            list.push_back(szPath);
+        }
+        std::string GetPwdHash();
+        std::string GetHMAC(int offset);
+        std::vector<std::string> PreprocessFilesSimple(const std::vector<std::string>&inputFiles);
+        auto files = PreprocessFilesSimple(list);
+        auto str = BuildMultiStringPath(files);
+        BYTE* szBuffer = new BYTE[1 + 80 + str.size()];
+        szBuffer[0] = { COMMAND_GET_FOLDER };
+        std::string masterId = GetPwdHash(), hmac = GetHMAC(100);
+        memcpy((char*)szBuffer + 1, masterId.c_str(), masterId.length());
+        memcpy((char*)szBuffer + 1 + masterId.length(), hmac.c_str(), hmac.length());
+        memcpy(szBuffer + 1 + 80, str.data(), str.size());
+        m_ContextObject->Send2Client(szBuffer, 81 + str.size());
+        Mprintf("【Ctrl+V】 从本地拖拽文件到远程 \n");
+        SAFE_DELETE_ARRAY(szBuffer);
+    }
+
+	DragFinish(hDropInfo);
+
+    CDialogBase::OnDropFiles(hDropInfo);
 }
