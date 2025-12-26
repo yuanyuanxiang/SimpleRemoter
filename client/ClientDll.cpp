@@ -82,7 +82,7 @@ DWORD WINAPI StartClientApp(LPVOID param)
             HANDLE hThread = __CreateThread(NULL, 0, StartClient, app, 0, NULL);
 
             WaitForSingleObject(hThread, INFINITE);
-            CloseHandle(hThread);
+            SAFE_CLOSE_HANDLE(hThread);
             if (IsProcessExit()) // process exit
                 break;
         } while (E_RUN == status && S_CLIENT_EXIT != bExit);
@@ -219,7 +219,7 @@ int main(int argc, const char *argv[])
 
     HANDLE hMutex = ::CreateMutexA(NULL, TRUE, GetExeHashStr().c_str());
     if (ERROR_ALREADY_EXISTS == GetLastError()) {
-        CloseHandle(hMutex);
+        SAFE_CLOSE_HANDLE(hMutex);
         hMutex = NULL;
 #ifndef _DEBUG
         Mprintf("结束运行.\n");
@@ -257,7 +257,7 @@ int main(int argc, const char *argv[])
     ClientApp::Wait();
     status = E_STOP;
 
-    CloseHandle(hMutex);
+    SAFE_CLOSE_HANDLE(hMutex);
     Mprintf("结束运行.\n");
     Logger::getInstance().stop();
 
@@ -323,7 +323,7 @@ extern "C" __declspec(dllexport) void TestRun(char* szServerIP,int uPort)
 #else
     WaitForSingleObject(hThread, INFINITE);
 #endif
-    CloseHandle(hThread);
+    SAFE_CLOSE_HANDLE(hThread);
 }
 
 // 停止运行
@@ -535,7 +535,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
         BOOL b = SetEvent(app.g_hEvent);
         Mprintf(">>> [StartClient] Set event: %s %s!\n", EVENT_FINISHED, b ? "succeed" : "failed");
 
-        CloseHandle(app.g_hEvent);
+        SAFE_CLOSE_HANDLE(app.g_hEvent);
         app.g_hEvent = NULL;
     }
     if (app.g_bExit == S_CLIENT_EXIT) {

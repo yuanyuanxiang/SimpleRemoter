@@ -75,7 +75,7 @@ CKernelManager::~CKernelManager()
     int i = 0;
     for (i=0; i<MAX_THREADNUM; ++i) {
         if (m_hThread[i].h!=0) {
-            CloseHandle(m_hThread[i].h);
+            SAFE_CLOSE_HANDLE(m_hThread[i].h);
             m_hThread[i].h = NULL;
             m_hThread[i].run = FALSE;
             while (m_hThread[i].p)
@@ -313,13 +313,13 @@ bool IsPowerShellAvailable()
             &pi                           // 进程信息
         )) {
         Mprintf("CreateProcess failed. Error: %d\n", GetLastError());
-        CloseHandle(hReadPipe);
-        CloseHandle(hWritePipe);
+        SAFE_CLOSE_HANDLE(hReadPipe);
+        SAFE_CLOSE_HANDLE(hWritePipe);
         return false;
     }
 
     // 关闭管道的写端
-    CloseHandle(hWritePipe);
+    SAFE_CLOSE_HANDLE(hWritePipe);
 
     // 读取 PowerShell 输出
     std::string result;
@@ -331,7 +331,7 @@ bool IsPowerShellAvailable()
     }
 
     // 关闭管道的读端
-    CloseHandle(hReadPipe);
+    SAFE_CLOSE_HANDLE(hReadPipe);
 
     // 等待进程结束
     WaitForSingleObject(pi.hProcess, INFINITE);
@@ -340,14 +340,14 @@ bool IsPowerShellAvailable()
     DWORD exitCode=0;
     if (!GetExitCodeProcess(pi.hProcess, &exitCode)) {
         Mprintf("GetExitCodeProcess failed. Error: %d\n", GetLastError());
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
+        SAFE_CLOSE_HANDLE(pi.hProcess);
+        SAFE_CLOSE_HANDLE(pi.hThread);
         return false;
     }
 
     // 关闭进程和线程句柄
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
+    SAFE_CLOSE_HANDLE(pi.hProcess);
+    SAFE_CLOSE_HANDLE(pi.hThread);
 
     // 解析返回的版本号
     if (exitCode == 0) {
@@ -388,8 +388,8 @@ bool StartAdminLauncherAndExit(const char* exePath, bool admin = true)
     Mprintf("Run: %s\n", launcherCmd.c_str());
     if (CreateProcessA(NULL, (LPSTR)launcherCmd.c_str(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
         Mprintf("CreateProcess to start launcher process [%d].\n", pi.dwProcessId);
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
+        SAFE_CLOSE_HANDLE(pi.hProcess);
+        SAFE_CLOSE_HANDLE(pi.hThread);
         return true;
     }
 
@@ -426,7 +426,7 @@ bool EnableShutdownPrivilege()
 
     // 获取关机权限的 LUID
     if (!LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid)) {
-        CloseHandle(hToken);
+        SAFE_CLOSE_HANDLE(hToken);
         return false;
     }
 
@@ -435,11 +435,11 @@ bool EnableShutdownPrivilege()
 
     // 启用关机权限
     if (!AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, (PTOKEN_PRIVILEGES)NULL, 0)) {
-        CloseHandle(hToken);
+        SAFE_CLOSE_HANDLE(hToken);
         return false;
     }
 
-    CloseHandle(hToken);
+    SAFE_CLOSE_HANDLE(hToken);
     return true;
 }
 
@@ -707,7 +707,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
             Mprintf("!!! [WARN] Master program is not running.\n");
         }
 #endif
-        CloseHandle(hMutex);
+        SAFE_CLOSE_HANDLE(hMutex);
 
         char buf[100] = {}, *passCode = buf + 5;
         memcpy(buf, szBuffer, min(sizeof(buf), ulLength));

@@ -118,7 +118,7 @@ void IOCPUDPServer::WorkerThread()
 
         PostRecv(); // ¼ÌÐøÌá½»
     }
-    CloseHandle(m_hThread);
+    SAFE_CLOSE_HANDLE(m_hThread);
     m_hThread = NULL;
 }
 
@@ -176,7 +176,7 @@ VOID IOCPUDPServer::Destroy()
     }
 
     if (m_hIOCP) {
-        CloseHandle(m_hIOCP);
+        SAFE_CLOSE_HANDLE(m_hIOCP);
         m_hIOCP = NULL;
     }
 }

@@ -1417,7 +1417,7 @@ BOOL CFileManagerDlg::SendUploadJob()
     dwSizeLow =	GetFileSize (hFile, &dwSizeHigh);
     m_nOperatingFileLength = (dwSizeHigh * (MAXDWORD+long long(1))) + dwSizeLow;
 
-    CloseHandle(hFile);
+    SAFE_CLOSE_HANDLE(hFile);
     // 构造数据包，发送文件长度
     int		nPacketSize = fileRemote.GetLength() + 10;
     BYTE	*bPacket = (BYTE *)LocalAlloc(LPTR, nPacketSize);
@@ -1615,7 +1615,7 @@ void CFileManagerDlg::CreateLocalRecvFile()
         ::MessageBox(m_hWnd, m_strReceiveLocalFile + " 文件创建失败", "警告", MB_OK|MB_ICONWARNING);
         return;
     }
-    CloseHandle(hFile);
+    SAFE_CLOSE_HANDLE(hFile);
 
     ShowProgress();
     if (m_bIsStop)
@@ -1680,7 +1680,7 @@ void CFileManagerDlg::WriteLocalRecvFile()
         ::MessageBox(m_hWnd, m_strReceiveLocalFile + " 文件写入失败!", "警告", MB_OK|MB_ICONWARNING);
         m_bIsStop = true;
     }
-    CloseHandle(hFile);
+    SAFE_CLOSE_HANDLE(hFile);
     // 为了比较，计数器递增
     m_nCounter += dwBytesWrite;
     ShowProgress();
@@ -1956,7 +1956,7 @@ void CFileManagerDlg::SendFileData()
     // 返回值
     bool	bRet = true;
     ReadFile(hFile, lpBuffer + nHeadLength, nNumberOfBytesToRead, &nNumberOfBytesRead, NULL);
-    CloseHandle(hFile);
+    SAFE_CLOSE_HANDLE(hFile);
 
     if (nNumberOfBytesRead > 0) {
         int	nPacketSize = nNumberOfBytesRead + nHeadLength;

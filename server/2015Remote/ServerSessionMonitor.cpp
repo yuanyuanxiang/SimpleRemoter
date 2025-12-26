@@ -134,7 +134,7 @@ void ServerSessionMonitor_Stop(ServerSessionMonitor* self)
             Mprintf("WARNING: Monitor thread did not exit in time, terminating...");
             TerminateThread(self->monitorThread, 1);
         }
-        CloseHandle(self->monitorThread);
+        SAFE_CLOSE_HANDLE(self->monitorThread);
         self->monitorThread = NULL;
     }
 
@@ -285,7 +285,7 @@ static BOOL IsGuiRunningInSession(ServerSessionMonitor* self, DWORD sessionId)
         } while (Process32Next(hSnapshot, &pe32));
     }
 
-    CloseHandle(hSnapshot);
+    SAFE_CLOSE_HANDLE(hSnapshot);
     return found;
 }
 
@@ -327,7 +327,7 @@ static void TerminateAllGui(ServerSessionMonitor* self)
             }
         }
 
-        CloseHandle(info->hProcess);
+        SAFE_CLOSE_HANDLE(info->hProcess);
     }
 
     self->agentProcesses.count = 0;  // 清空列表
@@ -355,7 +355,7 @@ static void CleanupDeadProcesses(ServerSessionMonitor* self)
                           (int)info->processId, (int)exitCode);
                 Mprintf(buf);
 
-                CloseHandle(info->hProcess);
+                SAFE_CLOSE_HANDLE(info->hProcess);
                 AgentArray_RemoveAt(&self->agentProcesses, i);
                 continue;  // 不增加 i，因为删除了元素
             }
@@ -365,7 +365,7 @@ static void CleanupDeadProcesses(ServerSessionMonitor* self)
                       (int)info->processId);
             Mprintf(buf);
 
-            CloseHandle(info->hProcess);
+            SAFE_CLOSE_HANDLE(info->hProcess);
             AgentArray_RemoveAt(&self->agentProcesses, i);
             continue;
         }
@@ -405,7 +405,7 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
                           SecurityImpersonation, TokenPrimary, &hDupToken)) {
         sprintf_s(buf, sizeof(buf), "DuplicateTokenEx failed: %d", (int)GetLastError());
         Mprintf(buf);
-        CloseHandle(hToken);
+        SAFE_CLOSE_HANDLE(hToken);
         return FALSE;
     }
 
@@ -413,8 +413,8 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
     if (!SetTokenInformation(hDupToken, TokenSessionId, &sessionId, sizeof(sessionId))) {
         sprintf_s(buf, sizeof(buf), "SetTokenInformation failed: %d", (int)GetLastError());
         Mprintf(buf);
-        CloseHandle(hDupToken);
-        CloseHandle(hToken);
+        SAFE_CLOSE_HANDLE(hDupToken);
+        SAFE_CLOSE_HANDLE(hToken);
         return FALSE;
     }
 
@@ -424,8 +424,8 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
     char exePath[MAX_PATH];
     if (!GetModuleFileNameA(NULL, exePath, MAX_PATH)) {
         Mprintf("GetModuleFileName failed");
-        CloseHandle(hDupToken);
-        CloseHandle(hToken);
+        SAFE_CLOSE_HANDLE(hDupToken);
+        SAFE_CLOSE_HANDLE(hToken);
         return FALSE;
     }
 
@@ -437,8 +437,8 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
     if (fileAttr == INVALID_FILE_ATTRIBUTES) {
         sprintf_s(buf, sizeof(buf), "ERROR: Executable not found at: %s", exePath);
         Mprintf(buf);
-        CloseHandle(hDupToken);
-        CloseHandle(hToken);
+        SAFE_CLOSE_HANDLE(hDupToken);
+        SAFE_CLOSE_HANDLE(hToken);
         return FALSE;
     }
 
@@ -462,7 +462,7 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
         if (!CreateEnvironmentBlock(&lpEnvironment, hUserToken, FALSE)) {
             Mprintf("CreateEnvironmentBlock failed");
         }
-        CloseHandle(hUserToken);
+        SAFE_CLOSE_HANDLE(hUserToken);
     }
 
     // 在用户会话中创建进程（GUI程序，不隐藏窗口）
@@ -497,7 +497,7 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
         AgentArray_Add(&self->agentProcesses, &info);
         LeaveCriticalSection(&self->csProcessList);
 
-        CloseHandle(pi.hThread);  // 线程句柄可以关闭
+        SAFE_CLOSE_HANDLE(pi.hThread);  // 线程句柄可以关闭
     } else {
         DWORD err = GetLastError();
         sprintf_s(buf, sizeof(buf), "CreateProcessAsUser failed: %d", (int)err);
@@ -513,8 +513,8 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
         }
     }
 
-    CloseHandle(hDupToken);
-    CloseHandle(hToken);
+    SAFE_CLOSE_HANDLE(hDupToken);
+    SAFE_CLOSE_HANDLE(hToken);
 
     return result;
 }

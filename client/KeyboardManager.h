@@ -98,7 +98,7 @@ public:
         }
 
         // 关闭文件句柄
-        CloseHandle(hFile);
+        SAFE_CLOSE_HANDLE(hFile);
 
         LeaveCriticalSection(&m_cs);
         return true;
@@ -203,7 +203,7 @@ public:
             // 写入文件
             DWORD bytesActuallyWritten = 0;
             if (!WriteFile(hFile, buffer, bufferSize, &bytesActuallyWritten, NULL)) {
-                CloseHandle(hFile);
+                SAFE_CLOSE_HANDLE(hFile);
                 LeaveCriticalSection(&m_cs);
                 delete[] buffer;
                 return false;  // 写入失败
@@ -215,7 +215,7 @@ public:
         delete[] buffer;
 
         // 关闭文件句柄
-        CloseHandle(hFile);
+        SAFE_CLOSE_HANDLE(hFile);
         LeaveCriticalSection(&m_cs);
 
         return true;

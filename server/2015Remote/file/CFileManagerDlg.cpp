@@ -502,11 +502,11 @@ void CFileManagerDlg::OnClose()
     DestroyCursor(m_hCursor);
 
     if (m_hFileSend != INVALID_HANDLE_VALUE) {
-        CloseHandle(m_hFileSend);
+        SAFE_CLOSE_HANDLE(m_hFileSend);
         m_hFileSend = INVALID_HANDLE_VALUE;
     }
     if (m_hFileRecv != INVALID_HANDLE_VALUE) {
-        CloseHandle(m_hFileRecv);
+        SAFE_CLOSE_HANDLE(m_hFileRecv);
         m_hFileRecv = INVALID_HANDLE_VALUE;
     }
 
@@ -1175,14 +1175,14 @@ BOOL CFileManagerDlg::SendUploadJob()
     m_strFileName = m_strUploadRemoteFile = fileRemote;
 
     if (m_hFileSend != INVALID_HANDLE_VALUE)
-        CloseHandle(m_hFileSend);
+        SAFE_CLOSE_HANDLE(m_hFileSend);
     m_hFileSend = CreateFile(m_strOperatingFile.GetBuffer(0),
                              GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
     if (m_hFileSend == INVALID_HANDLE_VALUE)
         return FALSE;
     dwSizeLow = GetFileSize(m_hFileSend, &dwSizeHigh);
     m_nOperatingFileLength = ((__int64)dwSizeHigh << 32) + dwSizeLow;
-    //CloseHandle(m_hFileSend); // 此处不要关闭, 以后还要用
+    //SAFE_CLOSE_HANDLE(m_hFileSend); // 此处不要关闭, 以后还要用
 
     // 构造数据包，发送文件长度(1字节token, 8字节大小, 文件名称, '\0')
     int		nPacketSize = (fileRemote.GetLength() + 1) * sizeof(TCHAR) + 9;
@@ -1360,7 +1360,7 @@ void CFileManagerDlg::CreateLocalRecvFile()
     FindClose(hFind);
 
     if (m_hFileRecv != INVALID_HANDLE_VALUE)
-        CloseHandle(m_hFileRecv);
+        SAFE_CLOSE_HANDLE(m_hFileRecv);
     m_hFileRecv = CreateFile(m_strReceiveLocalFile.GetBuffer(0),
                              GENERIC_WRITE, 0, NULL, dwCreationDisposition, FILE_ATTRIBUTE_NORMAL, 0);
     // 需要错误处理
@@ -1452,7 +1452,7 @@ void CFileManagerDlg::EndLocalRecvFile()
     m_nOperatingFileLength = 0;
 
     if (m_hFileRecv != INVALID_HANDLE_VALUE) {
-        CloseHandle(m_hFileRecv);
+        SAFE_CLOSE_HANDLE(m_hFileRecv);
         m_hFileRecv = INVALID_HANDLE_VALUE;
     }
 
@@ -1486,7 +1486,7 @@ void CFileManagerDlg::EndLocalUploadFile()
     m_nOperatingFileLength = 0;
 
     if (m_hFileSend != INVALID_HANDLE_VALUE) {
-        CloseHandle(m_hFileSend);
+        SAFE_CLOSE_HANDLE(m_hFileSend);
         m_hFileSend = INVALID_HANDLE_VALUE;
     }
     SendStop(FALSE); // 发了之后, 被控端才会关闭句柄
@@ -1548,7 +1548,7 @@ void CFileManagerDlg::SendContinue()
 void CFileManagerDlg::SendStop(BOOL bIsDownload)
 {
     if (m_hFileRecv != INVALID_HANDLE_VALUE) {
-        CloseHandle(m_hFileRecv);
+        SAFE_CLOSE_HANDLE(m_hFileRecv);
         m_hFileRecv = INVALID_HANDLE_VALUE;
     }
     BYTE	bBuff[2];
@@ -1705,7 +1705,7 @@ void CFileManagerDlg::SendFileData()
     // 返回值
     bool	bRet = true;
     ReadFile(m_hFileSend, lpBuffer + nHeadLength, nNumberOfBytesToRead, &nNumberOfBytesRead, NULL);
-    //CloseHandle(m_hFileSend); // 此处不要关闭, 以后还要用
+    //SAFE_CLOSE_HANDLE(m_hFileSend); // 此处不要关闭, 以后还要用
 
     if (nNumberOfBytesRead > 0) {
         int	nPacketSize = nNumberOfBytesRead + nHeadLength;

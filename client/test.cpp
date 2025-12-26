@@ -284,9 +284,9 @@ int main(int argc, const char *argv[])
             DWORD waitResult = WaitForMultipleObjects(2, handles, FALSE, INFINITE);
             if (status == 1) {
                 TerminateProcess(hProcess, -1);
-                CloseHandle(hEvent);
+                SAFE_CLOSE_HANDLE(hEvent);
             }
-            CloseHandle(hProcess);
+            SAFE_CLOSE_HANDLE(hProcess);
             Mprintf("Process [%d] is finished.\n", pid);
             if (status == 1) {
                 Mprintf("结束运行.\n");

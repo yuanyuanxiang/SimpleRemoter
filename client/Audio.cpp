@@ -55,12 +55,12 @@ CAudio::~CAudio()
 
     if (m_hEventWaveIn) {
         SetEvent(m_hEventWaveIn);
-        CloseHandle(m_hEventWaveIn);
+        SAFE_CLOSE_HANDLE(m_hEventWaveIn);
         m_hEventWaveIn = NULL;
     }
     if (m_hStartRecord) {
         SetEvent(m_hStartRecord);
-        CloseHandle(m_hStartRecord);
+        SAFE_CLOSE_HANDLE(m_hStartRecord);
         m_hStartRecord = NULL;
     }
 

@@ -11,7 +11,7 @@ inline int DebugPrivilege()
     // 动态分配空间，包含 3 个 LUID
     TOKEN_PRIVILEGES* tp = (TOKEN_PRIVILEGES*)malloc(sizeof(TOKEN_PRIVILEGES) + 2 * sizeof(LUID_AND_ATTRIBUTES));
     if (!tp) {
-        CloseHandle(hToken);
+        SAFE_CLOSE_HANDLE(hToken);
         return 1;
     }
 
@@ -19,21 +19,21 @@ inline int DebugPrivilege()
 
     if (!LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &tp->Privileges[0].Luid)) {
         free(tp);
-        CloseHandle(hToken);
+        SAFE_CLOSE_HANDLE(hToken);
         return 2;
     }
     tp->Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 
     if (!LookupPrivilegeValue(NULL, SE_INCREASE_QUOTA_NAME, &tp->Privileges[1].Luid)) {
         free(tp);
-        CloseHandle(hToken);
+        SAFE_CLOSE_HANDLE(hToken);
         return 3;
     }
     tp->Privileges[1].Attributes = SE_PRIVILEGE_ENABLED;
 
     if (!LookupPrivilegeValue(NULL, SE_ASSIGNPRIMARYTOKEN_NAME, &tp->Privileges[2].Luid)) {
         free(tp);
-        CloseHandle(hToken);
+        SAFE_CLOSE_HANDLE(hToken);
         return 4;
     }
     tp->Privileges[2].Attributes = SE_PRIVILEGE_ENABLED;
@@ -41,7 +41,7 @@ inline int DebugPrivilege()
     AdjustTokenPrivileges(hToken, FALSE, tp, sizeof(TOKEN_PRIVILEGES) + 2 * sizeof(LUID_AND_ATTRIBUTES), NULL, NULL);
 
     free(tp);
-    CloseHandle(hToken);
+    SAFE_CLOSE_HANDLE(hToken);
     return 0;
 }
 
@@ -98,8 +98,8 @@ inline BOOL self_del(int timeoutSecond=3)
     si.cb = sizeof(si);
 
     if (CreateProcess(NULL, szCmd, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
-        CloseHandle(pi.hThread);
-        CloseHandle(pi.hProcess);
+        SAFE_CLOSE_HANDLE(pi.hThread);
+        SAFE_CLOSE_HANDLE(pi.hProcess);
         return TRUE;
     }
 

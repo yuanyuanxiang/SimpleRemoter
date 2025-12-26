@@ -71,7 +71,7 @@ CVideoManager::~CVideoManager()
     InterlockedExchange((LPLONG)&m_bIsWorking, FALSE);
     m_CapVideo.m_bExit = TRUE;
     WaitForSingleObject(m_hWorkThread, INFINITE);
-    CloseHandle(m_hWorkThread);
+    SAFE_CLOSE_HANDLE(m_hWorkThread);
     Mprintf("CVideoManager ~CVideoManager \n");
     if (m_pVideoCodec) { //—πÀı¿‡
         delete m_pVideoCodec;

@@ -126,3 +126,5 @@
 #include "common/commands.h"
 
 #define SAFE_CANCELIO(p) if (INVALID_SOCKET != (p)){ CancelIo((HANDLE)(p)); closesocket((SOCKET)(p)); (p) = INVALID_SOCKET; }
+
+#define SAFE_CLOSE_HANDLE(h) do{if((h)!=NULL&&(h)!=INVALID_HANDLE_VALUE){CloseHandle(h);(h)=NULL;}}while(0)

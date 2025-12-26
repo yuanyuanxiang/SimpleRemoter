@@ -230,10 +230,10 @@ static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
     HANDLE hThread = CreateThread(NULL, 0, ServerService_WorkerThread, NULL, 0, NULL);
     if (hThread) {
         WaitForSingleObject(hThread, INFINITE);
-        CloseHandle(hThread);
+        SAFE_CLOSE_HANDLE(hThread);
     }
 
-    CloseHandle(g_StopEvent);
+    SAFE_CLOSE_HANDLE(g_StopEvent);
 
     g_ServiceStatus.dwControlsAccepted = 0;
     g_ServiceStatus.dwCurrentState = SERVICE_STOPPED;

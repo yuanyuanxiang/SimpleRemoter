@@ -1339,7 +1339,7 @@ DWORD WINAPI CMy2015RemoteDlg::StartFrpClient(LPVOID param)
 #ifdef _WIN64
     usingFRP = ip.empty() ? 0 : THIS_CFG.GetInt("frp", "UseFrp");
 #else
-    CloseHandle(This->m_hFRPThread);
+    SAFE_CLOSE_HANDLE(This->m_hFRPThread);
     This->m_hFRPThread = NULL;
     return 0x20250820;
 #endif
@@ -1380,7 +1380,7 @@ DWORD WINAPI CMy2015RemoteDlg::StartFrpClient(LPVOID param)
         // MemoryFreeLibrary(hDLL);
     } while (false);
 
-    CloseHandle(This->m_hFRPThread);
+    SAFE_CLOSE_HANDLE(This->m_hFRPThread);
     This->m_hFRPThread = NULL;
     Mprintf("[FRP] Proxy thread stop running\n");
 
@@ -1553,7 +1553,7 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
         static std::string eventName = EventName();
         HANDLE hEvent = OpenEventA(SYNCHRONIZE, FALSE, eventName.c_str());
         if (hEvent) {
-            CloseHandle(hEvent);
+            SAFE_CLOSE_HANDLE(hEvent);
         } else if (++count == 10) {
             THIS_APP->UpdateMaxConnection(count);
         }
@@ -1634,7 +1634,7 @@ void CMy2015RemoteDlg::Release()
     SAFE_DELETE(m_gridDlg);
     g_2015RemoteDlg = NULL;
     SetEvent(m_hExit);
-    CloseHandle(m_hExit);
+    SAFE_CLOSE_HANDLE(m_hExit);
     m_hExit = NULL;
     Sleep(500);
 
@@ -2142,12 +2142,12 @@ std::string exec(const std::string& cmd)
             &si,
             &pi
         )) {
-        CloseHandle(hReadPipe);
-        CloseHandle(hWritePipe);
+        SAFE_CLOSE_HANDLE(hReadPipe);
+        SAFE_CLOSE_HANDLE(hWritePipe);
         return "";
     }
 
-    CloseHandle(hWritePipe);
+    SAFE_CLOSE_HANDLE(hWritePipe);
 
     char buffer[256];
     std::string result;
@@ -2158,10 +2158,10 @@ std::string exec(const std::string& cmd)
         result += buffer;
     }
 
-    CloseHandle(hReadPipe);
+    SAFE_CLOSE_HANDLE(hReadPipe);
     WaitForSingleObject(pi.hProcess, INFINITE);
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
+    SAFE_CLOSE_HANDLE(pi.hProcess);
+    SAFE_CLOSE_HANDLE(pi.hThread);
 
     return result;
 }
@@ -2246,7 +2246,7 @@ BOOL CALLBACK CMy2015RemoteDlg::NotifyProc(CONTEXT_OBJECT* ContextObject)
         }
         if (!g_2015RemoteDlg->PostMessage(WM_HANDLEMESSAGE, (WPARAM)hEvent, (LPARAM)ContextObject)) {
             Mprintf("===> NotifyProc PostMessage FAILED: %p <===\n", ContextObject);
-            if (hEvent) CloseHandle(hEvent);
+            if (hEvent) SAFE_CLOSE_HANDLE(hEvent);
             return FALSE;
         }
         if (hEvent) {
@@ -2284,7 +2284,7 @@ LRESULT CMy2015RemoteDlg::OnHandleMessage(WPARAM wParam, LPARAM lParam)
     MessageHandle(ContextObject);
     if (hEvent) {
         SetEvent(hEvent);
-        CloseHandle(hEvent);
+        SAFE_CLOSE_HANDLE(hEvent);
     }
     return S_OK;
 }
@@ -3179,8 +3179,8 @@ int run_cmd(std::string cmdLine)
     DWORD exitCode;
     GetExitCodeProcess(pi.hProcess, &exitCode);
 
-    CloseHandle(pi.hProcess);
-    CloseHandle(pi.hThread);
+    SAFE_CLOSE_HANDLE(pi.hProcess);
+    SAFE_CLOSE_HANDLE(pi.hThread);
 
     return static_cast<int>(exitCode);
 }

