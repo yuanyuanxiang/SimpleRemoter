@@ -823,7 +823,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
             Mprintf("上线消息 - 主机已经存在 [1]: same context. IP= %s\n", data[ONLINELIST_IP]);
             return;
         }
-        if (ctx->GetClientID() == id) {
+        if (ctx->GetClientID() == id && !ctx->GetClientData(ONLINELIST_IP).IsEmpty()) {
             LeaveCriticalSection(&m_cs);
             Mprintf("上线消息 - 主机已经存在 [2]: %llu. IP= %s. Path= %s\n", id, data[ONLINELIST_IP], path);
             return;
