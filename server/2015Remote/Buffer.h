@@ -73,6 +73,22 @@ public:
     {
         return md5;
     }
+    BYTE GetBYTE(int idx=0) const {
+        return idx >= len ? 0 : buf[idx];
+    }
+    LPBYTE GetBuffer(int idx=0) const {
+        return idx >= len ? 0 : buf + idx;
+    }
+    int GetBufferLength() const {
+        return len;
+    }
+    BOOL CopyBuffer(PVOID pDst, ULONG nLen, ULONG ulPos=0) {
+        if (len - ulPos < nLen) {
+            return FALSE;
+        }
+        memcpy(pDst, buf + ulPos, nLen);
+        return TRUE;
+    }
 };
 
 class CBuffer
@@ -98,7 +114,7 @@ public:
         return WriteBuffer(buf.GetBuffer(), buf.GetBufferLen());
     }
     LPBYTE GetBuffer(ULONG ulPos=0);
-    Buffer GetMyBuffer(ULONG ulPos);
+    Buffer GetMyBuffer(ULONG ulPos=0);
     BYTE GetBYTE(ULONG ulPos);
     BOOL CopyBuffer(PVOID pDst, ULONG nLen, ULONG ulPos);
     ULONG RemoveCompletedBuffer(ULONG ulLength);

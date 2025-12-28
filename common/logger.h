@@ -103,9 +103,11 @@ public:
                 writeToFile(logEntry);
             }
         }
-#ifndef _WINDOWS
 #ifdef _DEBUG
+#ifndef _WINDOWS
         printf("%s", logEntry.c_str());
+#else
+        OutputDebugStringA(logEntry.c_str());
 #endif
 #endif
         cv.notify_one(); // 通知写线程
@@ -260,8 +262,6 @@ inline const char* getFileName(const char* path)
 #define Mprintf(format, ...) Logger::getInstance().log(getFileName(skCrypt(__FILE__)), __LINE__, skCrypt(format), __VA_ARGS__)
 #endif
 
-#endif // _WIN32
-
 inline void Log(const char* message)
 {
     return Logger::getInstance().log(NULL, 0, "%s", message);
@@ -276,3 +276,5 @@ inline void Logf(const char* file, int line, const char* format, ...)
     va_end(args);
     return Logger::getInstance().log(getFileName(file), line, "%s", message);
 }
+
+#endif // _WIN32

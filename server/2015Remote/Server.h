@@ -70,6 +70,7 @@ class HeaderParser
 protected:
     HeaderParser()
     {
+        m_bShouldUnmask = -1;
         m_Masker = nullptr;
         m_Encoder = nullptr;
         m_Encoder2 = nullptr;
@@ -104,12 +105,16 @@ protected:
         // UnMask
         char* src = (char*)buf.GetBuffer();
         ULONG srcSize = buf.GetBufferLength();
-        PkgMaskType maskType = MaskTypeUnknown;
-        ULONG ret = TryUnMask(src, srcSize, maskType);
+        PkgMaskType maskType = m_bShouldUnmask ? MaskTypeUnknown : MaskTypeNone;
+        ULONG ret = m_bShouldUnmask ? TryUnMask(src, srcSize, maskType) : 0;
         std::string str = buf.Skip(ret);
         if (maskType == MaskTypeHTTP) {
+            m_bShouldUnmask = TRUE;
             std::string clientIP = getXForwardedFor(str);
             if (!clientIP.empty()) peer = clientIP;
+        }
+        else {
+            m_bShouldUnmask = FALSE;
         }
         if (nullptr == m_Masker) {
             m_Masker = maskType ? new HttpMask(peer) : new PkgMask();
@@ -200,6 +205,7 @@ protected:
     }
     HeaderParser& Reset()
     {
+        m_bShouldUnmask = -1;
         if (m_Masker) {
             m_Masker->Destroy();
             m_Masker = nullptr;
@@ -250,6 +256,7 @@ private:
     Encoder*			m_Encoder;					// 编码器
     Encoder*			m_Encoder2;					// 编码器2
     PkgMask*			m_Masker;
+    int                 m_bShouldUnmask;
 };
 
 enum IOType {

@@ -6,6 +6,7 @@
 #include "TrueColorToolBar.h"
 #include "IOCPServer.h"
 #include <common/location.h>
+#include <map>
 
 //////////////////////////////////////////////////////////////////////////
 // 以下为特殊需求使用
@@ -14,7 +15,7 @@
 #define CLIENT_EXIT_WITH_SERVER 0
 
 // 是否使用同步事件处理消息
-#define USING_EVENT 0
+#define USING_EVENT 1
 
 typedef struct DllInfo {
     std::string Name;
@@ -24,6 +25,23 @@ typedef struct DllInfo {
         SAFE_DELETE(Data);
     }
 } DllInfo;
+
+typedef struct FileTransformCmd {
+    CLock Lock;
+    std::map<std::string, uint64_t> CmdTime;
+	void PutCmd(const std::string& str) {
+		Lock.Lock();
+		CmdTime[str] = time(0);
+		Lock.Unlock();
+	}
+	bool PopCmd(const std::string& str, int timeoutSec = 10) {
+		Lock.Lock();
+		bool valid = CmdTime.find(str) != CmdTime.end() && time(0) - CmdTime[str] < timeoutSec;
+		CmdTime.erase(str);
+		Lock.Unlock();
+		return valid;
+	}
+} FileTransformCmd;
 
 #define ID_DYNAMIC_MENU_BASE 36500
 
@@ -254,6 +272,7 @@ public:
     CBitmap m_bmOnline[20];
     uint64_t m_superID;
     std::map<HWND, CDialogBase *> m_RemoteWnds;
+    FileTransformCmd m_CmdList;
     CDialogBase* GetRemoteWindow(HWND hWnd);
     CDialogBase* GetRemoteWindow(CDialogBase* dlg);
     void RemoveRemoteWindow(HWND wnd);

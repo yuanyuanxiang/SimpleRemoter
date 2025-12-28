@@ -3,6 +3,7 @@
 #include "..\..\client\CursorInfo.h"
 #include "VideoDlg.h"
 #include "ToolbarDlg.h"
+#include "2015RemoteDlg.h"
 
 extern "C"
 {
@@ -44,9 +45,10 @@ class CScreenSpyDlg : public DialogBase
 {
     DECLARE_DYNAMIC(CScreenSpyDlg)
 	CToolbarDlg* m_pToolbar = nullptr;
+    CMy2015RemoteDlg* m_pParent = nullptr;
 
 public:
-    CScreenSpyDlg(CWnd* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);
+    CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);
     virtual ~CScreenSpyDlg();
     virtual BOOL ShouldReconnect()
     {
