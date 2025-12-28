@@ -29,6 +29,12 @@ enum {
     IDM_SAVEAVI_H264,
     IDM_SWITCHSCREEN,
     IDM_MULTITHREAD_COMPRESS,
+    IDM_FPS_10,
+    IDM_FPS_15,
+    IDM_FPS_20,
+    IDM_FPS_25,
+    IDM_FPS_30,
+    IDM_FPS_UNLIMITED,
 };
 
 IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
@@ -246,6 +252,12 @@ BOOL CScreenSpyDlg::OnInitDialog()
         SysMenu->AppendMenu(MF_STRING, IDM_SET_CLIPBOARD, "设置剪贴板(&L)");
         SysMenu->AppendMenu(MF_STRING, IDM_SWITCHSCREEN, "切换显示器(&1)");
         SysMenu->AppendMenu(MF_STRING, IDM_MULTITHREAD_COMPRESS, "多线程压缩(&2)");
+        SysMenu->AppendMenu(MF_STRING, IDM_FPS_10, "最大帧率FPS:10");
+        SysMenu->AppendMenu(MF_STRING, IDM_FPS_15, "最大帧率FPS:15");
+        SysMenu->AppendMenu(MF_STRING, IDM_FPS_20, "最大帧率FPS:20");
+        SysMenu->AppendMenu(MF_STRING, IDM_FPS_25, "最大帧率FPS:25");
+        SysMenu->AppendMenu(MF_STRING, IDM_FPS_30, "最大帧率FPS:30");
+        SysMenu->AppendMenu(MF_STRING, IDM_FPS_UNLIMITED, "最大帧率无限制");
         SysMenu->AppendMenu(MF_SEPARATOR);
 
         BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
@@ -654,6 +666,14 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         BYTE	bToken[2] = { CMD_MULTITHREAD_COMPRESS, (BYTE)threadNum };
         m_ContextObject->Send2Client(bToken, sizeof(bToken));
         SysMenu->CheckMenuItem(nID, threadNum ? MF_CHECKED : MF_UNCHECKED);
+        break;
+    }
+
+    case IDM_FPS_10:    case IDM_FPS_15:    case IDM_FPS_20:
+    case IDM_FPS_25:    case IDM_FPS_30:    case IDM_FPS_UNLIMITED: {
+        int fps = 10 + (nID - IDM_FPS_10) * 5;
+		BYTE	bToken[2] = { CMD_FPS, nID == IDM_FPS_UNLIMITED ? 255 : fps };
+		m_ContextObject->Send2Client(bToken, sizeof(bToken));
         break;
     }
 

@@ -341,7 +341,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
         ULONG ulNextSendLength = 0;
         const char*	szBuffer = This->GetNextScreen(ulNextSendLength);
         if (szBuffer) {
-            s0 = max(s0, 50); // 最快每秒20帧
+            s0 = max(s0, 1000./This->m_nMaxFPS); // 最快每秒20帧
             s0 = min(s0, 1000);
             int span = s0-(clock() - last);
             Sleep(span > 0 ? span : 1);
@@ -361,7 +361,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
                     s0 = (s0 >= sleep/4) ? s0/alpha : s0;
                     c2 = 0;
 #if _DEBUG
-                    if (1000./s0<20.0)
+                    if (1000./s0<This->m_nMaxFPS)
                         Mprintf("[-]SendScreen Span= %dms, s0= %f, fps= %f\n", span, s0, 1000./s0);
 #endif
                 }
@@ -476,6 +476,11 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     case CMD_MULTITHREAD_COMPRESS: {
         int threadNum = szBuffer[1];
         m_ClientObject->SetMultiThreadCompress(threadNum);
+        break;
+    }
+    case CMD_FPS: {
+        m_nMaxFPS = min(255, unsigned(szBuffer[1]));
+        m_nMaxFPS = max(m_nMaxFPS, 1);
         break;
     }
     case COMMAND_NEXT: {

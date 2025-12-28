@@ -64,6 +64,7 @@ public:
     virtual BOOL OnReconnect();
     uint64_t            m_DlgID = 0;
     BOOL                m_SendFirst = FALSE;
+    int                 m_nMaxFPS = 20;
     // ÐéÄâ×ÀÃæ
     BOOL                m_virtual;
     POINT               m_point;
