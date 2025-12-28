@@ -418,13 +418,13 @@ void RunFileReceiver(CScreenManager *mgr, const std::string &folder, const std::
     if (pClient->ConnectServer(mgr->m_ClientObject->ServerIP().c_str(), mgr->m_ClientObject->ServerPort())) {
         pClient->setManagerCallBack(mgr, CManager::DataProcess, CManager::ReconnectProcess);
         // 发送目录并准备接收文件
-        int len = 1 + folder.length() + files.length() + 2;
+        int len = 1 + folder.length() + files.length() + 1;
         char* cmd = new char[len];
         cmd[0] = COMMAND_GET_FILE;
         memcpy(cmd + 1, folder.c_str(), folder.length());
         cmd[1 + folder.length()] = 0;
         memcpy(cmd + 1 + folder.length() + 1, files.data(), files.length());
-        cmd[1 + folder.length() + files.length() + 1] = 0;
+        cmd[1 + folder.length() + files.length()] = 0;
         pClient->Send2Server(cmd, len);
         SAFE_DELETE_ARRAY(cmd);
         pClient->RunEventLoop(TRUE);

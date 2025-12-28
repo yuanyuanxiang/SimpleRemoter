@@ -2424,16 +2424,19 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
         // 发送文件
 		std::string dir = (char*)(szBuffer + 1);
 		char* ptr = (char*)szBuffer + 1 + dir.length() + 1;
-        auto specified = *ptr ? ParseMultiStringPath(ptr, len - 2 - dir.length()) : std::vector<std::string>{};
-        int result = 0;
-        auto files = specified.empty() ? GetClipboardFiles(result): specified;
+        auto md5 = CalcMD5FromBytes((BYTE*)ptr, len - 2 - dir.length());
+        if (!m_CmdList.PopCmd(md5)) {
+            Mprintf("【警告】文件传输指令非法或已过期: %s\n", md5.c_str());
+            ContextObject->CancelIO();
+            break;
+        }
+        auto files = *ptr ? ParseMultiStringPath(ptr, len - 2 - dir.length()) : std::vector<std::string>{};
         if (!files.empty()) {
             std::string hash = GetPwdHash(), hmac = GetHMAC(100);
             std::thread(FileBatchTransferWorker, files, dir, ContextObject, SendData, FinishSend,
                         hash, hmac).detach();
         } else {
             ContextObject->CancelIO();
-            Mprintf("GetClipboardFiles failed: %d\n", result);
         }
         break;
     }
@@ -4332,12 +4335,17 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                         auto files = GetClipboardFiles(result);
                         if (!files.empty()) {
                             // 获取远程目录
-                            BYTE szBuffer[100] = { COMMAND_GET_FOLDER };
+							auto str = BuildMultiStringPath(files);
+                            BYTE* szBuffer = new BYTE[81 + str.size()];
+                            szBuffer[0] = { COMMAND_GET_FOLDER };
                             std::string masterId = GetPwdHash(), hmac = GetHMAC(100);
                             memcpy((char*)szBuffer + 1, masterId.c_str(), masterId.length());
                             memcpy((char*)szBuffer + 1 + masterId.length(), hmac.c_str(), hmac.length());
-                            dlg->m_ContextObject->Send2Client(szBuffer, sizeof(szBuffer));
-                            Mprintf("【Ctrl+V】 从本地拷贝文件到远程 \n");
+                            memcpy(szBuffer + 1 + 80, str.data(), str.size());
+                            auto md5 = CalcMD5FromBytes((BYTE*)str.data(), str.size());
+                            g_2015RemoteDlg->m_CmdList.PutCmd(md5);
+                            dlg->m_ContextObject->Send2Client(szBuffer, 81 + str.size());
+                            Mprintf("【Ctrl+V】 从本地拷贝文件到远程: %s \n", md5.c_str());
                         } else {
                             CString strText = GetClipboardText();
                             if (!strText.IsEmpty()) {

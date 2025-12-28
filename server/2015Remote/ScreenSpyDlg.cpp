@@ -10,6 +10,7 @@
 #include "CGridDialog.h"
 #include "2015RemoteDlg.h"
 #include <file_upload.h>
+#include <md5.h>
 
 
 // CScreenSpyDlg 对话框
@@ -63,9 +64,10 @@ extern "C" char* __imp_strtok(char* str, const char* delim)
     return strtok(str, delim);
 }
 
-CScreenSpyDlg::CScreenSpyDlg(CWnd* Parent, Server* IOCPServer, CONTEXT_OBJECT* ContextObject)
+CScreenSpyDlg::CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer, CONTEXT_OBJECT* ContextObject)
     : DialogBase(CScreenSpyDlg::IDD, Parent, IOCPServer, ContextObject, 0)
 {
+    m_pParent = Parent;
     m_hFullDC = NULL;
     m_hFullMemDC = NULL;
     m_BitmapHandle = NULL;
@@ -1134,7 +1136,6 @@ void CScreenSpyDlg::OnDropFiles(HDROP hDropInfo)
         }
         std::string GetPwdHash();
         std::string GetHMAC(int offset);
-        std::vector<std::string> PreprocessFilesSimple(const std::vector<std::string>&inputFiles);
         auto files = PreprocessFilesSimple(list);
         auto str = BuildMultiStringPath(files);
         BYTE* szBuffer = new BYTE[1 + 80 + str.size()];
@@ -1143,8 +1144,10 @@ void CScreenSpyDlg::OnDropFiles(HDROP hDropInfo)
         memcpy((char*)szBuffer + 1, masterId.c_str(), masterId.length());
         memcpy((char*)szBuffer + 1 + masterId.length(), hmac.c_str(), hmac.length());
         memcpy(szBuffer + 1 + 80, str.data(), str.size());
+        auto md5 = CalcMD5FromBytes((BYTE*)str.data(), str.size());
+        m_pParent->m_CmdList.PutCmd(md5);
         m_ContextObject->Send2Client(szBuffer, 81 + str.size());
-        Mprintf("【Ctrl+V】 从本地拖拽文件到远程 \n");
+        Mprintf("【Ctrl+V】 从本地拖拽文件到远程: %s \n", md5.c_str());
         SAFE_DELETE_ARRAY(szBuffer);
     }
 

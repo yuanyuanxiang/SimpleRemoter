@@ -593,35 +593,45 @@ BOOL IOCPClient::SendWithSplit(const char* src, ULONG srcSize, ULONG ulSplitLeng
 
     // 依次发送
     for (i = ulLength; i >= (int)actualSplitLength; i -= actualSplitLength) {
-        int j = 0;
-        for (; j < ulSendRetry; ++j) {
-            iReturn = SendTo(Travel, actualSplitLength, 0);
-            if (iReturn > 0) {
+        int remaining = actualSplitLength;
+        while (remaining > 0) {
+            int j = 0;
+            for (; j < ulSendRetry; ++j) {
+                iReturn = SendTo(Travel, remaining, 0);
+                if (iReturn > 0) {
+                    break;
+                }
+            }
+            if (j == ulSendRetry) {
+                isFail = true;
                 break;
             }
-        }
-        if (j == ulSendRetry) {
-            isFail = true;
-            break;
-        }
 
-        ulSended += iReturn;
-        Travel += actualSplitLength;
+            ulSended += iReturn;
+            Travel += iReturn;
+            remaining -= iReturn;
+        }
+        if (isFail) break;
     }
     // 发送最后的部分
     if (!isFail && i>0) { //1024
-        int j = 0;
-        for (; j < ulSendRetry; j++) {
-            iReturn = SendTo((char*)Travel,i,0);
-
-            if (iReturn > 0) {
+        int remaining = i;
+        while (remaining > 0) {
+            int j = 0;
+            for (; j < ulSendRetry; j++) {
+                iReturn = SendTo((char*)Travel, remaining, 0);
+                if (iReturn > 0) {
+                    break;
+                }
+            }
+            if (j == ulSendRetry) {
+                isFail = true;
                 break;
             }
+            ulSended += iReturn;
+            Travel += iReturn;
+            remaining -= iReturn;
         }
-        if (j == ulSendRetry) {
-            isFail = true;
-        }
-        ulSended += iReturn;
     }
     if (szBuffer != src)
         SAFE_DELETE_ARRAY(szBuffer);
