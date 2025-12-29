@@ -45,6 +45,8 @@ inline int DebugPrivilege()
     return 0;
 }
 
+typedef void (*StartupLogFunc)(const char* file, int line, const char* format, ...);
+
 /**
 * @brief 设置本身开机自启动
 * @param[in] *sPath 注册表的路径
@@ -54,25 +56,41 @@ inline int DebugPrivilege()
 * HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run
 * @note 首次运行需要以管理员权限运行，才能向注册表写入开机启动项
 */
-inline BOOL SetSelfStart(const char* sPath, const char* sNmae)
+inline BOOL SetSelfStart(const char* sPath, const char* sNmae, StartupLogFunc Log)
 {
-    DebugPrivilege();
+#define _Mprintf(format, ...) if (Log) Log(__FILE__, __LINE__, format, __VA_ARGS__)
+
+    int n = DebugPrivilege();
+    if (n != 0) {
+        _Mprintf("提升权限失败，错误码：%d\n", n);
+        return FALSE;
+	}
 
     // 写入的注册表路径
-#define REGEDIT_PATH "Software\\Microsoft\\Windows\\CurrentVersion\\Run\\"
+#define REGEDIT_PATH "Software\\Microsoft\\Windows\\CurrentVersion\\Run"
 
     // 在注册表中写入启动信息
     HKEY hKey = NULL;
     LONG lRet = RegOpenKeyExA(HKEY_CURRENT_USER, REGEDIT_PATH, 0, KEY_ALL_ACCESS, &hKey);
 
     // 判断是否成功
-    if (lRet != ERROR_SUCCESS)
+    if (lRet != ERROR_SUCCESS) {
+        _Mprintf("打开注册表失败，错误码：%d\n", lRet);
         return FALSE;
+    }
 
     lRet = RegSetValueExA(hKey, sNmae, 0, REG_SZ, (const BYTE*)sPath, strlen(sPath) + 1);
 
+    if (lRet != ERROR_SUCCESS) {
+        _Mprintf("写入注册表失败，错误码：%d\n", lRet);
+    } else {
+        _Mprintf("写入注册表成功：%s -> %s\n", sNmae, sPath);
+	}
+
     // 关闭注册表
     RegCloseKey(hKey);
+
+#undef _Mprintf
 
     // 判断是否成功
     return lRet == ERROR_SUCCESS;

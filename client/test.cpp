@@ -231,7 +231,7 @@ int main(int argc, const char *argv[])
         }
     }
 
-    BOOL ok = SetSelfStart(argv[0], REG_NAME);
+    BOOL ok = SetSelfStart(argv[0], REG_NAME, Logf);
     if(!ok) {
         Mprintf("设置开机自启动失败，请用管理员权限运行.\n");
     }

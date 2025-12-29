@@ -239,7 +239,11 @@ BOOL LaunchAsAdmin(const char* szFilePath, const char* verb)
 
 BOOL CMy2015RemoteApp::InitInstance()
 {
+#if _DEBUG
+    BOOL runNormal = TRUE;
+#else
     BOOL runNormal = THIS_CFG.GetInt("settings", "RunNormal", 0);
+#endif
     char curFile[MAX_PATH] = { 0 };
     GetModuleFileNameA(NULL, curFile, MAX_PATH);
     if (!runNormal && !IsRunningAsAdmin() && LaunchAsAdmin(curFile, "runas")) {
