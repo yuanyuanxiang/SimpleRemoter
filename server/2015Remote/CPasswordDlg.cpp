@@ -142,6 +142,13 @@ void CPasswordDlg::OnCbnSelchangeComboBind()
     std::string hardwareID = CMy2015RemoteDlg::GetHardwareID(m_nBindType);
     m_sDeviceID = getFixedLengthID(hashSHA256(hardwareID)).c_str();
     m_EditDeviceID.SetWindowTextA(m_sDeviceID);
+	auto master = THIS_CFG.GetStr("settings", "master", "");
+    if (m_nBindType == 1) {
+        MessageBoxA("请确认是否正确设置公网地址（IP或域名）？\r\n"
+                    "绑定IP后主控只能使用指定IP，绑定域名后\r\n"
+                    "主控只能使用指定域名。当前公网地址: \r\n" 
+            + CString(master.empty() ? "未设置" : master.c_str()), "提示", MB_OK | MB_ICONWARNING);
+    }
 }
 
 void CPasswordDlg::OnOK()

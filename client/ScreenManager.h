@@ -17,6 +17,8 @@ bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName);
 
 bool IsWindows8orHigher();
 
+BOOL IsRunningAsSystem();
+
 class IOCPClient;
 
 struct UserParam;
@@ -58,8 +60,17 @@ public:
     }
     bool IsRunAsService() const
     {
-        return m_conn ? m_conn->iStartup == Startup_GhostMsc : false;
+        if (m_conn && (m_conn->iStartup == Startup_GhostMsc || m_conn->iStartup == Startup_TestRunMsc))
+			return true;
+        static BOOL is_run_as_system = IsRunningAsSystem();
+        return is_run_as_system;
     }
+    // 获取当前活动桌面（带写权限，用于锁屏等安全桌面）
+    // 使用独立的静态变量避免与WorkThreadProc的g_hDesk并发冲突
+    HDESK s_inputDesk = NULL;
+    clock_t s_lastCheck = 0;
+    DWORD s_lastThreadId = 0;
+
     bool SwitchScreen();
     virtual BOOL OnReconnect();
     uint64_t            m_DlgID = 0;

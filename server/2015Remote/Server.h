@@ -346,7 +346,7 @@ public:
     }
     virtual bool IsEqual(context *ctx) const
     {
-        return this == ctx || (GetPeerName() == ctx->GetPeerName() && GetPort() == ctx->GetPort());
+        return this == ctx || this->GetPort() == ctx->GetPort();
     }
 };
 
