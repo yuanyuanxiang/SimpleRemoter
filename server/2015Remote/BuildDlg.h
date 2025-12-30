@@ -23,6 +23,7 @@ public:
 
 protected:
     virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
+    CString GetFilePath(CString type, CString filter, BOOL isOpen = TRUE);
 
     DECLARE_MESSAGE_MAP()
 public:
@@ -47,4 +48,7 @@ public:
     CString m_strEncryptIP;
     afx_msg void OnMenuEncryptIp();
     afx_msg void OnClientRunasAdmin();
+    CComboBox m_ComboPayload;
+    afx_msg void OnCbnSelchangeComboCompress();
+    CStatic m_StaticPayload;
 };

