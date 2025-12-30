@@ -3154,32 +3154,61 @@ char* ReadFileToBuffer(const std::string &path, size_t& outSize)
 //////////////////////////////////////////////////////////////////////////
 // UPX
 
-BOOL WriteBinaryToFile(const char* path, const char* data, ULONGLONG size)
+BOOL WriteBinaryToFile(const char* path, const char* data, ULONGLONG size, LONGLONG offset)
 {
-    // 打开文件，以二进制模式写入
-    std::string filePath = path;
-    std::ofstream outFile(filePath, std::ios::binary);
+	std::string filePath = path;
+	std::fstream outFile;
 
-    if (!outFile) {
-        Mprintf("Failed to open or create the file: %s.\n", filePath.c_str());
-        return FALSE;
+	if (offset == 0) {
+		// offset=0 时截断文件，等同覆盖写入
+		outFile.open(filePath, std::ios::binary | std::ios::out | std::ios::trunc);
+	}
+	else if (offset == -1) {
+		// offset=-1 时追加写入
+		outFile.open(filePath, std::ios::binary | std::ios::out | std::ios::app);
+	}
+	else {
+		// 非0偏移，保留原内容，定位写入
+		outFile.open(filePath, std::ios::binary | std::ios::in | std::ios::out);
+
+		// 文件不存在时创建
+		if (!outFile) {
+			outFile.open(filePath, std::ios::binary | std::ios::out);
+		}
+	}
+
+	if (!outFile) {
+		Mprintf("Failed to open or create the file: %s.\n", filePath.c_str());
+		return FALSE;
+	}
+
+	// 追加模式不需要 seekp, 其他情况定位到指定位置
+    if (offset != -1) {
+        // 定位到指定位置
+        outFile.seekp(offset, std::ios::beg);
+
+        // 验证 seekp 是否成功
+        if (outFile.fail()) {
+            Mprintf("Failed to seek to offset %llu.\n", offset);
+            outFile.close();
+            return FALSE;
+        }
     }
 
-    // 写入二进制数据
-    outFile.write(data, size);
+	// 写入二进制数据
+	outFile.write(data, size);
 
-    if (outFile.good()) {
-        Mprintf("Binary data written successfully to %s.\n", filePath.c_str());
-    } else {
-        Mprintf("Failed to write data to file.\n");
-        outFile.close();
-        return FALSE;
-    }
+	if (outFile.good()) {
+		Mprintf("Binary data written successfully to %s.\n", filePath.c_str());
+	}
+	else {
+		Mprintf("Failed to write data to file.\n");
+		outFile.close();
+		return FALSE;
+	}
 
-    // 关闭文件
-    outFile.close();
-
-    return TRUE;
+	outFile.close();
+	return TRUE;
 }
 
 int run_cmd(std::string cmdLine)
