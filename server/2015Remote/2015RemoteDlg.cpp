@@ -2041,7 +2041,7 @@ VOID CMy2015RemoteDlg::SendAllCommand(PBYTE  szBuffer, ULONG ulLength)
 //真彩Bar
 VOID CMy2015RemoteDlg::OnAbout()
 {
-    MessageBox("Copyleft (c) FTU 2019—2025" + CString("\n编译日期: ") + __DATE__ +
+    MessageBox("Copyleft (c) FTU 2019—2026" + CString("\n编译日期: ") + __DATE__ +
                CString(sizeof(void*)==8 ? " (x64)" : " (x86)"), "关于");
 }
 

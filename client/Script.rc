@@ -88,7 +88,7 @@ IDR_WAVE                WAVE                    "Res\\msg.wav"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,2,0
+ FILEVERSION 1,0,2,1
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -106,9 +106,9 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "FUCK THE UNIVERSE"
             VALUE "FileDescription", "A GHOST"
-            VALUE "FileVersion", "1.0.2.0"
+            VALUE "FileVersion", "1.0.2.1"
             VALUE "InternalName", "ServerDll.dll"
-            VALUE "LegalCopyright", "Copyright (C) 2019-2025"
+            VALUE "LegalCopyright", "Copyright (C) 2019-2026"
             VALUE "OriginalFilename", "ServerDll.dll"
             VALUE "ProductName", "A GHOST"
             VALUE "ProductVersion", "1.0.0.1"
