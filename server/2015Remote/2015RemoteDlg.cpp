@@ -1948,7 +1948,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
         auto v = splitString(dlg.m_sPassword.GetBuffer(), '-');
         if (v.size() != 6 && v.size() != 7) {
             THIS_CFG.SetStr(settings, pwdKey, "");
-            MessageBox("格式错误，请重新申请口令!", "提示", MB_ICONINFORMATION);
+            THIS_APP->MessageBox("格式错误，请重新申请口令!", "提示", MB_ICONINFORMATION);
             return false;
         }
         std::vector<std::string> subvector(v.end() - 4, v.end());
@@ -1961,7 +1961,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
             THIS_CFG.SetStr(settings, "PwdHmac", "");
             if (pwd.IsEmpty() || hash256 != fixedKey || IDOK != dlg.DoModal()) {
                 if (!dlg.m_sPassword.IsEmpty())
-                    MessageBox("口令错误, 无法继续操作!", "提示", MB_ICONWARNING);
+                    THIS_APP->MessageBox("口令错误, 无法继续操作!", "提示", MB_ICONWARNING);
                 return false;
             }
         }
@@ -1971,7 +1971,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
         std::strftime(curDate, sizeof(curDate), "%Y%m%d", &pekingTime);
         if (curDate < v[0] || curDate > v[1]) {
             THIS_CFG.SetStr(settings, pwdKey, "");
-            MessageBox("口令过期，请重新申请口令!", "提示", MB_ICONINFORMATION);
+            THIS_APP->MessageBox("口令过期，请重新申请口令!", "提示", MB_ICONINFORMATION);
             return false;
         }
         if (dlg.m_sPassword != pwd)

