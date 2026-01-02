@@ -24,6 +24,7 @@ public:
 protected:
     virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
     CString GetFilePath(CString type, CString filter, BOOL isOpen = TRUE);
+	BOOL OnToolTipNotify(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 
     DECLARE_MESSAGE_MAP()
 public:
@@ -51,4 +52,5 @@ public:
     CComboBox m_ComboPayload;
     afx_msg void OnCbnSelchangeComboCompress();
     CStatic m_StaticPayload;
+    CSliderCtrl m_SliderClientSize;
 };

