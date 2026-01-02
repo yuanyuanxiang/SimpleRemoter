@@ -805,7 +805,11 @@ VOID CScreenSpyDlg::SendCommand(const MYMSG* Msg)
         int dx = abs(Msg->pt.x - m_lastMousePoint.x);
         int dy = abs(Msg->pt.y - m_lastMousePoint.y);
         int dist_sq = dx * dx + dy * dy;
-        if (time_elapsed < 200 && dist_sq < 18 * 18) {
+
+        bool fastMove = dist_sq > 50 * 50;
+        int minInterval = fastMove ? 33 : 16;
+        int minDistSq = fastMove ? 10 * 10 : 3 * 3;
+        if (time_elapsed < minInterval && dist_sq < minDistSq) {
             return;
         }
         m_lastMouseMove = now;
