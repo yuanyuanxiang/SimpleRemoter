@@ -2573,6 +2573,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
         break;
     }
     case TOKEN_BITMAPINFO_HIDE: { // 虚拟桌面【x】
+        ContextObject->SetNoDelay(TRUE);
         g_2015RemoteDlg->SendMessage(WM_OPENHIDESCREENDLG, 0, (LPARAM)ContextObject);
         break;
     }
@@ -2597,6 +2598,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
         break;
     }
     case TOKEN_BITMAPINFO: { // 远程桌面【x】
+        ContextObject->SetNoDelay(TRUE);
         g_2015RemoteDlg->SendMessage(WM_OPENSCREENSPYDIALOG, 0, (LPARAM)ContextObject);
         break;
     }

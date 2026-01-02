@@ -693,6 +693,10 @@ public:
     {
         GroupName = group;
     }
+    void SetNoDelay(BOOL bNoDelay = TRUE)
+    {
+        setsockopt(sClientSocket, IPPROTO_TCP, TCP_NODELAY, (char*)&bNoDelay, sizeof(BOOL));
+    }
 } CONTEXT_OBJECT, * PCONTEXT_OBJECT;
 
 typedef CList<PCONTEXT_OBJECT> ContextObjectList;
