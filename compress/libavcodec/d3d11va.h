@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Direct3D11 HW acceleration
  *
  * copyright (c) 2009 Laurent Aimar

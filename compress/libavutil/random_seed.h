@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2009 Baptiste Coudurier <baptiste.coudurier@gmail.com>
  *
  * This file is part of FFmpeg.

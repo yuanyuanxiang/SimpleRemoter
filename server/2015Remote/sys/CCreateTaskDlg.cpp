@@ -1,11 +1,11 @@
-// CCreateTaskDlg.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// CCreateTaskDlg.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "stdafx.h"
 #include "2015Remote.h"
 #include "CCreateTaskDlg.h"
 
-// CCreateTaskDlg ¶Ô»°¿ò
+// CCreateTaskDlg å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(CCreateTaskDlg, CDialog)
 
@@ -15,7 +15,7 @@ CCreateTaskDlg::CCreateTaskDlg(CWnd* pParent /*=nullptr*/)
     , m_TaskNames(_T("bhyy"))
     , m_ExePath(_T("C:\\windows\\system32\\cmd.exe"))
     , m_Author(_T("Microsoft Corporation"))
-    , m_Description(_T("´ËÈÎÎñÓÃÓÚÔÚĞèÒªÊ±Æô¶¯ Windows ¸üĞÂ·şÎñÒÔÖ´ĞĞ¼Æ»®µÄ²Ù×÷(ÈçÉ¨Ãè)"))
+    , m_Description(_T("æ­¤ä»»åŠ¡ç”¨äºåœ¨éœ€è¦æ—¶å¯åŠ¨ Windows æ›´æ–°æœåŠ¡ä»¥æ‰§è¡Œè®¡åˆ’çš„æ“ä½œ(å¦‚æ‰«æ)"))
 {
 }
 
@@ -40,12 +40,12 @@ BEGIN_MESSAGE_MAP(CCreateTaskDlg, CDialog)
 END_MESSAGE_MAP()
 
 
-// CCreateTaskDlg ÏûÏ¢´¦Àí³ÌĞò
+// CCreateTaskDlg æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 
 void CCreateTaskDlg::OnBnClickedButtonCREAT()
 {
     UpdateData(TRUE);
-    // TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+    // TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
     CDialog::OnOK();
 }

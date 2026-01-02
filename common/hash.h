@@ -1,20 +1,20 @@
-
+﻿
 /*
-原文：https://github.com/yuanyuanxiang/SimpleRemoter/releases/tag/v1.0.1.1
+鍘熸枃锛歨ttps://github.com/yuanyuanxiang/SimpleRemoter/releases/tag/v1.0.1.1
 
-自v1.1.1版本开始，主控程序需要授权，并且会自动连接到授权服务器，您可以联系作者请求授权。
-如果对这个有意见，请使用早期版本（<v1.0.8）。自行修改和编译程序，也可以解决该问题（参考 #91）。
+鑷獀1.1.1鐗堟湰寮€濮嬶紝涓绘帶绋嬪簭闇€瑕佹巿鏉冿紝骞朵笖浼氳嚜鍔ㄨ繛鎺ュ埌鎺堟潈鏈嶅姟鍣紝鎮ㄥ彲浠ヨ仈绯讳綔鑰呰姹傛巿鏉冦€?
+濡傛灉瀵硅繖涓湁鎰忚锛岃浣跨敤鏃╂湡鐗堟湰锛?v1.0.8锛夈€傝嚜琛屼慨鏀瑰拰缂栬瘧绋嬪簭锛屼篃鍙互瑙ｅ喅璇ラ棶棰橈紙鍙傝€?#91锛夈€?
 
-作者投入了业余精力来维护、更新本软件，开源仅供学习交流之用，盈利并非主要目的。
-若需使用发布版本，须获得授权，需要支付一定的授权费用。
+浣滆€呮姇鍏ヤ簡涓氫綑绮惧姏鏉ョ淮鎶ゃ€佹洿鏂版湰杞欢锛屽紑婧愪粎渚涘涔犱氦娴佷箣鐢紝鐩堝埄骞堕潪涓昏鐩殑銆?
+鑻ラ渶浣跨敤鍙戝竷鐗堟湰锛岄』鑾峰緱鎺堟潈锛岄渶瑕佹敮浠樹竴瀹氱殑鎺堟潈璐圭敤銆?
 
-你可以自由修改代码并自行编译使用（请参考上述问题：#91），此情况下不收取任何费用。
-建议用户优先尝试自行编译，或测试旧版本是否已能满足需求；如仍有需要且具备预算，可再考虑正式授权。
+浣犲彲浠ヨ嚜鐢变慨鏀逛唬鐮佸苟鑷缂栬瘧浣跨敤锛堣鍙傝€冧笂杩伴棶棰橈細#91锛夛紝姝ゆ儏鍐典笅涓嶆敹鍙栦换浣曡垂鐢ㄣ€?
+寤鸿鐢ㄦ埛浼樺厛灏濊瘯鑷缂栬瘧锛屾垨娴嬭瘯鏃х増鏈槸鍚﹀凡鑳芥弧瓒抽渶姹傦紱濡備粛鏈夐渶瑕佷笖鍏峰棰勭畻锛屽彲鍐嶈€冭檻姝ｅ紡鎺堟潈銆?
 
-如已获得授权，后续发布的新版本可继续使用，且未使用完的授权时间将自动顺延至新版本。
+濡傚凡鑾峰緱鎺堟潈锛屽悗缁彂甯冪殑鏂扮増鏈彲缁х画浣跨敤锛屼笖鏈娇鐢ㄥ畬鐨勬巿鏉冩椂闂村皢鑷姩椤哄欢鑷虫柊鐗堟湰銆?
 
-⚠️ 本软件仅限于合法、正当、合规的用途。禁止将本软件用于任何违法、恶意、侵权或违反道德规范的行为。
-作者不对任何因滥用软件所引发的法律责任、损害或争议承担任何责任，并保留在发现或怀疑不当用途时拒绝或终止授权的权利。
+鈿狅笍 鏈蒋浠朵粎闄愪簬鍚堟硶銆佹褰撱€佸悎瑙勭殑鐢ㄩ€斻€傜姝㈠皢鏈蒋浠剁敤浜庝换浣曡繚娉曘€佹伓鎰忋€佷镜鏉冩垨杩濆弽閬撳痉瑙勮寖鐨勮涓恒€?
+浣滆€呬笉瀵逛换浣曞洜婊ョ敤杞欢鎵€寮曞彂鐨勬硶寰嬭矗浠汇€佹崯瀹虫垨浜夎鎵挎媴浠讳綍璐ｄ换锛屽苟淇濈暀鍦ㄥ彂鐜版垨鎬€鐤戜笉褰撶敤閫旀椂鎷掔粷鎴栫粓姝㈡巿鏉冪殑鏉冨埄銆?
 
 --------------------------------------------------------------------------------------------------------------
 
@@ -35,14 +35,14 @@ If further functionality is required and budget is available, you may then consi
 If a license is obtained, future versions of the software can continue to be used under the same license,
 and any remaining license time will be automatically carried over to the new version.
 
-⚠️ This software is intended for lawful, legitimate, and compliant use only.
+鈿狅笍 This software is intended for lawful, legitimate, and compliant use only.
 Any use of this software for illegal, malicious, infringing, or unethical purposes is strictly prohibited.
 The author shall not be held liable for any legal issues, damages, or disputes resulting from misuse of
 the software, and reserves the right to refuse or revoke authorization if improper use is discovered or suspected.
 */
 
-// 主控程序唯一标识
-// 提示: 修改这个哈希可能造成一些功能受限，自主控的v1.1.1版本起，程序的诸多功能依赖于该哈希.
-// 因此，对于想破除程序授权限制的行为，建议基于v1.1.1版本，甚至使用无需授权的版本（如能满足需求）.
-// 当然这些早期版本没有包含问题修复和新的功能.
+// 涓绘帶绋嬪簭鍞竴鏍囪瘑
+// 鎻愮ず: 淇敼杩欎釜鍝堝笇鍙兘閫犳垚涓€浜涘姛鑳藉彈闄愶紝鑷富鎺х殑v1.1.1鐗堟湰璧凤紝绋嬪簭鐨勮澶氬姛鑳戒緷璧栦簬璇ュ搱甯?
+// 鍥犳锛屽浜庢兂鐮撮櫎绋嬪簭鎺堟潈闄愬埗鐨勮涓猴紝寤鸿鍩轰簬v1.1.1鐗堟湰锛岀敋鑷充娇鐢ㄦ棤闇€鎺堟潈鐨勭増鏈紙濡傝兘婊¤冻闇€姹傦級.
+// 褰撶劧杩欎簺鏃╂湡鐗堟湰娌℃湁鍖呭惈闂淇鍜屾柊鐨勫姛鑳?
 #define MASTER_HASH "61f04dd637a74ee34493fc1025de2c131022536da751c29e3ff4e9024d8eec43"

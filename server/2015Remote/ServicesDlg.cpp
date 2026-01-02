@@ -1,4 +1,4 @@
-// ServicesDlg.cpp : ÊµÏÖÎÄ¼ş
+ï»¿// ServicesDlg.cpp : å®ç°æ–‡ä»¶
 //
 
 #include "stdafx.h"
@@ -7,11 +7,11 @@
 #include "afxdialogex.h"
 
 
-// CServicesDlg ¶Ô»°¿ò
+// CServicesDlg å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(CServicesDlg, CDialog)
 
-// ItemData1 ²»ÒªºÍItemDataÍ¬ÃûÁË£¬Í¬ÃûµÄ»°µ÷ÊÔ»áÓĞÎÊÌâ
+// ItemData1 ä¸è¦å’ŒItemDataåŒåäº†ï¼ŒåŒåçš„è¯è°ƒè¯•ä¼šæœ‰é—®é¢˜
 typedef  struct  ItemData1 {
     CString Data[5];
     CString GetData(int index) const
@@ -50,7 +50,7 @@ BEGIN_MESSAGE_MAP(CServicesDlg, CDialog)
 END_MESSAGE_MAP()
 
 
-// CServicesDlg ÏûÏ¢´¦Àí³ÌĞò
+// CServicesDlg æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 
 BOOL CServicesDlg::OnInitDialog()
@@ -60,19 +60,19 @@ BOOL CServicesDlg::OnInitDialog()
     SetIcon(m_hIcon, TRUE);
     SetIcon(m_hIcon, FALSE);
     CString strString;
-    strString.Format("%s - ·şÎñ¹ÜÀí",m_IPAddress);
+    strString.Format("%s - æœåŠ¡ç®¡ç†",m_IPAddress);
     SetWindowText(strString);
 
     m_ControlList.SetExtendedStyle( LVS_EX_FULLROWSELECT);
-    m_ControlList.InsertColumn(0, "ÕæÊµÃû³Æ", LVCFMT_LEFT, 150);
-    m_ControlList.InsertColumn(1, "ÏÔÊ¾Ãû³Æ", LVCFMT_LEFT, 260);
-    m_ControlList.InsertColumn(2, "Æô¶¯ÀàĞÍ", LVCFMT_LEFT, 80);
-    m_ControlList.InsertColumn(3, "ÔËĞĞ×´Ì¬", LVCFMT_LEFT, 80);
-    m_ControlList.InsertColumn(4, "¿ÉÖ´ĞĞÎÄ¼şÂ·¾¶", LVCFMT_LEFT, 380);
+    m_ControlList.InsertColumn(0, "çœŸå®åç§°", LVCFMT_LEFT, 150);
+    m_ControlList.InsertColumn(1, "æ˜¾ç¤ºåç§°", LVCFMT_LEFT, 260);
+    m_ControlList.InsertColumn(2, "å¯åŠ¨ç±»å‹", LVCFMT_LEFT, 80);
+    m_ControlList.InsertColumn(3, "è¿è¡ŒçŠ¶æ€", LVCFMT_LEFT, 80);
+    m_ControlList.InsertColumn(4, "å¯æ‰§è¡Œæ–‡ä»¶è·¯å¾„", LVCFMT_LEFT, 380);
 
     ShowServicesList();
     return TRUE;  // return TRUE unless you set the focus to a control
-    // Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+    // å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 int CServicesDlg::ShowServicesList(void)
@@ -107,7 +107,7 @@ int CServicesDlg::ShowServicesList(void)
     }
 
     CString strTemp;
-    strTemp.Format("·şÎñ¸öÊı:%d",i);
+    strTemp.Format("æœåŠ¡ä¸ªæ•°:%d",i);
 
     m_ServicesCount.SetWindowText(strTemp);
 
@@ -117,7 +117,7 @@ int CServicesDlg::ShowServicesList(void)
 void CServicesDlg::OnClose()
 {
     CancelIO();
-    // µÈ´ıÊı¾İ´¦ÀíÍê±Ï
+    // ç­‰å¾…æ•°æ®å¤„ç†å®Œæ¯•
     if (IsProcessing()) {
         ShowWindow(SW_HIDE);
         return;
@@ -155,11 +155,11 @@ void CServicesDlg::OnServicesStart()
 
 void CServicesDlg::OnServicesReflash()
 {
-    BYTE bToken = COMMAND_SERVICELIST;   //Ë¢ĞÂ
+    BYTE bToken = COMMAND_SERVICELIST;   //åˆ·æ–°
     m_ContextObject->Send2Client(&bToken, 1);
 }
 
-// ÊÍ·Å×ÊÔ´ÒÔºóÔÙÇå¿Õ
+// é‡Šæ”¾èµ„æºä»¥åå†æ¸…ç©º
 void  CServicesDlg::DeleteAllItems()
 {
     for (int i = 0; i < m_ControlList.GetItemCount(); i++) {
@@ -177,7 +177,7 @@ int CALLBACK CServicesDlg::CompareFunction(LPARAM lParam1, LPARAM lParam2, LPARA
     int nColumn = pSortInfo->first;
     bool bAscending = pSortInfo->second;
 
-    // »ñÈ¡ÁĞÖµ
+    // è·å–åˆ—å€¼
     ItemData1* context1 = (ItemData1*)lParam1;
     ItemData1* context2 = (ItemData1*)lParam2;
     CString s1 = context1->GetData(nColumn);
@@ -192,15 +192,15 @@ void CServicesDlg::SortByColumn(int nColumn)
     static int m_nSortColumn = 0;
     static bool m_bSortAscending = false;
     if (nColumn == m_nSortColumn) {
-        // Èç¹ûµã»÷µÄÊÇÍ¬Ò»ÁĞ£¬ÇĞ»»ÅÅĞòË³Ğò
+        // å¦‚æœç‚¹å‡»çš„æ˜¯åŒä¸€åˆ—ï¼Œåˆ‡æ¢æ’åºé¡ºåº
         m_bSortAscending = !m_bSortAscending;
     } else {
-        // ·ñÔò£¬ÇĞ»»µ½ĞÂÁĞ²¢ÉèÖÃÎªÉıĞò
+        // å¦åˆ™ï¼Œåˆ‡æ¢åˆ°æ–°åˆ—å¹¶è®¾ç½®ä¸ºå‡åº
         m_nSortColumn = nColumn;
         m_bSortAscending = true;
     }
 
-    // ´´½¨ÅÅĞòĞÅÏ¢
+    // åˆ›å»ºæ’åºä¿¡æ¯
     std::pair<int, bool> sortInfo(m_nSortColumn, m_bSortAscending);
     m_ControlList.SortItems(CompareFunction, reinterpret_cast<LPARAM>(&sortInfo));
 }
@@ -208,8 +208,8 @@ void CServicesDlg::SortByColumn(int nColumn)
 void CServicesDlg::OnHdnItemclickList(NMHDR* pNMHDR, LRESULT* pResult)
 {
     LPNMHEADER pNMHeader = reinterpret_cast<LPNMHEADER>(pNMHDR);
-    int nColumn = pNMHeader->iItem; // »ñÈ¡µã»÷µÄÁĞË÷Òı
-    SortByColumn(nColumn);          // µ÷ÓÃÅÅĞòº¯Êı
+    int nColumn = pNMHeader->iItem; // è·å–ç‚¹å‡»çš„åˆ—ç´¢å¼•
+    SortByColumn(nColumn);          // è°ƒç”¨æ’åºå‡½æ•°
     *pResult = 0;
 }
 
@@ -234,7 +234,7 @@ void CServicesDlg::OnReceiveComplete(void)
         ShowServicesList();
         break;
     default:
-        // ´«Êä·¢ÉúÒì³£Êı¾İ
+        // ä¼ è¾“å‘ç”Ÿå¼‚å¸¸æ•°æ®
         break;
     }
 }
@@ -262,13 +262,13 @@ void CServicesDlg::OnSize(UINT nType, int cx, int cy)
 {
     CDialog::OnSize(nType, cx, cy);
 
-    if (!m_ControlList.GetSafeHwnd()) return; // È·±£¿Ø¼şÒÑ´´½¨
+    if (!m_ControlList.GetSafeHwnd()) return; // ç¡®ä¿æ§ä»¶å·²åˆ›å»º
 
-    // ¼ÆËãĞÂÎ»ÖÃºÍ´óĞ¡
+    // è®¡ç®—æ–°ä½ç½®å’Œå¤§å°
     CRect rc;
     m_ControlList.GetWindowRect(&rc);
     ScreenToClient(&rc);
 
-    // ÖØĞÂÉèÖÃ¿Ø¼ş´óĞ¡
+    // é‡æ–°è®¾ç½®æ§ä»¶å¤§å°
     m_ControlList.MoveWindow(0, 0, cx, cy, TRUE);
 }

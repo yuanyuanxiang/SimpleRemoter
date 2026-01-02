@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2007 Michael Niedermayer <michaelni@gmx.at>
  * Copyright (C) 2013 James Almer <jamrial@gmail.com>
  *

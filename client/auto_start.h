@@ -1,14 +1,14 @@
-#pragma once
+ï»¿#pragma once
 #include <windows.h>
 
-// ÌáÉıÈ¨ÏŞ
+// æå‡æƒé™
 inline int DebugPrivilege()
 {
     HANDLE hToken = NULL;
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
         return -1;
 
-    // ¶¯Ì¬·ÖÅä¿Õ¼ä£¬°üº¬ 3 ¸ö LUID
+    // åŠ¨æ€åˆ†é…ç©ºé—´ï¼ŒåŒ…å« 3 ä¸ª LUID
     TOKEN_PRIVILEGES* tp = (TOKEN_PRIVILEGES*)malloc(sizeof(TOKEN_PRIVILEGES) + 2 * sizeof(LUID_AND_ATTRIBUTES));
     if (!tp) {
         SAFE_CLOSE_HANDLE(hToken);
@@ -48,13 +48,13 @@ inline int DebugPrivilege()
 typedef void (*StartupLogFunc)(const char* file, int line, const char* format, ...);
 
 /**
-* @brief ÉèÖÃ±¾Éí¿ª»ú×ÔÆô¶¯
-* @param[in] *sPath ×¢²á±íµÄÂ·¾¶
-* @param[in] *sNmae ×¢²á±íÏîÃû³Æ
-* @return ·µ»Ø×¢²á½á¹û
-* @details Win7 64Î»»úÆ÷ÉÏ²âÊÔ½á¹û±íÃ÷£¬×¢²áÏîÔÚ£º\n
+* @brief è®¾ç½®æœ¬èº«å¼€æœºè‡ªå¯åŠ¨
+* @param[in] *sPath æ³¨å†Œè¡¨çš„è·¯å¾„
+* @param[in] *sNmae æ³¨å†Œè¡¨é¡¹åç§°
+* @return è¿”å›æ³¨å†Œç»“æœ
+* @details Win7 64ä½æœºå™¨ä¸Šæµ‹è¯•ç»“æœè¡¨æ˜ï¼Œæ³¨å†Œé¡¹åœ¨ï¼š\n
 * HKEY_LOCAL_MACHINE\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Run
-* @note Ê×´ÎÔËĞĞĞèÒªÒÔ¹ÜÀíÔ±È¨ÏŞÔËĞĞ£¬²ÅÄÜÏò×¢²á±íĞ´Èë¿ª»úÆô¶¯Ïî
+* @note é¦–æ¬¡è¿è¡Œéœ€è¦ä»¥ç®¡ç†å‘˜æƒé™è¿è¡Œï¼Œæ‰èƒ½å‘æ³¨å†Œè¡¨å†™å…¥å¼€æœºå¯åŠ¨é¡¹
 */
 inline BOOL SetSelfStart(const char* sPath, const char* sNmae, StartupLogFunc Log)
 {
@@ -62,37 +62,37 @@ inline BOOL SetSelfStart(const char* sPath, const char* sNmae, StartupLogFunc Lo
 
     int n = DebugPrivilege();
     if (n != 0) {
-        _Mprintf("ÌáÉıÈ¨ÏŞÊ§°Ü£¬´íÎóÂë£º%d\n", n);
+        _Mprintf("æå‡æƒé™å¤±è´¥ï¼Œé”™è¯¯ç ï¼š%d\n", n);
         return FALSE;
 	}
 
-    // Ğ´ÈëµÄ×¢²á±íÂ·¾¶
+    // å†™å…¥çš„æ³¨å†Œè¡¨è·¯å¾„
 #define REGEDIT_PATH "Software\\Microsoft\\Windows\\CurrentVersion\\Run"
 
-    // ÔÚ×¢²á±íÖĞĞ´ÈëÆô¶¯ĞÅÏ¢
+    // åœ¨æ³¨å†Œè¡¨ä¸­å†™å…¥å¯åŠ¨ä¿¡æ¯
     HKEY hKey = NULL;
     LONG lRet = RegOpenKeyExA(HKEY_CURRENT_USER, REGEDIT_PATH, 0, KEY_ALL_ACCESS, &hKey);
 
-    // ÅĞ¶ÏÊÇ·ñ³É¹¦
+    // åˆ¤æ–­æ˜¯å¦æˆåŠŸ
     if (lRet != ERROR_SUCCESS) {
-        _Mprintf("´ò¿ª×¢²á±íÊ§°Ü£¬´íÎóÂë£º%d\n", lRet);
+        _Mprintf("æ‰“å¼€æ³¨å†Œè¡¨å¤±è´¥ï¼Œé”™è¯¯ç ï¼š%d\n", lRet);
         return FALSE;
     }
 
     lRet = RegSetValueExA(hKey, sNmae, 0, REG_SZ, (const BYTE*)sPath, strlen(sPath) + 1);
 
     if (lRet != ERROR_SUCCESS) {
-        _Mprintf("Ğ´Èë×¢²á±íÊ§°Ü£¬´íÎóÂë£º%d\n", lRet);
+        _Mprintf("å†™å…¥æ³¨å†Œè¡¨å¤±è´¥ï¼Œé”™è¯¯ç ï¼š%d\n", lRet);
     } else {
-        _Mprintf("Ğ´Èë×¢²á±í³É¹¦£º%s -> %s\n", sNmae, sPath);
+        _Mprintf("å†™å…¥æ³¨å†Œè¡¨æˆåŠŸï¼š%s -> %s\n", sNmae, sPath);
 	}
 
-    // ¹Ø±Õ×¢²á±í
+    // å…³é—­æ³¨å†Œè¡¨
     RegCloseKey(hKey);
 
 #undef _Mprintf
 
-    // ÅĞ¶ÏÊÇ·ñ³É¹¦
+    // åˆ¤æ–­æ˜¯å¦æˆåŠŸ
     return lRet == ERROR_SUCCESS;
 }
 

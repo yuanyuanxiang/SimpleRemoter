@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+﻿#include "StdAfx.h"
 #include "SortListCtrl.h"
 
 BEGIN_MESSAGE_MAP(CSortListCtrl, CListCtrl)

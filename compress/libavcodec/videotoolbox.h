@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Videotoolbox hardware acceleration
  *
  * copyright (c) 2012 Sebastien Zwickert

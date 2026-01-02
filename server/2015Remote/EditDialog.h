@@ -1,21 +1,21 @@
-#pragma once
+ï»¿#pragma once
 
 
-// CEditDialog ¶Ô»°¿ò
+// CEditDialog å¯¹è¯æ¡†
 
 class CEditDialog : public CDialog
 {
     DECLARE_DYNAMIC(CEditDialog)
 
 public:
-    CEditDialog(CWnd* pParent = NULL);   // ±ê×¼¹¹Ôìº¯Êı
+    CEditDialog(CWnd* pParent = NULL);   // æ ‡å‡†æ„é€ å‡½æ•°
     virtual ~CEditDialog();
 
-    // ¶Ô»°¿òÊı¾İ
+    // å¯¹è¯æ¡†æ•°æ®
     enum { IDD = IDD_DIALOG_NEWFOLDER };
 
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æŒ
 
     DECLARE_MESSAGE_MAP()
 public:

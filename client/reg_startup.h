@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <stdbool.h>
 
 typedef void (*StartupLogFunc)(const char* file, int line, const char* format, ...);

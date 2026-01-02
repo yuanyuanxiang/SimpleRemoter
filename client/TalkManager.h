@@ -1,4 +1,4 @@
-// TalkManager.h: interface for the CTalkManager class.
+﻿// TalkManager.h: interface for the CTalkManager class.
 //
 //////////////////////////////////////////////////////////////////////
 

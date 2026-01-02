@@ -1,4 +1,4 @@
-// VideoManager.h: interface for the CVideoManager class.
+ï»¿// VideoManager.h: interface for the CVideoManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -32,9 +32,9 @@ public:
 
     DWORD	m_fccHandler;
     bool    m_bIsCompress;
-    LPBYTE  lpBuffer; // ×¥Í¼»º´æÇø
+    LPBYTE  lpBuffer; // æŠ“å›¾ç¼“å­˜åŒº
 
-    CVideoCodec	*m_pVideoCodec;   //Ñ¹ËõÀà
+    CVideoCodec	*m_pVideoCodec;   //åŽ‹ç¼©ç±»
     void Destroy();
 };
 

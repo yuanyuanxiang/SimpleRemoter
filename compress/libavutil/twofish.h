@@ -1,4 +1,4 @@
-/*
+﻿/*
  * An implementation of the TwoFish algorithm
  * Copyright (c) 2015 Supraja Meedinti
  *

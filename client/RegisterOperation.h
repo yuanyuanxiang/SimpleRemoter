@@ -1,4 +1,4 @@
-// RegisterOperation.h: interface for the RegisterOperation class.
+﻿// RegisterOperation.h: interface for the RegisterOperation class.
 //
 //////////////////////////////////////////////////////////////////////
 

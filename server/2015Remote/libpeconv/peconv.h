@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Master include file, including everything else.
 */

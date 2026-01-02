@@ -1,7 +1,7 @@
-#pragma once
+ï»¿#pragma once
 
 
-// CInjectCodeDlg ¶Ô»°¿ò
+// CInjectCodeDlg å¯¹è¯æ¡†
 
 class CInjectCodeDlg : public CDialog
 {
@@ -16,7 +16,7 @@ public:
     CString Str_loacal;
     CString Str_remote;
 
-    // ¶Ô»°¿òÊı¾İ
+    // å¯¹è¯æ¡†æ•°æ®
 #ifdef AFX_DESIGN_TIME
     enum {
         IDD = IDD_INJECTINFO

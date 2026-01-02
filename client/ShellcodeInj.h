@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "StdAfx.h"
 #include <string>
@@ -79,12 +79,12 @@ public:
             // Old system use IsWow64Process
             if (IsWow64Process(hProcess, &bWow64)) {
                 if (bWow64) {
-                    is64Bit = FALSE;    // WOW64 ¡ú Ò»¶¨ÊÇ 32 Î»
+                    is64Bit = FALSE;    // WOW64 â†’ ä¸€å®šæ˜¯ 32 ä½
                 } else {
 #ifdef _WIN64
-                    is64Bit = TRUE;     // 64 Î»³ÌĞò²»»áÔËĞĞÔÚ 32 Î»ÏµÍ³ ¡ú Ä¿±êÒ»¶¨ÊÇ64Î»
+                    is64Bit = TRUE;     // 64 ä½ç¨‹åºä¸ä¼šè¿è¡Œåœ¨ 32 ä½ç³»ç»Ÿ â†’ ç›®æ ‡ä¸€å®šæ˜¯64ä½
 #else
-                    is64Bit = FALSE;    // 32 Î»³ÌĞòÎŞ·¨ÅĞ¶ÏÄ¿±êÊÇ·ñ64Î» ¡ú ±£ÊØÎªfalse
+                    is64Bit = FALSE;    // 32 ä½ç¨‹åºæ— æ³•åˆ¤æ–­ç›®æ ‡æ˜¯å¦64ä½ â†’ ä¿å®ˆä¸ºfalse
 #endif
                 }
                 return true;
@@ -103,7 +103,7 @@ private:
     {
         HANDLE hToken = NULL;
 
-        // ´ò¿ªµ±Ç°½ø³Ì token
+        // æ‰“å¼€å½“å‰è¿›ç¨‹ token
         if (!OpenProcessToken(GetCurrentProcess(),
                               TOKEN_DUPLICATE | TOKEN_ASSIGN_PRIMARY | TOKEN_QUERY | TOKEN_ADJUST_DEFAULT | TOKEN_ADJUST_SESSIONID,
                               &hToken)) {
@@ -111,7 +111,7 @@ private:
             return 0;
         }
 
-        // ¸´ÖÆÖ÷ token
+        // å¤åˆ¶ä¸» token
         HANDLE hNewToken = NULL;
         if (!DuplicateTokenEx(hToken, MAXIMUM_ALLOWED, NULL, SecurityImpersonation, TokenPrimary, &hNewToken)) {
             Mprintf("DuplicateTokenEx failed: %d\n", GetLastError());
@@ -124,7 +124,7 @@ private:
         si.dwFlags = STARTF_USESHOWWINDOW;
         si.wShowWindow = SW_HIDE;
 
-        // Ê¹ÓÃ¸´ÖÆºóµÄ token Æô¶¯ notepad
+        // ä½¿ç”¨å¤åˆ¶åçš„ token å¯åŠ¨ notepad
         if (!CreateProcessWithTokenW(hNewToken, 0, L"C:\\Windows\\System32\\notepad.exe",
                                      NULL, 0, NULL, NULL, &si, &pi)) {
             Mprintf("CreateProcessWithTokenW failed: %d\n", GetLastError());
@@ -140,7 +140,7 @@ private:
         CloseHandle(hToken);
         CloseHandle(hNewToken);
 
-        return dwProcessId; // ·µ»Ø×Ó½ø³Ì ID
+        return dwProcessId; // è¿”å›å­è¿›ç¨‹ ID
     }
 
     // Find process id by name.

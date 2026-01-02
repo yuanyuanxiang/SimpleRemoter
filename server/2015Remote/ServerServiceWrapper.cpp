@@ -1,16 +1,16 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "ServerServiceWrapper.h"
 #include "ServerSessionMonitor.h"
 #include <stdio.h>
 #include <winsvc.h>
 
 
-// 静态变量
+// 闈欐€佸彉閲?
 static SERVICE_STATUS g_ServiceStatus;
 static SERVICE_STATUS_HANDLE g_StatusHandle = NULL;
 static HANDLE g_StopEvent = INVALID_HANDLE_VALUE;
 
-// 前向声明
+// 鍓嶅悜澹版槑
 static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
 static void WINAPI ServiceCtrlHandler(DWORD ctrlCode);
 
@@ -23,25 +23,25 @@ BOOL ServerService_CheckStatus(BOOL* registered, BOOL* running,
         exePath[0] = '\0';
     }
 
-    // 打开 SCM
+    // 鎵撳紑 SCM
     SC_HANDLE hSCM = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
     if (!hSCM) {
         return FALSE;
     }
 
-    // 打开服务
+    // 鎵撳紑鏈嶅姟
     SC_HANDLE hService = OpenServiceA(
                              hSCM,
                              SERVER_SERVICE_NAME,
                              SERVICE_QUERY_STATUS | SERVICE_QUERY_CONFIG);
     if (!hService) {
         CloseServiceHandle(hSCM);
-        return FALSE;  // 未注册
+        return FALSE;  // 鏈敞鍐?
     }
 
     *registered = TRUE;
 
-    // 获取服务状态
+    // 鑾峰彇鏈嶅姟鐘舵€?
     SERVICE_STATUS_PROCESS ssp;
     DWORD bytesNeeded = 0;
     memset(&ssp, 0, sizeof(ssp));
@@ -54,7 +54,7 @@ BOOL ServerService_CheckStatus(BOOL* registered, BOOL* running,
         *running = (ssp.dwCurrentState == SERVICE_RUNNING);
     }
 
-    // 获取 EXE 路径
+    // 鑾峰彇 EXE 璺緞
     if (exePath && exePathSize > 0) {
         DWORD bufSize = 0;
         QueryServiceConfigA(hService, NULL, 0, &bufSize);
@@ -77,13 +77,13 @@ BOOL ServerService_CheckStatus(BOOL* registered, BOOL* running,
 
 int ServerService_StartSimple(void)
 {
-    // 打开SCM
+    // 鎵撳紑SCM
     SC_HANDLE hSCM = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
     if (!hSCM) {
         return (int)GetLastError();
     }
 
-    // 打开服务并启动
+    // 鎵撳紑鏈嶅姟骞跺惎鍔?
     SC_HANDLE hService = OpenServiceA(hSCM, SERVER_SERVICE_NAME, SERVICE_START);
     if (!hService) {
         int err = (int)GetLastError();
@@ -91,7 +91,7 @@ int ServerService_StartSimple(void)
         return err;
     }
 
-    // 启动服务
+    // 鍚姩鏈嶅姟
     BOOL ok = StartServiceA(hService, 0, NULL);
     int err = ok ? ERROR_SUCCESS : (int)GetLastError();
 
@@ -124,13 +124,13 @@ int ServerService_Run(void)
 
 int ServerService_Stop(void)
 {
-    // 打开SCM
+    // 鎵撳紑SCM
     SC_HANDLE hSCM = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
     if (!hSCM) {
         return (int)GetLastError();
     }
 
-    // 打开服务
+    // 鎵撳紑鏈嶅姟
     SC_HANDLE hService = OpenServiceA(hSCM, SERVER_SERVICE_NAME, SERVICE_STOP | SERVICE_QUERY_STATUS);
     if (!hService) {
         int err = (int)GetLastError();
@@ -138,7 +138,7 @@ int ServerService_Stop(void)
         return err;
     }
 
-    // 查询当前状态
+    // 鏌ヨ褰撳墠鐘舵€?
     SERVICE_STATUS status;
     if (!QueryServiceStatus(hService, &status)) {
         int err = (int)GetLastError();
@@ -147,14 +147,14 @@ int ServerService_Stop(void)
         return err;
     }
 
-    // 如果服务未运行，直接返回成功
+    // 濡傛灉鏈嶅姟鏈繍琛岋紝鐩存帴杩斿洖鎴愬姛
     if (status.dwCurrentState == SERVICE_STOPPED) {
         CloseServiceHandle(hService);
         CloseServiceHandle(hSCM);
         return ERROR_SUCCESS;
     }
 
-    // 发送停止控制命令
+    // 鍙戦€佸仠姝㈡帶鍒跺懡浠?
     if (!ControlService(hService, SERVICE_CONTROL_STOP, &status)) {
         DWORD err = GetLastError();
         if (err != ERROR_SERVICE_NOT_ACTIVE) {
@@ -164,7 +164,7 @@ int ServerService_Stop(void)
         }
     }
 
-    // 等待服务停止（最多30秒）
+    // 绛夊緟鏈嶅姟鍋滄锛堟渶澶?0绉掞級
     int waitCount = 0;
     while (status.dwCurrentState != SERVICE_STOPPED && waitCount < 30) {
         Sleep(1000);
@@ -272,7 +272,7 @@ static void WINAPI ServiceCtrlHandler(DWORD ctrlCode)
     }
 }
 
-// 服务工作线程
+// 鏈嶅姟宸ヤ綔绾跨▼
 DWORD WINAPI ServerService_WorkerThread(LPVOID lpParam)
 {
     (void)lpParam;
@@ -283,7 +283,7 @@ DWORD WINAPI ServerService_WorkerThread(LPVOID lpParam)
     Mprintf("Worker thread started");
     Mprintf("Service will launch Yama GUI in user sessions");
 
-    // 初始化会话监控器
+    // 鍒濆鍖栦細璇濈洃鎺у櫒
     ServerSessionMonitor monitor;
     ServerSessionMonitor_Init(&monitor);
 
@@ -296,10 +296,10 @@ DWORD WINAPI ServerService_WorkerThread(LPVOID lpParam)
     Mprintf("Session monitor started successfully");
     Mprintf("Yama GUI will be launched automatically in user sessions");
 
-    // 主循环，只等待停止信号
+    // 涓诲惊鐜紝鍙瓑寰呭仠姝俊鍙?
     while (WaitForSingleObject(g_StopEvent, 10000) != WAIT_OBJECT_0) {
         heartbeatCount++;
-        if (heartbeatCount % 6 == 0) {  // 每60秒记录一次（10秒 * 6 = 60秒）
+        if (heartbeatCount % 6 == 0) {  // 姣?0绉掕褰曚竴娆★紙10绉?* 6 = 60绉掞級
             sprintf_s(buf, sizeof(buf), "Service heartbeat - uptime: %d minutes", heartbeatCount / 6);
             Mprintf(buf);
         }
@@ -337,7 +337,7 @@ BOOL ServerService_Install(void)
         return FALSE;
     }
 
-    // 添加 -service 参数
+    // 娣诲姞 -service 鍙傛暟
     char szPathWithArg[MAX_PATH + 32];
     sprintf_s(szPathWithArg, sizeof(szPathWithArg), "\"%s\" -service", szPath);
 
@@ -377,12 +377,12 @@ BOOL ServerService_Install(void)
 
     Mprintf("SUCCESS: Service created successfully\n");
 
-    // 设置服务描述
+    // 璁剧疆鏈嶅姟鎻忚堪
     SERVICE_DESCRIPTION sd;
     sd.lpDescription = (LPSTR)SERVER_SERVICE_DESC;
     ChangeServiceConfig2(schService, SERVICE_CONFIG_DESCRIPTION, &sd);
 
-    // 立即启动服务
+    // 绔嬪嵆鍚姩鏈嶅姟
     DWORD err = 0;
     Mprintf("Starting service...\n");
     if (StartServiceA(schService, 0, NULL)) {
@@ -437,7 +437,7 @@ BOOL ServerService_Uninstall(void)
         return FALSE;
     }
 
-    // 停止服务
+    // 鍋滄鏈嶅姟
     SERVICE_STATUS status;
     Mprintf("Stopping service...\n");
     if (ControlService(schService, SERVICE_CONTROL_STOP, &status)) {
@@ -463,7 +463,7 @@ BOOL ServerService_Uninstall(void)
     }
 
     BOOL r = FALSE;
-    // 删除服务
+    // 鍒犻櫎鏈嶅姟
     Mprintf("Deleting service...\n");
     if (DeleteService(schService)) {
         Mprintf("SUCCESS: Service uninstalled successfully\n");

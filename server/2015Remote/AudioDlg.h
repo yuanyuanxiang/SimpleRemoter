@@ -1,16 +1,16 @@
-#pragma once
+ï»¿#pragma once
 
 #include "IOCPServer.h"
 #include "../../client/Audio.h"
 
-// CAudioDlg ¶Ô»°¿ò
+// CAudioDlg å¯¹è¯æ¡†
 
 class CAudioDlg : public DialogBase
 {
     DECLARE_DYNAMIC(CAudioDlg)
 
 public:
-    CAudioDlg(CWnd* pParent = NULL, Server* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // ±ê×¼¹¹Ôìº¯Êı
+    CAudioDlg(CWnd* pParent = NULL, Server* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // æ ‡å‡†æ„é€ å‡½æ•°
     virtual ~CAudioDlg();
 
     DWORD         m_nTotalRecvBytes;
@@ -22,15 +22,15 @@ public:
     static DWORD WINAPI WorkThread(LPVOID lParam);
 
     void OnReceiveComplete(void);
-// ¶Ô»°¿òÊı¾İ
+// å¯¹è¯æ¡†æ•°æ®
     enum { IDD = IDD_DIALOG_AUDIO };
 
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æŒ
 
     DECLARE_MESSAGE_MAP()
 public:
-    BOOL m_bSend; // ÊÇ·ñ·¢ËÍ±¾µØÓïÒôµ½Ô¶³Ì
+    BOOL m_bSend; // æ˜¯å¦å‘é€æœ¬åœ°è¯­éŸ³åˆ°è¿œç¨‹
     virtual BOOL OnInitDialog();
     afx_msg void OnClose();
     afx_msg void OnBnClickedCheck();

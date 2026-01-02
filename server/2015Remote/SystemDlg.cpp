@@ -1,4 +1,4 @@
-// SystemDlg.cpp : ÊµÏÖÎÄ¼ş
+ï»¿// SystemDlg.cpp : å®ç°æ–‡ä»¶
 //
 
 #include "stdafx.h"
@@ -7,7 +7,7 @@
 #include "afxdialogex.h"
 
 
-// CSystemDlg ¶Ô»°¿ò
+// CSystemDlg å¯¹è¯æ¡†
 
 typedef struct ItemData {
     DWORD ID;
@@ -57,7 +57,7 @@ BEGIN_MESSAGE_MAP(CSystemDlg, CDialog)
 END_MESSAGE_MAP()
 
 
-// CSystemDlg ÏûÏ¢´¦Àí³ÌĞò
+// CSystemDlg æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 
 BOOL CSystemDlg::OnInitDialog()
@@ -68,27 +68,27 @@ BOOL CSystemDlg::OnInitDialog()
     SetIcon(m_hIcon, FALSE);
     CString str;
     m_bHow==TOKEN_PSLIST
-    ? str.Format("%s - ½ø³Ì¹ÜÀí", m_IPAddress)
-         :str.Format("%s - ´°¿Ú¹ÜÀí", m_IPAddress);
-    SetWindowText(str);//ÉèÖÃ¶Ô»°¿ò±êÌâ
+    ? str.Format("%s - è¿›ç¨‹ç®¡ç†", m_IPAddress)
+         :str.Format("%s - çª—å£ç®¡ç†", m_IPAddress);
+    SetWindowText(str);//è®¾ç½®å¯¹è¯æ¡†æ ‡é¢˜
 
     m_ControlList.SetExtendedStyle(LVS_EX_FLATSB | LVS_EX_FULLROWSELECT);
-    if (m_bHow==TOKEN_PSLIST) {    //½ø³Ì¹ÜÀí³õÊ¼»¯ÁĞ±í
-        m_ControlList.InsertColumn(0, "Ó³ÏñÃû³Æ", LVCFMT_LEFT, 180);
+    if (m_bHow==TOKEN_PSLIST) {    //è¿›ç¨‹ç®¡ç†åˆå§‹åŒ–åˆ—è¡¨
+        m_ControlList.InsertColumn(0, "æ˜ åƒåç§°", LVCFMT_LEFT, 180);
         m_ControlList.InsertColumn(1, "PID", LVCFMT_LEFT, 70);
-        m_ControlList.InsertColumn(2, "³ÌĞòÂ·¾¶", LVCFMT_LEFT, 320);
-        m_ControlList.InsertColumn(3, "¼Ü¹¹", LVCFMT_LEFT, 70);
-        ShowProcessList();   //ÓÉÓÚµÚÒ»¸ö·¢ËÍÀ´µÄÏûÏ¢ºóÃæ½ô¸ú×Å½ø³ÌµÄÊı¾İËùÒÔ°ÑÊı¾İÏÔÊ¾µ½ÁĞ±íµ±ÖĞ\0\0
-    } else if (m_bHow==TOKEN_WSLIST) { //´°¿Ú¹ÜÀí³õÊ¼»¯ÁĞ±í
-        //³õÊ¼»¯ ´°¿Ú¹ÜÀíµÄÁĞ±í
-        m_ControlList.InsertColumn(0, "¾ä±ú", LVCFMT_LEFT, 80);
-        m_ControlList.InsertColumn(1, "´°¿ÚÃû³Æ", LVCFMT_LEFT, 420);
-        m_ControlList.InsertColumn(2, "´°¿Ú×´Ì¬", LVCFMT_LEFT, 200);
+        m_ControlList.InsertColumn(2, "ç¨‹åºè·¯å¾„", LVCFMT_LEFT, 320);
+        m_ControlList.InsertColumn(3, "æ¶æ„", LVCFMT_LEFT, 70);
+        ShowProcessList();   //ç”±äºç¬¬ä¸€ä¸ªå‘é€æ¥çš„æ¶ˆæ¯åé¢ç´§è·Ÿç€è¿›ç¨‹çš„æ•°æ®æ‰€ä»¥æŠŠæ•°æ®æ˜¾ç¤ºåˆ°åˆ—è¡¨å½“ä¸­\0\0
+    } else if (m_bHow==TOKEN_WSLIST) { //çª—å£ç®¡ç†åˆå§‹åŒ–åˆ—è¡¨
+        //åˆå§‹åŒ– çª—å£ç®¡ç†çš„åˆ—è¡¨
+        m_ControlList.InsertColumn(0, "å¥æŸ„", LVCFMT_LEFT, 80);
+        m_ControlList.InsertColumn(1, "çª—å£åç§°", LVCFMT_LEFT, 420);
+        m_ControlList.InsertColumn(2, "çª—å£çŠ¶æ€", LVCFMT_LEFT, 200);
         ShowWindowsList();
     }
 
     return TRUE;  // return TRUE unless you set the focus to a control
-    // Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+    // å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 void CSystemDlg::ShowWindowsList(void)
@@ -103,18 +103,18 @@ void CSystemDlg::ShowWindowsList(void)
     CString	str;
     int i ;
     for ( i = 0; dwOffset <m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; ++i) {
-        LPDWORD	lpPID = LPDWORD(szBuffer + dwOffset);   //´°¿Ú¾ä±ú
-        szTitle = (char *)szBuffer + dwOffset + sizeof(DWORD);   //´°¿Ú±êÌâ
+        LPDWORD	lpPID = LPDWORD(szBuffer + dwOffset);   //çª—å£å¥æŸ„
+        szTitle = (char *)szBuffer + dwOffset + sizeof(DWORD);   //çª—å£æ ‡é¢˜
         str.Format("%5u", *lpPID);
         m_ControlList.InsertItem(i, str);
         m_ControlList.SetItemText(i, 1, szTitle);
-        m_ControlList.SetItemText(i, 2, "ÏÔÊ¾"); //(d) ½«´°¿Ú×´Ì¬ÏÔÊ¾Îª "ÏÔÊ¾"
-        // ItemData Îª´°¿Ú¾ä±ú
-        auto data = new ItemData{ *lpPID, {str, szTitle,"ÏÔÊ¾"} };
+        m_ControlList.SetItemText(i, 2, "æ˜¾ç¤º"); //(d) å°†çª—å£çŠ¶æ€æ˜¾ç¤ºä¸º "æ˜¾ç¤º"
+        // ItemData ä¸ºçª—å£å¥æŸ„
+        auto data = new ItemData{ *lpPID, {str, szTitle,"æ˜¾ç¤º"} };
         m_ControlList.SetItemData(i, (DWORD_PTR)data);  //(d)
         dwOffset += sizeof(DWORD) + lstrlen(szTitle) + 1;
     }
-    str.Format("´°¿ÚÃû³Æ    ´°¿Ú¸öÊı¡¾%d¡¿", i);   //ĞŞ¸ÄCtrlList
+    str.Format("çª—å£åç§°    çª—å£ä¸ªæ•°ã€%dã€‘", i);   //ä¿®æ”¹CtrlList
     LVCOLUMN lvc;
     lvc.mask = LVCF_TEXT;
     lvc.pszText = str.GetBuffer(0);
@@ -131,40 +131,40 @@ void CSystemDlg::ShowProcessList(void)
     DWORD	dwOffset = 0;
     CString str;
     DeleteAllItems();
-    //±éÀú·¢ËÍÀ´µÄÃ¿Ò»¸ö×Ö·û±ğÍüÁËËûµÄÊı¾İ½á¹¹°¡ Id+½ø³ÌÃû+0+ÍêÕûÃû+0
+    //éå†å‘é€æ¥çš„æ¯ä¸€ä¸ªå­—ç¬¦åˆ«å¿˜äº†ä»–çš„æ•°æ®ç»“æ„å•Š Id+è¿›ç¨‹å+0+å®Œæ•´å+0
     int i;
     for (i = 0; dwOffset < m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; ++i) {
-        LPDWORD	PID = LPDWORD(szBuffer + dwOffset);        //ÕâÀïµÃµ½½ø³ÌID
-        szExeFile = szBuffer + dwOffset + sizeof(DWORD);      //½ø³ÌÃû¾ÍÊÇIDÖ®ºóµÄÀ²
+        LPDWORD	PID = LPDWORD(szBuffer + dwOffset);        //è¿™é‡Œå¾—åˆ°è¿›ç¨‹ID
+        szExeFile = szBuffer + dwOffset + sizeof(DWORD);      //è¿›ç¨‹åå°±æ˜¯IDä¹‹åçš„å•¦
         auto arr = StringToVector(szExeFile, ':', 2);
-        szProcessFullPath = szExeFile + lstrlen(szExeFile) + 1;  //ÍêÕûÃû¾ÍÊÇ½ø³ÌÃûÖ®ºóµÄÀ²
-        //ËûµÄÊı¾İ½á¹¹µÄ¹¹½¨ºÜÇÉÃî
+        szProcessFullPath = szExeFile + lstrlen(szExeFile) + 1;  //å®Œæ•´åå°±æ˜¯è¿›ç¨‹åä¹‹åçš„å•¦
+        //ä»–çš„æ•°æ®ç»“æ„çš„æ„å»ºå¾ˆå·§å¦™
 
-        m_ControlList.InsertItem(i, arr[0].c_str());       //½«µÃµ½µÄÊı¾İ¼ÓÈëµ½ÁĞ±íµ±ÖĞ
+        m_ControlList.InsertItem(i, arr[0].c_str());       //å°†å¾—åˆ°çš„æ•°æ®åŠ å…¥åˆ°åˆ—è¡¨å½“ä¸­
         str.Format("%5u", *PID);
         m_ControlList.SetItemText(i, 1, str);
         m_ControlList.SetItemText(i, 2, szProcessFullPath);
         m_ControlList.SetItemText(i, 3, arr[1].empty() ? "N/A" : arr[1].c_str());
-        // ItemData Îª½ø³ÌID
+        // ItemData ä¸ºè¿›ç¨‹ID
         auto data = new ItemData{ *PID, {arr[0].c_str(), str, szProcessFullPath}, arr[1].c_str() };
         m_ControlList.SetItemData(i, DWORD_PTR(data));
 
-        dwOffset += sizeof(DWORD) + lstrlen(szExeFile) + lstrlen(szProcessFullPath) + 2;   //Ìø¹ıÕâ¸öÊı¾İ½á¹¹ ½øÈëÏÂÒ»¸öÑ­»·
+        dwOffset += sizeof(DWORD) + lstrlen(szExeFile) + lstrlen(szProcessFullPath) + 2;   //è·³è¿‡è¿™ä¸ªæ•°æ®ç»“æ„ è¿›å…¥ä¸‹ä¸€ä¸ªå¾ªç¯
     }
 
-    str.Format("³ÌĞò¸öÊı / %d", i);
+    str.Format("ç¨‹åºä¸ªæ•° / %d", i);
     LVCOLUMN lvc;
     lvc.mask = LVCF_TEXT;
     lvc.pszText = str.GetBuffer(0);
     lvc.cchTextMax = str.GetLength();
-    m_ControlList.SetColumn(2, &lvc); //ÔÚÁĞ±íÖĞÏÔÊ¾ÓĞ¶àÉÙ¸ö½ø³Ì
+    m_ControlList.SetColumn(2, &lvc); //åœ¨åˆ—è¡¨ä¸­æ˜¾ç¤ºæœ‰å¤šå°‘ä¸ªè¿›ç¨‹
 }
 
 
 void CSystemDlg::OnClose()
 {
     CancelIO();
-    // µÈ´ıÊı¾İ´¦ÀíÍê±Ï
+    // ç­‰å¾…æ•°æ®å¤„ç†å®Œæ¯•
     if (IsProcessing()) {
         ShowWindow(SW_HIDE);
         return;
@@ -174,7 +174,7 @@ void CSystemDlg::OnClose()
     DialogBase::OnClose();
 }
 
-// ÊÍ·Å×ÊÔ´ÒÔºóÔÙÇå¿Õ
+// é‡Šæ”¾èµ„æºä»¥åå†æ¸…ç©º
 void  CSystemDlg::DeleteAllItems()
 {
     for (int i = 0; i < m_ControlList.GetItemCount(); i++) {
@@ -192,7 +192,7 @@ int CALLBACK CSystemDlg::CompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM 
     int nColumn = pSortInfo->first;
     bool bAscending = pSortInfo->second;
 
-    // »ñÈ¡ÁĞÖµ
+    // è·å–åˆ—å€¼
     ItemData* context1 = (ItemData*)lParam1;
     ItemData* context2 = (ItemData*)lParam2;
     CString s1 = context1->GetData(nColumn);
@@ -207,15 +207,15 @@ void CSystemDlg::SortByColumn(int nColumn)
     static int m_nSortColumn = 0;
     static bool m_bSortAscending = false;
     if (nColumn == m_nSortColumn) {
-        // Èç¹ûµã»÷µÄÊÇÍ¬Ò»ÁĞ£¬ÇĞ»»ÅÅĞòË³Ğò
+        // å¦‚æœç‚¹å‡»çš„æ˜¯åŒä¸€åˆ—ï¼Œåˆ‡æ¢æ’åºé¡ºåº
         m_bSortAscending = !m_bSortAscending;
     } else {
-        // ·ñÔò£¬ÇĞ»»µ½ĞÂÁĞ²¢ÉèÖÃÎªÉıĞò
+        // å¦åˆ™ï¼Œåˆ‡æ¢åˆ°æ–°åˆ—å¹¶è®¾ç½®ä¸ºå‡åº
         m_nSortColumn = nColumn;
         m_bSortAscending = true;
     }
 
-    // ´´½¨ÅÅĞòĞÅÏ¢
+    // åˆ›å»ºæ’åºä¿¡æ¯
     std::pair<int, bool> sortInfo(m_nSortColumn, m_bSortAscending);
     m_ControlList.SortItems(CompareFunction, reinterpret_cast<LPARAM>(&sortInfo));
 }
@@ -223,8 +223,8 @@ void CSystemDlg::SortByColumn(int nColumn)
 void CSystemDlg::OnHdnItemclickList(NMHDR* pNMHDR, LRESULT* pResult)
 {
     LPNMHEADER pNMHeader = reinterpret_cast<LPNMHEADER>(pNMHDR);
-    int nColumn = pNMHeader->iItem; // »ñÈ¡µã»÷µÄÁĞË÷Òı
-    SortByColumn(nColumn);          // µ÷ÓÃÅÅĞòº¯Êı
+    int nColumn = pNMHeader->iItem; // è·å–ç‚¹å‡»çš„åˆ—ç´¢å¼•
+    SortByColumn(nColumn);          // è°ƒç”¨æ’åºå‡½æ•°
     *pResult = 0;
 }
 
@@ -232,7 +232,7 @@ void CSystemDlg::OnNMRClickListSystem(NMHDR *pNMHDR, LRESULT *pResult)
 {
     LPNMITEMACTIVATE pNMItemActivate = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
     CMenu	Menu;
-    if (m_bHow==TOKEN_PSLIST) {    //½ø³Ì¹ÜÀí³õÊ¼»¯ÁĞ±í
+    if (m_bHow==TOKEN_PSLIST) {    //è¿›ç¨‹ç®¡ç†åˆå§‹åŒ–åˆ—è¡¨
         Menu.LoadMenu(IDR_PROCESS_LIST);
     } else if (m_bHow==TOKEN_WSLIST) {
         Menu.LoadMenu(IDR_WINDOW_LIST);
@@ -254,28 +254,28 @@ void CSystemDlg::OnPlistKill()
         return;
 
     //[KILL][ID][ID][iD][ID]
-    //·ÇÅä»º³åÇø
+    //éé…ç¼“å†²åŒº
     LPBYTE szBuffer = (LPBYTE)LocalAlloc(LPTR, 1 + (ListCtrl->GetSelectedCount() * 4));//1.exe  4  ID   Handle
-    //¼ÓÈë½áÊø½ø³ÌµÄÊı¾İÍ·
+    //åŠ å…¥ç»“æŸè¿›ç¨‹çš„æ•°æ®å¤´
     szBuffer[0] = COMMAND_KILLPROCESS;
-    //ÏÔÊ¾¾¯¸æĞÅÏ¢
-    char *szTips = "¾¯¸æ: ÖÕÖ¹½ø³Ì»áµ¼ÖÂ²»Ï£Íû·¢ÉúµÄ½á¹û£¬\n"
-                   "°üÀ¨Êı¾İ¶ªÊ§ºÍÏµÍ³²»ÎÈ¶¨¡£ÔÚ±»ÖÕÖ¹Ç°£¬\n"
-                   "½ø³Ì½«Ã»ÓĞ»ú»á±£´æÆä×´Ì¬ºÍÊı¾İ¡£";
+    //æ˜¾ç¤ºè­¦å‘Šä¿¡æ¯
+    char *szTips = "è­¦å‘Š: ç»ˆæ­¢è¿›ç¨‹ä¼šå¯¼è‡´ä¸å¸Œæœ›å‘ç”Ÿçš„ç»“æœï¼Œ\n"
+                   "åŒ…æ‹¬æ•°æ®ä¸¢å¤±å’Œç³»ç»Ÿä¸ç¨³å®šã€‚åœ¨è¢«ç»ˆæ­¢å‰ï¼Œ\n"
+                   "è¿›ç¨‹å°†æ²¡æœ‰æœºä¼šä¿å­˜å…¶çŠ¶æ€å’Œæ•°æ®ã€‚";
     CString str;
     if (ListCtrl->GetSelectedCount() > 1) {
-        str.Format("%sÈ·Êµ\nÏëÖÕÖ¹Õâ%dÏî½ø³ÌÂğ?", szTips, ListCtrl->GetSelectedCount());
+        str.Format("%sç¡®å®\næƒ³ç»ˆæ­¢è¿™%dé¡¹è¿›ç¨‹å—?", szTips, ListCtrl->GetSelectedCount());
     } else {
-        str.Format("%sÈ·Êµ\nÏëÖÕÖ¹¸ÃÏî½ø³ÌÂğ?", szTips);
+        str.Format("%sç¡®å®\næƒ³ç»ˆæ­¢è¯¥é¡¹è¿›ç¨‹å—?", szTips);
     }
-    if (::MessageBox(m_hWnd, str, "½ø³Ì½áÊø¾¯¸æ", MB_YESNO | MB_ICONQUESTION) == IDNO) {
+    if (::MessageBox(m_hWnd, str, "è¿›ç¨‹ç»“æŸè­¦å‘Š", MB_YESNO | MB_ICONQUESTION) == IDNO) {
         LocalFree(szBuffer);
         return;
     }
 
     DWORD	dwOffset = 1;
     POSITION Pos = ListCtrl->GetFirstSelectedItemPosition();
-    //µÃµ½Òª½áÊøÄÄ¸ö½ø³Ì
+    //å¾—åˆ°è¦ç»“æŸå“ªä¸ªè¿›ç¨‹
     while(Pos) {
         int	nItem = ListCtrl->GetNextSelectedItem(Pos);
         auto data = (ItemData*)ListCtrl->GetItemData(nItem);
@@ -283,7 +283,7 @@ void CSystemDlg::OnPlistKill()
         memcpy(szBuffer + dwOffset, &dwProcessID, sizeof(DWORD));  //sdkfj101112
         dwOffset += sizeof(DWORD);
     }
-    //·¢ËÍÊı¾İµ½±»¿Ø¶ËÔÚ±»¿Ø¶ËÖĞ²éÕÒCOMMAND_KILLPROCESSÕâ¸öÊı¾İÍ·
+    //å‘é€æ•°æ®åˆ°è¢«æ§ç«¯åœ¨è¢«æ§ç«¯ä¸­æŸ¥æ‰¾COMMAND_KILLPROCESSè¿™ä¸ªæ•°æ®å¤´
     m_ContextObject->Send2Client(szBuffer, LocalSize(szBuffer));
     LocalFree(szBuffer);
 
@@ -337,7 +337,7 @@ void CSystemDlg::OnReceiveComplete(void)
     }
 
     default:
-        // ´«Êä·¢ÉúÒì³£Êı¾İ
+        // ä¼ è¾“å‘ç”Ÿå¼‚å¸¸æ•°æ®
         break;
     }
 }
@@ -353,9 +353,9 @@ void CSystemDlg::OnWlistClose()
     if (nItem>=0) {
 
         ZeroMemory(lpMsgBuf,20);
-        lpMsgBuf[0]=CMD_WINDOW_CLOSE;           //×¢ÒâÕâ¸ö¾ÍÊÇÎÒÃÇµÄÊı¾İÍ·
+        lpMsgBuf[0]=CMD_WINDOW_CLOSE;           //æ³¨æ„è¿™ä¸ªå°±æ˜¯æˆ‘ä»¬çš„æ•°æ®å¤´
         auto data = (ItemData*)pListCtrl->GetItemData(nItem);
-        DWORD hwnd = data->ID; //µÃµ½´°¿ÚµÄ¾ä±úÒ»Í¬·¢ËÍ  4   djfkdfj  dkfjf  4
+        DWORD hwnd = data->ID; //å¾—åˆ°çª—å£çš„å¥æŸ„ä¸€åŒå‘é€  4   djfkdfj  dkfjf  4
         memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));   //1 4
         m_ContextObject->Send2Client(lpMsgBuf, sizeof(lpMsgBuf));
 
@@ -372,13 +372,13 @@ void CSystemDlg::OnWlistHide()
     int	nItem = pListCtrl->GetSelectionMark();
     if (nItem>=0) {
         ZeroMemory(lpMsgBuf,20);
-        lpMsgBuf[0]=CMD_WINDOW_TEST;             //´°¿Ú´¦ÀíÊı¾İÍ·
+        lpMsgBuf[0]=CMD_WINDOW_TEST;             //çª—å£å¤„ç†æ•°æ®å¤´
         auto data = (ItemData*)pListCtrl->GetItemData(nItem);
-        DWORD hwnd = data->ID;  //µÃµ½´°¿ÚµÄ¾ä±úÒ»Í¬·¢ËÍ
-        pListCtrl->SetItemText(nItem,2,"Òş²Ø");      //×¢ÒâÕâÊ±½«ÁĞ±íÖĞµÄÏÔÊ¾×´Ì¬Îª"Òş²Ø"
-        //ÕâÑùÔÚÉ¾³ıÁĞ±íÌõÄ¿Ê±¾Í²»É¾³ı¸ÃÏîÁË Èç¹ûÉ¾³ı¸ÃÏî´°¿Ú¾ä±ú»á¶ªÊ§ ¾ÍÓÀÔ¶Ò²²»ÄÜÏÔÊ¾ÁË
-        memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));      //µÃµ½´°¿ÚµÄ¾ä±úÒ»Í¬·¢ËÍ
-        DWORD dHow=SW_HIDE;                          //´°¿Ú´¦Àí²ÎÊı 0
+        DWORD hwnd = data->ID;  //å¾—åˆ°çª—å£çš„å¥æŸ„ä¸€åŒå‘é€
+        pListCtrl->SetItemText(nItem,2,"éšè—");      //æ³¨æ„è¿™æ—¶å°†åˆ—è¡¨ä¸­çš„æ˜¾ç¤ºçŠ¶æ€ä¸º"éšè—"
+        //è¿™æ ·åœ¨åˆ é™¤åˆ—è¡¨æ¡ç›®æ—¶å°±ä¸åˆ é™¤è¯¥é¡¹äº† å¦‚æœåˆ é™¤è¯¥é¡¹çª—å£å¥æŸ„ä¼šä¸¢å¤± å°±æ°¸è¿œä¹Ÿä¸èƒ½æ˜¾ç¤ºäº†
+        memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));      //å¾—åˆ°çª—å£çš„å¥æŸ„ä¸€åŒå‘é€
+        DWORD dHow=SW_HIDE;                          //çª—å£å¤„ç†å‚æ•° 0
         memcpy(lpMsgBuf+1+sizeof(hwnd),&dHow,sizeof(DWORD));
         m_ContextObject->Send2Client(lpMsgBuf, sizeof(lpMsgBuf));
     }
@@ -397,7 +397,7 @@ void CSystemDlg::OnWlistRecover()
         lpMsgBuf[0]= CMD_WINDOW_TEST;
         auto data = (ItemData*)pListCtrl->GetItemData(nItem);
         DWORD hwnd = data->ID;
-        pListCtrl->SetItemText(nItem,2,"ÏÔÊ¾");
+        pListCtrl->SetItemText(nItem,2,"æ˜¾ç¤º");
         memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
         DWORD dHow=SW_NORMAL;
         memcpy(lpMsgBuf+1+sizeof(hwnd),&dHow,sizeof(DWORD));
@@ -418,7 +418,7 @@ void CSystemDlg::OnWlistMax()
         lpMsgBuf[0]= CMD_WINDOW_TEST;
         auto data = (ItemData*)pListCtrl->GetItemData(nItem);
         DWORD hwnd = data->ID;
-        pListCtrl->SetItemText(nItem,2,"ÏÔÊ¾");
+        pListCtrl->SetItemText(nItem,2,"æ˜¾ç¤º");
         memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
         DWORD dHow=SW_MAXIMIZE;
         memcpy(lpMsgBuf+1+sizeof(hwnd),&dHow,sizeof(DWORD));
@@ -439,7 +439,7 @@ void CSystemDlg::OnWlistMin()
         lpMsgBuf[0]= CMD_WINDOW_TEST;
         auto data = (ItemData*)pListCtrl->GetItemData(nItem);
         DWORD hwnd = data->ID;
-        pListCtrl->SetItemText(nItem,2,"ÏÔÊ¾");
+        pListCtrl->SetItemText(nItem,2,"æ˜¾ç¤º");
         memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
         DWORD dHow=SW_MINIMIZE;
         memcpy(lpMsgBuf+1+sizeof(hwnd),&dHow,sizeof(DWORD));
@@ -451,14 +451,14 @@ void CSystemDlg::OnSize(UINT nType, int cx, int cy)
 {
     CDialog::OnSize(nType, cx, cy);
 
-    if (!m_ControlList.GetSafeHwnd()) return; // È·±£¿Ø¼şÒÑ´´½¨
+    if (!m_ControlList.GetSafeHwnd()) return; // ç¡®ä¿æ§ä»¶å·²åˆ›å»º
 
-    // ¼ÆËãĞÂÎ»ÖÃºÍ´óĞ¡
+    // è®¡ç®—æ–°ä½ç½®å’Œå¤§å°
     CRect rc;
     m_ControlList.GetWindowRect(&rc);
     ScreenToClient(&rc);
 
-    // ÖØĞÂÉèÖÃ¿Ø¼ş´óĞ¡
+    // é‡æ–°è®¾ç½®æ§ä»¶å¤§å°
     m_ControlList.MoveWindow(0, 0, cx, cy, TRUE);
 }
 
@@ -472,10 +472,10 @@ void CSystemDlg::OnPlistInject()
         return;
 
     if (ListCtrl->GetSelectedCount() != 1)
-        ::MessageBox(m_hWnd, "Ö»ÄÜÍ¬Ê±ÏòÒ»¸ö½ø³Ì½øĞĞ´úÂë×¢Èë!", "ÌáÊ¾", MB_ICONINFORMATION);
+        ::MessageBox(m_hWnd, "åªèƒ½åŒæ—¶å‘ä¸€ä¸ªè¿›ç¨‹è¿›è¡Œä»£ç æ³¨å…¥!", "æç¤º", MB_ICONINFORMATION);
 
-    if (::MessageBox(m_hWnd, "È·¶¨ÒªÏòÄ¿±ê½ø³Ì (½öÏŞ64Î») ½øĞĞ´úÂë×¢ÈëÂğ?\n´Ë²Ù×÷¿ÉÄÜ±»°²È«Èí¼ş×èÖ¹£¬»òµ¼ÖÂ½ø³Ì±ÀÀ£!",
-                     "¾¯¸æ", MB_YESNO | MB_ICONQUESTION) == IDNO)
+    if (::MessageBox(m_hWnd, "ç¡®å®šè¦å‘ç›®æ ‡è¿›ç¨‹ (ä»…é™64ä½) è¿›è¡Œä»£ç æ³¨å…¥å—?\næ­¤æ“ä½œå¯èƒ½è¢«å®‰å…¨è½¯ä»¶é˜»æ­¢ï¼Œæˆ–å¯¼è‡´è¿›ç¨‹å´©æºƒ!",
+                     "è­¦å‘Š", MB_YESNO | MB_ICONQUESTION) == IDNO)
         return;
 
     DWORD	dwOffset = 1, dwProcessID = 0;
@@ -500,10 +500,10 @@ void CSystemDlg::OnPlistAntiBlackScreen()
         return;
 
     if (ListCtrl->GetSelectedCount() != 1)
-        ::MessageBox(m_hWnd, "Ö»ÄÜÍ¬Ê±ÏòÒ»¸ö½ø³Ì½øĞĞ·´ºÚÆÁ²Ù×÷!", "ÌáÊ¾", MB_ICONINFORMATION);
+        ::MessageBox(m_hWnd, "åªèƒ½åŒæ—¶å‘ä¸€ä¸ªè¿›ç¨‹è¿›è¡Œåé»‘å±æ“ä½œ!", "æç¤º", MB_ICONINFORMATION);
 
-    if (::MessageBox(m_hWnd, "È·¶¨ÒªÏòÄ¿±ê½ø³Ì½øĞĞ·´ºÚÆÁÂğ?\nÇëÈ·±£Ä¿±ê½ø³Ì¡¢DLL¼°±»¿Ø¶Ë¼Ü¹¹Îñ±ØÏàÍ¬!",
-                     "¾¯¸æ", MB_YESNO | MB_ICONQUESTION) == IDNO)
+    if (::MessageBox(m_hWnd, "ç¡®å®šè¦å‘ç›®æ ‡è¿›ç¨‹è¿›è¡Œåé»‘å±å—?\nè¯·ç¡®ä¿ç›®æ ‡è¿›ç¨‹ã€DLLåŠè¢«æ§ç«¯æ¶æ„åŠ¡å¿…ç›¸åŒ!",
+                     "è­¦å‘Š", MB_YESNO | MB_ICONQUESTION) == IDNO)
         return;
 
     DWORD	dwOffset = 1, dwProcessID = 0;

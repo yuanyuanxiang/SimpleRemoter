@@ -1,4 +1,4 @@
-// KeyBoardDlg.cpp : implementation file
+ï»¿// KeyBoardDlg.cpp : implementation file
 //
 
 #include "stdafx.h"
@@ -65,18 +65,18 @@ BOOL CKeyBoardDlg::OnInitDialog()
     if (pSysMenu != NULL) {
         //pSysMenu->DeleteMenu(SC_TASKLIST, MF_BYCOMMAND);
         pSysMenu->AppendMenu(MF_SEPARATOR);
-        pSysMenu->AppendMenu(MF_STRING, IDM_ENABLE_OFFLINE, "ÀëÏß¼ÇÂ¼(&O)");
-        pSysMenu->AppendMenu(MF_STRING, IDM_CLEAR_RECORD, "Çå¿Õ¼ÇÂ¼(&C)");
-        pSysMenu->AppendMenu(MF_STRING, IDM_SAVE_RECORD, "±£´æ¼ÇÂ¼(&S)");
+        pSysMenu->AppendMenu(MF_STRING, IDM_ENABLE_OFFLINE, "ç¦»çº¿è®°å½•(&O)");
+        pSysMenu->AppendMenu(MF_STRING, IDM_CLEAR_RECORD, "æ¸…ç©ºè®°å½•(&C)");
+        pSysMenu->AppendMenu(MF_STRING, IDM_SAVE_RECORD, "ä¿å­˜è®°å½•(&S)");
         if (m_bIsOfflineRecord)
             pSysMenu->CheckMenuItem(IDM_ENABLE_OFFLINE, MF_CHECKED);
     }
 
     UpdateTitle();
 
-    m_edit.SetLimitText(MAXDWORD); // ÉèÖÃ×î´ó³¤¶È
+    m_edit.SetLimitText(MAXDWORD); // è®¾ç½®æœ€å¤§é•¿åº¦
 
-    // Í¨ÖªÔ¶³Ì¿ØÖÆ¶Ë¶Ô»°¿òÒÑ¾­´ò¿ª
+    // é€šçŸ¥è¿œç¨‹æ§åˆ¶ç«¯å¯¹è¯æ¡†å·²ç»æ‰“å¼€
     BYTE bToken = COMMAND_NEXT;
     m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
 
@@ -88,11 +88,11 @@ BOOL CKeyBoardDlg::OnInitDialog()
 void CKeyBoardDlg::UpdateTitle()
 {
     CString str;
-    str.Format(_T("%s - ¼üÅÌ¼ÇÂ¼"), m_IPAddress);
+    str.Format(_T("%s - é”®ç›˜è®°å½•"), m_IPAddress);
     if (m_bIsOfflineRecord)
-        str += " (ÀëÏß¼ÇÂ¼ÒÑ¿ªÆô)";
+        str += " (ç¦»çº¿è®°å½•å·²å¼€å¯)";
     else
-        str += " (ÀëÏß¼ÇÂ¼Î´¿ªÆô)";
+        str += " (ç¦»çº¿è®°å½•æœªå¼€å¯)";
     SetWindowText(str);
 }
 
@@ -109,7 +109,7 @@ void CKeyBoardDlg::OnReceiveComplete()
 
 void CKeyBoardDlg::AddKeyBoardData()
 {
-    // ×îºóÌîÉÏ0
+    // æœ€åå¡«ä¸Š0
     m_ContextObject->m_DeCompressionBuffer.Write((LPBYTE)"", 1);
     int	len = m_edit.GetWindowTextLength();
     m_edit.SetSel(len, len);
@@ -119,13 +119,13 @@ void CKeyBoardDlg::AddKeyBoardData()
 bool CKeyBoardDlg::SaveRecord()
 {
     CString	strFileName = m_IPAddress + CTime::GetCurrentTime().Format("_%Y-%m-%d_%H-%M-%S.txt");
-    CFileDialog dlg(FALSE, "txt", strFileName, OFN_OVERWRITEPROMPT, "ÎÄ±¾ÎÄµµ(*.txt)|*.txt|", this);
+    CFileDialog dlg(FALSE, "txt", strFileName, OFN_OVERWRITEPROMPT, "æ–‡æœ¬æ–‡æ¡£(*.txt)|*.txt|", this);
     if(dlg.DoModal () != IDOK)
         return false;
 
     CFile	file;
     if (!file.Open( dlg.GetPathName(), CFile::modeWrite | CFile::modeCreate)) {
-        MessageBox("ÎÄ¼ş±£´æÊ§°Ü£º"+dlg.GetPathName(), "ÌáÊ¾");
+        MessageBox("æ–‡ä»¶ä¿å­˜å¤±è´¥ï¼š"+dlg.GetPathName(), "æç¤º");
         return false;
     }
     // Write the DIB header and the bits
@@ -196,7 +196,7 @@ BOOL CKeyBoardDlg::PreTranslateMessage(MSG* pMsg)
 void CKeyBoardDlg::OnClose()
 {
     CancelIO();
-    // µÈ´ıÊı¾İ´¦ÀíÍê±Ï
+    // ç­‰å¾…æ•°æ®å¤„ç†å®Œæ¯•
     if (IsProcessing()) {
         ShowWindow(SW_HIDE);
         return;

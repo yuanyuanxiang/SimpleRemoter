@@ -1,4 +1,4 @@
-/*
+﻿/*
  * The Video Decode and Presentation API for UNIX (VDPAU) is used for
  * hardware-accelerated decoding of MPEG-1/2, H.264 and VC-1.
  *

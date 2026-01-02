@@ -1,4 +1,4 @@
-/* $Revision: 1.2 $ */
+﻿/* $Revision: 1.2 $ */
 #ifndef	__D3DRMDEFS_H__
 #define	__D3DRMDEFS_H__
 #include	<stddef.h>

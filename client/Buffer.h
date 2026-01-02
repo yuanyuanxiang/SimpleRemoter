@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "../common/commands.h"
 
@@ -9,7 +9,7 @@ public:
     ~CBuffer(void);
 
     ULONG ReadBuffer(PBYTE Buffer, ULONG ulLength);
-    ULONG GetBufferLength() const; //»ñµÃÓĞĞ§Êı¾İ³¤¶È
+    ULONG GetBufferLength() const; //è·å¾—æœ‰æ•ˆæ•°æ®é•¿åº¦
     VOID DeAllocateBuffer(ULONG ulLength);
     VOID ClearBuffer();
     BOOL ReAllocateBuffer(ULONG ulLength);

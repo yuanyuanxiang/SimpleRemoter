@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Functions for retrieving process information from PEB.
 */

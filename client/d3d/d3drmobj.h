@@ -1,4 +1,4 @@
-/* $Revision: 1.2 $ */
+﻿/* $Revision: 1.2 $ */
 #ifndef _LCC_D3DRMOBJ_H_
 #define _LCC_D3DRMOBJ_H_
 #include <objbase.h>

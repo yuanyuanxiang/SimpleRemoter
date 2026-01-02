@@ -1,4 +1,4 @@
-/*
+﻿/*
  * AVOptions
  * copyright (c) 2005 Michael Niedermayer <michaelni@gmx.at>
  *

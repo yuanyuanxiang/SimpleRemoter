@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #ifdef _WIN64
 // Source code: https://github.com/hasherezade/pe_to_shellcode
 #include <windows.h>

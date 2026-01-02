@@ -1,4 +1,4 @@
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
+﻿#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _CRT_SECURE_NO_WARNINGS
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -28,24 +28,24 @@ typedef struct PkgHeader {
 } PkgHeader;
 
 struct CONNECT_ADDRESS {
-    char	        szFlag[32];		 // 标识
-    char			szServerIP[100]; // 主控IP
-    char			szPort[8];		 // 主控端口
-    int				iType;			 // 客户端类型
-    bool            bEncrypt;		 // 上线信息是否加密
-    char            szBuildDate[12]; // 构建日期(版本)
-    int             iMultiOpen;		 // 支持打开多个
-    int				iStartup;		 // 启动方式
-    int				iHeaderEnc;		 // 数据加密类型
-    char			protoType;		 // 协议类型
-    char			runningType;	 // 运行方式
-    char			szGroupName[24]; // 分组名称
-    char            runasAdmin;      // 是否提升权限运行
-    char            szReserved[11];  // 占位，使结构体占据300字节
-    uint64_t        clientID;        // 客户端唯一标识
-    uint64_t		parentHwnd;		 // 父进程窗口句柄
-    uint64_t		superAdmin;		 // 管理员主控ID
-    char			pwdHash[64];	 // 密码哈希
+    char	        szFlag[32];		 // 鏍囪瘑
+    char			szServerIP[100]; // 涓绘帶IP
+    char			szPort[8];		 // 涓绘帶绔彛
+    int				iType;			 // 瀹㈡埛绔被鍨?
+    bool            bEncrypt;		 // 涓婄嚎淇℃伅鏄惁鍔犲瘑
+    char            szBuildDate[12]; // 鏋勫缓鏃ユ湡(鐗堟湰)
+    int             iMultiOpen;		 // 鏀寔鎵撳紑澶氫釜
+    int				iStartup;		 // 鍚姩鏂瑰紡
+    int				iHeaderEnc;		 // 鏁版嵁鍔犲瘑绫诲瀷
+    char			protoType;		 // 鍗忚绫诲瀷
+    char			runningType;	 // 杩愯鏂瑰紡
+    char			szGroupName[24]; // 鍒嗙粍鍚嶇О
+    char            runasAdmin;      // 鏄惁鎻愬崌鏉冮檺杩愯
+    char            szReserved[11];  // 鍗犱綅锛屼娇缁撴瀯浣撳崰鎹?00瀛楄妭
+    uint64_t        clientID;        // 瀹㈡埛绔敮涓€鏍囪瘑
+    uint64_t		parentHwnd;		 // 鐖惰繘绋嬬獥鍙ｅ彞鏌?
+    uint64_t		superAdmin;		 // 绠＄悊鍛樹富鎺D
+    char			pwdHash[64];	 // 瀵嗙爜鍝堝笇
 } g_Server = { "Hello, World!", "127.0.0.1", "6543", 0, 0, __DATE__ };
 #pragma pack(pop)
 
@@ -205,7 +205,7 @@ const char* CalcMD5FromBytes(const BYTE* data, DWORD length)
         return NULL;
     }
 
-    // 转换为十六进制字符串
+    // 杞崲涓哄崄鍏繘鍒跺瓧绗︿覆
     for (DWORD i = 0; i < hashLen; ++i) {
         sprintf(&md5String[i * 2], "%02x", hash[i]);
     }

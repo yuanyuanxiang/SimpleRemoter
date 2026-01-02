@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "StdAfx.h"
 #include <WinSock2.h>
@@ -8,9 +8,9 @@
 
 #define	NC_CLIENT_CONNECT		0x0001
 #define	NC_RECEIVE				0x0004
-#define NC_RECEIVE_COMPLETE		0x0005 // ÍêÕû½ÓÊÕ
+#define NC_RECEIVE_COMPLETE		0x0005 // å®Œæ•´æ¥æ”¶
 
-// ZLIB Ñ¹Ëõ¿â
+// ZLIB å‹ç¼©åº“
 #include "zlib/zlib.h"
 
 // ZSTD
@@ -110,7 +110,7 @@ typedef CONTEXT_OBJECT ClientContext;
 #define m_Socket sClientSocket
 #define m_DeCompressionBuffer InDeCompressedBuffer
 
-// ËùÓĞ¶¯Ì¬´´½¨µÄ¶Ô»°¿òµÄ»ùÀà
+// æ‰€æœ‰åŠ¨æ€åˆ›å»ºçš„å¯¹è¯æ¡†çš„åŸºç±»
 class CDialogBase : public CDialog
 {
 public:
@@ -154,7 +154,7 @@ public:
         return FALSE;
     }
     virtual void OnReceiveComplete(void) = 0;
-    // ±ê¼ÇÎªÊÇ·ñÕıÔÚ½ÓÊÜÊı¾İ
+    // æ ‡è®°ä¸ºæ˜¯å¦æ­£åœ¨æ¥å—æ•°æ®
     void MarkReceiving(bool recv = true)
     {
         m_bIsProcessing = recv;
@@ -184,7 +184,7 @@ public:
     {
         return FALSE;
     }
-    // È¡Ïû SOCKET ¶ÁÈ¡£¬¸Ãº¯Êı¿ÉÒÔ±»¶à´Îµ÷ÓÃ
+    // å–æ¶ˆ SOCKET è¯»å–ï¼Œè¯¥å‡½æ•°å¯ä»¥è¢«å¤šæ¬¡è°ƒç”¨
     void CancelIO()
     {
         m_bIsClosed = TRUE;

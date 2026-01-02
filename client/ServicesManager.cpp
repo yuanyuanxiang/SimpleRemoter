@@ -1,4 +1,4 @@
-// ServicesManager.cpp: implementation of the CServicesManager class.
+ï»¿// ServicesManager.cpp: implementation of the CServicesManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -71,7 +71,7 @@ LPBYTE CServicesManager::GetServicesList()
         return NULL;
     szBuffer[0] = TOKEN_SERVERLIST;
     dwOffset = 1;
-    for (unsigned long i = 0; i < dwServicesCount; ++i) { // Display The Services,ÏÔÊ¾ËùÓĞµÄ·şÎñ
+    for (unsigned long i = 0; i < dwServicesCount; ++i) { // Display The Services,æ˜¾ç¤ºæ‰€æœ‰çš„æœåŠ¡
         SC_HANDLE hServices = NULL;
         DWORD     nResumeHandle = 0;
 
@@ -86,40 +86,40 @@ LPBYTE CServicesManager::GetServicesList()
         if (ServicesInfor == NULL)
             continue;
         QueryServiceConfig(hServices,ServicesInfor,4*1024,&dwResumeHandle);
-        //²éÑ¯·şÎñµÄÆô¶¯Àà±ğ
+        //æŸ¥è¯¢æœåŠ¡çš„å¯åŠ¨ç±»åˆ«
 
         ZeroMemory(szRunWay, sizeof(szRunWay));
         switch (ServicesStatus[i].ServiceStatus.dwCurrentState) {
         case SERVICE_STOPPED: {
-            lstrcatA(szRunWay, skCrypt("Í£Ö¹"));
+            lstrcatA(szRunWay, skCrypt("åœæ­¢"));
             break;
         }
         case SERVICE_START_PENDING: {
-            lstrcatA(szRunWay, skCrypt("Æô¶¯ÖĞ"));
+            lstrcatA(szRunWay, skCrypt("å¯åŠ¨ä¸­"));
             break;
         }
         case SERVICE_STOP_PENDING: {
-            lstrcatA(szRunWay, skCrypt("Í£Ö¹ÖĞ"));
+            lstrcatA(szRunWay, skCrypt("åœæ­¢ä¸­"));
             break;
         }
         case SERVICE_RUNNING: {
-            lstrcatA(szRunWay, skCrypt("Æô¶¯"));
+            lstrcatA(szRunWay, skCrypt("å¯åŠ¨"));
             break;
         }
         case SERVICE_CONTINUE_PENDING: {
-            lstrcatA(szRunWay, skCrypt("¼ÌĞø"));
+            lstrcatA(szRunWay, skCrypt("ç»§ç»­"));
             break;
         }
         case SERVICE_PAUSE_PENDING: {
-            lstrcatA(szRunWay, skCrypt("ÔİÍ£ÖĞ"));
+            lstrcatA(szRunWay, skCrypt("æš‚åœä¸­"));
             break;
         }
         case SERVICE_PAUSED: {
-            lstrcatA(szRunWay, skCrypt("ÔİÍ£"));
+            lstrcatA(szRunWay, skCrypt("æš‚åœ"));
             break;
         }
         default: {
-            lstrcatA(szRunWay, skCrypt("Î´Öª"));
+            lstrcatA(szRunWay, skCrypt("æœªçŸ¥"));
             break;
         }
         }
@@ -127,27 +127,27 @@ LPBYTE CServicesManager::GetServicesList()
         ZeroMemory(szAutoRun, sizeof(szAutoRun));
         switch (ServicesInfor->dwStartType) {
         case SERVICE_BOOT_START: {
-            lstrcatA(szAutoRun, skCrypt("ÄÚºË"));
+            lstrcatA(szAutoRun, skCrypt("å†…æ ¸"));
             break;
         }
         case SERVICE_SYSTEM_START: {
-            lstrcatA(szAutoRun, skCrypt("ÏµÍ³"));
+            lstrcatA(szAutoRun, skCrypt("ç³»ç»Ÿ"));
             break;
         }
         case SERVICE_AUTO_START: {
-            lstrcatA(szAutoRun, skCrypt("×Ô¶¯"));
+            lstrcatA(szAutoRun, skCrypt("è‡ªåŠ¨"));
             break;
         }
         case SERVICE_DEMAND_START: {
-            lstrcatA(szAutoRun, skCrypt("ÊÖ¶¯"));
+            lstrcatA(szAutoRun, skCrypt("æ‰‹åŠ¨"));
             break;
         }
         case SERVICE_DISABLED: {
-            lstrcatA(szAutoRun, skCrypt("½ûÓÃ"));
+            lstrcatA(szAutoRun, skCrypt("ç¦ç”¨"));
             break;
         }
         default: {
-            lstrcatA(szAutoRun, skCrypt("Î´Öª"));
+            lstrcatA(szAutoRun, skCrypt("æœªçŸ¥"));
             break;
         }
         }
@@ -155,7 +155,7 @@ LPBYTE CServicesManager::GetServicesList()
         dwLength = sizeof(DWORD) + lstrlen(ServicesStatus[i].lpDisplayName)
                    + lstrlen(ServicesInfor->lpBinaryPathName) + lstrlen(ServicesStatus[i].lpServiceName)
                    + lstrlen(szRunWay) + lstrlen(szAutoRun) + 1;
-        // »º³åÇøÌ«Ğ¡£¬ÔÙÖØĞÂ·ÖÅäÏÂ
+        // ç¼“å†²åŒºå¤ªå°ï¼Œå†é‡æ–°åˆ†é…ä¸‹
         if (LocalSize(szBuffer) < (dwOffset + dwLength))
             szBuffer = (LPBYTE)LocalReAlloc(szBuffer, (dwOffset + dwLength),
                                             LMEM_ZEROINIT|LMEM_MOVEABLE);
@@ -163,18 +163,18 @@ LPBYTE CServicesManager::GetServicesList()
             continue;
         memcpy(szBuffer + dwOffset, ServicesStatus[i].lpDisplayName,
                lstrlen(ServicesStatus[i].lpDisplayName) + 1);
-        dwOffset += lstrlen(ServicesStatus[i].lpDisplayName) + 1;//ÕæÊµÃû³Æ
+        dwOffset += lstrlen(ServicesStatus[i].lpDisplayName) + 1;//çœŸå®åç§°
 
         memcpy(szBuffer + dwOffset, ServicesStatus[i].lpServiceName, lstrlen(ServicesStatus[i].lpServiceName) + 1);
-        dwOffset += lstrlen(ServicesStatus[i].lpServiceName) + 1;//ÏÔÊ¾Ãû³Æ
+        dwOffset += lstrlen(ServicesStatus[i].lpServiceName) + 1;//æ˜¾ç¤ºåç§°
 
         memcpy(szBuffer + dwOffset, ServicesInfor->lpBinaryPathName, lstrlen(ServicesInfor->lpBinaryPathName) + 1);
-        dwOffset += lstrlen(ServicesInfor->lpBinaryPathName) + 1;//Â·¾¶
+        dwOffset += lstrlen(ServicesInfor->lpBinaryPathName) + 1;//è·¯å¾„
 
-        memcpy(szBuffer + dwOffset, szRunWay, lstrlen(szRunWay) + 1);//ÔËĞĞ×´Ì¬
+        memcpy(szBuffer + dwOffset, szRunWay, lstrlen(szRunWay) + 1);//è¿è¡ŒçŠ¶æ€
         dwOffset += lstrlen(szRunWay) + 1;
 
-        memcpy(szBuffer + dwOffset, szAutoRun, lstrlen(szAutoRun) + 1);//×ÔÆô¶¯×´Ì¬
+        memcpy(szBuffer + dwOffset, szAutoRun, lstrlen(szAutoRun) + 1);//è‡ªå¯åŠ¨çŠ¶æ€
         dwOffset += lstrlen(szAutoRun) + 1;
 
         CloseServiceHandle(hServices);
@@ -194,7 +194,7 @@ VOID  CServicesManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     case COMMAND_SERVICELIST:
         SendServicesList();
         break;
-    case COMMAND_SERVICECONFIG:   //ÆäËû²Ù×÷
+    case COMMAND_SERVICECONFIG:   //å…¶ä»–æ“ä½œ
         ServicesConfig((LPBYTE)szBuffer + 1, ulLength - 1);
         break;
     default:

@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Wrappers over various fields in the PE header. Read, write, parse PE headers.
 */

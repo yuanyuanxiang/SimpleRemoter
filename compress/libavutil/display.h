@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2014 Vittorio Giovara <vittorio.giovara@gmail.com>
  *
  * This file is part of FFmpeg.

@@ -1,41 +1,41 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 #include "SafeThread.h"
 #include <stdexcept>
 #include <map>
 
-// RoutineInfo ¼ÇÂ¼Ïß³ÌÏà¹ØĞÅÏ¢.
+// RoutineInfo è®°å½•çº¿ç¨‹ç›¸å…³ä¿¡æ¯.
 typedef struct RoutineInfo {
-    DWORD tid;							// Ïß³ÌID
+    DWORD tid;							// çº¿ç¨‹ID
 
-    LPTHREAD_START_ROUTINE Func;		// Ïß³Ìº¯Êı
-    LPVOID Param;						// Ïß³Ì²ÎÊı
+    LPTHREAD_START_ROUTINE Func;		// çº¿ç¨‹å‡½æ•°
+    LPVOID Param;						// çº¿ç¨‹å‚æ•°
 
-    OnException Excep;					// Òì³£´¦Àíº¯Êı
-    LPVOID User;						// ¶îÍâ²ÎÊı
+    OnException Excep;					// å¼‚å¸¸å¤„ç†å‡½æ•°
+    LPVOID User;						// é¢å¤–å‚æ•°
 
-    std::string File;					// ´´½¨Ïß³ÌµÄÎÄ¼ş
-    int Line;							// ÎÄ¼şĞĞÊı
-    std::string Name;					// º¯ÊıÃû³Æ
-    bool Trace;							// ×·×ÙÏß³ÌÔËĞĞÇé¿ö
+    std::string File;					// åˆ›å»ºçº¿ç¨‹çš„æ–‡ä»¶
+    int Line;							// æ–‡ä»¶è¡Œæ•°
+    std::string Name;					// å‡½æ•°åç§°
+    bool Trace;							// è¿½è¸ªçº¿ç¨‹è¿è¡Œæƒ…å†µ
 
 } RoutineInfo;
 
 DWORD HandleCppException(RoutineInfo& ri)
 {
     try {
-        return ri.Func(ri.Param); // µ÷ÓÃÊµ¼ÊÏß³Ìº¯Êı
+        return ri.Func(ri.Param); // è°ƒç”¨å®é™…çº¿ç¨‹å‡½æ•°
     } catch (const std::exception& e) {
         if (ri.Excep) {
-            Mprintf("[%d] ²¶»ñ C++ Òì³£: %s. [%s:%d]\n", ri.tid, e.what(), ri.File.c_str(), ri.Line);
+            Mprintf("[%d] æ•è· C++ å¼‚å¸¸: %s. [%s:%d]\n", ri.tid, e.what(), ri.File.c_str(), ri.Line);
             return ri.Excep(ri.User, ri.Param);
         }
-        Mprintf("[%d] ²¶»ñ C++ Òì³£: %s. Ã»ÓĞÌá¹©Òì³£´¦Àí³ÌĞò[%s:%d]!\n", ri.tid, e.what(), ri.File.c_str(), ri.Line);
+        Mprintf("[%d] æ•è· C++ å¼‚å¸¸: %s. æ²¡æœ‰æä¾›å¼‚å¸¸å¤„ç†ç¨‹åº[%s:%d]!\n", ri.tid, e.what(), ri.File.c_str(), ri.Line);
     } catch (...) {
         if (ri.Excep) {
-            Mprintf("[%d] ²¶»ñÎ´Öª C++ Òì³£. [%s:%d]\n", ri.tid, ri.File.c_str(), ri.Line);
+            Mprintf("[%d] æ•è·æœªçŸ¥ C++ å¼‚å¸¸. [%s:%d]\n", ri.tid, ri.File.c_str(), ri.Line);
             return ri.Excep(ri.User, ri.Param);
         }
-        Mprintf("[%d] ²¶»ñÎ´Öª C++ Òì³£. Ã»ÓĞÌá¹©Òì³£´¦Àí³ÌĞò[%s:%d]!\n", ri.tid, ri.File.c_str(), ri.Line);
+        Mprintf("[%d] æ•è·æœªçŸ¥ C++ å¼‚å¸¸. æ²¡æœ‰æä¾›å¼‚å¸¸å¤„ç†ç¨‹åº[%s:%d]!\n", ri.tid, ri.File.c_str(), ri.Line);
     }
     return 0xDEAD0002;
 }
@@ -43,19 +43,19 @@ DWORD HandleCppException(RoutineInfo& ri)
 DWORD HandleSEHException(RoutineInfo & ri)
 {
     __try {
-        // Ö´ĞĞÊµ¼ÊÏß³Ìº¯Êı
+        // æ‰§è¡Œå®é™…çº¿ç¨‹å‡½æ•°
         return HandleCppException(ri);
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         if (ri.Excep) {
-            Mprintf("[%d] ²¶»ñÓ²¼şÒì³££¬Ïß³Ì²»»á±ÀÀ£. [%s:%d] Code=%08X\n", ri.tid, ri.File.c_str(), ri.Line, GetExceptionCode());
+            Mprintf("[%d] æ•è·ç¡¬ä»¶å¼‚å¸¸ï¼Œçº¿ç¨‹ä¸ä¼šå´©æºƒ. [%s:%d] Code=%08X\n", ri.tid, ri.File.c_str(), ri.Line, GetExceptionCode());
             return ri.Excep(ri.User, ri.Param);
         }
-        Mprintf("[%d] ²¶»ñÓ²¼şÒì³£. Ã»ÓĞÌá¹©Òì³£´¦Àí³ÌĞò[%s:%d]! Code=%08X\n", ri.tid, ri.File.c_str(), ri.Line, GetExceptionCode());
-        return 0xDEAD0001; // ·µ»Ø´íÎó×´Ì¬
+        Mprintf("[%d] æ•è·ç¡¬ä»¶å¼‚å¸¸. æ²¡æœ‰æä¾›å¼‚å¸¸å¤„ç†ç¨‹åº[%s:%d]! Code=%08X\n", ri.tid, ri.File.c_str(), ri.Line, GetExceptionCode());
+        return 0xDEAD0001; // è¿”å›é”™è¯¯çŠ¶æ€
     }
 }
 
-// Í¨ÓÃÒì³£°ü×°º¯Êı
+// é€šç”¨å¼‚å¸¸åŒ…è£…å‡½æ•°
 DWORD WINAPI ThreadWrapper(LPVOID lpParam)
 {
     RoutineInfo *ri = (RoutineInfo *)lpParam;
@@ -65,21 +65,21 @@ DWORD WINAPI ThreadWrapper(LPVOID lpParam)
 
     if (pRealThreadFunc.Trace) {
         CAutoLog Log(pRealThreadFunc.Name.c_str());
-        // Òì³£²¶»ñ
+        // å¼‚å¸¸æ•è·
         return HandleSEHException(pRealThreadFunc);
     }
-    // Òì³£²¶»ñ
+    // å¼‚å¸¸æ•è·
     return HandleSEHException(pRealThreadFunc);
 }
 
-// ´´½¨´øÒì³£±£»¤µÄÏß³Ì£¬¼ÇÂ¼´´½¨Ïß³ÌµÄÎÄ¼ş¡¢ĞĞÊıºÍº¯ÊıÃû³Æ
+// åˆ›å»ºå¸¦å¼‚å¸¸ä¿æŠ¤çš„çº¿ç¨‹ï¼Œè®°å½•åˆ›å»ºçº¿ç¨‹çš„æ–‡ä»¶ã€è¡Œæ•°å’Œå‡½æ•°åç§°
 HANDLE CreateSafeThread(const char*file, int line, const char* fname, OnException excep, LPVOID user, SIZE_T dwStackSize,
                         LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId)
 {
 
-    if (excep) assert(user); // Òì³£´¦Àíº¯ÊıºÍ²ÎÊı±ØĞëÍ¬Ê±Ìá¹©
+    if (excep) assert(user); // å¼‚å¸¸å¤„ç†å‡½æ•°å’Œå‚æ•°å¿…é¡»åŒæ—¶æä¾›
     if (excep && !user) {
-        Mprintf("[ERROR] Ìá¹©ÁËÒì³£´¦Àíº¯Êıµ« user Îª NULL, ¾Ü¾ø´´½¨Ïß³Ì[%s:%d]!\n", file, line);
+        Mprintf("[ERROR] æä¾›äº†å¼‚å¸¸å¤„ç†å‡½æ•°ä½† user ä¸º NULL, æ‹’ç»åˆ›å»ºçº¿ç¨‹[%s:%d]!\n", file, line);
         return NULL;
     }
 
@@ -87,7 +87,7 @@ HANDLE CreateSafeThread(const char*file, int line, const char* fname, OnExceptio
 
     HANDLE hThread = ::CreateThread(NULL, dwStackSize, ThreadWrapper, ri, dwCreationFlags, lpThreadId);
     if (!hThread) {
-        Mprintf("[ERROR] ´´½¨Ïß³ÌÊ§°Ü£ºGetLastError=%lu [%s:%d]\n", GetLastError(), file, line);
+        Mprintf("[ERROR] åˆ›å»ºçº¿ç¨‹å¤±è´¥ï¼šGetLastError=%lu [%s:%d]\n", GetLastError(), file, line);
         delete ri;
         return NULL;
     }

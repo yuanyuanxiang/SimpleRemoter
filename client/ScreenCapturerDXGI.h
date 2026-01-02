@@ -1,10 +1,10 @@
-#pragma once
+ï»¿#pragma once
 #include "stdafx.h"
 #include "ScreenCapture.h"
 #include "common/commands.h"
 
-// Ö»ÒªÄã°²×°ÁË Windows 8 SDK »ò¸ü¸ß°æ±¾µÄ Windows SDK£¬±àÒëÆ÷¾ÍÄÜÕÒµ½ dxgi1_2.h ²¢³É¹¦±àÒë¡£
-// ½öÔÚ Windows 8 ¼°¸üĞÂ°æ±¾ÉÏÊÜÖ§³Ö
+// åªè¦ä½ å®‰è£…äº† Windows 8 SDK æˆ–æ›´é«˜ç‰ˆæœ¬çš„ Windows SDKï¼Œç¼–è¯‘å™¨å°±èƒ½æ‰¾åˆ° dxgi1_2.h å¹¶æˆåŠŸç¼–è¯‘ã€‚
+// ä»…åœ¨ Windows 8 åŠæ›´æ–°ç‰ˆæœ¬ä¸Šå—æ”¯æŒ
 #include <dxgi1_2.h>
 #include <d3d11.h>
 
@@ -13,7 +13,7 @@
 
 // author: ChatGPT
 // update: 962914132@qq.com
-// DXGI 1.2£¨IDXGIOutputDuplication£©Ïà±È´«Í³ GDI ½ØÆÁ£¬ĞÔÄÜÌáÉıÍ¨³£ÔÚ 3 ±¶µ½ 10 ±¶Ö®¼ä£¬¾ßÌåÈ¡¾öÓÚÓ²¼ş¡¢·Ö±æÂÊºÍÊ¹ÓÃ³¡¾°¡£
+// DXGI 1.2ï¼ˆIDXGIOutputDuplicationï¼‰ç›¸æ¯”ä¼ ç»Ÿ GDI æˆªå±ï¼Œæ€§èƒ½æå‡é€šå¸¸åœ¨ 3 å€åˆ° 10 å€ä¹‹é—´ï¼Œå…·ä½“å–å†³äºç¡¬ä»¶ã€åˆ†è¾¨ç‡å’Œä½¿ç”¨åœºæ™¯ã€‚
 class ScreenCapturerDXGI : public ScreenCapture
 {
 private:
@@ -49,7 +49,7 @@ public:
     {
         m_iScreenX = 0;
         m_iScreenY = 0;
-        // 1. ´´½¨ D3D11 Éè±¸
+        // 1. åˆ›å»º D3D11 è®¾å¤‡
         D3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, nullptr, 0, D3D11_SDK_VERSION, &d3dDevice, nullptr, &d3dContext);
 
         IDXGIFactory1* pFactory = nullptr;
@@ -57,18 +57,18 @@ public:
         IDXGIOutput* dxgiOutput = nullptr;
         IDXGIOutput1* dxgiOutput1 = nullptr;
 
-        // 2. ´´½¨¹¤³§
+        // 2. åˆ›å»ºå·¥å‚
         CreateDXGIFactory1(__uuidof(IDXGIFactory1), (void**)&pFactory);
         if (!pFactory) return;
 
         do {
-            // 3. »ñÈ¡Éè±¸
+            // 3. è·å–è®¾å¤‡
             static UINT idx = 0;
             idx = pFactory->EnumAdapters1(idx, &dxgiAdapter) == DXGI_ERROR_NOT_FOUND ? 0 : idx;
             if (!dxgiAdapter) pFactory->EnumAdapters1(idx, &dxgiAdapter);
             if (!dxgiAdapter)break;
 
-            // 4. »ñÈ¡ DXGI Êä³ö£¨ÆÁÄ»£©
+            // 4. è·å– DXGI è¾“å‡ºï¼ˆå±å¹•ï¼‰
             static UINT screen = 0;
             HRESULT r = dxgiAdapter->EnumOutputs(screen++, &dxgiOutput);
             if (r == DXGI_ERROR_NOT_FOUND && all) {
@@ -80,21 +80,21 @@ public:
             }
             if (!dxgiOutput)break;
 
-            // 5. »ñÈ¡ DXGI Êä³ö 1
+            // 5. è·å– DXGI è¾“å‡º 1
             dxgiOutput->QueryInterface(__uuidof(IDXGIOutput1), (void**)&dxgiOutput1);
             if (!dxgiOutput1)break;
 
-            // 6. ´´½¨ Desktop Duplication
+            // 6. åˆ›å»º Desktop Duplication
             dxgiOutput1->DuplicateOutput(d3dDevice, &deskDupl);
             if (!deskDupl)break;
 
-            // 7. »ñÈ¡ÆÁÄ»´óĞ¡
+            // 7. è·å–å±å¹•å¤§å°
             DXGI_OUTDUPL_DESC duplDesc;
             deskDupl->GetDesc(&duplDesc);
             m_ulFullWidth = duplDesc.ModeDesc.Width;
             m_ulFullHeight = duplDesc.ModeDesc.Height;
 
-            // 8. ´´½¨ CPU ·ÃÎÊÎÆÀí
+            // 8. åˆ›å»º CPU è®¿é—®çº¹ç†
             D3D11_TEXTURE2D_DESC desc = {};
             desc.Width = m_ulFullWidth;
             desc.Height = m_ulFullHeight;
@@ -106,7 +106,7 @@ public:
             desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
             d3dDevice->CreateTexture2D(&desc, NULL, &cpuTexture);
 
-            // 9. ³õÊ¼»¯ BITMAPINFO
+            // 9. åˆå§‹åŒ– BITMAPINFO
             m_BitmapInfor_Full = ConstructBitmapInfo(32, m_ulFullWidth, m_ulFullHeight);
             m_BitmapInfor_Send = new BITMAPINFO(*m_BitmapInfor_Full);
 			if (m_bAlgorithm != ALGORITHM_H264) {
@@ -117,7 +117,7 @@ public:
 					4 * m_BitmapInfor_Send->bmiHeader.biHeight;
 			}
 
-            // 10. ·ÖÅäÆÁÄ»»º³åÇø
+            // 10. åˆ†é…å±å¹•ç¼“å†²åŒº
             m_FirstBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage + 1];
             m_NextBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage + 1];
             m_RectBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage * 2 + 12];
@@ -127,7 +127,7 @@ public:
             break;
         } while (true);
 
-        // ÊÍ·Å DXGI ×ÊÔ´
+        // é‡Šæ”¾ DXGI èµ„æº
         if (dxgiOutput1) dxgiOutput1->Release();
         if (dxgiOutput) dxgiOutput->Release();
         if (dxgiAdapter) dxgiAdapter->Release();
@@ -188,7 +188,7 @@ public:
     }
 
 private:
-    // ÖØĞÂ³õÊ¼»¯ Desktop Duplication
+    // é‡æ–°åˆå§‹åŒ– Desktop Duplication
     BOOL ReinitDuplication()
     {
         if (deskDupl) {
@@ -231,11 +231,11 @@ private:
             if (!ReinitDuplication()) return -10;
         }
 
-        // 1. »ñÈ¡ÏÂÒ»Ö¡
+        // 1. è·å–ä¸‹ä¸€å¸§
         IDXGIResource* desktopResource = nullptr;
         DXGI_OUTDUPL_FRAME_INFO frameInfo;
         HRESULT hr = deskDupl->AcquireNextFrame(100, &frameInfo, &desktopResource);
-        // ´¦ÀíÈ«ÆÁÇĞ»»µ¼ÖÂµÄ·ÃÎÊ¶ªÊ§
+        // å¤„ç†å…¨å±åˆ‡æ¢å¯¼è‡´çš„è®¿é—®ä¸¢å¤±
         if (hr == DXGI_ERROR_ACCESS_LOST) {
             if (ReinitDuplication()) {
                 hr = deskDupl->AcquireNextFrame(100, &frameInfo, &desktopResource);
@@ -246,7 +246,7 @@ private:
             return -1;
         }
 
-        // 2. »ñÈ¡ ID3D11Texture2D
+        // 2. è·å– ID3D11Texture2D
         ID3D11Texture2D* texture = nullptr;
         hr = desktopResource->QueryInterface(__uuidof(ID3D11Texture2D), (void**)&texture);
         if (FAILED(hr)) {
@@ -254,24 +254,24 @@ private:
             return -2;
         }
 
-        // 3. ¸´ÖÆµ½ CPU ÎÆÀí
+        // 3. å¤åˆ¶åˆ° CPU çº¹ç†
         d3dContext->CopyResource(cpuTexture, texture);
 
-        // 4. ÊÍ·Å DXGI ×ÊÔ´
+        // 4. é‡Šæ”¾ DXGI èµ„æº
         deskDupl->ReleaseFrame();
         texture->Release();
         desktopResource->Release();
 
-        // 5. ¶ÁÈ¡ÎÆÀíÊı¾İ
+        // 5. è¯»å–çº¹ç†æ•°æ®
         D3D11_MAPPED_SUBRESOURCE mapped;
         hr = d3dContext->Map(cpuTexture, 0, D3D11_MAP_READ, 0, &mapped);
         if (FAILED(hr)) {
             return -3;
         }
 
-        // 6. ¸´ÖÆÊı¾İµ½»º³åÇø£¨´¹Ö±·­×ª£©
+        // 6. å¤åˆ¶æ•°æ®åˆ°ç¼“å†²åŒºï¼ˆå‚ç›´ç¿»è½¬ï¼‰
         BYTE* pData = (BYTE*)mapped.pData;
-        int rowSize = m_ulFullWidth * 4;  // Ã¿ĞĞµÄ×Ö½ÚÊı£¨RGBA£©
+        int rowSize = m_ulFullWidth * 4;  // æ¯è¡Œçš„å­—èŠ‚æ•°ï¼ˆRGBAï¼‰
 
         BYTE* dest = buffer + reservedBytes + (m_ulFullHeight - 1) * rowSize;
         BYTE* src = pData;
@@ -281,7 +281,7 @@ private:
             src += mapped.RowPitch;
         }
 
-        // 7. ÇåÀí
+        // 7. æ¸…ç†
         d3dContext->Unmap(cpuTexture, 0);
 
         *frameSize = m_ulFullWidth * m_ulFullHeight * 4;

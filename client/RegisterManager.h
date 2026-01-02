@@ -1,4 +1,4 @@
-// RegisterManager.h: interface for the CRegisterManager class.
+﻿// RegisterManager.h: interface for the CRegisterManager class.
 //
 //////////////////////////////////////////////////////////////////////
 

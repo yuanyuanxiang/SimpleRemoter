@@ -1,26 +1,26 @@
-#pragma once
+ï»¿#pragma once
 #include "afxcmn.h"
 #include "IOCPServer.h"
 #include "afxwin.h"
 
-// CServicesDlg ¶Ô»°¿ò
+// CServicesDlg å¯¹è¯æ¡†
 
 class CServicesDlg : public DialogBase
 {
     DECLARE_DYNAMIC(CServicesDlg)
 
 public:
-    CServicesDlg(CWnd* pParent = NULL, Server* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // ±ê×¼¹¹Ôìº¯Êı
+    CServicesDlg(CWnd* pParent = NULL, Server* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // æ ‡å‡†æ„é€ å‡½æ•°
     virtual ~CServicesDlg();
 
     int ShowServicesList(void);
     void OnReceiveComplete(void);
     void ServicesConfig(BYTE bCmd);
-// ¶Ô»°¿òÊı¾İ
+// å¯¹è¯æ¡†æ•°æ®
     enum { IDD = IDD_DIALOG_SERVICES };
 
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æŒ
 
     DECLARE_MESSAGE_MAP()
 public:

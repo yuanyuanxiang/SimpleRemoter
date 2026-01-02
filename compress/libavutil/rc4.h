@@ -1,4 +1,4 @@
-/*
+﻿/*
  * RC4 encryption/decryption/pseudo-random number generator
  *
  * This file is part of FFmpeg.

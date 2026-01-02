@@ -1,4 +1,4 @@
-// FileManager.h: interface for the CFileManager class.
+ï»¿// FileManager.h: interface for the CFileManager class.
 //
 //////////////////////////////////////////////////////////////////////
 #include "IOCPClient.h"
@@ -18,8 +18,8 @@ typedef IOCPClient CClientSocket;
 #endif // _MSC_VER > 1000
 
 typedef struct {
-    UINT	nFileSize;	// ÎÄ¼ş´óĞ¡
-    UINT	nSendSize;	// ÒÑ·¢ËÍ´óĞ¡
+    UINT	nFileSize;	// æ–‡ä»¶å¤§å°
+    UINT	nSendSize;	// å·²å‘é€å¤§å°
 } SENDFILEPROGRESS, *PSENDFILEPROGRESS;
 
 
@@ -33,8 +33,8 @@ public:
 private:
     std::list <std::string> m_UploadList;
     UINT m_nTransferMode;
-    char m_strCurrentProcessFileName[MAX_PATH]; // µ±Ç°ÕıÔÚ´¦ÀíµÄÎÄ¼ş
-    __int64 m_nCurrentProcessFileLength; // µ±Ç°ÕıÔÚ´¦ÀíµÄÎÄ¼şµÄ³¤¶È
+    char m_strCurrentProcessFileName[MAX_PATH]; // å½“å‰æ­£åœ¨å¤„ç†çš„æ–‡ä»¶
+    __int64 m_nCurrentProcessFileLength; // å½“å‰æ­£åœ¨å¤„ç†çš„æ–‡ä»¶çš„é•¿åº¦
     bool MakeSureDirectoryPathExists(LPCTSTR pszDirPath);
     bool UploadToRemote(LPBYTE lpBuffer);
     bool FixedUploadList(LPCTSTR lpszDirectory);

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "IOCPServer.h"
 #include "Bmp2Video.h"
@@ -36,7 +36,7 @@ public:
         }
 
         ICCompressGetFormat(m_hIC, m_lpbmiInput, &m_bmiOutput);
-        // Ïò±àÂëÆ÷·¢ËÍÑéÖ¤
+        // å‘ç¼–ç å™¨å‘é€éªŒè¯
         ICSendMessage(m_hIC, 0x60c9, 0xf7329ace, 0xacdeaea2);
 
         m_cv.hic = m_hIC;
@@ -115,7 +115,7 @@ public:
         if (hIC) {
             ICGetInfo(hIC, &icInfo, sizeof(icInfo));
             *fccHandler = icInfo.fccHandler;
-            //ÓÉÓÚµÃµ½µÄszDescriptionÊÇUNICODEË«×Ö½Ú×Ö´®£¬ËùÒÔÒª×ª»»ÎªASCIIµÄ
+            //ç”±äºå¾—åˆ°çš„szDescriptionæ˜¯UNICODEåŒå­—èŠ‚å­—ä¸²ï¼Œæ‰€ä»¥è¦è½¬æ¢ä¸ºASCIIçš„
             if (strName != NULL)
                 wcstombs(strName, icInfo.szDescription, 256);
         } else nRet = -1;
@@ -127,14 +127,14 @@ public:
 };
 
 
-// CVideoDlg ¶Ô»°¿ò
+// CVideoDlg å¯¹è¯æ¡†
 
 class CVideoDlg : public DialogBase
 {
     DECLARE_DYNAMIC(CVideoDlg)
 
 public:
-    CVideoDlg(CWnd* pParent = NULL, Server* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // ±ê×¼¹¹Ôìº¯Êı
+    CVideoDlg(CWnd* pParent = NULL, Server* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);   // æ ‡å‡†æ„é€ å‡½æ•°
     virtual ~CVideoDlg();
 
     LPBITMAPINFO m_BitmapInfor_Full;
@@ -147,19 +147,19 @@ public:
     void SaveAvi(void);
     void InitCodec(DWORD fccHandler);
 
-    CString		m_aviFile; // Èç¹ûÎÄ¼şÃû²»Îª¿Õ¾ÍĞ´Èë
+    CString		m_aviFile; // å¦‚æœæ–‡ä»¶åä¸ä¸ºç©ºå°±å†™å…¥
     CBmpToAvi	m_aviStream;
 
     int			m_nCount;
     HDC			m_hDC;
     HDRAWDIB	m_hDD;
 
-    CVideoCodec	*m_pVideoCodec;   // ÊÓÆµÑ¹ËõÀà
-    // ¶Ô»°¿òÊı¾İ
+    CVideoCodec	*m_pVideoCodec;   // è§†é¢‘å‹ç¼©ç±»
+    // å¯¹è¯æ¡†æ•°æ®
     enum { IDD = IDD_DIALOG_VIDEO };
 
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æŒ
 
     DECLARE_MESSAGE_MAP()
 public:

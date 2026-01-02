@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2014 Tim Walker <tdskywalker@gmail.com>
  *
  * This file is part of FFmpeg.

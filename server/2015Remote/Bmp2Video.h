@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <Vfw.h>
 #pragma comment(lib,"Vfw32.lib")
 
@@ -10,13 +10,13 @@
 enum FCCHandler {
     ENCODER_BMP = BI_RGB,
     ENCODER_MJPEG = mmioFOURCC('M', 'J', 'P', 'G'),
-    // °²×°x264vfw±à½âÂëÆ÷: https://sourceforge.net/projects/x264vfw/
+    // å®‰è£…x264vfwç¼–è§£ç å™¨: https://sourceforge.net/projects/x264vfw/
     ENCODER_H264 = mmioFOURCC('X', '2', '6', '4'),
 };
 
 /************************************************************************
 * @class CBmpToAvi
-* @brief Î»Í¼×ªAVIÖ¡
+* @brief ä½å›¾è½¬AVIå¸§
 ************************************************************************/
 class CBmpToAvi
 {
@@ -30,13 +30,13 @@ public:
     {
         switch (result) {
         case ERR_INVALID_PARAM:
-            return ("ÎŞĞ§²ÎÊı");
+            return ("æ— æ•ˆå‚æ•°");
         case ERR_NOT_SUPPORT:
-            return ("²»Ö§³ÖµÄÎ»Éî¶È£¬ĞèÒª24Î»»ò32Î»");
+            return ("ä¸æ”¯æŒçš„ä½æ·±åº¦ï¼Œéœ€è¦24ä½æˆ–32ä½");
         case ERR_NO_ENCODER:
-            return ("Î´°²×°x264±à½âÂëÆ÷ \nÏÂÔØµØÖ·£ºhttps://sourceforge.net/projects/x264vfw");
+            return ("æœªå®‰è£…x264ç¼–è§£ç å™¨ \nä¸‹è½½åœ°å€ï¼šhttps://sourceforge.net/projects/x264vfw");
         case ERR_INTERNAL:
-            return("´´½¨AVIÎÄ¼şÊ§°Ü");
+            return("åˆ›å»ºAVIæ–‡ä»¶å¤±è´¥");
         default:
             return "succeed";
         }
@@ -46,7 +46,7 @@ private:
     PAVIFILE m_pfile;
     PAVISTREAM m_pavi;
     int m_nFrames;
-    static AVISTREAMINFO m_si; // Õâ¸ö²ÎÊıĞèÒªÊÇ¾²Ì¬µÄ
+    static AVISTREAMINFO m_si; // è¿™ä¸ªå‚æ•°éœ€è¦æ˜¯é™æ€çš„
 
     int m_bitCount = 24;
     int m_width = 1920;

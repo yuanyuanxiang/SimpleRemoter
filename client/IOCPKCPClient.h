@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "IOCPUDPClient.h"
 #include "ikcp.h"
 #include <thread>
@@ -12,19 +12,19 @@ public:
 
     virtual BOOL ConnectServer(const char* szServerIP, unsigned short uPort) override;
 
-    // ÖØĞ´½ÓÊÕº¯Êı£ºÊäÈëUDPÊı¾İ¸øKCP£¬Êä³öKCP²ã½â°üºóµÄÊı¾İ
+    // é‡å†™æ¥æ”¶å‡½æ•°ï¼šè¾“å…¥UDPæ•°æ®ç»™KCPï¼Œè¾“å‡ºKCPå±‚è§£åŒ…åçš„æ•°æ®
     virtual int ReceiveData(char* buffer, int bufSize, int flags) override;
 
     virtual bool ProcessRecvData(CBuffer* m_CompressedBuffer, char* szBuffer, int len, int flag) override;
 
-    // ÖØĞ´·¢ËÍº¯Êı£º½«Ó¦ÓÃÊı¾İÍ¨¹ıKCP·¢ËÍ
+    // é‡å†™å‘é€å‡½æ•°ï¼šå°†åº”ç”¨æ•°æ®é€šè¿‡KCPå‘é€
     virtual int SendTo(const char* buf, int len, int flags) override;
 
 private:
-    // KCP·¢ËÍÊı¾İµÄ»Øµ÷º¯Êı£¬¸ºÔğµ÷ÓÃUDPµÄsendto
+    // KCPå‘é€æ•°æ®çš„å›è°ƒå‡½æ•°ï¼Œè´Ÿè´£è°ƒç”¨UDPçš„sendto
     static int kcpOutput(const char* buf, int len, struct IKCPCB* kcp, void* user);
 
-    // ¶¨Ê±µ÷ÓÃikcp_updateµÄÏß³Ìº¯Êı
+    // å®šæ—¶è°ƒç”¨ikcp_updateçš„çº¿ç¨‹å‡½æ•°
     void KCPUpdateLoop();
 
 private:

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C)2009-2015, 2017, 2020-2024 D. R. Commander.
  *                                         All Rights Reserved.
  *
@@ -765,9 +765,9 @@ enum TJPARAM {
      * 1   | Ra
      * 2   | Rb
      * 3   | Rc
-     * 4   | Ra + Rb – Rc
-     * 5   | Ra + (Rb – Rc) / 2
-     * 6   | Rb + (Ra – Rc) / 2
+     * 4   | Ra + Rb 鈥?Rc
+     * 5   | Ra + (Rb 鈥?Rc) / 2
+     * 6   | Rb + (Ra 鈥?Rc) / 2
      * 7   | (Ra + Rb) / 2
      *
      * Predictors 1-3 are 1-dimensional predictors, whereas Predictors 4-7 are

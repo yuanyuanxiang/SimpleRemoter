@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Fetching Load Config Directory and recognizing its version.
 */

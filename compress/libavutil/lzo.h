@@ -1,4 +1,4 @@
-/*
+﻿/*
  * LZO 1x decompression
  * copyright (c) 2006 Reimar Doeffinger
  *

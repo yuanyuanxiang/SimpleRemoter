@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
+ï»¿#define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
 #include <stdint.h>
@@ -13,10 +13,10 @@ public:
     ObfsBase(bool genCArray = true) : m_bGenCArray(genCArray) { }
     virtual ~ObfsBase() { }
 
-    // ¶Ô³Æ»ìÏıº¯Êı£ºÓÃÓÚ¼ÓÃÜºÍ½âÃÜ
+    // å¯¹ç§°æ··æ·†å‡½æ•°ï¼šç”¨äºåŠ å¯†å’Œè§£å¯†
     virtual void ObfuscateBuffer(uint8_t* buf, size_t len, uint32_t seed) {}
 
-    // ½â»ìÏı£ºÓë¼ÓÃÜË³ĞòÏà·´
+    // è§£æ··æ·†ï¼šä¸åŠ å¯†é¡ºåºç›¸å
     virtual void DeobfuscateBuffer(uint8_t* buf, size_t len, uint32_t seed) {}
 
     virtual bool WriteFile(const char* filename, uint8_t* data, size_t length, const char* arrayName)
@@ -24,7 +24,7 @@ public:
         return m_bGenCArray ? WriteBinaryAsCArray(filename, data, length, arrayName) : WriteBinaryFile(filename, data, length);
     }
 
-    // ½«¶ş½øÖÆÊı¾İÒÔ C Êı×é¸ñÊ½Ğ´ÈëÎÄ¼ş
+    // å°†äºŒè¿›åˆ¶æ•°æ®ä»¥ C æ•°ç»„æ ¼å¼å†™å…¥æ–‡ä»¶
     virtual bool WriteBinaryAsCArray(const char* filename, uint8_t* data, size_t length, const char* arrayName)
     {
         FILE* file = fopen(filename, "w");
@@ -45,7 +45,7 @@ public:
         return true;
     }
 
-    // Ê¹ÓÃ "wb" ¶ş½øÖÆĞ´ÈëÄ£Ê½
+    // ä½¿ç”¨ "wb" äºŒè¿›åˆ¶å†™å…¥æ¨¡å¼
     virtual bool WriteBinaryFile(const char* filename, const uint8_t* data, size_t length)
     {
         FILE* file = fopen(filename, "wb");
@@ -61,13 +61,13 @@ public:
 class Obfs : public ObfsBase
 {
 private:
-    // ×óĞı8Î»ÕûÊı
+    // å·¦æ—‹8ä½æ•´æ•°
     static inline uint8_t rol8(uint8_t val, int shift)
     {
         return (val << shift) | (val >> (8 - shift));
     }
 
-    // ÓÒĞı8Î»ÕûÊı
+    // å³æ—‹8ä½æ•´æ•°
     static inline uint8_t ror8(uint8_t val, int shift)
     {
         return (val >> shift) | (val << (8 - shift));
@@ -76,19 +76,19 @@ private:
 public:
     Obfs(bool genCArray = true) : ObfsBase(genCArray) { }
 
-    // ¶Ô³Æ»ìÏıº¯Êı£ºÓÃÓÚ¼ÓÃÜºÍ½âÃÜ
+    // å¯¹ç§°æ··æ·†å‡½æ•°ï¼šç”¨äºåŠ å¯†å’Œè§£å¯†
     virtual void ObfuscateBuffer(uint8_t* buf, size_t len, uint32_t seed)
     {
         uint32_t state = seed;
 
         for (size_t i = 0; i < len; ++i) {
             uint8_t mask = (uint8_t)((state >> 16) & 0xFF);
-            buf[i] = rol8(buf[i] ^ mask, 3);  // Òì»ò+Ğı×ªÈÅÂÒÌØÕ÷
-            state = state * 2654435761u + buf[i]; // LCG + Êı¾İÈÅ¶¯
+            buf[i] = rol8(buf[i] ^ mask, 3);  // å¼‚æˆ–+æ—‹è½¬æ‰°ä¹±ç‰¹å¾
+            state = state * 2654435761u + buf[i]; // LCG + æ•°æ®æ‰°åŠ¨
         }
     }
 
-    // ½â»ìÏı£ºÓë¼ÓÃÜË³ĞòÏà·´
+    // è§£æ··æ·†ï¼šä¸åŠ å¯†é¡ºåºç›¸å
     virtual void DeobfuscateBuffer(uint8_t* buf, size_t len, uint32_t seed)
     {
         uint32_t state = seed;
@@ -97,7 +97,7 @@ public:
             uint8_t mask = (uint8_t)((state >> 16) & 0xFF);
             uint8_t orig = buf[i];
             buf[i] = ror8(buf[i], 3) ^ mask;
-            state = state * 2654435761u + orig; // ±ØĞëÓÃ»ìÏıÇ°µÄÔ­×Ö½Ú¸üĞÂ state
+            state = state * 2654435761u + orig; // å¿…é¡»ç”¨æ··æ·†å‰çš„åŸå­—èŠ‚æ›´æ–° state
         }
     }
 };

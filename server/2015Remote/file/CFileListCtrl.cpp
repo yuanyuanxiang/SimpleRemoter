@@ -1,4 +1,4 @@
-#include "StdAfx.h"
+﻿#include "StdAfx.h"
 #include "2015Remote.h"
 #include "CFileListCtrl.h"
 #include "CFileManagerDlg.h"

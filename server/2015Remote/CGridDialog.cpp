@@ -1,4 +1,4 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 #include "afxdialogex.h"
 #include "CGridDialog.h"
 #include "Resource.h"
@@ -38,7 +38,7 @@ BOOL CGridDialog::AddChild(CDialog* pDlg)
     pDlg->SetParent(this);
     pDlg->ShowWindow(SW_SHOW);
 
-    // È¥µô±êÌâÀ¸ºÍµ÷Õû´óĞ¡
+    // å»æ‰æ ‡é¢˜æ å’Œè°ƒæ•´å¤§å°
     LONG style = ::GetWindowLong(pDlg->GetSafeHwnd(), GWL_STYLE);
     style &= ~(WS_CAPTION | WS_THICKFRAME | WS_SIZEBOX | WS_BORDER);
     ::SetWindowLong(pDlg->GetSafeHwnd(), GWL_STYLE, style);
@@ -57,12 +57,12 @@ void CGridDialog::RemoveChild(CDialog* pDlg)
         (*it)->SetParent(nullptr);
         m_children.erase(it);
 
-        // É¾³ı m_origState ÖĞ¶ÔÓ¦ÌõÄ¿
+        // åˆ é™¤ m_origState ä¸­å¯¹åº”æ¡ç›®
         auto itState = m_origState.find(pDlg);
         if (itState != m_origState.end())
             m_origState.erase(itState);
 
-        // Èç¹û¹Ø±ÕµÄ×Ó´°¿ÚÊÇµ±Ç°×î´ó»¯´°¿Ú£¬ÖØÖÃ m_pMaxChild
+        // å¦‚æœå…³é—­çš„å­çª—å£æ˜¯å½“å‰æœ€å¤§åŒ–çª—å£ï¼Œé‡ç½® m_pMaxChild
         if (m_pMaxChild == pDlg)
             m_pMaxChild = nullptr;
 
@@ -80,7 +80,7 @@ LRESULT CGridDialog::OnChildClosed(WPARAM wParam, LPARAM lParam)
 void CGridDialog::LayoutChildren()
 {
     if (m_children.size() == 0) {
-        // »Ö¸´¸¸´°¿Ú±êÌâÀ¸
+        // æ¢å¤çˆ¶çª—å£æ ‡é¢˜æ 
         if (m_parentStyle != 0) {
             ::SetWindowLong(m_hWnd, GWL_STYLE, m_parentStyle);
             ::SetWindowPos(m_hWnd, nullptr, 0, 0, 0, 0,
@@ -105,7 +105,7 @@ void CGridDialog::LayoutChildren()
         int c = (int)i % m_cols;
 
         if (r >= m_rows)
-            break; // ³¬¹ıÍø¸ñ·¶Î§
+            break; // è¶…è¿‡ç½‘æ ¼èŒƒå›´
 
         int x = c * w;
         int y = r * h;
@@ -122,7 +122,7 @@ void CGridDialog::OnSize(UINT nType, int cx, int cy)
     if (m_pMaxChild == nullptr) {
         LayoutChildren();
     } else {
-        // ×î´ó»¯×´Ì¬ÏÂ£¬±£³ÖÆÌÂú¸¸¶Ô»°¿ò
+        // æœ€å¤§åŒ–çŠ¶æ€ä¸‹ï¼Œä¿æŒé“ºæ»¡çˆ¶å¯¹è¯æ¡†
         CRect rcClient;
         GetClientRect(&rcClient);
         m_pMaxChild->MoveWindow(rcClient, TRUE);
@@ -131,9 +131,9 @@ void CGridDialog::OnSize(UINT nType, int cx, int cy)
 
 void CGridDialog::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
-    // Èç¹ûµ±Ç°ÓĞ×î´ó»¯µÄ×Ó´°¿Ú£¬Ë«»÷ÈÎºÎµØ·½¶¼»Ö¸´
+    // å¦‚æœå½“å‰æœ‰æœ€å¤§åŒ–çš„å­çª—å£ï¼ŒåŒå‡»ä»»ä½•åœ°æ–¹éƒ½æ¢å¤
     if (m_pMaxChild != nullptr) {
-        // »Ö¸´×Ó´°¿ÚÑùÊ½ºÍÎ»ÖÃ
+        // æ¢å¤å­çª—å£æ ·å¼å’Œä½ç½®
         for (auto& kv : m_origState) {
             CDialog* dlg = kv.first;
             const ChildState& state = kv.second;
@@ -146,7 +146,7 @@ void CGridDialog::OnLButtonDblClk(UINT nFlags, CPoint point)
             dlg->ShowWindow(SW_SHOW);
         }
 
-        // »Ö¸´¸¸´°¿Ú±êÌâÀ¸
+        // æ¢å¤çˆ¶çª—å£æ ‡é¢˜æ 
         if (m_parentStyle != 0) {
             ::SetWindowLong(m_hWnd, GWL_STYLE, m_parentStyle);
             ::SetWindowPos(m_hWnd, nullptr, 0, 0, 0, 0,
@@ -154,21 +154,21 @@ void CGridDialog::OnLButtonDblClk(UINT nFlags, CPoint point)
             m_parentStyle = 0;
         }
 
-        // Ë¢ĞÂ¸¸´°¿Ú
+        // åˆ·æ–°çˆ¶çª—å£
         m_pMaxChild = nullptr;
         m_origState.clear();
         LayoutChildren();
-        return; // ÒÑ´¦Àí£¬·µ»Ø
+        return; // å·²å¤„ç†ï¼Œè¿”å›
     }
 
-    // Ã»ÓĞ×î´ó»¯×Ó´°¿Ú£¬Ôò°´Ô­Âß¼­ÕÒµ½µã»÷µÄ×Ó´°¿Ú½øĞĞ×î´ó»¯
+    // æ²¡æœ‰æœ€å¤§åŒ–å­çª—å£ï¼Œåˆ™æŒ‰åŸé€»è¾‘æ‰¾åˆ°ç‚¹å‡»çš„å­çª—å£è¿›è¡Œæœ€å¤§åŒ–
     for (auto dlg : m_children) {
         CRect rc;
         dlg->GetWindowRect(&rc);
         ScreenToClient(&rc);
 
         if (rc.PtInRect(point)) {
-            // ±£´æËùÓĞ×Ó´°¿ÚÔ­Ê¼×´Ì¬
+            // ä¿å­˜æ‰€æœ‰å­çª—å£åŸå§‹çŠ¶æ€
             m_origState.clear();
             for (auto d : m_children) {
                 ChildState state;
@@ -178,14 +178,14 @@ void CGridDialog::OnLButtonDblClk(UINT nFlags, CPoint point)
                 m_origState[d] = state;
             }
 
-            // ×î´ó»¯µã»÷µÄ×Ó´°¿Ú
+            // æœ€å¤§åŒ–ç‚¹å‡»çš„å­çª—å£
             LONG style = m_origState[dlg].style;
             style |= (WS_CAPTION | WS_THICKFRAME | WS_SYSMENU | WS_MINIMIZEBOX | WS_MAXIMIZEBOX);
             ::SetWindowLong(dlg->GetSafeHwnd(), GWL_STYLE, style);
             ::SetWindowPos(dlg->GetSafeHwnd(), nullptr, 0, 0, 0, 0,
                            SWP_NOZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 
-            // Òş²Ø¸¸´°¿Ú±êÌâÀ¸
+            // éšè—çˆ¶çª—å£æ ‡é¢˜æ 
             if (m_parentStyle == 0)
                 m_parentStyle = ::GetWindowLong(m_hWnd, GWL_STYLE);
             LONG parentStyle = m_parentStyle & ~(WS_CAPTION | WS_THICKFRAME);
@@ -193,13 +193,13 @@ void CGridDialog::OnLButtonDblClk(UINT nFlags, CPoint point)
             ::SetWindowPos(m_hWnd, nullptr, 0, 0, 0, 0,
                            SWP_NOZORDER | SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
 
-            // È«ÆÁÏÔÊ¾×Ó´°¿Ú
+            // å…¨å±æ˜¾ç¤ºå­çª—å£
             CRect rcClient;
             GetClientRect(&rcClient);
             dlg->MoveWindow(rcClient, TRUE);
             m_pMaxChild = dlg;
 
-            // Òş²ØÆäËû×Ó´°¿Ú
+            // éšè—å…¶ä»–å­çª—å£
             for (auto d : m_children)
                 if (d != dlg) d->ShowWindow(SW_HIDE);
 
@@ -213,7 +213,7 @@ void CGridDialog::OnLButtonDblClk(UINT nFlags, CPoint point)
 BOOL CGridDialog::PreTranslateMessage(MSG* pMsg)
 {
     if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE) {
-        return TRUE;// ÆÁ±ÎEnterºÍESC¹Ø±Õ¶Ô»°
+        return TRUE;// å±è”½Enterå’ŒESCå…³é—­å¯¹è¯
     }
     return CDialog::PreTranslateMessage(pMsg);
 }

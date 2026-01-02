@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Searching specific functions in PE's Exports Table.
 */

@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Dumping PE from the memory buffer into a file.
 */

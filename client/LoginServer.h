@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "IOCPClient.h"
 #include <Vfw.h>

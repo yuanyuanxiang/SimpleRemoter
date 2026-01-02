@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <wincrypt.h>
 
@@ -6,7 +6,7 @@ inline std::string CalcMD5FromBytes(const BYTE* data, DWORD length)
 {
     HCRYPTPROV hProv = 0;
     HCRYPTHASH hHash = 0;
-    BYTE hash[16]; // MD5 Êä³ö³¤¶ÈÊÇ 16 ×Ö½Ú
+    BYTE hash[16]; // MD5 è¾“å‡ºé•¿åº¦æ˜¯ 16 å­—èŠ‚
     DWORD hashLen = sizeof(hash);
     std::ostringstream oss;
 
@@ -31,7 +31,7 @@ inline std::string CalcMD5FromBytes(const BYTE* data, DWORD length)
         return "";
     }
 
-    // ×ª»»ÎªÊ®Áù½øÖÆ×Ö·û´®
+    // è½¬æ¢ä¸ºåå…­è¿›åˆ¶å­—ç¬¦ä¸²
     for (DWORD i = 0; i < hashLen; ++i) {
         oss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
     }

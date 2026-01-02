@@ -1,4 +1,4 @@
-#ifndef JSON_VERSION_H_INCLUDED
+﻿#ifndef JSON_VERSION_H_INCLUDED
 #define JSON_VERSION_H_INCLUDED
 
 // Note: version must be updated in three places when doing a release. This

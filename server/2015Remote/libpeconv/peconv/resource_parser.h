@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Parsing PE's resource directory.
 */

@@ -1,4 +1,4 @@
-// Image Diff Algorithm Benchmark
+﻿// Image Diff Algorithm Benchmark
 // Compile: cl /O2 /EHsc TestCompareBitmap.cpp
 // Or: g++ -O2 -msse2 -o TestCompareBitmap.exe TestCompareBitmap.cpp
 

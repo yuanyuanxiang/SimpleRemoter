@@ -1,4 +1,4 @@
-/*
+﻿/*
  * An implementation of the CAST128 algorithm as mentioned in RFC2144
  * Copyright (c) 2014 Supraja Meedinti
  *

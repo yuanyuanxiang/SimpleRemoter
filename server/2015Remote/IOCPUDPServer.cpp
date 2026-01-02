@@ -1,4 +1,4 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 #include "IOCPUDPServer.h"
 #include <thread>
 #include <iostream>
@@ -37,17 +37,17 @@ UINT IOCPUDPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc
 
     m_running = true;
 
-    // Æô¶¯¹¤×÷Ïß³Ì
+    // å¯åŠ¨å·¥ä½œçº¿ç¨‹
     m_hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)+[](LPVOID param) -> DWORD {
         ((IOCPUDPServer*)param)->WorkerThread();
         return 0;
     }, this, 0, NULL);
 
-    // Ìá½»¶à¸ö³õÊ¼½ÓÊÕ
+    // æäº¤å¤šä¸ªåˆå§‹æ¥æ”¶
     for (int i = 0; i < 4; ++i)
         PostRecv();
 
-    return 0; // ³É¹¦
+    return 0; // æˆåŠŸ
 }
 
 void IOCPUDPServer::PostRecv()
@@ -111,12 +111,12 @@ void IOCPUDPServer::WorkerThread()
         if (999 != ret)
             ctx->Destroy();
 
-        // ÊÍ·Å
+        // é‡Šæ”¾
         ioCtx->pContext = NULL;
         delete ioCtx;
         DelCount();
 
-        PostRecv(); // ¼ÌĞøÌá½»
+        PostRecv(); // ç»§ç»­æäº¤
     }
     SAFE_CLOSE_HANDLE(m_hThread);
     m_hThread = NULL;
@@ -158,7 +158,7 @@ BOOL IOCPUDPServer::Send2Client(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, U
 VOID IOCPUDPServer::Destroy()
 {
     if (m_socket != INVALID_SOCKET) {
-        CancelIoEx((HANDLE)m_socket, NULL); // È¡ÏûËùÓĞIOÇëÇó
+        CancelIoEx((HANDLE)m_socket, NULL); // å–æ¶ˆæ‰€æœ‰IOè¯·æ±‚
         closesocket(m_socket);
         m_socket = INVALID_SOCKET;
     }
@@ -167,7 +167,7 @@ VOID IOCPUDPServer::Destroy()
         Sleep(200);
 
     m_running = false;
-    PostQueuedCompletionStatus(m_hIOCP, 0, 0, NULL); // ÓÃÓÚ»½ĞÑÏß³ÌÍË³ö
+    PostQueuedCompletionStatus(m_hIOCP, 0, 0, NULL); // ç”¨äºå”¤é†’çº¿ç¨‹é€€å‡º
 
     if (m_hThread) {
         WaitForSingleObject(m_hThread, INFINITE);

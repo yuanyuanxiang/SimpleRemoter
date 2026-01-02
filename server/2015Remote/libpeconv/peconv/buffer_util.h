@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Definitions of the used buffer types. Functions for their allocation and deallocation.
 */

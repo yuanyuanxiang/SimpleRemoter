@@ -1,4 +1,4 @@
-#include "X264Encoder.h"
+ï»¿#include "X264Encoder.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -37,7 +37,7 @@ bool CX264Encoder::open(int width, int height, int fps, int bitrate)
     param.i_threads = 1;
     param.i_frame_total = 0;
     param.i_keyint_max = 10;
-    param.i_bframe = 0;					//²»ÆôÓÃbÖ¡
+    param.i_bframe = 0;					//ä¸å¯ç”¨bå¸§
     param.b_open_gop = 0;
     param.i_fps_num = fps;
     param.i_csp = X264_CSP_I420;
@@ -47,7 +47,7 @@ bool CX264Encoder::open(int width, int height, int fps, int bitrate)
         param.rc.i_bitrate = bitrate;
     }
 
-    //ÉèÖÃprofile.
+    //è®¾ç½®profile.
     if (x264_param_apply_profile(&param, x264_profile_names[0])) {
         return false;
     }

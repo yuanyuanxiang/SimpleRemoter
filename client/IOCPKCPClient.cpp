@@ -1,4 +1,4 @@
-#include "IOCPKCPClient.h"
+ï»¿#include "IOCPKCPClient.h"
 #include <windows.h>
 #include <chrono>
 #include <iostream>
@@ -24,19 +24,19 @@ BOOL IOCPKCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
     if (!ret)
         return FALSE;
 
-    // ³õÊ¼»¯KCP
-    uint32_t conv = KCP_SESSION_ID; // conv ÒªÓë·şÎñ¶ËÆ¥Åä
+    // åˆå§‹åŒ–KCP
+    uint32_t conv = KCP_SESSION_ID; // conv è¦ä¸æœåŠ¡ç«¯åŒ¹é…
     kcp_ = ikcp_create(conv, this);
     if (!kcp_)
         return FALSE;
 
-    // ÉèÖÃKCP²ÎÊı
+    // è®¾ç½®KCPå‚æ•°
     ikcp_nodelay(kcp_, 1, 40, 2, 0);
     kcp_->rx_minrto = 30;
     kcp_->snd_wnd = 128;
     kcp_->rcv_wnd = 128;
 
-    // ÉèÖÃ·¢ËÍ»Øµ÷º¯Êı£¨KCP·¢ËÍÊı¾İÊ±µ÷ÓÃ£©
+    // è®¾ç½®å‘é€å›è°ƒå‡½æ•°ï¼ˆKCPå‘é€æ•°æ®æ—¶è°ƒç”¨ï¼‰
     kcp_->output = IOCPKCPClient::kcpOutput;
 
     running_ = true;
@@ -46,23 +46,23 @@ BOOL IOCPKCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
     return TRUE;
 }
 
-// UDPÊÕ°üÏß³Ìµ÷ÓÃ£¬½«ÊÕµ½µÄUDP°üËÍÈëKCP´¦Àí£¬ÔÙ³¢ÊÔ¶ÁÈ¡ÍêÕûÓ¦ÓÃ°ü
+// UDPæ”¶åŒ…çº¿ç¨‹è°ƒç”¨ï¼Œå°†æ”¶åˆ°çš„UDPåŒ…é€å…¥KCPå¤„ç†ï¼Œå†å°è¯•è¯»å–å®Œæ•´åº”ç”¨åŒ…
 int IOCPKCPClient::ReceiveData(char* buffer, int bufSize, int flags)
 {
-    // ÏÈµ÷ÓÃ»ùÀà½ÓÊÕUDPÔ­Ê¼Êı¾İ
+    // å…ˆè°ƒç”¨åŸºç±»æ¥æ”¶UDPåŸå§‹æ•°æ®
     char udpBuffer[1500] = { 0 };
     int recvLen = IOCPUDPClient::ReceiveData(udpBuffer, sizeof(udpBuffer), flags);
     if (recvLen <= 0)
         return recvLen;
 
-    // ÊäÈëKCPĞ­ÒéÕ»
+    // è¾“å…¥KCPåè®®æ ˆ
     int inputRet = ikcp_input(kcp_, udpBuffer, recvLen);
     if (inputRet < 0)
         return -1;
 
-    // ´ÓKCPÖĞ¶ÁÈ¡Ó¦ÓÃ²ãÊı¾İ£¬Ğ´Èëbuffer
+    // ä»KCPä¸­è¯»å–åº”ç”¨å±‚æ•°æ®ï¼Œå†™å…¥buffer
     int kcpRecvLen = ikcp_recv(kcp_, buffer, bufSize);
-    return kcpRecvLen; // >0±íÊ¾ÊÕµ½ÍêÕûÓ¦ÓÃÊı¾İ£¬0±íÊ¾ÎŞÍêÕû°ü
+    return kcpRecvLen; // >0è¡¨ç¤ºæ”¶åˆ°å®Œæ•´åº”ç”¨æ•°æ®ï¼Œ0è¡¨ç¤ºæ— å®Œæ•´åŒ…
 }
 
 bool IOCPKCPClient::ProcessRecvData(CBuffer* m_CompressedBuffer, char* szBuffer, int len, int flag)
@@ -72,13 +72,13 @@ bool IOCPKCPClient::ProcessRecvData(CBuffer* m_CompressedBuffer, char* szBuffer,
     {}
     else {
         szBuffer[iReceivedLength] = 0;
-        //ÕıÈ·½ÓÊÕ¾Íµ÷ÓÃOnRead´¦Àí,×ªµ½OnRead
+        //æ­£ç¡®æ¥æ”¶å°±è°ƒç”¨OnReadå¤„ç†,è½¬åˆ°OnRead
         OnServerReceiving(m_CompressedBuffer, szBuffer, iReceivedLength);
     }
     return true;
 }
 
-// ·¢ËÍÓ¦ÓÃ²ãÊı¾İÊ±µ÷ÓÃ£¬×ª·¢¸øKCPĞ­ÒéÕ»
+// å‘é€åº”ç”¨å±‚æ•°æ®æ—¶è°ƒç”¨ï¼Œè½¬å‘ç»™KCPåè®®æ ˆ
 int IOCPKCPClient::SendTo(const char* buf, int len, int flags)
 {
     if (!kcp_)
@@ -88,12 +88,12 @@ int IOCPKCPClient::SendTo(const char* buf, int len, int flags)
     if (ret < 0)
         return -1;
 
-    // Ö÷¶¯µ÷ÓÃflush£¬¼Ó¿ì·¢ËÍ
+    // ä¸»åŠ¨è°ƒç”¨flushï¼ŒåŠ å¿«å‘é€
     ikcp_flush(kcp_);
     return ret;
 }
 
-// KCP·¢ËÍÊı¾İ»Øµ÷£¬½«KCPÉú³ÉµÄUDP°ü·¢ËÍ³öÈ¥
+// KCPå‘é€æ•°æ®å›è°ƒï¼Œå°†KCPç”Ÿæˆçš„UDPåŒ…å‘é€å‡ºå»
 int IOCPKCPClient::kcpOutput(const char* buf, int len, struct IKCPCB* kcp, void* user)
 {
     IOCPKCPClient* client = reinterpret_cast<IOCPKCPClient*>(user);
@@ -107,12 +107,12 @@ int IOCPKCPClient::kcpOutput(const char* buf, int len, struct IKCPCB* kcp, void*
         return -1;
 }
 
-// ¶ÀÁ¢Ïß³Ì¶¨Ê±µ÷ÓÃikcp_update£¬±£³ÖKCPĞ­ÒéÕı³£¹¤×÷
+// ç‹¬ç«‹çº¿ç¨‹å®šæ—¶è°ƒç”¨ikcp_updateï¼Œä¿æŒKCPåè®®æ­£å¸¸å·¥ä½œ
 void IOCPKCPClient::KCPUpdateLoop()
 {
     while (running_ && !g_bExit) {
         IUINT32 current = GetTickCount64();
         ikcp_update(kcp_, current);
-        std::this_thread::sleep_for(std::chrono::milliseconds(20)); // 20msÖÜÆÚ£¬ÊÓĞèÇóµ÷Õû
+        std::this_thread::sleep_for(std::chrono::milliseconds(20)); // 20mså‘¨æœŸï¼Œè§†éœ€æ±‚è°ƒæ•´
     }
 }

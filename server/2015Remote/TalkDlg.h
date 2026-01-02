@@ -1,18 +1,18 @@
-#pragma once
+ï»¿#pragma once
 #include "IOCPServer.h"
 #include "afxwin.h"
 
-// CTalkDlg ¶Ô»°¿ò
+// CTalkDlg å¯¹è¯æ¡†
 
 class CTalkDlg : public DialogBase
 {
     DECLARE_DYNAMIC(CTalkDlg)
 
 public:
-    CTalkDlg(CWnd* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);   // ±ê×¼¹¹Ôìº¯Êı
+    CTalkDlg(CWnd* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);   // æ ‡å‡†æ„é€ å‡½æ•°
     virtual ~CTalkDlg();
 
-    // ¶Ô»°¿òÊı¾İ
+    // å¯¹è¯æ¡†æ•°æ®
     enum { IDD = IDD_DIALOG_TALK };
 
     void OnReceiveComplete(void)
@@ -20,7 +20,7 @@ public:
     }
 
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æŒ
 
     DECLARE_MESSAGE_MAP()
 public:

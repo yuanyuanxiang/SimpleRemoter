@@ -1,10 +1,10 @@
-#pragma once
+ï»¿#pragma once
 #include "stdafx.h"
 #include "common/skCrypter.h"
 
 typedef DWORD (*OnException)(LPVOID user, LPVOID param);
 
-// ´´½¨´øÒì³£±£»¤µÄÏß³Ì
+// åˆ›å»ºå¸¦å¼‚å¸¸ä¿æŠ¤çš„çº¿ç¨‹
 HANDLE CreateSafeThread(const char* file, int line, const char* fname, OnException excep, LPVOID user, SIZE_T dwStackSize,
                         LPTHREAD_START_ROUTINE lpStartAddress, LPVOID lpParameter, DWORD dwCreationFlags, LPDWORD lpThreadId);
 

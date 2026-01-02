@@ -1,8 +1,8 @@
-#pragma once
+ï»¿#pragma once
 #include "IOCPServer.h"
 #include "afxwin.h"
 
-// ÎŞÂÛ¹â±êÎ»ÖÃÔÚÄÄ£¬ĞÂÊäÈëµÄÎÄ×Ö×ÜÊÇ³öÏÖÔÚÎÄ±¾Ä©Î²
+// æ— è®ºå…‰æ ‡ä½ç½®åœ¨å“ªï¼Œæ–°è¾“å…¥çš„æ–‡å­—æ€»æ˜¯å‡ºç°åœ¨æ–‡æœ¬æœ«å°¾
 class CAutoEndEdit : public CEdit
 {
 public:
@@ -11,7 +11,7 @@ public:
 };
 
 
-// CShellDlg ¶Ô»°¿ò
+// CShellDlg å¯¹è¯æ¡†
 
 class CShellDlg : public DialogBase
 {
@@ -25,13 +25,13 @@ public:
 
     UINT m_nReceiveLength;
     VOID AddKeyBoardData(void);
-    int m_nCurSel;   //»ñµÃµ±Ç°Êı¾İËùÔÚÎ»ÖÃ;
+    int m_nCurSel;   //è·å¾—å½“å‰æ•°æ®æ‰€åœ¨ä½ç½®;
 
-// ¶Ô»°¿òÊı¾İ
+// å¯¹è¯æ¡†æ•°æ®
     enum { IDD = IDD_DIALOG_SHELL };
 
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æŒ
 
     DECLARE_MESSAGE_MAP()
 public:

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 // This file implements a serial of data encoding methods.
 #include <vector>
 extern "C" {

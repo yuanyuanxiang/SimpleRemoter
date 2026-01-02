@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   A definition of ExportsMapper class. Creates a lookup of all the exported functions from the supplied DLLs. Allows to associate an address with a corresponding function.
 */

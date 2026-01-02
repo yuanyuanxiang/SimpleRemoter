@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "stdafx.h"
 #include "ProxyConnectServer.h"
 #include "Resource.h"
@@ -30,7 +30,7 @@ typedef struct {
     BYTE szIP;
 } Socks5Info;
 
-// ´úÀí²âÊÔ: curl --socks5 127.0.0.1:5543 https://www.example.com
+// ä»£ç†æµ‹è¯•: curl --socks5 127.0.0.1:5543 https://www.example.com
 class CProxyMapDlg : public DialogBase
 {
 public:

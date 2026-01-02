@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Functions related to finding a base to which the module was relocated.
 */

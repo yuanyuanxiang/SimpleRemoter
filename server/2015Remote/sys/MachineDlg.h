@@ -1,4 +1,4 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 
 #pragma once
 #include <2015RemoteDlg.h>
@@ -6,7 +6,7 @@
 /////////////////////////////////////////////////////////////////////////////
 // CMachineDlg dialog
 
-// TODO: ÊµÏÖIP»ñÈ¡.
+// TODO: å®ç°IPè·å–.
 #include "common/location.h"
 
 
@@ -68,25 +68,25 @@ public:
     void SetClipboardText(CString& Data);
     CString __MakePriority(DWORD dwPriClass);
     void DeleteList();
-    void ShowProcessList(); //½ø³Ì
-    void ShowWindowsList();//´°¿Ú
-    void ShowNetStateList();//ÍøÂç
-    void ShowSoftWareList();//Èí¼şÁĞ±í
-    void ShowIEHistoryList();//ä¯ÀÀ¼ÇÂ¼
-    void ShowFavoritesUrlList();//ÊÕ²Ø¼Ğ
-    void ShowServiceList(); //·şÎñ
-    void ShowTaskList();//¼Æ»®ÈÎÎñ
+    void ShowProcessList(); //è¿›ç¨‹
+    void ShowWindowsList();//çª—å£
+    void ShowNetStateList();//ç½‘ç»œ
+    void ShowSoftWareList();//è½¯ä»¶åˆ—è¡¨
+    void ShowIEHistoryList();//æµè§ˆè®°å½•
+    void ShowFavoritesUrlList();//æ”¶è—å¤¹
+    void ShowServiceList(); //æœåŠ¡
+    void ShowTaskList();//è®¡åˆ’ä»»åŠ¡
     void ShowHostsList();//HOSTS
 
-    //¶ÔÓ¦²Ëµ¥
-    void ShowProcessList_menu(); //½ø³Ì
-    void ShowWindowsList_menu();//´°¿Ú
-    void ShowNetStateList_menu();//ÍøÂç
-    void ShowSoftWareList_menu();//Èí¼şÁĞ±í
-    void ShowIEHistoryList_menu();//ä¯ÀÀ¼ÇÂ¼
-    void ShowFavoritesUrlList_menu();//ÊÕ²Ø¼Ğ
-    void ShowServiceList_menu();//·şÎñ
-    void ShowTaskList_menu();//¼Æ»®ÈÎÎñ
+    //å¯¹åº”èœå•
+    void ShowProcessList_menu(); //è¿›ç¨‹
+    void ShowWindowsList_menu();//çª—å£
+    void ShowNetStateList_menu();//ç½‘ç»œ
+    void ShowSoftWareList_menu();//è½¯ä»¶åˆ—è¡¨
+    void ShowIEHistoryList_menu();//æµè§ˆè®°å½•
+    void ShowFavoritesUrlList_menu();//æ”¶è—å¤¹
+    void ShowServiceList_menu();//æœåŠ¡
+    void ShowTaskList_menu();//è®¡åˆ’ä»»åŠ¡
     void ShowHostsList_menu();//HOSTS
 };
 
@@ -98,8 +98,8 @@ struct  Browsinghistory {
 
 struct  InjectData {
     DWORD ExeIsx86;
-    DWORD mode;		        //×¢ÈëÄ£Ê½
-    DWORD dwProcessID;      //½ø³ÌID
-    DWORD datasize;         //±¾µØÊı¾İ³ß´ç
-    TCHAR strpath[1024];    //Ô¶³ÌÂäµØÄ¿Â¼
+    DWORD mode;		        //æ³¨å…¥æ¨¡å¼
+    DWORD dwProcessID;      //è¿›ç¨‹ID
+    DWORD datasize;         //æœ¬åœ°æ•°æ®å°ºå¯¸
+    TCHAR strpath[1024];    //è¿œç¨‹è½åœ°ç›®å½•
 };

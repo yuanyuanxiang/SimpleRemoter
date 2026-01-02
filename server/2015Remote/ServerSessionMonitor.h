@@ -1,4 +1,4 @@
-#ifndef SERVER_SESSION_MONITOR_H
+﻿#ifndef SERVER_SESSION_MONITOR_H
 #define SERVER_SESSION_MONITOR_H
 
 #include <windows.h>
@@ -10,21 +10,21 @@ extern "C" {
 
 #pragma comment(lib, "wtsapi32.lib")
 
-// GUI进程信息
+// GUI杩涚▼淇℃伅
 typedef struct ServerAgentProcessInfo {
     DWORD processId;
     DWORD sessionId;
     HANDLE hProcess;
 } ServerAgentProcessInfo;
 
-// GUI进程数组（动态数组）
+// GUI杩涚▼鏁扮粍锛堝姩鎬佹暟缁勶級
 typedef struct ServerAgentProcessArray {
     ServerAgentProcessInfo* items;
     size_t count;
     size_t capacity;
 } ServerAgentProcessArray;
 
-// 会话监控器结构
+// 浼氳瘽鐩戞帶鍣ㄧ粨鏋?
 typedef struct ServerSessionMonitor {
     HANDLE monitorThread;
     BOOL running;
@@ -32,16 +32,16 @@ typedef struct ServerSessionMonitor {
     ServerAgentProcessArray agentProcesses;
 } ServerSessionMonitor;
 
-// 初始化会话监控器
+// 鍒濆鍖栦細璇濈洃鎺у櫒
 void ServerSessionMonitor_Init(ServerSessionMonitor* self);
 
-// 清理会话监控器资源
+// 娓呯悊浼氳瘽鐩戞帶鍣ㄨ祫婧?
 void ServerSessionMonitor_Cleanup(ServerSessionMonitor* self);
 
-// 启动会话监控
+// 鍚姩浼氳瘽鐩戞帶
 BOOL ServerSessionMonitor_Start(ServerSessionMonitor* self);
 
-// 停止会话监控
+// 鍋滄浼氳瘽鐩戞帶
 void ServerSessionMonitor_Stop(ServerSessionMonitor* self);
 
 #ifdef __cplusplus

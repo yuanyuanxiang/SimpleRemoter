@@ -1,25 +1,25 @@
-#pragma once
+ï»¿#pragma once
 
 
-// CTextDlg ¶Ô»°¿ò
+// CTextDlg å¯¹è¯æ¡†
 
 class CTextDlg : public CDialog
 {
     DECLARE_DYNAMIC(CTextDlg)
 
 public:
-    CTextDlg(CWnd* pParent = nullptr);   // ±ê×¼¹¹Ôìº¯Êı
+    CTextDlg(CWnd* pParent = nullptr);   // æ ‡å‡†æ„é€ å‡½æ•°
     virtual ~CTextDlg();
     CString	oldstr;
     CString nowstr;
     CString cmeline;
-    // ¶Ô»°¿òÊı¾İ
+    // å¯¹è¯æ¡†æ•°æ®
 #ifdef AFX_DESIGN_TIME
     enum { IDD = IDD_TEXT };
 #endif
 
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æŒ
 
     DECLARE_MESSAGE_MAP()
 public:

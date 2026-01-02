@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Functions related to Exceptions Table
 */

