@@ -4278,9 +4278,12 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
             KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
 			// 先判断是否需要处理的热键
 			bool bNeedCheck = false;
-
+			if (wParam == WM_SYSKEYDOWN || wParam == WM_SYSKEYUP) {
+				// 所有系统键都需要检查
+				bNeedCheck = true;
+			}
 			// Win 键 (开始菜单、Win+D/E/R/L 等)
-			if (pKey->vkCode == VK_LWIN || pKey->vkCode == VK_RWIN) {
+			else if (pKey->vkCode == VK_LWIN || pKey->vkCode == VK_RWIN) {
 				bNeedCheck = true;
 			}
 			// Alt+Tab (切换窗口)
@@ -4302,7 +4305,7 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
 				bNeedCheck = true;
 			}
 			// F12 (调试器热键)
-			else if (pKey->vkCode == VK_F12) {
+			else if (pKey->vkCode == VK_F12 || pKey->vkCode == VK_F10) {
 				bNeedCheck = true;
 			}
 			// Print Screen (截图)
@@ -4376,6 +4379,7 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                             auto md5 = CalcMD5FromBytes((BYTE*)str.data(), str.size());
                             g_2015RemoteDlg->m_CmdList.PutCmd(md5);
                             dlg->m_ContextObject->Send2Client(szBuffer, 81 + str.size());
+                            SAFE_DELETE_ARRAY(szBuffer);
                             Mprintf("【Ctrl+V】 从本地拷贝文件到远程: %s \n", md5.c_str());
                         } else {
                             CString strText = GetClipboardText();
