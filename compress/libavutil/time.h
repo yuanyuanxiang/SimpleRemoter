@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2000-2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.

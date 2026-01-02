@@ -1,4 +1,4 @@
-#if !defined(AFX_FILEMANAGERDLG_H__4918F922_13A4_4389_8027_5D4993A6DB91__INCLUDED_)
+ï»¿#if !defined(AFX_FILEMANAGERDLG_H__4918F922_13A4_4389_8027_5D4993A6DB91__INCLUDED_)
 #define AFX_FILEMANAGERDLG_H__4918F922_13A4_4389_8027_5D4993A6DB91__INCLUDED_
 #include "TrueColorToolBar.h"	// Added by ClassView
 #if _MSC_VER > 1000
@@ -27,7 +27,7 @@ typedef struct {
 
 #define MAKEINT64(low, high) ((unsigned __int64)(((DWORD)(low)) | ((unsigned __int64)((DWORD)(high))) << 32))
 
-#define	MAX_WRITE_RETRY			15 // ÖØÊÔĞ´ÈëÎÄ¼ş´ÎÊı
+#define	MAX_WRITE_RETRY			15 // é‡è¯•å†™å…¥æ–‡ä»¶æ¬¡æ•°
 
 #define WM_MY_MESSAGE (WM_USER+300)
 
@@ -41,7 +41,7 @@ typedef CList<CString, CString&> strList;
 class CFileManagerDlg : public DialogBase
 {
 protected:
-    // ¸üĞÂ×´Ì¬À¸ĞÅÏ¢
+    // æ›´æ–°çŠ¶æ€æ ä¿¡æ¯
     afx_msg LRESULT OnMyMessage(WPARAM wParam, LPARAM lParam)
     {
         char *buff = (char*)lParam;
@@ -63,9 +63,9 @@ public:
     void SendException();
     void EndLocalRecvFile();
     void EndRemoteDeleteFile();
-    CString m_strOperatingFile; // ÎÄ¼şÃû
-    __int64 m_nOperatingFileLength; // ÎÄ¼ş×Ü´óĞ¡
-    __int64	m_nCounter;// ¼ÆÊıÆ÷
+    CString m_strOperatingFile; // æ–‡ä»¶å
+    __int64 m_nOperatingFileLength; // æ–‡ä»¶æ€»å¤§å°
+    __int64	m_nCounter;// è®¡æ•°å™¨
     void WriteLocalRecvFile();
     void CreateLocalRecvFile();
     BOOL SendDownloadJob();
@@ -84,7 +84,7 @@ public:
     CString GetParentDirectory(CString strPath);
     void OnReceiveComplete();
 
-    int m_nNewIconBaseIndex; // ĞÂ¼ÓµÄICON
+    int m_nNewIconBaseIndex; // æ–°åŠ çš„ICON
 
     CProgressCtrl* m_ProgressCtrl;
     HCURSOR m_hCursor;
@@ -195,7 +195,7 @@ protected:
 
     void DropItemOnList(CListCtrl* pDragList, CListCtrl* pDropList);
 private:
-    bool m_bIsUpload; // ÊÇ·ñÊÇ°Ñ±¾µØÖ÷»ú´«µ½Ô¶³ÌÉÏ£¬±êÖ¾·½ÏòÎ»
+    bool m_bIsUpload; // æ˜¯å¦æ˜¯æŠŠæœ¬åœ°ä¸»æœºä¼ åˆ°è¿œç¨‹ä¸Šï¼Œæ ‡å¿—æ–¹å‘ä½
     bool MakeSureDirectoryPathExists(LPCTSTR pszDirPath);
     void SendTransferMode();
     void SendFileData();

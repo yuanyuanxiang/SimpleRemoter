@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Miscellaneous utility functions.
 */

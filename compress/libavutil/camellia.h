@@ -1,4 +1,4 @@
-/*
+﻿/*
  * An implementation of the CAMELLIA algorithm as mentioned in RFC3713
  * Copyright (c) 2014 Supraja Meedinti
  *

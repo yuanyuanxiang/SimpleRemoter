@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <string>
 #include <vector>
 #include <common/commands.h>
@@ -8,7 +8,7 @@ std::string GetIPAddress(const char* hostName);
 class DomainPool
 {
 private:
-    char Address[100]; // ´Ë³¤¶ÈºÍCONNECT_ADDRESS¶¨ÒåÆ¥Åä
+    char Address[100]; // æ­¤é•¿åº¦å’ŒCONNECT_ADDRESSå®šä¹‰åŒ¹é…
     std::vector<std::string> IPList;
 public:
     DomainPool()

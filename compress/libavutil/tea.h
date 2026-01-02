@@ -1,4 +1,4 @@
-/*
+﻿/*
  * A 32-bit implementation of the TEA algorithm
  * Copyright (c) 2015 Vesselin Bontchev
  *

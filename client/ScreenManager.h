@@ -1,4 +1,4 @@
-// ScreenManager.h: interface for the CScreenManager class.
+ï»¿// ScreenManager.h: interface for the CScreenManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -65,8 +65,8 @@ public:
         static BOOL is_run_as_system = IsRunningAsSystem();
         return is_run_as_system;
     }
-    // »ñÈ¡µ±Ç°»î¶¯×ÀÃæ£¨´øĞ´È¨ÏŞ£¬ÓÃÓÚËøÆÁµÈ°²È«×ÀÃæ£©
-    // Ê¹ÓÃ¶ÀÁ¢µÄ¾²Ì¬±äÁ¿±ÜÃâÓëWorkThreadProcµÄg_hDesk²¢·¢³åÍ»
+    // è·å–å½“å‰æ´»åŠ¨æ¡Œé¢ï¼ˆå¸¦å†™æƒé™ï¼Œç”¨äºé”å±ç­‰å®‰å…¨æ¡Œé¢ï¼‰
+    // ä½¿ç”¨ç‹¬ç«‹çš„é™æ€å˜é‡é¿å…ä¸WorkThreadProcçš„g_hDeskå¹¶å‘å†²çª
     HDESK s_inputDesk = NULL;
     clock_t s_lastCheck = 0;
     DWORD s_lastThreadId = 0;
@@ -76,16 +76,16 @@ public:
     uint64_t            m_DlgID = 0;
     BOOL                m_SendFirst = FALSE;
     int                 m_nMaxFPS = 20;
-    // ĞéÄâ×ÀÃæ
+    // è™šæ‹Ÿæ¡Œé¢
     BOOL                m_virtual;
     POINT               m_point;
     POINT               m_lastPoint;
     BOOL                m_lmouseDown;
     HWND                m_hResMoveWindow;
     LRESULT             m_resMoveType;
-    BOOL				m_rmouseDown;      // ±ê¼ÇÓÒ¼üÊÇ·ñ°´ÏÂ
-    POINT				m_rclickPoint;     // ÓÒ¼üµã»÷×ø±ê
-    HWND				m_rclickWnd;	   // ÓÒ¼ü´°¿Ú
+    BOOL				m_rmouseDown;      // æ ‡è®°å³é”®æ˜¯å¦æŒ‰ä¸‹
+    POINT				m_rclickPoint;     // å³é”®ç‚¹å‡»åæ ‡
+    HWND				m_rclickWnd;	   // å³é”®çª—å£
 };
 
 #endif // !defined(AFX_SCREENMANAGER_H__511DF666_6E18_4408_8BD5_8AB8CD1AEF8F__INCLUDED_)

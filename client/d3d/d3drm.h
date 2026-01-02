@@ -1,4 +1,4 @@
-/* $Revision: 1.2 $ */
+﻿/* $Revision: 1.2 $ */
 #ifndef	_LCC__D3DRM_H__
 #define	_LCC__D3DRM_H__
 #include	"ddraw.h"

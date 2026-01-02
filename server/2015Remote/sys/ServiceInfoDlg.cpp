@@ -1,4 +1,4 @@
-#include "stdafx.h"
+Ôªø#include "stdafx.h"
 #include "2015Remote.h"
 #include "ServiceInfoDlg.h"
 
@@ -43,9 +43,9 @@ BOOL CServiceInfoDlg::OnInitDialog()
     SetIcon(m_hIcon, FALSE);		// Set small icon
 
     // TODO: Add extra initialization here
-    m_combox_runway.InsertString(0, _T("◊‘∂Ø")); // 0
-    m_combox_runway.InsertString(1, _T(" ÷∂Ø")); // 1
-    m_combox_runway.InsertString(2, _T("“—Ω˚”√")); // 2
+    m_combox_runway.InsertString(0, _T("Ëá™Âä®")); // 0
+    m_combox_runway.InsertString(1, _T("ÊâãÂä®")); // 1
+    m_combox_runway.InsertString(2, _T("Â∑≤Á¶ÅÁî®")); // 2
 
     SetDlgItemText(IDC_EDIT_SERNAME, m_ServiceInfo.strSerName);
     SetDlgItemText(IDC_EDIT_SERDISPLAYNAME, m_ServiceInfo.strSerDisPlayname);

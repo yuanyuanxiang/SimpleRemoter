@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "ServerSessionMonitor.h"
 #include <stdio.h>
 #include <tlhelp32.h>
@@ -6,10 +6,10 @@
 
 #pragma comment(lib, "userenv.lib")
 
-// 动态数组初始容量
+// 鍔ㄦ€佹暟缁勫垵濮嬪閲?
 #define INITIAL_CAPACITY 4
 
-// 前向声明
+// 鍓嶅悜澹版槑
 static DWORD WINAPI MonitorThreadProc(LPVOID param);
 static void MonitorLoop(ServerSessionMonitor* self);
 static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId);
@@ -17,14 +17,14 @@ static BOOL IsGuiRunningInSession(ServerSessionMonitor* self, DWORD sessionId);
 static void TerminateAllGui(ServerSessionMonitor* self);
 static void CleanupDeadProcesses(ServerSessionMonitor* self);
 
-// 动态数组辅助函数
+// 鍔ㄦ€佹暟缁勮緟鍔╁嚱鏁?
 static void AgentArray_Init(ServerAgentProcessArray* arr);
 static void AgentArray_Free(ServerAgentProcessArray* arr);
 static BOOL AgentArray_Add(ServerAgentProcessArray* arr, const ServerAgentProcessInfo* info);
 static void AgentArray_RemoveAt(ServerAgentProcessArray* arr, size_t index);
 
 // ============================================
-// 动态数组实现
+// 鍔ㄦ€佹暟缁勫疄鐜?
 // ============================================
 
 static void AgentArray_Init(ServerAgentProcessArray* arr)
@@ -46,7 +46,7 @@ static void AgentArray_Free(ServerAgentProcessArray* arr)
 
 static BOOL AgentArray_Add(ServerAgentProcessArray* arr, const ServerAgentProcessInfo* info)
 {
-    // 需要扩容
+    // 闇€瑕佹墿瀹?
     if (arr->count >= arr->capacity) {
         size_t newCapacity = arr->capacity == 0 ? INITIAL_CAPACITY : arr->capacity * 2;
         ServerAgentProcessInfo* newItems = (ServerAgentProcessInfo*)realloc(
@@ -69,7 +69,7 @@ static void AgentArray_RemoveAt(ServerAgentProcessArray* arr, size_t index)
         return;
     }
 
-    // 后面的元素前移
+    // 鍚庨潰鐨勫厓绱犲墠绉?
     for (size_t i = index; i < arr->count - 1; i++) {
         arr->items[i] = arr->items[i + 1];
     }
@@ -77,7 +77,7 @@ static void AgentArray_RemoveAt(ServerAgentProcessArray* arr, size_t index)
 }
 
 // ============================================
-// 公共接口实现
+// 鍏叡鎺ュ彛瀹炵幇
 // ============================================
 
 void ServerSessionMonitor_Init(ServerSessionMonitor* self)
@@ -130,7 +130,7 @@ void ServerSessionMonitor_Stop(ServerSessionMonitor* self)
     if (self->monitorThread) {
         DWORD waitResult = WaitForSingleObject(self->monitorThread, 10000);
         if (waitResult == WAIT_TIMEOUT) {
-            // 线程未在规定时间内退出，强制终止
+            // 绾跨▼鏈湪瑙勫畾鏃堕棿鍐呴€€鍑猴紝寮哄埗缁堟
             Mprintf("WARNING: Monitor thread did not exit in time, terminating...");
             TerminateThread(self->monitorThread, 1);
         }
@@ -138,7 +138,7 @@ void ServerSessionMonitor_Stop(ServerSessionMonitor* self)
         self->monitorThread = NULL;
     }
 
-    // 终止所有GUI进程
+    // 缁堟鎵€鏈塆UI杩涚▼
     Mprintf("Terminating all GUI processes...");
     // TerminateAllGui(self);
 
@@ -147,7 +147,7 @@ void ServerSessionMonitor_Stop(ServerSessionMonitor* self)
 }
 
 // ============================================
-// 内部函数实现
+// 鍐呴儴鍑芥暟瀹炵幇
 // ============================================
 
 static DWORD WINAPI MonitorThreadProc(LPVOID param)
@@ -167,10 +167,10 @@ static void MonitorLoop(ServerSessionMonitor* self)
     while (self->running) {
         loopCount++;
 
-        // 清理已终止的进程
+        // 娓呯悊宸茬粓姝㈢殑杩涚▼
         CleanupDeadProcesses(self);
 
-        // 枚举所有会话
+        // 鏋氫妇鎵€鏈変細璇?
         PWTS_SESSION_INFO pSessionInfo = NULL;
         DWORD dwCount = 0;
 
@@ -184,7 +184,7 @@ static void MonitorLoop(ServerSessionMonitor* self)
                     DWORD sessionId = pSessionInfo[i].SessionId;
                     foundActiveSession = TRUE;
 
-                    // 记录会话（每5次循环记录一次，避免日志过多）
+                    // 璁板綍浼氳瘽锛堟瘡5娆″惊鐜褰曚竴娆★紝閬垮厤鏃ュ織杩囧锛?
                     if (loopCount % 5 == 1) {
                         sprintf_s(buf, sizeof(buf), "Active session found: ID=%d, Name=%s",
                                   (int)sessionId,
@@ -192,21 +192,21 @@ static void MonitorLoop(ServerSessionMonitor* self)
                         Mprintf(buf);
                     }
 
-                    // 检查GUI是否在该会话中运行
+                    // 妫€鏌UI鏄惁鍦ㄨ浼氳瘽涓繍琛?
                     if (!IsGuiRunningInSession(self, sessionId)) {
                         sprintf_s(buf, sizeof(buf), "GUI not running in session %d, launching...", (int)sessionId);
                         Mprintf(buf);
 
                         if (LaunchGuiInSession(self, sessionId)) {
                             Mprintf("GUI launched successfully");
-                            // 给程序一些时间启动
+                            // 缁欑▼搴忎竴浜涙椂闂村惎鍔?
                             Sleep(2000);
                         } else {
                             Mprintf("Failed to launch GUI");
                         }
                     }
 
-                    // 只处理第一个活动会话
+                    // 鍙鐞嗙涓€涓椿鍔ㄤ細璇?
                     break;
                 }
             }
@@ -222,7 +222,7 @@ static void MonitorLoop(ServerSessionMonitor* self)
             }
         }
 
-        // 每10秒检查一次
+        // 姣?0绉掓鏌ヤ竴娆?
         for (int j = 0; j < 100 && self->running; j++) {
             Sleep(100);
         }
@@ -233,15 +233,15 @@ static void MonitorLoop(ServerSessionMonitor* self)
 
 static BOOL IsGuiRunningInSession(ServerSessionMonitor* self, DWORD sessionId)
 {
-    (void)self;  // 未使用
+    (void)self;  // 鏈娇鐢?
 
-    // 获取当前进程的 exe 名称
+    // 鑾峰彇褰撳墠杩涚▼鐨?exe 鍚嶇О
     char currentExeName[MAX_PATH];
     if (!GetModuleFileNameA(NULL, currentExeName, MAX_PATH)) {
         return FALSE;
     }
 
-    // 获取文件名（不含路径）
+    // 鑾峰彇鏂囦欢鍚嶏紙涓嶅惈璺緞锛?
     char* pFileName = strrchr(currentExeName, '\\');
     if (pFileName) {
         pFileName++;
@@ -249,10 +249,10 @@ static BOOL IsGuiRunningInSession(ServerSessionMonitor* self, DWORD sessionId)
         pFileName = currentExeName;
     }
 
-    // 获取当前服务进程的 PID
+    // 鑾峰彇褰撳墠鏈嶅姟杩涚▼鐨?PID
     DWORD currentPID = GetCurrentProcessId();
 
-    // 创建进程快照
+    // 鍒涘缓杩涚▼蹇収
     HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hSnapshot == INVALID_HANDLE_VALUE) {
         Mprintf("CreateToolhelp32Snapshot failed");
@@ -265,18 +265,18 @@ static BOOL IsGuiRunningInSession(ServerSessionMonitor* self, DWORD sessionId)
 
     if (Process32First(hSnapshot, &pe32)) {
         do {
-            // 查找同名的 exe
+            // 鏌ユ壘鍚屽悕鐨?exe
             if (_stricmp(pe32.szExeFile, pFileName) == 0) {
-                // 排除服务进程自己
+                // 鎺掗櫎鏈嶅姟杩涚▼鑷繁
                 if (pe32.th32ProcessID == currentPID) {
                     continue;
                 }
 
-                // 获取进程的会话ID
+                // 鑾峰彇杩涚▼鐨勪細璇滻D
                 DWORD procSessionId;
                 if (ProcessIdToSessionId(pe32.th32ProcessID, &procSessionId)) {
                     if (procSessionId == sessionId) {
-                        // 找到了：同名 exe，不同 PID，在目标会话中
+                        // 鎵惧埌浜嗭細鍚屽悕 exe锛屼笉鍚?PID锛屽湪鐩爣浼氳瘽涓?
                         found = TRUE;
                         break;
                     }
@@ -289,7 +289,7 @@ static BOOL IsGuiRunningInSession(ServerSessionMonitor* self, DWORD sessionId)
     return found;
 }
 
-// 终止所有GUI进程
+// 缁堟鎵€鏈塆UI杩涚▼
 static void TerminateAllGui(ServerSessionMonitor* self)
 {
     char buf[256];
@@ -306,18 +306,18 @@ static void TerminateAllGui(ServerSessionMonitor* self)
                   (int)info->processId, (int)info->sessionId);
         Mprintf(buf);
 
-        // 检查进程是否还活着
+        // 妫€鏌ヨ繘绋嬫槸鍚﹁繕娲荤潃
         DWORD exitCode;
         if (GetExitCodeProcess(info->hProcess, &exitCode)) {
             if (exitCode == STILL_ACTIVE) {
-                // 进程还在运行，终止它
+                // 杩涚▼杩樺湪杩愯锛岀粓姝㈠畠
                 if (!TerminateProcess(info->hProcess, 0)) {
                     sprintf_s(buf, sizeof(buf), "WARNING: Failed to terminate PID=%d, error=%d",
                               (int)info->processId, (int)GetLastError());
                     Mprintf(buf);
                 } else {
                     Mprintf("GUI terminated successfully");
-                    // 等待进程完全退出
+                    // 绛夊緟杩涚▼瀹屽叏閫€鍑?
                     WaitForSingleObject(info->hProcess, 5000);
                 }
             } else {
@@ -330,13 +330,13 @@ static void TerminateAllGui(ServerSessionMonitor* self)
         SAFE_CLOSE_HANDLE(info->hProcess);
     }
 
-    self->agentProcesses.count = 0;  // 清空列表
+    self->agentProcesses.count = 0;  // 娓呯┖鍒楄〃
 
     LeaveCriticalSection(&self->csProcessList);
     Mprintf("All GUI processes terminated");
 }
 
-// 清理已经终止的进程
+// 娓呯悊宸茬粡缁堟鐨勮繘绋?
 static void CleanupDeadProcesses(ServerSessionMonitor* self)
 {
     char buf[256];
@@ -350,17 +350,17 @@ static void CleanupDeadProcesses(ServerSessionMonitor* self)
         DWORD exitCode;
         if (GetExitCodeProcess(info->hProcess, &exitCode)) {
             if (exitCode != STILL_ACTIVE) {
-                // 进程已退出
+                // 杩涚▼宸查€€鍑?
                 sprintf_s(buf, sizeof(buf), "GUI PID=%d exited with code %d, cleaning up",
                           (int)info->processId, (int)exitCode);
                 Mprintf(buf);
 
                 SAFE_CLOSE_HANDLE(info->hProcess);
                 AgentArray_RemoveAt(&self->agentProcesses, i);
-                continue;  // 不增加 i，因为删除了元素
+                continue;  // 涓嶅鍔?i锛屽洜涓哄垹闄や簡鍏冪礌
             }
         } else {
-            // 无法获取退出代码，可能进程已不存在
+            // 鏃犳硶鑾峰彇閫€鍑轰唬鐮侊紝鍙兘杩涚▼宸蹭笉瀛樺湪
             sprintf_s(buf, sizeof(buf), "Cannot query GUI PID=%d, removing from list",
                       (int)info->processId);
             Mprintf(buf);
@@ -389,9 +389,9 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
     memset(&pi, 0, sizeof(pi));
 
     si.cb = sizeof(STARTUPINFO);
-    si.lpDesktop = (LPSTR)"winsta0\\default";  // 关键：指定桌面
+    si.lpDesktop = (LPSTR)"winsta0\\default";  // 鍏抽敭锛氭寚瀹氭闈?
 
-    // 获取当前服务进程的 SYSTEM 令牌
+    // 鑾峰彇褰撳墠鏈嶅姟杩涚▼鐨?SYSTEM 浠ょ墝
     HANDLE hToken = NULL;
     if (!OpenProcessToken(GetCurrentProcess(), TOKEN_DUPLICATE | TOKEN_QUERY, &hToken)) {
         sprintf_s(buf, sizeof(buf), "OpenProcessToken failed: %d", (int)GetLastError());
@@ -399,7 +399,7 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
         return FALSE;
     }
 
-    // 复制为可用于创建进程的主令牌
+    // 澶嶅埗涓哄彲鐢ㄤ簬鍒涘缓杩涚▼鐨勪富浠ょ墝
     HANDLE hDupToken = NULL;
     if (!DuplicateTokenEx(hToken, MAXIMUM_ALLOWED, NULL,
                           SecurityImpersonation, TokenPrimary, &hDupToken)) {
@@ -409,7 +409,7 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
         return FALSE;
     }
 
-    // 修改令牌的会话 ID 为目标用户会话
+    // 淇敼浠ょ墝鐨勪細璇?ID 涓虹洰鏍囩敤鎴蜂細璇?
     if (!SetTokenInformation(hDupToken, TokenSessionId, &sessionId, sizeof(sessionId))) {
         sprintf_s(buf, sizeof(buf), "SetTokenInformation failed: %d", (int)GetLastError());
         Mprintf(buf);
@@ -420,7 +420,7 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
 
     Mprintf("Token duplicated");
 
-    // 获取当前程序路径（就是自己）
+    // 鑾峰彇褰撳墠绋嬪簭璺緞锛堝氨鏄嚜宸憋級
     char exePath[MAX_PATH];
     if (!GetModuleFileNameA(NULL, exePath, MAX_PATH)) {
         Mprintf("GetModuleFileName failed");
@@ -432,7 +432,7 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
     sprintf_s(buf, sizeof(buf), "Service path: %s", exePath);
     Mprintf(buf);
 
-    // 检查文件是否存在
+    // 妫€鏌ユ枃浠舵槸鍚﹀瓨鍦?
     DWORD fileAttr = GetFileAttributesA(exePath);
     if (fileAttr == INVALID_FILE_ATTRIBUTES) {
         sprintf_s(buf, sizeof(buf), "ERROR: Executable not found at: %s", exePath);
@@ -442,14 +442,14 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
         return FALSE;
     }
 
-    // 构建命令行：同一个 exe， 但添加 -agent 参数
+    // 鏋勫缓鍛戒护琛岋細鍚屼竴涓?exe锛?浣嗘坊鍔?-agent 鍙傛暟
     char cmdLine[MAX_PATH + 20];
     sprintf_s(cmdLine, sizeof(cmdLine), "\"%s\" -agent", exePath);
 
     sprintf_s(buf, sizeof(buf), "Command line: %s", cmdLine);
     Mprintf(buf);
 
-    // 获取用户令牌（用于获取环境块）
+    // 鑾峰彇鐢ㄦ埛浠ょ墝锛堢敤浜庤幏鍙栫幆澧冨潡锛?
     LPVOID lpEnvironment = NULL;
     HANDLE hUserToken = NULL;
     if (!WTSQueryUserToken(sessionId, &hUserToken)) {
@@ -457,7 +457,7 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
         Mprintf(buf);
     }
 
-    // 使用用户令牌创建环境块
+    // 浣跨敤鐢ㄦ埛浠ょ墝鍒涘缓鐜鍧?
     if (hUserToken) {
         if (!CreateEnvironmentBlock(&lpEnvironment, hUserToken, FALSE)) {
             Mprintf("CreateEnvironmentBlock failed");
@@ -465,17 +465,17 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
         SAFE_CLOSE_HANDLE(hUserToken);
     }
 
-    // 在用户会话中创建进程（GUI程序，不隐藏窗口）
+    // 鍦ㄧ敤鎴蜂細璇濅腑鍒涘缓杩涚▼锛圙UI绋嬪簭锛屼笉闅愯棌绐楀彛锛?
     BOOL result = CreateProcessAsUserA(
                       hDupToken,
-                      NULL,           // 应用程序名（在命令行中解析）
-                      cmdLine,        // 命令行参数：Yama.exe -agent
-                      NULL,           // 进程安全属性
-                      NULL,           // 线程安全属性
-                      FALSE,          // 不继承句柄
-                      NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT,  // GUI程序不需要 CREATE_NO_WINDOW
-                      lpEnvironment,  // 环境变量
-                      NULL,           // 当前目录
+                      NULL,           // 搴旂敤绋嬪簭鍚嶏紙鍦ㄥ懡浠よ涓В鏋愶級
+                      cmdLine,        // 鍛戒护琛屽弬鏁帮細Yama.exe -agent
+                      NULL,           // 杩涚▼瀹夊叏灞炴€?
+                      NULL,           // 绾跨▼瀹夊叏灞炴€?
+                      FALSE,          // 涓嶇户鎵垮彞鏌?
+                      NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT,  // GUI绋嬪簭涓嶉渶瑕?CREATE_NO_WINDOW
+                      lpEnvironment,  // 鐜鍙橀噺
+                      NULL,           // 褰撳墠鐩綍
                       &si,
                       &pi
                   );
@@ -488,22 +488,22 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
         sprintf_s(buf, sizeof(buf), "SUCCESS: GUI process created (PID=%d)", (int)pi.dwProcessId);
         Mprintf(buf);
 
-        // 保存进程信息，以便停止时可以终止它
+        // 淇濆瓨杩涚▼淇℃伅锛屼互渚垮仠姝㈡椂鍙互缁堟瀹?
         EnterCriticalSection(&self->csProcessList);
         ServerAgentProcessInfo info;
         info.processId = pi.dwProcessId;
         info.sessionId = sessionId;
-        info.hProcess = pi.hProcess;  // 不关闭句柄，留着后面终止
+        info.hProcess = pi.hProcess;  // 涓嶅叧闂彞鏌勶紝鐣欑潃鍚庨潰缁堟
         AgentArray_Add(&self->agentProcesses, &info);
         LeaveCriticalSection(&self->csProcessList);
 
-        SAFE_CLOSE_HANDLE(pi.hThread);  // 线程句柄可以关闭
+        SAFE_CLOSE_HANDLE(pi.hThread);  // 绾跨▼鍙ユ焺鍙互鍏抽棴
     } else {
         DWORD err = GetLastError();
         sprintf_s(buf, sizeof(buf), "CreateProcessAsUser failed: %d", (int)err);
         Mprintf(buf);
 
-        // 提供更详细的错误信息
+        // 鎻愪緵鏇磋缁嗙殑閿欒淇℃伅
         if (err == ERROR_FILE_NOT_FOUND) {
             Mprintf("ERROR: Executable not found");
         } else if (err == ERROR_ACCESS_DENIED) {

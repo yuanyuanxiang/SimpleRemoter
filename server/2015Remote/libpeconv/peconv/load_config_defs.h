@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Definitions of various versions of Load Config Directory (new fields added with new versions for Windows).
 */

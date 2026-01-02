@@ -1,4 +1,4 @@
-// EditDialog.cpp : ÊµÏÖÎÄ¼ş
+ï»¿// EditDialog.cpp : å®ç°æ–‡ä»¶
 //
 
 #include "stdafx.h"
@@ -7,7 +7,7 @@
 #include "afxdialogex.h"
 
 
-// CEditDialog ¶Ô»°¿ò
+// CEditDialog å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(CEditDialog, CDialog)
 
@@ -34,17 +34,17 @@ BEGIN_MESSAGE_MAP(CEditDialog, CDialog)
 END_MESSAGE_MAP()
 
 
-// CEditDialog ÏûÏ¢´¦Àí³ÌĞò
+// CEditDialog æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 
 void CEditDialog::OnBnClickedOk()
 {
-    // TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+    // TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
 
     UpdateData(TRUE);
     if (m_EditString.IsEmpty()) {
         MessageBeep(0);
-        return;   //²»¹Ø±Õ¶Ô»°¿ò
+        return;   //ä¸å…³é—­å¯¹è¯æ¡†
     }
     CDialog::OnOK();
 }

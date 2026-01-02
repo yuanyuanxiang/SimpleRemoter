@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Detecting in which mode is the PE in the supplied buffer (i.e. raw, virtual). Analyzes PE features typical for particular modes.
 */

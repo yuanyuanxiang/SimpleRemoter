@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Loading PE from a file with the help of the custom loader.
 */

@@ -1,4 +1,4 @@
-// Clip Library
+﻿// Clip Library
 // Copyright (c) 2015-2024 David Capello
 //
 // This file is released under the terms of the MIT license.

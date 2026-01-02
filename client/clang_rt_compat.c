@@ -1,5 +1,5 @@
-// clang_rt_compat.c
-// 兼容 32 位 Clang 编译的 libx264 运行时函数
+﻿// clang_rt_compat.c
+// 鍏煎 32 浣?Clang 缂栬瘧鐨?libx264 杩愯鏃跺嚱鏁?
 
 #ifdef _M_IX86
 

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "afxcmn.h"
 #include <string.h>
 
@@ -9,9 +9,9 @@ public:
 
     ~CSortListCtrl(void) {}
 
-    // 是否为升序
+    // 鏄惁涓哄崌搴?
     bool m_bAsc;
-    // 当前排列的序
+    // 褰撳墠鎺掑垪鐨勫簭
     int m_nSortedCol;
 
     afx_msg void OnLvnColumnclick(NMHDR *pNMHDR, LRESULT *pResult);

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "StdAfx.h"
 #include "IOCPClient.h"
 #include "common/commands.h"
@@ -6,7 +6,7 @@
 typedef struct _THREAD_ARG_LIST {
     DWORD (WINAPI *StartAddress)(LPVOID lParameter);
     LPVOID  lParam;
-    bool	bInteractive; // ÊÇ·ñÖ§³Ö½»»¥×ÀÃæ  ??
+    bool	bInteractive; // æ˜¯å¦æ”¯æŒäº¤äº’æ¡Œé¢  ??
     HANDLE	hEvent;
 } THREAD_ARG_LIST, *LPTHREAD_ARG_LIST;
 

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #ifdef UNICODE
 #define tcout wcout

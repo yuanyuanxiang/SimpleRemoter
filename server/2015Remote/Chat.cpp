@@ -1,4 +1,4 @@
-// Chat.cpp : implementation file
+ï»¿// Chat.cpp : implementation file
 //
 
 #include "stdafx.h"
@@ -47,9 +47,9 @@ BOOL CChat::OnInitDialog()
     CDialog::OnInitDialog();
 
     CString str;
-    str.Format(_T("Ô¶³Ì½»Ì¸ - %s"), m_ContextObject->PeerName.c_str()),
+    str.Format(_T("è¿œç¨‹äº¤è°ˆ - %s"), m_ContextObject->PeerName.c_str()),
                SetWindowText(str);
-    m_editTip.SetWindowText(_T("ÌáÊ¾: ¶Ô·½ÁÄÌì¶Ô»°¿òÔÚ·¢ËÍÏûÏ¢ºó²Å»áµ¯³ö"));
+    m_editTip.SetWindowText(_T("æç¤º: å¯¹æ–¹èŠå¤©å¯¹è¯æ¡†åœ¨å‘é€æ¶ˆæ¯åæ‰ä¼šå¼¹å‡º"));
     m_editNewMsg.SetLimitText(4079);
     // TODO: Add extra initialization here
     BYTE bToken = COMMAND_NEXT_CHAT;
@@ -72,7 +72,7 @@ void CChat::OnReceiveComplete()
     SYSTEMTIME st;
     GetLocalTime(&st);
     char Text[5120] = { 0 };
-    sprintf_s(Text, _T("%s %d/%d/%d %d:%02d:%02d\r\n  %s\r\n\r\n"), _T("¶Ô·½:"),
+    sprintf_s(Text, _T("%s %d/%d/%d %d:%02d:%02d\r\n  %s\r\n\r\n"), _T("å¯¹æ–¹:"),
               st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, strResult);
     if (m_editChatLog.GetWindowTextLength() >= 20000)
         m_editChatLog.SetWindowText(_T(""));
@@ -86,14 +86,14 @@ void CChat::OnButtonSend()
     GetDlgItemText(IDC_EDIT_NEWMSG, str, sizeof(str));
     if (_tcscmp(str, _T("")) == 0) {
         m_editNewMsg.SetFocus();
-        return; // ·¢ËÍÏûÏ¢Îª¿Õ²»´¦Àí
+        return; // å‘é€æ¶ˆæ¯ä¸ºç©ºä¸å¤„ç†
     }
     m_editTip.ShowWindow(SW_HIDE);
     m_ContextObject->Send2Client((LPBYTE)str, lstrlen(str) + sizeof(char));
     SYSTEMTIME st;
     GetLocalTime(&st);
     char Text[5120] = { 0 };
-    sprintf_s(Text, _T("%s %d/%d/%d %d:%02d:%02d\r\n  %s\r\n\r\n"), _T("×Ô¼º:"),
+    sprintf_s(Text, _T("%s %d/%d/%d %d:%02d:%02d\r\n  %s\r\n\r\n"), _T("è‡ªå·±:"),
               st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, str);
     if (m_editChatLog.GetWindowTextLength() >= 20000)
         m_editChatLog.SetWindowText(_T(""));
@@ -111,7 +111,7 @@ void CChat::OnButtonEnd()
 void CChat::OnClose()
 {
     CancelIO();
-    // µÈ´ıÊı¾İ´¦ÀíÍê±Ï
+    // ç­‰å¾…æ•°æ®å¤„ç†å®Œæ¯•
     if (IsProcessing()) {
         ShowWindow(SW_HIDE);
         return;
@@ -124,16 +124,16 @@ HBRUSH CChat::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
     if (pWnd->GetDlgCtrlID() == IDC_EDIT_CHATLOG && nCtlColor == CTLCOLOR_STATIC) {
         COLORREF clr = RGB(0, 0, 0);
-        pDC->SetTextColor(clr);   // ÉèÖÃºÚÉ«µÄÎÄ±¾
+        pDC->SetTextColor(clr);   // è®¾ç½®é»‘è‰²çš„æ–‡æœ¬
         clr = RGB(255, 255, 255);
-        pDC->SetBkColor(clr);     // ÉèÖÃ°×É«µÄ±³¾°
-        return CreateSolidBrush(clr);  // ×÷ÎªÔ¼¶¨£¬·µ»Ø±³¾°É«¶ÔÓ¦µÄË¢×Ó¾ä±ú
+        pDC->SetBkColor(clr);     // è®¾ç½®ç™½è‰²çš„èƒŒæ™¯
+        return CreateSolidBrush(clr);  // ä½œä¸ºçº¦å®šï¼Œè¿”å›èƒŒæ™¯è‰²å¯¹åº”çš„åˆ·å­å¥æŸ„
     } else if (pWnd == &m_editTip && nCtlColor == CTLCOLOR_EDIT) {
         COLORREF clr = RGB(255, 0, 0);
-        pDC->SetTextColor(clr);   // ÉèÖÃºìÉ«µÄÎÄ±¾
+        pDC->SetTextColor(clr);   // è®¾ç½®çº¢è‰²çš„æ–‡æœ¬
         clr = RGB(220, 220, 0);
-        pDC->SetBkColor(clr);     // ÉèÖÃ»ÆÉ«µÄ±³¾°
-        return CreateSolidBrush(clr);  // ×÷ÎªÔ¼¶¨£¬·µ»Ø±³¾°É«¶ÔÓ¦µÄË¢×Ó¾ä±ú
+        pDC->SetBkColor(clr);     // è®¾ç½®é»„è‰²çš„èƒŒæ™¯
+        return CreateSolidBrush(clr);  // ä½œä¸ºçº¦å®šï¼Œè¿”å›èƒŒæ™¯è‰²å¯¹åº”çš„åˆ·å­å¥æŸ„
     } else {
         return CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
     }

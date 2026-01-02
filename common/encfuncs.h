@@ -1,115 +1,115 @@
-#pragma once
+ï»¿#pragma once
 
 
-// ¼ÓÃÜº¯Êı
+// åŠ å¯†å‡½æ•°
 inline void encrypt_v1(unsigned char* data, size_t length, unsigned char key)
 {
     for (size_t i = 0; i < length; i++) {
         if (i % 2 == 0) {
-            data[i] = data[i] + key;  // Å¼ÊıË÷Òı¼Ó key
+            data[i] = data[i] + key;  // å¶æ•°ç´¢å¼•åŠ  key
         } else {
-            data[i] = data[i] - key;  // ÆæÊıË÷Òı¼õ key
+            data[i] = data[i] - key;  // å¥‡æ•°ç´¢å¼•å‡ key
         }
     }
 }
 
-// ½âÃÜº¯Êı
+// è§£å¯†å‡½æ•°
 inline void decrypt_v1(unsigned char* data, size_t length, unsigned char key)
 {
     for (size_t i = 0; i < length; i++) {
         if (i % 2 == 0) {
-            data[i] = data[i] - key;  // Å¼ÊıË÷Òı¼õ key »¹Ô­
+            data[i] = data[i] - key;  // å¶æ•°ç´¢å¼•å‡ key è¿˜åŸ
         } else {
-            data[i] = data[i] + key;  // ÆæÊıË÷Òı¼Ó key »¹Ô­
+            data[i] = data[i] + key;  // å¥‡æ•°ç´¢å¼•åŠ  key è¿˜åŸ
         }
     }
 }
 
-// ¼ÓÃÜº¯Êı - Ê¹ÓÃÒì»òºÍÎ»Ğı×ª
+// åŠ å¯†å‡½æ•° - ä½¿ç”¨å¼‚æˆ–å’Œä½æ—‹è½¬
 inline void encrypt_v2(unsigned char* data, size_t length, unsigned char key)
 {
     for (size_t i = 0; i < length; i++) {
-        // Å¼ÊıË÷Òı£ºÓëkeyÒì»òºó×óÑ­»·ÒÆÎ»1Î»
-        // ÆæÊıË÷Òı£ºÓëkeyÒì»òºóÓÒÑ­»·ÒÆÎ»1Î»
+        // å¶æ•°ç´¢å¼•ï¼šä¸keyå¼‚æˆ–åå·¦å¾ªç¯ç§»ä½1ä½
+        // å¥‡æ•°ç´¢å¼•ï¼šä¸keyå¼‚æˆ–åå³å¾ªç¯ç§»ä½1ä½
         data[i] ^= key;
         if (i % 2 == 0) {
-            data[i] = (data[i] << 1) | (data[i] >> 7);  // ×óÑ­»·ÒÆÎ»
+            data[i] = (data[i] << 1) | (data[i] >> 7);  // å·¦å¾ªç¯ç§»ä½
         } else {
-            data[i] = (data[i] >> 1) | (data[i] << 7);  // ÓÒÑ­»·ÒÆÎ»
+            data[i] = (data[i] >> 1) | (data[i] << 7);  // å³å¾ªç¯ç§»ä½
         }
     }
 }
 
-// ½âÃÜº¯Êı
+// è§£å¯†å‡½æ•°
 inline void decrypt_v2(unsigned char* data, size_t length, unsigned char key)
 {
     for (size_t i = 0; i < length; i++) {
-        // ¼ÓÃÜµÄÄæ²Ù×÷
+        // åŠ å¯†çš„é€†æ“ä½œ
         if (i % 2 == 0) {
-            data[i] = (data[i] >> 1) | (data[i] << 7);  // ÓÒÑ­»·ÒÆÎ»»¹Ô­
+            data[i] = (data[i] >> 1) | (data[i] << 7);  // å³å¾ªç¯ç§»ä½è¿˜åŸ
         } else {
-            data[i] = (data[i] << 1) | (data[i] >> 7);  // ×óÑ­»·ÒÆÎ»»¹Ô­
+            data[i] = (data[i] << 1) | (data[i] >> 7);  // å·¦å¾ªç¯ç§»ä½è¿˜åŸ
         }
-        data[i] ^= key;  // ÔÙ´ÎÒì»ò»¹Ô­
+        data[i] ^= key;  // å†æ¬¡å¼‚æˆ–è¿˜åŸ
     }
 }
 
-// ¼ÓÃÜº¯Êı V3 - »ùÓÚË÷ÒıºÍkeyµÄ¶¯Ì¬¼ÆËã
+// åŠ å¯†å‡½æ•° V3 - åŸºäºç´¢å¼•å’Œkeyçš„åŠ¨æ€è®¡ç®—
 inline void encrypt_v3(unsigned char* data, size_t length, unsigned char key)
 {
     for (size_t i = 0; i < length; i++) {
-        unsigned char dynamic_key = key + (i % 8);  // ¶¯Ì¬±ä»¯µÄkey£¨»ùÓÚË÷Òı£©
+        unsigned char dynamic_key = key + (i % 8);  // åŠ¨æ€å˜åŒ–çš„keyï¼ˆåŸºäºç´¢å¼•ï¼‰
         if (i % 3 == 0) {
-            data[i] = (data[i] + dynamic_key) ^ dynamic_key;  // ¼Ó·¨ + Òì»ò
+            data[i] = (data[i] + dynamic_key) ^ dynamic_key;  // åŠ æ³• + å¼‚æˆ–
         } else if (i % 3 == 1) {
-            data[i] = (data[i] ^ dynamic_key) - dynamic_key;  // Òì»ò + ¼õ·¨
+            data[i] = (data[i] ^ dynamic_key) - dynamic_key;  // å¼‚æˆ– + å‡æ³•
         } else {
-            data[i] = ~(data[i] + dynamic_key);  // È¡·´ + ¼Ó·¨
+            data[i] = ~(data[i] + dynamic_key);  // å–å + åŠ æ³•
         }
     }
 }
 
-// ½âÃÜº¯Êı V3
+// è§£å¯†å‡½æ•° V3
 inline void decrypt_v3(unsigned char* data, size_t length, unsigned char key)
 {
     for (size_t i = 0; i < length; i++) {
         unsigned char dynamic_key = key + (i % 8);
         if (i % 3 == 0) {
-            data[i] = (data[i] ^ dynamic_key) - dynamic_key;  // Äæ²Ù×÷£ºÏÈÒì»òÔÙ¼õ
+            data[i] = (data[i] ^ dynamic_key) - dynamic_key;  // é€†æ“ä½œï¼šå…ˆå¼‚æˆ–å†å‡
         } else if (i % 3 == 1) {
-            data[i] = (data[i] + dynamic_key) ^ dynamic_key;   // Äæ²Ù×÷£ºÏÈ¼ÓÔÙÒì»ò
+            data[i] = (data[i] + dynamic_key) ^ dynamic_key;   // é€†æ“ä½œï¼šå…ˆåŠ å†å¼‚æˆ–
         } else {
-            data[i] = ~data[i] - dynamic_key;                 // Äæ²Ù×÷£ºÈ¡·´ÔÙ¼õ
+            data[i] = ~data[i] - dynamic_key;                 // é€†æ“ä½œï¼šå–åå†å‡
         }
     }
 }
 
-// ¼ÓÃÜº¯Êı V4 - »ùÓÚÎ±Ëæ»úĞòÁĞ£¨¼òµ¥ÏßĞÔÍ¬ÓàÉú³ÉÆ÷£©
+// åŠ å¯†å‡½æ•° V4 - åŸºäºä¼ªéšæœºåºåˆ—ï¼ˆç®€å•çº¿æ€§åŒä½™ç”Ÿæˆå™¨ï¼‰
 inline void encrypt_v4(unsigned char* data, size_t length, unsigned char key)
 {
     unsigned char rand = key;
     for (size_t i = 0; i < length; i++) {
-        rand = (rand * 13 + 17) % 256;  // Î±Ëæ»úÊıÉú³É£¨LCG£©
-        data[i] ^= rand;                 // ÓÃÎ±Ëæ»úÊıÒì»ò¼ÓÃÜ
+        rand = (rand * 13 + 17) % 256;  // ä¼ªéšæœºæ•°ç”Ÿæˆï¼ˆLCGï¼‰
+        data[i] ^= rand;                 // ç”¨ä¼ªéšæœºæ•°å¼‚æˆ–åŠ å¯†
     }
 }
 
-// ½âÃÜº¯Êı V4£¨Óë¼ÓÃÜÍêÈ«ÏàÍ¬£¬ÒòÎªÒì»òµÄ×Ô·´ĞÔ£©
+// è§£å¯†å‡½æ•° V4ï¼ˆä¸åŠ å¯†å®Œå…¨ç›¸åŒï¼Œå› ä¸ºå¼‚æˆ–çš„è‡ªåæ€§ï¼‰
 inline void decrypt_v4(unsigned char* data, size_t length, unsigned char key)
 {
-    encrypt_v4(data, length, key);  // Òì»ò¼ÓÃÜµÄ½âÃÜ¾ÍÊÇÔÙÖ´ĞĞÒ»´Î
+    encrypt_v4(data, length, key);  // å¼‚æˆ–åŠ å¯†çš„è§£å¯†å°±æ˜¯å†æ‰§è¡Œä¸€æ¬¡
 }
 
-// ¼ÓÃÜº¯Êı V5 - V5 °æ±¾£¨¶¯Ì¬ÃÜÔ¿ÅÉÉú + ¶àÖØÎ»ÔËËã£©
+// åŠ å¯†å‡½æ•° V5 - V5 ç‰ˆæœ¬ï¼ˆåŠ¨æ€å¯†é’¥æ´¾ç”Ÿ + å¤šé‡ä½è¿ç®—ï¼‰
 inline void encrypt_v5(unsigned char* data, size_t length, unsigned char key)
 {
     for (size_t i = 0; i < length; i++) {
-        unsigned char dynamic_key = (key + i) ^ 0x55;  // ¶¯Ì¬ÃÜÔ¿ÅÉÉú
+        unsigned char dynamic_key = (key + i) ^ 0x55;  // åŠ¨æ€å¯†é’¥æ´¾ç”Ÿ
         data[i] = ((data[i] + dynamic_key) ^ (dynamic_key << 3)) + (i % 7);
     }
 }
 
-// ½âÃÜº¯Êı V5
+// è§£å¯†å‡½æ•° V5
 inline void decrypt_v5(unsigned char* data, size_t length, unsigned char key)
 {
     for (size_t i = 0; i < length; i++) {
@@ -118,18 +118,18 @@ inline void decrypt_v5(unsigned char* data, size_t length, unsigned char key)
     }
 }
 
-// ¼ÓÃÜ/½âÃÜº¯Êı V6£¨×Ô·´ĞÔ£© - V6 °æ±¾£¨Î±Ëæ»úÁ÷»ìÏı + ×Ô·´ĞÔ½âÃÜ£©
+// åŠ å¯†/è§£å¯†å‡½æ•° V6ï¼ˆè‡ªåæ€§ï¼‰ - V6 ç‰ˆæœ¬ï¼ˆä¼ªéšæœºæµæ··æ·† + è‡ªåæ€§è§£å¯†ï¼‰
 inline void encrypt_v6(unsigned char* data, size_t length, unsigned char key)
 {
     unsigned char rand = key;
     for (size_t i = 0; i < length; i++) {
-        rand = (rand * 31 + 17) % 256;  // ¼òµ¥Î±Ëæ»úÉú³É
-        data[i] ^= rand + i;            // Òì»ò¶¯Ì¬Öµ
+        rand = (rand * 31 + 17) % 256;  // ç®€å•ä¼ªéšæœºç”Ÿæˆ
+        data[i] ^= rand + i;            // å¼‚æˆ–åŠ¨æ€å€¼
     }
 }
 
-// ½âÃÜº¯Êı V6£¨Ö±½Óµ÷ÓÃ encrypt_v6 ¼´¿É£©
+// è§£å¯†å‡½æ•° V6ï¼ˆç›´æ¥è°ƒç”¨ encrypt_v6 å³å¯ï¼‰
 inline void decrypt_v6(unsigned char* data, size_t length, unsigned char key)
 {
-    encrypt_v6(data, length, key);  // Òì»òµÄ×Ô·´ĞÔ
+    encrypt_v6(data, length, key);  // å¼‚æˆ–çš„è‡ªåæ€§
 }

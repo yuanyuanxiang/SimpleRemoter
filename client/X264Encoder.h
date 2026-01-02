@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 extern "C" {
 #include <libyuv\libyuv.h>
@@ -8,7 +8,7 @@ extern "C" {
 class CX264Encoder
 {
 private:
-    x264_t*	m_pCodec;		//±àÂëÆ÷ÊµÀı
+    x264_t*	m_pCodec;		//ç¼–ç å™¨å®ä¾‹
     x264_picture_t *m_pPicIn;
     x264_picture_t *m_pPicOut;
     x264_param_t    m_Param;

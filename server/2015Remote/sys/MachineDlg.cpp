@@ -1,4 +1,4 @@
-// ServiceDlg.cpp : implementation file
+ï»¿// ServiceDlg.cpp : implementation file
 //
 
 #include "stdafx.h"
@@ -41,8 +41,8 @@ CMachineDlg::~CMachineDlg()
     DeleteList();
 }
 
-// Èç¹ûÓÃ`SortItemsEx`º¯Êı¶ÔÁĞ±íÅÅĞòÔò²»ĞèÒª¶¨ÒåÕâ¸ö½á¹¹Ìå,
-// ´«µİ¸øÅÅĞòº¯ÊıµÄÖµ¾ÍÊÇĞĞºÅ.
+// å¦‚æœç”¨`SortItemsEx`å‡½æ•°å¯¹åˆ—è¡¨æ’åºåˆ™ä¸éœ€è¦å®šä¹‰è¿™ä¸ªç»“æ„ä½“,
+// ä¼ é€’ç»™æ’åºå‡½æ•°çš„å€¼å°±æ˜¯è¡Œå·.
 class ListItem
 {
 public:
@@ -72,7 +72,7 @@ int CALLBACK CMachineDlg::CompareFunction(LPARAM lParam1, LPARAM lParam2, LPARAM
     auto* pSortInfo = reinterpret_cast<std::pair<int, bool>*>(lParamSort);
     int nColumn = pSortInfo->first;
     bool bAscending = pSortInfo->second;
-    // ÅÅĞò
+    // æ’åº
     ListItem* it1 = (ListItem*)lParam1, * it2 = (ListItem*)lParam2;
     if (it1 == NULL || it2 == NULL) return 0;
     int n = it1->data[nColumn].Compare(it2->data[nColumn]);
@@ -132,7 +132,7 @@ BOOL CMachineDlg::OnInitDialog()
 
     // TODO: Add extra initialization here
     CString str;
-    str.Format(_T("Ö÷»ú¹ÜÀí - %s"), m_ContextObject->PeerName.c_str());
+    str.Format(_T("ä¸»æœºç®¡ç† - %s"), m_ContextObject->PeerName.c_str());
     SetWindowText(str);
 
     m_tab.SetPadding(CSize(6, 3));
@@ -140,15 +140,15 @@ BOOL CMachineDlg::OnInitDialog()
     m_list.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_UNDERLINEHOT | LVS_EX_SUBITEMIMAGES | LVS_EX_GRIDLINES | LVS_EX_INFOTIP);
 
     int i = 0;
-    m_tab.InsertItem(i++, _T("½ø³Ì¹ÜÀí"));
-    m_tab.InsertItem(i++, _T("´°¿Ú¹ÜÀí"));
-    m_tab.InsertItem(i++, _T("ÍøÂçÁ¬½Ó"));
-    m_tab.InsertItem(i++, _T("Èí¼şĞÅÏ¢"));
-    m_tab.InsertItem(i++, _T("ä¯ÀÀ¼ÇÂ¼"));
-    m_tab.InsertItem(i++, _T("ÊÕ ²Ø ¼Ğ"));
-    m_tab.InsertItem(i++, _T("WIN32·şÎñ"));
-    m_tab.InsertItem(i++, _T("Çı¶¯·şÎñ"));
-    m_tab.InsertItem(i++, _T("¼Æ»®ÈÎÎñ"));
+    m_tab.InsertItem(i++, _T("è¿›ç¨‹ç®¡ç†"));
+    m_tab.InsertItem(i++, _T("çª—å£ç®¡ç†"));
+    m_tab.InsertItem(i++, _T("ç½‘ç»œè¿æ¥"));
+    m_tab.InsertItem(i++, _T("è½¯ä»¶ä¿¡æ¯"));
+    m_tab.InsertItem(i++, _T("æµè§ˆè®°å½•"));
+    m_tab.InsertItem(i++, _T("æ”¶ è— å¤¹"));
+    m_tab.InsertItem(i++, _T("WIN32æœåŠ¡"));
+    m_tab.InsertItem(i++, _T("é©±åŠ¨æœåŠ¡"));
+    m_tab.InsertItem(i++, _T("è®¡åˆ’ä»»åŠ¡"));
     m_tab.InsertItem(i++, _T("HOSTS"));
 
     if (!m_wndStatusBar.Create(this) ||
@@ -161,8 +161,8 @@ BOOL CMachineDlg::OnInitDialog()
     m_wndStatusBar.SetPaneInfo(1, m_wndStatusBar.GetItemID(1), SBPS_STRETCH, 0);
     m_wndStatusBar.SetPaneInfo(2, m_wndStatusBar.GetItemID(2), SBPS_NORMAL, 300);
 
-    m_wndStatusBar.SetPaneText(0, _T("¾ÍĞ÷"));
-    RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 0); //ÏÔÊ¾×´Ì¬À¸
+    m_wndStatusBar.SetPaneText(0, _T("å°±ç»ª"));
+    RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 0); //æ˜¾ç¤ºçŠ¶æ€æ 
 
     HWND hWndHeader = m_list.GetDlgItem(0)->GetSafeHwnd();
 
@@ -178,25 +178,25 @@ CString CMachineDlg::__MakePriority(DWORD dwPriClass)
     CString strRet;
     switch (dwPriClass) {
     case REALTIME_PRIORITY_CLASS:
-        strRet = _T("ÊµÊ±");
+        strRet = _T("å®æ—¶");
         break;
     case HIGH_PRIORITY_CLASS:
-        strRet = _T("¸ß");
+        strRet = _T("é«˜");
         break;
     case ABOVE_NORMAL_PRIORITY_CLASS:
-        strRet = _T("¸ßÓÚ±ê×¼");
+        strRet = _T("é«˜äºæ ‡å‡†");
         break;
     case NORMAL_PRIORITY_CLASS:
-        strRet = _T("±ê×¼");
+        strRet = _T("æ ‡å‡†");
         break;
     case BELOW_NORMAL_PRIORITY_CLASS:
-        strRet = _T("µÍÓÚ±ê×¼");
+        strRet = _T("ä½äºæ ‡å‡†");
         break;
     case IDLE_PRIORITY_CLASS:
-        strRet = _T("¿ÕÏĞ");
+        strRet = _T("ç©ºé—²");
         break;
     default:
-        strRet = _T("Î´Öª");
+        strRet = _T("æœªçŸ¥");
         break;
     }
 
@@ -218,7 +218,7 @@ void CMachineDlg::OnReceiveComplete()
     DeleteList();
 
     if (m_ContextObject->m_DeCompressionBuffer.GetBufferLen() <= 2) {
-        PostMessage(WM_SHOW_MSG, (WPARAM)new CString(_T("ÎŞÈ¨ÏŞ»òÎŞ¼ÇÂ¼...")), 0);
+        PostMessage(WM_SHOW_MSG, (WPARAM)new CString(_T("æ— æƒé™æˆ–æ— è®°å½•...")), 0);
         SetReceivingStatus(false);
         return;
     }
@@ -254,7 +254,7 @@ void CMachineDlg::OnReceiveComplete()
         break;
 
     default:
-        // ´«Êä·¢ÉúÒì³£Êı¾İ
+        // ä¼ è¾“å‘ç”Ÿå¼‚å¸¸æ•°æ®
         break;
     }
     SetReceivingStatus(false);
@@ -321,7 +321,7 @@ void CMachineDlg::OnRclickList(NMHDR* pNMHDR, LRESULT* pResult)
 void CMachineDlg::OnClose()
 {
     CancelIO();
-    // µÈ´ıÊı¾İ´¦ÀíÍê±Ï
+    // ç­‰å¾…æ•°æ®å¤„ç†å®Œæ¯•
     if (IsProcessing()) {
         ShowWindow(SW_HIDE);
         return;
@@ -351,7 +351,7 @@ void CMachineDlg::OnSelChangeTab(NMHDR* pNMHDR, LRESULT* pResult)
 void CMachineDlg::OnSelChangingTab(NMHDR* pNMHDR, LRESULT* pResult)
 {
     if (*pResult = IsReceivingData()) {
-        m_wndStatusBar.SetPaneText(0, "ÕıÔÚ½ÓÊÕÊı¾İ - ÇëÉÔºó...");
+        m_wndStatusBar.SetPaneText(0, "æ­£åœ¨æ¥æ”¶æ•°æ® - è¯·ç¨å...");
     }
 }
 
@@ -386,21 +386,21 @@ void CMachineDlg::DeleteList()
         m_list.DeleteColumn(0);
     }
     if (!m_bIsClosed)
-        PostMessage(WM_SHOW_MSG, (WPARAM)new CString(_T("ÇëµÈ´ıÊı¾İ·µ»Ø...")), 0);
+        PostMessage(WM_SHOW_MSG, (WPARAM)new CString(_T("è¯·ç­‰å¾…æ•°æ®è¿”å›...")), 0);
 }
 
 void CMachineDlg::ShowProcessList()
 {
-    m_list.InsertColumn(0, _T("Ó³ÏñÃû³Æ"), LVCFMT_LEFT, 100);
+    m_list.InsertColumn(0, _T("æ˜ åƒåç§°"), LVCFMT_LEFT, 100);
     m_list.InsertColumn(1, _T("PID"), LVCFMT_LEFT, 50);
-    m_list.InsertColumn(2, _T("ÓÅÏÈ¼¶"), LVCFMT_LEFT, 50);
-    m_list.InsertColumn(3, _T("Ïß³ÌÊı"), LVCFMT_LEFT, 50);
-    m_list.InsertColumn(4, _T("ÓÃ»§Ãû"), LVCFMT_LEFT, 70);
-    m_list.InsertColumn(5, _T("ÄÚ´æ"), LVCFMT_LEFT, 70);
-    m_list.InsertColumn(6, _T("ÎÄ¼ş´óĞ¡"), LVCFMT_LEFT, 80);
-    m_list.InsertColumn(7, _T("³ÌĞòÂ·¾¶"), LVCFMT_LEFT, 300);
-    m_list.InsertColumn(8, _T("´°¿ÚÃû³Æ"), LVCFMT_LEFT, 100);
-    m_list.InsertColumn(9, _T("½ø³ÌÎ»Êı"), LVCFMT_LEFT, 80);
+    m_list.InsertColumn(2, _T("ä¼˜å…ˆçº§"), LVCFMT_LEFT, 50);
+    m_list.InsertColumn(3, _T("çº¿ç¨‹æ•°"), LVCFMT_LEFT, 50);
+    m_list.InsertColumn(4, _T("ç”¨æˆ·å"), LVCFMT_LEFT, 70);
+    m_list.InsertColumn(5, _T("å†…å­˜"), LVCFMT_LEFT, 70);
+    m_list.InsertColumn(6, _T("æ–‡ä»¶å¤§å°"), LVCFMT_LEFT, 80);
+    m_list.InsertColumn(7, _T("ç¨‹åºè·¯å¾„"), LVCFMT_LEFT, 300);
+    m_list.InsertColumn(8, _T("çª—å£åç§°"), LVCFMT_LEFT, 100);
+    m_list.InsertColumn(9, _T("è¿›ç¨‹ä½æ•°"), LVCFMT_LEFT, 80);
 
     char* lpBuffer = (char*)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
@@ -443,30 +443,30 @@ void CMachineDlg::ShowProcessList()
         m_list.SetItemText(i, 8, szBuf_title);
 
         m_list.SetItemText(i, 9, (*is64) ? _T("x64") : _T("x86"));
-        // ListItem Îª½ø³ÌID
+        // ListItem ä¸ºè¿›ç¨‹ID
         m_list.SetItemData(i, (DWORD_PTR)new ListItem(m_list, i, *lpPID));
         dwOffset += sizeof(DWORD) * 5 + sizeof(bool) + MAX_PATH * sizeof(char) + lstrlen(strExeFile) * sizeof(char) +
                     lstrlen(strProcessName) * sizeof(char) + lstrlen(strProcessUser) * sizeof(char) + 6;
     }
 
-    str.Format(_T("³ÌĞòÂ·¾¶ / %d"), i);
+    str.Format(_T("ç¨‹åºè·¯å¾„ / %d"), i);
     LVCOLUMN lvc;
     lvc.mask = LVCF_TEXT;
     lvc.pszText = str.GetBuffer(0);
     lvc.cchTextMax = str.GetLength();
     m_list.SetColumn(7, &lvc);
 
-    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("½ÓÊÕÊı¾İÍê³É"), 0);
+    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("æ¥æ”¶æ•°æ®å®Œæˆ"), 0);
 }
 
 
 void CMachineDlg::ShowWindowsList()
 {
     m_list.InsertColumn(0, _T("PID"), LVCFMT_LEFT, 75);
-    m_list.InsertColumn(1, _T("¾ä±úHWND"), LVCFMT_LEFT, 75);
-    m_list.InsertColumn(2, _T("´°¿ÚÃû³Æ"), LVCFMT_LEFT, 300);
-    m_list.InsertColumn(3, _T("´°¿Ú×´Ì¬"), LVCFMT_LEFT, 100);
-    m_list.InsertColumn(4, _T("´óĞ¡"), LVCFMT_LEFT, 100);
+    m_list.InsertColumn(1, _T("å¥æŸ„HWND"), LVCFMT_LEFT, 75);
+    m_list.InsertColumn(2, _T("çª—å£åç§°"), LVCFMT_LEFT, 300);
+    m_list.InsertColumn(3, _T("çª—å£çŠ¶æ€"), LVCFMT_LEFT, 100);
+    m_list.InsertColumn(4, _T("å¤§å°"), LVCFMT_LEFT, 100);
 
     LPBYTE lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
@@ -482,33 +482,33 @@ void CMachineDlg::ShowWindowsList()
         _stprintf_s(t_hwnd, 250, _T("%d"), m_ibfo.m_hwnd);
         m_list.SetItemText(i, 1, t_hwnd);
         m_list.SetItemText(i, 2, m_ibfo.strTitle);
-        m_list.SetItemText(i, 3, m_ibfo.canlook ? _T("ÏÔÊ¾") : _T("Òş²Ø"));
+        m_list.SetItemText(i, 3, m_ibfo.canlook ? _T("æ˜¾ç¤º") : _T("éšè—"));
         str.Format(_T("%d*%d"), m_ibfo.w, m_ibfo.h);
         m_list.SetItemText(i, 4, str);
-        // ListItem Îª½ø³ÌID
+        // ListItem ä¸ºè¿›ç¨‹ID
         m_list.SetItemData(i, (DWORD_PTR)new ListItem(m_list, i, m_ibfo.m_poceessid));
         dwOffset += sizeof(WINDOWSINFO);
     }
-    str.Format(_T("´°¿ÚÃû³Æ / %d"), i);
+    str.Format(_T("çª—å£åç§° / %d"), i);
     LVCOLUMN lvc = {};
     lvc.mask = LVCF_TEXT;
     lvc.pszText = str.GetBuffer(0);
     lvc.cchTextMax = str.GetLength();
     m_list.SetColumn(2, &lvc);
 
-    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("½ÓÊÕÊı¾İÍê³É"), 0);
+    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("æ¥æ”¶æ•°æ®å®Œæˆ"), 0);
 }
 
 
 void CMachineDlg::ShowNetStateList()
 {
-    m_list.InsertColumn(0, _T("½ø³ÌÃû"), LVCFMT_LEFT, 100);
+    m_list.InsertColumn(0, _T("è¿›ç¨‹å"), LVCFMT_LEFT, 100);
     m_list.InsertColumn(1, _T("PID"), LVCFMT_LEFT, 50);
-    m_list.InsertColumn(2, _T("Ğ­Òé"), LVCFMT_LEFT, 50);
-    m_list.InsertColumn(3, _T("±¾µØµØÖ·:¶Ë¿Ú"), LVCFMT_LEFT, 130);
-    m_list.InsertColumn(4, _T("Ô¶³ÌµØÖ·:¶Ë¿Ú"), LVCFMT_LEFT, 130);
-    m_list.InsertColumn(5, _T("Ä¿±êIP¹éÊôµØ"), LVCFMT_LEFT, 140);
-    m_list.InsertColumn(6, _T("Á¬½Ó×´Ì¬"), LVCFMT_LEFT, 80);
+    m_list.InsertColumn(2, _T("åè®®"), LVCFMT_LEFT, 50);
+    m_list.InsertColumn(3, _T("æœ¬åœ°åœ°å€:ç«¯å£"), LVCFMT_LEFT, 130);
+    m_list.InsertColumn(4, _T("è¿œç¨‹åœ°å€:ç«¯å£"), LVCFMT_LEFT, 130);
+    m_list.InsertColumn(5, _T("ç›®æ ‡IPå½’å±åœ°"), LVCFMT_LEFT, 140);
+    m_list.InsertColumn(6, _T("è¿æ¥çŠ¶æ€"), LVCFMT_LEFT, 80);
 
     LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
@@ -548,17 +548,17 @@ void CMachineDlg::ShowNetStateList()
         }
         m_list.SetItemData(i, (DWORD_PTR)new ListItem(m_list, i, pid));
     }
-    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("½ÓÊÕÊı¾İÍê³É"), 0);
+    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("æ¥æ”¶æ•°æ®å®Œæˆ"), 0);
 }
 
 
 void CMachineDlg::ShowSoftWareList()
 {
-    m_list.InsertColumn(0, _T("Èí¼şÃû³Æ"), LVCFMT_LEFT, 150);
-    m_list.InsertColumn(1, _T("·¢ĞĞÉÌ"), LVCFMT_LEFT, 150);
-    m_list.InsertColumn(2, _T("°æ±¾"), LVCFMT_LEFT, 75);
-    m_list.InsertColumn(3, _T("°²×°Ê±¼ä"), LVCFMT_LEFT, 80);
-    m_list.InsertColumn(4, _T("Ğ¶ÔØÃüÁî¼°²ÎÊı"), LVCFMT_LEFT, 400);
+    m_list.InsertColumn(0, _T("è½¯ä»¶åç§°"), LVCFMT_LEFT, 150);
+    m_list.InsertColumn(1, _T("å‘è¡Œå•†"), LVCFMT_LEFT, 150);
+    m_list.InsertColumn(2, _T("ç‰ˆæœ¬"), LVCFMT_LEFT, 75);
+    m_list.InsertColumn(3, _T("å®‰è£…æ—¶é—´"), LVCFMT_LEFT, 80);
+    m_list.InsertColumn(4, _T("å¸è½½å‘½ä»¤åŠå‚æ•°"), LVCFMT_LEFT, 400);
 
     LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
@@ -574,15 +574,15 @@ void CMachineDlg::ShowSoftWareList()
         }
         m_list.SetItemData(i, (DWORD_PTR)new ListItem(m_list, i));
     }
-    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("½ÓÊÕÊı¾İÍê³É"), 0);
+    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("æ¥æ”¶æ•°æ®å®Œæˆ"), 0);
 }
 
 void CMachineDlg::ShowIEHistoryList()
 {
-    m_list.InsertColumn(0, _T("ĞòºÅ"), LVCFMT_LEFT, 70);
-    m_list.InsertColumn(1, _T("·ÃÎÊÊ±¼ä"), LVCFMT_LEFT, 130);
-    m_list.InsertColumn(2, _T("±êÌâ"), LVCFMT_LEFT, 150);
-    m_list.InsertColumn(3, _T("ÍøÒ³µØÖ·"), LVCFMT_LEFT, 400);
+    m_list.InsertColumn(0, _T("åºå·"), LVCFMT_LEFT, 70);
+    m_list.InsertColumn(1, _T("è®¿é—®æ—¶é—´"), LVCFMT_LEFT, 130);
+    m_list.InsertColumn(2, _T("æ ‡é¢˜"), LVCFMT_LEFT, 150);
+    m_list.InsertColumn(3, _T("ç½‘é¡µåœ°å€"), LVCFMT_LEFT, 400);
     LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
     CString	str;
@@ -596,12 +596,12 @@ void CMachineDlg::ShowIEHistoryList()
         dwOffset += sizeof(Browsinghistory);
         m_list.SetItemData(i, (DWORD_PTR)new ListItem(m_list, i));
     }
-    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("½ÓÊÕÊı¾İÍê³É"), 0);
+    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("æ¥æ”¶æ•°æ®å®Œæˆ"), 0);
 }
 
 void CMachineDlg::ShowFavoritesUrlList()
 {
-    m_list.InsertColumn(0, _T("ÊÕ²ØÃû³Æ"), LVCFMT_LEFT, 200);
+    m_list.InsertColumn(0, _T("æ”¶è—åç§°"), LVCFMT_LEFT, 200);
     m_list.InsertColumn(1, _T("Url"), LVCFMT_LEFT, 300);
 
     LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
@@ -618,19 +618,19 @@ void CMachineDlg::ShowFavoritesUrlList()
         }
         m_list.SetItemData(i, (DWORD_PTR)new ListItem(m_list, i));
     }
-    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("½ÓÊÕÊı¾İÍê³É"), 0);
+    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("æ¥æ”¶æ•°æ®å®Œæˆ"), 0);
 }
 
 void CMachineDlg::ShowServiceList()
 {
-    m_list.InsertColumn(0, _T("ÏÔÊ¾Ãû³Æ"), LVCFMT_LEFT, 150);
-    m_list.InsertColumn(1, _T("ÃèÊö"), LVCFMT_LEFT, 200);
-    m_list.InsertColumn(2, _T("×´Ì¬"), LVCFMT_LEFT, 70);
-    m_list.InsertColumn(3, _T("Æô¶¯ÀàĞÍ"), LVCFMT_LEFT, 85);
-    m_list.InsertColumn(4, _T("µÇÂ½Éí·İ"), LVCFMT_LEFT, 135);
-    m_list.InsertColumn(5, _T("×ÀÃæ½»»¥"), LVCFMT_LEFT, 60);
-    m_list.InsertColumn(6, _T("·şÎñÃû"), LVCFMT_LEFT, 140);
-    m_list.InsertColumn(7, _T("¿ÉÖ´ĞĞÎÄ¼şÂ·¾¶"), LVCFMT_LEFT, 400);
+    m_list.InsertColumn(0, _T("æ˜¾ç¤ºåç§°"), LVCFMT_LEFT, 150);
+    m_list.InsertColumn(1, _T("æè¿°"), LVCFMT_LEFT, 200);
+    m_list.InsertColumn(2, _T("çŠ¶æ€"), LVCFMT_LEFT, 70);
+    m_list.InsertColumn(3, _T("å¯åŠ¨ç±»å‹"), LVCFMT_LEFT, 85);
+    m_list.InsertColumn(4, _T("ç™»é™†èº«ä»½"), LVCFMT_LEFT, 135);
+    m_list.InsertColumn(5, _T("æ¡Œé¢äº¤äº’"), LVCFMT_LEFT, 60);
+    m_list.InsertColumn(6, _T("æœåŠ¡å"), LVCFMT_LEFT, 140);
+    m_list.InsertColumn(7, _T("å¯æ‰§è¡Œæ–‡ä»¶è·¯å¾„"), LVCFMT_LEFT, 400);
 
     char* lpBuffer = (char*)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
@@ -660,22 +660,22 @@ void CMachineDlg::ShowServiceList()
     }
     CString strMsgShow;
     if (i <= 0) {
-        strMsgShow.Format(_T("ÎŞÈ¨ÏŞ»òÎŞÊı¾İ"));
+        strMsgShow.Format(_T("æ— æƒé™æˆ–æ— æ•°æ®"));
     } else {
-        strMsgShow.Format(_T("¹² %d ¸ö·şÎñ"), i);
+        strMsgShow.Format(_T("å…± %d ä¸ªæœåŠ¡"), i);
     }
     PostMessage(WM_SHOW_MSG, (WPARAM)new CString(strMsgShow), 0);
 }
 
 void CMachineDlg::ShowTaskList()
 {
-    m_list.InsertColumn(0, _T("ĞòºÅ"), LVCFMT_LEFT, 50);
-    m_list.InsertColumn(1, _T("Ä¿Â¼"), LVCFMT_LEFT, 200);
-    m_list.InsertColumn(2, _T("ÈÎÎñÃû³Æ"), LVCFMT_LEFT, 300);
-    m_list.InsertColumn(3, _T("³ÌĞòÂ·¾¶"), LVCFMT_LEFT, 400);
-    m_list.InsertColumn(4, _T("×´Ì¬"), LVCFMT_LEFT, 50);
-    m_list.InsertColumn(5, _T("×îºóÖ´ĞĞÊ±¼ä"), LVCFMT_LEFT, 130);
-    m_list.InsertColumn(6, _T("ÏÂ´ÎÖ´ĞĞÊ±¼ä"), LVCFMT_LEFT, 130);
+    m_list.InsertColumn(0, _T("åºå·"), LVCFMT_LEFT, 50);
+    m_list.InsertColumn(1, _T("ç›®å½•"), LVCFMT_LEFT, 200);
+    m_list.InsertColumn(2, _T("ä»»åŠ¡åç§°"), LVCFMT_LEFT, 300);
+    m_list.InsertColumn(3, _T("ç¨‹åºè·¯å¾„"), LVCFMT_LEFT, 400);
+    m_list.InsertColumn(4, _T("çŠ¶æ€"), LVCFMT_LEFT, 50);
+    m_list.InsertColumn(5, _T("æœ€åæ‰§è¡Œæ—¶é—´"), LVCFMT_LEFT, 130);
+    m_list.InsertColumn(6, _T("ä¸‹æ¬¡æ‰§è¡Œæ—¶é—´"), LVCFMT_LEFT, 130);
 
     BYTE* lpBuffer = (BYTE*)(m_ContextObject->m_DeCompressionBuffer.GetBuffer() + 1);
     DATE lasttime = 0;
@@ -713,12 +713,12 @@ void CMachineDlg::ShowTaskList()
             break;
         }
     }
-    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("½ÓÊÕÊı¾İÍê³É"), 0);
+    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("æ¥æ”¶æ•°æ®å®Œæˆ"), 0);
 }
 
 void CMachineDlg::ShowHostsList()
 {
-    m_list.InsertColumn(0, _T("Êı¾İ"), LVCFMT_LEFT, 600);
+    m_list.InsertColumn(0, _T("æ•°æ®"), LVCFMT_LEFT, 600);
 
     LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     int i = 0;
@@ -733,7 +733,7 @@ void CMachineDlg::ShowHostsList()
         m_list.SetItemData(i, (DWORD_PTR)new ListItem(m_list, i));
         i++;
     }
-    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("½ÓÊÕÊı¾İÍê³É"), 0);
+    PostMessage(WM_SHOW_MSG, (WPARAM)new CString("æ¥æ”¶æ•°æ®å®Œæˆ"), 0);
 }
 
 void CMachineDlg::OnSize(UINT nType, int cx, int cy)
@@ -744,12 +744,12 @@ void CMachineDlg::OnSize(UINT nType, int cx, int cy)
     if (IsWindowVisible())
         AdjustList();
 
-    // ×´Ì¬À¸»¹Ã»ÓĞ´´½¨
+    // çŠ¶æ€æ è¿˜æ²¡æœ‰åˆ›å»º
     if (m_wndStatusBar.m_hWnd == NULL)
         return;
 
-    // ¶¨Î»×´Ì¬À¸
-    RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 0); //ÏÔÊ¾¹¤¾ßÀ¸
+    // å®šä½çŠ¶æ€æ 
+    RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 0); //æ˜¾ç¤ºå·¥å…·æ 
 }
 
 void CMachineDlg::AdjustList()
@@ -807,12 +807,12 @@ void CMachineDlg::SendToken(BYTE bToken)
     LocalFree(lpBuffer);
 }
 
-/////////////////////////////////////////// ²Ëµ¥ ///////////////////////////////////////////
+/////////////////////////////////////////// èœå• ///////////////////////////////////////////
 
 void CMachineDlg::SetClipboardText(CString& Data)
 {
     CStringA source = Data;
-    // ÎÄ±¾ÄÚÈİ±£´æÔÚsource±äÁ¿ÖĞ
+    // æ–‡æœ¬å†…å®¹ä¿å­˜åœ¨sourceå˜é‡ä¸­
     if (OpenClipboard()) {
         HGLOBAL clipbuffer;
         char* buffer;
@@ -831,18 +831,18 @@ void CMachineDlg::ShowProcessList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("Ë¢ĞÂÊı¾İ(&F)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("¸´ÖÆÊı¾İ(&V)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("åˆ·æ–°æ•°æ®(&F)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("å¤åˆ¶æ•°æ®(&V)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("É¾³ıÎÄ¼ş(&C)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("½áÊø½ø³Ì(&E)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("åˆ é™¤æ–‡ä»¶(&C)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("ç»“æŸè¿›ç¨‹(&E)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 400, _T("¶³½á½ø³Ì(&D)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 500, _T("½â¶³½ø³Ì(&J)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 400, _T("å†»ç»“è¿›ç¨‹(&D)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 500, _T("è§£å†»è¿›ç¨‹(&J)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 600, _T("Ç¿É¾ÎÄ¼ş(&Q)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 600, _T("å¼ºåˆ æ–‡ä»¶(&Q)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 700, _T("×¢Èë¹ÜÀí(&I)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 700, _T("æ³¨å…¥ç®¡ç†(&I)"));
 
     CPoint	p;
     GetCursorPos(&p);
@@ -870,7 +870,7 @@ void CMachineDlg::ShowProcessList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("ÒÑ¸´ÖÆÊı¾İµ½¼ôÇĞ°å!"), "ÌáÊ¾");
+        MessageBox(_T("å·²å¤åˆ¶æ•°æ®åˆ°å‰ªåˆ‡æ¿!"), "æç¤º");
     }
     break;
     case 200: {
@@ -955,11 +955,11 @@ void CMachineDlg::ShowProcessList_menu()
             CString strexeis86 = m_list.GetItemText(nItem, 9);
             strexeis86 == _T("x86") ? p_InjectData->ExeIsx86 = 1 : p_InjectData->ExeIsx86 = 0;
             memcpy(p_InjectData->strpath, dlg.Str_remote, dlg.Str_remote.GetLength() * 2 + 2);
-            //¶ÁÈ¡ÎÄ¼ş
+            //è¯»å–æ–‡ä»¶
             BYTE* lpBuffer = NULL;
             HANDLE hFile = CreateFile(dlg.Str_loacal, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
             if (hFile == INVALID_HANDLE_VALUE) {
-                PostMessage(WM_SHOW_MSG, (WPARAM)new CString(_T("´ò¿ªÎÄ¼şÊ§°Ü...")), 0);
+                PostMessage(WM_SHOW_MSG, (WPARAM)new CString(_T("æ‰“å¼€æ–‡ä»¶å¤±è´¥...")), 0);
             } else {
                 p_InjectData->datasize = GetFileSize(hFile, NULL);
                 int allsize = p_InjectData->datasize + sizeof(InjectData)+1;
@@ -989,20 +989,20 @@ void CMachineDlg::ShowWindowsList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("Ë¢ĞÂÊı¾İ(&F)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("¸´ÖÆÊı¾İ(&V)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("åˆ·æ–°æ•°æ®(&F)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("å¤åˆ¶æ•°æ®(&V)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("»¹Ô­´°¿Ú(&H)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("Òş²Ø´°¿Ú(&Y)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 400, _T("¹Ø±Õ´°¿Ú(&E)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("è¿˜åŸçª—å£(&H)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("éšè—çª—å£(&Y)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 400, _T("å…³é—­çª—å£(&E)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 500, _T("×î ´ó »¯(&M)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 600, _T("×î Ğ¡ »¯(&I)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 500, _T("æœ€ å¤§ åŒ–(&M)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 600, _T("æœ€ å° åŒ–(&I)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 700, _T("¶³½á½ø³Ì(&D)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 800, _T("½â¶³½ø³Ì(&J)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 700, _T("å†»ç»“è¿›ç¨‹(&D)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 800, _T("è§£å†»è¿›ç¨‹(&J)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 900, _T("½áÊø½ø³Ì(&E)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 900, _T("ç»“æŸè¿›ç¨‹(&E)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
     CPoint	p;
     GetCursorPos(&p);
@@ -1030,7 +1030,7 @@ void CMachineDlg::ShowWindowsList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("ÒÑ¸´ÖÆÊı¾İµ½¼ôÇĞ°å!"), "ÌáÊ¾");
+        MessageBox(_T("å·²å¤åˆ¶æ•°æ®åˆ°å‰ªåˆ‡æ¿!"), "æç¤º");
     }
     break;
     case 200: {
@@ -1040,7 +1040,7 @@ void CMachineDlg::ShowWindowsList_menu()
             ZeroMemory(lpMsgBuf, 20);
             lpMsgBuf[0] = COMMAND_WINDOW_OPERATE;
             DWORD hwnd = _tstoi(m_list.GetItemText(nItem, 1));
-            m_list.SetItemText(nItem, 3, _T("·¢ËÍ»¹Ô­ÃüÁî"));
+            m_list.SetItemText(nItem, 3, _T("å‘é€è¿˜åŸå‘½ä»¤"));
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
             DWORD dHow = SW_RESTORE;
             memcpy(lpMsgBuf + 1 + sizeof(hwnd), &dHow, sizeof(DWORD));
@@ -1055,7 +1055,7 @@ void CMachineDlg::ShowWindowsList_menu()
             ZeroMemory(lpMsgBuf, 20);
             lpMsgBuf[0] = COMMAND_WINDOW_OPERATE;
             DWORD hwnd = _tstoi(m_list.GetItemText(nItem, 1));
-            m_list.SetItemText(nItem, 3, _T("·¢ËÍÒş²ØÃüÁî"));
+            m_list.SetItemText(nItem, 3, _T("å‘é€éšè—å‘½ä»¤"));
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
             DWORD dHow = SW_HIDE;
             memcpy(lpMsgBuf + 1 + sizeof(hwnd), &dHow, sizeof(DWORD));
@@ -1071,7 +1071,7 @@ void CMachineDlg::ShowWindowsList_menu()
             ZeroMemory(lpMsgBuf, 20);
             lpMsgBuf[0] = COMMAND_WINDOW_CLOSE;
             DWORD hwnd = _tstoi(m_list.GetItemText(nItem, 1));
-            m_list.SetItemText(nItem, 3, _T("·¢ËÍ¹Ø±ÕÃüÁî"));
+            m_list.SetItemText(nItem, 3, _T("å‘é€å…³é—­å‘½ä»¤"));
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
             m_ContextObject->Send2Client(lpMsgBuf, sizeof(lpMsgBuf));
         }
@@ -1084,7 +1084,7 @@ void CMachineDlg::ShowWindowsList_menu()
             ZeroMemory(lpMsgBuf, 20);
             lpMsgBuf[0] = COMMAND_WINDOW_OPERATE;
             DWORD hwnd = _tstoi(m_list.GetItemText(nItem, 1));
-            m_list.SetItemText(nItem, 3, _T("·¢ËÍ×î´ó»¯ÃüÁî"));
+            m_list.SetItemText(nItem, 3, _T("å‘é€æœ€å¤§åŒ–å‘½ä»¤"));
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
             DWORD dHow = SW_MAXIMIZE;
             memcpy(lpMsgBuf + 1 + sizeof(hwnd), &dHow, sizeof(DWORD));
@@ -1099,7 +1099,7 @@ void CMachineDlg::ShowWindowsList_menu()
             ZeroMemory(lpMsgBuf, 20);
             lpMsgBuf[0] = COMMAND_WINDOW_OPERATE;
             DWORD hwnd = _tstoi(m_list.GetItemText(nItem, 1));
-            m_list.SetItemText(nItem, 3, _T("·¢ËÍ×îĞ¡»¯ÃüÁî"));
+            m_list.SetItemText(nItem, 3, _T("å‘é€æœ€å°åŒ–å‘½ä»¤"));
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
             DWORD dHow = SW_MINIMIZE;
             memcpy(lpMsgBuf + 1 + sizeof(hwnd), &dHow, sizeof(DWORD));
@@ -1163,9 +1163,9 @@ void CMachineDlg::ShowNetStateList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("Ë¢ĞÂÊı¾İ(&F)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("¸´ÖÆÊı¾İ(&V)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 150, _T("½áÊø½ø³Ì(&C)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("åˆ·æ–°æ•°æ®(&F)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("å¤åˆ¶æ•°æ®(&V)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 150, _T("ç»“æŸè¿›ç¨‹(&C)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
     CPoint	p;
     GetCursorPos(&p);
@@ -1193,7 +1193,7 @@ void CMachineDlg::ShowNetStateList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("ÒÑ¸´ÖÆÊı¾İµ½¼ôÇĞ°å!"), "ÌáÊ¾");
+        MessageBox(_T("å·²å¤åˆ¶æ•°æ®åˆ°å‰ªåˆ‡æ¿!"), "æç¤º");
     }
     break;
     case 150: {
@@ -1220,9 +1220,9 @@ void CMachineDlg::ShowSoftWareList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("Ë¢ĞÂÊı¾İ(&F)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("¸´ÖÆÊı¾İ(&V)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("Ğ¶ÔØ³ÌĞò(&X)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("åˆ·æ–°æ•°æ®(&F)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("å¤åˆ¶æ•°æ®(&V)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("å¸è½½ç¨‹åº(&X)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
     CPoint	p;
     GetCursorPos(&p);
@@ -1250,7 +1250,7 @@ void CMachineDlg::ShowSoftWareList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("ÒÑ¸´ÖÆÊı¾İµ½¼ôÇĞ°å!"), "ÌáÊ¾");
+        MessageBox(_T("å·²å¤åˆ¶æ•°æ®åˆ°å‰ªåˆ‡æ¿!"), "æç¤º");
     }
     break;
     case 200: {
@@ -1258,7 +1258,7 @@ void CMachineDlg::ShowSoftWareList_menu()
             return;
         }
 
-        if (MessageBox(_T("È·¶¨ÒªĞ¶ÔØ¸Ã³ÌĞò?"), _T("ÌáÊ¾"), MB_YESNO | MB_ICONQUESTION) == IDNO)
+        if (MessageBox(_T("ç¡®å®šè¦å¸è½½è¯¥ç¨‹åº?"), _T("æç¤º"), MB_YESNO | MB_ICONQUESTION) == IDNO)
             return;
 
         POSITION pos = m_list.GetFirstSelectedItemPosition();
@@ -1290,8 +1290,8 @@ void CMachineDlg::ShowIEHistoryList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("Ë¢ĞÂÊı¾İ(&F)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("¸´ÖÆÊı¾İ(&V)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("åˆ·æ–°æ•°æ®(&F)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("å¤åˆ¶æ•°æ®(&V)"));
 
     menu.AppendMenu(MF_SEPARATOR, NULL);
     CPoint	p;
@@ -1320,7 +1320,7 @@ void CMachineDlg::ShowIEHistoryList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("ÒÑ¸´ÖÆÊı¾İµ½¼ôÇĞ°å!"), "ÌáÊ¾");
+        MessageBox(_T("å·²å¤åˆ¶æ•°æ®åˆ°å‰ªåˆ‡æ¿!"), "æç¤º");
     }
     break;
 
@@ -1335,11 +1335,11 @@ void CMachineDlg::ShowTaskList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("&(R)Ö´ĞĞÈÎÎñ"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 101, _T("&(T)Í£Ö¹ÈÎÎñ"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 102, _T("&(D)É¾³ıÈÎÎñ"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 103, _T("&(C)´´½¨ÈÎÎñ"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 104, _T("&(F)Ë¢ĞÂÈÎÎñ"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("&(R)æ‰§è¡Œä»»åŠ¡"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 101, _T("&(T)åœæ­¢ä»»åŠ¡"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 102, _T("&(D)åˆ é™¤ä»»åŠ¡"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 103, _T("&(C)åˆ›å»ºä»»åŠ¡"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 104, _T("&(F)åˆ·æ–°ä»»åŠ¡"));
     CPoint	p;
     GetCursorPos(&p);
     int nMenuResult = menu.TrackPopupMenu(TPM_RETURNCMD | TPM_LEFTALIGN | TPM_RIGHTBUTTON, p.x, p.y, this, NULL);
@@ -1435,7 +1435,7 @@ void CMachineDlg::ShowTaskList_menu()
         DWORD offset = 0;
         CCreateTaskDlg* dlg = new CCreateTaskDlg(this);
         if (IDOK == dlg->DoModal()) {
-            // ¼ÆËã×Ö·û´®³¤¶È
+            // è®¡ç®—å­—ç¬¦ä¸²é•¿åº¦
             len = lstrlen(dlg->m_TaskPath.GetBuffer()) * 2 + lstrlen(dlg->m_TaskNames.GetBuffer()) * 2 + lstrlen(dlg->m_ExePath.GetBuffer()) *
                   2 + lstrlen(dlg->m_Author.GetBuffer()) * 2 + lstrlen(dlg->m_Description.GetBuffer()) * 2 + 12;
             LPBYTE lpBuffer = (LPBYTE)LocalAlloc(LPTR, len);
@@ -1478,8 +1478,8 @@ void CMachineDlg::ShowFavoritesUrlList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("Ë¢ĞÂÊı¾İ(&F)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("¸´ÖÆÊı¾İ(&V)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("åˆ·æ–°æ•°æ®(&F)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("å¤åˆ¶æ•°æ®(&V)"));
 
     menu.AppendMenu(MF_SEPARATOR, NULL);
     CPoint	p;
@@ -1508,7 +1508,7 @@ void CMachineDlg::ShowFavoritesUrlList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("ÒÑ¸´ÖÆÊı¾İµ½¼ôÇĞ°å!"), "ÌáÊ¾");
+        MessageBox(_T("å·²å¤åˆ¶æ•°æ®åˆ°å‰ªåˆ‡æ¿!"), "æç¤º");
     }
     break;
     default:
@@ -1522,17 +1522,17 @@ void CMachineDlg::ShowServiceList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("Æô¶¯(&S)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("Í£Ö¹(&O)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("ÔİÍ£(&U)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 400, _T("»Ö¸´(&M)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 500, _T("ÖØĞÂÆô¶¯(&E)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("å¯åŠ¨(&S)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("åœæ­¢(&O)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("æš‚åœ(&U)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 400, _T("æ¢å¤(&M)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 500, _T("é‡æ–°å¯åŠ¨(&E)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 600, _T("Ë¢ĞÂ(&R)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 600, _T("åˆ·æ–°(&R)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 700, _T("ÊôĞÔ(&R)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 700, _T("å±æ€§(&R)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 800, _T("É¾³ı·şÎñ(&D)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 800, _T("åˆ é™¤æœåŠ¡(&D)"));
     CPoint	p;
     GetCursorPos(&p);
     int nMenuResult = ::TrackPopupMenu(menu, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, p.x, p.y, 0, GetSafeHwnd(), NULL);
@@ -1585,11 +1585,11 @@ void CMachineDlg::ShowHostsList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("Ë¢ĞÂÊı¾İ(&F)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("¸´ÖÆÊı¾İ(&V)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("åˆ·æ–°æ•°æ®(&F)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("å¤åˆ¶æ•°æ®(&V)"));
     menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("ĞŞ¸ÄÔ¶³ÌÎÄ¼ş(&S)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("¼ÓÔØ±¾µØÎÄ¼ş(&S)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("ä¿®æ”¹è¿œç¨‹æ–‡ä»¶(&S)"));
+    menu.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("åŠ è½½æœ¬åœ°æ–‡ä»¶(&S)"));
     CPoint	p;
     GetCursorPos(&p);
     int nMenuResult = ::TrackPopupMenu(menu, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, p.x, p.y, 0, GetSafeHwnd(), NULL);
@@ -1616,7 +1616,7 @@ void CMachineDlg::ShowHostsList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("ÒÑ¸´ÖÆÊı¾İµ½¼ôÇĞ°å!"), "ÌáÊ¾");
+        MessageBox(_T("å·²å¤åˆ¶æ•°æ®åˆ°å‰ªåˆ‡æ¿!"), "æç¤º");
     }
     break;
     case 200: {
@@ -1642,8 +1642,8 @@ void CMachineDlg::ShowHostsList_menu()
         DWORD dwSize = 0, dwRead;
         LPBYTE lpBuffer = NULL;
         CFileDialog dlg(TRUE, _T("*.txt"), NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY,
-                        _T("Í¼Æ¬ÎÄ¼ş(*.txt;*.txt)|*.txt;*.txt| All Files (*.*) |*.*||"), NULL);
-        dlg.m_ofn.lpstrTitle = _T("Ñ¡ÔñÎÄ¼ş");
+                        _T("å›¾ç‰‡æ–‡ä»¶(*.txt;*.txt)|*.txt;*.txt| All Files (*.*) |*.*||"), NULL);
+        dlg.m_ofn.lpstrTitle = _T("é€‰æ‹©æ–‡ä»¶");
 
         if (dlg.DoModal() != IDOK)
             break;

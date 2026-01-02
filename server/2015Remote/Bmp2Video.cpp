@@ -1,4 +1,4 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 #include "Bmp2Video.h"
 
 #define USE_JPEG 0
@@ -67,11 +67,11 @@ int CBmpToAvi::Open(LPCTSTR szFile, LPBITMAPINFO lpbmi, int rate, FCCHandler h)
         return ERR_NOT_SUPPORT;
     }
 
-    // ´´½¨ÕıÈ·µÄBITMAPINFOÓÃÓÚMJPEG
+    // åˆ›å»ºæ­£ç¡®çš„BITMAPINFOç”¨äºMJPEG
     BITMAPINFO bmiFormat = *lpbmi;
 
     if (m_fccHandler == ENCODER_H264) {
-        // ´ò¿ªH.264Ñ¹ËõÆ÷
+        // æ‰“å¼€H.264å‹ç¼©å™¨
         m_hic = ICOpen(ICTYPE_VIDEO, mmioFOURCC('X', '2', '6', '4'), ICMODE_COMPRESS);
         if (!m_hic) {
             AVIFileRelease(m_pfile);
@@ -79,7 +79,7 @@ int CBmpToAvi::Open(LPCTSTR szFile, LPBITMAPINFO lpbmi, int rate, FCCHandler h)
             return ERR_NO_ENCODER;
         }
 
-        // ÉèÖÃÊäÈë¸ñÊ½£¨Î´Ñ¹ËõµÄ24Î»BMP£©
+        // è®¾ç½®è¾“å…¥æ ¼å¼ï¼ˆæœªå‹ç¼©çš„24ä½BMPï¼‰
         BITMAPINFOHEADER inputFormat = { 0 };
         inputFormat.biSize = sizeof(BITMAPINFOHEADER);
         inputFormat.biWidth = m_width;
@@ -89,11 +89,11 @@ int CBmpToAvi::Open(LPCTSTR szFile, LPBITMAPINFO lpbmi, int rate, FCCHandler h)
         inputFormat.biCompression = BI_RGB;
         inputFormat.biSizeImage = m_width * m_height * 3;
 
-        // ÉèÖÃÊä³ö¸ñÊ½£¨H.264Ñ¹Ëõ£©
+        // è®¾ç½®è¾“å‡ºæ ¼å¼ï¼ˆH.264å‹ç¼©ï¼‰
         BITMAPINFOHEADER outputFormat = inputFormat;
         outputFormat.biCompression = mmioFOURCC('X', '2', '6', '4');
 
-        // ²éÑ¯Ñ¹ËõÆ÷ÄÜ·ñ´¦ÀíÕâ¸ö¸ñÊ½
+        // æŸ¥è¯¢å‹ç¼©å™¨èƒ½å¦å¤„ç†è¿™ä¸ªæ ¼å¼
         DWORD result = ICCompressQuery(m_hic, &inputFormat, &outputFormat);
         if (result != ICERR_OK) {
             ICClose(m_hic);
@@ -104,7 +104,7 @@ int CBmpToAvi::Open(LPCTSTR szFile, LPBITMAPINFO lpbmi, int rate, FCCHandler h)
             return ERR_NO_ENCODER;
         }
 
-        // ¿ªÊ¼Ñ¹Ëõ
+        // å¼€å§‹å‹ç¼©
         result = ICCompressBegin(m_hic, &inputFormat, &outputFormat);
         if (result != ICERR_OK) {
             ICClose(m_hic);
@@ -115,22 +115,22 @@ int CBmpToAvi::Open(LPCTSTR szFile, LPBITMAPINFO lpbmi, int rate, FCCHandler h)
             return ERR_NO_ENCODER;
         }
 
-        // ÉèÖÃÖÊÁ¿
+        // è®¾ç½®è´¨é‡
         m_quality = 7500;
 
-        // AVIÁ÷ÅäÖÃ
+        // AVIæµé…ç½®
         bmiFormat.bmiHeader.biCompression = mmioFOURCC('X', '2', '6', '4');
         bmiFormat.bmiHeader.biBitCount = 24;
         bmiFormat.bmiHeader.biSizeImage = m_width * m_height * 3;
         m_si.dwSuggestedBufferSize = bmiFormat.bmiHeader.biSizeImage;
     } else if (m_fccHandler == ENCODER_MJPEG) {
-        // MJPEGĞèÒªÌØÊâÉèÖÃ
+        // MJPEGéœ€è¦ç‰¹æ®Šè®¾ç½®
         bmiFormat.bmiHeader.biCompression = mmioFOURCC('M', 'J', 'P', 'G');
-        bmiFormat.bmiHeader.biBitCount = 24; // MJPEG½âÂëºóÊÇ24Î»
-        // ¼ÆËãÕıÈ·µÄÍ¼Ïñ´óĞ¡
+        bmiFormat.bmiHeader.biBitCount = 24; // MJPEGè§£ç åæ˜¯24ä½
+        // è®¡ç®—æ­£ç¡®çš„å›¾åƒå¤§å°
         bmiFormat.bmiHeader.biSizeImage = m_width * m_height * 3;
-        m_si.dwSuggestedBufferSize = bmiFormat.bmiHeader.biSizeImage * 2; // Ô¤Áô×ã¹»¿Õ¼ä
-        m_quality = 85; // Ä¬ÈÏÖÊÁ¿
+        m_si.dwSuggestedBufferSize = bmiFormat.bmiHeader.biSizeImage * 2; // é¢„ç•™è¶³å¤Ÿç©ºé—´
+        m_quality = 85; // é»˜è®¤è´¨é‡
     } else {
         m_si.dwSuggestedBufferSize = lpbmi->bmiHeader.biSizeImage;
     }
@@ -163,7 +163,7 @@ int CBmpToAvi::Open(LPCTSTR szFile, LPBITMAPINFO lpbmi, int rate, FCCHandler h)
 }
 
 #if USE_JPEG
-// ÓÅ»¯µÄBMPµ½JPEG×ª»»
+// ä¼˜åŒ–çš„BMPåˆ°JPEGè½¬æ¢
 bool BmpToJpeg(LPVOID lpBuffer, int width, int height, int quality,	unsigned char** jpegData, unsigned long* jpegSize)
 {
     if (!lpBuffer || !jpegData || !jpegSize) {
@@ -175,29 +175,29 @@ bool BmpToJpeg(LPVOID lpBuffer, int width, int height, int quality,	unsigned cha
         return false;
     }
 
-    // È·±£ÖÊÁ¿ÔÚºÏÀí·¶Î§ÄÚ
+    // ç¡®ä¿è´¨é‡åœ¨åˆç†èŒƒå›´å†…
     if (quality < 1) quality = 85;
     if (quality > 100) quality = 100;
 
-    int pitch = width * 3; // BGR24¸ñÊ½£¬Ã¿ĞĞ×Ö½ÚÊı
+    int pitch = width * 3; // BGR24æ ¼å¼ï¼Œæ¯è¡Œå­—èŠ‚æ•°
 
-    // ÖØÒª£º³õÊ¼»¯ÎªNULL£¬ÈÃTurboJPEG×Ô¼º·ÖÅäÄÚ´æ
+    // é‡è¦ï¼šåˆå§‹åŒ–ä¸ºNULLï¼Œè®©TurboJPEGè‡ªå·±åˆ†é…å†…å­˜
     *jpegData = NULL;
     *jpegSize = 0;
 
-    // È¥µôTJFLAG_NOREALLOC±êÖ¾£¬ÈÃTurboJPEG×Ô¶¯·ÖÅäÄÚ´æ
+    // å»æ‰TJFLAG_NOREALLOCæ ‡å¿—ï¼Œè®©TurboJPEGè‡ªåŠ¨åˆ†é…å†…å­˜
     int tjError = tjCompress2(
                       jpegCompressor,
                       (unsigned char*)lpBuffer,
                       width,
-                      pitch,           // Ã¿ĞĞ×Ö½ÚÊı
+                      pitch,           // æ¯è¡Œå­—èŠ‚æ•°
                       height,
-                      TJPF_BGR,        // BGR¸ñÊ½
-                      jpegData,        // TurboJPEG»á×Ô¶¯·ÖÅäÄÚ´æ
+                      TJPF_BGR,        // BGRæ ¼å¼
+                      jpegData,        // TurboJPEGä¼šè‡ªåŠ¨åˆ†é…å†…å­˜
                       jpegSize,
-                      TJSAMP_422,      // 4:2:2É«¶È×Ó²ÉÑù
-                      quality,         // Ñ¹ËõÖÊÁ¿
-                      0                // ²»Ê¹ÓÃÌØÊâ±êÖ¾
+                      TJSAMP_422,      // 4:2:2è‰²åº¦å­é‡‡æ ·
+                      quality,         // å‹ç¼©è´¨é‡
+                      0                // ä¸ä½¿ç”¨ç‰¹æ®Šæ ‡å¿—
                   );
 
     if (tjError != 0) {
@@ -208,7 +208,7 @@ bool BmpToJpeg(LPVOID lpBuffer, int width, int height, int quality,	unsigned cha
 
     tjDestroy(jpegCompressor);
 
-    // ÑéÖ¤Êä³ö
+    // éªŒè¯è¾“å‡º
     if (*jpegData == NULL || *jpegSize == 0) {
         Mprintf("JPEG compression produced no data\n");
         return false;
@@ -226,9 +226,9 @@ bool BmpToJpeg(LPVOID lpBuffer, int width, int height, int quality,	unsigned cha
 
 using namespace Gdiplus;
 
-// ==================== ¸¨Öúº¯Êı ====================
+// ==================== è¾…åŠ©å‡½æ•° ====================
 
-// »ñÈ¡ JPEG ±àÂëÆ÷µÄ CLSID
+// è·å– JPEG ç¼–ç å™¨çš„ CLSID
 int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
 {
     UINT num = 0;
@@ -254,7 +254,7 @@ int GetEncoderClsid(const WCHAR* format, CLSID* pClsid)
     return -1;
 }
 
-// ==================== Ö÷º¯Êı ====================
+// ==================== ä¸»å‡½æ•° ====================
 
 bool BmpToJpeg(LPVOID lpBuffer, int width, int height, int quality,
                unsigned char** jpegData, unsigned long* jpegSize)
@@ -263,17 +263,17 @@ bool BmpToJpeg(LPVOID lpBuffer, int width, int height, int quality,
         return false;
     }
 
-    // ¼ÆËã DIB µÄĞĞ×Ö½ÚÊı£¨4×Ö½Ú¶ÔÆë£©
+    // è®¡ç®— DIB çš„è¡Œå­—èŠ‚æ•°ï¼ˆ4å­—èŠ‚å¯¹é½ï¼‰
     int rowSize = ((width * 3 + 3) / 4) * 4;
 
-    // ´´½¨ Bitmap ¶ÔÏó£¨24Î» BGR ¸ñÊ½£©
+    // åˆ›å»º Bitmap å¯¹è±¡ï¼ˆ24ä½ BGR æ ¼å¼ï¼‰
     Bitmap* bitmap = new Bitmap(width, height, PixelFormat24bppRGB);
     if (!bitmap || bitmap->GetLastStatus() != Ok) {
         if (bitmap) delete bitmap;
         return false;
     }
 
-    // Ëø¶¨ Bitmap ÒÔĞ´ÈëÊı¾İ
+    // é”å®š Bitmap ä»¥å†™å…¥æ•°æ®
     BitmapData bitmapData;
     Rect rect(0, 0, width, height);
     Status status = bitmap->LockBits(&rect, ImageLockModeWrite,
@@ -284,12 +284,12 @@ bool BmpToJpeg(LPVOID lpBuffer, int width, int height, int quality,
         return false;
     }
 
-    // ¸´ÖÆÊı¾İ£¨×¢Òâ£ºDIB ÊÇµ×²¿µ½¶¥²¿£¬ĞèÒª·­×ª£©
+    // å¤åˆ¶æ•°æ®ï¼ˆæ³¨æ„ï¼šDIB æ˜¯åº•éƒ¨åˆ°é¡¶éƒ¨ï¼Œéœ€è¦ç¿»è½¬ï¼‰
     BYTE* srcData = (BYTE*)lpBuffer;
     BYTE* dstData = (BYTE*)bitmapData.Scan0;
 
     for (int y = 0; y < height; y++) {
-        // DIB ÊÇ´Óµ×²¿¿ªÊ¼µÄ£¬ËùÒÔĞèÒª·­×ª
+        // DIB æ˜¯ä»åº•éƒ¨å¼€å§‹çš„ï¼Œæ‰€ä»¥éœ€è¦ç¿»è½¬
         BYTE* srcRow = srcData + (height - 1 - y) * rowSize;
         BYTE* dstRow = dstData + y * bitmapData.Stride;
         memcpy(dstRow, srcRow, width * 3);
@@ -297,14 +297,14 @@ bool BmpToJpeg(LPVOID lpBuffer, int width, int height, int quality,
 
     bitmap->UnlockBits(&bitmapData);
 
-    // »ñÈ¡ JPEG ±àÂëÆ÷
+    // è·å– JPEG ç¼–ç å™¨
     CLSID jpegClsid;
     if (GetEncoderClsid(L"image/jpeg", &jpegClsid) < 0) {
         delete bitmap;
         return false;
     }
 
-    // ÉèÖÃ JPEG ÖÊÁ¿²ÎÊı
+    // è®¾ç½® JPEG è´¨é‡å‚æ•°
     EncoderParameters encoderParams;
     encoderParams.Count = 1;
     encoderParams.Parameter[0].Guid = EncoderQuality;
@@ -314,7 +314,7 @@ bool BmpToJpeg(LPVOID lpBuffer, int width, int height, int quality,
     ULONG qualityValue = (ULONG)quality;
     encoderParams.Parameter[0].Value = &qualityValue;
 
-    // ´´½¨ÄÚ´æÁ÷ÓÃÓÚ±£´æ JPEG
+    // åˆ›å»ºå†…å­˜æµç”¨äºä¿å­˜ JPEG
     IStream* stream = NULL;
     HRESULT hr = CreateStreamOnHGlobal(NULL, TRUE, &stream);
     if (FAILED(hr)) {
@@ -322,7 +322,7 @@ bool BmpToJpeg(LPVOID lpBuffer, int width, int height, int quality,
         return false;
     }
 
-    // ±£´æÎª JPEG
+    // ä¿å­˜ä¸º JPEG
     status = bitmap->Save(stream, &jpegClsid, &encoderParams);
     delete bitmap;
 
@@ -331,7 +331,7 @@ bool BmpToJpeg(LPVOID lpBuffer, int width, int height, int quality,
         return false;
     }
 
-    // »ñÈ¡ JPEG Êı¾İ
+    // è·å– JPEG æ•°æ®
     HGLOBAL hMem = NULL;
     hr = GetHGlobalFromStream(stream, &hMem);
     if (FAILED(hr)) {
@@ -345,11 +345,11 @@ bool BmpToJpeg(LPVOID lpBuffer, int width, int height, int quality,
         return false;
     }
 
-    // ·ÖÅäÊä³ö»º³åÇø
+    // åˆ†é…è¾“å‡ºç¼“å†²åŒº
     *jpegSize = (unsigned long)memSize;
     *jpegData = new unsigned char[*jpegSize];
 
-    // ¸´ÖÆÊı¾İ
+    // å¤åˆ¶æ•°æ®
     void* pMem = GlobalLock(hMem);
     if (pMem) {
         memcpy(*jpegData, pMem, *jpegSize);
@@ -365,7 +365,7 @@ bool BmpToJpeg(LPVOID lpBuffer, int width, int height, int quality,
     return true;
 }
 
-// ==================== GDI+ ³õÊ¼»¯/ÇåÀí ====================
+// ==================== GDI+ åˆå§‹åŒ–/æ¸…ç† ====================
 
 class GdiplusManager
 {
@@ -395,23 +395,23 @@ public:
     }
 };
 
-// È«¾Ö¶ÔÏó£¬×Ô¶¯³õÊ¼»¯ºÍÇåÀí
+// å…¨å±€å¯¹è±¡ï¼Œè‡ªåŠ¨åˆå§‹åŒ–å’Œæ¸…ç†
 static GdiplusManager g_gdiplusManager;
 #endif
 
 
-// ÕıÈ·µÄ32Î»×ª24Î»×ª»»£¨º¬·­×ª£©
+// æ­£ç¡®çš„32ä½è½¬24ä½è½¬æ¢ï¼ˆå«ç¿»è½¬ï¼‰
 unsigned char* ConvertScreenshot32to24(unsigned char* p32bitBmp, int width, int height)
 {
-    // ¼ÆËãBMPµÄÊµ¼ÊĞĞ´óĞ¡£¨4×Ö½Ú¶ÔÆë£©
+    // è®¡ç®—BMPçš„å®é™…è¡Œå¤§å°ï¼ˆ4å­—èŠ‚å¯¹é½ï¼‰
     int srcRowSize = ((width * 32 + 31) / 32) * 4;
-    int dstRowSize = width * 3; // Ä¿±êÊÇ½ô´ÕµÄ24Î»
+    int dstRowSize = width * 3; // ç›®æ ‡æ˜¯ç´§å‡‘çš„24ä½
 
     unsigned char* p24bitBmp = (unsigned char*)malloc(dstRowSize * height);
     if (!p24bitBmp) return nullptr;
 
     for (int y = 0; y < height; y++) {
-        // BMPÊÇ´ÓÏÂµ½ÉÏ´æ´¢£¬ĞèÒª·­×ª
+        // BMPæ˜¯ä»ä¸‹åˆ°ä¸Šå­˜å‚¨ï¼Œéœ€è¦ç¿»è½¬
         unsigned char* src = p32bitBmp + (height - 1 - y) * srcRowSize;
         unsigned char* dst = p24bitBmp + y * dstRowSize;
 
@@ -419,25 +419,25 @@ unsigned char* ConvertScreenshot32to24(unsigned char* p32bitBmp, int width, int 
             dst[x * 3 + 0] = src[x * 4 + 0]; // B
             dst[x * 3 + 1] = src[x * 4 + 1]; // G
             dst[x * 3 + 2] = src[x * 4 + 2]; // R
-            // ºöÂÔAlphaÍ¨µÀ
+            // å¿½ç•¥Alphaé€šé“
         }
     }
 
     return p24bitBmp;
 }
 
-// 24Î»BMP´¦Àí£¨º¬·­×ªºÍÈ¥¶ÔÆë£©
+// 24ä½BMPå¤„ç†ï¼ˆå«ç¿»è½¬å’Œå»å¯¹é½ï¼‰
 unsigned char* Process24BitBmp(unsigned char* lpBuffer, int width, int height)
 {
-    // BMP 24Î»ĞĞ´óĞ¡£¨4×Ö½Ú¶ÔÆë£©
+    // BMP 24ä½è¡Œå¤§å°ï¼ˆ4å­—èŠ‚å¯¹é½ï¼‰
     int srcRowSize = ((width * 24 + 31) / 32) * 4;
-    int dstRowSize = width * 3; // ½ô´Õ¸ñÊ½
+    int dstRowSize = width * 3; // ç´§å‡‘æ ¼å¼
 
     unsigned char* processed = (unsigned char*)malloc(dstRowSize * height);
     if (!processed) return nullptr;
 
     for (int y = 0; y < height; y++) {
-        // ·­×ª²¢È¥³ıÌî³ä×Ö½Ú
+        // ç¿»è½¬å¹¶å»é™¤å¡«å……å­—èŠ‚
         unsigned char* src = lpBuffer + (height - 1 - y) * srcRowSize;
         unsigned char* dst = processed + y * dstRowSize;
         memcpy(dst, src, dstRowSize);
@@ -475,7 +475,7 @@ bool CBmpToAvi::Write(unsigned char* lpBuffer)
             return false;
         }
 
-        // ´´½¨ÕıÈ·µÄ¸ñÊ½Í·
+        // åˆ›å»ºæ­£ç¡®çš„æ ¼å¼å¤´
         BITMAPINFOHEADER inputHeader = { 0 };
         inputHeader.biSize = sizeof(BITMAPINFOHEADER);
         inputHeader.biWidth = m_width;
@@ -488,7 +488,7 @@ bool CBmpToAvi::Write(unsigned char* lpBuffer)
         BITMAPINFOHEADER outputHeader = inputHeader;
         outputHeader.biCompression = mmioFOURCC('X', '2', '6', '4');
 
-        // ·ÖÅäÊä³ö»º³åÇø
+        // åˆ†é…è¾“å‡ºç¼“å†²åŒº
         DWORD maxCompressedSize = m_width * m_height * 3;
         unsigned char* compressedData = (unsigned char*)malloc(maxCompressedSize);
         if (!compressedData) {
@@ -499,21 +499,21 @@ bool CBmpToAvi::Write(unsigned char* lpBuffer)
 
         DWORD flags = 0;
 
-        // ÕıÈ·µ÷ÓÃICCompress
+        // æ­£ç¡®è°ƒç”¨ICCompress
         DWORD result = ICCompress(
-                           m_hic,              // Ñ¹ËõÆ÷¾ä±ú
-                           0,                  // ±êÖ¾£¨0=×Ô¶¯¾ö¶¨¹Ø¼üÖ¡£©
-                           &outputHeader,      // Êä³ö¸ñÊ½Í·
-                           compressedData,     // Êä³öÊı¾İ
-                           &inputHeader,       // ÊäÈë¸ñÊ½Í·
-                           processedBuffer,    // ÊäÈëÊı¾İ
+                           m_hic,              // å‹ç¼©å™¨å¥æŸ„
+                           0,                  // æ ‡å¿—ï¼ˆ0=è‡ªåŠ¨å†³å®šå…³é”®å¸§ï¼‰
+                           &outputHeader,      // è¾“å‡ºæ ¼å¼å¤´
+                           compressedData,     // è¾“å‡ºæ•°æ®
+                           &inputHeader,       // è¾“å…¥æ ¼å¼å¤´
+                           processedBuffer,    // è¾“å…¥æ•°æ®
                            NULL,               // ckid
-                           &flags,             // Êä³ö±êÖ¾
-                           m_nFrames,          // Ö¡ºÅ
-                           0,                  // ÆÚÍû´óĞ¡£¨0=×Ô¶¯£©
-                           m_quality,          // ÖÊÁ¿
-                           NULL,               // Ç°Ò»Ö¡¸ñÊ½Í·
-                           NULL                // Ç°Ò»Ö¡Êı¾İ
+                           &flags,             // è¾“å‡ºæ ‡å¿—
+                           m_nFrames,          // å¸§å·
+                           0,                  // æœŸæœ›å¤§å°ï¼ˆ0=è‡ªåŠ¨ï¼‰
+                           m_quality,          // è´¨é‡
+                           NULL,               // å‰ä¸€å¸§æ ¼å¼å¤´
+                           NULL                // å‰ä¸€å¸§æ•°æ®
                        );
 
         if (result != ICERR_OK) {
@@ -523,7 +523,7 @@ bool CBmpToAvi::Write(unsigned char* lpBuffer)
             return false;
         }
 
-        // Êµ¼ÊÑ¹Ëõ´óĞ¡ÔÚoutputHeader.biSizeImageÖĞ
+        // å®é™…å‹ç¼©å¤§å°åœ¨outputHeader.biSizeImageä¸­
         writeData = compressedData;
         writeSize = outputHeader.biSizeImage;
         needFree = true;
@@ -535,7 +535,7 @@ bool CBmpToAvi::Write(unsigned char* lpBuffer)
     case ENCODER_MJPEG: {
         unsigned char* processedBuffer = nullptr;
 
-        // ´¦Àí²»Í¬Î»Éî¶È
+        // å¤„ç†ä¸åŒä½æ·±åº¦
         if (m_bitCount == 32) {
             processedBuffer = ConvertScreenshot32to24(lpBuffer, m_width, m_height);
         } else if (m_bitCount == 24) {
@@ -545,7 +545,7 @@ bool CBmpToAvi::Write(unsigned char* lpBuffer)
         if (!processedBuffer) {
             return false;
         }
-        // Ñ¹ËõÎªJPEG
+        // å‹ç¼©ä¸ºJPEG
         if (!BmpToJpeg(processedBuffer, m_width, m_height, m_quality, &writeData, &writeSize)) {
             free(processedBuffer);
             Mprintf("Failed to compress JPEG\n");
@@ -560,7 +560,7 @@ bool CBmpToAvi::Write(unsigned char* lpBuffer)
         return false;
     }
 
-    // Ğ´ÈëAVIÁ÷
+    // å†™å…¥AVIæµ
     LONG bytesWritten = 0;
     LONG samplesWritten = 0;
     HRESULT hr = AVIStreamWrite(m_pavi, m_nFrames, 1,

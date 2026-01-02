@@ -1,8 +1,8 @@
-#pragma once
+ï»¿#pragma once
 
 #include <Windows.h>
 
-// ÊÇ·ñÊ¹ÓÃÈ«¾Ö¼üÅÌ¹³×Ó
+// æ˜¯å¦ä½¿ç”¨å…¨å±€é”®ç›˜é’©å­
 #define USING_KB_HOOK 1
 
 #define GET_PROCESS_EASY(p)

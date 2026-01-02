@@ -1,4 +1,4 @@
-// CTextDlg.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// CTextDlg.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "stdafx.h"
@@ -10,7 +10,7 @@
 #define new DEBUG_NEW
 #endif
 
-// CTextDlg ¶Ô»°¿ò
+// CTextDlg å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(CTextDlg, CDialog)
 
@@ -41,7 +41,7 @@ BEGIN_MESSAGE_MAP(CTextDlg, CDialog)
 END_MESSAGE_MAP()
 
 
-// CTextDlg ÏûÏ¢´¦Àí³ÌĞò
+// CTextDlg æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 
 void CTextDlg::OnBnClickedOk()

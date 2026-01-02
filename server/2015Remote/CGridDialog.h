@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <vector>
 #include <map>
 #include <afxwin.h>
@@ -10,10 +10,10 @@ class CGridDialog : public CDialog
 public:
     CGridDialog();
 
-    BOOL AddChild(CDialog* pDlg);			// ¶¯Ì¬Ìí¼Ó×Ó¶Ô»°¿ò
-    void RemoveChild(CDialog* pDlg);		// ¶¯Ì¬ÒÆ³ı×Ó¶Ô»°¿ò
-    void SetGrid(int rows, int cols);		// ÉèÖÃĞĞÁĞÊı
-    void LayoutChildren();					// ²¼¾Ö
+    BOOL AddChild(CDialog* pDlg);			// åŠ¨æ€æ·»åŠ å­å¯¹è¯æ¡†
+    void RemoveChild(CDialog* pDlg);		// åŠ¨æ€ç§»é™¤å­å¯¹è¯æ¡†
+    void SetGrid(int rows, int cols);		// è®¾ç½®è¡Œåˆ—æ•°
+    void LayoutChildren();					// å¸ƒå±€
     BOOL HasSlot() const
     {
         return m_children.size() < m_max;
@@ -35,13 +35,13 @@ private:
     int m_max = 0;
     std::vector<CDialog*> m_children;
 
-    // ×î´ó»¯Ïà¹Ø
-    CDialog* m_pMaxChild = nullptr;  // µ±Ç°×î´ó»¯µÄ×Ó¶Ô»°¿ò
-    LONG m_parentStyle = 0;           // ¸¸´°¿ÚÔ­Ê¼ÑùÊ½
+    // æœ€å¤§åŒ–ç›¸å…³
+    CDialog* m_pMaxChild = nullptr;  // å½“å‰æœ€å¤§åŒ–çš„å­å¯¹è¯æ¡†
+    LONG m_parentStyle = 0;           // çˆ¶çª—å£åŸå§‹æ ·å¼
 
     struct ChildState {
-        CRect rect;   // Ô­Ê¼Î»ÖÃ
-        LONG style;   // Ô­Ê¼´°¿ÚÑùÊ½
+        CRect rect;   // åŸå§‹ä½ç½®
+        LONG style;   // åŸå§‹çª—å£æ ·å¼
     };
     std::map<CDialog*, ChildState> m_origState;
 };

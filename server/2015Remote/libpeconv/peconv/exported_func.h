@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   A definition of ExportedFunc  class - used for storing the details of the exported function. Helper functions related to the export parsing.
 */

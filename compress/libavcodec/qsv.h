@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Intel MediaSDK QSV public API
  *
  * This file is part of FFmpeg.

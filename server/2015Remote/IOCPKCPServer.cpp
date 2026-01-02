@@ -1,4 +1,4 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 #include "IOCPKCPServer.h"
 #include "IOCPServer.h"
 
@@ -28,12 +28,12 @@ CONTEXT_KCP* IOCPKCPServer::FindOrCreateClient(const sockaddr_in& addr, SOCKET s
         return it->second;
     }
 
-    // ĞÂ½¨ CONTEXT_KCP
+    // æ–°å»º CONTEXT_KCP
     CONTEXT_KCP* ctx = new CONTEXT_KCP();
     ctx->InitMember(sClientSocket, this);
     ctx->clientAddr = addr;
 
-    // ³õÊ¼»¯ kcp
+    // åˆå§‹åŒ– kcp
     IUINT32 conv = KCP_SESSION_ID;
     ctx->kcp = ikcp_create(conv, ctx);
 
@@ -41,14 +41,14 @@ CONTEXT_KCP* IOCPKCPServer::FindOrCreateClient(const sockaddr_in& addr, SOCKET s
         CONTEXT_KCP* c = (CONTEXT_KCP*)user;
         WSABUF wsaBuf = { len, (CHAR*)buf };
         DWORD sent = 0;
-        // ¸ù¾İctx´æ´¢µÄIP¶Ë¿Ú·¢ËÍ
-        // ×¢Òâ£ºÒª±£Ö¤ ctx ¶ÔÓ¦¿Í»§¶ËµØÖ·£¬ÇÒ sClientSocket ÕıÈ·
+        // æ ¹æ®ctxå­˜å‚¨çš„IPç«¯å£å‘é€
+        // æ³¨æ„ï¼šè¦ä¿è¯ ctx å¯¹åº”å®¢æˆ·ç«¯åœ°å€ï¼Œä¸” sClientSocket æ­£ç¡®
         int ret = WSASendTo(c->sClientSocket, &wsaBuf, 1, &sent, 0,
                             (sockaddr*)&c->clientAddr, c->addrLen, NULL, NULL);
         if (ret == SOCKET_ERROR)
         {
             DWORD err = WSAGetLastError();
-            // ¿ÉÒÔ´òÓ¡´íÎóÈÕÖ¾
+            // å¯ä»¥æ‰“å°é”™è¯¯æ—¥å¿—
             return -1;
         }
         return 0;
@@ -85,13 +85,13 @@ UINT IOCPKCPServer::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc
 
     m_running = true;
 
-    // Æô¶¯IOCP¹¤×÷Ïß³Ì
+    // å¯åŠ¨IOCPå·¥ä½œçº¿ç¨‹
     m_hThread = CreateThread(NULL, 0, [](LPVOID param) -> DWORD {
         ((IOCPKCPServer*)param)->WorkerThread();
         return 0;
     }, this, 0, NULL);
 
-    // Æô¶¯KCP¶¨Ê±¸üĞÂÏß³Ì
+    // å¯åŠ¨KCPå®šæ—¶æ›´æ–°çº¿ç¨‹
     m_kcpUpdateThread = std::thread(&IOCPKCPServer::KCPUpdateLoop, this);
 
     Mprintf("IOCPKCPServer StartServer: %p\n", this);
@@ -131,7 +131,7 @@ void IOCPKCPServer::WorkerThread()
         } else {
             DWORD err = WSAGetLastError();
             if (err != WSAEWOULDBLOCK && err != WSAEINTR) {
-                // ´òÓ¡´íÎó»ò×öÆäËû´¦Àí
+                // æ‰“å°é”™è¯¯æˆ–åšå…¶ä»–å¤„ç†
             }
         }
     }
@@ -197,7 +197,7 @@ void IOCPKCPServer::Destroy()
         m_hIOCP = NULL;
     }
 
-    // ÇåÀíËùÓĞ¿Í»§¶Ë
+    // æ¸…ç†æ‰€æœ‰å®¢æˆ·ç«¯
     std::lock_guard<std::mutex> lock(m_contextsMutex);
     for (auto& kv : m_clients) {
         if (kv.second) {

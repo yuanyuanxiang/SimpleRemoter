@@ -1,4 +1,4 @@
-// Audio.h: interface for the CAudio class.
+ï»¿// Audio.h: interface for the CAudio class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -19,15 +19,15 @@ public:
     virtual ~CAudio();
     GSM610WAVEFORMAT m_GSMWavefmt;
     ULONG     m_ulBufferLength;
-    LPWAVEHDR m_InAudioHeader[2];   //Á½¸öÍ·
-    LPBYTE    m_InAudioData[2];     //Á½¸öÊı¾İ   ±£³ÖÉùÒôµÄÁ¬Ğø
+    LPWAVEHDR m_InAudioHeader[2];   //ä¸¤ä¸ªå¤´
+    LPBYTE    m_InAudioData[2];     //ä¸¤ä¸ªæ•°æ®   ä¿æŒå£°éŸ³çš„è¿ç»­
     HANDLE	  m_hEventWaveIn;
-    HANDLE	  m_hStartRecord;    //Á½¸öÊÂ¼ş
-    HWAVEIN   m_hWaveIn;         //Éè±¸¾ä±ú
+    HANDLE	  m_hStartRecord;    //ä¸¤ä¸ªäº‹ä»¶
+    HWAVEIN   m_hWaveIn;         //è®¾å¤‡å¥æŸ„
     DWORD     m_nWaveInIndex;
     bool    m_hThreadCallBack;
-    HANDLE m_Thread;// waveInCallBackÏß³Ì
-    static DWORD WINAPI waveInCallBack(LPVOID lParam);   //·¢ËÍµ½Ö÷¿Ø¶Ë
+    HANDLE m_Thread;// waveInCallBackçº¿ç¨‹
+    static DWORD WINAPI waveInCallBack(LPVOID lParam);   //å‘é€åˆ°ä¸»æ§ç«¯
     LPBYTE GetRecordBuffer(LPDWORD dwBufferSize);
     BOOL InitializeWaveIn();
     BOOL m_bIsWaveInUsed;
@@ -36,8 +36,8 @@ public:
     BOOL	m_bExit;
     BOOL     m_bIsWaveOutUsed;
     DWORD    m_nWaveOutIndex;
-    LPWAVEHDR m_OutAudioHeader[2];   //Á½¸öÍ·
-    LPBYTE    m_OutAudioData[2];     //Á½¸öÊı¾İ   ±£³ÖÉùÒôµÄÁ¬Ğø
+    LPWAVEHDR m_OutAudioHeader[2];   //ä¸¤ä¸ªå¤´
+    LPBYTE    m_OutAudioData[2];     //ä¸¤ä¸ªæ•°æ®   ä¿æŒå£°éŸ³çš„è¿ç»­
     BOOL PlayBuffer(LPBYTE szBuffer, DWORD dwBufferSize);
     BOOL InitializeWaveOut();
 };

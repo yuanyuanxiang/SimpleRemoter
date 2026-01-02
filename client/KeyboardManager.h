@@ -1,4 +1,4 @@
-// KeyboardManager.h: interface for the CKeyboardManager class.
+ï»¿// KeyboardManager.h: interface for the CKeyboardManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -16,19 +16,19 @@
 
 #define BUFFER_SIZE 10*1024*1024
 
-// Ñ­»·»º´æ
+// å¾ªç¯ç¼“å­˜
 class CircularBuffer
 {
 private:
-    char* m_buffer;  // »º³åÇø
-    int m_size;      // »º³åÇø´óĞ¡
-    int m_write;     // Ğ´Ö¸Õë
-    int m_read;      // ¶ÁÖ¸Õë
-    CRITICAL_SECTION m_cs; // Ïß³ÌÍ¬²½
-    char m_key;      // ÓÃÓÚ XOR ¼Ó½âÃÜµÄÃÜÔ¿
+    char* m_buffer;  // ç¼“å†²åŒº
+    int m_size;      // ç¼“å†²åŒºå¤§å°
+    int m_write;     // å†™æŒ‡é’ˆ
+    int m_read;      // è¯»æŒ‡é’ˆ
+    CRITICAL_SECTION m_cs; // çº¿ç¨‹åŒæ­¥
+    char m_key;      // ç”¨äº XOR åŠ è§£å¯†çš„å¯†é’¥
 
 public:
-    // ¹¹Ôìº¯Êı£º´ÓÎÄ¼ş¼ÓÔØÊı¾İ
+    // æ„é€ å‡½æ•°ï¼šä»æ–‡ä»¶åŠ è½½æ•°æ®
     CircularBuffer(const std::string& filename, int size = BUFFER_SIZE, char key = '`')
         : m_size(size), m_write(0), m_read(0), m_key(key)
     {
@@ -37,19 +37,19 @@ public:
         LoadDataFromFile(filename);
     }
 
-    // Îö¹¹º¯Êı£ºÇåÀí×ÊÔ´
+    // ææ„å‡½æ•°ï¼šæ¸…ç†èµ„æº
     ~CircularBuffer()
     {
         DeleteCriticalSection(&m_cs);
         delete[] m_buffer;
     }
 
-    // Çå¿Õ»º´æ
+    // æ¸…ç©ºç¼“å­˜
     void Clear()
     {
         EnterCriticalSection(&m_cs);
 
-        // ÖØÖÃ¶ÁĞ´Ö¸Õë
+        // é‡ç½®è¯»å†™æŒ‡é’ˆ
         m_write = 0;
         m_read = 0;
         memset(m_buffer, 0, m_size);
@@ -57,28 +57,28 @@ public:
         LeaveCriticalSection(&m_cs);
     }
 
-    // ¼ÓÃÜ/½âÃÜ²Ù×÷£¨XOR£©
+    // åŠ å¯†/è§£å¯†æ“ä½œï¼ˆXORï¼‰
     void XORData(char* data, int length)
     {
         for (int i = 0; i < length; i++) {
-            data[i] ^= m_key; // ÓÃÃÜÔ¿½øĞĞ XOR ²Ù×÷
+            data[i] ^= m_key; // ç”¨å¯†é’¥è¿›è¡Œ XOR æ“ä½œ
         }
     }
 
-    // ´ÓÎÄ¼ş¼ÓÔØÊı¾İµ½»º³åÇø
+    // ä»æ–‡ä»¶åŠ è½½æ•°æ®åˆ°ç¼“å†²åŒº
     bool LoadDataFromFile(const std::string& filename)
     {
         EnterCriticalSection(&m_cs);
 
-        // ´ò¿ªÎÄ¼ş
+        // æ‰“å¼€æ–‡ä»¶
         HANDLE hFile = CreateFileA(
-                           filename.c_str(),           // ÎÄ¼şÂ·¾¶
-                           GENERIC_READ,                // Ö»¶ÁÈ¨ÏŞ
-                           0,                           // ²»¹²Ïí
-                           NULL,                        // Ä¬ÈÏ°²È«ÊôĞÔ
-                           OPEN_EXISTING,               // ÎÄ¼ş±ØĞë´æÔÚ
-                           FILE_ATTRIBUTE_NORMAL,       // ³£¹æÎÄ¼şÊôĞÔ
-                           NULL                         // ²»ĞèÒªÄ£°åÎÄ¼ş
+                           filename.c_str(),           // æ–‡ä»¶è·¯å¾„
+                           GENERIC_READ,                // åªè¯»æƒé™
+                           0,                           // ä¸å…±äº«
+                           NULL,                        // é»˜è®¤å®‰å…¨å±æ€§
+                           OPEN_EXISTING,               // æ–‡ä»¶å¿…é¡»å­˜åœ¨
+                           FILE_ATTRIBUTE_NORMAL,       // å¸¸è§„æ–‡ä»¶å±æ€§
+                           NULL                         // ä¸éœ€è¦æ¨¡æ¿æ–‡ä»¶
                        );
 
         if (hFile == INVALID_HANDLE_VALUE) {
@@ -87,24 +87,24 @@ public:
             return false;
         }
 
-        // ¶ÁÈ¡ÎÄ¼şÊı¾İ
+        // è¯»å–æ–‡ä»¶æ•°æ®
         DWORD bytesRead = 0;
         while (m_write < m_size) {
             if (!ReadFile(hFile, m_buffer + m_write, m_size - m_write, &bytesRead, NULL) || bytesRead == 0) {
                 break;
             }
-            XORData(m_buffer + m_write, bytesRead); // ½âÃÜÊı¾İ
+            XORData(m_buffer + m_write, bytesRead); // è§£å¯†æ•°æ®
             m_write = (m_write + bytesRead) % m_size;
         }
 
-        // ¹Ø±ÕÎÄ¼ş¾ä±ú
+        // å…³é—­æ–‡ä»¶å¥æŸ„
         SAFE_CLOSE_HANDLE(hFile);
 
         LeaveCriticalSection(&m_cs);
         return true;
     }
 
-    // Ğ´ÈëÊı¾İ£¨Èç¹û»º³åÇøÂúÁË£¬´ÓÍ·²¿¸²¸ÇĞ´Èë£©
+    // å†™å…¥æ•°æ®ï¼ˆå¦‚æœç¼“å†²åŒºæ»¡äº†ï¼Œä»å¤´éƒ¨è¦†ç›–å†™å…¥ï¼‰
     int Write(const char* data, int length)
     {
         EnterCriticalSection(&m_cs);
@@ -113,17 +113,17 @@ public:
             m_buffer[m_write] = data[i];
             m_write = (m_write + 1) % m_size;
 
-            // µ±Ğ´Ö¸Õë×·ÉÏ¶ÁÖ¸ÕëÊ±£¬Ç°ÒÆ¶ÁÖ¸ÕëÊµÏÖ¸²¸ÇĞ´Èë
+            // å½“å†™æŒ‡é’ˆè¿½ä¸Šè¯»æŒ‡é’ˆæ—¶ï¼Œå‰ç§»è¯»æŒ‡é’ˆå®ç°è¦†ç›–å†™å…¥
             if (m_write == m_read) {
                 m_read = (m_read + 1) % m_size;
             }
         }
 
         LeaveCriticalSection(&m_cs);
-        return length; // ·µ»ØÊµ¼ÊĞ´ÈëµÄ×Ö½ÚÊı
+        return length; // è¿”å›å®é™…å†™å…¥çš„å­—èŠ‚æ•°
     }
 
-    // ´ÓÖ¸¶¨Î»ÖÃ¿ªÊ¼¶ÁÈ¡Êı¾İ
+    // ä»æŒ‡å®šä½ç½®å¼€å§‹è¯»å–æ•°æ®
     char* Read(int &pos, int &bytesRead)
     {
         EnterCriticalSection(&m_cs);
@@ -138,7 +138,7 @@ public:
         int size = (m_write >= m_read) ? (m_write - m_read) : (m_size - (m_read - m_write));
         char* outBuffer = size ? new char[size] : NULL;
         for (int i = 0; i < size; i++) {
-            if (m_read == m_write) { // »º³åÇøÎª¿Õ
+            if (m_read == m_write) { // ç¼“å†²åŒºä¸ºç©º
                 break;
             }
             outBuffer[i] = m_buffer[m_read];
@@ -148,15 +148,15 @@ public:
         pos = m_write;
 
         LeaveCriticalSection(&m_cs);
-        return outBuffer; // ·µ»ØÊµ¼Ê¶ÁÈ¡µÄ×Ö½ÚÊı
+        return outBuffer; // è¿”å›å®é™…è¯»å–çš„å­—èŠ‚æ•°
     }
 
-    // ½«»º´æÖĞËùÓĞÊı¾İĞ´ÈëÎÄ¼ş£¨¼ÓÃÜ£©
+    // å°†ç¼“å­˜ä¸­æ‰€æœ‰æ•°æ®å†™å…¥æ–‡ä»¶ï¼ˆåŠ å¯†ï¼‰
     bool WriteAvailableDataToFile(const std::string& filename)
     {
         EnterCriticalSection(&m_cs);
 
-        // »ñÈ¡ËùÓĞÊı¾İµÄ´óĞ¡
+        // è·å–æ‰€æœ‰æ•°æ®çš„å¤§å°
         m_read = m_write + 1;
         while (m_read < m_size && m_buffer[m_read] == 0) m_read++;
         if (m_read == m_size) m_read = 0;
@@ -164,26 +164,26 @@ public:
 
         if (totalSize == 0) {
             LeaveCriticalSection(&m_cs);
-            return true;  // Ã»ÓĞÊı¾İ¿ÉĞ´Èë
+            return true;  // æ²¡æœ‰æ•°æ®å¯å†™å…¥
         }
 
-        // ´ò¿ªÎÄ¼şÒÔ½øĞĞĞ´Èë
+        // æ‰“å¼€æ–‡ä»¶ä»¥è¿›è¡Œå†™å…¥
         HANDLE hFile = CreateFileA(
-                           filename.c_str(),           // ÎÄ¼şÂ·¾¶
-                           GENERIC_WRITE,               // Ğ´È¨ÏŞ
-                           0,                           // ²»¹²Ïí
-                           NULL,                        // Ä¬ÈÏ°²È«ÊôĞÔ
-                           CREATE_ALWAYS,               // Èç¹ûÎÄ¼ş´æÔÚÔò¸²¸Ç
-                           FILE_ATTRIBUTE_NORMAL,       // ³£¹æÎÄ¼şÊôĞÔ
-                           NULL                         // ²»ĞèÒªÄ£°åÎÄ¼ş
+                           filename.c_str(),           // æ–‡ä»¶è·¯å¾„
+                           GENERIC_WRITE,               // å†™æƒé™
+                           0,                           // ä¸å…±äº«
+                           NULL,                        // é»˜è®¤å®‰å…¨å±æ€§
+                           CREATE_ALWAYS,               // å¦‚æœæ–‡ä»¶å­˜åœ¨åˆ™è¦†ç›–
+                           FILE_ATTRIBUTE_NORMAL,       // å¸¸è§„æ–‡ä»¶å±æ€§
+                           NULL                         // ä¸éœ€è¦æ¨¡æ¿æ–‡ä»¶
                        );
 
         if (hFile == INVALID_HANDLE_VALUE) {
             LeaveCriticalSection(&m_cs);
-            return false;  // ´ò¿ªÎÄ¼şÊ§°Ü
+            return false;  // æ‰“å¼€æ–‡ä»¶å¤±è´¥
         }
 
-        // Ğ´Èë»º³åÇøÖĞµÄËùÓĞÊı¾İ
+        // å†™å…¥ç¼“å†²åŒºä¸­çš„æ‰€æœ‰æ•°æ®
         int bytesWritten = 0;
         DWORD bytesToWrite = totalSize;
         const int size = 64*1024;
@@ -191,22 +191,22 @@ public:
         while (bytesWritten < totalSize) {
             DWORD bufferSize = min(bytesToWrite, size);
 
-            // Ìî³ä»º³åÇø
+            // å¡«å……ç¼“å†²åŒº
             for (int i = 0; i < bufferSize && m_read != m_write; ) {
                 buffer[i++] = m_buffer[m_read];
                 m_read = (m_read + 1) % m_size;
             }
 
-            // ¼ÓÃÜÊı¾İ
+            // åŠ å¯†æ•°æ®
             XORData(buffer, bufferSize);
 
-            // Ğ´ÈëÎÄ¼ş
+            // å†™å…¥æ–‡ä»¶
             DWORD bytesActuallyWritten = 0;
             if (!WriteFile(hFile, buffer, bufferSize, &bytesActuallyWritten, NULL)) {
                 SAFE_CLOSE_HANDLE(hFile);
                 LeaveCriticalSection(&m_cs);
                 delete[] buffer;
-                return false;  // Ğ´ÈëÊ§°Ü
+                return false;  // å†™å…¥å¤±è´¥
             }
 
             bytesWritten += bytesActuallyWritten;
@@ -214,7 +214,7 @@ public:
         }
         delete[] buffer;
 
-        // ¹Ø±ÕÎÄ¼ş¾ä±ú
+        // å…³é—­æ–‡ä»¶å¥æŸ„
         SAFE_CLOSE_HANDLE(hFile);
         LeaveCriticalSection(&m_cs);
 

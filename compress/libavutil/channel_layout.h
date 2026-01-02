@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2006 Michael Niedermayer <michaelni@gmx.at>
  * Copyright (c) 2008 Peter Ross
  *

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <string>
 #include <winsock2.h>
 #include <iphlpapi.h>
@@ -37,8 +37,8 @@ inline void splitIpPort(const std::string& input, std::string& ip, std::string& 
 }
 
 /**
- * IPConverter: IP ²Ù×÷Àà£¬ÓÃÓÚ»ñÈ¡¹«ÍøIP£¬»ñÈ¡IP¶ÔÓ¦µÄµØÀíÎ»ÖÃµÈ.
- * Ä¿Ç°ÊÇÍ¨¹ıµ÷ÓÃ¹«¿ªµÄ»¥ÁªÍøAPIÍê³É£¬¼ÙÈç¸Ã²éÑ¯ÍøÕ¾²»¿É·ÃÎÊÔòĞèÒªÖØĞÂÊÊÅä.
+ * IPConverter: IP æ“ä½œç±»ï¼Œç”¨äºè·å–å…¬ç½‘IPï¼Œè·å–IPå¯¹åº”çš„åœ°ç†ä½ç½®ç­‰.
+ * ç›®å‰æ˜¯é€šè¿‡è°ƒç”¨å…¬å¼€çš„äº’è”ç½‘APIå®Œæˆï¼Œå‡å¦‚è¯¥æŸ¥è¯¢ç½‘ç«™ä¸å¯è®¿é—®åˆ™éœ€è¦é‡æ–°é€‚é….
  */
 class IPConverter
 {
@@ -49,23 +49,23 @@ public:
     }
 
     /**
-     * ÅĞ¶Ï¸ø¶¨µÄ IP µØÖ·ÊÇ·ñÊÇ¾ÖÓòÍø£¨ÄÚÍø£©IP
-     * @param ipAddress IP µØÖ·×Ö·û´®£¨Èç "192.168.1.1"£©
-     * @return Èç¹ûÊÇ¾ÖÓòÍø IP£¬·µ»Ø true; ·ñÔò·µ»Ø false
+     * åˆ¤æ–­ç»™å®šçš„ IP åœ°å€æ˜¯å¦æ˜¯å±€åŸŸç½‘ï¼ˆå†…ç½‘ï¼‰IP
+     * @param ipAddress IP åœ°å€å­—ç¬¦ä¸²ï¼ˆå¦‚ "192.168.1.1"ï¼‰
+     * @return å¦‚æœæ˜¯å±€åŸŸç½‘ IPï¼Œè¿”å› true; å¦åˆ™è¿”å› false
      */
     bool IsPrivateIP(const std::string& ipAddress)
     {
-        // ½« IP µØÖ·×Ö·û´®×ª»»Îª¶ş½øÖÆ¸ñÊ½
+        // å°† IP åœ°å€å­—ç¬¦ä¸²è½¬æ¢ä¸ºäºŒè¿›åˆ¶æ ¼å¼
         in_addr addr;
         if (inet_pton(AF_INET, ipAddress.c_str(), &addr) != 1) {
             Mprintf("Invalid IP address: %s\n", ipAddress.c_str());
             return false;
         }
 
-        // ½«¶ş½øÖÆ IP µØÖ·×ª»»ÎªÎŞ·ûºÅÕûÊı
+        // å°†äºŒè¿›åˆ¶ IP åœ°å€è½¬æ¢ä¸ºæ— ç¬¦å·æ•´æ•°
         unsigned long ip = ntohl(addr.s_addr);
 
-        // ¼ì²é IP µØÖ·ÊÇ·ñÔÚ¾ÖÓòÍø·¶Î§ÄÚ
+        // æ£€æŸ¥ IP åœ°å€æ˜¯å¦åœ¨å±€åŸŸç½‘èŒƒå›´å†…
         if ((ip >= 0x0A000000 && ip <= 0x0AFFFFFF) || // 10.0.0.0/8
             (ip >= 0xAC100000 && ip <= 0xAC1FFFFF) || // 172.16.0.0/12
             (ip >= 0xC0A80000 && ip <= 0xC0A8FFFF) || // 192.168.0.0/16
@@ -76,13 +76,13 @@ public:
         return false;
     }
 
-    // »ñÈ¡±¾»úµØÀíÎ»ÖÃ
+    // è·å–æœ¬æœºåœ°ç†ä½ç½®
     std::string GetLocalLocation()
     {
         return GetGeoLocation(getPublicIP());
     }
 
-    // »ñÈ¡ IP µØÖ·µØÀíÎ»ÖÃ(»ùÓÚ[ipinfo.io])
+    // è·å– IP åœ°å€åœ°ç†ä½ç½®(åŸºäº[ipinfo.io])
     std::string GetGeoLocation(const std::string& IP)
     {
         if (IP.empty()) return "";
@@ -98,14 +98,14 @@ public:
         DWORD bytesRead;
         std::string readBuffer;
 
-        // ³õÊ¼»¯ WinINet
+        // åˆå§‹åŒ– WinINet
         hInternet = InternetOpen("IP Geolocation", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
         if (hInternet == NULL) {
             Mprintf("InternetOpen failed! %d\n", GetLastError());
             return "";
         }
 
-        // ´´½¨ HTTP ÇëÇó¾ä±ú
+        // åˆ›å»º HTTP è¯·æ±‚å¥æŸ„
         std::string url = "http://ipinfo.io/" + ip + "/json";
         hConnect = InternetOpenUrlA(hInternet, url.c_str(), NULL, 0, INTERNET_FLAG_RELOAD, 0);
         if (hConnect == NULL) {
@@ -114,13 +114,13 @@ public:
             return "";
         }
 
-        // ¶ÁÈ¡·µ»ØµÄÄÚÈİ
+        // è¯»å–è¿”å›çš„å†…å®¹
         char buffer[4096];
         while (InternetReadFile(hConnect, buffer, sizeof(buffer), &bytesRead) && bytesRead > 0) {
             readBuffer.append(buffer, bytesRead);
         }
 
-        // ½âÎö JSON ÏìÓ¦
+        // è§£æ JSON å“åº”
         Json::Value jsonData;
         Json::Reader jsonReader;
         std::string location;
@@ -128,7 +128,7 @@ public:
         if (jsonReader.parse(readBuffer, jsonData)) {
             std::string country = jsonData["country"].asString();
             std::string city = jsonData["city"].asString();
-            std::string loc = jsonData["loc"].asString();  // ¾­Î³¶ÈĞÅÏ¢
+            std::string loc = jsonData["loc"].asString();  // ç»çº¬åº¦ä¿¡æ¯
             if (city.empty() && country.empty()) {
             } else if (city.empty()) {
                 location = country;
@@ -144,7 +144,7 @@ public:
             Mprintf("Failed to parse JSON response: %s.\n", readBuffer.c_str());
         }
 
-        // ¹Ø±Õ¾ä±ú
+        // å…³é—­å¥æŸ„
         InternetCloseHandle(hConnect);
         InternetCloseHandle(hInternet);
 
@@ -158,7 +158,7 @@ public:
 
     bool isLocalIP(const std::string& ip)
     {
-        if (isLoopbackAddress(ip)) return true; // ÏÈ¼ì²é»Ø»·µØÖ·
+        if (isLoopbackAddress(ip)) return true; // å…ˆæ£€æŸ¥å›ç¯åœ°å€
 
         ULONG outBufLen = 15000;
         IP_ADAPTER_ADDRESSES* pAddresses = (IP_ADAPTER_ADDRESSES*)malloc(outBufLen);
@@ -185,29 +185,29 @@ public:
         return false;
     }
 
-    // »ñÈ¡¹«ÍøIP, »ñÈ¡Ê§°Ü·µ»Ø¿Õ
+    // è·å–å…¬ç½‘IP, è·å–å¤±è´¥è¿”å›ç©º
     std::string getPublicIP()
     {
         clock_t t = clock();
 
-        // ¶à¸öºòÑ¡²éÑ¯Ô´
+        // å¤šä¸ªå€™é€‰æŸ¥è¯¢æº
         static const std::vector<std::string> urls = {
-            "https://checkip.amazonaws.com",  // È«Çò×îÎÈ
-            "https://api.ipify.org",          // Ö÷Á÷¸ß¿ÉÓÃ
-            "https://ipinfo.io/ip",           // ±¸ÓÃ·½°¸
-            "https://icanhazip.com",          // ÇáÁ¿¿ìËÙ
-            "https://ifconfig.me/ip"          // Ä©Î»¶µµ×
+            "https://checkip.amazonaws.com",  // å…¨çƒæœ€ç¨³
+            "https://api.ipify.org",          // ä¸»æµé«˜å¯ç”¨
+            "https://ipinfo.io/ip",           // å¤‡ç”¨æ–¹æ¡ˆ
+            "https://icanhazip.com",          // è½»é‡å¿«é€Ÿ
+            "https://ifconfig.me/ip"          // æœ«ä½å…œåº•
         };
 
-        // ´ò¿ª WinINet »á»°
+        // æ‰“å¼€ WinINet ä¼šè¯
         HINTERNET hInternet = InternetOpenA("Mozilla/5.0", INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
         if (!hInternet) {
             Mprintf("InternetOpen failed. cost %d ms.\n", clock() - t);
             return "";
         }
 
-        // ÉèÖÃ³¬Ê± (ºÁÃë)
-        DWORD timeout = 3000; // 3 Ãë
+        // è®¾ç½®è¶…æ—¶ (æ¯«ç§’)
+        DWORD timeout = 3000; // 3 ç§’
         InternetSetOptionA(hInternet, INTERNET_OPTION_CONNECT_TIMEOUT, &timeout, sizeof(timeout));
         InternetSetOptionA(hInternet, INTERNET_OPTION_SEND_TIMEOUT, &timeout, sizeof(timeout));
         InternetSetOptionA(hInternet, INTERNET_OPTION_RECEIVE_TIMEOUT, &timeout, sizeof(timeout));
@@ -216,7 +216,7 @@ public:
         char buffer[2048];
         DWORD bytesRead = 0;
 
-        // ÂÖÑ¯²»Í¬ IP ²éÑ¯Ô´
+        // è½®è¯¢ä¸åŒ IP æŸ¥è¯¢æº
         for (const auto& url : urls) {
             HINTERNET hConnect = InternetOpenUrlA(
                                      hInternet, url.c_str(), NULL, 0,
@@ -225,19 +225,19 @@ public:
                                  );
 
             if (!hConnect) {
-                continue; // µ±Ç°Ô´Ê§°Ü£¬³¢ÊÔÏÂÒ»¸ö
+                continue; // å½“å‰æºå¤±è´¥ï¼Œå°è¯•ä¸‹ä¸€ä¸ª
             }
 
             memset(buffer, 0, sizeof(buffer));
             if (InternetReadFile(hConnect, buffer, sizeof(buffer) - 1, &bytesRead) && bytesRead > 0) {
                 result.assign(buffer, bytesRead);
 
-                // È¥³ı»»ĞĞ·ûºÍ¿Õ¸ñ
+                // å»é™¤æ¢è¡Œç¬¦å’Œç©ºæ ¼
                 while (!result.empty() && (result.back() == '\n' || result.back() == '\r' || result.back() == ' '))
                     result.pop_back();
 
                 InternetCloseHandle(hConnect);
-                break; // ³É¹¦»ñÈ¡£¬Í£Ö¹³¢ÊÔ
+                break; // æˆåŠŸè·å–ï¼Œåœæ­¢å°è¯•
             }
 
             InternetCloseHandle(hConnect);

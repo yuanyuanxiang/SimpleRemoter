@@ -1,4 +1,4 @@
-// VideoDlg.cpp : ÊµÏÖÎÄ¼ş
+ï»¿// VideoDlg.cpp : å®ç°æ–‡ä»¶
 //
 
 #include "stdafx.h"
@@ -8,10 +8,10 @@
 
 
 enum {
-    IDM_ENABLECOMPRESS = 0x0010,	// ÊÓÆµÑ¹Ëõ
-    IDM_SAVEAVI,					// ±£´æÂ¼Ïñ
+    IDM_ENABLECOMPRESS = 0x0010,	// è§†é¢‘å‹ç¼©
+    IDM_SAVEAVI,					// ä¿å­˜å½•åƒ
 };
-// CVideoDlg ¶Ô»°¿ò
+// CVideoDlg å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(CVideoDlg, CDialog)
 
@@ -27,13 +27,13 @@ void CVideoDlg::SaveAvi(void)
     }
 
     CString	strFileName = m_IPAddress + CTime::GetCurrentTime().Format("_%Y-%m-%d_%H-%M-%S.avi");
-    CFileDialog dlg(FALSE, "avi", strFileName, OFN_OVERWRITEPROMPT, "ÊÓÆµÎÄ¼ş(*.avi)|*.avi|", this);
+    CFileDialog dlg(FALSE, "avi", strFileName, OFN_OVERWRITEPROMPT, "è§†é¢‘æ–‡ä»¶(*.avi)|*.avi|", this);
     if(dlg.DoModal () != IDOK)
         return;
     m_aviFile = dlg.GetPathName();
     int code;
     if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full)) {
-        MessageBox("´´½¨Â¼ÏñÎÄ¼şÊ§°Ü:"+m_aviFile + "\r\n´íÎó´úÂë: " + CBmpToAvi::GetErrMsg(code).c_str(), "ÌáÊ¾");
+        MessageBox("åˆ›å»ºå½•åƒæ–‡ä»¶å¤±è´¥:"+m_aviFile + "\r\né”™è¯¯ä»£ç : " + CBmpToAvi::GetErrMsg(code).c_str(), "æç¤º");
         m_aviFile.Empty();
     } else {
         pSysMenu->CheckMenuItem(IDM_SAVEAVI, MF_CHECKED);
@@ -110,7 +110,7 @@ BEGIN_MESSAGE_MAP(CVideoDlg, CDialog)
 END_MESSAGE_MAP()
 
 
-// CVideoDlg ÏûÏ¢´¦Àí³ÌĞò
+// CVideoDlg æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 
 BOOL CVideoDlg::OnInitDialog()
@@ -122,13 +122,13 @@ BOOL CVideoDlg::OnInitDialog()
         m_hDD = DrawDibOpen();
 
         m_hDC = ::GetDC(m_hWnd);
-        SysMenu->AppendMenu(MF_STRING, IDM_ENABLECOMPRESS, "ÊÓÆµÑ¹Ëõ(&C)");
-        SysMenu->AppendMenu(MF_STRING, IDM_SAVEAVI, "±£´æÂ¼Ïñ(&V)");
+        SysMenu->AppendMenu(MF_STRING, IDM_ENABLECOMPRESS, "è§†é¢‘å‹ç¼©(&C)");
+        SysMenu->AppendMenu(MF_STRING, IDM_SAVEAVI, "ä¿å­˜å½•åƒ(&V)");
         SysMenu->AppendMenu(MF_SEPARATOR);
 
         CString strString;
 
-        strString.Format("%s - ÊÓÆµ¹ÜÀí %d¡Á%d", m_IPAddress, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
+        strString.Format("%s - è§†é¢‘ç®¡ç† %dÃ—%d", m_IPAddress, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
 
         SetWindowText(strString);
 
@@ -146,7 +146,7 @@ BOOL CVideoDlg::OnInitDialog()
 void CVideoDlg::OnClose()
 {
     CancelIO();
-    // µÈ´ıÊı¾İ´¦ÀíÍê±Ï
+    // ç­‰å¾…æ•°æ®å¤„ç†å®Œæ¯•
     if (IsProcessing()) {
         ShowWindow(SW_HIDE);
         return;
@@ -165,11 +165,11 @@ void CVideoDlg::OnReceiveComplete(void)
 
     switch (m_ContextObject->InDeCompressedBuffer.GetBYTE(0)) {
     case TOKEN_WEBCAM_DIB: {
-        DrawDIB();//ÕâÀïÊÇ»æÍ¼º¯Êı£¬×ªµ½ËûµÄ´úÂë¿´Ò»ÏÂ
+        DrawDIB();//è¿™é‡Œæ˜¯ç»˜å›¾å‡½æ•°ï¼Œè½¬åˆ°ä»–çš„ä»£ç çœ‹ä¸€ä¸‹
         break;
     }
     default:
-        // ´«Êä·¢ÉúÒì³£Êı¾İ
+        // ä¼ è¾“å‘ç”Ÿå¼‚å¸¸æ•°æ®
         break;
     }
 }
@@ -185,22 +185,22 @@ void CVideoDlg::DrawDIB(void)
     Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(0);
     LPBYTE	szBuffer = tmp.Buf();
     UINT	ulBufferLen = m_ContextObject->InDeCompressedBuffer.GetBufferLength();
-    if (szBuffer[1] == 0) { // Ã»ÓĞ¾­¹ıH263Ñ¹ËõµÄÔ­Ê¼Êı¾İ£¬²»ĞèÒª½âÂë
-        // µÚÒ»´Î£¬Ã»ÓĞÑ¹Ëõ£¬ËµÃ÷·şÎñ¶Ë²»Ö§³ÖÖ¸¶¨µÄ½âÂëÆ÷
+    if (szBuffer[1] == 0) { // æ²¡æœ‰ç»è¿‡H263å‹ç¼©çš„åŸå§‹æ•°æ®ï¼Œä¸éœ€è¦è§£ç 
+        // ç¬¬ä¸€æ¬¡ï¼Œæ²¡æœ‰å‹ç¼©ï¼Œè¯´æ˜æœåŠ¡ç«¯ä¸æ”¯æŒæŒ‡å®šçš„è§£ç å™¨
         if (m_nCount == 1) {
             SysMenu->EnableMenuItem(IDM_ENABLECOMPRESS, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
         }
         SysMenu->CheckMenuItem(IDM_ENABLECOMPRESS, MF_UNCHECKED);
         memcpy(m_BitmapData_Full, szBuffer + nHeadLen, ulBufferLen - nHeadLen);
-    } else { // ½âÂë
-        ////ÕâÀï»º³åÇøÀïµÄµÄµÚ¶ş¸ö×Ö·ûÕıºÃÊÇÊÇ·ñÊÓÆµ½âÂë
-        InitCodec(*(LPDWORD)(szBuffer + 2)); //ÅĞ¶Ï
+    } else { // è§£ç 
+        ////è¿™é‡Œç¼“å†²åŒºé‡Œçš„çš„ç¬¬äºŒä¸ªå­—ç¬¦æ­£å¥½æ˜¯æ˜¯å¦è§†é¢‘è§£ç 
+        InitCodec(*(LPDWORD)(szBuffer + 2)); //åˆ¤æ–­
         if (m_pVideoCodec != NULL) {
             SysMenu->CheckMenuItem(IDM_ENABLECOMPRESS, MF_CHECKED);
-            memcpy(m_BitmapCompressedData_Full, szBuffer + nHeadLen, ulBufferLen - nHeadLen); //ÊÓÆµÃ»ÓĞ½âÑ¹
-            //ÕâÀï¿ªÊ¼½âÂë£¬½âÂëºó¾ÍÊÇÍ¬Î´Ñ¹ËõµÄÒ»ÑùÁË ÏÔÊ¾µ½¶Ô»°¿òÉÏ¡£ ½ÓÏÂÀ´¿ªÊ¼ÊÓÆµ±£´æ³Éavi¸ñÊ½
+            memcpy(m_BitmapCompressedData_Full, szBuffer + nHeadLen, ulBufferLen - nHeadLen); //è§†é¢‘æ²¡æœ‰è§£å‹
+            //è¿™é‡Œå¼€å§‹è§£ç ï¼Œè§£ç åå°±æ˜¯åŒæœªå‹ç¼©çš„ä¸€æ ·äº† æ˜¾ç¤ºåˆ°å¯¹è¯æ¡†ä¸Šã€‚ æ¥ä¸‹æ¥å¼€å§‹è§†é¢‘ä¿å­˜æˆaviæ ¼å¼
             m_pVideoCodec->DecodeVideoData(m_BitmapCompressedData_Full, ulBufferLen - nHeadLen,
-                                           (LPBYTE)m_BitmapData_Full, NULL,  NULL);  //½«ÊÓÆµÊı¾İ½âÑ¹
+                                           (LPBYTE)m_BitmapData_Full, NULL,  NULL);  //å°†è§†é¢‘æ•°æ®è§£å‹
         }
     }
 
@@ -217,9 +217,9 @@ void CVideoDlg::InitCodec(DWORD fccHandler)
     if (!m_pVideoCodec->InitCompressor(m_BitmapInfor_Full, fccHandler)) {
         Mprintf("======> InitCompressor failed \n");
         delete m_pVideoCodec;
-        // ÖÃNULL, ·¢ËÍÊ±ÅĞ¶ÏÊÇ·ñÎªNULLÀ´ÅĞ¶ÏÊÇ·ñÑ¹Ëõ
+        // ç½®NULL, å‘é€æ—¶åˆ¤æ–­æ˜¯å¦ä¸ºNULLæ¥åˆ¤æ–­æ˜¯å¦å‹ç¼©
         m_pVideoCodec = NULL;
-        // Í¨Öª·şÎñ¶Ë²»ÆôÓÃÑ¹Ëõ
+        // é€šçŸ¥æœåŠ¡ç«¯ä¸å¯ç”¨å‹ç¼©
         BYTE bToken = COMMAND_WEBCAM_DISABLECOMPRESS;
         m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
         GetSystemMenu(FALSE)->EnableMenuItem(IDM_ENABLECOMPRESS, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
@@ -229,7 +229,7 @@ void CVideoDlg::InitCodec(DWORD fccHandler)
 
 void CVideoDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
-    // TODO: ÔÚ´ËÌí¼ÓÏûÏ¢´¦Àí³ÌĞò´úÂëºÍ/»òµ÷ÓÃÄ¬ÈÏÖµ
+    // TODO: åœ¨æ­¤æ·»åŠ æ¶ˆæ¯å¤„ç†ç¨‹åºä»£ç å’Œ/æˆ–è°ƒç”¨é»˜è®¤å€¼
     switch (nID) {
     case IDM_SAVEAVI: {
         SaveAvi();
@@ -277,7 +277,7 @@ void CVideoDlg::OnPaint()
 
     if (!m_aviFile.IsEmpty()) {
         m_aviStream.Write(m_BitmapData_Full);
-        // ÌáÊ¾ÕıÔÚÂ¼Ïñ
+        // æç¤ºæ­£åœ¨å½•åƒ
         SetBkMode(m_hDC, TRANSPARENT);
         SetTextColor(m_hDC, RGB(0xff,0x00,0x00));
         const LPCTSTR lpTipsString = "Recording";

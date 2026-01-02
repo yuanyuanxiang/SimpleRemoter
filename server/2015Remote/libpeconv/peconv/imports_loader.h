@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Parsing and filling the Import Table.
 */

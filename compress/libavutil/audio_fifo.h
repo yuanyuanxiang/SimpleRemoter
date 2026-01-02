@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Audio FIFO
  * Copyright (c) 2012 Justin Ruggles <justin.ruggles@gmail.com>
  *

@@ -1,4 +1,4 @@
-// CaptureVideo.h: interface for the CCaptureVideo class.
+ï»¿// CaptureVideo.h: interface for the CCaptureVideo class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -18,15 +18,15 @@
 
 #pragma comment(lib,"Strmiids.lib")
 
-// TODO È«¾Ö±äÁ¿, ¶¨ÒåÎ»ÖÃ£ºqedit.h
+// TODO å…¨å±€å˜é‡, å®šä¹‰ä½ç½®ï¼šqedit.h
 
-// ½Ó¿Ú ID	»Øµ÷½Ó¿Ú£¬ÓÃÓÚÔÚÃ¿Ò»Ö¡×¥È¡Ê±Í¨ÖªÓ¦ÓÃ
+// æ¥å£ ID	å›è°ƒæ¥å£ï¼Œç”¨äºåœ¨æ¯ä¸€å¸§æŠ“å–æ—¶é€šçŸ¥åº”ç”¨
 EXTERN_C const IID IID_ISampleGrabberCB;
 
-// Àà ID	´´½¨ Sample Grabber COM ¶ÔÏó
+// ç±» ID	åˆ›å»º Sample Grabber COM å¯¹è±¡
 EXTERN_C const CLSID CLSID_SampleGrabber;
 
-// 	½Ó¿Ú ID	ÉèÖÃ Sample Grabber µÄ²ÎÊı¡¢¸ñÊ½¡¢»Øµ÷µÈ²Ù×÷½Ó¿Ú
+// 	æ¥å£ ID	è®¾ç½® Sample Grabber çš„å‚æ•°ã€æ ¼å¼ã€å›è°ƒç­‰æ“ä½œæ¥å£
 EXTERN_C const IID IID_ISampleGrabber;
 
 struct ISampleGrabberCB : public IUnknown {
@@ -85,7 +85,7 @@ public:
     LPBITMAPINFO m_BitmapInfor_Full;
     BYTE*        m_BitmapData_Full;
     BOOL         bStact;
-    DWORD        m_dwSize; // ÊÓÆµÍ¼ÏñÊı¾İ´óĞ¡
+    DWORD        m_dwSize; // è§†é¢‘å›¾åƒæ•°æ®å¤§å°
 
     CSampleGrabberCB()
     {
@@ -114,7 +114,7 @@ public:
 
     LPBITMAPINFO GetBmpInfor()
     {
-        if (m_BitmapInfor_Full==NULL) { //Í·ĞÅÏ¢
+        if (m_BitmapInfor_Full==NULL) { //å¤´ä¿¡æ¯
             ConstructBI(24);
         }
 
@@ -124,7 +124,7 @@ public:
     LPBITMAPINFO ConstructBI(ULONG ulbiBitCount)
     {
         int	ColorNum = ulbiBitCount <= 8 ? 1 << ulbiBitCount : 0;
-        ULONG ulBitmapLength  = sizeof(BITMAPINFOHEADER) + (ColorNum * sizeof(RGBQUAD));   //BITMAPINFOHEADER +¡¡µ÷É«°åµÄ¸öÊı
+        ULONG ulBitmapLength  = sizeof(BITMAPINFOHEADER) + (ColorNum * sizeof(RGBQUAD));   //BITMAPINFOHEADER +ã€€è°ƒè‰²æ¿çš„ä¸ªæ•°
 
         m_BitmapInfor_Full = (BITMAPINFO *) new BYTE[ulBitmapLength];
 
@@ -141,13 +141,13 @@ public:
         BitmapInforHeader->biClrUsed = 0;
         BitmapInforHeader->biClrImportant = 0;
 
-        BitmapInforHeader->biSizeImage =                   //Í¼ÏñÊı¾İ
+        BitmapInforHeader->biSizeImage =                   //å›¾åƒæ•°æ®
             (((BitmapInforHeader->biWidth * BitmapInforHeader->biBitCount + 31) & ~31) >> 3)
             * BitmapInforHeader->biHeight;
-        // 16Î»ºÍÒÔºóµÄÃ»ÓĞÑÕÉ«±í£¬Ö±½Ó·µ»Ø
+        // 16ä½å’Œä»¥åçš„æ²¡æœ‰é¢œè‰²è¡¨ï¼Œç›´æ¥è¿”å›
 
         //!!
-        m_dwSize=BitmapInforHeader->biSizeImage;    //Êı¾İ´óĞ¡
+        m_dwSize=BitmapInforHeader->biSizeImage;    //æ•°æ®å¤§å°
         m_BitmapData_Full=new BYTE[m_dwSize+10];
         ZeroMemory(m_BitmapData_Full,m_dwSize+10);
 
@@ -184,18 +184,18 @@ public:
         return 0;
     }
 
-    //»Øµ÷º¯Êı ÔÚÕâÀïµÃµ½ bmp µÄÊı¾İ
+    //å›è°ƒå‡½æ•° åœ¨è¿™é‡Œå¾—åˆ° bmp çš„æ•°æ®
     STDMETHODIMP BufferCB(double dblSampleTime, BYTE * szBuffer, long ulBufferSize)
     {
         if (!szBuffer) {
             return E_POINTER;
         }
 
-        if (bStact==CMD_CAN_COPY) {       //Î´³õÊ¼»¯ ·¢ËÍµÄÍ¬²îÒìµÄÒ»Ñù
-            //½«Í¼ÏñÊı¾İ¿½±´µÄÎÒÃÇµÄÄÚ´æ
-            memcpy(m_BitmapData_Full,szBuffer,ulBufferSize);    //Î»Í¼
+        if (bStact==CMD_CAN_COPY) {       //æœªåˆå§‹åŒ– å‘é€çš„åŒå·®å¼‚çš„ä¸€æ ·
+            //å°†å›¾åƒæ•°æ®æ‹·è´çš„æˆ‘ä»¬çš„å†…å­˜
+            memcpy(m_BitmapData_Full,szBuffer,ulBufferSize);    //ä½å›¾
 
-            InterlockedExchange((LPLONG)&bStact,CMD_CAN_SEND);      //Ô­×Ó×ÔÔö¿ÉÒÔ·¢ËÍ
+            InterlockedExchange((LPLONG)&bStact,CMD_CAN_SEND);      //åŸå­è‡ªå¢å¯ä»¥å‘é€
             return S_OK;
         }
         return -1;
@@ -224,14 +224,14 @@ public:
     HWND      m_hWnd;
 
     static CSampleGrabberCB mCB;
-    IGraphBuilder *    m_pGB;   //Í¨¹ı¸ÃÖµ¿ÉÒÔ·ÃÎÊ FCDO   Filter Control Device Object
-    ICaptureGraphBuilder2* m_pCapture;   //Í¨¹ı¸ÃÖµ¿ÉÒÔ·ÃÎÊ ÕæÊµCDO
+    IGraphBuilder *    m_pGB;   //é€šè¿‡è¯¥å€¼å¯ä»¥è®¿é—® FCDO   Filter Control Device Object
+    ICaptureGraphBuilder2* m_pCapture;   //é€šè¿‡è¯¥å€¼å¯ä»¥è®¿é—® çœŸå®CDO
 
-    IMediaControl*    m_pMC;             //¹ıÂËÉè±¸µÄ½Ó¿Ú
+    IMediaControl*    m_pMC;             //è¿‡æ»¤è®¾å¤‡çš„æ¥å£
     IVideoWindow*     m_pVW;
 
     IBaseFilter*       m_pBF;              //FDO
-    ISampleGrabber*    m_pGrabber;		   //Òı½Å 24Color
+    ISampleGrabber*    m_pGrabber;		   //å¼•è„š 24Color
 
     void FreeMediaType(AM_MEDIA_TYPE& mt);
     void ResizeVideoWindow();

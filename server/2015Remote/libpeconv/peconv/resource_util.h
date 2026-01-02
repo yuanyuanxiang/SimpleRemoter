@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Functions related to manual retrieving of PE resources.
 */

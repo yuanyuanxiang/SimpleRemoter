@@ -1,4 +1,4 @@
-// AudioDlg.cpp : ÊµÏÖÎÄ¼ş
+ï»¿// AudioDlg.cpp : å®ç°æ–‡ä»¶
 //
 
 #include "stdafx.h"
@@ -7,7 +7,7 @@
 #include "afxdialogex.h"
 
 
-// CAudioDlg ¶Ô»°¿ò
+// CAudioDlg å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(CAudioDlg, CDialog)
 
@@ -42,7 +42,7 @@ BEGIN_MESSAGE_MAP(CAudioDlg, CDialog)
 END_MESSAGE_MAP()
 
 
-// CAudioDlg ÏûÏ¢´¦Àí³ÌĞò
+// CAudioDlg æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 
 BOOL CAudioDlg::OnInitDialog()
@@ -52,13 +52,13 @@ BOOL CAudioDlg::OnInitDialog()
     SetIcon(m_hIcon,FALSE);
 
     CString strString;
-    strString.Format("%s - ÓïÒô¼àÌı", m_IPAddress);
+    strString.Format("%s - è¯­éŸ³ç›‘å¬", m_IPAddress);
     SetWindowText(strString);
 
     BYTE bToken = COMMAND_NEXT;
     m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
 
-    //Æô¶¯Ïß³Ì ÅĞ¶ÏCheckBox
+    //å¯åŠ¨çº¿ç¨‹ åˆ¤æ–­CheckBox
     m_hWorkThread = CreateThread(NULL, 0, WorkThread, (LPVOID)this, 0, NULL);
 
     m_bThreadRun = m_hWorkThread ? TRUE : FALSE;
@@ -66,7 +66,7 @@ BOOL CAudioDlg::OnInitDialog()
     GetDlgItem(IDC_CHECK)->EnableWindow(TRUE);
 
     return TRUE;  // return TRUE unless you set the focus to a control
-    // Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+    // å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 DWORD  CAudioDlg::WorkThread(LPVOID lParam)
@@ -79,10 +79,10 @@ DWORD  CAudioDlg::WorkThread(LPVOID lParam)
             continue;
         }
         DWORD	dwBufferSize = 0;
-        LPBYTE	szBuffer = This->m_AudioObject.GetRecordBuffer(&dwBufferSize);   //²¥·ÅÉùÒô
+        LPBYTE	szBuffer = This->m_AudioObject.GetRecordBuffer(&dwBufferSize);   //æ’­æ”¾å£°éŸ³
 
         if (szBuffer != NULL && dwBufferSize > 0)
-            This->m_ContextObject->Send2Client(szBuffer, dwBufferSize); //Ã»ÓĞÏûÏ¢Í·
+            This->m_ContextObject->Send2Client(szBuffer, dwBufferSize); //æ²¡æœ‰æ¶ˆæ¯å¤´
     }
     This->m_bThreadRun = FALSE;
 
@@ -98,12 +98,12 @@ void CAudioDlg::OnReceiveComplete(void)
     switch (m_ContextObject->InDeCompressedBuffer.GetBYTE(0)) {
     case TOKEN_AUDIO_DATA: {
         Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(1);
-        m_AudioObject.PlayBuffer(tmp.Buf(), tmp.length());   //²¥·Å²¨ĞÎÊı¾İ
+        m_AudioObject.PlayBuffer(tmp.Buf(), tmp.length());   //æ’­æ”¾æ³¢å½¢æ•°æ®
         break;
     }
 
     default:
-        // ´«Êä·¢ÉúÒì³£Êı¾İ
+        // ä¼ è¾“å‘ç”Ÿå¼‚å¸¸æ•°æ®
         break;
     }
 }
@@ -111,7 +111,7 @@ void CAudioDlg::OnReceiveComplete(void)
 void CAudioDlg::OnClose()
 {
     CancelIO();
-    // µÈ´ıÊı¾İ´¦ÀíÍê±Ï
+    // ç­‰å¾…æ•°æ®å¤„ç†å®Œæ¯•
     if (IsProcessing()) {
         ShowWindow(SW_HIDE);
         return;
@@ -122,7 +122,7 @@ void CAudioDlg::OnClose()
     DialogBase::OnClose();
 }
 
-// ´¦ÀíÊÇ·ñ·¢ËÍ±¾µØÓïÒôµ½Ô¶³Ì
+// å¤„ç†æ˜¯å¦å‘é€æœ¬åœ°è¯­éŸ³åˆ°è¿œç¨‹
 void CAudioDlg::OnBnClickedCheck()
 {
     UpdateData(true);

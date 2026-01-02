@@ -1,4 +1,4 @@
-#if !defined(AFX_VIDEOCODEC_H_INCLUDED)
+ï»¿#if !defined(AFX_VIDEOCODEC_H_INCLUDED)
 #define AFX_VIDEOCODEC_H_INCLUDED
 
 #include <VFW.H>
@@ -37,7 +37,7 @@ public:
         }
 
         ICCompressGetFormat(m_hIC, m_lpbmiInput, &m_bmiOutput);
-        // Ïò±àÂëÆ÷·¢ËÍÑéÖ¤
+        // å‘ç¼–ç å™¨å‘é€éªŒè¯
         ICSendMessage(m_hIC, 0x60c9, 0xf7329ace, 0xacdeaea2);
 
         m_cv.hic = m_hIC;
@@ -117,7 +117,7 @@ public:
         if (hIC) {
             ICGetInfo(hIC, &icInfo, sizeof(icInfo));
             *fccHandler = icInfo.fccHandler;
-            //ÓÉÓÚµÃµ½µÄszDescriptionÊÇUNICODEË«×Ö½Ú×Ö´®£¬ËùÒÔÒª×ª»»ÎªASCIIµÄ
+            //ç”±äºå¾—åˆ°çš„szDescriptionæ˜¯UNICODEåŒå­—èŠ‚å­—ä¸²ï¼Œæ‰€ä»¥è¦è½¬æ¢ä¸ºASCIIçš„
             if (strName != NULL)
                 wcstombs(strName, icInfo.szDescription, 256);
         } else nRet = -1;

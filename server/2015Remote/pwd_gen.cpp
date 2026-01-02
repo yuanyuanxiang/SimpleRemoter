@@ -1,4 +1,4 @@
-
+ï»¿
 #ifdef _WINDOWS
 #include "stdafx.h"
 #else
@@ -21,52 +21,52 @@
 #pragma comment(lib, "Advapi32.lib")
 #pragma comment(lib, "bcrypt.lib")
 
-// Ö´ĞĞÏµÍ³ÃüÁî£¬»ñÈ¡Ó²¼şĞÅÏ¢
+// æ‰§è¡Œç³»ç»Ÿå‘½ä»¤ï¼Œè·å–ç¡¬ä»¶ä¿¡æ¯
 std::string execCommand(const char* cmd)
 {
-    // ÉèÖÃ¹ÜµÀ£¬ÓÃÓÚ²¶»ñÃüÁîµÄÊä³ö
+    // è®¾ç½®ç®¡é“ï¼Œç”¨äºæ•è·å‘½ä»¤çš„è¾“å‡º
     SECURITY_ATTRIBUTES saAttr;
     saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
     saAttr.bInheritHandle = TRUE;
     saAttr.lpSecurityDescriptor = NULL;
 
-    // ´´½¨ÓÃÓÚ½ÓÊÕÊä³öµÄ¹ÜµÀ
+    // åˆ›å»ºç”¨äºæ¥æ”¶è¾“å‡ºçš„ç®¡é“
     HANDLE hStdOutRead, hStdOutWrite;
     if (!CreatePipe(&hStdOutRead, &hStdOutWrite, &saAttr, 0)) {
         Mprintf("CreatePipe failed with error: %d\n", GetLastError());
         return "ERROR";
     }
 
-    // ÉèÖÃÆô¶¯ĞÅÏ¢
+    // è®¾ç½®å¯åŠ¨ä¿¡æ¯
     STARTUPINFO si = { sizeof(si) };
     PROCESS_INFORMATION pi;
 
-    // ÉèÖÃ´°¿ÚÒş²Ø
+    // è®¾ç½®çª—å£éšè—
     si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
     si.wShowWindow = SW_HIDE;
-    si.hStdOutput = hStdOutWrite;  // ½«±ê×¼Êä³öÖØ¶¨Ïòµ½¹ÜµÀ
+    si.hStdOutput = hStdOutWrite;  // å°†æ ‡å‡†è¾“å‡ºé‡å®šå‘åˆ°ç®¡é“
 
-    // ´´½¨½ø³Ì
+    // åˆ›å»ºè¿›ç¨‹
     if (!CreateProcess(
-            NULL,          // Ó¦ÓÃ³ÌĞòÃû³Æ
-            (LPSTR)cmd,    // ÃüÁîĞĞ
-            NULL,          // ½ø³Ì°²È«ÊôĞÔ
-            NULL,          // Ïß³Ì°²È«ÊôĞÔ
-            TRUE,          // ÊÇ·ñ¼Ì³Ğ¾ä±ú
-            0,             // ´´½¨±êÖ¾
-            NULL,          // »·¾³±äÁ¿
-            NULL,          // µ±Ç°Ä¿Â¼
-            &si,           // Æô¶¯ĞÅÏ¢
-            &pi            // ½ø³ÌĞÅÏ¢
+            NULL,          // åº”ç”¨ç¨‹åºåç§°
+            (LPSTR)cmd,    // å‘½ä»¤è¡Œ
+            NULL,          // è¿›ç¨‹å®‰å…¨å±æ€§
+            NULL,          // çº¿ç¨‹å®‰å…¨å±æ€§
+            TRUE,          // æ˜¯å¦ç»§æ‰¿å¥æŸ„
+            0,             // åˆ›å»ºæ ‡å¿—
+            NULL,          // ç¯å¢ƒå˜é‡
+            NULL,          // å½“å‰ç›®å½•
+            &si,           // å¯åŠ¨ä¿¡æ¯
+            &pi            // è¿›ç¨‹ä¿¡æ¯
         )) {
         Mprintf("CreateProcess failed with error: %d\n", GetLastError());
         return "ERROR";
     }
 
-    // ¹Ø±ÕĞ´Èë¶Ë¾ä±ú
+    // å…³é—­å†™å…¥ç«¯å¥æŸ„
     SAFE_CLOSE_HANDLE(hStdOutWrite);
 
-    // ¶ÁÈ¡ÃüÁîÊä³ö
+    // è¯»å–å‘½ä»¤è¾“å‡º
     char buffer[128];
     std::string result = "";
     DWORD bytesRead;
@@ -74,27 +74,27 @@ std::string execCommand(const char* cmd)
         result.append(buffer, bytesRead);
     }
 
-    // ¹Ø±Õ¶ÁÈ¡¶Ë¾ä±ú
+    // å…³é—­è¯»å–ç«¯å¥æŸ„
     SAFE_CLOSE_HANDLE(hStdOutRead);
 
-    // µÈ´ı½ø³ÌÍê³É
+    // ç­‰å¾…è¿›ç¨‹å®Œæˆ
     WaitForSingleObject(pi.hProcess, INFINITE);
 
-    // ¹Ø±Õ½ø³ÌºÍÏß³Ì¾ä±ú
+    // å…³é—­è¿›ç¨‹å’Œçº¿ç¨‹å¥æŸ„
     SAFE_CLOSE_HANDLE(pi.hProcess);
     SAFE_CLOSE_HANDLE(pi.hThread);
 
-    // È¥³ı»»ĞĞ·ûºÍ¿Õ¸ñ
+    // å»é™¤æ¢è¡Œç¬¦å’Œç©ºæ ¼
     result.erase(remove(result.begin(), result.end(), '\n'), result.end());
     result.erase(remove(result.begin(), result.end(), '\r'), result.end());
 
-    // ·µ»ØÃüÁîµÄÊä³ö½á¹û
+    // è¿”å›å‘½ä»¤çš„è¾“å‡ºç»“æœ
     return result.empty() ? "ERROR" : result;
 }
 
 std::string getHardwareID_PS()
 {
-    // Get-WmiObject ÔÚ PowerShell 2.0+ ¶¼¿ÉÓÃ (>=Win7)
+    // Get-WmiObject åœ¨ PowerShell 2.0+ éƒ½å¯ç”¨ (>=Win7)
     const char* psScript =
         "(Get-WmiObject Win32_Processor).ProcessorId + '|' + "
         "(Get-WmiObject Win32_BaseBoard).SerialNumber + '|' + "
@@ -111,16 +111,16 @@ std::string getHardwareID_PS()
     return combinedID;
 }
 
-// »ñÈ¡Ó²¼ş ID£¨CPU + Ö÷°å + Ó²ÅÌ£©
+// è·å–ç¡¬ä»¶ IDï¼ˆCPU + ä¸»æ¿ + ç¡¬ç›˜ï¼‰
 std::string getHardwareID()
 {
-    // wmicÔÚĞÂÏµÍ³¿ÉÄÜ±»ÒÆ³ıÁË
+    // wmicåœ¨æ–°ç³»ç»Ÿå¯èƒ½è¢«ç§»é™¤äº†
     std::string cpuID = execCommand("wmic cpu get processorid");
     std::string boardID = execCommand("wmic baseboard get serialnumber");
     std::string diskID = execCommand("wmic diskdrive get serialnumber");
     std::string combinedID = cpuID + "|" + boardID + "|" + diskID;
     if (combinedID.find("ERROR") != std::string::npos) {
-        // Ê§°ÜÔÙÊ¹ÓÃ PowerShell ·½·¨
+        // å¤±è´¥å†ä½¿ç”¨ PowerShell æ–¹æ³•
         std::string psID = getHardwareID_PS();
         if (!psID.empty()) {
             Mprintf("Get hardware info with PowerShell: %s\n", psID.c_str());
@@ -133,7 +133,7 @@ std::string getHardwareID()
     return combinedID;
 }
 
-// Ê¹ÓÃ SHA-256 ¼ÆËã¹şÏ£
+// ä½¿ç”¨ SHA-256 è®¡ç®—å“ˆå¸Œ
 std::string hashSHA256(const std::string& data)
 {
     HCRYPTPROV hProv;
@@ -167,7 +167,7 @@ std::string genHMAC(const std::string& pwdHash, const std::string& superPass)
     return hashSHA256(pwdHash + " - " + key).substr(0, 16);
 }
 
-// Éú³É 16 ×Ö·ûµÄÎ¨Ò»Éè±¸ ID
+// ç”Ÿæˆ 16 å­—ç¬¦çš„å”¯ä¸€è®¾å¤‡ ID
 std::string getFixedLengthID(const std::string& hash)
 {
     return hash.substr(0, 4) + "-" + hash.substr(4, 4) + "-" + hash.substr(8, 4) + "-" + hash.substr(12, 4);

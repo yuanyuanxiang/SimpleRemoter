@@ -1,4 +1,4 @@
-// SystemManager.h: interface for the CSystemManager class.
+﻿// SystemManager.h: interface for the CSystemManager class.
 //
 //////////////////////////////////////////////////////////////////////
 

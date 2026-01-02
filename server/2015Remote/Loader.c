@@ -1,4 +1,4 @@
-// RDIShellcodeCLoader.cpp : Defines the entry point for the console application.
+﻿// RDIShellcodeCLoader.cpp : Defines the entry point for the console application.
 // https://github.com/Drewsif/sRDI/blob/master/Native/Loader.cpp
 
 #include <windows.h>

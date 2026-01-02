@@ -1,8 +1,8 @@
-#pragma once
+ï»¿#pragma once
 #include "afxcmn.h"
 
 #include "IOCPServer.h"
-// CSystemDlg ¶Ô»°¿ò
+// CSystemDlg å¯¹è¯æ¡†
 
 class CSystemDlg : public DialogBase
 {
@@ -19,11 +19,11 @@ public:
     void OnReceiveComplete(void);
     CWnd* m_pParent;
     BOOL   m_bHow;
-// ¶Ô»°¿òÊı¾İ
+// å¯¹è¯æ¡†æ•°æ®
     enum { IDD = IDD_DIALOG_SYSTEM };
 
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æŒ
 
     DECLARE_MESSAGE_MAP()
 public:

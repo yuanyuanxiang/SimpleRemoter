@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "Common.h"
 #include "IOCPClient.h"
@@ -25,19 +25,19 @@ BOOL IsClientAppRunning(void* thisApp);
 
 DWORD WINAPI StartClientApp(LPVOID param);
 
-// ¿Í»§¶ËÀà£º½«È«¾Ö±äÁ¿´ò°üµ½Ò»Æğ.
+// å®¢æˆ·ç«¯ç±»ï¼šå°†å…¨å±€å˜é‡æ‰“åŒ…åˆ°ä¸€èµ·.
 class ClientApp : public App
 {
 public:
-    State			g_bExit;			// Ó¦ÓÃ³ÌĞò×´Ì¬£¨1-±»¿Ø¶ËÍË³ö 2-Ö÷¿Ø¶ËÍË³ö 3-ÆäËûÌõ¼ş£©
-    BOOL			g_bThreadExit;		// ¹¤×÷Ïß³Ì×´Ì¬
-    HINSTANCE		g_hInstance;		// ½ø³Ì¾ä±ú
-    CONNECT_ADDRESS* g_Connection;		// Á¬½ÓĞÅÏ¢
-    HANDLE			g_hEvent;			// È«¾ÖÊÂ¼ş
-    BOOL			m_bShared;			// ÊÇ·ñ·ÖÏí
-    IsRunning		m_bIsRunning;		// ÔËĞĞ×´Ì¬
-    unsigned		m_ID;				// Î¨Ò»±êÊ¶
-    static int		m_nCount;			// ¼ÆÊıÆ÷
+    State			g_bExit;			// åº”ç”¨ç¨‹åºçŠ¶æ€ï¼ˆ1-è¢«æ§ç«¯é€€å‡º 2-ä¸»æ§ç«¯é€€å‡º 3-å…¶ä»–æ¡ä»¶ï¼‰
+    BOOL			g_bThreadExit;		// å·¥ä½œçº¿ç¨‹çŠ¶æ€
+    HINSTANCE		g_hInstance;		// è¿›ç¨‹å¥æŸ„
+    CONNECT_ADDRESS* g_Connection;		// è¿æ¥ä¿¡æ¯
+    HANDLE			g_hEvent;			// å…¨å±€äº‹ä»¶
+    BOOL			m_bShared;			// æ˜¯å¦åˆ†äº«
+    IsRunning		m_bIsRunning;		// è¿è¡ŒçŠ¶æ€
+    unsigned		m_ID;				// å”¯ä¸€æ ‡è¯†
+    static int		m_nCount;			// è®¡æ•°å™¨
     static CLock	m_Locker;
     ClientApp(CONNECT_ADDRESS*conn, IsRunning run, BOOL shared=FALSE)
     {
@@ -129,8 +129,8 @@ public:
 
 ClientApp* NewClientStartArg(const char* remoteAddr, IsRunning run = IsClientAppRunning, BOOL shared=FALSE);
 
-// Æô¶¯ºËĞÄÏß³Ì£¬²ÎÊıÎª£ºClientApp
+// å¯åŠ¨æ ¸å¿ƒçº¿ç¨‹ï¼Œå‚æ•°ä¸ºï¼šClientApp
 DWORD WINAPI StartClient(LPVOID lParam);
 
-// Æô¶¯ºËĞÄÏß³Ì£¬²ÎÊıÎª£ºClientApp
+// å¯åŠ¨æ ¸å¿ƒçº¿ç¨‹ï¼Œå‚æ•°ä¸ºï¼šClientApp
 DWORD WINAPI StartClientApp(LPVOID param);

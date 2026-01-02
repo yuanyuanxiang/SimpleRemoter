@@ -1,4 +1,4 @@
-// ShellManager.h: interface for the CShellManager class.
+ï»¿// ShellManager.h: interface for the CShellManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -29,8 +29,8 @@ public:
 
     BOOL m_bStarting;
     HANDLE m_hThreadRead;
-    int m_nCmdLength;				// ÊäÈëµÄÃüÁî³¤¶È
-    HANDLE m_hShellProcessHandle;    //±£´æCmd½ø³ÌµÄ½ø³Ì¾ä±úºÍÖ÷Ïß³Ì¾ä±ú
+    int m_nCmdLength;				// è¾“å…¥çš„å‘½ä»¤é•¿åº¦
+    HANDLE m_hShellProcessHandle;    //ä¿å­˜Cmdè¿›ç¨‹çš„è¿›ç¨‹å¥æŸ„å’Œä¸»çº¿ç¨‹å¥æŸ„
     HANDLE m_hShellThreadHandle;
 };
 

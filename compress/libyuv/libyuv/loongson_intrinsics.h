@@ -1,4 +1,4 @@
-/*
+﻿/*
  *  Copyright 2022 The LibYuv Project Authors. All rights reserved.
  *
  *  Use of this source code is governed by a BSD-style license
@@ -1191,7 +1191,7 @@ static inline __m256i __lasx_xvaddwl_h_bu(__m256i in_h, __m256i in_l)
  * Arguments   : Inputs - in_h, in_l
  *               Output - out
  * Details     : The in_l vector after double zero extension (unsigned byte to
- *               signed halfword)，added to the in_h vector.
+ *               signed halfword)锛宎dded to the in_h vector.
  * Example     : See out = __lasx_xvaddw_w_w_h(in_h, in_l)
  * =============================================================================
  */

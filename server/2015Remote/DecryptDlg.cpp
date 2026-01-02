@@ -1,4 +1,4 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 #include "DecryptDlg.h"
 
 
@@ -32,7 +32,7 @@ BEGIN_MESSAGE_MAP(DecryptDlg, CDialog)
 END_MESSAGE_MAP()
 
 
-// DecryptDlg ÏûÏ¢´¦Àí³ÌĞò
+// DecryptDlg æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 
 BOOL DecryptDlg::OnInitDialog()
@@ -41,12 +41,12 @@ BOOL DecryptDlg::OnInitDialog()
     SetIcon(m_hIcon, FALSE);
 
     CString str;
-    str.Format("%s - ½âÃÜÊı¾İ", m_IPAddress);
+    str.Format("%s - è§£å¯†æ•°æ®", m_IPAddress);
     SetWindowText(str);
 
     BYTE bToken = COMMAND_NEXT;
     m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
-    m_EditDecrypedResult.SetWindowTextA(CString("<<< ÌáÊ¾: ÇëÔÚ²Ëµ¥Ñ¡Ôñ½âÃÜÀàĞÍ >>>\r\n"));
+    m_EditDecrypedResult.SetWindowTextA(CString("<<< æç¤º: è¯·åœ¨èœå•é€‰æ‹©è§£å¯†ç±»å‹ >>>\r\n"));
     int m_nCurSel = m_EditDecrypedResult.GetWindowTextLengthA();
     m_EditDecrypedResult.SetSel((int)m_nCurSel, (int)m_nCurSel);
     m_EditDecrypedResult.PostMessage(EM_SETSEL, m_nCurSel, m_nCurSel);
@@ -67,7 +67,7 @@ VOID DecryptDlg::OnReceiveComplete()
 void DecryptDlg::OnClose()
 {
     CancelIO();
-    // µÈ´ıÊı¾İ´¦ÀíÍê±Ï
+    // ç­‰å¾…æ•°æ®å¤„ç†å®Œæ¯•
     if (IsProcessing()) {
         ShowWindow(SW_HIDE);
         return;
@@ -79,7 +79,7 @@ void DecryptDlg::OnSize(UINT nType, int cx, int cy)
 {
     CDialogBase::OnSize(nType, cx, cy);
     if (m_EditDecrypedResult.GetSafeHwnd()) {
-        m_EditDecrypedResult.MoveWindow(0, 0, cx, cy); // Õ¼ÂúÕû¸ö¶Ô»°¿ò
+        m_EditDecrypedResult.MoveWindow(0, 0, cx, cy); // å æ»¡æ•´ä¸ªå¯¹è¯æ¡†
     }
 }
 

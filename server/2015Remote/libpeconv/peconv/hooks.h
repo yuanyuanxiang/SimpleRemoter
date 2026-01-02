@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Functions related to hooking the loaded PE. Reditecting/replacing a functions with another.
 */

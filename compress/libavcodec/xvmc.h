@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) 2003 Ivan Kalvachev
  *
  * This file is part of FFmpeg.

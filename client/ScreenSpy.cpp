@@ -1,4 +1,4 @@
-// ScreenSpy.cpp: implementation of the CScreenSpy class.
+﻿// ScreenSpy.cpp: implementation of the CScreenSpy class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -96,7 +96,7 @@ LPBYTE CScreenSpy::GetFirstScreenData(ULONG* ulFirstScreenLength)
     }
     *ulFirstScreenLength = m_BitmapInfor_Send->bmiHeader.biSizeImage;
 
-    return m_RectBuffer;  //�ڴ�
+    return m_RectBuffer;  //内存
 }
 
 

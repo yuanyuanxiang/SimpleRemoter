@@ -1,4 +1,4 @@
-// FileManagerDlg.cpp : implementation file
+ï»¿// FileManagerDlg.cpp : implementation file
 #include "stdafx.h"
 #include "2015Remote.h"
 #include "CFileManagerDlg.h"
@@ -32,7 +32,7 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, Server* pIOCPServer, ClientConte
     m_bSubFordle = FALSE;
     id_search_result = 0;
 
-    // ±£´æÔ¶³ÌÇı¶¯Æ÷ÁĞ±í
+    // ä¿å­˜è¿œç¨‹é©±åŠ¨å™¨åˆ—è¡¨
     m_bCanAdmin = (*m_ContextObject->m_DeCompressionBuffer.GetBuffer(1)) == 0x01;
     m_strDesktopPath = (TCHAR*)m_ContextObject->m_DeCompressionBuffer.GetBuffer(2);
     memset(m_bRemoteDriveList, 0, sizeof(m_bRemoteDriveList));
@@ -49,7 +49,7 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, Server* pIOCPServer, ClientConte
 
     DRIVE_Sys = FALSE;
     DRIVE_CAZ = FALSE;
-    Bf_nCounters = 0;// ±¸·İ¼ÆÊıÆ÷  ÓÉÓÚ±È½ÏÓÃ
+    Bf_nCounters = 0;// å¤‡ä»½è®¡æ•°å™¨  ç”±äºæ¯”è¾ƒç”¨
     Bf_dwOffsetHighs = 0;
     Bf_dwOffsetLows = 0;
 
@@ -77,22 +77,22 @@ BEGIN_MESSAGE_MAP(CFileManagerDlg, CDialog)
     ON_WM_TIMER()
     ON_WM_CLOSE()
 
-    ON_NOTIFY(NM_DBLCLK, IDC_LIST_REMOTE_DRIVER, OnDblclkListRemotedriver)	//Ö÷1   Ë«»÷
-    ON_NOTIFY(NM_DBLCLK, IDC_LIST_REMOTE, OnDblclkListRemote)				//Ö÷    Ë«»÷
-    ON_NOTIFY(NM_RCLICK, IDC_LIST_REMOTE_DRIVER, OnRclickListRemotedriver)	//Ö÷1    ÓÒ¼ü
-    ON_NOTIFY(NM_RCLICK, IDC_LIST_REMOTE, OnRclickListRemote)				//Ö÷    ÓÒ¼ü
-    ON_NOTIFY(NM_RCLICK, IDC_LIST_REMOTE_SEARCH, OnRclickListSearch)		//ËÑË÷  ÓÒ¼ü
+    ON_NOTIFY(NM_DBLCLK, IDC_LIST_REMOTE_DRIVER, OnDblclkListRemotedriver)	//ä¸»1   åŒå‡»
+    ON_NOTIFY(NM_DBLCLK, IDC_LIST_REMOTE, OnDblclkListRemote)				//ä¸»    åŒå‡»
+    ON_NOTIFY(NM_RCLICK, IDC_LIST_REMOTE_DRIVER, OnRclickListRemotedriver)	//ä¸»1    å³é”®
+    ON_NOTIFY(NM_RCLICK, IDC_LIST_REMOTE, OnRclickListRemote)				//ä¸»    å³é”®
+    ON_NOTIFY(NM_RCLICK, IDC_LIST_REMOTE_SEARCH, OnRclickListSearch)		//æœç´¢  å³é”®
 
-    ON_NOTIFY(NM_CLICK, IDC_LIST_REMOTE_DRIVER, OnclkListRemotedriver)	//Ö÷1   µ¥»÷
-    ON_NOTIFY(NM_CLICK, IDC_LIST_REMOTE, OnclkListRemote)				//Ö÷    µ¥»÷
-    ON_NOTIFY(NM_CLICK, IDC_LIST_REMOTE_SEARCH, OnclickListSearch)		//ËÑË÷  µ¥»÷
+    ON_NOTIFY(NM_CLICK, IDC_LIST_REMOTE_DRIVER, OnclkListRemotedriver)	//ä¸»1   å•å‡»
+    ON_NOTIFY(NM_CLICK, IDC_LIST_REMOTE, OnclkListRemote)				//ä¸»    å•å‡»
+    ON_NOTIFY(NM_CLICK, IDC_LIST_REMOTE_SEARCH, OnclickListSearch)		//æœç´¢  å•å‡»
 
     ON_NOTIFY(LVN_ENDLABELEDIT, IDC_LIST_REMOTE, OnEndLabelEditListRemote)
     ON_NOTIFY(LVN_BEGINDRAG, IDC_LIST_REMOTE, OnBeginDragListRemote)
 
-    ON_COMMAND(IDT_REMOTE_VIEW, OnRemoteView) //ÏÔÊ¾·½Ê½
-    ON_COMMAND(IDT_REMOTE_PREV, OnRemotePrev) //ÏòÉÏ
-    ON_COMMAND(IDT_REMOTE_STOP, OnRemoteStop) //È¡Ïû
+    ON_COMMAND(IDT_REMOTE_VIEW, OnRemoteView) //æ˜¾ç¤ºæ–¹å¼
+    ON_COMMAND(IDT_REMOTE_PREV, OnRemotePrev) //å‘ä¸Š
+    ON_COMMAND(IDT_REMOTE_STOP, OnRemoteStop) //å–æ¶ˆ
     ON_BN_CLICKED(IDC_BUTTON_GO, OnGo)
     ON_COMMAND(IDM_RENAME, OnRename)
     ON_COMMAND(IDM_DELETE, OnDelete)
@@ -157,11 +157,11 @@ BOOL CFileManagerDlg::OnInitDialog()
     RECT	rect;
     GetClientRect(&rect);
 
-    // ÉèÖÃ±êÌâ
+    // è®¾ç½®æ ‡é¢˜
     CString str;
-    str.Format(_T("ÎÄ¼ş¹ÜÀí - %s"), m_ContextObject->PeerName.c_str()), SetWindowText(str);
+    str.Format(_T("æ–‡ä»¶ç®¡ç† - %s"), m_ContextObject->PeerName.c_str()), SetWindowText(str);
 
-    // ´´½¨´ø½ø¶ÈÌõµÄ×´Ì¬À¸
+    // åˆ›å»ºå¸¦è¿›åº¦æ¡çš„çŠ¶æ€æ 
     if (!m_wndStatusBar.Create(this) ||
         !m_wndStatusBar.SetIndicators(indicators,
                                       sizeof(indicators) / sizeof(UINT))) {
@@ -172,13 +172,13 @@ BOOL CFileManagerDlg::OnInitDialog()
     m_wndStatusBar.SetPaneInfo(0, m_wndStatusBar.GetItemID(0), SBPS_STRETCH, NULL);
     m_wndStatusBar.SetPaneInfo(1, m_wndStatusBar.GetItemID(1), SBPS_NORMAL, 100);
     m_wndStatusBar.SetPaneInfo(2, m_wndStatusBar.GetItemID(2), SBPS_NORMAL, 210);
-    RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 0); //ÏÔÊ¾×´Ì¬À¸
+    RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 0); //æ˜¾ç¤ºçŠ¶æ€æ 
 
     m_wndStatusBar.GetItemRect(1, &rect);
     m_ProgressCtrl = new CProgressCtrl;
     m_ProgressCtrl->Create(PBS_SMOOTH | WS_VISIBLE, rect, &m_wndStatusBar, 1);
-    m_ProgressCtrl->SetRange(0, 100);           //ÉèÖÃ½ø¶ÈÌõ·¶Î§
-    m_ProgressCtrl->SetPos(0);                 //ÉèÖÃ½ø¶ÈÌõµ±Ç°Î»ÖÃ
+    m_ProgressCtrl->SetRange(0, 100);           //è®¾ç½®è¿›åº¦æ¡èŒƒå›´
+    m_ProgressCtrl->SetPos(0);                 //è®¾ç½®è¿›åº¦æ¡å½“å‰ä½ç½®
 
     SHAutoComplete(GetDlgItem(IDC_REMOTE_PATH)->GetWindow(GW_CHILD)->m_hWnd, SHACF_FILESYSTEM);
 
@@ -197,23 +197,23 @@ BOOL CFileManagerDlg::OnInitDialog()
     m_list_remote_search.SetImageList(&(THIS_APP->m_pImageList_Large), LVSIL_NORMAL);
     m_list_remote_search.SetImageList(&(THIS_APP->m_pImageList_Small), LVSIL_SMALL);
 
-    m_list_remote_driver.InsertColumn(0, _T("Ãû³Æ"), LVCFMT_LEFT, 50);
-    m_list_remote_driver.InsertColumn(1, _T("ÀàĞÍ"), LVCFMT_LEFT, 38);
-    m_list_remote_driver.InsertColumn(2, _T("×Ü´óĞ¡"), LVCFMT_LEFT, 70);
-    m_list_remote_driver.InsertColumn(3, _T("¿ÉÓÃ¿Õ¼ä"), LVCFMT_LEFT, 70);
+    m_list_remote_driver.InsertColumn(0, _T("åç§°"), LVCFMT_LEFT, 50);
+    m_list_remote_driver.InsertColumn(1, _T("ç±»å‹"), LVCFMT_LEFT, 38);
+    m_list_remote_driver.InsertColumn(2, _T("æ€»å¤§å°"), LVCFMT_LEFT, 70);
+    m_list_remote_driver.InsertColumn(3, _T("å¯ç”¨ç©ºé—´"), LVCFMT_LEFT, 70);
 
-    m_list_remote.InsertColumn(0, _T("Ãû³Æ"), LVCFMT_LEFT, 250);
-    m_list_remote.InsertColumn(1, _T("´óĞ¡"), LVCFMT_LEFT, 70);
-    m_list_remote.InsertColumn(2, _T("ÀàĞÍ"), LVCFMT_LEFT, 120);
-    m_list_remote.InsertColumn(3, _T("ĞŞ¸ÄÈÕÆÚ"), LVCFMT_LEFT, 115);
+    m_list_remote.InsertColumn(0, _T("åç§°"), LVCFMT_LEFT, 250);
+    m_list_remote.InsertColumn(1, _T("å¤§å°"), LVCFMT_LEFT, 70);
+    m_list_remote.InsertColumn(2, _T("ç±»å‹"), LVCFMT_LEFT, 120);
+    m_list_remote.InsertColumn(3, _T("ä¿®æ”¹æ—¥æœŸ"), LVCFMT_LEFT, 115);
     m_list_remote.SetParenDlg(this);
 
-    //ÉèÖÃËÑË÷list±íÍ·
+    //è®¾ç½®æœç´¢listè¡¨å¤´
     m_list_remote_search.ShowWindow(SW_HIDE);
-    m_list_remote_search.InsertColumn(0, _T("ÎÄ¼şÃû"), LVCFMT_LEFT, 130);
-    m_list_remote_search.InsertColumn(1, _T("´óĞ¡"), LVCFMT_LEFT, 100);
-    m_list_remote_search.InsertColumn(2, _T("ĞŞ¸ÄÈÕÆÚ"), LVCFMT_LEFT, 100);
-    m_list_remote_search.InsertColumn(3, _T("ÎÄ¼şÂ·¾¶"), LVCFMT_LEFT, 450);
+    m_list_remote_search.InsertColumn(0, _T("æ–‡ä»¶å"), LVCFMT_LEFT, 130);
+    m_list_remote_search.InsertColumn(1, _T("å¤§å°"), LVCFMT_LEFT, 100);
+    m_list_remote_search.InsertColumn(2, _T("ä¿®æ”¹æ—¥æœŸ"), LVCFMT_LEFT, 100);
+    m_list_remote_search.InsertColumn(3, _T("æ–‡ä»¶è·¯å¾„"), LVCFMT_LEFT, 450);
     SetWindowPos(NULL, 0, 0, 830, 500, SWP_NOMOVE);
 
     FixedRemoteDriveList();
@@ -226,11 +226,11 @@ void CFileManagerDlg::OnSize(UINT nType, int cx, int cy)
     CDialog::OnSize(nType, cx, cy);
 
     // TODO: Add your message handler code here
-    // ×´Ì¬À¸»¹Ã»ÓĞ´´½¨
+    // çŠ¶æ€æ è¿˜æ²¡æœ‰åˆ›å»º
     if (m_wndStatusBar.m_hWnd == NULL)
         return;
-    // ¶¨Î»×´Ì¬À¸
-    RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 0); //ÏÔÊ¾¹¤¾ßÀ¸
+    // å®šä½çŠ¶æ€æ 
+    RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 0); //æ˜¾ç¤ºå·¥å…·æ 
     RECT	rect;
     m_wndStatusBar.GetItemRect(1, &rect);
     m_ProgressCtrl->MoveWindow(&rect);
@@ -241,7 +241,7 @@ void CFileManagerDlg::OnBeginDragListRemote(NMHDR* pNMHDR, LRESULT* pResult)
     NM_LISTVIEW* pNMListView = (NM_LISTVIEW*)pNMHDR;
     //We will call delete later (in LButtonUp) to clean this up
 
-    if (m_list_remote.GetSelectedCount() > 1) //Ñ¡ÔñÁËÁĞ±íÖĞµÄ³¬¹ı 1 ¸öÏîÄ¿
+    if (m_list_remote.GetSelectedCount() > 1) //é€‰æ‹©äº†åˆ—è¡¨ä¸­çš„è¶…è¿‡ 1 ä¸ªé¡¹ç›®
         m_hCursor = AfxGetApp()->LoadCursor(IDC_MUTI_DRAG);
     else
         m_hCursor = AfxGetApp()->LoadCursor(IDC_DRAG);
@@ -262,12 +262,12 @@ void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
         TCHAR str[1024] = TEXT("c:\\");
         HWND hwnd = NULL;
         POINT pNow = { 0,0 };
-        if (GetCursorPos(&pNow)) // »ñÈ¡Êó±êµ±Ç°Î»ÖÃ
+        if (GetCursorPos(&pNow)) // è·å–é¼ æ ‡å½“å‰ä½ç½®
             mouse_event(MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_LEFTDOWN, pNow.x, pNow.y, 0, 0);
         mouse_event(MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_LEFTUP, pNow.x, pNow.y, 0, 0);
         Sleep(150);
         HWND hwndPointNow = NULL;
-        hwndPointNow = ::WindowFromPoint(pNow); // »ñÈ¡Êó±êËùÔÚ´°¿ÚµÄ¾ä±ú
+        hwndPointNow = ::WindowFromPoint(pNow); // è·å–é¼ æ ‡æ‰€åœ¨çª—å£çš„å¥æŸ„
         TCHAR szBuf_class[MAX_PATH];
         TCHAR szBuf_title[MAX_PATH];
         ::GetWindowText(hwndPointNow, szBuf_title, MAX_PATH);
@@ -297,7 +297,7 @@ void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
                 }
 
                 if (hwnd == NULL) {
-                    ::MessageBox(NULL, _T("ÇëÍÏ×§µ½ÎÄ¼ş¹ÜÀíÆ÷Ñ¡¶¨Ä¿Â¼ÖĞ"), TEXT("´íÎó"), 0);
+                    ::MessageBox(NULL, _T("è¯·æ‹–æ‹½åˆ°æ–‡ä»¶ç®¡ç†å™¨é€‰å®šç›®å½•ä¸­"), TEXT("é”™è¯¯"), 0);
                 } else {
                     ::SendMessage(hwnd, WM_GETTEXT, 1024, (LPARAM)str);
                     strLpath = str + 4;
@@ -307,7 +307,7 @@ void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
         }
         if (bDownload) {
             m_bIsUpload = false;
-            // ½ûÓÃÎÄ¼ş¹ÜÀí´°¿Ú
+            // ç¦ç”¨æ–‡ä»¶ç®¡ç†çª—å£
             EnableControl(FALSE);
 
             CString	file;
@@ -316,14 +316,14 @@ void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
             while (pos) {
                 int nItem = m_list_remote.GetNextSelectedItem(pos);
                 file = m_Remote_Path + m_list_remote.GetItemText(nItem, 0);
-                // Èç¹ûÊÇÄ¿Â¼
+                // å¦‚æœæ˜¯ç›®å½•
                 if (m_list_remote.GetItemData(nItem))
                     file += '\\';
                 m_Remote_Download_Job.AddTail(file);
             }
             if (file.IsEmpty()) {
                 EnableControl(TRUE);
-                ::MessageBox(m_hWnd, _T("ÇëÑ¡ÔñÎÄ¼ş£¡"), _T("¾¯¸æ"), MB_OK | MB_ICONWARNING);
+                ::MessageBox(m_hWnd, _T("è¯·é€‰æ‹©æ–‡ä»¶ï¼"), _T("è­¦å‘Š"), MB_OK | MB_ICONWARNING);
                 return;
             }
 
@@ -334,7 +334,7 @@ void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
             if (strLpath.GetAt(strLpath.GetLength() - 1) != _T('\\'))
                 strLpath += _T("\\");
             m_nTransferMode = TRANSFER_MODE_NORMAL;
-            // ·¢ËÍµÚÒ»¸öÏÂÔØÈÎÎñ
+            // å‘é€ç¬¬ä¸€ä¸ªä¸‹è½½ä»»åŠ¡
             SendDownloadJob();
         }
     }
@@ -355,7 +355,7 @@ BOOL CFileManagerDlg::PreTranslateMessage(MSG* pMsg)
             return TRUE;
         }
     }
-    // µ¥»÷³ıÁË´°¿Ú±êÌâÀ¸ÒÔÍâµÄÇøÓòÊ¹´°¿ÚÒÆ¶¯
+    // å•å‡»é™¤äº†çª—å£æ ‡é¢˜æ ä»¥å¤–çš„åŒºåŸŸä½¿çª—å£ç§»åŠ¨
     if (pMsg->message == WM_LBUTTONDOWN && pMsg->hwnd == m_hWnd) {
         pMsg->message = WM_NCLBUTTONDOWN;
         pMsg->wParam = HTCAPTION;
@@ -373,15 +373,15 @@ void CFileManagerDlg::OnTimer(UINT_PTR nIDEvent)
 
 void CFileManagerDlg::FixedRemoteDriveList()
 {
-    // ¼ÓÔØÏµÍ³Í³Í¼±êÁĞ±í ÉèÖÃÇı¶¯Æ÷Í¼±êÁĞ±í
-    //¼ÓÔØÏµÍ³Í¼±ê
+    // åŠ è½½ç³»ç»Ÿç»Ÿå›¾æ ‡åˆ—è¡¨ è®¾ç½®é©±åŠ¨å™¨å›¾æ ‡åˆ—è¡¨
+    //åŠ è½½ç³»ç»Ÿå›¾æ ‡
 
     DRIVE_Sys = FALSE;
     BYTE* pDrive = NULL;
     pDrive = (BYTE*)m_bRemoteDriveList;
     int		 count = 0;
-    int		AmntMB = 0; // ×Ü´óĞ¡
-    int		FreeMB = 0; // Ê£Óà¿Õ¼ä
+    int		AmntMB = 0; // æ€»å¤§å°
+    int		FreeMB = 0; // å‰©ä½™ç©ºé—´
 
     /*
     6	DRIVE_FLOPPY
@@ -392,9 +392,9 @@ void CFileManagerDlg::FixedRemoteDriveList()
     11	DRIVE_CDROM
     */
     int	nIconIndex = -1;
-    //ÓÃÒ»¸öÑ­»·±éÀúËùÓĞ·¢ËÍÀ´µÄĞÅÏ¢£¬ÏÈÊÇµ½ÁĞ±íÖĞ
+    //ç”¨ä¸€ä¸ªå¾ªç¯éå†æ‰€æœ‰å‘é€æ¥çš„ä¿¡æ¯ï¼Œå…ˆæ˜¯åˆ°åˆ—è¡¨ä¸­
     for (int i = 0; pDrive[i] != '\0';) {
-        //ÓÉÇı¶¯Æ÷ÃûÅĞ¶ÏÍ¼±êµÄË÷Òı
+        //ç”±é©±åŠ¨å™¨ååˆ¤æ–­å›¾æ ‡çš„ç´¢å¼•
         if (pDrive[i] == _T('A') || pDrive[i] == _T('B')) {
             nIconIndex = 0;
         } else {
@@ -420,12 +420,12 @@ void CFileManagerDlg::FixedRemoteDriveList()
                 break;
             }
         }
-        //ÏÔÊ¾Çı¶¯Æ÷Ãû
+        //æ˜¾ç¤ºé©±åŠ¨å™¨å
         CString	str;
         str.Format(_T("%c:\\"), pDrive[i]);
         int	nItem = m_list_remote_driver.InsertItem(i, str, nIconIndex);
         m_list_remote_driver.SetItemData(nItem, 1);
-        //ÏÔÊ¾Çı¶¯Æ÷´óĞ¡
+        //æ˜¾ç¤ºé©±åŠ¨å™¨å¤§å°
         memcpy(&AmntMB, pDrive + i + 4, 4);
         memcpy(&FreeMB, pDrive + i + 8, 4);
         str.Format(_T("%0.1f GB"), (float)AmntMB / 1024);
@@ -442,7 +442,7 @@ void CFileManagerDlg::FixedRemoteDriveList()
         i += (lstrlen(lpTypeName) + 1) * sizeof(TCHAR);
         lpFileSystemName = (TCHAR*)(pDrive + i);
 
-        // ´ÅÅÌÀàĞÍ, Îª¿Õ¾ÍÏÔÊ¾´ÅÅÌÃû³Æ
+        // ç£ç›˜ç±»å‹, ä¸ºç©ºå°±æ˜¾ç¤ºç£ç›˜åç§°
         if (lstrlen(lpFileSystemName) == 0) {
             m_list_remote_driver.SetItemText(nItem, 1, lpTypeName);
         } else {
@@ -453,17 +453,17 @@ void CFileManagerDlg::FixedRemoteDriveList()
         count++;
     }
 
-    m_list_remote_driver.InsertItem(0, _T("×ÀÃæ"), nIconIndex);
-    m_list_remote_driver.InsertItem(0, _T("×î½ü"), nIconIndex);
+    m_list_remote_driver.InsertItem(0, _T("æ¡Œé¢"), nIconIndex);
+    m_list_remote_driver.InsertItem(0, _T("æœ€è¿‘"), nIconIndex);
     count += 2;
 
-    // ÖØÖÃÔ¶³Ìµ±Ç°Â·¾¶
+    // é‡ç½®è¿œç¨‹å½“å‰è·¯å¾„
     m_Remote_Path = "";
     m_Remote_Directory_ComboBox.ResetContent();
 
     DRIVE_CAZ = FALSE;
     DWORD_PTR dwResult;
-    ShowMessage(_T("Ô¶³Ì¼ÆËã»ú£º´ÅÅÌÁĞ±í"));
+    ShowMessage(_T("è¿œç¨‹è®¡ç®—æœºï¼šç£ç›˜åˆ—è¡¨"));
     SendMessageTimeout(m_ProgressCtrl->GetSafeHwnd(), PBM_SETPOS, 0, 0, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
     SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, NULL, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
 
@@ -476,14 +476,14 @@ void CFileManagerDlg::fixNetHood(BYTE* pbuffer, int buffersize)
     CString	str;
     TCHAR* pszFileName = NULL;
     int strsize;
-    DWORD	dwOffset = 0; // Î»ÒÆÖ¸Õë
+    DWORD	dwOffset = 0; // ä½ç§»æŒ‡é’ˆ
     for (int i = 0; dwOffset < buffersize - sizeof(int);) {
         memcpy(&strsize, pbuffer + dwOffset, sizeof(int));
         pszFileName = (TCHAR*)(pbuffer + dwOffset + sizeof(int));
         str = pszFileName;
         int	nItem = m_list_remote_driver.InsertItem(m_list_remote_driver.GetItemCount(), str, DRIVE_REMOTE);
         m_list_remote_driver.SetItemData(nItem, 1);
-        m_list_remote_driver.SetItemText(nItem, 1, _T("¹²Ïí"));
+        m_list_remote_driver.SetItemText(nItem, 1, _T("å…±äº«"));
         m_list_remote_driver.SetItemText(nItem, 2, _T(""));
         m_list_remote_driver.SetItemText(nItem, 3, _T(""));
         dwOffset += (strsize + sizeof(int));
@@ -493,7 +493,7 @@ void CFileManagerDlg::fixNetHood(BYTE* pbuffer, int buffersize)
 void CFileManagerDlg::OnClose()
 {
     CancelIO();
-    // µÈ´ıÊı¾İ´¦ÀíÍê±Ï
+    // ç­‰å¾…æ•°æ®å¤„ç†å®Œæ¯•
     if (IsProcessing()) {
         ShowWindow(SW_HIDE);
         return;
@@ -551,16 +551,16 @@ void CFileManagerDlg::OnReceiveComplete()
 {
     if (m_bIsClosed) 	return;
     switch (m_ContextObject->m_DeCompressionBuffer.GetBuffer(0)[0]) {
-    case TOKEN_FILE_LIST: // ÎÄ¼şÁĞ±í
+    case TOKEN_FILE_LIST: // æ–‡ä»¶åˆ—è¡¨
         FixedRemoteFileList(m_ContextObject->m_DeCompressionBuffer.GetBuffer(0), m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - 1);
         break;
-    case TOKEN_FILE_SIZE: // ´«ÊäÎÄ¼şÊ±µÄµÚÒ»¸öÊı¾İ°ü£¬ÎÄ¼ş´óĞ¡£¬¼°ÎÄ¼şÃû
+    case TOKEN_FILE_SIZE: // ä¼ è¾“æ–‡ä»¶æ—¶çš„ç¬¬ä¸€ä¸ªæ•°æ®åŒ…ï¼Œæ–‡ä»¶å¤§å°ï¼ŒåŠæ–‡ä»¶å
         CreateLocalRecvFile();
         break;
-    case TOKEN_FILE_DATA: // ÎÄ¼şÄÚÈİ
+    case TOKEN_FILE_DATA: // æ–‡ä»¶å†…å®¹
         WriteLocalRecvFile();
         break;
-    case TOKEN_TRANSFER_FINISH: // ´«ÊäÍê³É
+    case TOKEN_TRANSFER_FINISH: // ä¼ è¾“å®Œæˆ
         EndLocalRecvFile();
         break;
     case TOKEN_CREATEFOLDER_FINISH:
@@ -569,14 +569,14 @@ void CFileManagerDlg::OnReceiveComplete()
     case TOKEN_DELETE_FINISH:
         EndRemoteDeleteFile();
         break;
-    case TOKEN_GET_TRANSFER_MODE: //ÎÄ¼şÉÏ´«
+    case TOKEN_GET_TRANSFER_MODE: //æ–‡ä»¶ä¸Šä¼ 
         SendTransferMode();
         break;
     case TOKEN_DATA_CONTINUE:
-        SendFileData();    //ÎÄ¼şÉÏ´«Êı¾İ
+        SendFileData();    //æ–‡ä»¶ä¸Šä¼ æ•°æ®
         break;
     case TOKEN_RENAME_FINISH:
-        // Ë¢ĞÂÔ¶³ÌÎÄ¼şÁĞ±í
+        // åˆ·æ–°è¿œç¨‹æ–‡ä»¶åˆ—è¡¨
         GetRemoteFileList(_T("."));
         break;
     case TOKEN_SEARCH_FILE_LIST:
@@ -604,7 +604,7 @@ void CFileManagerDlg::OnReceiveComplete()
     break;
     case TOKEN_FILE_INFO: {
         CString szInfo = (TCHAR*)m_ContextObject->m_DeCompressionBuffer.GetBuffer(1);
-        if (MessageBox(szInfo, _T("Â·¾¶  È·ÈÏ¿½±´µ½¼ôÇĞ°å"), MB_ICONEXCLAMATION | MB_YESNO) == IDYES) {
+        if (MessageBox(szInfo, _T("è·¯å¾„  ç¡®è®¤æ‹·è´åˆ°å‰ªåˆ‡æ¿"), MB_ICONEXCLAMATION | MB_YESNO) == IDYES) {
             CStringA a;
             a = szInfo;
             ::OpenClipboard(::GetDesktopWindow());
@@ -628,8 +628,8 @@ void CFileManagerDlg::OnReceiveComplete()
     break;
     case TOKEN_FILE_ZIPOK: {
         GetRemoteFileList(_T("."));
-        ShowMessage(_T("Ñ¹ËõÍê³É"));
-        MessageBox(0, _T("ZIPÑ¹ËõÍê³É"));
+        ShowMessage(_T("å‹ç¼©å®Œæˆ"));
+        MessageBox(0, _T("ZIPå‹ç¼©å®Œæˆ"));
     }
     break;
     case TOKEN_FILE_GETINFO: {
@@ -641,22 +641,22 @@ void CFileManagerDlg::OnReceiveComplete()
         break;
     case TOKEN_FILE_SEARCHPLUS_NONTFS: {
         DWORD_PTR dwResult;
-        SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2,(LPARAM)_T(" Çı¶¯ÅÌ·ÇNTFS¸ñÊ½"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
+        SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2,(LPARAM)_T(" é©±åŠ¨ç›˜éNTFSæ ¼å¼"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
     }
     break;
     case TOKEN_FILE_SEARCHPLUS_HANDLE: {
         DWORD_PTR dwResult;
-        SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, (LPARAM)_T("ĞèÒª¹ÜÀíÔ±È¨ÏŞÔËĞĞ"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
+        SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, (LPARAM)_T("éœ€è¦ç®¡ç†å‘˜æƒé™è¿è¡Œ"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
     }
     break;
     case TOKEN_FILE_SEARCHPLUS_INITUSN: {
         DWORD_PTR dwResult;
-        SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, (LPARAM)_T("³õÊ¼»¯ÈÕÖ¾ÎÄ¼şÊ§°Ü"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
+        SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, (LPARAM)_T("åˆå§‹åŒ–æ—¥å¿—æ–‡ä»¶å¤±è´¥"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
     }
     break;
     case TOKEN_FILE_SEARCHPLUS_GETUSN: {
         DWORD_PTR dwResult;
-        SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, (LPARAM)_T("»ñÈ¡ÈÕÖ¾ÎÄ¼şÊ§°Ü"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
+        SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, (LPARAM)_T("è·å–æ—¥å¿—æ–‡ä»¶å¤±è´¥"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
     }
     break;
     case TOKEN_FILE_SEARCHPLUS_NUMBER: {
@@ -664,7 +664,7 @@ void CFileManagerDlg::OnReceiveComplete()
         int i;
         memcpy(&i, m_ContextObject->m_DeCompressionBuffer.GetBuffer() + 1, sizeof(int));
         CString	strMsgShow;
-        strMsgShow.Format(_T("ÒÑ¾­ËÑË÷ %d  ÇëÎğÔÙ´ÎËÑË÷"), i);
+        strMsgShow.Format(_T("å·²ç»æœç´¢ %d  è¯·å‹¿å†æ¬¡æœç´¢"), i);
         SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, (LPARAM)(strMsgShow.GetBuffer()), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
     }
     break;
@@ -684,18 +684,18 @@ void CFileManagerDlg::GetRemoteFileList(CString directory)
     if (directory.GetLength() == 0) {
         int	nItem = m_list_remote.GetSelectionMark();
 
-        // Èç¹ûÓĞÑ¡ÖĞµÄ£¬ÊÇÄ¿Â¼
+        // å¦‚æœæœ‰é€‰ä¸­çš„ï¼Œæ˜¯ç›®å½•
         if (nItem != -1) {
             if (m_list_remote.GetItemData(nItem) == 1) {
                 directory = m_list_remote.GetItemText(nItem, 0);
             }
         }
-        // ´Ó×éºÏ¿òÀïµÃµ½Â·¾¶
+        // ä»ç»„åˆæ¡†é‡Œå¾—åˆ°è·¯å¾„
         else {
             m_Remote_Directory_ComboBox.GetWindowText(m_Remote_Path);
         }
     }
-    // µÃµ½¸¸Ä¿Â¼
+    // å¾—åˆ°çˆ¶ç›®å½•
     if (directory == _T("..")) {
         if (m_Remote_Path.GetLength() == 3) return;
 
@@ -706,12 +706,12 @@ void CFileManagerDlg::GetRemoteFileList(CString directory)
             m_Remote_Path += _T("\\");
     }
 
-    // ÊÇÇı¶¯Æ÷µÄ¸ùÄ¿Â¼,·µ»Ø´ÅÅÌÁĞ±í
+    // æ˜¯é©±åŠ¨å™¨çš„æ ¹ç›®å½•,è¿”å›ç£ç›˜åˆ—è¡¨
     if (m_Remote_Path.GetLength() == 0) {
         return;
     }
 
-    // ·¢ËÍÊı¾İÇ°Çå¿Õ»º³åÇø
+    // å‘é€æ•°æ®å‰æ¸…ç©ºç¼“å†²åŒº
     int	PacketSize = (m_Remote_Path.GetLength() + 1) * sizeof(TCHAR) + 1;
     BYTE* bPacket = (BYTE*)LocalAlloc(LPTR, PacketSize);
 
@@ -723,7 +723,7 @@ void CFileManagerDlg::GetRemoteFileList(CString directory)
     m_Remote_Directory_ComboBox.InsertString(0, m_Remote_Path);
     m_Remote_Directory_ComboBox.SetCurSel(0);
 
-    // µÃµ½·µ»ØÊı¾İÇ°½û´°¿Ú
+    // å¾—åˆ°è¿”å›æ•°æ®å‰ç¦çª—å£
     m_list_remote.EnableWindow(FALSE);
     m_list_remote_driver.EnableWindow(FALSE);
 
@@ -733,13 +733,13 @@ void CFileManagerDlg::GetRemoteFileList(CString directory)
 void CFileManagerDlg::OnDblclkListRemote(NMHDR* pNMHDR, LRESULT* pResult)
 {
     if (m_list_remote.GetSelectedCount() == 0 || m_list_remote.GetItemData(m_list_remote.GetSelectionMark()) != 1) {
-        //»ñÈ¡ÎÄ¼şÏêÏ¸ĞÅÏ¢
+        //è·å–æ–‡ä»¶è¯¦ç»†ä¿¡æ¯
         POSITION pos = m_list_remote.GetFirstSelectedItemPosition();
         if (pos != NULL) {
             int nItem = m_list_remote.GetNextSelectedItem(pos);
             CString filename = m_list_remote.GetItemText(nItem, 0);
             filename = m_Remote_Path + filename;
-            // ·¢ËÍÊı¾İÇ°Çå¿Õ»º³åÇø
+            // å‘é€æ•°æ®å‰æ¸…ç©ºç¼“å†²åŒº
             int	PacketSize = (filename.GetLength() + 1) * sizeof(TCHAR) + 1;
             BYTE* bPacket = (BYTE*)LocalAlloc(LPTR, PacketSize);
             bPacket[0] = COMMAND_FILE_GETINFO;
@@ -761,19 +761,19 @@ void CFileManagerDlg::OnDblclkListRemotedriver(NMHDR* pNMHDR, LRESULT* pResult)
 
     int	nItem = m_list_remote_driver.GetSelectionMark();
     CString	directory = m_list_remote_driver.GetItemText(nItem, 0);
-    if (directory.Compare(_T("×ÀÃæ")) == 0) {
+    if (directory.Compare(_T("æ¡Œé¢")) == 0) {
         m_Remote_Directory_ComboBox.SetWindowText(m_strDesktopPath);
         m_list_remote.SetSelectionMark(-1);
         GetRemoteFileList();
         return;
     }
-    if (directory.Compare(_T("×î½ü")) == 0) {
+    if (directory.Compare(_T("æœ€è¿‘")) == 0) {
         BYTE byToken = COMMAND_FILE_RECENT;
         m_ContextObject->Send2Client(&byToken, 1);
         return;
     }
     m_Remote_Path = directory;
-    // ·¢ËÍÊı¾İÇ°Çå¿Õ»º³åÇø
+    // å‘é€æ•°æ®å‰æ¸…ç©ºç¼“å†²åŒº
     int	PacketSize = (directory.GetLength() + 1) * sizeof(TCHAR) + 1;
     BYTE* bPacket = (BYTE*)LocalAlloc(LPTR, PacketSize);
 
@@ -785,7 +785,7 @@ void CFileManagerDlg::OnDblclkListRemotedriver(NMHDR* pNMHDR, LRESULT* pResult)
     m_Remote_Directory_ComboBox.InsertString(0, directory);
     m_Remote_Directory_ComboBox.SetCurSel(0);
 
-    // µÃµ½·µ»ØÊı¾İÇ°½û´°¿Ú
+    // å¾—åˆ°è¿”å›æ•°æ®å‰ç¦çª—å£
     m_list_remote.EnableWindow(FALSE);
     m_list_remote_driver.EnableWindow(FALSE);
     DRIVE_CAZ = FALSE;
@@ -808,7 +808,7 @@ int	GetIconIndex(LPCTSTR lpFileName, DWORD dwFileAttributes);
 
 void CFileManagerDlg::FixedRemoteFileList(BYTE* pbBuffer, DWORD dwBufferLen)
 {
-    // ÖØ½¨±êÌâ
+    // é‡å»ºæ ‡é¢˜
     m_list_remote.DeleteAllItems();
     int	nItemIndex = 0;
     m_list_remote.SetItemData
@@ -817,27 +817,27 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE* pbBuffer, DWORD dwBufferLen)
         1
     );
     /*
-    ListView Ïû³ıÉÁË¸
-    ¸üĞÂÊı¾İÇ°ÓÃSetRedraw(FALSE)
-    ¸üĞÂºóµ÷ÓÃSetRedraw(TRUE)
+    ListView æ¶ˆé™¤é—ªçƒ
+    æ›´æ–°æ•°æ®å‰ç”¨SetRedraw(FALSE)
+    æ›´æ–°åè°ƒç”¨SetRedraw(TRUE)
     */
     m_list_remote.SetRedraw(FALSE);
 
     if (dwBufferLen != 0) {
         //
         for (int i = 0; i < 2; i++) {
-            // Ìø¹ıToken£¬¹²5×Ö½Ú
+            // è·³è¿‡Tokenï¼Œå…±5å­—èŠ‚
             byte* pList = (byte*)(pbBuffer + 1);
             for (byte* pBase = pList; (unsigned long)(pList - pBase) < dwBufferLen - 1;) {
                 TCHAR* pszFileName = NULL;
-                DWORD	dwFileSizeHigh = 0; // ÎÄ¼ş¸ß×Ö½Ú´óĞ¡
-                DWORD	dwFileSizeLow = 0; // ÎÄ¼şµÍ×Ö½Ú´óĞ¡
+                DWORD	dwFileSizeHigh = 0; // æ–‡ä»¶é«˜å­—èŠ‚å¤§å°
+                DWORD	dwFileSizeLow = 0; // æ–‡ä»¶ä½å­—èŠ‚å¤§å°
                 int		nItem = 0;
                 bool	bIsInsert = false;
                 FILETIME	ftm_strReceiveLocalFileTime;
 
                 int	nType = *pList ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL;
-                // i Îª 0 Ê±£¬ÁĞÄ¿Â¼£¬iÎª1Ê±ÁĞÎÄ¼ş
+                // i ä¸º 0 æ—¶ï¼Œåˆ—ç›®å½•ï¼Œiä¸º1æ—¶åˆ—æ–‡ä»¶
                 bIsInsert = !(nType == FILE_ATTRIBUTE_DIRECTORY) == i;
                 pszFileName = (TCHAR*)++pList;
 
@@ -850,7 +850,7 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE* pbBuffer, DWORD dwBufferLen)
                     m_list_remote.SetItemText(nItem, 2, sfi.szTypeName);
                 }
 
-                // µÃµ½ÎÄ¼ş´óĞ¡
+                // å¾—åˆ°æ–‡ä»¶å¤§å°
                 pList += (lstrlen(pszFileName) + 1) * sizeof(TCHAR);
                 if (bIsInsert) {
                     CString strFileSize;
@@ -874,12 +874,12 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE* pbBuffer, DWORD dwBufferLen)
     }
 
     m_list_remote.SetRedraw(TRUE);
-    // »Ö¸´´°¿Ú
+    // æ¢å¤çª—å£
     m_list_remote.EnableWindow(TRUE);
     m_list_remote_driver.EnableWindow(TRUE);
     if (DRIVE_CAZ == FALSE) {
         DWORD_PTR dwResult;
-        ShowMessage(_T("Ô¶³ÌÄ¿Â¼£º%s"), m_Remote_Path);
+        ShowMessage(_T("è¿œç¨‹ç›®å½•ï¼š%s"), m_Remote_Path);
         SendMessageTimeout(m_ProgressCtrl->GetSafeHwnd(), PBM_SETPOS, 0, 0, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
         SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, NULL, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
     }
@@ -909,7 +909,7 @@ void CFileManagerDlg::OnRemotePrev()
     GetRemoteFileList(_T(".."));
 }
 
-//////////////////////////////////ÒÔÏÂÎª¹¤¾ßÀ¸ÏìÓ¦´¦Àí//////////////////////////////////////////
+//////////////////////////////////ä»¥ä¸‹ä¸ºå·¥å…·æ å“åº”å¤„ç†//////////////////////////////////////////
 
 void CFileManagerDlg::OnRemoteView()
 {
@@ -962,24 +962,24 @@ bool CFileManagerDlg::FixedUploadDirectory(LPCTSTR lpPathName)
 
     WIN32_FIND_DATA	wfd;
     HANDLE hFind = FindFirstFile(lpszFilter, &wfd);
-    if (hFind == INVALID_HANDLE_VALUE) // Èç¹ûÃ»ÓĞÕÒµ½»ò²éÕÒÊ§°Ü
+    if (hFind == INVALID_HANDLE_VALUE) // å¦‚æœæ²¡æœ‰æ‰¾åˆ°æˆ–æŸ¥æ‰¾å¤±è´¥
         return FALSE;
 
     do {
         if (wfd.cFileName[0] == _T('.'))
-            continue; // ¹ıÂËÕâÁ½¸öÄ¿Â¼
+            continue; // è¿‡æ»¤è¿™ä¸¤ä¸ªç›®å½•
         if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
             TCHAR strDirectory[MAX_PATH];
             wsprintf(strDirectory, _T("%s%s%s"), lpPathName, lpszSlash, wfd.cFileName);
-            FixedUploadDirectory(strDirectory); // Èç¹ûÕÒµ½µÄÊÇÄ¿Â¼£¬Ôò½øÈë´ËÄ¿Â¼½øĞĞµİ¹é
+            FixedUploadDirectory(strDirectory); // å¦‚æœæ‰¾åˆ°çš„æ˜¯ç›®å½•ï¼Œåˆ™è¿›å…¥æ­¤ç›®å½•è¿›è¡Œé€’å½’
         } else {
             CString file;
             file.Format(_T("%s%s%s"), lpPathName, lpszSlash, wfd.cFileName);
             m_Remote_Upload_Job.AddTail(file);
-            // ¶ÔÎÄ¼ş½øĞĞ²Ù×÷
+            // å¯¹æ–‡ä»¶è¿›è¡Œæ“ä½œ
         }
     } while (FindNextFile(hFind, &wfd));
-    FindClose(hFind); // ¹Ø±Õ²éÕÒ¾ä±ú
+    FindClose(hFind); // å…³é—­æŸ¥æ‰¾å¥æŸ„
     return true;
 }
 
@@ -1005,7 +1005,7 @@ CString CFileManagerDlg::ExtractNameFromFullPath(CString szFullPath)
 void CFileManagerDlg::OnTransferSend()
 {
     m_bIsUpload = true;
-    // ÖØÖÃÉÏ´«ÈÎÎñÁĞ±í
+    // é‡ç½®ä¸Šä¼ ä»»åŠ¡åˆ—è¡¨
     m_Remote_Upload_Job.RemoveAll();
     CString	file = GetDirectoryPath(TRUE);
     if (file == "") return;
@@ -1020,7 +1020,7 @@ void CFileManagerDlg::OnTransferSend()
     }
 
     if (m_Remote_Upload_Job.IsEmpty()) {
-        ::MessageBox(m_hWnd, _T("ÎÄ¼ş¼ĞÎª¿Õ"), _T("¾¯¸æ"), MB_OK | MB_ICONWARNING);
+        ::MessageBox(m_hWnd, _T("æ–‡ä»¶å¤¹ä¸ºç©º"), _T("è­¦å‘Š"), MB_OK | MB_ICONWARNING);
         return;
     }
     EnableControl(FALSE);
@@ -1032,7 +1032,7 @@ void CFileManagerDlg::TransferSend(CString	file)
     if (!m_list_remote.GetItemText(0, 0).Compare(_T("")))
         return;
     m_bIsUpload = true;
-    // ÖØÖÃÉÏ´«ÈÎÎñÁĞ±í
+    // é‡ç½®ä¸Šä¼ ä»»åŠ¡åˆ—è¡¨
     m_Remote_Upload_Job.RemoveAll();
     if (file == "") return;
 
@@ -1046,45 +1046,45 @@ void CFileManagerDlg::TransferSend(CString	file)
     }
 
     if (m_Remote_Upload_Job.IsEmpty()) {
-        ::MessageBox(m_hWnd, _T("ÎÄ¼ş¼ĞÎª¿Õ"), _T("¾¯¸æ"), MB_OK | MB_ICONWARNING);
+        ::MessageBox(m_hWnd, _T("æ–‡ä»¶å¤¹ä¸ºç©º"), _T("è­¦å‘Š"), MB_OK | MB_ICONWARNING);
         return;
     }
     EnableControl(FALSE);
     SendUploadJob();
 }
 
-// »ñÈ¡Ñ¡ÔñµÄÂ·¾¶
+// è·å–é€‰æ‹©çš„è·¯å¾„
 CString  CFileManagerDlg::GetDirectoryPath(BOOL bIncludeFiles)
 {
     CString szSavePath;
     TCHAR szBrowsePath[MAX_PATH];
     ZeroMemory(szBrowsePath, sizeof(szBrowsePath));
-    BROWSEINFO bi = { 0 };  //ÒòÎªÒÑ¾­³õÊ¼»¯Îª0.ËùÒÔÓĞĞ©Ïî²»ÓÃÔÙÖØ¸´¸³ÖµÁË
+    BROWSEINFO bi = { 0 };  //å› ä¸ºå·²ç»åˆå§‹åŒ–ä¸º0.æ‰€ä»¥æœ‰äº›é¡¹ä¸ç”¨å†é‡å¤èµ‹å€¼äº†
     bi.hwndOwner = m_hWnd;
     bi.pszDisplayName = szBrowsePath;
     if (bIncludeFiles) {
-        bi.lpszTitle = _T("ÇëÑ¡ÔñÉÏ´«Â·¾¶: ");
+        bi.lpszTitle = _T("è¯·é€‰æ‹©ä¸Šä¼ è·¯å¾„: ");
         bi.ulFlags = BIF_BROWSEINCLUDEFILES;
     } else {
-        bi.lpszTitle = _T("ÇëÑ¡ÔñÏÂÔØÂ·¾¶: ");
+        bi.lpszTitle = _T("è¯·é€‰æ‹©ä¸‹è½½è·¯å¾„: ");
         bi.ulFlags = BIF_RETURNONLYFSDIRS;
     }
     LPITEMIDLIST lpiml = { 0 };
-    lpiml = SHBrowseForFolder(&bi); //Èç¹ûÃ»ÓĞÑ¡ÖĞÄ¿Â¼£¬Ôò·µ»ØNULL
-    if (lpiml && SHGetPathFromIDList(lpiml, szBrowsePath))//´Ólpiml ÖĞ»ñÈ¡Â·¾¶ĞÅÏ¢
+    lpiml = SHBrowseForFolder(&bi); //å¦‚æœæ²¡æœ‰é€‰ä¸­ç›®å½•ï¼Œåˆ™è¿”å›NULL
+    if (lpiml && SHGetPathFromIDList(lpiml, szBrowsePath))//ä»lpiml ä¸­è·å–è·¯å¾„ä¿¡æ¯
         szSavePath = szBrowsePath;
     else
         return _T("");
     return szSavePath;
 }
 
-//////////////// ÎÄ¼ş´«Êä²Ù×÷ ////////////////
-// Ö»¹Ü·¢³öÁËÏÂÔØµÄÎÄ¼ş
-// Ò»¸öÒ»¸ö·¢£¬½ÓÊÕµ½ÏÂÔØÍê³ÉÊ±£¬ÏÂÔØµÚ¶ş¸öÎÄ¼ş ...
+//////////////// æ–‡ä»¶ä¼ è¾“æ“ä½œ ////////////////
+// åªç®¡å‘å‡ºäº†ä¸‹è½½çš„æ–‡ä»¶
+// ä¸€ä¸ªä¸€ä¸ªå‘ï¼Œæ¥æ”¶åˆ°ä¸‹è½½å®Œæˆæ—¶ï¼Œä¸‹è½½ç¬¬äºŒä¸ªæ–‡ä»¶ ...
 void CFileManagerDlg::OnRemoteCopy()
 {
     m_bIsUpload = false;
-    // ½ûÓÃÎÄ¼ş¹ÜÀí´°¿Ú
+    // ç¦ç”¨æ–‡ä»¶ç®¡ç†çª—å£
     EnableControl(FALSE);
 
     CString	file;
@@ -1093,14 +1093,14 @@ void CFileManagerDlg::OnRemoteCopy()
     while (pos) {
         int nItem = m_list_remote.GetNextSelectedItem(pos);
         file = m_Remote_Path + m_list_remote.GetItemText(nItem, 0);
-        // Èç¹ûÊÇÄ¿Â¼
+        // å¦‚æœæ˜¯ç›®å½•
         if (m_list_remote.GetItemData(nItem))
             file += '\\';
         m_Remote_Download_Job.AddTail(file);
     }
     if (file.IsEmpty()) {
         EnableControl(TRUE);
-        ::MessageBox(m_hWnd, _T("ÇëÑ¡ÔñÎÄ¼ş£¡"), _T("¾¯¸æ"), MB_OK | MB_ICONWARNING);
+        ::MessageBox(m_hWnd, _T("è¯·é€‰æ‹©æ–‡ä»¶ï¼"), _T("è­¦å‘Š"), MB_OK | MB_ICONWARNING);
         return;
     }
 
@@ -1112,35 +1112,35 @@ void CFileManagerDlg::OnRemoteCopy()
     if (strLpath.GetAt(strLpath.GetLength() - 1) != _T('\\'))
         strLpath += _T("\\");
     m_nTransferMode = TRANSFER_MODE_NORMAL;
-    // ·¢ËÍµÚÒ»¸öÏÂÔØÈÎÎñ
+    // å‘é€ç¬¬ä¸€ä¸ªä¸‹è½½ä»»åŠ¡
     SendDownloadJob();
 }
 
-// ·¢³öÒ»¸öÏÂÔØÈÎÎñ
+// å‘å‡ºä¸€ä¸ªä¸‹è½½ä»»åŠ¡
 BOOL CFileManagerDlg::SendDownloadJob()
 {
     if (m_Remote_Download_Job.IsEmpty())
         return FALSE;
 
     EnableControl(FALSE);
-    // ·¢³öµÚÒ»¸öÏÂÔØÈÎÎñÃüÁî
+    // å‘å‡ºç¬¬ä¸€ä¸ªä¸‹è½½ä»»åŠ¡å‘½ä»¤
     CString file = m_Remote_Download_Job.GetHead();
     int		nPacketSize = (file.GetLength() + 1) * sizeof(TCHAR) + 1;
     BYTE* bPacket = (BYTE*)LocalAlloc(LPTR, nPacketSize);
     bPacket[0] = COMMAND_DOWN_FILES;
 
-    // ÎÄ¼şÆ«ÒÆ£¬Ğø´«Ê±ÓÃ
+    // æ–‡ä»¶åç§»ï¼Œç»­ä¼ æ—¶ç”¨
     memcpy(bPacket + 1, file.GetBuffer(0), (file.GetLength() + 1) * sizeof(TCHAR));
     m_ContextObject->Send2Client(bPacket, nPacketSize);
     LocalFree(bPacket);
 
-    // ´ÓÏÂÔØÈÎÎñÁĞ±íÖĞÉ¾³ı×Ô¼º
+    // ä»ä¸‹è½½ä»»åŠ¡åˆ—è¡¨ä¸­åˆ é™¤è‡ªå·±
     m_Remote_Download_Job.RemoveHead();
 
     return TRUE;
 }
 
-// ·¢³öÒ»¸öÉÏ´«ÈÎÎñ
+// å‘å‡ºä¸€ä¸ªä¸Šä¼ ä»»åŠ¡
 BOOL CFileManagerDlg::SendUploadJob()
 {
     if (m_Remote_Upload_Job.IsEmpty())
@@ -1148,7 +1148,7 @@ BOOL CFileManagerDlg::SendUploadJob()
 
     EnableControl(FALSE);
     CString	strDestDirectory = m_Remote_Path;
-    // Èç¹ûÔ¶³ÌÒ²ÓĞÑ¡Ôñ£¬µ±×öÄ¿±êÎÄ¼ş¼Ğ
+    // å¦‚æœè¿œç¨‹ä¹Ÿæœ‰é€‰æ‹©ï¼Œå½“åšç›®æ ‡æ–‡ä»¶å¤¹
     int nItem = m_list_remote.GetSelectionMark();
 
     if (!m_hCopyDestFolder.IsEmpty()) {
@@ -1159,18 +1159,18 @@ BOOL CFileManagerDlg::SendUploadJob()
         m_Local_Path = _T("");
         m_Remote_Upload_Job.RemoveHead();
         EnableControl(TRUE);
-        ::MessageBox(m_hWnd, _T("ÇëÑ¡ÔñÄ¿Â¼£¡"), _T("¾¯¸æ"), MB_OK | MB_ICONWARNING);
+        ::MessageBox(m_hWnd, _T("è¯·é€‰æ‹©ç›®å½•ï¼"), _T("è­¦å‘Š"), MB_OK | MB_ICONWARNING);
         return 0;
     }
 
-    // ·¢³öµÚÒ»¸öÏÂÔØÈÎÎñÃüÁî
+    // å‘å‡ºç¬¬ä¸€ä¸ªä¸‹è½½ä»»åŠ¡å‘½ä»¤
     m_strOperatingFile = m_Remote_Upload_Job.GetHead();
 
     DWORD	dwSizeHigh;
     DWORD	dwSizeLow;
-    CString	fileRemote = m_strOperatingFile; // Ô¶³ÌÎÄ¼ş
+    CString	fileRemote = m_strOperatingFile; // è¿œç¨‹æ–‡ä»¶
 
-    // µÃµ½Òª±£´æµ½µÄÔ¶³ÌµÄÎÄ¼şÂ·¾¶
+    // å¾—åˆ°è¦ä¿å­˜åˆ°çš„è¿œç¨‹çš„æ–‡ä»¶è·¯å¾„
     fileRemote.Replace(m_Local_Path, strDestDirectory);
     m_strFileName = m_strUploadRemoteFile = fileRemote;
 
@@ -1182,9 +1182,9 @@ BOOL CFileManagerDlg::SendUploadJob()
         return FALSE;
     dwSizeLow = GetFileSize(m_hFileSend, &dwSizeHigh);
     m_nOperatingFileLength = ((__int64)dwSizeHigh << 32) + dwSizeLow;
-    //SAFE_CLOSE_HANDLE(m_hFileSend); // ´Ë´¦²»Òª¹Ø±Õ, ÒÔºó»¹ÒªÓÃ
+    //SAFE_CLOSE_HANDLE(m_hFileSend); // æ­¤å¤„ä¸è¦å…³é—­, ä»¥åè¿˜è¦ç”¨
 
-    // ¹¹ÔìÊı¾İ°ü£¬·¢ËÍÎÄ¼ş³¤¶È(1×Ö½Útoken, 8×Ö½Ú´óĞ¡, ÎÄ¼şÃû³Æ, '\0')
+    // æ„é€ æ•°æ®åŒ…ï¼Œå‘é€æ–‡ä»¶é•¿åº¦(1å­—èŠ‚token, 8å­—èŠ‚å¤§å°, æ–‡ä»¶åç§°, '\0')
     int		nPacketSize = (fileRemote.GetLength() + 1) * sizeof(TCHAR) + 9;
     BYTE* bPacket = (BYTE*)LocalAlloc(LPTR, nPacketSize);
     memset(bPacket, 0, nPacketSize);
@@ -1196,19 +1196,19 @@ BOOL CFileManagerDlg::SendUploadJob()
     m_ContextObject->Send2Client(bPacket, nPacketSize);
     LocalFree(bPacket);
 
-    // ´ÓÏÂÔØÈÎÎñÁĞ±íÖĞÉ¾³ı×Ô¼º
+    // ä»ä¸‹è½½ä»»åŠ¡åˆ—è¡¨ä¸­åˆ é™¤è‡ªå·±
     m_Remote_Upload_Job.RemoveHead();
     return TRUE;
 }
 
-// ·¢³öÒ»¸öÉ¾³ıÈÎÎñ
+// å‘å‡ºä¸€ä¸ªåˆ é™¤ä»»åŠ¡
 BOOL CFileManagerDlg::SendDeleteJob()
 {
     if (m_Remote_Delete_Job.IsEmpty())
         return FALSE;
 
     EnableControl(FALSE);
-    // ·¢³öµÚÒ»¸öÏÂÔØÈÎÎñÃüÁî
+    // å‘å‡ºç¬¬ä¸€ä¸ªä¸‹è½½ä»»åŠ¡å‘½ä»¤
     CString file = m_Remote_Delete_Job.GetHead();
     int		nPacketSize = (file.GetLength() + 1) * sizeof(TCHAR) + 1;
     BYTE* bPacket = (BYTE*)LocalAlloc(LPTR, nPacketSize);
@@ -1219,12 +1219,12 @@ BOOL CFileManagerDlg::SendDeleteJob()
     else
         bPacket[0] = COMMAND_DELETE_FILE;
 
-    // ÎÄ¼şÆ«ÒÆ£¬Ğø´«Ê±ÓÃ
+    // æ–‡ä»¶åç§»ï¼Œç»­ä¼ æ—¶ç”¨
     memcpy(bPacket + 1, file.GetBuffer(0), nPacketSize - 1);
     m_ContextObject->Send2Client(bPacket, nPacketSize);
     LocalFree(bPacket);
 
-    // ´ÓÏÂÔØÈÎÎñÁĞ±íÖĞÉ¾³ı×Ô¼º
+    // ä»ä¸‹è½½ä»»åŠ¡åˆ—è¡¨ä¸­åˆ é™¤è‡ªå·±
     m_Remote_Delete_Job.RemoveHead();
 
     DRIVE_CAZ = TRUE;
@@ -1233,7 +1233,7 @@ BOOL CFileManagerDlg::SendDeleteJob()
 
 void CFileManagerDlg::CreateLocalRecvFile()
 {
-    // ÖØÖÃ¼ÆÊıÆ÷
+    // é‡ç½®è®¡æ•°å™¨
     m_nCounter = 0;
 
     FILESIZE* pFileSize = (FILESIZE*)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
@@ -1245,16 +1245,16 @@ void CFileManagerDlg::CreateLocalRecvFile()
     }
     m_nOperatingFileLength = ((__int64)dwSizeHigh << 32) + dwSizeLow;
 
-    // µ±Ç°Õı²Ù×÷µÄÎÄ¼şÃû
+    // å½“å‰æ­£æ“ä½œçš„æ–‡ä»¶å
     m_strOperatingFile = (TCHAR*)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(9));
 
     m_strReceiveLocalFile = m_strOperatingFile;
 
-    // µÃµ½Òª±£´æµ½µÄ±¾µØµÄÎÄ¼şÂ·¾¶
+    // å¾—åˆ°è¦ä¿å­˜åˆ°çš„æœ¬åœ°çš„æ–‡ä»¶è·¯å¾„
     m_strReceiveLocalFile.Replace(m_Remote_Path, strLpath);
     m_strFileName = m_strReceiveLocalFile;
 
-    // ´´½¨¶à²ãÄ¿Â¼
+    // åˆ›å»ºå¤šå±‚ç›®å½•
     MakeSureDirectoryPathExists(m_strReceiveLocalFile.GetBuffer(0));
 
     WIN32_FIND_DATA FindFileData;
@@ -1293,7 +1293,7 @@ void CFileManagerDlg::CreateLocalRecvFile()
     }
 
     if (m_nTransferMode == TRANSFER_MODE_CANCEL) {
-        // È¡Ïû´«ËÍ
+        // å–æ¶ˆä¼ é€
         m_bIsStop = true;
         SendStop(TRUE);
         FindClose(hFind);
@@ -1315,34 +1315,34 @@ void CFileManagerDlg::CreateLocalRecvFile()
         nTransferMode = m_nTransferMode;
     }
 
-    //  1×Ö½ÚToken,ËÄ×Ö½ÚÆ«ÒÆ¸ßËÄÎ»£¬ËÄ×Ö½ÚÆ«ÒÆµÍËÄÎ»
+    //  1å­—èŠ‚Token,å››å­—èŠ‚åç§»é«˜å››ä½ï¼Œå››å­—èŠ‚åç§»ä½å››ä½
     BYTE	bToken[9];
-    DWORD	dwCreationDisposition; // ÎÄ¼ş´ò¿ª·½Ê½
+    DWORD	dwCreationDisposition; // æ–‡ä»¶æ‰“å¼€æ–¹å¼
     memset(bToken, 0, sizeof(bToken));
     bToken[0] = COMMAND_CONTINUE;
 
-    // ÎÄ¼şÒÑ¾­´æÔÚ
+    // æ–‡ä»¶å·²ç»å­˜åœ¨
     if (hFind != INVALID_HANDLE_VALUE) {
-        // ÌáÊ¾µãÊ²Ã´
-        // Èç¹ûÊÇĞø´«
+        // æç¤ºç‚¹ä»€ä¹ˆ
+        // å¦‚æœæ˜¯ç»­ä¼ 
         if (nTransferMode == TRANSFER_MODE_ADDITION) {
             memcpy(bToken + 1, &FindFileData.nFileSizeHigh, 4);
             memcpy(bToken + 5, &FindFileData.nFileSizeLow, 4);
-            // ½ÓÊÕµÄ³¤¶ÈµİÔö
+            // æ¥æ”¶çš„é•¿åº¦é€’å¢
             m_nCounter += (__int64)FindFileData.nFileSizeHigh << 32;
             m_nCounter += FindFileData.nFileSizeLow;
 
             dwCreationDisposition = OPEN_EXISTING;
         }
-        // ¸²¸Ç
+        // è¦†ç›–
         else if (nTransferMode == TRANSFER_MODE_OVERWRITE) {
-            // Æ«ÒÆÖÃ0
+            // åç§»ç½®0
             memset(bToken + 1, 0, 8);
-            // ÖØĞÂ´´½¨
+            // é‡æ–°åˆ›å»º
             dwCreationDisposition = CREATE_ALWAYS;
 
         }
-        // Ìø¹ı£¬Ö¸ÕëÒÆµ½-1
+        // è·³è¿‡ï¼ŒæŒ‡é’ˆç§»åˆ°-1
         else if (nTransferMode == TRANSFER_MODE_JUMP) {
             DWORD dwOffset = -1;
             memcpy(bToken + 1, &dwOffset, 4);
@@ -1352,9 +1352,9 @@ void CFileManagerDlg::CreateLocalRecvFile()
             SendMessageTimeout(m_ProgressCtrl->GetSafeHwnd(), PBM_SETPOS, 100, 0, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
         }
     } else {
-        // Æ«ÒÆÖÃ0
+        // åç§»ç½®0
         memset(bToken + 1, 0, 8);
-        // ÖØĞÂ´´½¨
+        // é‡æ–°åˆ›å»º
         dwCreationDisposition = CREATE_ALWAYS;
     }
     FindClose(hFind);
@@ -1363,11 +1363,11 @@ void CFileManagerDlg::CreateLocalRecvFile()
         SAFE_CLOSE_HANDLE(m_hFileRecv);
     m_hFileRecv = CreateFile(m_strReceiveLocalFile.GetBuffer(0),
                              GENERIC_WRITE, 0, NULL, dwCreationDisposition, FILE_ATTRIBUTE_NORMAL, 0);
-    // ĞèÒª´íÎó´¦Àí
+    // éœ€è¦é”™è¯¯å¤„ç†
     if (m_hFileRecv == INVALID_HANDLE_VALUE) {
         m_nOperatingFileLength = 0;
         m_nCounter = 0;
-        ::MessageBox(m_hWnd, m_strReceiveLocalFile + _T(" ÎÄ¼ş´´½¨Ê§°Ü"), _T("¾¯¸æ"), MB_OK | MB_ICONWARNING);
+        ::MessageBox(m_hWnd, m_strReceiveLocalFile + _T(" æ–‡ä»¶åˆ›å»ºå¤±è´¥"), _T("è­¦å‘Š"), MB_OK | MB_ICONWARNING);
         return;
     }
 
@@ -1375,33 +1375,33 @@ void CFileManagerDlg::CreateLocalRecvFile()
     if (m_bIsStop)
         SendStop(TRUE);
     else {
-        // ·¢ËÍ¼ÌĞø´«ÊäÎÄ¼şµÄtoken,°üº¬ÎÄ¼şĞø´«µÄÆ«ÒÆ
+        // å‘é€ç»§ç»­ä¼ è¾“æ–‡ä»¶çš„token,åŒ…å«æ–‡ä»¶ç»­ä¼ çš„åç§»
         m_ContextObject->Send2Client(bToken, sizeof(bToken));
     }
 }
 
-// Ğ´ÈëÎÄ¼şÄÚÈİ
+// å†™å…¥æ–‡ä»¶å†…å®¹
 void CFileManagerDlg::WriteLocalRecvFile()
 {
-    // ´«ÊäÍê±Ï
+    // ä¼ è¾“å®Œæ¯•
     BYTE* pData;
     DWORD	dwBytesToWrite;
     DWORD	dwBytesWrite = 0;
-    int		nHeadLength = 9; // 1 + 4 + 4  Êı¾İ°üÍ·²¿´óĞ¡£¬Îª¹Ì¶¨µÄ9
+    int		nHeadLength = 9; // 1 + 4 + 4  æ•°æ®åŒ…å¤´éƒ¨å¤§å°ï¼Œä¸ºå›ºå®šçš„9
     FILESIZE* pFileSize;
-    // µÃµ½Êı¾İµÄÆ«ÒÆ
+    // å¾—åˆ°æ•°æ®çš„åç§»
     pData = m_ContextObject->m_DeCompressionBuffer.GetBuffer(nHeadLength);
 
     pFileSize = (FILESIZE*)m_ContextObject->m_DeCompressionBuffer.GetBuffer(1);
-    // µÃµ½Êı¾İÔÚÎÄ¼şÖĞµÄÆ«ÒÆ, ¸³Öµ¸ø¼ÆÊıÆ÷
+    // å¾—åˆ°æ•°æ®åœ¨æ–‡ä»¶ä¸­çš„åç§», èµ‹å€¼ç»™è®¡æ•°å™¨
     //m_nCounter = MAKEINT64(pFileSize->dwSizeLow, pFileSize->dwSizeHigh);
 
     LONG	dwOffsetHigh = pFileSize->dwSizeHigh;
     LONG	dwOffsetLow = pFileSize->dwSizeLow;
-    // µÃµ½Êı¾İÔÚÎÄ¼şÖĞµÄÆ«ÒÆ, ¸³Öµ¸ø¼ÆÊıÆ÷
+    // å¾—åˆ°æ•°æ®åœ¨æ–‡ä»¶ä¸­çš„åç§», èµ‹å€¼ç»™è®¡æ•°å™¨
     m_nCounter = MAKEINT64(dwOffsetLow, dwOffsetHigh);
 
-    if (m_nCounter < 0) { //Êı¾İ³ö´í ·µ»ØÉÏ´«´«ËÍÊı¾İ
+    if (m_nCounter < 0) { //æ•°æ®å‡ºé”™ è¿”å›ä¸Šä¼ ä¼ é€æ•°æ®
         m_nCounter = Bf_nCounters;
         dwOffsetHigh = Bf_dwOffsetHighs;
         dwOffsetLow = Bf_dwOffsetLows;
@@ -1417,19 +1417,19 @@ void CFileManagerDlg::WriteLocalRecvFile()
         BOOL bResult = FALSE;
         int i = 0;
         for (i = 0; i < MAX_WRITE_RETRY; i++) {
-            // Ğ´ÈëÎÄ¼ş
+            // å†™å…¥æ–‡ä»¶
             bResult = WriteFile(m_hFileRecv, pData, dwBytesToWrite, &dwBytesWrite, NULL);
             if (bResult)
                 break;
         }
         if (i == MAX_WRITE_RETRY && !bResult) {
-            ::MessageBox(m_hWnd, m_strReceiveLocalFile + _T(" ÎÄ¼şĞ´ÈëÊ§°Ü!"), _T("¾¯¸æ"), MB_OK | MB_ICONWARNING);
+            ::MessageBox(m_hWnd, m_strReceiveLocalFile + _T(" æ–‡ä»¶å†™å…¥å¤±è´¥!"), _T("è­¦å‘Š"), MB_OK | MB_ICONWARNING);
             m_bIsStop = true;
         } else {
             dwOffsetLow = 0;
             dwOffsetHigh = 0;
             dwOffsetLow = SetFilePointer(m_hFileRecv, dwOffsetLow, &dwOffsetHigh, FILE_CURRENT);
-            // ÎªÁË±È½Ï£¬¼ÆÊıÆ÷µİÔö
+            // ä¸ºäº†æ¯”è¾ƒï¼Œè®¡æ•°å™¨é€’å¢
             m_nCounter += dwBytesWrite;
             ShowProgress();
         }
@@ -1458,20 +1458,20 @@ void CFileManagerDlg::EndLocalRecvFile()
 
     if (m_Remote_Download_Job.IsEmpty() || m_bIsStop) {
         m_Remote_Download_Job.RemoveAll();
-        // ÖØÖÃ´«Êä·½Ê½
+        // é‡ç½®ä¼ è¾“æ–¹å¼
         m_nTransferMode = TRANSFER_MODE_NORMAL;
         EnableControl(TRUE);
         DWORD_PTR dwResult;
         if (m_bIsStop) {
             SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2,
-                               (LPARAM)_T(" È¡ÏûÏÂÔØ"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
+                               (LPARAM)_T(" å–æ¶ˆä¸‹è½½"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
         } else {
             SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2,
-                               (LPARAM)_T(" È«²¿Íê³É"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
+                               (LPARAM)_T(" å…¨éƒ¨å®Œæˆ"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
         }
         m_bIsStop = false;
     } else {
-        // ÎÒ¿¿£¬²»sleepÏÂ»á³ö´í£¬·şÁË¿ÉÄÜÒÔÇ°µÄÊı¾İ»¹Ã»send³öÈ¥
+        // æˆ‘é ï¼Œä¸sleepä¸‹ä¼šå‡ºé”™ï¼Œæœäº†å¯èƒ½ä»¥å‰çš„æ•°æ®è¿˜æ²¡sendå‡ºå»
         Sleep(5);
         SendDownloadJob();
     }
@@ -1489,7 +1489,7 @@ void CFileManagerDlg::EndLocalUploadFile()
         SAFE_CLOSE_HANDLE(m_hFileSend);
         m_hFileSend = INVALID_HANDLE_VALUE;
     }
-    SendStop(FALSE); // ·¢ÁËÖ®ºó, ±»¿Ø¶Ë²Å»á¹Ø±Õ¾ä±ú
+    SendStop(FALSE); // å‘äº†ä¹‹å, è¢«æ§ç«¯æ‰ä¼šå…³é—­å¥æŸ„
 
     if (m_Remote_Upload_Job.IsEmpty() || m_bIsStop) {
         m_Remote_Upload_Job.RemoveAll();
@@ -1498,10 +1498,10 @@ void CFileManagerDlg::EndLocalUploadFile()
         DWORD_PTR dwResult;
         if (m_bIsStop) {
             SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2,
-                               (LPARAM)_T(" È¡ÏûÉÏ´«"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
+                               (LPARAM)_T(" å–æ¶ˆä¸Šä¼ "), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
         } else {
             SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2,
-                               (LPARAM)_T(" È«²¿Íê³É"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
+                               (LPARAM)_T(" å…¨éƒ¨å®Œæˆ"), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
         }
         m_bIsStop = false;
         DRIVE_CAZ = TRUE;
@@ -1520,9 +1520,9 @@ void CFileManagerDlg::EndRemoteDeleteFile()
         GetRemoteFileList(_T("."));
         DWORD_PTR dwResult;
         if (m_strFileName.GetAt(m_strFileName.GetLength() - 1) == '\\')
-            ShowMessage(_T("É¾³ıÄ¿Â¼£º%s (Íê³É)"), m_strFileName);
+            ShowMessage(_T("åˆ é™¤ç›®å½•ï¼š%s (å®Œæˆ)"), m_strFileName);
         else
-            ShowMessage(_T("É¾³ıÎÄ¼ş£º%s (Íê³É)"), m_strFileName);
+            ShowMessage(_T("åˆ é™¤æ–‡ä»¶ï¼š%s (å®Œæˆ)"), m_strFileName);
         SendMessageTimeout(m_ProgressCtrl->GetSafeHwnd(), PBM_SETPOS, 0, 0, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
         SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, NULL, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
         DRIVE_CAZ = TRUE;
@@ -1561,9 +1561,9 @@ void CFileManagerDlg::ShowProgress()
 {
     TCHAR* lpDirection = NULL;
     if (m_bIsUpload)
-        lpDirection = _T("ÎÄ¼şÉÏ´«");
+        lpDirection = _T("æ–‡ä»¶ä¸Šä¼ ");
     else
-        lpDirection = _T("ÎÄ¼şÏÂÔØ");
+        lpDirection = _T("æ–‡ä»¶ä¸‹è½½");
 
     if (m_nCounter == -1) {
         m_nCounter = m_nOperatingFileLength;
@@ -1584,7 +1584,7 @@ void CFileManagerDlg::ShowProgress()
 
     if (m_nCounter == m_nOperatingFileLength) {
         m_nCounter = m_nOperatingFileLength = 0;
-        // ¹Ø±ÕÎÄ¼ş¾ä±ú
+        // å…³é—­æ–‡ä»¶å¥æŸ„
     }
 }
 
@@ -1594,29 +1594,29 @@ void CFileManagerDlg::OnRemoteDelete()
     // TODO: Add your command handler code here
     CString str;
     if (m_list_remote.GetSelectedCount() > 1)
-        str.Format(_T("È·¶¨Òª½«Õâ %d ÏîÉ¾³ıÂğ?"), m_list_remote.GetSelectedCount());
+        str.Format(_T("ç¡®å®šè¦å°†è¿™ %d é¡¹åˆ é™¤å—?"), m_list_remote.GetSelectedCount());
     else {
         CString file = m_list_remote.GetItemText(m_list_remote.GetSelectionMark(), 0);
         if (m_list_remote.GetItemData(m_list_remote.GetSelectionMark()) == 1)
-            str.Format(_T("È·ÊµÒªÉ¾³ıÎÄ¼ş¼Ğ¡°%s¡±²¢½«ËùÓĞÄÚÈİÉ¾³ıÂğ?"), file);
+            str.Format(_T("ç¡®å®è¦åˆ é™¤æ–‡ä»¶å¤¹â€œ%sâ€å¹¶å°†æ‰€æœ‰å†…å®¹åˆ é™¤å—?"), file);
         else
-            str.Format(_T("È·ÊµÒª°Ñ¡°%s¡±É¾³ıÂğ?"), file);
+            str.Format(_T("ç¡®å®è¦æŠŠâ€œ%sâ€åˆ é™¤å—?"), file);
     }
-    if (::MessageBox(m_hWnd, str, _T("È·ÈÏÉ¾³ı"), MB_YESNO | MB_ICONQUESTION) == IDNO)
+    if (::MessageBox(m_hWnd, str, _T("ç¡®è®¤åˆ é™¤"), MB_YESNO | MB_ICONQUESTION) == IDNO)
         return;
     m_Remote_Delete_Job.RemoveAll();
     POSITION pos = m_list_remote.GetFirstSelectedItemPosition(); //iterator for the CListCtrl
     while (pos) { //so long as we have a valid POSITION, we keep iterating
         int nItem = m_list_remote.GetNextSelectedItem(pos);
         CString	file = m_Remote_Path + m_list_remote.GetItemText(nItem, 0);
-        // Èç¹ûÊÇÄ¿Â¼
+        // å¦‚æœæ˜¯ç›®å½•
         if (m_list_remote.GetItemData(nItem))
             file += _T('\\');
 
         m_Remote_Delete_Job.AddTail(file);
     }
     EnableControl(FALSE);
-    // ·¢ËÍµÚÒ»¸öÏÂÔØÈÎÎñ
+    // å‘é€ç¬¬ä¸€ä¸ªä¸‹è½½ä»»åŠ¡
     SendDeleteJob();
 }
 
@@ -1690,7 +1690,7 @@ void CFileManagerDlg::SendFileData()
 
     SetFilePointer(m_hFileSend, dwOffsetLow, &dwOffsetHigh, FILE_BEGIN);
 
-    int		nHeadLength = 9; // 1 + 4 + 4  Êı¾İ°üÍ·²¿´óĞ¡£¬Îª¹Ì¶¨µÄ9
+    int		nHeadLength = 9; // 1 + 4 + 4  æ•°æ®åŒ…å¤´éƒ¨å¤§å°ï¼Œä¸ºå›ºå®šçš„9
 
     int dwDownFileSize = GetFileSize(m_hFileSend, NULL);
 
@@ -1698,14 +1698,14 @@ void CFileManagerDlg::SendFileData()
     DWORD	nNumberOfBytesRead = 0;
 
     BYTE* lpBuffer = (BYTE*)LocalAlloc(LPTR, MAX_SEND_BUFFER);
-    // Token,  ´óĞ¡£¬Æ«ÒÆ£¬Êı¾İ
+    // Token,  å¤§å°ï¼Œåç§»ï¼Œæ•°æ®
     lpBuffer[0] = COMMAND_FILE_DATA;
     memcpy(lpBuffer + 1, &dwOffsetHigh, sizeof(dwOffsetHigh));
     memcpy(lpBuffer + 5, &dwOffsetLow, sizeof(dwOffsetLow));
-    // ·µ»ØÖµ
+    // è¿”å›å€¼
     bool	bRet = true;
     ReadFile(m_hFileSend, lpBuffer + nHeadLength, nNumberOfBytesToRead, &nNumberOfBytesRead, NULL);
-    //SAFE_CLOSE_HANDLE(m_hFileSend); // ´Ë´¦²»Òª¹Ø±Õ, ÒÔºó»¹ÒªÓÃ
+    //SAFE_CLOSE_HANDLE(m_hFileSend); // æ­¤å¤„ä¸è¦å…³é—­, ä»¥åè¿˜è¦ç”¨
 
     if (nNumberOfBytesRead > 0) {
         int	nPacketSize = nNumberOfBytesRead + nHeadLength;
@@ -1722,7 +1722,7 @@ bool CFileManagerDlg::DeleteDirectory(LPCTSTR lpszDirectory)
     wsprintf(lpszFilter, _T("%s\\*.*"), lpszDirectory);
 
     HANDLE hFind = FindFirstFile(lpszFilter, &wfd);
-    if (hFind == INVALID_HANDLE_VALUE) // Èç¹ûÃ»ÓĞÕÒµ½»ò²éÕÒÊ§°Ü
+    if (hFind == INVALID_HANDLE_VALUE) // å¦‚æœæ²¡æœ‰æ‰¾åˆ°æˆ–æŸ¥æ‰¾å¤±è´¥
         return FALSE;
 
     do {
@@ -1739,7 +1739,7 @@ bool CFileManagerDlg::DeleteDirectory(LPCTSTR lpszDirectory)
         }
     } while (FindNextFile(hFind, &wfd));
 
-    FindClose(hFind); // ¹Ø±Õ²éÕÒ¾ä±ú
+    FindClose(hFind); // å…³é—­æŸ¥æ‰¾å¥æŸ„
 
     if (!RemoveDirectory(lpszDirectory)) {
         return FALSE;
@@ -1754,7 +1754,7 @@ void CFileManagerDlg::OnRemoteNewFolder()
         return;
 
     CInputDialog	dlg(this);
-    dlg.Init(_T("ĞÂ½¨Ä¿Â¼"), _T("ÇëÊäÈëÄ¿Â¼Ãû³Æ:"));
+    dlg.Init(_T("æ–°å»ºç›®å½•"), _T("è¯·è¾“å…¥ç›®å½•åç§°:"));
     if (dlg.DoModal() == IDOK && dlg.m_str.GetLength()) {
         CString file = m_Remote_Path + dlg.m_str + _T("\\");
         UINT	nPacketSize = (file.GetLength() + 1) * sizeof(TCHAR) + 1;
@@ -1768,7 +1768,7 @@ void CFileManagerDlg::OnRemoteNewFolder()
 
 void CFileManagerDlg::OnTransferRecv()
 {
-    OnRemoteCopy(); //ÏÂÔØ
+    OnRemoteCopy(); //ä¸‹è½½
 }
 
 void CFileManagerDlg::OnRename()
@@ -1944,7 +1944,7 @@ void CFileManagerDlg::OnRemoteCopyFile()
     memcpy(lpPacket + 1, file.GetBuffer(0), nPacketLength - 1);
     m_ContextObject->Send2Client(lpPacket, nPacketLength);
     LocalFree(lpPacket);
-    ShowMessage(_T("×¼±¸Õ³Ìù"));
+    ShowMessage(_T("å‡†å¤‡ç²˜è´´"));
 }
 
 void CFileManagerDlg::OnRemotePasteFile()
@@ -1967,7 +1967,7 @@ void CFileManagerDlg::OnRemotezip()
     while (pos) { //so long as we have a valid POSITION, we keep iterating
         int nItem = m_list_remote.GetNextSelectedItem(pos);
         file += (m_Remote_Path + m_list_remote.GetItemText(nItem, 0));
-        // Èç¹ûÊÇÄ¿Â¼
+        // å¦‚æœæ˜¯ç›®å½•
         if (m_list_remote.GetItemData(nItem))
             file += _T('\\');
         file += "|";
@@ -1980,7 +1980,7 @@ void CFileManagerDlg::OnRemotezip()
     m_ContextObject->Send2Client(lpPacket, nPacketLength);
     LocalFree(lpPacket);
 
-    ShowMessage(_T("¿ªÊ¼Ñ¹Ëõ£¬²»Òª¹Ø±Õ´°¿Ú£¬ÆäËû²Ù×÷¼ÌĞø"));
+    ShowMessage(_T("å¼€å§‹å‹ç¼©ï¼Œä¸è¦å…³é—­çª—å£ï¼Œå…¶ä»–æ“ä½œç»§ç»­"));
 }
 
 void CFileManagerDlg::OnRemotezipstop()
@@ -1993,7 +1993,7 @@ void CFileManagerDlg::OnRclickListRemotedriver(NMHDR* pNMHDR, LRESULT* pResult)
 {
     CMenu mListmeau;
     mListmeau.CreatePopupMenu();
-    mListmeau.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("·ÖÇø¸ß¼¶ËÑË÷"));
+    mListmeau.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("åˆ†åŒºé«˜çº§æœç´¢"));
     POINT mousepos;
     GetCursorPos(&mousepos);
     int nMenuResult = ::TrackPopupMenu(mListmeau, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, mousepos.x, mousepos.y, 0, GetSafeHwnd(), NULL);
@@ -2003,7 +2003,7 @@ void CFileManagerDlg::OnRclickListRemotedriver(NMHDR* pNMHDR, LRESULT* pResult)
     case 100: {
         UpdateData();
 
-        //»ñÈ¡ÎÄ¼şÏêÏ¸ĞÅÏ¢
+        //è·å–æ–‡ä»¶è¯¦ç»†ä¿¡æ¯
         POSITION pos = m_list_remote_driver.GetFirstSelectedItemPosition();
         CString str_disk;
         if (pos != NULL) {
@@ -2012,10 +2012,10 @@ void CFileManagerDlg::OnRclickListRemotedriver(NMHDR* pNMHDR, LRESULT* pResult)
             if (str_disk.Find(_T(":")) == -1) return;;
         }
         CInputDialog	dlg(this);
-        dlg.Init(_T("È·ÈÏºó ±ØĞëµÈ´ı³öÏÖ½á¹û"), _T("ÇëÊäÈëÒªËÑË÷µÄ¹Ø¼ü´Ê"));
+        dlg.Init(_T("ç¡®è®¤å å¿…é¡»ç­‰å¾…å‡ºç°ç»“æœ"), _T("è¯·è¾“å…¥è¦æœç´¢çš„å…³é”®è¯"));
         if (dlg.DoModal() != IDOK)return;
 
-        // µÃµ½·µ»ØÊı¾İÇ°½û´°¿Ú
+        // å¾—åˆ°è¿”å›æ•°æ®å‰ç¦çª—å£
         m_list_remote_search.DeleteAllItems();
         m_ProgressCtrl->SetPos(0);
         struct SEARCH {
@@ -2027,7 +2027,7 @@ void CFileManagerDlg::OnRclickListRemotedriver(NMHDR* pNMHDR, LRESULT* pResult)
 
         memcpy(S_search.TC_disk, str_disk.GetBuffer(), str_disk.GetLength() * sizeof(TCHAR));
         if (dlg.m_str.GetLength() > (MAX_PATH - 5)) {
-            MessageBox(_T("ËÑË÷¹Ø¼ü´ÊÌ«³¤"), _T("×¢Òâ"));
+            MessageBox(_T("æœç´¢å…³é”®è¯å¤ªé•¿"), _T("æ³¨æ„"));
             return ;
         }
         memcpy(S_search.TC_search, dlg.m_str.GetBuffer(), dlg.m_str.GetLength() * sizeof(TCHAR));
@@ -2078,7 +2078,7 @@ void CFileManagerDlg::OnRclickListRemote(NMHDR* pNMHDR, LRESULT* pResult)
         pM->EnableMenuItem(ID_FILEMANGER_PASTE, MF_BYCOMMAND | MF_ENABLED);
     }
     if (pListCtrl->GetSelectedCount() == 1) {
-        // µ¥Ñ¡Èç¹ûÊÇÄ¿Â¼, ²»ÄÜÒş²ØÔËĞĞ
+        // å•é€‰å¦‚æœæ˜¯ç›®å½•, ä¸èƒ½éšè—è¿è¡Œ
         if (pListCtrl->GetItemData(pListCtrl->GetSelectionMark()) == 1) {
             pM->EnableMenuItem(IDM_REMOTE_OPEN_HIDE, MF_BYCOMMAND | MF_GRAYED);
             pM->EnableMenuItem(IDM_REMOTE_OPEN_SHOW, MF_BYCOMMAND | MF_GRAYED);
@@ -2122,9 +2122,9 @@ void CFileManagerDlg::OnRclickListSearch(NMHDR* pNMHDR, LRESULT* pResult)
 {
     CMenu mListmeau;
     mListmeau.CreatePopupMenu();
-    mListmeau.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("ÏÂÔØ(¸½´øÄ¿Â¼½á¹¹)"));
-    mListmeau.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("É¾³ı"));
-    mListmeau.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("´ò¿ªÎÄ¼şÎ»ÖÃ"));
+    mListmeau.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("ä¸‹è½½(é™„å¸¦ç›®å½•ç»“æ„)"));
+    mListmeau.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("åˆ é™¤"));
+    mListmeau.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("æ‰“å¼€æ–‡ä»¶ä½ç½®"));
     POINT mousepos;
     GetCursorPos(&mousepos);
     int nMenuResult = ::TrackPopupMenu(mListmeau, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, mousepos.x, mousepos.y, 0, GetSafeHwnd(), NULL);
@@ -2149,7 +2149,7 @@ void CFileManagerDlg::OnRclickListSearch(NMHDR* pNMHDR, LRESULT* pResult)
         }
         if (file.IsEmpty()) {
             EnableControl(TRUE);
-            ::MessageBox(m_hWnd, _T("ÇëÑ¡ÔñÎÄ¼ş£¡"), _T("¾¯¸æ"), MB_OK | MB_ICONWARNING);
+            ::MessageBox(m_hWnd, _T("è¯·é€‰æ‹©æ–‡ä»¶ï¼"), _T("è­¦å‘Š"), MB_OK | MB_ICONWARNING);
             return;
         }
         strLpath = GetDirectoryPath(FALSE);
@@ -2168,15 +2168,15 @@ void CFileManagerDlg::OnRclickListSearch(NMHDR* pNMHDR, LRESULT* pResult)
         // TODO: Add your command handler code here
         CString str;
         if (m_list_remote_search.GetSelectedCount() > 1)
-            str.Format(_T("È·¶¨Òª½«Õâ %d ÏîÉ¾³ıÂğ?"), m_list_remote_search.GetSelectedCount());
+            str.Format(_T("ç¡®å®šè¦å°†è¿™ %d é¡¹åˆ é™¤å—?"), m_list_remote_search.GetSelectedCount());
         else {
             CString file = m_list_remote_search.GetItemText(m_list_remote_search.GetSelectionMark(), 0);
             if (m_list_remote_search.GetItemData(m_list_remote_search.GetSelectionMark()) == 1)
-                str.Format(_T("È·ÊµÒªÉ¾³ıÎÄ¼ş¼Ğ¡°%s¡±²¢½«ËùÓĞÄÚÈİÉ¾³ıÂğ?"), file);
+                str.Format(_T("ç¡®å®è¦åˆ é™¤æ–‡ä»¶å¤¹â€œ%sâ€å¹¶å°†æ‰€æœ‰å†…å®¹åˆ é™¤å—?"), file);
             else
-                str.Format(_T("È·ÊµÒª°Ñ¡°%s¡±É¾³ıÂğ?"), file);
+                str.Format(_T("ç¡®å®è¦æŠŠâ€œ%sâ€åˆ é™¤å—?"), file);
         }
-        if (::MessageBox(m_hWnd, str, _T("È·ÈÏÉ¾³ı"), MB_YESNO | MB_ICONQUESTION) == IDNO)
+        if (::MessageBox(m_hWnd, str, _T("ç¡®è®¤åˆ é™¤"), MB_YESNO | MB_ICONQUESTION) == IDNO)
             return;
         m_Remote_Delete_Job.RemoveAll();
         POSITION pos = m_list_remote_search.GetFirstSelectedItemPosition(); //iterator for the CListCtrl
@@ -2186,7 +2186,7 @@ void CFileManagerDlg::OnRclickListSearch(NMHDR* pNMHDR, LRESULT* pResult)
             m_Search_Path = m_list_remote_search.GetItemText(nItem, 3);
             m_Search_Path += '\\';
             CString	file = m_Search_Path + m_list_remote_search.GetItemText(nItem, 0);
-            // Èç¹ûÊÇÄ¿Â¼
+            // å¦‚æœæ˜¯ç›®å½•
             if (m_list_remote_search.GetItemData(nItem))
                 file += _T('\\');
 
@@ -2194,7 +2194,7 @@ void CFileManagerDlg::OnRclickListSearch(NMHDR* pNMHDR, LRESULT* pResult)
         } //EO while(pos) -- at this point we have deleted the moving items and stored them in memory
 
         EnableControl(FALSE);
-        // ·¢ËÍµÚÒ»¸öÏÂÔØÈÎÎñ
+        // å‘é€ç¬¬ä¸€ä¸ªä¸‹è½½ä»»åŠ¡
         SendDeleteJob();
     }
     break;
@@ -2284,11 +2284,11 @@ bool CFileManagerDlg::MakeSureDirectoryPathExists(LPCTSTR pszDirPath)
     return TRUE;
 }
 
-//Ñ¹Ëõ´¦Àí
+//å‹ç¼©å¤„ç†
 void CFileManagerDlg::OnCompress()
 {
-    // TODO: ÔÚ´ËÌí¼ÓÃüÁî´¦Àí³ÌĞò´úÂë
-    //winrar a -r D:\123.she.rar d:\123.she    //¼ÓÑ¹
+    // TODO: åœ¨æ­¤æ·»åŠ å‘½ä»¤å¤„ç†ç¨‹åºä»£ç 
+    //winrar a -r D:\123.she.rar d:\123.she    //åŠ å‹
     UpdateData(TRUE);
     int i = m_list_remote.GetSelectionMark();
     if (i < 0) {
@@ -2296,7 +2296,7 @@ void CFileManagerDlg::OnCompress()
     }
     CString strMsg = _T("a -ep1 -ibck ");
     CString strFullFileName = m_list_remote.GetItemText(i, 0);
-    if (m_list_remote.GetItemData(i)) { //ÎÄ¼ş¼Ğ
+    if (m_list_remote.GetItemData(i)) { //æ–‡ä»¶å¤¹
         strMsg += _T("-r ");
         strMsg += (m_Remote_Path + strFullFileName);
     } else {
@@ -2316,7 +2316,7 @@ void CFileManagerDlg::OnCompress()
 
 void CFileManagerDlg::OnUncompress()
 {
-    // TODO: ÔÚ´ËÌí¼ÓÃüÁî´¦Àí³ÌĞò´úÂë
+    // TODO: åœ¨æ­¤æ·»åŠ å‘½ä»¤å¤„ç†ç¨‹åºä»£ç 
     // winrar x D:\11.she.rar D:\11.she\ 
     UpdateData(TRUE);
     int i = m_list_remote.GetSelectionMark();
@@ -2351,13 +2351,13 @@ void CFileManagerDlg::OnBtnSearch()
 {
     UpdateData();
 
-    // 	// µÃµ½·µ»ØÊı¾İÇ°½û´°¿Ú
+    // 	// å¾—åˆ°è¿”å›æ•°æ®å‰ç¦çª—å£
     m_list_remote_search.DeleteAllItems();
     m_ProgressCtrl->SetPos(0);
 
     if (m_Remote_Path.IsEmpty()) return;
 
-    // ¹¹½¨Êı¾İ°ü
+    // æ„å»ºæ•°æ®åŒ…
     FILESEARCH mFileSearchPacket;
     lstrcpy(mFileSearchPacket.SearchPath, m_Remote_Path.GetBuffer(0));
     lstrcpy(mFileSearchPacket.SearchFileName, m_SearchStr.GetBuffer(0));
@@ -2372,8 +2372,8 @@ void CFileManagerDlg::OnBtnSearch()
     memcpy(lpBuffer + 1, &mFileSearchPacket, sizeof(mFileSearchPacket));
     m_ContextObject->Send2Client(lpBuffer, nPacketSize);
     SAFE_DELETE_AR(lpBuffer);
-    // ÉèÖÃ°´Å¥×´Ì¬
-    m_BtnSearch.SetWindowText(_T("ÕıÔÚËÑË÷..."));
+    // è®¾ç½®æŒ‰é’®çŠ¶æ€
+    m_BtnSearch.SetWindowText(_T("æ­£åœ¨æœç´¢..."));
 
     m_list_remote_search.ShowWindow(SW_SHOW);
     GetDlgItem(IDC_BTN_SEARCH)->EnableWindow(FALSE);
@@ -2384,8 +2384,8 @@ void CFileManagerDlg::OnBtnSearch()
 void CFileManagerDlg::SearchEnd()
 {
     int len = m_list_remote_search.GetItemCount();
-    m_BtnSearch.SetWindowText(_T("ÖØĞÂËÑË÷"));
-    ShowMessage(_T("ËÑË÷Íê±Ï ¹²£º%d ¸öÎÄ¼ş"), len);
+    m_BtnSearch.SetWindowText(_T("é‡æ–°æœç´¢"));
+    ShowMessage(_T("æœç´¢å®Œæ¯• å…±ï¼š%d ä¸ªæ–‡ä»¶"), len);
     m_list_remote_search.EnableWindow(TRUE);
     GetDlgItem(IDC_BTN_SEARCH)->EnableWindow(TRUE);
     GetDlgItem(ID_SEARCH_STOP)->EnableWindow(FALSE);
@@ -2410,7 +2410,7 @@ void CFileManagerDlg::FixedRemoteSearchFileList(BYTE* pbBuffer, DWORD dwBufferLe
         CString csFilePath, csFileFullName;
         csFilePath.Format(_T("%s"), pszFileName);
         int nPos = csFilePath.ReverseFind(_T('\\'));
-        csFileFullName = csFilePath.Right(csFilePath.GetLength() - nPos - 1);// »ñÈ¡ÎÄ¼şÈ«Ãû£¬°üÀ¨ÎÄ¼şÃûºÍÀ©Õ¹Ãû
+        csFileFullName = csFilePath.Right(csFilePath.GetLength() - nPos - 1);// è·å–æ–‡ä»¶å…¨åï¼ŒåŒ…æ‹¬æ–‡ä»¶åå’Œæ‰©å±•å
 
         nItem = m_list_remote_search.InsertItem(nItemIndex++, csFileFullName, GetIconIndex(pszFileName, nType));
         m_list_remote_search.SetItemData(nItem, nType == FILE_ATTRIBUTE_DIRECTORY);
@@ -2427,7 +2427,7 @@ void CFileManagerDlg::FixedRemoteSearchFileList(BYTE* pbBuffer, DWORD dwBufferLe
         CTime	time(ftm_strReceiveLocalFileTime);
         m_list_remote_search.SetItemText(nItem, 2, time.Format(_T("%Y-%m-%d %H:%M")));
 
-        PathRemoveFileSpec(pszFileName); //È¥³ıÎÄ¼şÃû»ñÈ¡ÎÄ¼şÂ·¾¶
+        PathRemoveFileSpec(pszFileName); //å»é™¤æ–‡ä»¶åè·å–æ–‡ä»¶è·¯å¾„
         m_list_remote_search.SetItemText(nItem, 3, pszFileName);
 
         pList += 16;
@@ -2437,7 +2437,7 @@ void CFileManagerDlg::FixedRemoteSearchFileList(BYTE* pbBuffer, DWORD dwBufferLe
 }
 
 
-//ÎÄ¼şËÑË÷Í£Ö¹
+//æ–‡ä»¶æœç´¢åœæ­¢
 void CFileManagerDlg::OnBnClickedSearchStop()
 {
     GetDlgItem(ID_SEARCH_STOP)->EnableWindow(FALSE);
@@ -2446,7 +2446,7 @@ void CFileManagerDlg::OnBnClickedSearchStop()
     m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
 }
 
-//ÏÔÊ¾ËÑË÷½á¹û
+//æ˜¾ç¤ºæœç´¢ç»“æœ
 void CFileManagerDlg::OnBnClickedSearchResult()
 {
     m_list_remote_search.ShowWindow(m_list_remote_search.IsWindowVisible() ? SW_HIDE : SW_SHOW);
@@ -2482,7 +2482,7 @@ void CFileManagerDlg::ShowSearchPlugList()
     }
     m_list_remote_search.EnableWindow(TRUE);
     CString strMsgShow;
-    strMsgShow.Format(_T("¹²ËÑË÷µ½ %d ¸ö"), i);
+    strMsgShow.Format(_T("å…±æœç´¢åˆ° %d ä¸ª"), i);
     DWORD_PTR dwResult;
     SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, (LPARAM)(strMsgShow.GetBuffer()), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, & dwResult);
     m_list_remote_search.ShowWindow( SW_SHOW);

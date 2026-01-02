@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Lagged Fibonacci PRNG
  * Copyright (c) 2008 Michael Niedermayer
  *

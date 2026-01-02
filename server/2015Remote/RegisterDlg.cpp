@@ -1,4 +1,4 @@
-// RegisterDlg.cpp : ʵ���ļ�
+﻿// RegisterDlg.cpp : 实现文件
 //
 
 #include "stdafx.h"
@@ -21,7 +21,7 @@ enum KEYVALUE {
     MREG_EXPAND_SZ
 };
 
-// CRegisterDlg �Ի���
+// CRegisterDlg 对话框
 
 IMPLEMENT_DYNAMIC(CRegisterDlg, CDialog)
 
@@ -52,7 +52,7 @@ BEGIN_MESSAGE_MAP(CRegisterDlg, CDialog)
 END_MESSAGE_MAP()
 
 
-// CRegisterDlg ��Ϣ��������
+// CRegisterDlg 消息处理程序
 
 
 BOOL CRegisterDlg::OnInitDialog()
@@ -61,12 +61,12 @@ BOOL CRegisterDlg::OnInitDialog()
     SetIcon(m_hIcon, TRUE);
     SetIcon(m_hIcon, FALSE);
 
-    // TODO:  �ڴ����Ӷ���ĳ�ʼ��
+    // TODO:  在此添加额外的初始化
     CString str;
-    str.Format("%s - ע�������", m_IPAddress);
+    str.Format("%s - 注册表管理", m_IPAddress);
     SetWindowText(str);
 
-    m_ImageListTree.Create(18, 18, ILC_COLOR16,10, 0);   //���� ���ؼ��ϵ�ͼ��
+    m_ImageListTree.Create(18, 18, ILC_COLOR16,10, 0);   //制作 树控件上的图标
 
     auto hIcon = (HICON)::LoadImage(::AfxGetInstanceHandle(),MAKEINTRESOURCE(IDI_ICON_FATHER), IMAGE_ICON, 18, 18, 0);
     m_ImageListTree.Add(hIcon);
@@ -75,7 +75,7 @@ BOOL CRegisterDlg::OnInitDialog()
 
     m_Tree.SetImageList(&m_ImageListTree,TVSIL_NORMAL);
 
-    m_hRoot = m_Tree.InsertItem("ע�������",0,0,0,0);      //0
+    m_hRoot = m_Tree.InsertItem("注册表管理",0,0,0,0);      //0
     HKCU    = m_Tree.InsertItem("HKEY_CURRENT_USER",1,1,m_hRoot,0); //1
     HKLM    = m_Tree.InsertItem("HKEY_LOCAL_MACHINE",1,1,m_hRoot,0);
     HKUS    = m_Tree.InsertItem("HKEY_USERS",1,1,m_hRoot,0);
@@ -84,26 +84,26 @@ BOOL CRegisterDlg::OnInitDialog()
 
     m_Tree.Expand(m_hRoot,TVE_EXPAND);
 
-    m_ControlList.InsertColumn(0,"����",LVCFMT_LEFT,150,-1);
-    m_ControlList.InsertColumn(1,"����",LVCFMT_LEFT,60,-1);
-    m_ControlList.InsertColumn(2,"����",LVCFMT_LEFT,300,-1);
+    m_ControlList.InsertColumn(0,"名称",LVCFMT_LEFT,150,-1);
+    m_ControlList.InsertColumn(1,"类型",LVCFMT_LEFT,60,-1);
+    m_ControlList.InsertColumn(2,"数据",LVCFMT_LEFT,300,-1);
     m_ControlList.SetExtendedStyle(LVS_EX_FULLROWSELECT);
-    //////����ͼ��//////
+    //////添加图标//////
     m_ImageListControlList.Create(16,16,TRUE,2,2);
     m_ImageListControlList.Add(THIS_APP->LoadIcon(IDI_ICON_STRING));
     m_ImageListControlList.Add(THIS_APP->LoadIcon(IDI_ICON_DWORD));
     m_ControlList.SetImageList(&m_ImageListControlList,LVSIL_SMALL);
 
-    m_isEnable = TRUE;   //��ֵ��Ϊ�˽��Ƶ�� �򱻿ض�����
+    m_isEnable = TRUE;   //该值是为了解决频繁 向被控端请求
 
     return TRUE;  // return TRUE unless you set the focus to a control
-    // �쳣: OCX ����ҳӦ���� FALSE
+    // 异常: OCX 属性页应返回 FALSE
 }
 
 void CRegisterDlg::OnClose()
 {
     CancelIO();
-    // �ȴ����ݴ������
+    // 等待数据处理完毕
     if (IsProcessing()) {
         ShowWindow(SW_HIDE);
         return;
@@ -129,20 +129,20 @@ void CRegisterDlg::OnTvnSelchangedTree(NMHDR *pNMHDR, LRESULT *pResult)
         return;
     }
 
-    m_hSelectedItem=Item.hItem;			//�����û��򿪵������ڵ���   //0  1 2 2 3
+    m_hSelectedItem=Item.hItem;			//保存用户打开的子树节点句柄   //0  1 2 2 3
     m_ControlList.DeleteAllItems();
 
-    CString strFullPath=GetFullPath(m_hSelectedItem);    //��ü�ֵ·��
+    CString strFullPath=GetFullPath(m_hSelectedItem);    //获得键值路径
 
     char bToken=GetFatherPath(strFullPath);       //[2] \1\2\3
-    //����һ����
-    int nitem=m_ControlList.InsertItem(0,"(Ĭ��)",0);
+    //愈加一个键
+    int nitem=m_ControlList.InsertItem(0,"(默认)",0);
     m_ControlList.SetItemText(nitem,1,"REG_SZ");
-    m_ControlList.SetItemText(nitem,2,"(����δ����ֵ)");
+    m_ControlList.SetItemText(nitem,2,"(数据未设置值)");
 
-    strFullPath.Insert(0,bToken);//����  �Ǹ�����
+    strFullPath.Insert(0,bToken);//插入  那个根键
     bToken=COMMAND_REG_FIND;
-    strFullPath.Insert(0,bToken);      //�����ѯ����  [COMMAND_REG_FIND][x]
+    strFullPath.Insert(0,bToken);      //插入查询命令  [COMMAND_REG_FIND][x]
 
     m_ContextObject->Send2Client((LPBYTE)(strFullPath.GetBuffer(0)), strFullPath.GetLength()+1);
 
@@ -163,7 +163,7 @@ CString CRegisterDlg::GetFullPath(HTREEITEM hCurrent)
         if(strTemp.Right(1) != "\\")
             strTemp += "\\";
         strReturn = strTemp  + strReturn;
-        hCurrent = m_Tree.GetParentItem(hCurrent);   //�õ�����
+        hCurrent = m_Tree.GetParentItem(hCurrent);   //得到父的
     }
     return strReturn;
 }
@@ -171,7 +171,7 @@ CString CRegisterDlg::GetFullPath(HTREEITEM hCurrent)
 char CRegisterDlg::GetFatherPath(CString& strFullPath)
 {
     char bToken;
-    if(!strFullPath.Find("HKEY_CLASSES_ROOT")) {	//�ж�����
+    if(!strFullPath.Find("HKEY_CLASSES_ROOT")) {	//判断主键
         bToken=MHKEY_CLASSES_ROOT;
         strFullPath.Delete(0,sizeof("HKEY_CLASSES_ROOT"));
     } else if(!strFullPath.Find("HKEY_CURRENT_USER")) {
@@ -210,7 +210,7 @@ void CRegisterDlg::OnReceiveComplete(void)
         break;
     }
     default:
-        // ���䷢���쳣����
+        // 传输发生异常数据
         break;
     }
     m_bIsWorking = FALSE;
@@ -218,9 +218,9 @@ void CRegisterDlg::OnReceiveComplete(void)
 
 
 struct REGMSG {
-    int count;         //���ָ���
-    DWORD size;             //���ִ�С
-    DWORD valsize;     //ֵ��С
+    int count;         //名字个数
+    DWORD size;             //名字大小
+    DWORD valsize;     //值大小
 };
 
 
@@ -232,12 +232,12 @@ void CRegisterDlg::AddPath(char* szBuffer)
     memcpy((void*)&msg,szBuffer,msgsize);
     DWORD size =msg.size;
     int count=msg.count;
-    if(size>0&&count>0) {                  //һ�㱣����ʩ
+    if(size>0&&count>0) {                  //一点保护措施
         for(int i=0; i<count; ++i) {
             if (m_bIsClosed)
                 break;
             char* szKeyName=szBuffer+size*i+msgsize;
-            m_Tree.InsertItem(szKeyName,1,1,m_hSelectedItem,0);//�����Ӽ�����
+            m_Tree.InsertItem(szKeyName,1,1,m_hSelectedItem,0);//插入子键名称
             m_Tree.Expand(m_hSelectedItem,TVE_EXPAND);
         }
     }
@@ -257,11 +257,11 @@ void CRegisterDlg::AddKey(char* szBuffer)
     for(int i=0; i<msg.count; ++i) {
         if (m_bIsClosed)
             break;
-        BYTE Type=szTemp[0];   //����
+        BYTE Type=szTemp[0];   //类型
         szTemp+=sizeof(BYTE);
-        char* szValueName=szTemp;   //ȡ������
+        char* szValueName=szTemp;   //取出名字
         szTemp+=msg.size;
-        BYTE* szValueData=(BYTE*)szTemp;      //ȡ��ֵ
+        BYTE* szValueData=(BYTE*)szTemp;      //取出值
         szTemp+=msg.valsize;
         if(Type==MREG_SZ) {
             int iItem=m_ControlList.InsertItem(0,szValueName,0);
@@ -269,7 +269,7 @@ void CRegisterDlg::AddKey(char* szBuffer)
             m_ControlList.SetItemText(iItem,2,(char*)szValueData);
         }
         if(Type==MREG_DWORD) {
-            // ��ע��� REG_DWORD ���͵Ĵ���
+            // 对注册表 REG_DWORD 类型的处理
             char ValueData[256] = {0};
             INT_PTR d=(INT_PTR)szValueData;
             memcpy((void*)&d,szValueData,sizeof(INT_PTR));
@@ -283,7 +283,7 @@ void CRegisterDlg::AddKey(char* szBuffer)
             m_ControlList.SetItemText(iItem,2,strValue);
         }
         if(Type==MREG_BINARY) {
-            // ��ע��� REG_BINARY ���͵Ĵ���
+            // 对注册表 REG_BINARY 类型的处理
             char *ValueData = new char[msg.valsize+1];
             sprintf(ValueData,"%s",szValueData);
 

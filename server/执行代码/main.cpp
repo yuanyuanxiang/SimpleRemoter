@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
+Ôªø#define _CRT_SECURE_NO_WARNINGS
 #include <windows.h>
 #include "../../common/commands.h"
 
@@ -7,8 +7,8 @@ extern "C" __declspec(dllexport) DWORD WINAPI run(LPVOID param)
     PluginParam* p = reinterpret_cast<PluginParam*>(param);
 
     char buf[200] = {};
-    sprintf(buf, "÷˜øÿµÿ÷∑: %s:%d", p->IP, p->Port);
-    MessageBoxA(NULL, buf, "≤Âº˛œ˚œ¢", MB_OK | MB_ICONINFORMATION);
+    sprintf(buf, "‰∏ªÊéßÂú∞ÂùÄ: %s:%d", p->IP, p->Port);
+    MessageBoxA(NULL, buf, "Êèí‰ª∂Ê∂àÊÅØ", MB_OK | MB_ICONINFORMATION);
 
     return 0;
 }

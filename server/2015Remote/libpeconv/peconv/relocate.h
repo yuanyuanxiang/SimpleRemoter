@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Operating on PE file's relocations table.
 */

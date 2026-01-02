@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Functions related to operations on files. Wrappers for read/write.
 */

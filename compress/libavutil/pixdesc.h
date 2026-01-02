@@ -1,4 +1,4 @@
-/*
+﻿/*
  * pixel format descriptor
  * Copyright (c) 2009 Michael Niedermayer <michaelni@gmx.at>
  *

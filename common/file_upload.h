@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <string>
 #include <vector>
@@ -6,12 +6,12 @@
 #pragma pack(push, 1)
 struct FileChunkPacket {
     unsigned char       cmd;          // COMMAND_SEND_FILE
-    uint32_t			fileIndex;	  // ÎÄ¼ş±àºÅ
-    uint32_t			totalNum;	  // ÎÄ¼ş×ÜÊı
-    uint64_t            fileSize;     // Õû¸öÎÄ¼ş´óĞ¡
-    uint64_t            offset;       // µ±Ç°¿éÔÚÎÄ¼şÖĞµÄÆ«ÒÆ
-    uint64_t            dataLength;   // ±¾¿éÊı¾İ³¤¶È
-    uint64_t            nameLength;   // ÎÄ¼şÃû³¤¶È£¨²»º¬ '\0'£©
+    uint32_t			fileIndex;	  // æ–‡ä»¶ç¼–å·
+    uint32_t			totalNum;	  // æ–‡ä»¶æ€»æ•°
+    uint64_t            fileSize;     // æ•´ä¸ªæ–‡ä»¶å¤§å°
+    uint64_t            offset;       // å½“å‰å—åœ¨æ–‡ä»¶ä¸­çš„åç§»
+    uint64_t            dataLength;   // æœ¬å—æ•°æ®é•¿åº¦
+    uint64_t            nameLength;   // æ–‡ä»¶åé•¿åº¦ï¼ˆä¸å« '\0'ï¼‰
 };
 #pragma pack(pop)
 

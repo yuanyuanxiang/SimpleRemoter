@@ -1,22 +1,22 @@
-#pragma once
+ï»¿#pragma once
 #include "afxwin.h"
 
 
-// CSettingDlg ¶Ô»°¿ò
+// CSettingDlg å¯¹è¯æ¡†
 
 class CSettingDlg : public CDialog
 {
     DECLARE_DYNAMIC(CSettingDlg)
 
 public:
-    CSettingDlg(CWnd* pParent = NULL);   // ±ê×¼¹¹Ôìº¯Êı
+    CSettingDlg(CWnd* pParent = NULL);   // æ ‡å‡†æ„é€ å‡½æ•°
     virtual ~CSettingDlg();
 
-    // ¶Ô»°¿òÊı¾İ
+    // å¯¹è¯æ¡†æ•°æ®
     enum { IDD = IDD_DIALOG_SET };
 
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æŒ
 
     DECLARE_MESSAGE_MAP()
 public:

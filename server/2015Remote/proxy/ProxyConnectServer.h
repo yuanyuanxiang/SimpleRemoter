@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "HPSocket.h"
 #include "SocketInterface.h"
 #include "Buffer.h"
@@ -42,10 +42,10 @@ private:
     void*                   m_pUser;
     ContextList             m_listFreePool;
     CLock                   m_Locker;
-    int                     m_nPort;			    // ²å¼ş¶Ë¿Ú
-    CONNID                  m_IDs[65535];           // ËùÓĞÁ¬½ÓID
-    LONG                    m_bStop;		        // ¶Ë¿ÚÍ£Ö¹ÉÏÏß¿ØÖÆ
-    int                     m_nMaxConnection;	    // ×î´óÁ¬½ÓÊı
-    BOOL                    m_bIsRun;               // ÔËĞĞ×´Ì¬
-    DWORD					m_dwIndex;              // Á¬½Ó±àºÅ
+    int                     m_nPort;			    // æ’ä»¶ç«¯å£
+    CONNID                  m_IDs[65535];           // æ‰€æœ‰è¿æ¥ID
+    LONG                    m_bStop;		        // ç«¯å£åœæ­¢ä¸Šçº¿æ§åˆ¶
+    int                     m_nMaxConnection;	    // æœ€å¤§è¿æ¥æ•°
+    BOOL                    m_bIsRun;               // è¿è¡ŒçŠ¶æ€
+    DWORD					m_dwIndex;              // è¿æ¥ç¼–å·
 };

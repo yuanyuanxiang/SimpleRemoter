@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Functions and classes responsible for fixing Import Table. A definition of ImportedDllCoverage class.
 */

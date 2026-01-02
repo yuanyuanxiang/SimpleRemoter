@@ -1,4 +1,4 @@
-/*
+﻿/*
  * DES encryption/decryption
  * Copyright (c) 2007 Reimar Doeffinger
  *

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "IOCPServer.h"
 #include "Resource.h"
@@ -13,11 +13,11 @@ public:
 
     VOID OnReceiveComplete();
 
-// ¶Ô»°¿òÊı¾İ
+// å¯¹è¯æ¡†æ•°æ®
     enum { IDD = IDD_DIALOG_DECRYPT };
 
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æŒ
 
     DECLARE_MESSAGE_MAP()
 public:

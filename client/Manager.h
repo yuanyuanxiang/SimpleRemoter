@@ -1,4 +1,4 @@
-// Manager.h: interface for the CManager class.
+﻿// Manager.h: interface for the CManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -39,7 +39,7 @@ HANDLE MyCreateThread(LPSECURITY_ATTRIBUTES lpThreadAttributes, // SD
 class CManager : public IOCPManager
 {
 public:
-    const State&g_bExit; // 1-被控端退出 2-主控端退出
+    const State&g_bExit; // 1-琚帶绔€€鍑?2-涓绘帶绔€€鍑?
     BOOL m_bReady;
     CManager(IOCPClient* ClientObject);
     virtual ~CManager();

@@ -1,4 +1,4 @@
-// RegisterOperation.cpp: implementation of the RegisterOperation class.
+Ôªø// RegisterOperation.cpp: implementation of the RegisterOperation class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -28,9 +28,9 @@ enum KEYVALUE {
 };
 
 struct REGMSG {
-    int count;         //√˚◊÷∏ˆ ˝
-    DWORD size;             //√˚◊÷¥Û–°
-    DWORD valsize;     //÷µ¥Û–°
+    int count;         //ÂêçÂ≠ó‰∏™Êï∞
+    DWORD size;             //ÂêçÂ≠óÂ§ßÂ∞è
+    DWORD valsize;     //ÂÄºÂ§ßÂ∞è
 
 };
 RegisterOperation::RegisterOperation(char bToken)
@@ -68,17 +68,17 @@ RegisterOperation::~RegisterOperation()
 char* RegisterOperation::FindPath()
 {
     char *szBuffer=NULL;
-    HKEY		hKey;			//◊¢≤·±Ì∑µªÿæ‰±˙
-    /*¥Úø™◊¢≤·±Ì User  kdjfjkf\kdjfkdjf\  */
-    if(RegOpenKeyEx(MKEY,KeyPath,0,KEY_ALL_ACCESS,&hKey)==ERROR_SUCCESS) { //¥Úø™
+    HKEY		hKey;			//Ê≥®ÂÜåË°®ËøîÂõûÂè•ÊüÑ
+    /*ÊâìÂºÄÊ≥®ÂÜåË°® User  kdjfjkf\kdjfkdjf\  */
+    if(RegOpenKeyEx(MKEY,KeyPath,0,KEY_ALL_ACCESS,&hKey)==ERROR_SUCCESS) { //ÊâìÂºÄ
         DWORD dwIndex=0,NameCount,NameMaxLen;
         DWORD KeySize,KeyCount,KeyMaxLen,MaxDataLen;
-        //’‚æÕ «√∂æŸ¡À
+        //ËøôÂ∞±ÊòØÊûö‰∏æ‰∫Ü
         if(RegQueryInfoKey(hKey,NULL,NULL,NULL,&KeyCount,  //14
                            &KeyMaxLen,NULL,&NameCount,&NameMaxLen,&MaxDataLen,NULL,NULL)!=ERROR_SUCCESS) {
             return NULL;
         }
-        //“ªµ„±£ª§¥Î ©
+        //‰∏ÄÁÇπ‰øùÊä§Êé™ÊñΩ
         KeySize=KeyMaxLen+1;
         if(KeyCount>0&&KeySize>1) {
             int Size=sizeof(REGMSG)+1;
@@ -89,14 +89,14 @@ char* RegisterOperation::FindPath()
                 return NULL;
             }
             ZeroMemory(szBuffer,DataSize);
-            szBuffer[0]=TOKEN_REG_PATH;           //√¸¡ÓÕ∑
-            REGMSG msg;                     // ˝æ›Õ∑
+            szBuffer[0]=TOKEN_REG_PATH;           //ÂëΩ‰ª§Â§¥
+            REGMSG msg;                     //Êï∞ÊçÆÂ§¥
             msg.size=KeySize;
             msg.count=KeyCount;
             memcpy(szBuffer+1,(void*)&msg,Size);
 
             char * szTemp=new char[KeySize];
-            for(dwIndex=0; dwIndex<KeyCount; dwIndex++) {	//√∂æŸœÓ
+            for(dwIndex=0; dwIndex<KeyCount; dwIndex++) {	//Êûö‰∏æÈ°π
                 ZeroMemory(szTemp,KeySize);
                 DWORD i=KeySize;  //21
                 RegEnumKeyEx(hKey,dwIndex,szTemp,&i,NULL,NULL,NULL,NULL);
@@ -119,15 +119,15 @@ void RegisterOperation::SetPath(char *szPath)
 
 char* RegisterOperation::FindKey()
 {
-    char	*szValueName;		//º¸÷µ√˚≥∆
-    LPBYTE	 szValueData;		//º¸÷µ ˝æ›
+    char	*szValueName;		//ÈîÆÂÄºÂêçÁß∞
+    LPBYTE	 szValueData;		//ÈîÆÂÄºÊï∞ÊçÆ
 
     char *szBuffer=NULL;
-    HKEY  hKey;			//◊¢≤·±Ì∑µªÿæ‰±˙
-    if(RegOpenKeyEx(MKEY,KeyPath,0,KEY_ALL_ACCESS,&hKey)==ERROR_SUCCESS) { //¥Úø™
+    HKEY  hKey;			//Ê≥®ÂÜåË°®ËøîÂõûÂè•ÊüÑ
+    if(RegOpenKeyEx(MKEY,KeyPath,0,KEY_ALL_ACCESS,&hKey)==ERROR_SUCCESS) { //ÊâìÂºÄ
         DWORD dwIndex=0,NameSize,NameCount,NameMaxLen,Type;
         DWORD KeyCount,KeyMaxLen,DataSize,MaxDataLen;
-        //’‚æÕ «√∂æŸ¡À
+        //ËøôÂ∞±ÊòØÊûö‰∏æ‰∫Ü
         if(RegQueryInfoKey(hKey,NULL,NULL,NULL,
                            &KeyCount,&KeyMaxLen,NULL,&NameCount,&NameMaxLen,&MaxDataLen,NULL,NULL)!=ERROR_SUCCESS) {
             return NULL;
@@ -136,11 +136,11 @@ char* RegisterOperation::FindKey()
             DataSize=MaxDataLen+1;
             NameSize=NameMaxLen+100;
             REGMSG  msg;
-            msg.count=NameCount;        //◊‹∏ˆ ˝
-            msg.size=NameSize;          //√˚◊÷¥Û–°
-            msg.valsize=DataSize;       // ˝æ›¥Û–°
+            msg.count=NameCount;        //ÊÄª‰∏™Êï∞
+            msg.size=NameSize;          //ÂêçÂ≠óÂ§ßÂ∞è
+            msg.valsize=DataSize;       //Êï∞ÊçÆÂ§ßÂ∞è
             const int msgsize=sizeof(REGMSG);
-            // Õ∑                   ±Íº«            √˚◊÷                 ˝æ›
+            // Â§¥                   Ê†áËÆ∞            ÂêçÂ≠ó                Êï∞ÊçÆ
             DWORD size=sizeof(REGMSG)+
                        sizeof(BYTE)*NameCount+ NameSize*NameCount+DataSize*NameCount+10;
             szBuffer = (char*)LocalAlloc(LPTR, size);
@@ -148,8 +148,8 @@ char* RegisterOperation::FindKey()
                 return NULL;
             }
             ZeroMemory(szBuffer,size);
-            szBuffer[0]=TOKEN_REG_KEY;         //√¸¡ÓÕ∑
-            memcpy(szBuffer+1,(void*)&msg,msgsize);     // ˝æ›Õ∑
+            szBuffer[0]=TOKEN_REG_KEY;         //ÂëΩ‰ª§Â§¥
+            memcpy(szBuffer+1,(void*)&msg,msgsize);     //Êï∞ÊçÆÂ§¥
 
             szValueName=(char *)malloc(NameSize);
             szValueData=(LPBYTE)malloc(DataSize);
@@ -157,7 +157,7 @@ char* RegisterOperation::FindKey()
                 return NULL;
             }
             char *szTemp=szBuffer+msgsize+1;
-            for(dwIndex=0; dwIndex<NameCount; dwIndex++) {	//√∂æŸº¸÷µ
+            for(dwIndex=0; dwIndex<NameCount; dwIndex++) {	//Êûö‰∏æÈîÆÂÄº
                 ZeroMemory(szValueName,NameSize);
                 ZeroMemory(szValueData,DataSize);
 
@@ -165,7 +165,7 @@ char* RegisterOperation::FindKey()
                 NameSize=NameMaxLen+100;
 
                 RegEnumValue(hKey,dwIndex,szValueName,&NameSize,
-                             NULL,&Type,szValueData,&DataSize);//∂¡»°º¸÷µ
+                             NULL,&Type,szValueData,&DataSize);//ËØªÂèñÈîÆÂÄº
 
                 if(Type==REG_SZ) {
                     szTemp[0]=MREG_SZ;

@@ -1,4 +1,4 @@
-// ShellDlg.cpp : ÊµÏÖÎÄ¼ş
+ï»¿// ShellDlg.cpp : å®ç°æ–‡ä»¶
 //
 
 #include "stdafx.h"
@@ -14,15 +14,15 @@ END_MESSAGE_MAP()
 
 void CAutoEndEdit::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
-    // ½«¹â±êÒÆ¶¯µ½ÎÄ±¾Ä©Î²
+    // å°†å…‰æ ‡ç§»åŠ¨åˆ°æ–‡æœ¬æœ«å°¾
     int nLength = GetWindowTextLength();
     SetSel(nLength, nLength);
 
-    // µ÷ÓÃ¸¸Àà´¦ÀíÊäÈë×Ö·û
+    // è°ƒç”¨çˆ¶ç±»å¤„ç†è¾“å…¥å­—ç¬¦
     CEdit::OnChar(nChar, nRepCnt, nFlags);
 }
 
-// CShellDlg ¶Ô»°¿ò
+// CShellDlg å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(CShellDlg, CDialog)
 
@@ -49,7 +49,7 @@ BEGIN_MESSAGE_MAP(CShellDlg, CDialog)
 END_MESSAGE_MAP()
 
 
-// CShellDlg ÏûÏ¢´¦Àí³ÌĞò
+// CShellDlg æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 
 BOOL CShellDlg::OnInitDialog()
@@ -61,7 +61,7 @@ BOOL CShellDlg::OnInitDialog()
     SetIcon(m_hIcon,FALSE);
 
     CString str;
-    str.Format("%s - Ô¶³ÌÖÕ¶Ë", m_IPAddress);
+    str.Format("%s - è¿œç¨‹ç»ˆç«¯", m_IPAddress);
     SetWindowText(str);
 
     BYTE bToken = COMMAND_NEXT;
@@ -75,7 +75,7 @@ BOOL CShellDlg::OnInitDialog()
     m_Edit.SetLimitText(EDIT_MAXLENGTH);
 
     return TRUE;  // return TRUE unless you set the focus to a control
-    // Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+    // å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 
@@ -99,51 +99,51 @@ std::string removeAnsiCodes(const std::string& input)
 
 VOID CShellDlg::AddKeyBoardData(void)
 {
-    // ×îºóÌîÉÏ0
+    // æœ€åå¡«ä¸Š0
 
     //Shit\0
-    m_ContextObject->InDeCompressedBuffer.WriteBuffer((LPBYTE)"", 1);           //´Ó±»¿ØÖÆ¶ËÀ´µÄÊı¾İÎÒÃÇÒª¼ÓÉÏÒ»¸ö\0
+    m_ContextObject->InDeCompressedBuffer.WriteBuffer((LPBYTE)"", 1);           //ä»è¢«æ§åˆ¶ç«¯æ¥çš„æ•°æ®æˆ‘ä»¬è¦åŠ ä¸Šä¸€ä¸ª\0
     Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(0);
     bool firstRecv = tmp.c_str() == std::string(">");
-    CString strResult = firstRecv ? "" : CString("\r\n") + removeAnsiCodes(tmp.c_str()).c_str(); //»ñµÃËùÓĞµÄÊı¾İ °üÀ¨ \0
+    CString strResult = firstRecv ? "" : CString("\r\n") + removeAnsiCodes(tmp.c_str()).c_str(); //è·å¾—æ‰€æœ‰çš„æ•°æ® åŒ…æ‹¬ \0
 
-    //Ìæ»»µôÔ­À´µÄ»»ĞĞ·û  ¿ÉÄÜcmd µÄ»»ĞĞÍ¬w32ÏÂµÄ±à¼­¿Ø¼şµÄ»»ĞĞ·û²»Ò»ÖÂ   ËùÓĞµÄ»Ø³µ»»ĞĞ
+    //æ›¿æ¢æ‰åŸæ¥çš„æ¢è¡Œç¬¦  å¯èƒ½cmd çš„æ¢è¡ŒåŒw32ä¸‹çš„ç¼–è¾‘æ§ä»¶çš„æ¢è¡Œç¬¦ä¸ä¸€è‡´   æ‰€æœ‰çš„å›è½¦æ¢è¡Œ
     strResult.Replace("\n", "\r\n");
 
     if (strResult.GetLength() + m_Edit.GetWindowTextLength() >= EDIT_MAXLENGTH) {
         CString text;
         m_Edit.GetWindowTextA(text);
-        auto n = EDIT_MAXLENGTH - strResult.GetLength() - 5; // Áô5¸ö×Ö·ûÊäÈëclearÇåÆÁ
+        auto n = EDIT_MAXLENGTH - strResult.GetLength() - 5; // ç•™5ä¸ªå­—ç¬¦è¾“å…¥clearæ¸…å±
         if (n < 0) {
             strResult = strResult.Right(strResult.GetLength() + n);
         }
         m_Edit.SetWindowTextA(text.Right(max(n, 0)));
     }
 
-    //µÃµ½µ±Ç°´°¿ÚµÄ×Ö·û¸öÊı
+    //å¾—åˆ°å½“å‰çª—å£çš„å­—ç¬¦ä¸ªæ•°
     int	iLength = m_Edit.GetWindowTextLength();    //kdfjdjfdir
     //1.txt
     //2.txt
     //dir\r\n
 
-    //½«¹â±ê¶¨Î»µ½¸ÃÎ»ÖÃ²¢Ñ¡ÖĞÖ¸¶¨¸öÊıµÄ×Ö·û  Ò²¾ÍÊÇÄ©Î² ÒòÎª´Ó±»¿Ø¶ËÀ´µÄÊı¾İ ÒªÏÔÊ¾ÔÚ ÎÒÃÇµÄ ÏÈÇ°ÄÚÈİµÄºóÃæ
+    //å°†å…‰æ ‡å®šä½åˆ°è¯¥ä½ç½®å¹¶é€‰ä¸­æŒ‡å®šä¸ªæ•°çš„å­—ç¬¦  ä¹Ÿå°±æ˜¯æœ«å°¾ å› ä¸ºä»è¢«æ§ç«¯æ¥çš„æ•°æ® è¦æ˜¾ç¤ºåœ¨ æˆ‘ä»¬çš„ å…ˆå‰å†…å®¹çš„åé¢
     m_Edit.SetSel(iLength, iLength);
 
-    //ÓÃ´«µİ¹ıÀ´µÄÊı¾İÌæ»»µô¸ÃÎ»ÖÃµÄ×Ö·û    //ÏÔÊ¾
+    //ç”¨ä¼ é€’è¿‡æ¥çš„æ•°æ®æ›¿æ¢æ‰è¯¥ä½ç½®çš„å­—ç¬¦    //æ˜¾ç¤º
     m_Edit.ReplaceSel(strResult);
 
-    //ÖØĞÂµÃµ½×Ö·ûµÄ´óĞ¡
+    //é‡æ–°å¾—åˆ°å­—ç¬¦çš„å¤§å°
 
     m_nCurSel = m_Edit.GetWindowTextLength();
 
-    //ÎÒÃÇ×¢Òâµ½£¬ÎÒÃÇÔÚÊ¹ÓÃÔ¶³ÌÖÕ¶ËÊ± £¬·¢ËÍµÄÃ¿Ò»¸öÃüÁîĞĞ ¶¼ÓĞÒ»¸ö»»ĞĞ·û  ¾ÍÊÇÒ»¸ö»Ø³µ
-    //ÒªÕÒµ½Õâ¸ö»Ø³µµÄ´¦ÀíÎÒÃÇ¾ÍÒªµ½PreTranslateMessageº¯ÊıµÄ¶¨Òå
+    //æˆ‘ä»¬æ³¨æ„åˆ°ï¼Œæˆ‘ä»¬åœ¨ä½¿ç”¨è¿œç¨‹ç»ˆç«¯æ—¶ ï¼Œå‘é€çš„æ¯ä¸€ä¸ªå‘½ä»¤è¡Œ éƒ½æœ‰ä¸€ä¸ªæ¢è¡Œç¬¦  å°±æ˜¯ä¸€ä¸ªå›è½¦
+    //è¦æ‰¾åˆ°è¿™ä¸ªå›è½¦çš„å¤„ç†æˆ‘ä»¬å°±è¦åˆ°PreTranslateMessageå‡½æ•°çš„å®šä¹‰
 }
 
 void CShellDlg::OnClose()
 {
     CancelIO();
-    // µÈ´ıÊı¾İ´¦ÀíÍê±Ï
+    // ç­‰å¾…æ•°æ®å¤„ç†å®Œæ¯•
     if (IsProcessing()) {
         ShowWindow(SW_HIDE);
         return;
@@ -172,27 +172,27 @@ CString ExtractAfterLastNewline(const CString& str)
 BOOL CShellDlg::PreTranslateMessage(MSG* pMsg)
 {
     if (pMsg->message == WM_KEYDOWN) {
-        // ÆÁ±ÎVK_ESCAPE¡¢VK_DELETE
+        // å±è”½VK_ESCAPEã€VK_DELETE
         if (pMsg->wParam == VK_ESCAPE || pMsg->wParam == VK_DELETE)
             return true;
-        //Èç¹ûÊÇ¿É±à¼­¿òµÄ»Ø³µ¼ü
+        //å¦‚æœæ˜¯å¯ç¼–è¾‘æ¡†çš„å›è½¦é”®
         if (pMsg->wParam == VK_RETURN && pMsg->hwnd == m_Edit.m_hWnd) {
-            //µÃµ½´°¿ÚµÄÊı¾İ´óĞ¡
+            //å¾—åˆ°çª—å£çš„æ•°æ®å¤§å°
             int	iLength = m_Edit.GetWindowTextLength();
             CString str;
-            //µÃµ½´°¿ÚµÄ×Ö·ûÊı¾İ
+            //å¾—åˆ°çª—å£çš„å­—ç¬¦æ•°æ®
             m_Edit.GetWindowText(str);
-            //¼ÓÈë»»ĞĞ·û
+            //åŠ å…¥æ¢è¡Œç¬¦
             str += "\r\n";
-            //µÃµ½Õû¸öµÄ»º³åÇøµÄÊ×µØÖ·ÔÙ¼ÓÉÏÔ­ÓĞµÄ×Ö·ûµÄÎ»ÖÃ£¬ÆäÊµ¾ÍÊÇÓÃ»§µ±Ç°ÊäÈëµÄÊı¾İÁË
-            //È»ºó½«Êı¾İ·¢ËÍ³öÈ¥
+            //å¾—åˆ°æ•´ä¸ªçš„ç¼“å†²åŒºçš„é¦–åœ°å€å†åŠ ä¸ŠåŸæœ‰çš„å­—ç¬¦çš„ä½ç½®ï¼Œå…¶å®å°±æ˜¯ç”¨æˆ·å½“å‰è¾“å…¥çš„æ•°æ®äº†
+            //ç„¶åå°†æ•°æ®å‘é€å‡ºå»
             LPBYTE pSrc = (LPBYTE)str.GetBuffer(0) + m_nCurSel;
 #ifdef _DEBUG
             TRACE("[Shell]=> %s", (char*)pSrc);
 #endif
-            if (0 == strcmp((char*)pSrc, "exit\r\n")) { // ÍË³öÖÕ¶Ë
+            if (0 == strcmp((char*)pSrc, "exit\r\n")) { // é€€å‡ºç»ˆç«¯
                 return PostMessage(WM_CLOSE);
-            } else if (0 == strcmp((char*)pSrc, "clear\r\n")) { // ÇåÀíÖÕ¶Ë
+            } else if (0 == strcmp((char*)pSrc, "clear\r\n")) { // æ¸…ç†ç»ˆç«¯
                 str = ExtractAfterLastNewline(str.Left(str.GetLength() - 7));
                 m_Edit.SetWindowTextA(str);
                 m_nCurSel = m_Edit.GetWindowTextLength();
@@ -204,12 +204,12 @@ BOOL CShellDlg::PreTranslateMessage(MSG* pMsg)
             m_ContextObject->Send2Client(pSrc, length);
             m_nCurSel = m_Edit.GetWindowTextLength();
         }
-        // ÏŞÖÆVK_BACK
+        // é™åˆ¶VK_BACK
         if (pMsg->wParam == VK_BACK && pMsg->hwnd == m_Edit.m_hWnd) {
             if (m_Edit.GetWindowTextLength() <= m_nReceiveLength)
                 return true;
         }
-        // Ê¾Àı£º
+        // ç¤ºä¾‹ï¼š
         //dir\r\n  5
     }
 
@@ -223,10 +223,10 @@ HBRUSH CShellDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 
     if ((pWnd->GetDlgCtrlID() == IDC_EDIT) && (nCtlColor == CTLCOLOR_EDIT)) {
         COLORREF clr = RGB(255, 255, 255);
-        pDC->SetTextColor(clr);   //ÉèÖÃ°×É«µÄÎÄ±¾
+        pDC->SetTextColor(clr);   //è®¾ç½®ç™½è‰²çš„æ–‡æœ¬
         clr = RGB(0,0,0);
-        pDC->SetBkColor(clr);     //ÉèÖÃºÚÉ«µÄ±³¾°
-        return CreateSolidBrush(clr);  //×÷ÎªÔ¼¶¨£¬·µ»Ø±³¾°É«¶ÔÓ¦µÄË¢×Ó¾ä±ú
+        pDC->SetBkColor(clr);     //è®¾ç½®é»‘è‰²çš„èƒŒæ™¯
+        return CreateSolidBrush(clr);  //ä½œä¸ºçº¦å®šï¼Œè¿”å›èƒŒæ™¯è‰²å¯¹åº”çš„åˆ·å­å¥æŸ„
     } else {
         return CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
     }
@@ -238,13 +238,13 @@ void CShellDlg::OnSize(UINT nType, int cx, int cy)
 {
     CDialog::OnSize(nType, cx, cy);
 
-    if (!m_Edit.GetSafeHwnd()) return; // È·±£¿Ø¼şÒÑ´´½¨
+    if (!m_Edit.GetSafeHwnd()) return; // ç¡®ä¿æ§ä»¶å·²åˆ›å»º
 
-    // ¼ÆËãĞÂÎ»ÖÃºÍ´óĞ¡
+    // è®¡ç®—æ–°ä½ç½®å’Œå¤§å°
     CRect rc;
     m_Edit.GetWindowRect(&rc);
     ScreenToClient(&rc);
 
-    // ÖØĞÂÉèÖÃ¿Ø¼ş´óĞ¡
+    // é‡æ–°è®¾ç½®æ§ä»¶å¤§å°
     m_Edit.MoveWindow(0, 0, cx, cy, TRUE);
 }

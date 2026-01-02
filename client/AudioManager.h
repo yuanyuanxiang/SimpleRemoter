@@ -1,4 +1,4 @@
-// AudioManager.h: interface for the CAudioManager class.
+ï»¿// AudioManager.h: interface for the CAudioManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -26,7 +26,7 @@ public:
     BOOL SendRecordBuffer();
 
     CAudio*  m_AudioObject;
-    LPBYTE	szPacket; // ÒôÆµ»º´æÇø
+    LPBYTE	szPacket; // éŸ³é¢‘ç¼“å­˜åŒº
 };
 
 #endif // !defined(AFX_AUDIOMANAGER_H__B47ECAB3_9810_4031_9E2E_BC34825CAD74__INCLUDED_)

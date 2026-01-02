@@ -1,7 +1,7 @@
-#pragma once
+ï»¿#pragma once
 
 
-// CCreateTaskDlg ¶Ô»°¿ò
+// CCreateTaskDlg å¯¹è¯æ¡†
 
 class CCreateTaskDlg : public CDialog
 {
@@ -11,7 +11,7 @@ public:
     CCreateTaskDlg(CWnd* pParent = nullptr);
     virtual ~CCreateTaskDlg();
 
-    // ¶Ô»°¿òÊı¾İ
+    // å¯¹è¯æ¡†æ•°æ®
 #ifdef AFX_DESIGN_TIME
     enum { IDD = IDD_CREATETASK };
 #endif

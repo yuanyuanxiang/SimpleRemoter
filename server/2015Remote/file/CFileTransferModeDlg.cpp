@@ -1,4 +1,4 @@
-// FileTransferModeDlg.cpp : implementation file
+ï»¿// FileTransferModeDlg.cpp : implementation file
 //
 #include "stdafx.h"
 #include "2015Remote.h"
@@ -49,7 +49,7 @@ BOOL CFileTransferModeDlg::OnInitDialog()
     CDialog::OnInitDialog();
 
     CString	str;
-    str.Format(_T("´ËÎÄ¼ş¼ĞÒÑ°üº¬Ò»¸öÃûÎª¡°%s¡±µÄÎÄ¼ş"), m_strFileName);
+    str.Format(_T("æ­¤æ–‡ä»¶å¤¹å·²åŒ…å«ä¸€ä¸ªåä¸ºâ€œ%sâ€çš„æ–‡ä»¶"), m_strFileName);
 
     for (int i = 0; i < str.GetLength(); i += 120) {
         str.Insert(i, _T("\n"));
@@ -64,48 +64,48 @@ BOOL CFileTransferModeDlg::OnInitDialog()
 
 void CFileTransferModeDlg::OnBnClickedOverwrite()
 {
-    // TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+    // TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
     EndDialog(IDC_OVERWRITE);
 }
 
 
 void CFileTransferModeDlg::OnBnClickedOverwriteAll()
 {
-    // TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+    // TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
     EndDialog(IDC_OVERWRITE_ALL);
 }
 
 
 void CFileTransferModeDlg::OnBnClickedAddition()
 {
-    // TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+    // TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
     EndDialog(IDC_ADDITION);
 }
 
 
 void CFileTransferModeDlg::OnBnClickedAdditionAll()
 {
-    // TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+    // TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
     EndDialog(IDC_ADDITION_ALL);
 }
 
 
 void CFileTransferModeDlg::OnBnClickedJump()
 {
-    // TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+    // TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
     EndDialog(IDC_JUMP);
 }
 
 
 void CFileTransferModeDlg::OnBnClickedJumpAll()
 {
-    // TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+    // TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
     EndDialog(IDC_JUMP_ALL);
 }
 
 
 void CFileTransferModeDlg::OnBnClickedCancel()
 {
-    // TODO: ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+    // TODO: åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
     EndDialog(IDC_CANCEL);
 }

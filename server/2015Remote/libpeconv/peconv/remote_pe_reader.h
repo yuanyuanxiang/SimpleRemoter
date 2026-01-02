@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Reading from a PE module that is loaded within a remote process.
 */

@@ -1,4 +1,4 @@
-// ServicesManager.h: interface for the CServicesManager class.
+﻿// ServicesManager.h: interface for the CServicesManager class.
 //
 //////////////////////////////////////////////////////////////////////
 

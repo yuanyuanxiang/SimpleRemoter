@@ -1,8 +1,8 @@
-#pragma once
+﻿#pragma once
 
 #include "header.h"
 
-// 数据包协议封装格式
+// 鏁版嵁鍖呭崗璁皝瑁呮牸寮?
 // Copy left: 962914132@qq.com & ChatGPT
 enum PkgMaskType {
     MaskTypeUnknown = -1,
@@ -18,16 +18,16 @@ inline ULONG UnMaskHttp(char* src, ULONG srcSize)
     const char* header_end_mark = "\r\n\r\n";
     const ULONG mark_len = 4;
 
-    // 查找 HTTP 头部结束标记
+    // 鏌ユ壘 HTTP 澶撮儴缁撴潫鏍囪
     for (ULONG i = 0; i + mark_len <= srcSize; ++i) {
         if (memcmp(src + i, header_end_mark, mark_len) == 0) {
-            return i + mark_len;  // 返回 Body 起始位置
+            return i + mark_len;  // 杩斿洖 Body 璧峰浣嶇疆
         }
     }
-    return 0;  // 无效数据
+    return 0;  // 鏃犳晥鏁版嵁
 }
 
-// TryUnMask 尝试去掉伪装的协议头.
+// TryUnMask 灏濊瘯鍘绘帀浼鐨勫崗璁ご.
 inline ULONG TryUnMask(char* src, ULONG srcSize, PkgMaskType& maskHit)
 {
     if (srcSize >= 5 && memcmp(src, "POST ", 5) == 0) {
@@ -38,7 +38,7 @@ inline ULONG TryUnMask(char* src, ULONG srcSize, PkgMaskType& maskHit)
     return 0;
 }
 
-// PkgMask 针对消息进一步加密、混淆或伪装.
+// PkgMask 閽堝娑堟伅杩涗竴姝ュ姞瀵嗐€佹贩娣嗘垨浼.
 class PkgMask
 {
 protected:
@@ -76,13 +76,13 @@ public:
     }
 
     /**
-     * @brief 构造函数
-     * @param host HTTP Host 头字段
+     * @brief 鏋勯€犲嚱鏁?
+     * @param host HTTP Host 澶村瓧娈?
      */
     explicit HttpMask(const std::string& host, const std::map<std::string, std::string>& headers = {}) :
         product_(GenerateRandomString()), host_(host)
     {
-        // 初始化随机数生成器
+        // 鍒濆鍖栭殢鏈烘暟鐢熸垚鍣?
         srand(static_cast<unsigned>(time(nullptr)));
         char buf[32];
         sprintf_s(buf, "V%d.%d.%d", rand() % 10, rand() % 10, rand() % 10);
@@ -94,16 +94,16 @@ public:
     }
 
     /**
-     * @brief 将原始数据伪装为 HTTP 请求
-     * @param dst      [输出] 伪装后的数据缓冲区（需调用者释放）
-     * @param dstSize  [输出] 伪装后数据长度
-     * @param src      原始数据指针
-     * @param srcSize  原始数据长度
-     * @param cmd      命令号
+     * @brief 灏嗗師濮嬫暟鎹吉瑁呬负 HTTP 璇锋眰
+     * @param dst      [杈撳嚭] 浼鍚庣殑鏁版嵁缂撳啿鍖猴紙闇€璋冪敤鑰呴噴鏀撅級
+     * @param dstSize  [杈撳嚭] 浼鍚庢暟鎹暱搴?
+     * @param src      鍘熷鏁版嵁鎸囬拡
+     * @param srcSize  鍘熷鏁版嵁闀垮害
+     * @param cmd      鍛戒护鍙?
      */
     void Mask(char*& dst, ULONG& dstSize, char* src, ULONG srcSize, int cmd = -1)
     {
-        // 生成动态 HTTP 头部
+        // 鐢熸垚鍔ㄦ€?HTTP 澶撮儴
         std::string http_header =
             "POST " + GeneratePath(cmd) + " HTTP/1.1\r\n"
             "Host: " + host_ + "\r\n"
@@ -111,22 +111,22 @@ public:
             "Content-Type: application/octet-stream\r\n"
             "Content-Length: " + std::to_string(srcSize) + "\r\n" + headers_ +
             "Connection: keep-alive\r\n"
-            "\r\n";  // 空行分隔头部和 Body
+            "\r\n";  // 绌鸿鍒嗛殧澶撮儴鍜?Body
 
-        // 分配输出缓冲区
+        // 鍒嗛厤杈撳嚭缂撳啿鍖?
         dstSize = static_cast<ULONG>(http_header.size()) + srcSize;
         dst = new char[dstSize];
 
-        // 拷贝数据：HTTP 头部 + 原始数据
+        // 鎷疯礉鏁版嵁锛欻TTP 澶撮儴 + 鍘熷鏁版嵁
         memcpy(dst, http_header.data(), http_header.size());
         memcpy(dst + http_header.size(), src, srcSize);
     }
 
     /**
-     * @brief 从 HTTP 数据中提取原始数据起始位置
-     * @param src      收到的 HTTP 数据
-     * @param srcSize  数据长度
-     * @return ULONG   原始数据在 src 中的起始偏移量（失败返回 0）
+     * @brief 浠?HTTP 鏁版嵁涓彁鍙栧師濮嬫暟鎹捣濮嬩綅缃?
+     * @param src      鏀跺埌鐨?HTTP 鏁版嵁
+     * @param srcSize  鏁版嵁闀垮害
+     * @return ULONG   鍘熷鏁版嵁鍦?src 涓殑璧峰鍋忕Щ閲忥紙澶辫触杩斿洖 0锛?
      */
     ULONG UnMask(char* src, ULONG srcSize)
     {
@@ -146,7 +146,7 @@ private:
         osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
         GetVersionEx((OSVERSIONINFO*)&osvi);
 
-        // 获取系统架构
+        // 鑾峰彇绯荤粺鏋舵瀯
         SYSTEM_INFO si;
         GetNativeSystemInfo(&si);
         std::string arch = (si.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64) ? "Win64; x64" :
@@ -164,13 +164,13 @@ private:
 #endif
     }
 
-    std::string host_;      // 目标主机
-    std::string product_;   // 产品名称
-    std::string version_;   // 产品版本
-    std::string user_agent_;// 代理名称
-    std::string headers_;   // 自定义请求头
+    std::string host_;      // 鐩爣涓绘満
+    std::string product_;   // 浜у搧鍚嶇О
+    std::string version_;   // 浜у搧鐗堟湰
+    std::string user_agent_;// 浠ｇ悊鍚嶇О
+    std::string headers_;   // 鑷畾涔夎姹傚ご
 
-    /** 生成随机 URL 路径 */
+    /** 鐢熸垚闅忔満 URL 璺緞 */
     std::string GenerateRandomString(int size = 8) const
     {
         static const char charset[] = "abcdefghijklmnopqrstuvwxyz0123456789";

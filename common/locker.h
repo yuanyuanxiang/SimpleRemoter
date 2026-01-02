@@ -1,13 +1,13 @@
-#pragma once
+﻿#pragma once
 
 #pragma warning(disable: 4996)
 #pragma warning(disable: 4819)
 
-// 互斥锁、睡眠函数、自动锁、自动计时、自动日志等
+// 浜掓枼閿併€佺潯鐪犲嚱鏁般€佽嚜鍔ㄩ攣銆佽嚜鍔ㄨ鏃躲€佽嚜鍔ㄦ棩蹇楃瓑
 
 #include "logger.h"
 
-// 自动日志
+// 鑷姩鏃ュ織
 class CAutoLog
 {
 private:
@@ -64,8 +64,8 @@ public:
     }
 
 protected:
-    CRITICAL_SECTION* m_cs; // 外部锁
-    CRITICAL_SECTION	i_cs; // 内部锁
+    CRITICAL_SECTION* m_cs; // 澶栭儴閿?
+    CRITICAL_SECTION	i_cs; // 鍐呴儴閿?
 };
 
 typedef CLock CLocker;
@@ -104,7 +104,7 @@ public:
     }
 };
 
-// 智能计时器，计算函数的耗时
+// 鏅鸿兘璁℃椂鍣紝璁＄畻鍑芥暟鐨勮€楁椂
 class auto_tick
 {
 private:
@@ -147,7 +147,7 @@ public:
 };
 
 #if defined (_DEBUG) || defined (WINDOWS)
-// 智能计算当前函数的耗时，超时会打印
+// 鏅鸿兘璁＄畻褰撳墠鍑芥暟鐨勮€楁椂锛岃秴鏃朵細鎵撳嵃
 #define AUTO_TICK(thresh, tag) auto_tick TICK(__FILE__, __FUNCTION__, __LINE__, thresh, tag)
 #define STOP_TICK TICK.stop()
 #else
@@ -160,14 +160,14 @@ public:
 #include <MMSystem.h>
 #pragma comment(lib, "winmm.lib")
 
-// 高精度的睡眠函数
+// 楂樼簿搴︾殑鐫＄湢鍑芥暟
 #define Sleep_m(ms) { Sleep(ms); }
 
-// 以步长n毫秒在条件C下等待T秒(n是步长，必须能整除1000)
+// 浠ユ闀縩姣鍦ㄦ潯浠禖涓嬬瓑寰匱绉?n鏄闀匡紝蹇呴』鑳芥暣闄?000)
 #define WAIT_n(C, T, n) { int s=(1000*(T))/(n); s=max(s,1); while((C)&&(s--))Sleep(n); }
 
-// 在条件C成立时等待T秒(步长10ms)
+// 鍦ㄦ潯浠禖鎴愮珛鏃剁瓑寰匱绉?姝ラ暱10ms)
 #define WAIT(C, T) { WAIT_n(C, T, 10); }
 
-// 在条件C成立时等待T秒(步长1ms)
+// 鍦ㄦ潯浠禖鎴愮珛鏃剁瓑寰匱绉?姝ラ暱1ms)
 #define WAIT_1(C, T) { WAIT_n(C, T, 1); }

@@ -1,4 +1,4 @@
-// SettingDlg.cpp : ÊµÏÖÎÄ¼ş
+ï»¿// SettingDlg.cpp : å®ç°æ–‡ä»¶
 //
 
 #include "stdafx.h"
@@ -8,7 +8,7 @@
 #include "client/CursorInfo.h"
 #include "common/location.h"
 
-// CSettingDlg ¶Ô»°¿ò
+// CSettingDlg å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(CSettingDlg, CDialog)
 
@@ -17,9 +17,9 @@ CSettingDlg::CSettingDlg(CWnd* pParent)
     , m_nListenPort("6543")
     , m_nMax_Connect(0)
     , m_sScreenCapture(_T("GDI"))
-    , m_sScreenCompress(_T("ÆÁÄ»²îÒìËã·¨"))
+    , m_sScreenCompress(_T("å±å¹•å·®å¼‚ç®—æ³•"))
     , m_nReportInterval(5)
-    , m_sSoftwareDetect(_T("ÉãÏñÍ·"))
+    , m_sSoftwareDetect(_T("æ‘„åƒå¤´"))
     , m_sPublicIP(_T(""))
     , m_sUdpOption(_T(""))
     , m_nFrpPort(7000)
@@ -75,7 +75,7 @@ BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)
 END_MESSAGE_MAP()
 
 
-// CSettingDlg ÏûÏ¢´¦Àí³ÌĞò
+// CSettingDlg æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 
 BOOL CSettingDlg::OnInitDialog()
@@ -96,40 +96,40 @@ BOOL CSettingDlg::OnInitDialog()
     int n = algo.IsEmpty() ? ALGORITHM_DIFF : atoi(algo.GetString());
     switch (n) {
     case ALGORITHM_GRAY:
-        m_sScreenCompress = "»Ò¶ÈÍ¼Ïñ´«Êä";
+        m_sScreenCompress = "ç°åº¦å›¾åƒä¼ è¾“";
         break;
     case ALGORITHM_DIFF:
-        m_sScreenCompress = "ÆÁÄ»²îÒìËã·¨";
+        m_sScreenCompress = "å±å¹•å·®å¼‚ç®—æ³•";
         break;
     case ALGORITHM_H264:
-        m_sScreenCompress = "H264Ñ¹ËõËã·¨";
+        m_sScreenCompress = "H264å‹ç¼©ç®—æ³•";
         break;
     default:
         break;
     }
-    m_ComboScreenCompress.InsertString(ALGORITHM_GRAY, "»Ò¶ÈÍ¼Ïñ´«Êä");
-    m_ComboScreenCompress.InsertString(ALGORITHM_DIFF, "ÆÁÄ»²îÒìËã·¨");
-    m_ComboScreenCompress.InsertString(ALGORITHM_H264, "H264Ñ¹ËõËã·¨");
+    m_ComboScreenCompress.InsertString(ALGORITHM_GRAY, "ç°åº¦å›¾åƒä¼ è¾“");
+    m_ComboScreenCompress.InsertString(ALGORITHM_DIFF, "å±å¹•å·®å¼‚ç®—æ³•");
+    m_ComboScreenCompress.InsertString(ALGORITHM_H264, "H264å‹ç¼©ç®—æ³•");
 
     m_ComboScreenCapture.InsertString(0, "GDI");
     m_ComboScreenCapture.InsertString(1, "DXGI");
     m_ComboScreenCapture.InsertString(2, "VIRTUAL");
     m_sScreenCapture = DXGI==1 ? "DXGI" : (DXGI == 2 ? "VIRTUAL" : "GDI");
 
-    m_ComboSoftwareDetect.InsertString(SOFTWARE_CAMERA, "ÉãÏñÍ·");
-    m_ComboSoftwareDetect.InsertString(SOFTWARE_TELEGRAM, "µç±¨");
+    m_ComboSoftwareDetect.InsertString(SOFTWARE_CAMERA, "æ‘„åƒå¤´");
+    m_ComboSoftwareDetect.InsertString(SOFTWARE_TELEGRAM, "ç”µæŠ¥");
     auto str = THIS_CFG.GetStr("settings", "ReportInterval", "5");
     m_nReportInterval = atoi(str.c_str());
     n = THIS_CFG.GetInt("settings", "SoftwareDetect");
     switch (n) {
     case SOFTWARE_CAMERA:
-        m_sSoftwareDetect = "ÉãÏñÍ·";
+        m_sSoftwareDetect = "æ‘„åƒå¤´";
         break;
     case SOFTWARE_TELEGRAM:
-        m_sSoftwareDetect = "µç±¨";
+        m_sSoftwareDetect = "ç”µæŠ¥";
         break;
     default:
-        m_sSoftwareDetect = "ÉãÏñÍ·";
+        m_sSoftwareDetect = "æ‘„åƒå¤´";
         break;
     }
     BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
@@ -149,7 +149,7 @@ BOOL CSettingDlg::OnInitDialog()
     m_sFrpToken = THIS_CFG.GetStr("frp", "token").c_str();
 
     int size = THIS_CFG.GetInt("settings", "VideoWallSize");
-    m_ComboVideoWall.InsertString(0, "ÎŞ");
+    m_ComboVideoWall.InsertString(0, "æ— ");
     m_ComboVideoWall.InsertString(1, "2 x 2");
     m_ComboVideoWall.InsertString(2, "3 x 3");
     m_ComboVideoWall.InsertString(3, "4 x 4");
@@ -197,26 +197,26 @@ void CSettingDlg::OnBnClickedButtonSettingapply()
 
 void CSettingDlg::OnEnChangeEditPort()
 {
-    // TODO:  Èç¹û¸Ã¿Ø¼şÊÇ RICHEDIT ¿Ø¼ş£¬Ëü½«²»
-    // ·¢ËÍ´ËÍ¨Öª£¬³ı·ÇÖØĞ´ CDialog::OnInitDialog()
-    // º¯Êı²¢µ÷ÓÃ CRichEditCtrl().SetEventMask()£¬
-    // Í¬Ê±½« ENM_CHANGE ±êÖ¾¡°»ò¡±ÔËËãµ½ÑÚÂëÖĞ¡£
+    // TODO:  å¦‚æœè¯¥æ§ä»¶æ˜¯ RICHEDIT æ§ä»¶ï¼Œå®ƒå°†ä¸
+    // å‘é€æ­¤é€šçŸ¥ï¼Œé™¤éé‡å†™ CDialog::OnInitDialog()
+    // å‡½æ•°å¹¶è°ƒç”¨ CRichEditCtrl().SetEventMask()ï¼Œ
+    // åŒæ—¶å°† ENM_CHANGE æ ‡å¿—â€œæˆ–â€è¿ç®—åˆ°æ©ç ä¸­ã€‚
 
-    // TODO:  ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+    // TODO:  åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
 
-    // ¸øButtonÌí¼Ó±äÁ¿
+    // ç»™Buttonæ·»åŠ å˜é‡
     m_ApplyButton.ShowWindow(SW_NORMAL);
     m_ApplyButton.EnableWindow(TRUE);
 }
 
 void CSettingDlg::OnEnChangeEditMax()
 {
-    // TODO:  Èç¹û¸Ã¿Ø¼şÊÇ RICHEDIT ¿Ø¼ş£¬Ëü½«²»
-    // ·¢ËÍ´ËÍ¨Öª£¬³ı·ÇÖØĞ´ CDialog::OnInitDialog()
-    // º¯Êı²¢µ÷ÓÃ CRichEditCtrl().SetEventMask()£¬
-    // Í¬Ê±½« ENM_CHANGE ±êÖ¾¡°»ò¡±ÔËËãµ½ÑÚÂëÖĞ¡£
+    // TODO:  å¦‚æœè¯¥æ§ä»¶æ˜¯ RICHEDIT æ§ä»¶ï¼Œå®ƒå°†ä¸
+    // å‘é€æ­¤é€šçŸ¥ï¼Œé™¤éé‡å†™ CDialog::OnInitDialog()
+    // å‡½æ•°å¹¶è°ƒç”¨ CRichEditCtrl().SetEventMask()ï¼Œ
+    // åŒæ—¶å°† ENM_CHANGE æ ‡å¿—â€œæˆ–â€è¿ç®—åˆ°æ©ç ä¸­ã€‚
 
-    // TODO:  ÔÚ´ËÌí¼Ó¿Ø¼şÍ¨Öª´¦Àí³ÌĞò´úÂë
+    // TODO:  åœ¨æ­¤æ·»åŠ æ§ä»¶é€šçŸ¥å¤„ç†ç¨‹åºä»£ç 
     HWND hApplyButton = ::GetDlgItem(m_hWnd,IDC_BUTTON_SETTINGAPPLY);
 
     ::ShowWindow(hApplyButton,SW_NORMAL);

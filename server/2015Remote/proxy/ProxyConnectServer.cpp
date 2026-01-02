@@ -1,8 +1,8 @@
-#include "stdafx.h"
+ï»¿#include "stdafx.h"
 #include "ProxyConnectServer.h"
 
-#define MAX_SEND_BUFFER		65535	// ×î´ó·¢ËÍÊı¾İ³¤¶È 1024*64
-#define	MAX_RECV_BUFFER		65535   // ×î´ó½ÓÊÕÊı¾İ³¤¶È
+#define MAX_SEND_BUFFER		65535	// æœ€å¤§å‘é€æ•°æ®é•¿åº¦ 1024*64
+#define	MAX_RECV_BUFFER		65535   // æœ€å¤§æ¥æ”¶æ•°æ®é•¿åº¦
 
 CProxyConnectServer::CProxyConnectServer(void) :m_TcpServer(this)
 {

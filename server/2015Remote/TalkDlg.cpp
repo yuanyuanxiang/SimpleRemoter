@@ -1,4 +1,4 @@
-// TalkDlg.cpp : ÊµÏÖÎÄ¼ş
+ï»¿// TalkDlg.cpp : å®ç°æ–‡ä»¶
 //
 
 #include "stdafx.h"
@@ -6,7 +6,7 @@
 #include "TalkDlg.h"
 #include "afxdialogex.h"
 
-// CTalkDlg ¶Ô»°¿ò
+// CTalkDlg å¯¹è¯æ¡†
 
 IMPLEMENT_DYNAMIC(CTalkDlg, CDialog)
 
@@ -33,7 +33,7 @@ BEGIN_MESSAGE_MAP(CTalkDlg, CDialog)
 END_MESSAGE_MAP()
 
 
-// CTalkDlg ÏûÏ¢´¦Àí³ÌĞò
+// CTalkDlg æ¶ˆæ¯å¤„ç†ç¨‹åº
 
 
 BOOL CTalkDlg::OnInitDialog()
@@ -45,7 +45,7 @@ BOOL CTalkDlg::OnInitDialog()
     m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
 
     return TRUE;  // return TRUE unless you set the focus to a control
-    // Òì³£: OCX ÊôĞÔÒ³Ó¦·µ»Ø FALSE
+    // å¼‚å¸¸: OCX å±æ€§é¡µåº”è¿”å› FALSE
 }
 
 
@@ -72,10 +72,10 @@ void CTalkDlg::OnBnClickedButtonTalk()
 BOOL CTalkDlg::PreTranslateMessage(MSG* pMsg)
 {
     if (pMsg->message == WM_KEYDOWN) {
-        // ÆÁ±ÎVK_ESCAPE¡¢VK_DELETE
+        // å±è”½VK_ESCAPEã€VK_DELETE
         if (pMsg->wParam == VK_ESCAPE)
             return true;
-        //Èç¹ûÊÇ¿É±à¼­¿òµÄ»Ø³µ¼ü
+        //å¦‚æœæ˜¯å¯ç¼–è¾‘æ¡†çš„å›è½¦é”®
         if (pMsg->wParam == VK_RETURN && pMsg->hwnd == m_EditTalk.m_hWnd) {
             OnBnClickedButtonTalk();
 
@@ -90,7 +90,7 @@ BOOL CTalkDlg::PreTranslateMessage(MSG* pMsg)
 void CTalkDlg::OnClose()
 {
     CancelIO();
-    // µÈ´ıÊı¾İ´¦ÀíÍê±Ï
+    // ç­‰å¾…æ•°æ®å¤„ç†å®Œæ¯•
     if (IsProcessing()) {
         ShowWindow(SW_HIDE);
         return;

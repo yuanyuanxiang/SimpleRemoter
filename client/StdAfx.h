@@ -1,4 +1,4 @@
-// stdafx.h : include file for standard system include files,
+﻿// stdafx.h : include file for standard system include files,
 //  or project specific include files that are used frequently, but
 //      are changed infrequently
 //
@@ -6,7 +6,7 @@
 #if !defined(AFX_STDAFX_H__46CA6496_AAD6_4658_B6E9_D7AEB26CDCD5__INCLUDED_)
 #define AFX_STDAFX_H__46CA6496_AAD6_4658_B6E9_D7AEB26CDCD5__INCLUDED_
 
-// �Ƿ�ʹ��ZLIB
+// 是否使用ZLIB
 #define USING_ZLIB 0
 
 #if !USING_ZLIB
@@ -21,10 +21,10 @@
 #endif // _MSC_VER > 1000
 
 #ifdef _DEBUG
-// ����ڴ�й©���谲װVLD��������ע�ʹ���
+// 检测内存泄漏，需安装VLD；否则请注释此行
 #include "vld.h"
 #ifndef VLD_RPTHOOK_REMOVE
-#error ����ڴ�й©���谲װVLD��������ע��#include "vld.h"����ʹ��Release����
+#error 检测内存泄漏，需安装VLD；否则请注释#include "vld.h"，或使用Release编译
 #endif
 #define USING_SAFETHRED 0
 #define IsDebug 1

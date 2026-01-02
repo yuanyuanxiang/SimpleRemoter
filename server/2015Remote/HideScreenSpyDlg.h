@@ -1,4 +1,4 @@
-#pragma once
+Ôªø#pragma once
 #include "stdafx.h"
 #include "../client/CursorInfo.h"
 #include "../common/jpeglib.h"
@@ -83,8 +83,8 @@ protected:
     BYTE                m_bCursorIndex;
     CString				m_strTip;
 
-    clock_t				m_lastMouseMove; //  Û±Í“∆∂Ø ±º‰
-    POINT				m_lastMousePoint;// …œ¥Œ Û±ÍŒª÷√
+    clock_t				m_lastMouseMove; // Èº†Ê†áÁßªÂä®Êó∂Èó¥
+    POINT				m_lastMousePoint;// ‰∏äÊ¨°Èº†Ê†á‰ΩçÁΩÆ
 
 private:
     CString             m_aviFile;

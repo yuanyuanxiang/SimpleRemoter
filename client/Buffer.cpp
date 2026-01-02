@@ -1,4 +1,4 @@
-#ifdef _WIN32
+ï»¿#ifdef _WIN32
 #include "StdAfx.h"
 #endif
 
@@ -53,7 +53,7 @@ ULONG CBuffer::ReadBuffer(PBYTE Buffer, ULONG ulLength)
 }
 
 
-// ÖØĞÂ·ÖÅäÄÚ´æ´óĞ¡
+// é‡æ–°åˆ†é…å†…å­˜å¤§å°
 VOID CBuffer::DeAllocateBuffer(ULONG ulLength)
 {
     int len = m_Ptr - m_Base;
@@ -94,7 +94,7 @@ BOOL CBuffer::WriteBuffer(PBYTE Buffer, ULONG ulLength)
 }
 
 
-// µ±»º´æ³¤¶È²»×ãÊ±ÖØĞÂ·ÖÅä
+// å½“ç¼“å­˜é•¿åº¦ä¸è¶³æ—¶é‡æ–°åˆ†é…
 BOOL CBuffer::ReAllocateBuffer(ULONG ulLength)
 {
     if (ulLength < m_ulMaxLength)

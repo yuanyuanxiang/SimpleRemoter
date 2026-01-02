@@ -1,4 +1,4 @@
-/**
+﻿/**
 * @file
 * @brief   Converting PE from raw to virtual format.
 */

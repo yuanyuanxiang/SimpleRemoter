@@ -1,32 +1,32 @@
-#pragma once
+ï»¿#pragma once
 #include "afxcmn.h"
 
 #include "IOCPServer.h"
 
-// CRegisterDlg ¶Ô»°¿ò
+// CRegisterDlg å¯¹è¯æ¡†
 
 class CRegisterDlg : public DialogBase
 {
     DECLARE_DYNAMIC(CRegisterDlg)
 
 public:
-    CRegisterDlg(CWnd* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);   // ±ê×¼¹¹Ôìº¯Êı
+    CRegisterDlg(CWnd* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);   // æ ‡å‡†æ„é€ å‡½æ•°
     virtual ~CRegisterDlg();
 
-// ¶Ô»°¿òÊı¾İ
+// å¯¹è¯æ¡†æ•°æ®
     enum { IDD = IDD_DIALOG_REGISTER };
 
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æŒ
 
     DECLARE_MESSAGE_MAP()
 public:
 
-    BOOL m_bIsWorking;// ÕıÔÚ´¦Àí×¢²á±í
+    BOOL m_bIsWorking;// æ­£åœ¨å¤„ç†æ³¨å†Œè¡¨
     CTreeCtrl m_Tree;
-    CImageList	m_ImageListTree;   //Ê÷¿Ø¼şÉÏµÄÍ¼±ê
+    CImageList	m_ImageListTree;   //æ ‘æ§ä»¶ä¸Šçš„å›¾æ ‡
     CListCtrl m_ControlList;
-    CImageList m_ImageListControlList;         //ControlListÉÏµÄÍ¼±ê
+    CImageList m_ImageListControlList;         //ControlListä¸Šçš„å›¾æ ‡
     virtual BOOL OnInitDialog();
     afx_msg void OnClose();
     HTREEITEM	m_hRoot;

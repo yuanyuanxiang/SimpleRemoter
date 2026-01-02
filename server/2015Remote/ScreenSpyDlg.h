@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include "IOCPServer.h"
 #include "..\..\client\CursorInfo.h"
 #include "VideoDlg.h"
@@ -39,7 +39,7 @@ extern "C"
 #pragma comment(lib, "Bcrypt.lib")
 #pragma comment(lib, "Strmiids.lib")
 
-// CScreenSpyDlg ¶Ô»°¿ò
+// CScreenSpyDlg å¯¹è¯æ¡†
 
 class CScreenSpyDlg : public DialogBase
 {
@@ -72,7 +72,7 @@ public:
     POINT  m_ClientCursorPos;
     BYTE m_bCursorIndex;
     BOOL     m_bIsTraceCursor;
-    CCursorInfo	m_CursorInfo; //×Ô¶¨ÒåµÄÒ»¸öÏµÍ³µÄ¹â±êÀà
+    CCursorInfo	m_CursorInfo; //è‡ªå®šä¹‰çš„ä¸€ä¸ªç³»ç»Ÿçš„å…‰æ ‡ç±»
     VOID SendCommand(const MYMSG* Msg);
     void SendScaledMouseMessage(MSG* pMsg, bool makeLP);
     VOID UpdateServerClipboard(char *szBuffer,ULONG ulLength);
@@ -86,7 +86,7 @@ public:
     bool m_bHide = false;
 
     BOOL SaveSnapshot(void);
-    // ¶Ô»°¿òÊı¾İ
+    // å¯¹è¯æ¡†æ•°æ®
     enum { IDD = IDD_DIALOG_SCREEN_SPY };
 
     BOOL m_bFullScreen;
@@ -98,8 +98,8 @@ public:
     AVPacket			m_AVPacket;
     AVFrame				m_AVFrame;
 
-    clock_t				m_lastMouseMove; // Êó±êÒÆ¶¯Ê±¼ä
-    POINT				m_lastMousePoint;// ÉÏ´ÎÊó±êÎ»ÖÃ
+    clock_t				m_lastMouseMove; // é¼ æ ‡ç§»åŠ¨æ—¶é—´
+    POINT				m_lastMousePoint;// ä¸Šæ¬¡é¼ æ ‡ä½ç½®
     BOOL				m_bAdaptiveSize = TRUE;
     HCURSOR				m_hRemoteCursor = NULL;
     CRect				m_CRect;
@@ -132,7 +132,7 @@ public:
 	}
 
 protected:
-    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
+    virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV æ”¯æŒ
 
     DECLARE_MESSAGE_MAP()
 public:

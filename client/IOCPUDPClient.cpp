@@ -1,4 +1,4 @@
-#include "IOCPUDPClient.h"
+ï»¿#include "IOCPUDPClient.h"
 
 
 BOOL IOCPUDPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
@@ -9,14 +9,14 @@ BOOL IOCPUDPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
     m_sCurIP = m_Domain.SelectIP();
     unsigned short port = m_nHostPort;
 
-    // ´´½¨ UDP socket
+    // åˆ›å»º UDP socket
     m_sClientSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (m_sClientSocket == INVALID_SOCKET) {
         Mprintf("Failed to create UDP socket\n");
         return FALSE;
     }
 
-    // ³õÊ¼»¯·şÎñÆ÷µØÖ·½á¹¹
+    // åˆå§‹åŒ–æœåŠ¡å™¨åœ°å€ç»“æ„
     memset(&m_ServerAddr, 0, sizeof(m_ServerAddr));
     m_ServerAddr.sin_family = AF_INET;
     m_ServerAddr.sin_port = htons(port);
@@ -32,11 +32,11 @@ BOOL IOCPUDPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
     }
 #endif
 
-    // UDP²»µ÷ÓÃ connect()£¬Ò²²»ÉèÖÃ TCP keep-alive Ïà¹ØÑ¡Ïî
+    // UDPä¸è°ƒç”¨ connect()ï¼Œä¹Ÿä¸è®¾ç½® TCP keep-alive ç›¸å…³é€‰é¡¹
     Mprintf("UDP client socket created and ready to send.\n");
     m_bConnected = TRUE;
 
-    // ´´½¨¹¤×÷Ïß³Ì£¨Èç¹ûĞèÒª£©
+    // åˆ›å»ºå·¥ä½œçº¿ç¨‹ï¼ˆå¦‚æœéœ€è¦ï¼‰
     if (m_hWorkThread == NULL) {
 #ifdef _WIN32
         m_hWorkThread = (HANDLE)__CreateThread(NULL, 0, WorkThreadProc, (LPVOID)this, 0, NULL);

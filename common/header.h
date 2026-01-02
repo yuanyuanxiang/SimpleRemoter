@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 // This file implements a serial of data header encoding methods.
 #include <cstring>
 #include <common/skCrypter.h>
@@ -19,7 +19,7 @@ enum HeaderEncType {
     HeaderEncNum,
 };
 
-// Êı¾İ±àÂë¸ñÊ½£º±êÊ¶·û + ±àÂëºó³¤¶È(4×Ö½Ú) + ½âÂëºó³¤¶È(4×Ö½Ú)
+// æ•°æ®ç¼–ç æ ¼å¼ï¼šæ ‡è¯†ç¬¦ + ç¼–ç åé•¿åº¦(4å­—èŠ‚) + è§£ç åé•¿åº¦(4å­—èŠ‚)
 const int FLAG_COMPLEN = 4;
 const int FLAG_LENGTH = 8;
 const int HDR_LENGTH = FLAG_LENGTH + 2 * sizeof(unsigned int);
@@ -35,12 +35,12 @@ inline void default_decrypt(unsigned char* data, size_t length, unsigned char ke
 {
 }
 
-// ¼ÓÃÜº¯Êı
+// åŠ å¯†å‡½æ•°
 inline void encrypt(unsigned char* data, size_t length, unsigned char key)
 {
     if (key == 0) return;
     for (size_t i = 0; i < length; ++i) {
-        unsigned char k = static_cast<unsigned char>(key ^ (i * 31));  // ¶¯Ì¬ÈÅ¶¯ key
+        unsigned char k = static_cast<unsigned char>(key ^ (i * 31));  // åŠ¨æ€æ‰°åŠ¨ key
         int value = static_cast<int>(data[i]);
         switch (i % 4) {
         case 0:
@@ -53,14 +53,14 @@ inline void encrypt(unsigned char* data, size_t length, unsigned char key)
             value -= k;
             break;
         case 3:
-            value = ~(value ^ k);  // ¶à²½±ä»»£ºÏÈÒì»òÔÙÈ¡·´
+            value = ~(value ^ k);  // å¤šæ­¥å˜æ¢ï¼šå…ˆå¼‚æˆ–å†å–å
             break;
         }
         data[i] = static_cast<unsigned char>(value & 0xFF);
     }
 }
 
-// ½âÃÜº¯Êı
+// è§£å¯†å‡½æ•°
 inline void decrypt(unsigned char* data, size_t length, unsigned char key)
 {
     if (key == 0) return;
@@ -78,7 +78,7 @@ inline void decrypt(unsigned char* data, size_t length, unsigned char key)
             value += k;
             break;
         case 3:
-            value = ~(value) ^ k;  // ½â¿ª£ºÏÈÈ¡·´£¬ÔÙÒì»ò
+            value = ~(value) ^ k;  // è§£å¼€ï¼šå…ˆå–åï¼Œå†å¼‚æˆ–
             break;
         }
         data[i] = static_cast<unsigned char>(value & 0xFF);
@@ -111,7 +111,7 @@ typedef struct HeaderFlag {
     }
 } HeaderFlag;
 
-// Ğ´ÈëÊı¾İ°üµÄÍ·
+// å†™å…¥æ•°æ®åŒ…çš„å¤´
 inline HeaderFlag GetHead(EncFun enc)
 {
     char header[FLAG_LENGTH + 1] = { 'H','E','L','L', 0 };
@@ -144,8 +144,8 @@ inline int compare(const char *flag, const char *magic, int len, DecFun dec, uns
     return -1;
 }
 
-// ±È¶ÔÊı¾İ°üÇ°¼¸¸ö×Ö½Ú
-// »áÓÃÖ¸¶¨µÄ½âÃÜº¯ÊıÏÈ¶ÔÊı¾İ°üÍ·½øĞĞ½âÃÜ£¬ÔÙÀ´½øĞĞ±È¶Ô
+// æ¯”å¯¹æ•°æ®åŒ…å‰å‡ ä¸ªå­—èŠ‚
+// ä¼šç”¨æŒ‡å®šçš„è§£å¯†å‡½æ•°å…ˆå¯¹æ•°æ®åŒ…å¤´è¿›è¡Œè§£å¯†ï¼Œå†æ¥è¿›è¡Œæ¯”å¯¹
 inline FlagType CheckHead(const char* flag, DecFun dec)
 {
     FlagType type = FLAG_UNKNOWN;
@@ -163,7 +163,7 @@ inline FlagType CheckHead(const char* flag, DecFun dec)
     return type;
 }
 
-// ½âÃÜĞèÒª³¢ÊÔ¶àÖÖ·½·¨£¬ÒÔ±ãÄÜ¼æÈİÀÏ°æ±¾Í¨Ñ¶Ğ­Òé
+// è§£å¯†éœ€è¦å°è¯•å¤šç§æ–¹æ³•ï¼Œä»¥ä¾¿èƒ½å…¼å®¹è€ç‰ˆæœ¬é€šè®¯åè®®
 inline FlagType CheckHead(char* flag, HeaderEncType& funcHit)
 {
     static const DecFun methods[] = { default_decrypt, decrypt, decrypt_v1, decrypt_v2, decrypt_v3, decrypt_v4, decrypt_v5, decrypt_v6 };
