@@ -6,6 +6,8 @@
 #include "FileManagerDlg.h"
 #include "FileTransferModeDlg.h"
 #include "InputDlg.h"
+#include "ZstdArchive.h"
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -130,6 +132,8 @@ BEGIN_MESSAGE_MAP(CFileManagerDlg, CDialog)
     ON_NOTIFY(NM_RCLICK, IDC_LIST_REMOTE, OnRclickListRemote)
     ON_MESSAGE(WM_MY_MESSAGE, OnMyMessage)
     //}}AFX_MSG_MAP
+    ON_COMMAND(ID_FILEMANGER_COMPRESS, &CFileManagerDlg::OnFilemangerCompress)
+    ON_COMMAND(ID_FILEMANGER_UNCOMPRESS, &CFileManagerDlg::OnFilemangerUncompress)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1330,6 +1334,78 @@ void CFileManagerDlg::OnLocalCopy()
     SendUploadJob();
 }
 
+void CFileManagerDlg::OnLocalCompress()
+{
+    std::vector<std::string> paths;
+    POSITION pos = m_list_local.GetFirstSelectedItemPosition();
+    while (pos) {
+        int nItem = m_list_local.GetNextSelectedItem(pos);
+        CString	file = m_Local_Path + m_list_local.GetItemText(nItem, 0);
+        // 如果是目录
+        if (m_list_local.GetItemData(nItem)) {
+            file += '\\';
+        }
+		paths.push_back(file.GetBuffer(0));
+    }
+	std::string target = m_Local_Path.GetString() + ToPekingDateTime(0) + ".zsta";
+    zsta::Error err = zsta::CZstdArchive::Compress(paths, target);
+    if (err != zsta::Error::Success) {
+		::MessageBoxA(m_hWnd, "压缩失败: " + CString(zsta::CZstdArchive::GetErrorString(err)), 
+            "错误", MB_OK | MB_ICONERROR);
+    }
+    else {
+        FixedLocalFileList(".");
+    }
+}
+
+bool HasZstaExtension(const std::string& path) {
+    if (path.size() < 5) return false;
+    std::string ext = path.substr(path.size() - 5);
+    // 转小写比较
+    for (char& c : ext) c = tolower(c);
+    return ext == ".zsta";
+}
+
+std::string GetExtractDir(const std::string& archivePath) {
+    if (archivePath.size() >= 5) {
+        std::string ext = archivePath.substr(archivePath.size() - 5);
+        for (char& c : ext) c = tolower(c);
+        if (ext == ".zsta") {
+            return archivePath.substr(0, archivePath.size() - 5);
+        }
+    }
+    return archivePath + "_extract";
+}
+
+void CFileManagerDlg::OnLocalUnCompress()
+{
+	BOOL needRefresh = FALSE;
+    POSITION pos = m_list_local.GetFirstSelectedItemPosition();
+    while (pos) {
+        int nItem = m_list_local.GetNextSelectedItem(pos);
+        CString	file = m_Local_Path + m_list_local.GetItemText(nItem, 0);
+        // 如果是目录
+        if (m_list_local.GetItemData(nItem)) {
+            continue;
+        }
+        else if (HasZstaExtension(file.GetString())){
+            std::string path(file.GetBuffer(0));
+            std::string destDir = GetExtractDir(path);
+            zsta::Error err = zsta::CZstdArchive::Extract(path, destDir);
+            if (err != zsta::Error::Success) {
+                ::MessageBoxA(m_hWnd, "解压失败: " + CString(zsta::CZstdArchive::GetErrorString(err)),
+					"错误", MB_OK | MB_ICONERROR);
+            }
+            else {
+				needRefresh = TRUE;
+            }
+        }
+    }
+    if (needRefresh) {
+        FixedLocalFileList(".");
+    }
+}
+
 //////////////// 文件传输操作 ////////////////
 // 只管发出了下载的文件
 // 一个一个发，接收到下载完成时，下载第二个文件 ...
@@ -1358,6 +1434,66 @@ void CFileManagerDlg::OnRemoteCopy()
 
     // 发送第一个下载任务
     SendDownloadJob();
+}
+
+std::vector<char> BuildMultiStringPath(const std::vector<std::string>& paths);
+
+void CFileManagerDlg::OnRemoteCompress()
+{
+    std::vector<std::string> paths;
+    std::string target = m_Remote_Path.GetString() + ToPekingDateTime(0) + ".zsta";
+    paths.push_back(target);
+    POSITION pos = m_list_remote.GetFirstSelectedItemPosition();
+    while (pos) {
+        int nItem = m_list_remote.GetNextSelectedItem(pos);
+        CString	file = m_Remote_Path + m_list_remote.GetItemText(nItem, 0);
+        // 如果是目录
+        if (m_list_remote.GetItemData(nItem)) {
+            file += '\\';
+        }
+        paths.push_back(file.GetBuffer(0));
+    }
+    if (paths.size() <= 1) {
+        ::MessageBoxA(m_hWnd, "请先选择要压缩的文件或文件夹!", "提示", MB_OK | MB_ICONWARNING);
+        return;
+	}
+    auto pathsMultiString = BuildMultiStringPath(paths);
+    BYTE* bPacket = (BYTE*)LocalAlloc(LPTR, pathsMultiString.size() + 1);
+    if (bPacket) {
+        memcpy(bPacket + 1, pathsMultiString.data(), pathsMultiString.size());
+        bPacket[0] = CMD_COMPRESS_FILES;
+        m_ContextObject->Send2Client(bPacket, (DWORD)(pathsMultiString.size() + 1));
+        LocalFree(bPacket);
+    }
+}
+
+void CFileManagerDlg::OnRemoteUnCompress()
+{
+    std::vector<std::string> paths;
+    POSITION pos = m_list_remote.GetFirstSelectedItemPosition();
+    while (pos) {
+        int nItem = m_list_remote.GetNextSelectedItem(pos);
+        CString	file = m_Remote_Path + m_list_remote.GetItemText(nItem, 0);
+        // 如果是目录
+        if (m_list_remote.GetItemData(nItem)) {
+            continue;
+        }
+        else  if (HasZstaExtension(file.GetString())) {
+			paths.push_back(file.GetBuffer(0));
+        }
+    }
+    if (paths.empty()) {
+		::MessageBoxA(m_hWnd, "请先选择要解压的.zsta文件!", "提示", MB_OK | MB_ICONWARNING);
+        return;
+	}
+	auto pathsMultiString = BuildMultiStringPath(paths);
+    BYTE* bPacket = (BYTE*)LocalAlloc(LPTR, pathsMultiString.size() + 1);
+    if (bPacket) {
+        memcpy(bPacket + 1, pathsMultiString.data(), pathsMultiString.size());
+        bPacket[0] = CMD_UNCOMPRESS_FILES;
+        m_ContextObject->Send2Client(bPacket, (DWORD)(pathsMultiString.size() + 1));
+        LocalFree(bPacket);
+    }
 }
 
 // 发出一个下载任务
@@ -2045,6 +2181,31 @@ void CFileManagerDlg::OnTransfer()
         OnLocalCopy();
     } else {
         OnRemoteCopy();
+    }
+}
+
+void CFileManagerDlg::OnFilemangerCompress()
+{
+    POINT pt;
+    GetCursorPos(&pt);
+    if (GetFocus()->m_hWnd == m_list_local.m_hWnd) {
+        OnLocalCompress();
+    }
+    else {
+        OnRemoteCompress();
+    }
+}
+
+
+void CFileManagerDlg::OnFilemangerUncompress()
+{
+    POINT pt;
+    GetCursorPos(&pt);
+    if (GetFocus()->m_hWnd == m_list_local.m_hWnd) {
+        OnLocalUnCompress();
+    }
+    else {
+        OnRemoteUnCompress();
     }
 }
 

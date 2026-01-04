@@ -164,6 +164,10 @@ protected:
     afx_msg void OnUpdateLocalNewfolder(CCmdUI* pCmdUI);
     afx_msg void OnRemoteCopy();
     afx_msg void OnLocalCopy();
+    afx_msg void OnRemoteCompress();
+    afx_msg void OnLocalCompress();
+    afx_msg void OnRemoteUnCompress();
+    afx_msg void OnLocalUnCompress();
     afx_msg void OnLocalDelete();
     afx_msg void OnRemoteDelete();
     afx_msg void OnRemoteStop();
@@ -203,6 +207,9 @@ private:
     bool DeleteDirectory(LPCTSTR lpszDirectory);
     void EnableControl(BOOL bEnable = TRUE);
     float m_fScalingFactor;
+public:
+    afx_msg void OnFilemangerCompress();
+    afx_msg void OnFilemangerUncompress();
 };
 
 //{{AFX_INSERT_LOCATION}}

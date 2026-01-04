@@ -101,6 +101,92 @@ std::string GetPwdHash();
 
 // CMy2015RemoteApp 构造
 
+// 自定义压缩文件
+#include <windows.h>
+#include <shlobj.h>
+#include "ZstdArchive.h"
+
+bool RegisterZstaMenu(const std::string& exePath) {
+    HKEY hKey;
+    const char* compressText = "压缩为 ZSTA 文件";
+    const char* extractText = "解压 ZSTA 文件";
+    const char* zstaDesc = "ZSTA 压缩文件";
+    const char* zstaExt = "ZstaArchive";
+
+    // 文件右键
+    if (RegCreateKeyExA(HKEY_CLASSES_ROOT, "*\\shell\\CompressToZsta", 0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+        RegSetValueExA(hKey, NULL, 0, REG_SZ, (BYTE*)compressText, strlen(compressText) + 1);
+        RegCloseKey(hKey);
+    }
+    std::string compressCmd = "\"" + exePath + "\" -c \"%1\"";
+    if (RegCreateKeyExA(HKEY_CLASSES_ROOT, "*\\shell\\CompressToZsta\\command", 0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+        RegSetValueExA(hKey, NULL, 0, REG_SZ, (BYTE*)compressCmd.c_str(), compressCmd.size() + 1);
+        RegCloseKey(hKey);
+    }
+
+    // 文件夹右键
+    if (RegCreateKeyExA(HKEY_CLASSES_ROOT, "Directory\\shell\\CompressToZsta", 0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+        RegSetValueExA(hKey, NULL, 0, REG_SZ, (BYTE*)compressText, strlen(compressText) + 1);
+        RegCloseKey(hKey);
+    }
+    if (RegCreateKeyExA(HKEY_CLASSES_ROOT, "Directory\\shell\\CompressToZsta\\command", 0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+        RegSetValueExA(hKey, NULL, 0, REG_SZ, (BYTE*)compressCmd.c_str(), compressCmd.size() + 1);
+        RegCloseKey(hKey);
+    }
+
+    // .zsta 文件关联
+    if (RegCreateKeyExA(HKEY_CLASSES_ROOT, ".zsta", 0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+        RegSetValueExA(hKey, NULL, 0, REG_SZ, (BYTE*)zstaExt, strlen(zstaExt) + 1);
+        RegCloseKey(hKey);
+    }
+    if (RegCreateKeyExA(HKEY_CLASSES_ROOT, "ZstaArchive", 0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+        RegSetValueExA(hKey, NULL, 0, REG_SZ, (BYTE*)zstaDesc, strlen(zstaDesc) + 1);
+        RegCloseKey(hKey);
+    }
+
+    // .zsta 右键菜单
+    if (RegCreateKeyExA(HKEY_CLASSES_ROOT, "ZstaArchive\\shell\\extract", 0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+        RegSetValueExA(hKey, NULL, 0, REG_SZ, (BYTE*)extractText, strlen(extractText) + 1);
+        RegCloseKey(hKey);
+    }
+    std::string extractCmd = "\"" + exePath + "\" -x \"%1\"";
+    if (RegCreateKeyExA(HKEY_CLASSES_ROOT, "ZstaArchive\\shell\\extract\\command", 0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
+        RegSetValueExA(hKey, NULL, 0, REG_SZ, (BYTE*)extractCmd.c_str(), extractCmd.size() + 1);
+        RegCloseKey(hKey);
+    }
+
+    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
+    return true;
+}
+
+bool UnregisterZstaMenu() {
+    RegDeleteTreeA(HKEY_CLASSES_ROOT, "*\\shell\\CompressToZsta");
+    RegDeleteTreeA(HKEY_CLASSES_ROOT, "Directory\\shell\\CompressToZsta");
+    RegDeleteTreeA(HKEY_CLASSES_ROOT, ".zsta");
+    RegDeleteTreeA(HKEY_CLASSES_ROOT, "ZstaArchive");
+    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, NULL, NULL);
+    return true;
+}
+
+std::string RemoveTrailingSlash(const std::string& path) {
+    std::string p = path;
+    while (!p.empty() && (p.back() == '/' || p.back() == '\\')) {
+        p.pop_back();
+    }
+    return p;
+}
+
+std::string RemoveZstaExtension(const std::string& path) {
+    if (path.size() >= 5) {
+        std::string ext = path.substr(path.size() - 5);
+        for (char& c : ext) c = tolower(c);
+        if (ext == ".zsta") {
+            return path.substr(0, path.size() - 5);
+        }
+    }
+    return path + "_extract";
+}
+
 CMy2015RemoteApp::CMy2015RemoteApp()
 {
     // 支持重新启动管理器
@@ -237,8 +323,65 @@ BOOL LaunchAsAdmin(const char* szFilePath, const char* verb)
     return ShellExecuteExA(&shExecInfo);
 }
 
+BOOL CMy2015RemoteApp::ProcessZstaCmd() {
+    // 检查是否已注册右键菜单
+    char exePath[MAX_PATH];
+    GetModuleFileNameA(NULL, exePath, MAX_PATH);
+
+    // 检查当前注册的路径是否是自己
+    HKEY hKey;
+    bool needRegister = false;
+    if (RegOpenKeyExA(HKEY_CLASSES_ROOT, "ZstaArchive\\shell\\extract\\command",
+        0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+        char regPath[MAX_PATH * 2] = { 0 };
+        DWORD size = sizeof(regPath);
+        RegQueryValueExA(hKey, NULL, NULL, NULL, (BYTE*)regPath, &size);
+        RegCloseKey(hKey);
+
+        // 检查注册的路径是否包含当前程序路径
+        if (strstr(regPath, exePath) == NULL) {
+            needRegister = true;  // 路径不同，需要重新注册
+        }
+    }
+    else {
+        needRegister = true;  // 未注册
+    }
+
+    if (needRegister) {
+        RegisterZstaMenu(exePath);
+    }
+    // 处理自定义压缩和解压命令
+    if (__argc >= 3) {
+        std::string cmd = __argv[1];
+        std::string path = __argv[2];
+
+        // 压缩
+        if (cmd == "-c") {
+            std::string src = RemoveTrailingSlash(path);
+            std::string dst = src + ".zsta";
+            auto b = (zsta::CZstdArchive::Compress(src, dst) == zsta::Error::Success);
+            Mprintf("压缩%s: %s -> %s\n", b ? "成功" : "失败", src.c_str(), dst.c_str());
+            return FALSE;
+        }
+
+        // 解压
+        if (cmd == "-x") {
+            std::string dst = RemoveZstaExtension(path);
+            auto b = (zsta::CZstdArchive::Extract(path, dst) == zsta::Error::Success);
+            Mprintf("解压%s: %s -> %s\n", b ? "成功" : "失败", path.c_str(), dst.c_str());
+            return FALSE;
+        }
+    }
+    return TRUE;
+}
+
 BOOL CMy2015RemoteApp::InitInstance()
 {
+    if (!ProcessZstaCmd()) {
+        Mprintf("[InitInstance] 处理自定义压缩/解压命令后退出。\n");
+        return FALSE;
+	}
+
 #if _DEBUG
     BOOL runNormal = TRUE;
 #else

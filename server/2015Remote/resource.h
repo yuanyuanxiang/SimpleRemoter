@@ -28,7 +28,6 @@
 #define IDC_CURSOR_DRAG                 144
 #define IDC_CURSOR_MDRAG                145
 #define IDD_DIALOG_TRANSMODE            146
-#define IDR_MENU_FILE_OPERATION         147
 #define IDD_DIALOG_FILE_COMPRESS        148
 #define IDD_DIALOG_TALK                 149
 #define IDD_DIALOG_SHELL                150
@@ -237,7 +236,6 @@
 #define IDR_GH0STTYPE                   2003
 #define IDD_BUILD                       2004
 #define IDD_FILE                        2005
-#define IDR_LIST                        2006
 #define IDC_DRAG                        2007
 #define IDC_MUTI_DRAG                   2008
 #define IDC_CURSOR3                     2009
@@ -268,7 +266,6 @@
 #define IDI_KEYBOARD                    2034
 #define IDI_SYSTEM                      2035
 #define IDC_DOT                         2036
-#define IDR_MINIMIZE                    2037
 #define IDD_AUDIO                       2038
 #define IDI_AUDIO                       2039
 #define IDC_LIST_REMOTE                 2040
@@ -316,9 +313,6 @@
 #define ID_LOCAL_TOOLBAR                2082
 #define ID_REMOTE_TOOLBAR               2083
 #define ID_APP_PWD                      2084
-#define IDM_FILEMANAGER                 2085
-#define IDM_SHUTDOWN                    2086
-#define IDM_REBOOT                      2087
 #define IDM_TRANSFER                    2088
 #define IDM_RENAME                      2089
 #define IDM_DELETE                      2090
@@ -344,32 +338,13 @@
 #define IDM_REMOTE_SMALLICON            2110
 #define IDM_REMOTE_LIST                 2111
 #define IDM_REMOTE_REPORT               2112
-#define IDM_SCREENSPY                   2113
-#define IDM_DOWNEXEC                    2114
-#define IDM_WEBCAM                      2115
-#define IDM_REMOVE                      2116
 #define IDM_KEYBOARD                    2117
 #define IDM_REFRESH                     2118
-#define IDM_SYSTEM                      2119
 #define IDM_KILLPROCESS                 2120
 #define IDM_REFRESHPSLIST               2121
-#define IDM_REMOTESHELL                 2122
-#define IDM_LOGOFF                      2123
-#define IDM_SELECT_ALL                  2124
-#define IDM_UNSELECT_ALL                2125
-#define IDM_OPEN_URL_SHOW               2126
-#define IDM_OPEN_URL_HIDE               2127
-#define IDM_CLEANEVENT                  2128
-#define IDM_HIDE                        2129
-#define IDM_SHOW                        2130
-#define IDM_EXIT                        2131
-#define IDM_RENAME_REMARK               2132
-#define IDM_UPDATE_SERVER               2133
 #define IDM_LOCAL_OPEN                  2134
 #define IDM_REMOTE_OPEN_SHOW            2135
 #define IDM_REMOTE_OPEN_HIDE            2136
-#define IDM_AUDIO_LISTEN                2137
-#define IDM_DISCONNECT                  2138
 #define ID_STAUTSTIP                    2139
 #define ID_STAUTSSPEED                  2140
 #define ID_STAUTSPORT                   2141
@@ -477,12 +452,6 @@
 #define ID_VIEW_BIG_ICON                32806
 #define ID_VIEW_SMALL_ICON              32807
 #define ID_VIEW_DETAIL                  32808
-#define ID_OPERATION_RENAME             32813
-#define ID_OPERATION_CLIENT_SHOW_RUN    32819
-#define ID_OPERATION_CLIENT_HIDE_RUN    32820
-#define ID_OPERATION_SERVER_RUN         32821
-#define ID_OPERATION_COMPRESS           32823
-#define ID_OPERATION_DECOMPRESS         32825
 #define ID_PLIST_KILL                   32828
 #define ID_PLIST_REFRESH                32829
 #define ID_WLIST_REFRESH                32836
@@ -628,6 +597,10 @@
 #define ID_HOOK_WIN                     32986
 #define ID_32987                        32987
 #define ID_RUNAS_SERVICE                32988
+#define ID_FILEMANGER_32989             32989
+#define ID_FILEMANGER_COMPRESS          32990
+#define ID_FILEMANGER_32991             32991
+#define ID_FILEMANGER_UNCOMPRESS        32992
 #define ID_EXIT_FULLSCREEN              40001
 
 // Next default values for new objects
@@ -635,7 +608,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        320
-#define _APS_NEXT_COMMAND_VALUE         32989
+#define _APS_NEXT_COMMAND_VALUE         32993
 #define _APS_NEXT_CONTROL_VALUE         2213
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
