@@ -85,6 +85,7 @@ public:
     {
         m_pSplash = pSplash;
     }
+    BOOL ProcessZstaCmd();
 
     virtual BOOL InitInstance();
 

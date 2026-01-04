@@ -4,6 +4,7 @@
 
 #include "FileManager.h"
 #include <shellapi.h>
+#include "ZstdArchive.h"
 
 typedef struct {
     DWORD	dwSizeHigh;
@@ -26,9 +27,79 @@ CFileManager::~CFileManager()
     m_UploadList.clear();
 }
 
+std::vector<std::string> ParseMultiStringPath(const char* buffer, size_t size)
+{
+    std::vector<std::string> paths;
+
+    const char* p = buffer;
+    const char* end = buffer + size;
+
+    while (p < end)
+    {
+        size_t len = strlen(p);
+        if (len > 0)
+        {
+            paths.emplace_back(p, len);
+        }
+        p += len + 1;
+    }
+
+    return paths;
+}
+
+std::string GetExtractDir(const std::string& archivePath) {
+    if (archivePath.size() >= 5) {
+        std::string ext = archivePath.substr(archivePath.size() - 5);
+        for (char& c : ext) c = tolower(c);
+        if (ext == ".zsta") {
+            return archivePath.substr(0, archivePath.size() - 5);
+        }
+    }
+    return archivePath + "_extract";
+}
+
+std::string GetDirectory(const std::string& filePath) {
+    size_t pos = filePath.find_last_of("/\\");
+    if (pos != std::string::npos) {
+        return filePath.substr(0, pos);
+    }
+    return ".";
+}
+
 VOID CFileManager::OnReceive(PBYTE lpBuffer, ULONG nSize)
 {
     switch (lpBuffer[0]) {
+    case CMD_COMPRESS_FILES: {
+		std::vector<std::string> paths = ParseMultiStringPath((char*)lpBuffer + 1, nSize - 1);
+        zsta::Error err = zsta::CZstdArchive::Compress(std::vector<std::string>(paths.begin() + 1, paths.end()), paths.at(0));
+        if (err != zsta::Error::Success) {
+            Mprintf("压缩失败: %s\n", zsta::CZstdArchive::GetErrorString(err));
+        }
+        else {
+			std::string dir = GetDirectory(paths.at(0));
+			SendFilesList((char*)dir.c_str());
+        }
+        break;
+    }
+    case CMD_UNCOMPRESS_FILES: {
+        std::string dir;
+		std::vector<std::string> paths = ParseMultiStringPath((char*)lpBuffer + 1, nSize - 1);
+        for (size_t i = 0; i < paths.size(); i++) {
+            const std::string& path = paths[i];
+            std::string destDir = GetExtractDir(path);
+            zsta::Error err = zsta::CZstdArchive::Extract(path, destDir);
+            if (err != zsta::Error::Success) {
+                Mprintf("解压失败: %s\n", zsta::CZstdArchive::GetErrorString(err));
+            }
+            else {
+				dir = GetDirectory(path);
+            }
+		}
+        if (!dir.empty()) {
+            SendFilesList((char*)dir.c_str());
+		}
+        break;
+    }
     case COMMAND_LIST_FILES:// 获取文件列表
         SendFilesList((char *)lpBuffer + 1);
         break;
