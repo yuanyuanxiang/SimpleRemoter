@@ -194,6 +194,7 @@
 #define IDB_BITMAP_INJECT               316
 #define IDB_BITMAP_PORTPROXY            317
 #define IDD_TOOLBAR_DLG                 318
+#define IDD_DIALOG_FILESEND             320
 #define IDC_MESSAGE                     1000
 #define IDC_ONLINE                      1001
 #define IDC_STATIC_TIPS                 1002
@@ -425,6 +426,10 @@
 #define IDC_COMBO_PAYLOAD               2210
 #define IDC_STATIC_PAYLOAD              2211
 #define IDC_SLIDER_CLIENT_SIZE          2212
+#define IDC_STATIC_CURRENT_FILE         2213
+#define IDC_PROGRESS_FILESEND           2214
+#define IDC_STATIC_CURRENTINDEX         2215
+#define IDC_STATIC_CURRENTPERCENT       2216
 #define ID_ONLINE_UPDATE                32772
 #define ID_ONLINE_MESSAGE               32773
 #define ID_ONLINE_DELETE                32775
@@ -607,9 +612,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        320
+#define _APS_NEXT_RESOURCE_VALUE        322
 #define _APS_NEXT_COMMAND_VALUE         32993
-#define _APS_NEXT_CONTROL_VALUE         2213
-#define _APS_NEXT_SYMED_VALUE           101
+#define _APS_NEXT_CONTROL_VALUE         2216
+#define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
