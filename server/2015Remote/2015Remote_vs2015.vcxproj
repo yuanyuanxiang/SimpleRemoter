@@ -275,6 +275,7 @@
     <ClInclude Include="Bmp2Video.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="BuildDlg.h" />
+    <ClInclude Include="CDlgFileSend.h" />
     <ClInclude Include="CDrawingBoard.h" />
     <ClInclude Include="CGridDialog.h" />
     <ClInclude Include="Chat.h" />
@@ -353,6 +354,7 @@
     <ClCompile Include="Bmp2Video.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="BuildDlg.cpp" />
+    <ClCompile Include="CDlgFileSend.cpp" />
     <ClCompile Include="CDrawingBoard.cpp" />
     <ClCompile Include="CGridDialog.cpp" />
     <ClCompile Include="Chat.cpp" />

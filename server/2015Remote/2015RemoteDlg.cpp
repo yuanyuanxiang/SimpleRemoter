@@ -46,6 +46,7 @@
 #include "common/file_upload.h"
 #include "SplashDlg.h"
 #include <ServerServiceWrapper.h>
+#include "CDlgFileSend.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -2313,18 +2314,21 @@ bool SendData(void* user, FileChunkPacket* chunk, BYTE* data, int size)
     if (!ctx->Send2Client(data, size)) {
         return false;
     }
-    return true;
-}
+	CDlgFileSend* dlg = (CDlgFileSend*)ctx->hDlg;
+    BYTE* name = data + sizeof(FileChunkPacket);
+	dlg->UpdateProgress(CString((char*)name, chunk->nameLength), chunk);
 
-void RecvData(void* ptr)
-{
-    FileChunkPacket* pkt = (FileChunkPacket*)ptr;
+    return true;
 }
 
 void delay_cancel(CONTEXT_OBJECT* ctx, int sec)
 {
     if (!ctx) return;
+    CDlgFileSend* dlg = (CDlgFileSend*)ctx->hDlg;
+	dlg->FinishFileSend(TRUE);
     Sleep(sec*1000);
+    dlg->PostMessageA(WM_CLOSE);
+    ctx->hDlg = NULL;
     ctx->CancelIO();
 }
 
@@ -2432,6 +2436,10 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
         }
         auto files = *ptr ? ParseMultiStringPath(ptr, len - 2 - dir.length()) : std::vector<std::string>{};
         if (!files.empty()) {
+			CDlgFileSend* dlg = new CDlgFileSend(this, ContextObject->GetServer(), ContextObject, TRUE);
+			dlg->Create(IDD_DIALOG_FILESEND, GetDesktopWindow());
+			dlg->ShowWindow(SW_HIDE);
+			ContextObject->hDlg = dlg;
             std::string hash = GetPwdHash(), hmac = GetHMAC(100);
             std::thread(FileBatchTransferWorker, files, dir, ContextObject, SendData, FinishSend,
                         hash, hmac).detach();
@@ -2442,13 +2450,15 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     }
     case COMMAND_SEND_FILE: {
         // 接收文件
-        std::string hash = GetPwdHash(), hmac = GetHMAC(100);
-        CONNECT_ADDRESS addr;
-        memcpy(addr.pwdHash, hash.c_str(), min(hash.length(), sizeof(addr.pwdHash)));
-        int n = RecvFileChunk((char*)szBuffer, len, &addr, RecvData, hash, hmac);
-        if (n) {
-            Mprintf("RecvFileChunk failed: %d. hash: %s, hmac: %s\n", n, hash.c_str(), hmac.c_str());
+        if (ContextObject->hDlg == NULL) {
+            CDlgFileSend* dlg = new CDlgFileSend(this, ContextObject->GetServer(), ContextObject, FALSE);
+            dlg->Create(IDD_DIALOG_FILESEND, GetDesktopWindow());
+            dlg->ShowWindow(SW_HIDE);
+            ContextObject->hDlg = dlg;
         }
+        DialogBase* dlg = (DialogBase*)ContextObject->hDlg;
+		dlg->OnReceiveComplete();
+
         break;
     }
     case TOKEN_GETVERSION: { // 获取版本【L】
