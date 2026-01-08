@@ -1731,7 +1731,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
     // 创建一个新的子菜单
     CMenu newMenu;
     if (!newMenu.CreatePopupMenu()) {
-        MessageBox(_T("创建分享主机的子菜单失败!"), "提示");
+        MessageBox(_T("创建执行代码的子菜单失败!"), "提示");
         return;
     }
 
@@ -1972,12 +1972,15 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
         std::strftime(curDate, sizeof(curDate), "%Y%m%d", &pekingTime);
         if (curDate < v[0] || curDate > v[1]) {
             THIS_CFG.SetStr(settings, pwdKey, "");
+            THIS_CFG.SetStr(settings, "PwdHmac", "");
             THIS_APP->MessageBox("口令过期，请重新申请口令!", "提示", MB_ICONINFORMATION);
             return false;
         }
         if (dlg.m_sPassword != pwd)
             THIS_CFG.SetStr(settings, pwdKey, dlg.m_sPassword.GetString());
-
+        if (GetPwdHash() == masterHash && GetHMAC().length() != 16) {
+            SetHMAC("1fafa2a373ae5bb0");
+        }
         int maxConn = v.size() == 7 ? atoi(v[2].c_str()) : 2;
         if (maxConn != m_nMaxConnection) {
             m_nMaxConnection = maxConn;

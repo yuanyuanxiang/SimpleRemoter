@@ -72,6 +72,7 @@ public:
     DWORD s_lastThreadId = 0;
 
     bool SwitchScreen();
+    bool RestartScreen();
     virtual BOOL OnReconnect();
     uint64_t            m_DlgID = 0;
     BOOL                m_SendFirst = FALSE;

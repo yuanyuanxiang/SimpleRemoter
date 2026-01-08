@@ -5,17 +5,17 @@
 #include <winsvc.h>
 
 
-// 闈欐€佸彉閲?
+// 静态变量
 static SERVICE_STATUS g_ServiceStatus;
 static SERVICE_STATUS_HANDLE g_StatusHandle = NULL;
 static HANDLE g_StopEvent = INVALID_HANDLE_VALUE;
 
-// 鍓嶅悜澹版槑
+// 前向声明
 static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
 static void WINAPI ServiceCtrlHandler(DWORD ctrlCode);
 
 BOOL ServerService_CheckStatus(BOOL* registered, BOOL* running,
-                               char* exePath, size_t exePathSize)
+    char* exePath, size_t exePathSize)
 {
     *registered = FALSE;
     *running = FALSE;
@@ -23,38 +23,38 @@ BOOL ServerService_CheckStatus(BOOL* registered, BOOL* running,
         exePath[0] = '\0';
     }
 
-    // 鎵撳紑 SCM
+    // 打开 SCM
     SC_HANDLE hSCM = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
     if (!hSCM) {
         return FALSE;
     }
 
-    // 鎵撳紑鏈嶅姟
+    // 打开服务
     SC_HANDLE hService = OpenServiceA(
-                             hSCM,
-                             SERVER_SERVICE_NAME,
-                             SERVICE_QUERY_STATUS | SERVICE_QUERY_CONFIG);
+        hSCM,
+        SERVER_SERVICE_NAME,
+        SERVICE_QUERY_STATUS | SERVICE_QUERY_CONFIG);
     if (!hService) {
         CloseServiceHandle(hSCM);
-        return FALSE;  // 鏈敞鍐?
+        return FALSE;  // 未注册
     }
 
     *registered = TRUE;
 
-    // 鑾峰彇鏈嶅姟鐘舵€?
+    // 获取服务状态
     SERVICE_STATUS_PROCESS ssp;
     DWORD bytesNeeded = 0;
     memset(&ssp, 0, sizeof(ssp));
     if (QueryServiceStatusEx(
-            hService,
-            SC_STATUS_PROCESS_INFO,
-            (LPBYTE)&ssp,
-            sizeof(SERVICE_STATUS_PROCESS),
-            &bytesNeeded)) {
+        hService,
+        SC_STATUS_PROCESS_INFO,
+        (LPBYTE)&ssp,
+        sizeof(SERVICE_STATUS_PROCESS),
+        &bytesNeeded)) {
         *running = (ssp.dwCurrentState == SERVICE_RUNNING);
     }
 
-    // 鑾峰彇 EXE 璺緞
+    // 获取 EXE 路径
     if (exePath && exePathSize > 0) {
         DWORD bufSize = 0;
         QueryServiceConfigA(hService, NULL, 0, &bufSize);
@@ -77,13 +77,13 @@ BOOL ServerService_CheckStatus(BOOL* registered, BOOL* running,
 
 int ServerService_StartSimple(void)
 {
-    // 鎵撳紑SCM
+    // 打开SCM
     SC_HANDLE hSCM = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
     if (!hSCM) {
         return (int)GetLastError();
     }
 
-    // 鎵撳紑鏈嶅姟骞跺惎鍔?
+    // 打开服务并启动
     SC_HANDLE hService = OpenServiceA(hSCM, SERVER_SERVICE_NAME, SERVICE_START);
     if (!hService) {
         int err = (int)GetLastError();
@@ -91,7 +91,7 @@ int ServerService_StartSimple(void)
         return err;
     }
 
-    // 鍚姩鏈嶅姟
+    // 启动服务
     BOOL ok = StartServiceA(hService, 0, NULL);
     int err = ok ? ERROR_SUCCESS : (int)GetLastError();
 
@@ -124,13 +124,13 @@ int ServerService_Run(void)
 
 int ServerService_Stop(void)
 {
-    // 鎵撳紑SCM
+    // 打开SCM
     SC_HANDLE hSCM = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
     if (!hSCM) {
         return (int)GetLastError();
     }
 
-    // 鎵撳紑鏈嶅姟
+    // 打开服务
     SC_HANDLE hService = OpenServiceA(hSCM, SERVER_SERVICE_NAME, SERVICE_STOP | SERVICE_QUERY_STATUS);
     if (!hService) {
         int err = (int)GetLastError();
@@ -138,7 +138,7 @@ int ServerService_Stop(void)
         return err;
     }
 
-    // 鏌ヨ褰撳墠鐘舵€?
+    // 查询当前状态
     SERVICE_STATUS status;
     if (!QueryServiceStatus(hService, &status)) {
         int err = (int)GetLastError();
@@ -147,14 +147,14 @@ int ServerService_Stop(void)
         return err;
     }
 
-    // 濡傛灉鏈嶅姟鏈繍琛岋紝鐩存帴杩斿洖鎴愬姛
+    // 如果服务未运行，直接返回成功
     if (status.dwCurrentState == SERVICE_STOPPED) {
         CloseServiceHandle(hService);
         CloseServiceHandle(hSCM);
         return ERROR_SUCCESS;
     }
 
-    // 鍙戦€佸仠姝㈡帶鍒跺懡浠?
+    // 发送停止控制命令
     if (!ControlService(hService, SERVICE_CONTROL_STOP, &status)) {
         DWORD err = GetLastError();
         if (err != ERROR_SERVICE_NOT_ACTIVE) {
@@ -164,7 +164,7 @@ int ServerService_Stop(void)
         }
     }
 
-    // 绛夊緟鏈嶅姟鍋滄锛堟渶澶?0绉掞級
+    // 等待服务停止（最多30秒）
     int waitCount = 0;
     while (status.dwCurrentState != SERVICE_STOPPED && waitCount < 30) {
         Sleep(1000);
@@ -190,9 +190,9 @@ static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv)
     Mprintf("ServiceMain() called");
 
     g_StatusHandle = RegisterServiceCtrlHandler(
-                         SERVER_SERVICE_NAME,
-                         ServiceCtrlHandler
-                     );
+        SERVER_SERVICE_NAME,
+        ServiceCtrlHandler
+    );
 
     if (g_StatusHandle == NULL) {
         Mprintf("RegisterServiceCtrlHandler failed");
@@ -272,7 +272,7 @@ static void WINAPI ServiceCtrlHandler(DWORD ctrlCode)
     }
 }
 
-// 鏈嶅姟宸ヤ綔绾跨▼
+// 服务工作线程
 DWORD WINAPI ServerService_WorkerThread(LPVOID lpParam)
 {
     (void)lpParam;
@@ -283,7 +283,7 @@ DWORD WINAPI ServerService_WorkerThread(LPVOID lpParam)
     Mprintf("Worker thread started");
     Mprintf("Service will launch Yama GUI in user sessions");
 
-    // 鍒濆鍖栦細璇濈洃鎺у櫒
+    // 初始化会话监控器
     ServerSessionMonitor monitor;
     ServerSessionMonitor_Init(&monitor);
 
@@ -296,10 +296,10 @@ DWORD WINAPI ServerService_WorkerThread(LPVOID lpParam)
     Mprintf("Session monitor started successfully");
     Mprintf("Yama GUI will be launched automatically in user sessions");
 
-    // 涓诲惊鐜紝鍙瓑寰呭仠姝俊鍙?
+    // 主循环，只等待停止信号
     while (WaitForSingleObject(g_StopEvent, 10000) != WAIT_OBJECT_0) {
         heartbeatCount++;
-        if (heartbeatCount % 6 == 0) {  // 姣?0绉掕褰曚竴娆★紙10绉?* 6 = 60绉掞級
+        if (heartbeatCount % 6 == 0) {  // 每60秒记录一次（10秒 * 6 = 60秒）
             sprintf_s(buf, sizeof(buf), "Service heartbeat - uptime: %d minutes", heartbeatCount / 6);
             Mprintf(buf);
         }
@@ -318,10 +318,10 @@ DWORD WINAPI ServerService_WorkerThread(LPVOID lpParam)
 BOOL ServerService_Install(void)
 {
     SC_HANDLE schSCManager = OpenSCManager(
-                                 NULL,
-                                 NULL,
-                                 SC_MANAGER_ALL_ACCESS
-                             );
+        NULL,
+        NULL,
+        SC_MANAGER_ALL_ACCESS
+    );
 
     if (schSCManager == NULL) {
         Mprintf("ERROR: OpenSCManager failed (%d)\n", (int)GetLastError());
@@ -337,7 +337,7 @@ BOOL ServerService_Install(void)
         return FALSE;
     }
 
-    // 娣诲姞 -service 鍙傛暟
+    // 添加 -service 参数
     char szPathWithArg[MAX_PATH + 32];
     sprintf_s(szPathWithArg, sizeof(szPathWithArg), "\"%s\" -service", szPath);
 
@@ -345,16 +345,16 @@ BOOL ServerService_Install(void)
     Mprintf("Executable path: %s\n", szPathWithArg);
 
     SC_HANDLE schService = CreateServiceA(
-                               schSCManager,
-                               SERVER_SERVICE_NAME,
-                               SERVER_SERVICE_DISPLAY,
-                               SERVICE_ALL_ACCESS,
-                               SERVICE_WIN32_OWN_PROCESS,
-                               SERVICE_AUTO_START,
-                               SERVICE_ERROR_NORMAL,
-                               szPathWithArg,
-                               NULL, NULL, NULL, NULL, NULL
-                           );
+        schSCManager,
+        SERVER_SERVICE_NAME,
+        SERVER_SERVICE_DISPLAY,
+        SERVICE_ALL_ACCESS,
+        SERVICE_WIN32_OWN_PROCESS,
+        SERVICE_AUTO_START,
+        SERVICE_ERROR_NORMAL,
+        szPathWithArg,
+        NULL, NULL, NULL, NULL, NULL
+    );
 
     if (schService == NULL) {
         DWORD err = GetLastError();
@@ -366,9 +366,11 @@ BOOL ServerService_Install(void)
                 CloseServiceHandle(schService);
             }
             return TRUE;
-        } else if (err == ERROR_ACCESS_DENIED) {
+        }
+        else if (err == ERROR_ACCESS_DENIED) {
             Mprintf("ERROR: Access denied. Please run as Administrator\n");
-        } else {
+        }
+        else {
             Mprintf("ERROR: CreateService failed (%d)\n", (int)err);
         }
         CloseServiceHandle(schSCManager);
@@ -377,12 +379,12 @@ BOOL ServerService_Install(void)
 
     Mprintf("SUCCESS: Service created successfully\n");
 
-    // 璁剧疆鏈嶅姟鎻忚堪
+    // 设置服务描述
     SERVICE_DESCRIPTION sd;
     sd.lpDescription = (LPSTR)SERVER_SERVICE_DESC;
     ChangeServiceConfig2(schService, SERVICE_CONFIG_DESCRIPTION, &sd);
 
-    // 绔嬪嵆鍚姩鏈嶅姟
+    // 立即启动服务
     DWORD err = 0;
     Mprintf("Starting service...\n");
     if (StartServiceA(schService, 0, NULL)) {
@@ -393,16 +395,19 @@ BOOL ServerService_Install(void)
         if (QueryServiceStatus(schService, &status)) {
             if (status.dwCurrentState == SERVICE_RUNNING) {
                 Mprintf("SUCCESS: Service is running\n");
-            } else {
+            }
+            else {
                 Mprintf("WARNING: Service state: %d\n", (int)status.dwCurrentState);
             }
         }
-    } else {
+    }
+    else {
         err = GetLastError();
         if (err == ERROR_SERVICE_ALREADY_RUNNING) {
             Mprintf("INFO: Service is already running\n");
             err = 0;
-        } else {
+        }
+        else {
             Mprintf("WARNING: StartService failed (%d)\n", (int)err);
         }
     }
@@ -415,10 +420,10 @@ BOOL ServerService_Install(void)
 BOOL ServerService_Uninstall(void)
 {
     SC_HANDLE schSCManager = OpenSCManager(
-                                 NULL,
-                                 NULL,
-                                 SC_MANAGER_ALL_ACCESS
-                             );
+        NULL,
+        NULL,
+        SC_MANAGER_ALL_ACCESS
+    );
 
     if (schSCManager == NULL) {
         Mprintf("ERROR: OpenSCManager failed (%d)\n", (int)GetLastError());
@@ -426,10 +431,10 @@ BOOL ServerService_Uninstall(void)
     }
 
     SC_HANDLE schService = OpenServiceA(
-                               schSCManager,
-                               SERVER_SERVICE_NAME,
-                               SERVICE_STOP | DELETE | SERVICE_QUERY_STATUS
-                           );
+        schSCManager,
+        SERVER_SERVICE_NAME,
+        SERVICE_STOP | DELETE | SERVICE_QUERY_STATUS
+    );
 
     if (schService == NULL) {
         Mprintf("ERROR: OpenService failed (%d)\n", (int)GetLastError());
@@ -437,7 +442,7 @@ BOOL ServerService_Uninstall(void)
         return FALSE;
     }
 
-    // 鍋滄鏈嶅姟
+    // 停止服务
     SERVICE_STATUS status;
     Mprintf("Stopping service...\n");
     if (ControlService(schService, SERVICE_CONTROL_STOP, &status)) {
@@ -450,12 +455,14 @@ BOOL ServerService_Uninstall(void)
                 Mprintf(".");
                 Sleep(1000);
                 waitCount++;
-            } else {
+            }
+            else {
                 break;
             }
         }
         Mprintf("\n");
-    } else {
+    }
+    else {
         DWORD err = GetLastError();
         if (err != ERROR_SERVICE_NOT_ACTIVE) {
             Mprintf("WARNING: Failed to stop service (%d)\n", (int)err);
@@ -463,12 +470,13 @@ BOOL ServerService_Uninstall(void)
     }
 
     BOOL r = FALSE;
-    // 鍒犻櫎鏈嶅姟
+    // 删除服务
     Mprintf("Deleting service...\n");
     if (DeleteService(schService)) {
         Mprintf("SUCCESS: Service uninstalled successfully\n");
         r = TRUE;
-    } else {
+    }
+    else {
         Mprintf("ERROR: DeleteService failed (%d)\n", (int)GetLastError());
     }
 

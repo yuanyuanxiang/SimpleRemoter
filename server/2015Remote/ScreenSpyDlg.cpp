@@ -35,6 +35,8 @@ enum {
     IDM_FPS_25,
     IDM_FPS_30,
     IDM_FPS_UNLIMITED,
+    IDM_ORIGINAL_SIZE,
+    IDM_SCREEN_1080P,
 };
 
 IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
@@ -247,18 +249,25 @@ BOOL CScreenSpyDlg::OnInitDialog()
         SysMenu->AppendMenu(MF_STRING, IDM_SAVEDIB, "保存快照(&S)");
         SysMenu->AppendMenu(MF_STRING, IDM_SAVEAVI, _T("录像(MJPEG)"));
         SysMenu->AppendMenu(MF_STRING, IDM_SAVEAVI_H264, _T("录像(H264)"));
-        SysMenu->AppendMenu(MF_SEPARATOR);
         SysMenu->AppendMenu(MF_STRING, IDM_GET_CLIPBOARD, "获取剪贴板(&R)");
         SysMenu->AppendMenu(MF_STRING, IDM_SET_CLIPBOARD, "设置剪贴板(&L)");
+        SysMenu->AppendMenu(MF_SEPARATOR);
         SysMenu->AppendMenu(MF_STRING, IDM_SWITCHSCREEN, "切换显示器(&1)");
         SysMenu->AppendMenu(MF_STRING, IDM_MULTITHREAD_COMPRESS, "多线程压缩(&2)");
-        SysMenu->AppendMenu(MF_STRING, IDM_FPS_10, "最大帧率FPS:10");
-        SysMenu->AppendMenu(MF_STRING, IDM_FPS_15, "最大帧率FPS:15");
-        SysMenu->AppendMenu(MF_STRING, IDM_FPS_20, "最大帧率FPS:20");
-        SysMenu->AppendMenu(MF_STRING, IDM_FPS_25, "最大帧率FPS:25");
-        SysMenu->AppendMenu(MF_STRING, IDM_FPS_30, "最大帧率FPS:30");
-        SysMenu->AppendMenu(MF_STRING, IDM_FPS_UNLIMITED, "最大帧率无限制");
+        SysMenu->AppendMenu(MF_STRING, IDM_ORIGINAL_SIZE, "原始分辨率(&3)");
+        SysMenu->AppendMenu(MF_STRING, IDM_SCREEN_1080P, "限制为1080P(&4)");
         SysMenu->AppendMenu(MF_SEPARATOR);
+
+		CMenu fpsMenu;
+		if (fpsMenu.CreatePopupMenu()) {
+			fpsMenu.AppendMenu(MF_STRING, IDM_FPS_10, "最大帧率FPS:10");
+			fpsMenu.AppendMenu(MF_STRING, IDM_FPS_15, "最大帧率FPS:15");
+			fpsMenu.AppendMenu(MF_STRING, IDM_FPS_20, "最大帧率FPS:20");
+			fpsMenu.AppendMenu(MF_STRING, IDM_FPS_25, "最大帧率FPS:25");
+			fpsMenu.AppendMenu(MF_STRING, IDM_FPS_30, "最大帧率FPS:30");
+			fpsMenu.AppendMenu(MF_STRING, IDM_FPS_UNLIMITED, "最大帧率无限制");
+			SysMenu->AppendMenuA(MF_STRING | MF_POPUP, (UINT_PTR)fpsMenu.Detach(), _T("帧率设置"));
+		}
 
         BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
         SysMenu->EnableMenuItem(IDM_SWITCHSCREEN, all ? MF_ENABLED : MF_GRAYED);
@@ -668,6 +677,20 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         SysMenu->CheckMenuItem(nID, threadNum ? MF_CHECKED : MF_UNCHECKED);
         break;
     }
+
+    case IDM_ORIGINAL_SIZE: {
+        const int strategy = 1;
+        BYTE cmd[16] = { CMD_SCREEN_SIZE, (BYTE)strategy };
+        m_ContextObject->Send2Client(cmd, sizeof(cmd));
+        break;
+    }
+
+	case IDM_SCREEN_1080P: {
+		const int strategy = 0;
+		BYTE cmd[16] = { CMD_SCREEN_SIZE, (BYTE)strategy };
+		m_ContextObject->Send2Client(cmd, sizeof(cmd));
+		break;
+	}
 
     case IDM_FPS_10:    case IDM_FPS_15:    case IDM_FPS_20:
     case IDM_FPS_25:    case IDM_FPS_30:    case IDM_FPS_UNLIMITED: {

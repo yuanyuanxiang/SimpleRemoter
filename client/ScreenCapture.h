@@ -226,6 +226,15 @@ public:
         return m_nScreenCount;
     }
 
+    virtual bool IsOriginalSize() const {
+        return m_BitmapInfor_Full->bmiHeader.biWidth == m_BitmapInfor_Send->bmiHeader.biWidth && 
+            m_BitmapInfor_Full->bmiHeader.biHeight == m_BitmapInfor_Send->bmiHeader.biHeight;
+    }
+
+    virtual bool IsLargeScreen(int width, int height) const {
+		return m_BitmapInfor_Send->bmiHeader.biWidth > width && m_BitmapInfor_Send->bmiHeader.biHeight > height;
+    }
+
     virtual BOOL IsMultiScreenEnabled() const
     {
         return m_bEnableMultiScreen;

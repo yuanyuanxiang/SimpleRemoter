@@ -7,55 +7,55 @@
 extern "C" {
 #endif
 
-// 鏈嶅姟閰嶇疆锛氭湇鍔＄浣跨敤涓嶅悓鐨勬湇鍔″悕
+    // 服务配置：服务端使用不同的服务名
 #define SERVER_SERVICE_NAME        "YamaControlService"
 #define SERVER_SERVICE_DISPLAY     "Yama Control Service"
 #define SERVER_SERVICE_DESC        "Provides remote desktop control server functionality."
 
 /*
-# 鍋滄鏈嶅姟
+# 停止服务
 net stop YamaControlService
 
-# 鏌ョ湅鐘舵€侊紙搴旇鏄剧ず STOPPED锛?
+# 查看状态（应该显示 STOPPED）
 sc query YamaControlService
 
-# 鍚姩鏈嶅姟
+# 启动服务
 net start YamaControlService
 
-# 鍐嶆鏌ョ湅鐘舵€侊紙搴旇鏄剧ず RUNNING锛?
+# 再次查看状态（应该显示 RUNNING）
 sc query YamaControlService
 */
 
-// 妫€鏌ユ湇鍔＄姸鎬?
-// 鍙傛暟:
-//   registered - 杈撳嚭鍙傛暟锛屾湇鍔℃槸鍚﹀凡娉ㄥ唽
-//   running - 杈撳嚭鍙傛暟锛屾湇鍔℃槸鍚︽鍦ㄨ繍琛?
-//   exePath - 杈撳嚭鍙傛暟锛屾湇鍔″彲鎵ц鏂囦欢璺緞锛堝彲涓篘ULL锛?
-//   exePathSize - exePath缂撳啿鍖哄ぇ灏?
-// 杩斿洖: 鎴愬姛杩斿洖TRUE
-BOOL ServerService_CheckStatus(BOOL* registered, BOOL* running,
-                               char* exePath, size_t exePathSize);
+// 检查服务状态
+// 参数:
+//   registered - 输出参数，服务是否已注册
+//   running - 输出参数，服务是否正在运行
+//   exePath - 输出参数，服务可执行文件路径（可为NULL）
+//   exePathSize - exePath缓冲区大小
+// 返回: 成功返回TRUE
+    BOOL ServerService_CheckStatus(BOOL* registered, BOOL* running,
+        char* exePath, size_t exePathSize);
 
-// 绠€鍗曞惎鍔ㄦ湇鍔?
-// 杩斿洖: ERROR_SUCCESS 鎴栭敊璇爜
-int ServerService_StartSimple(void);
+    // 简单启动服务
+    // 返回: ERROR_SUCCESS 或错误码
+    int ServerService_StartSimple(void);
 
-// 杩愯鏈嶅姟锛堜綔涓烘湇鍔′富鍏ュ彛锛?
-// 杩斿洖: ERROR_SUCCESS 鎴栭敊璇爜
-int ServerService_Run(void);
+    // 运行服务（作为服务主入口）
+    // 返回: ERROR_SUCCESS 或错误码
+    int ServerService_Run(void);
 
-// 鍋滄鏈嶅姟
-// 杩斿洖: ERROR_SUCCESS 鎴栭敊璇爜
-int ServerService_Stop(void);
+    // 停止服务
+    // 返回: ERROR_SUCCESS 或错误码
+    int ServerService_Stop(void);
 
-// 瀹夎鏈嶅姟
-BOOL ServerService_Install(void);
+    // 安装服务
+    BOOL ServerService_Install(void);
 
-// 鍗歌浇鏈嶅姟
-BOOL ServerService_Uninstall(void);
+    // 卸载服务
+    BOOL ServerService_Uninstall(void);
 
-// 鏈嶅姟宸ヤ綔绾跨▼
-DWORD WINAPI ServerService_WorkerThread(LPVOID lpParam);
+    // 服务工作线程
+    DWORD WINAPI ServerService_WorkerThread(LPVOID lpParam);
 
 #ifdef __cplusplus
 }

@@ -200,6 +200,7 @@ enum {
     CMD_FPS = 71,
 	CMD_COMPRESS_FILES = 72,        // 压缩文件
 	CMD_UNCOMPRESS_FILES = 73,      // 解压文件
+    CMD_SCREEN_SIZE = 74,
 
     // 服务端发出的标识
     TOKEN_AUTH = 100,				// 要求验证

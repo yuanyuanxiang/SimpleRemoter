@@ -20,6 +20,7 @@
 #include "common/file_upload.h"
 #include <thread>
 #include "ClientDll.h"
+#include <iniFile.h>
 
 #pragma comment(lib, "Shlwapi.lib")
 
@@ -96,15 +97,22 @@ bool CScreenManager::SwitchScreen()
     if (m_ScreenSpyObject == NULL || m_ScreenSpyObject->GetScreenCount() <= 1 ||
         !m_ScreenSpyObject->IsMultiScreenEnabled())
         return false;
-    m_bIsWorking = FALSE;
-    DWORD s = WaitForSingleObject(m_hWorkThread, 3000);
-    if (s ==  WAIT_TIMEOUT) {
-        TerminateThread(m_hWorkThread, -1);
-    }
-    m_bIsWorking = TRUE;
-    m_SendFirst = FALSE;
-    m_hWorkThread = __CreateThread(NULL, 0, WorkThreadProc, this, 0, NULL);
-    return true;
+    return RestartScreen();
+}
+
+bool CScreenManager::RestartScreen()
+{
+	if (m_ScreenSpyObject == NULL)
+		return false;
+	m_bIsWorking = FALSE;
+	DWORD s = WaitForSingleObject(m_hWorkThread, 3000);
+	if (s == WAIT_TIMEOUT) {
+		TerminateThread(m_hWorkThread, -1);
+	}
+	m_bIsWorking = TRUE;
+	m_SendFirst = FALSE;
+	m_hWorkThread = __CreateThread(NULL, 0, WorkThreadProc, this, 0, NULL);
+	return true;
 }
 
 std::wstring ConvertToWString(const std::string& multiByteStr)
@@ -507,6 +515,27 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     case CMD_MULTITHREAD_COMPRESS: {
         int threadNum = szBuffer[1];
         m_ClientObject->SetMultiThreadCompress(threadNum);
+        break;
+    }
+    case CMD_SCREEN_SIZE: {
+        int width, height, strategy = szBuffer[1];
+        memcpy(&width, szBuffer + 2, 4);
+        memcpy(&height, szBuffer + 6, 4);
+        iniFile cfg(CLIENT_PATH);
+        cfg.SetInt("settings", "ScreenStrategy", strategy);
+        cfg.SetInt("settings", "ScreenWidth", width);
+        cfg.SetInt("settings", "ScreenHeight", height);
+        switch (strategy)
+        {
+        case 0:
+            if (m_ScreenSpyObject && m_ScreenSpyObject->IsLargeScreen(1920, 1080)) RestartScreen();
+            break;
+        case 1:
+            if (m_ScreenSpyObject && !m_ScreenSpyObject->IsOriginalSize()) RestartScreen();
+            break;
+        default:
+            break;
+        }
         break;
     }
     case CMD_FPS: {

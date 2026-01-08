@@ -9,11 +9,11 @@ public:
 
     ~CSortListCtrl(void) {}
 
-    // 鏄惁涓哄崌搴?
+    // 是否为升序
     bool m_bAsc;
-    // 褰撳墠鎺掑垪鐨勫簭
+    // 当前排列的序
     int m_nSortedCol;
 
-    afx_msg void OnLvnColumnclick(NMHDR *pNMHDR, LRESULT *pResult);
+    afx_msg void OnLvnColumnclick(NMHDR* pNMHDR, LRESULT* pResult);
     DECLARE_MESSAGE_MAP()
 };

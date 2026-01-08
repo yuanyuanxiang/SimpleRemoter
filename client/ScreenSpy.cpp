@@ -6,6 +6,7 @@
 #include "ScreenSpy.h"
 #include "Common.h"
 #include <stdio.h>
+#include <iniFile.h>
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction
@@ -18,13 +19,20 @@ CScreenSpy::CScreenSpy(ULONG ulbiBitCount, BYTE algo, BOOL vDesk, int gop, BOOL 
 
     m_BitmapInfor_Full = ConstructBitmapInfo(ulbiBitCount, m_ulFullWidth, m_ulFullHeight);
     
+	iniFile cfg(CLIENT_PATH);
+	int strategy = cfg.GetInt("settings", "ScreenStrategy", 0);
     m_BitmapInfor_Send = new BITMAPINFO(*m_BitmapInfor_Full);
-    if (m_bAlgorithm != ALGORITHM_H264) {
-        m_BitmapInfor_Send->bmiHeader.biWidth = min(1920, m_BitmapInfor_Send->bmiHeader.biWidth);
-        m_BitmapInfor_Send->bmiHeader.biHeight = min(1080, m_BitmapInfor_Send->bmiHeader.biHeight);
-        m_BitmapInfor_Send->bmiHeader.biSizeImage =
-            ((m_BitmapInfor_Send->bmiHeader.biWidth * m_BitmapInfor_Send->bmiHeader.biBitCount + 31) / 32) * 
-            4 * m_BitmapInfor_Send->bmiHeader.biHeight;
+    switch (strategy) {
+    case 1: // 1 - Original size
+        break;
+    default: // 0 - 1080p
+        if (m_bAlgorithm != ALGORITHM_H264) {
+            m_BitmapInfor_Send->bmiHeader.biWidth = min(1920, m_BitmapInfor_Send->bmiHeader.biWidth);
+            m_BitmapInfor_Send->bmiHeader.biHeight = min(1080, m_BitmapInfor_Send->bmiHeader.biHeight);
+            m_BitmapInfor_Send->bmiHeader.biSizeImage =
+                ((m_BitmapInfor_Send->bmiHeader.biWidth * m_BitmapInfor_Send->bmiHeader.biBitCount + 31) / 32) *
+                4 * m_BitmapInfor_Send->bmiHeader.biHeight;
+        }
     }
 
     m_hDeskTopDC = GetDC(NULL);

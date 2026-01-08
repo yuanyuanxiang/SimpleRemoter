@@ -16,6 +16,8 @@ std::string GetMasterId();
 
 std::string GetHMAC(int offset=100);
 
+void SetHMAC(const std::string str, int offset=100);
+
 bool IsPwdHashValid(const char* pwdHash = nullptr);
 
 bool WritePwdHash(char* target, const std::string& pwdHash, const Validation &verify);

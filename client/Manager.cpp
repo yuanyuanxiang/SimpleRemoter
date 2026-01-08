@@ -10,7 +10,7 @@
 typedef struct {
     unsigned(__stdcall* start_address)(void*);
     void* arglist;
-    bool	bInteractive; // 鏄惁鏀寔浜や簰妗岄潰
+    bool	bInteractive; // 是否支持交互桌面
     HANDLE	hEventTransferArg;
 } THREAD_ARGLIST, * LPTHREAD_ARGLIST;
 
@@ -23,22 +23,23 @@ unsigned int __stdcall ThreadLoader(LPVOID param)
         THREAD_ARGLIST	arg;
         memcpy(&arg, param, sizeof(arg));
         SetEvent(arg.hEventTransferArg);
-        // 涓庢闈氦浜?
+        // 与桌面交互
         if (arg.bInteractive)
             SelectDesktop(NULL);
 
         nRet = arg.start_address(arg.arglist);
-    } catch (...) {
+    }
+    catch (...) {
     };
     return nRet;
 }
 
 HANDLE MyCreateThread(LPSECURITY_ATTRIBUTES lpThreadAttributes, // SD
-                      SIZE_T dwStackSize,                       // initial stack size
-                      LPTHREAD_START_ROUTINE lpStartAddress,    // thread function
-                      LPVOID lpParameter,                       // thread argument
-                      DWORD dwCreationFlags,                    // creation option
-                      LPDWORD lpThreadId, bool bInteractive)
+    SIZE_T dwStackSize,                       // initial stack size
+    LPTHREAD_START_ROUTINE lpStartAddress,    // thread function
+    LPVOID lpParameter,                       // thread argument
+    DWORD dwCreationFlags,                    // creation option
+    LPDWORD lpThreadId, bool bInteractive)
 {
     HANDLE	hThread = INVALID_HANDLE_VALUE;
     THREAD_ARGLIST	arg;
@@ -132,14 +133,15 @@ HDESK OpenActiveDesktop(ACCESS_MASK dwDesiredAccess)
                     Mprintf("OpenDesktop Default failed: %d\n", GetLastError());
                 }
             }
-        } else {
+        }
+        else {
             Mprintf("OpenWindowStation failed: %d\n", GetLastError());
         }
     }
     return hInputDesktop;
 }
 
-// 杩斿洖鏂版闈㈠彞鏌勶紝濡傛灉娌℃湁鍙樺寲杩斿洖NULL
+// 返回新桌面句柄，如果没有变化返回NULL
 HDESK IsDesktopChanged(HDESK currentDesk, DWORD accessRights)
 {
     HDESK hInputDesk = OpenActiveDesktop(accessRights);
@@ -147,8 +149,9 @@ HDESK IsDesktopChanged(HDESK currentDesk, DWORD accessRights)
 
     if (!currentDesk) {
         return hInputDesk;
-    } else {
-        // 閫氳繃妗岄潰鍚嶇О鍒ゆ柇鏄惁鐪熸鍙樺寲
+    }
+    else {
+        // 通过桌面名称判断是否真正变化
         char oldName[256] = { 0 };
         char newName[256] = { 0 };
         DWORD len = 0;
@@ -164,8 +167,8 @@ HDESK IsDesktopChanged(HDESK currentDesk, DWORD accessRights)
     return NULL;
 }
 
-// 妗岄潰鍒囨崲杈呭姪鍑芥暟锛氶€氳繃妗岄潰鍚嶇О姣旇緝鍒ゆ柇鏄惁闇€瑕佸垏鎹?
-// 杩斿洖鍊硷細true琛ㄧず妗岄潰宸插垏鎹紝false琛ㄧず妗岄潰鏈彉鍖?
+// 桌面切换辅助函数：通过桌面名称比较判断是否需要切换
+// 返回值：true表示桌面已切换，false表示桌面未变化
 bool SwitchToDesktopIfChanged(HDESK& currentDesk, DWORD accessRights)
 {
     HDESK hInputDesk = IsDesktopChanged(currentDesk, accessRights);
@@ -192,17 +195,18 @@ HDESK SelectDesktop(TCHAR* name)
     if (name != NULL) {
         // Attempt to open the named desktop
         desktop = OpenDesktop(name, 0, FALSE,
-                              DESKTOP_CREATEMENU | DESKTOP_CREATEWINDOW |
-                              DESKTOP_ENUMERATE | DESKTOP_HOOKCONTROL |
-                              DESKTOP_WRITEOBJECTS | DESKTOP_READOBJECTS |
-                              DESKTOP_SWITCHDESKTOP | GENERIC_WRITE);
-    } else {
+            DESKTOP_CREATEMENU | DESKTOP_CREATEWINDOW |
+            DESKTOP_ENUMERATE | DESKTOP_HOOKCONTROL |
+            DESKTOP_WRITEOBJECTS | DESKTOP_READOBJECTS |
+            DESKTOP_SWITCHDESKTOP | GENERIC_WRITE);
+    }
+    else {
         // No, so open the input desktop
         desktop = OpenInputDesktop(0, FALSE,
-                                   DESKTOP_CREATEMENU | DESKTOP_CREATEWINDOW |
-                                   DESKTOP_ENUMERATE | DESKTOP_HOOKCONTROL |
-                                   DESKTOP_WRITEOBJECTS | DESKTOP_READOBJECTS |
-                                   DESKTOP_SWITCHDESKTOP | GENERIC_WRITE);
+            DESKTOP_CREATEMENU | DESKTOP_CREATEWINDOW |
+            DESKTOP_ENUMERATE | DESKTOP_HOOKCONTROL |
+            DESKTOP_WRITEOBJECTS | DESKTOP_READOBJECTS |
+            DESKTOP_SWITCHDESKTOP | GENERIC_WRITE);
     }
 
     // Did we succeed?
@@ -231,12 +235,12 @@ CManager::CManager(IOCPClient* ClientObject) : g_bExit(ClientObject->GetState())
     m_ClientObject = ClientObject;
     m_ClientObject->setManagerCallBack(this, IOCPManager::DataProcess, IOCPManager::ReconnectProcess);
 
-    m_hEventDlgOpen = CreateEvent(NULL,TRUE,FALSE,NULL);
+    m_hEventDlgOpen = CreateEvent(NULL, TRUE, FALSE, NULL);
 }
 
 CManager::~CManager()
 {
-    if (m_hEventDlgOpen!=NULL) {
+    if (m_hEventDlgOpen != NULL) {
         SAFE_CLOSE_HANDLE(m_hEventDlgOpen);
         m_hEventDlgOpen = NULL;
     }
@@ -248,7 +252,8 @@ BOOL CManager::Send(LPBYTE lpData, UINT nSize)
     int	nRet = 0;
     try {
         nRet = m_ClientObject->Send2Server((char*)lpData, nSize);
-    } catch(...) {
+    }
+    catch (...) {
         Mprintf("[ERROR] CManager::Send catch an error \n");
     };
     return nRet;
@@ -257,7 +262,7 @@ BOOL CManager::Send(LPBYTE lpData, UINT nSize)
 VOID CManager::WaitForDialogOpen()
 {
     WaitForSingleObject(m_hEventDlgOpen, 8000);
-    //蹇呴』鐨凷leep,鍥犱负杩滅▼绐楀彛浠嶪nitDialog涓彂閫丆OMMAND_NEXT鍒版樉绀鸿繕瑕佷竴娈垫椂闂?
+    //必须的Sleep,因为远程窗口从InitDialog中发送COMMAND_NEXT到显示还要一段时间
     Sleep(150);
 }
 

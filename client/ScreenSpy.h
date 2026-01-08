@@ -9,7 +9,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#define COPY_ALL 1	// 鎷疯礉鍏ㄩ儴灞忓箷锛屼笉鍒嗗潡鎷疯礉锛坅dded by yuanyuanxiang 2019-1-7锛?
+#define COPY_ALL 1	// 拷贝全部屏幕，不分块拷贝（added by yuanyuanxiang 2019-1-7）
 #include "CursorInfo.h"
 #include "ScreenCapture.h"
 
@@ -80,18 +80,18 @@ private:
     int height;
 };
 
-class CScreenSpy  : public ScreenCapture
+class CScreenSpy : public ScreenCapture
 {
 protected:
-    HDC              m_hDeskTopDC;          // 灞忓箷涓婁笅鏂?
-    HDC              m_hFullMemDC;          // 涓婁竴涓笂涓嬫枃
-    HDC              m_hDiffMemDC;          // 宸紓涓婁笅鏂?
-    HBITMAP	         m_BitmapHandle;        // 涓婁竴甯т綅鍥?
-    HBITMAP	         m_DiffBitmapHandle;    // 宸紓甯т綅鍥?
-    PVOID            m_BitmapData_Full;     // 褰撳墠浣嶅浘鏁版嵁
-    PVOID            m_DiffBitmapData_Full; // 宸紓浣嶅浘鏁版嵁
+    HDC              m_hDeskTopDC;          // 屏幕上下文
+    HDC              m_hFullMemDC;          // 上一个上下文
+    HDC              m_hDiffMemDC;          // 差异上下文
+    HBITMAP	         m_BitmapHandle;        // 上一帧位图
+    HBITMAP	         m_DiffBitmapHandle;    // 差异帧位图
+    PVOID            m_BitmapData_Full;     // 当前位图数据
+    PVOID            m_DiffBitmapData_Full; // 差异位图数据
 
-    BOOL					m_bVirtualPaint;// 鏄惁铏氭嫙缁樺埗
+    BOOL					m_bVirtualPaint;// 是否虚拟绘制
     EnumHwndsPrintData		m_data;
 
 public:
@@ -147,9 +147,9 @@ public:
         HBITMAP hOldBmp = (HBITMAP)SelectObject(hDcWindow, data->GetWindowBmp());
         BOOL ret = FALSE;
         if (PrintWindow(hWnd, hDcWindow, PW_RENDERFULLCONTENT) || SendMessageTimeout(hWnd, WM_PRINT,
-                (WPARAM)hDcWindow, PRF_CLIENT | PRF_NONCLIENT, SMTO_BLOCK, 50, NULL)) {
+            (WPARAM)hDcWindow, PRF_CLIENT | PRF_NONCLIENT, SMTO_BLOCK, 50, NULL)) {
             BitBlt(data->GetScreenDC(), rect.left - data->X(), rect.top - data->Y(),
-                   rect.right - rect.left, rect.bottom - rect.top, hDcWindow, 0, 0, SRCCOPY);
+                rect.right - rect.left, rect.bottom - rect.top, hDcWindow, 0, 0, SRCCOPY);
 
             ret = TRUE;
         }
@@ -200,7 +200,7 @@ public:
 
     VOID ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHeight);
 
-    // 閲嶇疆妗岄潰 DC锛堟闈㈠垏鎹㈡椂璋冪敤锛?
+    // 重置桌面 DC（桌面切换时调用）
     void ResetDesktopDC()
     {
         ReleaseDC(NULL, m_hDeskTopDC);

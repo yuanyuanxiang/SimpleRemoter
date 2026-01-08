@@ -37,10 +37,19 @@ std::string GetMasterId()
 std::string GetHMAC(int offset)
 {
     const Validation * v= (Validation*)(g_MasterID + offset);
-    std::string hmac = v->Checksum;
-    if (hmac.empty())
+    std::string hmac(v->Checksum, 16);
+    if (hmac.c_str()[0] == 0)
         hmac = THIS_CFG.GetStr("settings", "HMAC");
     return hmac;
+}
+
+void SetHMAC(const std::string str, int offset) {
+	Validation* v = (Validation*)(g_MasterID + offset);
+    std::string hmac(v->Checksum, 16);
+    if (hmac.c_str()[0] == 0) {
+        memcpy(v->Checksum, str.c_str(), min(16, str.length()));
+        THIS_CFG.SetStr("settings", "HMAC", str);
+    }
 }
 
 extern "C" void shrink64to32(const char* input64, char* output32);  // output32 必须至少 33 字节

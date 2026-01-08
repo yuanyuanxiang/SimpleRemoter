@@ -7,6 +7,7 @@
 // 仅在 Windows 8 及更新版本上受支持
 #include <dxgi1_2.h>
 #include <d3d11.h>
+#include <iniFile.h>
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
@@ -108,15 +109,21 @@ public:
 
             // 9. 初始化 BITMAPINFO
             m_BitmapInfor_Full = ConstructBitmapInfo(32, m_ulFullWidth, m_ulFullHeight);
-            m_BitmapInfor_Send = new BITMAPINFO(*m_BitmapInfor_Full);
-			if (m_bAlgorithm != ALGORITHM_H264) {
-				m_BitmapInfor_Send->bmiHeader.biWidth = min(1920, m_BitmapInfor_Send->bmiHeader.biWidth);
-				m_BitmapInfor_Send->bmiHeader.biHeight = min(1080, m_BitmapInfor_Send->bmiHeader.biHeight);
-				m_BitmapInfor_Send->bmiHeader.biSizeImage =
-					((m_BitmapInfor_Send->bmiHeader.biWidth * m_BitmapInfor_Send->bmiHeader.biBitCount + 31) / 32) *
-					4 * m_BitmapInfor_Send->bmiHeader.biHeight;
-			}
-
+			iniFile cfg(CLIENT_PATH);
+			int strategy = cfg.GetInt("settings", "ScreenStrategy", 0);
+            switch (strategy) {
+            case 1:
+                break;
+            default:
+                m_BitmapInfor_Send = new BITMAPINFO(*m_BitmapInfor_Full);
+                if (m_bAlgorithm != ALGORITHM_H264) {
+                    m_BitmapInfor_Send->bmiHeader.biWidth = min(1920, m_BitmapInfor_Send->bmiHeader.biWidth);
+                    m_BitmapInfor_Send->bmiHeader.biHeight = min(1080, m_BitmapInfor_Send->bmiHeader.biHeight);
+                    m_BitmapInfor_Send->bmiHeader.biSizeImage =
+                        ((m_BitmapInfor_Send->bmiHeader.biWidth * m_BitmapInfor_Send->bmiHeader.biBitCount + 31) / 32) *
+                        4 * m_BitmapInfor_Send->bmiHeader.biHeight;
+                }
+            }
             // 10. 分配屏幕缓冲区
             m_FirstBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage + 1];
             m_NextBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage + 1];
