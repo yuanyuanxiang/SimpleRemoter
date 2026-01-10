@@ -103,7 +103,8 @@ private:
         }
         return TRUE;
     }
-    std::vector<MONITORINFOEX> GetAllMonitors()
+public:
+    static std::vector<MONITORINFOEX> GetAllMonitors()
     {
         std::vector<MONITORINFOEX> monitors;
         EnumDisplayMonitors(nullptr, nullptr, MonitorEnumProc, (LPARAM)&monitors);

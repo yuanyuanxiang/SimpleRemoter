@@ -792,6 +792,8 @@ enum LOGIN_RES {
     RES_EXE_VERSION = 12,					// EXE版本
     RES_USERNAME = 13,                      // 电脑用户名称
     RES_ISADMIN = 14,                       // 是否具有管理员权限
+	RES_RESOLUTION = 15,                    // 屏幕分辨率
+	RES_CLIENT_ID = 16,                     // 客户端唯一ID
     RES_MAX,
 };
 

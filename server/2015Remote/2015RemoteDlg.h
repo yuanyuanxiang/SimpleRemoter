@@ -255,7 +255,7 @@ public:
     std::set<std::string> m_GroupList;
     std::string m_selectedGroup;
     void LoadListData(const std::string& group);
-    void DeletePopupWindow();
+    void DeletePopupWindow(BOOL bForce = FALSE);
     context* FindHost(context* ctx);
     context* FindHost(int port);
     context* FindHost(uint64_t port);

@@ -9,6 +9,7 @@
 #include "common/skCrypter.h"
 #include <common/iniFile.h>
 #include <location.h>
+#include "ScreenCapture.h"
 
 // by ChatGPT
 bool IsWindows11()
@@ -376,7 +377,15 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn, BOOL& isAuthKerne
     char cpuInfo[32];
     sprintf(cpuInfo, "%dMHz", dwCPUMHz);
     conn.clientID = CalcalateID({ pubIP, szPCName, LoginInfor.OsVerInfoEx, cpuInfo, buf });
-    Mprintf("此客户端的唯一标识为: %s\n", std::to_string(conn.clientID).c_str());
+	auto clientID = std::to_string(conn.clientID);
+    Mprintf("此客户端的唯一标识为: %s\n", clientID.c_str());
+	char reservedInfo[64];
+    int m_iScreenX = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    int m_iScreenY = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+	auto list = ScreenCapture::GetAllMonitors();
+	sprintf_s(reservedInfo, "%d:%d*%d", (int)list.size(), m_iScreenX, m_iScreenY);
+	LoginInfor.AddReserved(reservedInfo);               // 屏幕分辨率
+	LoginInfor.AddReserved(clientID.c_str());           // 客户端路径
     return LoginInfor;
 }
 
