@@ -177,6 +177,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\common\file_upload.cpp" />
     <ClCompile Include="..\common\ikcp.c" />
     <ClCompile Include="..\common\zstd_wrapper.c" />
     <ClCompile Include="..\server\2015Remote\pwd_gen.cpp" />

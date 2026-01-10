@@ -39,3 +39,7 @@ uint8_t* ScaleBitmap(uint8_t* dst, const uint8_t* src, int srcW, int srcH, int d
 std::vector<std::string> PreprocessFilesSimple(const std::vector<std::string>& inputFiles);
 
 std::vector<char> BuildMultiStringPath(const std::vector<std::string>& paths);
+
+std::vector<std::string> ParseMultiStringPath(const char* buffer, size_t size);
+
+std::vector<std::string> GetForegroundSelectedFiles();

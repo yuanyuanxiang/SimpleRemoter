@@ -62,6 +62,7 @@
     <ClCompile Include="SplashDlg.cpp" />
     <ClCompile Include="ToolbarDlg.cpp" />
     <ClCompile Include="CDlgFileSend.cpp" />
+    <ClCompile Include="..\..\common\file_upload.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />

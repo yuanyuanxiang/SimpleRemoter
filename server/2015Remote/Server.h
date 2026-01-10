@@ -511,7 +511,7 @@ public:
         for (int i = 0; i < ONLINELIST_MAX; i++) {
             sClientInfo[i] = s[i];
         }
-        for (int i = 0; i < a.size(); i++) {
+        for (int i = 0; i < a.size() && i < RES_MAX; i++) {
             additonalInfo[i] = a[i].c_str();
         }
     }
@@ -549,6 +549,12 @@ public:
     {
         return additonalInfo[index];
     }
+    void SetAdditionalData(int index, const std::string &value)
+    {
+		if (index >= 0 && index < RES_MAX) {
+            additonalInfo[index] = value.c_str();
+        }
+	}
     std::string GetGroupName() const override
     {
         return GroupName;

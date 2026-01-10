@@ -777,7 +777,7 @@ std::vector<CString> SplitCString(CString strData)
 
 VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName, CString strOS,
                                CString strCPU, CString strVideo, CString strPing, CString ver,
-                               CString startTime, const std::vector<std::string>& v, CONTEXT_OBJECT * ContextObject)
+                               CString startTime, std::vector<std::string>& v, CONTEXT_OBJECT * ContextObject)
 {
     auto arr = StringToVector(strPCName.GetString(), '/', 2);
     strPCName = arr[0].c_str();
@@ -790,9 +790,12 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
                                      v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(),
                                    };
     auto id = CONTEXT_OBJECT::CalculateID(data);
-    if (std::to_string(id) != v[RES_CLIENT_ID]) {
+	auto id_str = std::to_string(id);
+    if (v[RES_CLIENT_ID].empty()) {
+		v[RES_CLIENT_ID] = id_str;
+    }else if (id_str != v[RES_CLIENT_ID]) {
         Mprintf("上线消息 - 主机ID错误: calc=%llu, recv=%s, IP=%s, Path=%s\n",
-                id, v[RES_CLIENT_ID].c_str(), strIP.GetString(), path.GetString());
+            id, v[RES_CLIENT_ID].c_str(), strIP.GetString(), path.GetString());
     }
     bool modify = false;
     CString loc = GetClientMapData(id, MAP_LOCATION);
@@ -2367,25 +2370,6 @@ BOOL CMy2015RemoteDlg::AuthorizeClient(const std::string& sn, const std::string&
     static const char* superAdmin = getenv("YAMA_PWD");
     std::string pwd = superAdmin ? superAdmin : m_superPass;
     return VerifyMessage(pwd, (BYTE*)passcode.c_str(), passcode.length(), hmac);
-}
-
-// 从char数组解析出多个路径
-std::vector<std::string> ParseMultiStringPath(const char* buffer, size_t size)
-{
-    std::vector<std::string> paths;
-
-    const char* p = buffer;
-    const char* end = buffer + size;
-
-    while (p < end) {
-        size_t len = strlen(p);
-        if (len > 0) {
-            paths.emplace_back(p, len);
-        }
-        p += len + 1;
-    }
-
-    return paths;
 }
 
 VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)

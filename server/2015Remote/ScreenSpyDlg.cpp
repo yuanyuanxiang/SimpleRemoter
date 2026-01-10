@@ -340,9 +340,16 @@ VOID CScreenSpyDlg::OnReceiveComplete()
         std::string folder;
         if (GetCurrentFolderPath(folder)) {
             // 发送目录并准备接收文件
-            BYTE cmd[300] = { COMMAND_GET_FILE };
+            std::string files(szBuffer + 1, szBuffer + len);
+            int len = 1 + folder.length() + files.length() + 1;
+            BYTE* cmd = new BYTE[len];
+            cmd[0] = COMMAND_GET_FILE;
             memcpy(cmd + 1, folder.c_str(), folder.length());
-            m_ContextObject->Send2Client(cmd, sizeof(cmd));
+            cmd[1 + folder.length()] = 0;
+            memcpy(cmd + 1 + folder.length() + 1, files.data(), files.length());
+            cmd[1 + folder.length() + files.length()] = 0;
+            m_ContextObject->Send2Client(cmd, len);
+            SAFE_DELETE_ARRAY(cmd);
         }
         break;
     }
@@ -1159,20 +1166,6 @@ void CScreenSpyDlg::UpdateCtrlStatus(BOOL ctrl)
 {
     m_bIsCtrl = ctrl;
     SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
-}
-
-// 将多个路径组合成单\0分隔的char数组
-// 格式: "path1\0path2\0path3\0"
-std::vector<char> BuildMultiStringPath(const std::vector<std::string>& paths)
-{
-    std::vector<char> result;
-
-    for (const auto& path : paths) {
-        result.insert(result.end(), path.begin(), path.end());
-        result.push_back('\0');
-    }
-
-    return result;
 }
 
 void CScreenSpyDlg::OnDropFiles(HDROP hDropInfo)

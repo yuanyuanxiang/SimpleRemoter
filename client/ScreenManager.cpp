@@ -569,11 +569,29 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
             memcpy(h, szBuffer + 1, ulLength - 1);
             m_hash = std::string(h, h + 64);
             m_hmac = std::string(h + 64, h + 80);
-            BYTE szBuffer[1] = { COMMAND_GET_FOLDER };
-            SendData(szBuffer, sizeof(szBuffer));
+            auto str = BuildMultiStringPath(files);
+            BYTE* szBuffer = new BYTE[1 + str.size()];
+            szBuffer[0] = { COMMAND_GET_FOLDER };
+            memcpy(szBuffer + 1, str.data(), str.size());
+            SendData(szBuffer, 1 + str.size());
+			SAFE_DELETE_ARRAY(szBuffer);
             break;
         }
-        SendClientClipboard(ulLength > 1);
+        if (SendClientClipboard(ulLength > 1))
+            break;
+		files = GetForegroundSelectedFiles();
+        if (!files.empty()) {
+            char h[100] = {};
+            memcpy(h, szBuffer + 1, ulLength - 1);
+            m_hash = std::string(h, h + 64);
+            m_hmac = std::string(h + 64, h + 80);
+            auto str = BuildMultiStringPath(files);
+            BYTE* szBuffer = new BYTE[1 + str.size()];
+            szBuffer[0] = { COMMAND_GET_FOLDER };
+            memcpy(szBuffer + 1, str.data(), str.size());
+            SendData(szBuffer, 1 + str.size());
+            SAFE_DELETE_ARRAY(szBuffer);
+		}
         break;
     }
     case COMMAND_SCREEN_SET_CLIPBOARD: {
@@ -599,9 +617,13 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     }
     case COMMAND_GET_FILE: {
         // 发送文件
-        int result = 0;
-        auto files = GetClipboardFiles(result);
         std::string dir = (char*)(szBuffer + 1);
+        char* ptr = (char*)szBuffer + 1 + dir.length() + 1;
+        auto files = *ptr ? ParseMultiStringPath(ptr, ulLength - 2 - dir.length()) : std::vector<std::string>{};
+        if (files.empty()) {
+			BOOL result = 0;
+			files = GetClipboardFiles(result);
+        }
         if (!files.empty() && !dir.empty()) {
             IOCPClient* pClient = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
             if (pClient->ConnectServer(m_ClientObject->ServerIP().c_str(), m_ClientObject->ServerPort())) {
@@ -648,22 +670,22 @@ VOID CScreenManager::UpdateClientClipboard(char *szBuffer, ULONG ulLength)
     CloseClipboard();
 }
 
-VOID CScreenManager::SendClientClipboard(BOOL fast)
+BOOL CScreenManager::SendClientClipboard(BOOL fast)
 {
     if (!::OpenClipboard(NULL))
-        return;
+        return FALSE;
 
     // 改为获取 Unicode 格式
     HGLOBAL hGlobal = GetClipboardData(CF_UNICODETEXT);
     if (hGlobal == NULL) {
         ::CloseClipboard();
-        return;
+        return FALSE;
     }
 
     wchar_t* pWideStr = (wchar_t*)GlobalLock(hGlobal);
     if (pWideStr == NULL) {
         ::CloseClipboard();
-        return;
+        return FALSE;
     }
 
     // Unicode 转 UTF-8
@@ -671,14 +693,14 @@ VOID CScreenManager::SendClientClipboard(BOOL fast)
     if (utf8Len <= 0) {
         GlobalUnlock(hGlobal);
         ::CloseClipboard();
-        return;
+        return TRUE;
     }
 
     if (fast && utf8Len > 200 * 1024) {
         Mprintf("剪切板文本太长, 无法快速拷贝: %d\n", utf8Len);
         GlobalUnlock(hGlobal);
         ::CloseClipboard();
-        return;
+        return TRUE;
     }
 
     LPBYTE szBuffer = new BYTE[utf8Len + 1];
@@ -690,6 +712,7 @@ VOID CScreenManager::SendClientClipboard(BOOL fast)
 
     m_ClientObject->Send2Server((char*)szBuffer, utf8Len + 1);
     delete[] szBuffer;
+    return TRUE;
 }
 
 

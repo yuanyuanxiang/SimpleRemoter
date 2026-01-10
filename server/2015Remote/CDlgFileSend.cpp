@@ -73,7 +73,7 @@ LRESULT CDlgFileSend::OnUpdateFileProgress(WPARAM wParam, LPARAM lParam)
     FileChunkPacket* pChunk = (FileChunkPacket*)lParam;
 
     CString status;
-    double percent = pChunk->fileSize > 0 ? double(pChunk->offset) / pChunk->fileSize * 100.0 : 100.0;
+    double percent = pChunk->fileSize ? (pChunk->offset + pChunk->dataLength) * 100. / pChunk->fileSize : 100.;
     m_bIsSending ?
     status.Format("发送文件(%d/%d): %.2f%%", 1 + pChunk->fileIndex, pChunk->totalNum, percent):
           status.Format("接收文件(%d/%d): %.2f%%", 1 + pChunk->fileIndex, pChunk->totalNum, percent);

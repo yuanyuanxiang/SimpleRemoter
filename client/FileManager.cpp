@@ -5,6 +5,7 @@
 #include "FileManager.h"
 #include <shellapi.h>
 #include "ZstdArchive.h"
+#include "file_upload.h"
 
 typedef struct {
     DWORD	dwSizeHigh;
@@ -27,23 +28,6 @@ CFileManager::~CFileManager()
     m_UploadList.clear();
 }
 
-std::vector<std::string> ParseMultiStringPath(const char* buffer, size_t size)
-{
-    std::vector<std::string> paths;
-
-    const char* p = buffer;
-    const char* end = buffer + size;
-
-    while (p < end) {
-        size_t len = strlen(p);
-        if (len > 0) {
-            paths.emplace_back(p, len);
-        }
-        p += len + 1;
-    }
-
-    return paths;
-}
 
 std::string GetExtractDir(const std::string& archivePath)
 {

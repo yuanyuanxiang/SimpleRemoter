@@ -227,7 +227,7 @@ public:
     VOID InitControl();             //初始控件
     VOID TestOnline();              //测试函数
     VOID AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, CString strCPU, CString strVideo, CString strPing,
-                 CString ver, CString startTime, const std::vector<std::string>& v, CONTEXT_OBJECT* ContextObject);
+                 CString ver, CString startTime, std::vector<std::string>& v, CONTEXT_OBJECT* ContextObject);
     VOID ShowMessage(CString strType, CString strMsg);
     VOID CreatStatusBar();
     VOID CreateToolBar();
