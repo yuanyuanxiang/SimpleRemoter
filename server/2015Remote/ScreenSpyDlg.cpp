@@ -232,8 +232,8 @@ BOOL CScreenSpyDlg::OnInitDialog()
     CDialog::OnInitDialog();
     SetIcon(m_hIcon,FALSE);
     DragAcceptFiles(TRUE);
-	ChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
-	ChangeWindowMessageFilter(0x0049, MSGFLT_ADD);
+    ChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
+    ChangeWindowMessageFilter(0x0049, MSGFLT_ADD);
 
     PrepareDrawing(m_BitmapInfor_Full);
 
@@ -258,16 +258,16 @@ BOOL CScreenSpyDlg::OnInitDialog()
         SysMenu->AppendMenu(MF_STRING, IDM_SCREEN_1080P, "限制为1080P(&4)");
         SysMenu->AppendMenu(MF_SEPARATOR);
 
-		CMenu fpsMenu;
-		if (fpsMenu.CreatePopupMenu()) {
-			fpsMenu.AppendMenu(MF_STRING, IDM_FPS_10, "最大帧率FPS:10");
-			fpsMenu.AppendMenu(MF_STRING, IDM_FPS_15, "最大帧率FPS:15");
-			fpsMenu.AppendMenu(MF_STRING, IDM_FPS_20, "最大帧率FPS:20");
-			fpsMenu.AppendMenu(MF_STRING, IDM_FPS_25, "最大帧率FPS:25");
-			fpsMenu.AppendMenu(MF_STRING, IDM_FPS_30, "最大帧率FPS:30");
-			fpsMenu.AppendMenu(MF_STRING, IDM_FPS_UNLIMITED, "最大帧率无限制");
-			SysMenu->AppendMenuA(MF_STRING | MF_POPUP, (UINT_PTR)fpsMenu.Detach(), _T("帧率设置"));
-		}
+        CMenu fpsMenu;
+        if (fpsMenu.CreatePopupMenu()) {
+            fpsMenu.AppendMenu(MF_STRING, IDM_FPS_10, "最大帧率FPS:10");
+            fpsMenu.AppendMenu(MF_STRING, IDM_FPS_15, "最大帧率FPS:15");
+            fpsMenu.AppendMenu(MF_STRING, IDM_FPS_20, "最大帧率FPS:20");
+            fpsMenu.AppendMenu(MF_STRING, IDM_FPS_25, "最大帧率FPS:25");
+            fpsMenu.AppendMenu(MF_STRING, IDM_FPS_30, "最大帧率FPS:30");
+            fpsMenu.AppendMenu(MF_STRING, IDM_FPS_UNLIMITED, "最大帧率无限制");
+            SysMenu->AppendMenuA(MF_STRING | MF_POPUP, (UINT_PTR)fpsMenu.Detach(), _T("帧率设置"));
+        }
 
         BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
         SysMenu->EnableMenuItem(IDM_SWITCHSCREEN, all ? MF_ENABLED : MF_GRAYED);
@@ -322,7 +322,8 @@ VOID CScreenSpyDlg::OnClose()
     DialogBase::OnClose();
 }
 
-afx_msg LRESULT CScreenSpyDlg::OnDisconnect(WPARAM wParam, LPARAM lParam) {
+afx_msg LRESULT CScreenSpyDlg::OnDisconnect(WPARAM wParam, LPARAM lParam)
+{
     m_bConnected = FALSE;
     return S_OK;
 }
@@ -685,18 +686,22 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         break;
     }
 
-	case IDM_SCREEN_1080P: {
-		const int strategy = 0;
-		BYTE cmd[16] = { CMD_SCREEN_SIZE, (BYTE)strategy };
-		m_ContextObject->Send2Client(cmd, sizeof(cmd));
-		break;
-	}
+    case IDM_SCREEN_1080P: {
+        const int strategy = 0;
+        BYTE cmd[16] = { CMD_SCREEN_SIZE, (BYTE)strategy };
+        m_ContextObject->Send2Client(cmd, sizeof(cmd));
+        break;
+    }
 
-    case IDM_FPS_10:    case IDM_FPS_15:    case IDM_FPS_20:
-    case IDM_FPS_25:    case IDM_FPS_30:    case IDM_FPS_UNLIMITED: {
+    case IDM_FPS_10:
+    case IDM_FPS_15:
+    case IDM_FPS_20:
+    case IDM_FPS_25:
+    case IDM_FPS_30:
+    case IDM_FPS_UNLIMITED: {
         int fps = 10 + (nID - IDM_FPS_10) * 5;
-		BYTE	bToken[2] = { CMD_FPS, nID == IDM_FPS_UNLIMITED ? 255 : fps };
-		m_ContextObject->Send2Client(bToken, sizeof(bToken));
+        BYTE	bToken[2] = { CMD_FPS, nID == IDM_FPS_UNLIMITED ? 255 : fps };
+        m_ContextObject->Send2Client(bToken, sizeof(bToken));
         break;
     }
 
@@ -750,9 +755,9 @@ void CScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
         SetTextColor(m_hFullDC, RGB(0xff, 0x00, 0x00));
         TextOut(m_hFullDC, 0, 0, lpTipsString, lstrlen(lpTipsString));
     }
-	if (nIDEvent == 1 && m_bFullScreen && m_pToolbar) {
-		m_pToolbar->CheckMousePosition();
-	}
+    if (nIDEvent == 1 && m_bFullScreen && m_pToolbar) {
+        m_pToolbar->CheckMousePosition();
+    }
     CDialog::OnTimer(nIDEvent);
 }
 
@@ -778,21 +783,21 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
     case WM_KEYUP:
     case WM_SYSKEYDOWN:
     case WM_SYSKEYUP:
-		if (pMsg->message == WM_KEYDOWN && m_bFullScreen) {
-			// Ctrl+Alt+Home 退出全屏（备用）
-			if (pMsg->wParam == VK_HOME &&
-				(GetKeyState(VK_CONTROL) & 0x8000) &&
-				(GetKeyState(VK_MENU) & 0x8000)) {
-				LeaveFullScreen();
-				return TRUE;
-			}
-		}
+        if (pMsg->message == WM_KEYDOWN && m_bFullScreen) {
+            // Ctrl+Alt+Home 退出全屏（备用）
+            if (pMsg->wParam == VK_HOME &&
+                (GetKeyState(VK_CONTROL) & 0x8000) &&
+                (GetKeyState(VK_MENU) & 0x8000)) {
+                LeaveFullScreen();
+                return TRUE;
+            }
+        }
         if (pMsg->wParam != VK_LWIN && pMsg->wParam != VK_RWIN) {
             SendScaledMouseMessage(pMsg, true);
         }
-		if (pMsg->message == WM_SYSKEYDOWN && pMsg->wParam == VK_F4) {
-			return TRUE; // 屏蔽 Alt + F4
-		}
+        if (pMsg->message == WM_SYSKEYDOWN && pMsg->wParam == VK_F4) {
+            return TRUE; // 屏蔽 Alt + F4
+        }
         if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE)
             return TRUE;// 屏蔽Enter和ESC关闭对话
         break;
@@ -1032,13 +1037,13 @@ void CScreenSpyDlg::EnterFullScreen()
         SetWindowPos(&CWnd::wndTop, rcMonitor.left, rcMonitor.top, rcMonitor.right - rcMonitor.left,
                      rcMonitor.bottom - rcMonitor.top, SWP_NOZORDER | SWP_FRAMECHANGED);
 
-		if (!m_pToolbar) {
-			m_pToolbar = new CToolbarDlg(this);
-			m_pToolbar->Create(IDD_TOOLBAR_DLG, this);
-			int cx = GetSystemMetrics(SM_CXSCREEN);
-			int cy = GetSystemMetrics(SM_CYSCREEN);
-			m_pToolbar->SetWindowPos(&wndTopMost, 0, -40, cx, 40, SWP_HIDEWINDOW);
-		}
+        if (!m_pToolbar) {
+            m_pToolbar = new CToolbarDlg(this);
+            m_pToolbar->Create(IDD_TOOLBAR_DLG, this);
+            int cx = GetSystemMetrics(SM_CXSCREEN);
+            int cy = GetSystemMetrics(SM_CYSCREEN);
+            m_pToolbar->SetWindowPos(&wndTopMost, 0, -40, cx, 40, SWP_HIDEWINDOW);
+        }
 
         // 7. 标记全屏模式
         m_bFullScreen = true;
@@ -1052,11 +1057,11 @@ bool CScreenSpyDlg::LeaveFullScreen()
 {
     if (m_bFullScreen) {
         KillTimer(1);
-		if (m_pToolbar) {
-			m_pToolbar->DestroyWindow();
-			delete m_pToolbar;
-			m_pToolbar = nullptr;
-		}
+        if (m_pToolbar) {
+            m_pToolbar->DestroyWindow();
+            delete m_pToolbar;
+            m_pToolbar = nullptr;
+        }
 
         // 1. 恢复窗口样式
         LONG lStyle = GetWindowLong(m_hWnd, GWL_STYLE);
@@ -1150,24 +1155,24 @@ void CScreenSpyDlg::OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized)
     }
 }
 
-void CScreenSpyDlg::UpdateCtrlStatus(BOOL ctrl) {
-	m_bIsCtrl = ctrl;
-	SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
+void CScreenSpyDlg::UpdateCtrlStatus(BOOL ctrl)
+{
+    m_bIsCtrl = ctrl;
+    SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
 }
 
 // 将多个路径组合成单\0分隔的char数组
 // 格式: "path1\0path2\0path3\0"
 std::vector<char> BuildMultiStringPath(const std::vector<std::string>& paths)
 {
-	std::vector<char> result;
+    std::vector<char> result;
 
-	for (const auto& path : paths)
-	{
-		result.insert(result.end(), path.begin(), path.end());
-		result.push_back('\0');
-	}
+    for (const auto& path : paths) {
+        result.insert(result.end(), path.begin(), path.end());
+        result.push_back('\0');
+    }
 
-	return result;
+    return result;
 }
 
 void CScreenSpyDlg::OnDropFiles(HDROP hDropInfo)
@@ -1175,8 +1180,7 @@ void CScreenSpyDlg::OnDropFiles(HDROP hDropInfo)
     if (m_bIsCtrl && m_bConnected) {
         UINT nFiles = DragQueryFile(hDropInfo, 0xFFFFFFFF, NULL, 0);
         std::vector<std::string> list;
-        for (UINT i = 0; i < nFiles; i++)
-        {
+        for (UINT i = 0; i < nFiles; i++) {
             TCHAR szPath[MAX_PATH];
             DragQueryFile(hDropInfo, i, szPath, MAX_PATH);
             list.push_back(szPath);
@@ -1198,7 +1202,7 @@ void CScreenSpyDlg::OnDropFiles(HDROP hDropInfo)
         SAFE_DELETE_ARRAY(szBuffer);
     }
 
-	DragFinish(hDropInfo);
+    DragFinish(hDropInfo);
 
     CDialogBase::OnDropFiles(hDropInfo);
 }

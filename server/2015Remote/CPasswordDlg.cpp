@@ -43,8 +43,9 @@ std::string GetHMAC(int offset)
     return hmac;
 }
 
-void SetHMAC(const std::string str, int offset) {
-	Validation* v = (Validation*)(g_MasterID + offset);
+void SetHMAC(const std::string str, int offset)
+{
+    Validation* v = (Validation*)(g_MasterID + offset);
     std::string hmac(v->Checksum, 16);
     if (hmac.c_str()[0] == 0) {
         memcpy(v->Checksum, str.c_str(), min(16, str.length()));
@@ -151,12 +152,12 @@ void CPasswordDlg::OnCbnSelchangeComboBind()
     std::string hardwareID = CMy2015RemoteDlg::GetHardwareID(m_nBindType);
     m_sDeviceID = getFixedLengthID(hashSHA256(hardwareID)).c_str();
     m_EditDeviceID.SetWindowTextA(m_sDeviceID);
-	auto master = THIS_CFG.GetStr("settings", "master", "");
+    auto master = THIS_CFG.GetStr("settings", "master", "");
     if (m_nBindType == 1) {
         MessageBoxA("请确认是否正确设置公网地址（IP或域名）？\r\n"
                     "绑定IP后主控只能使用指定IP，绑定域名后\r\n"
-                    "主控只能使用指定域名。当前公网地址: \r\n" 
-            + CString(master.empty() ? "未设置" : master.c_str()), "提示", MB_OK | MB_ICONWARNING);
+                    "主控只能使用指定域名。当前公网地址: \r\n"
+                    + CString(master.empty() ? "未设置" : master.c_str()), "提示", MB_OK | MB_ICONWARNING);
     }
 }
 

@@ -64,7 +64,7 @@ inline BOOL SetSelfStart(const char* sPath, const char* sNmae, StartupLogFunc Lo
     if (n != 0) {
         _Mprintf("提升权限失败，错误码：%d\n", n);
         return FALSE;
-	}
+    }
 
     // 写入的注册表路径
 #define REGEDIT_PATH "Software\\Microsoft\\Windows\\CurrentVersion\\Run"
@@ -85,7 +85,7 @@ inline BOOL SetSelfStart(const char* sPath, const char* sNmae, StartupLogFunc Lo
         _Mprintf("写入注册表失败，错误码：%d\n", lRet);
     } else {
         _Mprintf("写入注册表成功：%s -> %s\n", sNmae, sPath);
-	}
+    }
 
     // 关闭注册表
     RegCloseKey(hKey);

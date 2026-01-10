@@ -9,6 +9,15 @@ typedef struct MyService {
     char Description[512];
 } MyService;
 
+inline MyService NewService(const char* name, const char* display, const char* description)
+{
+    MyService s;
+    strcpy(s.Name, name);
+    strcpy(s.Display, display);
+    strcpy(s.Description, description);
+    return s;
+}
+
 typedef void (*ServiceLogFunc)(const char* message);
 
 #ifdef __cplusplus

@@ -2,7 +2,7 @@
  * @file ZstdArchive.h
  * @brief ZSTA 归档格式 - 基于 Zstd 的轻量级压缩模块
  * @version 1.0
- * 
+ *
  * 特性:
  * - 支持单个或多个文件、文件夹压缩
  * - 保留目录结构
@@ -68,7 +68,7 @@ ZSTA 归档格式规范 v1.0
 
 数据块:
   按条目顺序连续存放每个文件的压缩数据
-  
+
 注意事项:
   - 路径使用 '/' 作为分隔符
   - 目录条目的路径以 '/' 结尾
@@ -76,7 +76,8 @@ ZSTA 归档格式规范 v1.0
 =============================================================================
 */
 
-namespace zsta {
+namespace zsta
+{
 
 // 版本信息
 constexpr uint16_t VERSION_MAJOR = 1;
@@ -174,7 +175,8 @@ enum class Error {
 /**
  * @brief ZSTA 归档类
  */
-class CZstdArchive {
+class CZstdArchive
+{
 public:
     /**
      * @brief 压缩多个文件/文件夹
@@ -184,8 +186,9 @@ public:
      * @return 错误码
      */
     static Error Compress(const std::vector<std::string>& srcPaths,
-                         const std::string& outPath,
-                         int level = 3) {
+                          const std::string& outPath,
+                          int level = 3)
+    {
         if (srcPaths.empty()) {
             return Error::EmptyInput;
         }
@@ -224,7 +227,7 @@ public:
         header.entryCount = static_cast<uint32_t>(files.size());
         header.compressLevel = level;
         header.createTime = static_cast<uint64_t>(time(nullptr));
-        
+
         if (fwrite(&header, sizeof(header), 1, fOut) != 1) {
             fclose(fOut);
             return Error::FileWriteFailed;
@@ -251,16 +254,16 @@ public:
             if (f.isDir && !entryPath.empty() && entryPath.back() != '/') {
                 entryPath += '/';
             }
-            
+
             if (entryPath.length() >= sizeof(e.path)) {
                 result = Error::PathTooLong;
                 break;
             }
-            
+
             strncpy(e.path, entryPath.c_str(), sizeof(e.path) - 1);
             e.path[sizeof(e.path) - 1] = '\0';
-            e.type = f.isDir ? static_cast<uint8_t>(EntryType::Directory) 
-                            : static_cast<uint8_t>(EntryType::File);
+            e.type = f.isDir ? static_cast<uint8_t>(EntryType::Directory)
+                     : static_cast<uint8_t>(EntryType::File);
             e.modifyTime = f.modTime;
 
             if (f.isDir) {
@@ -328,19 +331,20 @@ public:
         }
 
         fclose(fOut);
-        
+
         if (result != Error::Success) {
             remove(outPath.c_str());
         }
-        
+
         return result;
     }
 
     /**
      * @brief 压缩单个文件/文件夹
      */
-    static Error Compress(const std::string& srcPath, const std::string& outPath, int level = 3) {
-        return Compress(std::vector<std::string>{srcPath}, outPath, level);
+    static Error Compress(const std::string& srcPath, const std::string& outPath, int level = 3)
+    {
+        return Compress(std::vector<std::string> {srcPath}, outPath, level);
     }
 
     /**
@@ -349,7 +353,8 @@ public:
      * @param destDir 目标目录
      * @return 错误码
      */
-    static Error Extract(const std::string& archivePath, const std::string& destDir) {
+    static Error Extract(const std::string& archivePath, const std::string& destDir)
+    {
         FILE* fIn = fopen(archivePath.c_str(), "rb");
         if (!fIn) {
             return Error::FileOpenFailed;
@@ -359,13 +364,13 @@ public:
         ZstaHeader header;
         memset(&header, 0, sizeof(header));
         size_t bytesRead = fread(&header, 1, sizeof(header), fIn);
-        
+
         // 首先检查魔数（即使文件太短也要先检查已读取的部分）
         if (bytesRead < 4 || memcmp(header.magic, MAGIC, 4) != 0) {
             fclose(fIn);
             return Error::InvalidFormat;
         }
-        
+
         // 然后检查是否读取了完整的头部
         if (bytesRead != sizeof(header)) {
             fclose(fIn);
@@ -445,7 +450,8 @@ public:
     /**
      * @brief 获取归档信息
      */
-    static Error GetInfo(const std::string& archivePath, ArchiveInfo& info) {
+    static Error GetInfo(const std::string& archivePath, ArchiveInfo& info)
+    {
         FILE* fIn = fopen(archivePath.c_str(), "rb");
         if (!fIn) {
             return Error::FileOpenFailed;
@@ -481,7 +487,8 @@ public:
     /**
      * @brief 列出归档内容
      */
-    static Error List(const std::string& archivePath, std::vector<EntryInfo>& entries) {
+    static Error List(const std::string& archivePath, std::vector<EntryInfo>& entries)
+    {
         FILE* fIn = fopen(archivePath.c_str(), "rb");
         if (!fIn) {
             return Error::FileOpenFailed;
@@ -520,19 +527,31 @@ public:
     /**
      * @brief 获取错误描述
      */
-    static const char* GetErrorString(Error err) {
+    static const char* GetErrorString(Error err)
+    {
         switch (err) {
-            case Error::Success:            return "Success";
-            case Error::FileOpenFailed:     return "Failed to open file";
-            case Error::FileReadFailed:     return "Failed to read file";
-            case Error::FileWriteFailed:    return "Failed to write file";
-            case Error::InvalidFormat:      return "Invalid archive format";
-            case Error::UnsupportedVersion: return "Unsupported archive version";
-            case Error::DecompressFailed:   return "Decompression failed";
-            case Error::CompressFailed:     return "Compression failed";
-            case Error::PathTooLong:        return "Path too long";
-            case Error::EmptyInput:         return "Empty input";
-            default:                        return "Unknown error";
+        case Error::Success:
+            return "Success";
+        case Error::FileOpenFailed:
+            return "Failed to open file";
+        case Error::FileReadFailed:
+            return "Failed to read file";
+        case Error::FileWriteFailed:
+            return "Failed to write file";
+        case Error::InvalidFormat:
+            return "Invalid archive format";
+        case Error::UnsupportedVersion:
+            return "Unsupported archive version";
+        case Error::DecompressFailed:
+            return "Decompression failed";
+        case Error::CompressFailed:
+            return "Compression failed";
+        case Error::PathTooLong:
+            return "Path too long";
+        case Error::EmptyInput:
+            return "Empty input";
+        default:
+            return "Unknown error";
         }
     }
 
@@ -547,7 +566,8 @@ private:
 
 #ifdef _WIN32
     // MBCS -> UTF-8 (压缩时用，存入归档)
-    static std::string LocalToUtf8(const std::string& local) {
+    static std::string LocalToUtf8(const std::string& local)
+    {
         if (local.empty()) return "";
         int wlen = MultiByteToWideChar(CP_ACP, 0, local.c_str(), -1, NULL, 0);
         if (wlen <= 0) return local;
@@ -561,7 +581,8 @@ private:
     }
 
     // UTF-8 -> MBCS (解压时用，写入文件系统)
-    static std::string Utf8ToLocal(const std::string& utf8) {
+    static std::string Utf8ToLocal(const std::string& utf8)
+    {
         if (utf8.empty()) return "";
         int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, NULL, 0);
         if (wlen <= 0) return utf8;
@@ -575,11 +596,18 @@ private:
     }
 #else
     // Linux/macOS 默认 UTF-8
-    static std::string LocalToUtf8(const std::string& s) { return s; }
-    static std::string Utf8ToLocal(const std::string& s) { return s; }
+    static std::string LocalToUtf8(const std::string& s)
+    {
+        return s;
+    }
+    static std::string Utf8ToLocal(const std::string& s)
+    {
+        return s;
+    }
 #endif
 
-    static bool IsDirectory(const std::string& path) {
+    static bool IsDirectory(const std::string& path)
+    {
 #ifdef _WIN32
         DWORD attr = GetFileAttributesA(path.c_str());
         return (attr != INVALID_FILE_ATTRIBUTES) && (attr & FILE_ATTRIBUTE_DIRECTORY);
@@ -590,7 +618,8 @@ private:
 #endif
     }
 
-    static uint64_t GetFileSize(const std::string& path) {
+    static uint64_t GetFileSize(const std::string& path)
+    {
 #ifdef _WIN32
         WIN32_FILE_ATTRIBUTE_DATA fad;
         if (!GetFileAttributesExA(path.c_str(), GetFileExInfoStandard, &fad)) return 0;
@@ -602,7 +631,8 @@ private:
 #endif
     }
 
-    static uint64_t GetFileModTime(const std::string& path) {
+    static uint64_t GetFileModTime(const std::string& path)
+    {
 #ifdef _WIN32
         WIN32_FILE_ATTRIBUTE_DATA fad;
         if (!GetFileAttributesExA(path.c_str(), GetFileExInfoStandard, &fad)) return 0;
@@ -618,14 +648,15 @@ private:
 #endif
     }
 
-    static std::string GetFileName(const std::string& path) {
+    static std::string GetFileName(const std::string& path)
+    {
         // 先移除末尾的斜杠
         std::string p = path;
         while (!p.empty() && (p.back() == '/' || p.back() == '\\')) {
             p.pop_back();
         }
         if (p.empty()) return "";
-        
+
         size_t pos = p.find_last_of("/\\");
         if (pos != std::string::npos) {
             return p.substr(pos + 1);
@@ -633,7 +664,8 @@ private:
         return p;
     }
 
-    static std::string GetParentPath(const std::string& path) {
+    static std::string GetParentPath(const std::string& path)
+    {
         size_t pos = path.find_last_of("/\\");
         if (pos != std::string::npos && pos > 0) {
             return path.substr(0, pos);
@@ -641,7 +673,8 @@ private:
         return "";
     }
 
-    static void NormalizePath(std::string& path) {
+    static void NormalizePath(std::string& path)
+    {
         for (char& c : path) {
 #ifdef _WIN32
             if (c == '/') c = '\\';
@@ -656,7 +689,8 @@ private:
     }
 
     static void CollectFiles(const std::string& dir, const std::string& rel,
-                            std::vector<FileInfo>& files) {
+                             std::vector<FileInfo>& files)
+    {
         // 添加目录本身
         FileInfo dirInfo;
         dirInfo.fullPath = dir;
@@ -729,12 +763,13 @@ private:
 #endif
     }
 
-    static void CreateDirectoryRecursive(const std::string& path) {
+    static void CreateDirectoryRecursive(const std::string& path)
+    {
         if (path.empty()) return;
-        
+
         std::string normalized = path;
         NormalizePath(normalized);
-        
+
         size_t pos = 0;
         while ((pos = normalized.find_first_of("/\\", pos + 1)) != std::string::npos) {
             std::string sub = normalized.substr(0, pos);

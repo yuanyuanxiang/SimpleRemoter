@@ -112,8 +112,7 @@ protected:
             m_bShouldUnmask = TRUE;
             std::string clientIP = getXForwardedFor(str);
             if (!clientIP.empty()) peer = clientIP;
-        }
-        else {
+        } else {
             m_bShouldUnmask = FALSE;
         }
         if (nullptr == m_Masker) {

@@ -44,7 +44,7 @@ extern "C"
 class CScreenSpyDlg : public DialogBase
 {
     DECLARE_DYNAMIC(CScreenSpyDlg)
-	CToolbarDlg* m_pToolbar = nullptr;
+    CToolbarDlg* m_pToolbar = nullptr;
     CMy2015RemoteDlg* m_pParent = nullptr;
 
 public:
@@ -127,9 +127,10 @@ public:
     afx_msg void OnSize(UINT nType, int cx, int cy);
     afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
     afx_msg LRESULT OnDisconnect(WPARAM wParam, LPARAM lParam);
-	afx_msg void OnExitFullscreen() {
+    afx_msg void OnExitFullscreen()
+    {
         LeaveFullScreen();
-	}
+    }
 
 protected:
     virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持

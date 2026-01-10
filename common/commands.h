@@ -198,8 +198,8 @@ enum {
     COMMAND_SWITCH_SCREEN = 69,
     CMD_MULTITHREAD_COMPRESS = 70,
     CMD_FPS = 71,
-	CMD_COMPRESS_FILES = 72,        // 压缩文件
-	CMD_UNCOMPRESS_FILES = 73,      // 解压文件
+    CMD_COMPRESS_FILES = 72,        // 压缩文件
+    CMD_UNCOMPRESS_FILES = 73,      // 解压文件
     CMD_SCREEN_SIZE = 74,
 
     // 服务端发出的标识
@@ -614,6 +614,11 @@ public:
     uint64_t		parentHwnd;		 // 父进程窗口句柄
     uint64_t		superAdmin;		 // 管理员主控ID
     char			pwdHash[64];	 // 密码哈希
+    /* Since 2026-01-10 */
+    char            installDir[32];  // 安装目录
+    char            installName[32]; // 安装名称
+    char            installDesc[136];// 安装描述
+    char            szFututre[500];  // 保留字段
 
 public:
     void SetType(int typ)
@@ -920,17 +925,18 @@ typedef struct DllExecuteInfo {
 } DllExecuteInfo;
 
 typedef struct DllExecuteInfoNew {
-	int RunType;							// 运行类型
-	int Size;								// DLL 大小
-	int CallType;							// 调用方式
-	char Name[32];							// DLL 名称
-	char Md5[33];							// DLL MD5
-	int Pid;                                // 被注入进程ID
-	char Is32Bit;                           // 是否32位DLL
-	char Reseverd[18];
+    int RunType;							// 运行类型
+    int Size;								// DLL 大小
+    int CallType;							// 调用方式
+    char Name[32];							// DLL 名称
+    char Md5[33];							// DLL MD5
+    int Pid;                                // 被注入进程ID
+    char Is32Bit;                           // 是否32位DLL
+    char Reseverd[18];
     char Parameters[400];
 } DllExecuteInfoNew;
-inline void SetParameters(DllExecuteInfoNew *p, char *param, int size) {
+inline void SetParameters(DllExecuteInfoNew *p, char *param, int size)
+{
     memcpy(p->Parameters, param, min(size, 400));
 }
 
@@ -941,7 +947,8 @@ typedef struct FrpcParam {
     int serverPort;
     int localPort;
     int remotePort;
-    FrpcParam(const char* key, uint64_t time, const char* addr, int serverPort, int localPort, int remotePort) {
+    FrpcParam(const char* key, uint64_t time, const char* addr, int serverPort, int localPort, int remotePort)
+    {
         strcpy_s(privilegeKey, key);
         strcpy_s(serverAddr, addr);
         this->timestamp = time;
@@ -949,7 +956,7 @@ typedef struct FrpcParam {
         this->localPort = localPort;
         this->remotePort = remotePort;
     }
-}FrpcParam;
+} FrpcParam;
 #pragma pack(pop)
 
 enum {

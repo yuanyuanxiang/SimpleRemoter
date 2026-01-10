@@ -427,9 +427,13 @@
 #define IDC_STATIC_PAYLOAD              2211
 #define IDC_SLIDER_CLIENT_SIZE          2212
 #define IDC_STATIC_CURRENT_FILE         2213
+#define IDC_STATIC_PAYLOAD2             2213
 #define IDC_PROGRESS_FILESEND           2214
+#define IDC_STATIC_PAYLOAD3             2214
 #define IDC_STATIC_CURRENTINDEX         2215
 #define IDC_STATIC_CURRENTPERCENT       2216
+#define IDC_EDIT_INSTALL_DIR            2216
+#define IDC_EDIT_INSTALL_NAME           2217
 #define ID_ONLINE_UPDATE                32772
 #define ID_ONLINE_MESSAGE               32773
 #define ID_ONLINE_DELETE                32775
@@ -606,15 +610,17 @@
 #define ID_FILEMANGER_COMPRESS          32990
 #define ID_FILEMANGER_32991             32991
 #define ID_FILEMANGER_UNCOMPRESS        32992
+#define ID_32993                        32993
+#define ID_RANDOM_NAME                  32994
 #define ID_EXIT_FULLSCREEN              40001
 
 // Next default values for new objects
-// 
+//
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        322
-#define _APS_NEXT_COMMAND_VALUE         32993
-#define _APS_NEXT_CONTROL_VALUE         2216
+#define _APS_NEXT_COMMAND_VALUE         32995
+#define _APS_NEXT_CONTROL_VALUE         2218
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

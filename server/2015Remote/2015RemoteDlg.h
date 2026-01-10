@@ -29,18 +29,20 @@ typedef struct DllInfo {
 typedef struct FileTransformCmd {
     CLock Lock;
     std::map<std::string, uint64_t> CmdTime;
-	void PutCmd(const std::string& str) {
-		Lock.Lock();
-		CmdTime[str] = time(0);
-		Lock.Unlock();
-	}
-	bool PopCmd(const std::string& str, int timeoutSec = 10) {
-		Lock.Lock();
-		bool valid = CmdTime.find(str) != CmdTime.end() && time(0) - CmdTime[str] < timeoutSec;
-		CmdTime.erase(str);
-		Lock.Unlock();
-		return valid;
-	}
+    void PutCmd(const std::string& str)
+    {
+        Lock.Lock();
+        CmdTime[str] = time(0);
+        Lock.Unlock();
+    }
+    bool PopCmd(const std::string& str, int timeoutSec = 10)
+    {
+        Lock.Lock();
+        bool valid = CmdTime.find(str) != CmdTime.end() && time(0) - CmdTime[str] < timeoutSec;
+        CmdTime.erase(str);
+        Lock.Unlock();
+        return valid;
+    }
 } FileTransformCmd;
 
 #define ID_DYNAMIC_MENU_BASE 36500

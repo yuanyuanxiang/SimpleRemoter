@@ -61,7 +61,7 @@ public:
     bool IsRunAsService() const
     {
         if (m_conn && (m_conn->iStartup == Startup_GhostMsc || m_conn->iStartup == Startup_TestRunMsc))
-			return true;
+            return true;
         static BOOL is_run_as_system = IsRunningAsSystem();
         return is_run_as_system;
     }

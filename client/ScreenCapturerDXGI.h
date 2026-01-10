@@ -109,8 +109,8 @@ public:
 
             // 9. 初始化 BITMAPINFO
             m_BitmapInfor_Full = ConstructBitmapInfo(32, m_ulFullWidth, m_ulFullHeight);
-			iniFile cfg(CLIENT_PATH);
-			int strategy = cfg.GetInt("settings", "ScreenStrategy", 0);
+            iniFile cfg(CLIENT_PATH);
+            int strategy = cfg.GetInt("settings", "ScreenStrategy", 0);
             switch (strategy) {
             case 1:
                 break;
@@ -128,8 +128,8 @@ public:
             m_FirstBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage + 1];
             m_NextBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage + 1];
             m_RectBuffer = new BYTE[m_BitmapInfor_Full->bmiHeader.biSizeImage * 2 + 12];
-			m_BmpZoomBuffer = new BYTE[m_BitmapInfor_Send->bmiHeader.biSizeImage * 2 + 12];
-			m_BmpZoomFirst = nullptr;
+            m_BmpZoomBuffer = new BYTE[m_BitmapInfor_Send->bmiHeader.biSizeImage * 2 + 12];
+            m_BmpZoomFirst = nullptr;
 
             break;
         } while (true);
@@ -154,14 +154,15 @@ public:
         if (d3dDevice) d3dDevice->Release();
     }
 
-	virtual LPBYTE scaleBitmap(LPBYTE target, LPBYTE bitmap) override {
+    virtual LPBYTE scaleBitmap(LPBYTE target, LPBYTE bitmap) override
+    {
         if (m_ulFullWidth == m_BitmapInfor_Send->bmiHeader.biWidth && m_ulFullHeight == m_BitmapInfor_Send->bmiHeader.biHeight) {
             memcpy(target, bitmap, m_BitmapInfor_Send->bmiHeader.biSizeImage);
             return bitmap;
         }
-		return ScaleBitmap(target, (uint8_t*)bitmap, m_ulFullWidth, m_ulFullHeight, m_BitmapInfor_Send->bmiHeader.biWidth,
-			m_BitmapInfor_Send->bmiHeader.biHeight);
-	}
+        return ScaleBitmap(target, (uint8_t*)bitmap, m_ulFullWidth, m_ulFullHeight, m_BitmapInfor_Send->bmiHeader.biWidth,
+                           m_BitmapInfor_Send->bmiHeader.biHeight);
+    }
 
     LPBYTE GetFirstScreenData(ULONG* ulFirstScreenLength) override
     {
@@ -181,8 +182,8 @@ public:
     {
         ULONG ulNextScreenLength = 0;
         int ret = CaptureFrame(m_NextBuffer, &ulNextScreenLength, 0);
-		scaleBitmap(m_BmpZoomBuffer, m_NextBuffer);
-		memcpy(m_NextBuffer, m_BmpZoomBuffer, m_BitmapInfor_Send->bmiHeader.biSizeImage);
+        scaleBitmap(m_BmpZoomBuffer, m_NextBuffer);
+        memcpy(m_NextBuffer, m_BmpZoomBuffer, m_BitmapInfor_Send->bmiHeader.biSizeImage);
         if (ret)
             return nullptr;
 

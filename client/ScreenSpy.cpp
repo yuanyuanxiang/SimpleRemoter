@@ -18,9 +18,9 @@ CScreenSpy::CScreenSpy(ULONG ulbiBitCount, BYTE algo, BOOL vDesk, int gop, BOOL 
     m_GOP = gop;
 
     m_BitmapInfor_Full = ConstructBitmapInfo(ulbiBitCount, m_ulFullWidth, m_ulFullHeight);
-    
-	iniFile cfg(CLIENT_PATH);
-	int strategy = cfg.GetInt("settings", "ScreenStrategy", 0);
+
+    iniFile cfg(CLIENT_PATH);
+    int strategy = cfg.GetInt("settings", "ScreenStrategy", 0);
     m_BitmapInfor_Send = new BITMAPINFO(*m_BitmapInfor_Full);
     switch (strategy) {
     case 1: // 1 - Original size

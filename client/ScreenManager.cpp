@@ -102,17 +102,17 @@ bool CScreenManager::SwitchScreen()
 
 bool CScreenManager::RestartScreen()
 {
-	if (m_ScreenSpyObject == NULL)
-		return false;
-	m_bIsWorking = FALSE;
-	DWORD s = WaitForSingleObject(m_hWorkThread, 3000);
-	if (s == WAIT_TIMEOUT) {
-		TerminateThread(m_hWorkThread, -1);
-	}
-	m_bIsWorking = TRUE;
-	m_SendFirst = FALSE;
-	m_hWorkThread = __CreateThread(NULL, 0, WorkThreadProc, this, 0, NULL);
-	return true;
+    if (m_ScreenSpyObject == NULL)
+        return false;
+    m_bIsWorking = FALSE;
+    DWORD s = WaitForSingleObject(m_hWorkThread, 3000);
+    if (s == WAIT_TIMEOUT) {
+        TerminateThread(m_hWorkThread, -1);
+    }
+    m_bIsWorking = TRUE;
+    m_SendFirst = FALSE;
+    m_hWorkThread = __CreateThread(NULL, 0, WorkThreadProc, this, 0, NULL);
+    return true;
 }
 
 std::wstring ConvertToWString(const std::string& multiByteStr)
@@ -202,8 +202,7 @@ BOOL IsProcessRunningInDesktop(HDESK hDesk, const char* targetExeName)
 
         // 获取进程名
         HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, dwProcessId);
-        if (hProcess)
-        {
+        if (hProcess) {
             char exePath[MAX_PATH];
             DWORD size = MAX_PATH;
             if (QueryFullProcessImageName(hProcess, 0, exePath, &size)) {
@@ -284,7 +283,8 @@ void CScreenManager::InitScreenSpy()
     }
 }
 
-BOOL IsRunningAsSystem() {
+BOOL IsRunningAsSystem()
+{
     HANDLE hToken;
     PTOKEN_USER pTokenUser = NULL;
     DWORD dwSize = 0;
@@ -298,18 +298,18 @@ BOOL IsRunningAsSystem() {
     pTokenUser = (PTOKEN_USER)malloc(dwSize);
 
     if (pTokenUser && GetTokenInformation(hToken, TokenUser, pTokenUser,
-        dwSize, &dwSize)) {
+                                          dwSize, &dwSize)) {
         // 使用 WellKnownSid 创建 SYSTEM SID
         BYTE systemSid[SECURITY_MAX_SID_SIZE];
         DWORD sidSize = sizeof(systemSid);
 
         if (CreateWellKnownSid(WinLocalSystemSid, NULL, systemSid, &sidSize)) {
             isSystem = EqualSid(pTokenUser->User.Sid, systemSid);
-            if (isSystem){
+            if (isSystem) {
                 Mprintf("当前进程以 SYSTEM 身份运行。\n");
             } else {
                 Mprintf("当前进程未以 SYSTEM 身份运行。\n");
-			}
+            }
         }
     }
 
@@ -525,8 +525,7 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         cfg.SetInt("settings", "ScreenStrategy", strategy);
         cfg.SetInt("settings", "ScreenWidth", width);
         cfg.SetInt("settings", "ScreenHeight", height);
-        switch (strategy)
-        {
+        switch (strategy) {
         case 0:
             if (m_ScreenSpyObject && m_ScreenSpyObject->IsLargeScreen(1920, 1080)) RestartScreen();
             break;
@@ -588,8 +587,8 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
             memcpy(h, szBuffer + 1, ulLength - 1);
             m_hash = std::string(h, h + 64);
             m_hmac = std::string(h + 64, h + 80);
-			std::string files = h[80] ? std::string(h + 80, h + ulLength - 1) : "";
-			SAFE_DELETE_ARRAY(h);
+            std::string files = h[80] ? std::string(h + 80, h + ulLength - 1) : "";
+            SAFE_DELETE_ARRAY(h);
             if (OpenClipboard(nullptr)) {
                 EmptyClipboard();
                 CloseClipboard();

@@ -28,18 +28,17 @@ unsigned int __stdcall ThreadLoader(LPVOID param)
             SelectDesktop(NULL);
 
         nRet = arg.start_address(arg.arglist);
-    }
-    catch (...) {
+    } catch (...) {
     };
     return nRet;
 }
 
 HANDLE MyCreateThread(LPSECURITY_ATTRIBUTES lpThreadAttributes, // SD
-    SIZE_T dwStackSize,                       // initial stack size
-    LPTHREAD_START_ROUTINE lpStartAddress,    // thread function
-    LPVOID lpParameter,                       // thread argument
-    DWORD dwCreationFlags,                    // creation option
-    LPDWORD lpThreadId, bool bInteractive)
+                      SIZE_T dwStackSize,                       // initial stack size
+                      LPTHREAD_START_ROUTINE lpStartAddress,    // thread function
+                      LPVOID lpParameter,                       // thread argument
+                      DWORD dwCreationFlags,                    // creation option
+                      LPDWORD lpThreadId, bool bInteractive)
 {
     HANDLE	hThread = INVALID_HANDLE_VALUE;
     THREAD_ARGLIST	arg;
@@ -133,8 +132,7 @@ HDESK OpenActiveDesktop(ACCESS_MASK dwDesiredAccess)
                     Mprintf("OpenDesktop Default failed: %d\n", GetLastError());
                 }
             }
-        }
-        else {
+        } else {
             Mprintf("OpenWindowStation failed: %d\n", GetLastError());
         }
     }
@@ -149,8 +147,7 @@ HDESK IsDesktopChanged(HDESK currentDesk, DWORD accessRights)
 
     if (!currentDesk) {
         return hInputDesk;
-    }
-    else {
+    } else {
         // 通过桌面名称判断是否真正变化
         char oldName[256] = { 0 };
         char newName[256] = { 0 };
@@ -195,18 +192,17 @@ HDESK SelectDesktop(TCHAR* name)
     if (name != NULL) {
         // Attempt to open the named desktop
         desktop = OpenDesktop(name, 0, FALSE,
-            DESKTOP_CREATEMENU | DESKTOP_CREATEWINDOW |
-            DESKTOP_ENUMERATE | DESKTOP_HOOKCONTROL |
-            DESKTOP_WRITEOBJECTS | DESKTOP_READOBJECTS |
-            DESKTOP_SWITCHDESKTOP | GENERIC_WRITE);
-    }
-    else {
+                              DESKTOP_CREATEMENU | DESKTOP_CREATEWINDOW |
+                              DESKTOP_ENUMERATE | DESKTOP_HOOKCONTROL |
+                              DESKTOP_WRITEOBJECTS | DESKTOP_READOBJECTS |
+                              DESKTOP_SWITCHDESKTOP | GENERIC_WRITE);
+    } else {
         // No, so open the input desktop
         desktop = OpenInputDesktop(0, FALSE,
-            DESKTOP_CREATEMENU | DESKTOP_CREATEWINDOW |
-            DESKTOP_ENUMERATE | DESKTOP_HOOKCONTROL |
-            DESKTOP_WRITEOBJECTS | DESKTOP_READOBJECTS |
-            DESKTOP_SWITCHDESKTOP | GENERIC_WRITE);
+                                   DESKTOP_CREATEMENU | DESKTOP_CREATEWINDOW |
+                                   DESKTOP_ENUMERATE | DESKTOP_HOOKCONTROL |
+                                   DESKTOP_WRITEOBJECTS | DESKTOP_READOBJECTS |
+                                   DESKTOP_SWITCHDESKTOP | GENERIC_WRITE);
     }
 
     // Did we succeed?
@@ -252,8 +248,7 @@ BOOL CManager::Send(LPBYTE lpData, UINT nSize)
     int	nRet = 0;
     try {
         nRet = m_ClientObject->Send2Server((char*)lpData, nSize);
-    }
-    catch (...) {
+    } catch (...) {
         Mprintf("[ERROR] CManager::Send catch an error \n");
     };
     return nRet;

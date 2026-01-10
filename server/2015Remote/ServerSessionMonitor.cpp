@@ -50,7 +50,7 @@ static BOOL AgentArray_Add(ServerAgentProcessArray* arr, const ServerAgentProces
     if (arr->count >= arr->capacity) {
         size_t newCapacity = arr->capacity == 0 ? INITIAL_CAPACITY : arr->capacity * 2;
         ServerAgentProcessInfo* newItems = (ServerAgentProcessInfo*)realloc(
-            arr->items, newCapacity * sizeof(ServerAgentProcessInfo));
+                                               arr->items, newCapacity * sizeof(ServerAgentProcessInfo));
         if (!newItems) {
             return FALSE;
         }
@@ -175,7 +175,7 @@ static void MonitorLoop(ServerSessionMonitor* self)
         DWORD dwCount = 0;
 
         if (WTSEnumerateSessions(WTS_CURRENT_SERVER_HANDLE, 0, 1,
-            &pSessionInfo, &dwCount)) {
+                                 &pSessionInfo, &dwCount)) {
 
             BOOL foundActiveSession = FALSE;
 
@@ -187,8 +187,8 @@ static void MonitorLoop(ServerSessionMonitor* self)
                     // 记录会话（每5次循环记录一次，避免日志过多）
                     if (loopCount % 5 == 1) {
                         sprintf_s(buf, sizeof(buf), "Active session found: ID=%d, Name=%s",
-                            (int)sessionId,
-                            pSessionInfo[i].pWinStationName);
+                                  (int)sessionId,
+                                  pSessionInfo[i].pWinStationName);
                         Mprintf(buf);
                     }
 
@@ -201,8 +201,7 @@ static void MonitorLoop(ServerSessionMonitor* self)
                             Mprintf("GUI launched successfully");
                             // 给程序一些时间启动
                             Sleep(2000);
-                        }
-                        else {
+                        } else {
                             Mprintf("Failed to launch GUI");
                         }
                     }
@@ -217,8 +216,7 @@ static void MonitorLoop(ServerSessionMonitor* self)
             }
 
             WTSFreeMemory(pSessionInfo);
-        }
-        else {
+        } else {
             if (loopCount % 5 == 1) {
                 Mprintf("WTSEnumerateSessions failed");
             }
@@ -247,8 +245,7 @@ static BOOL IsGuiRunningInSession(ServerSessionMonitor* self, DWORD sessionId)
     char* pFileName = strrchr(currentExeName, '\\');
     if (pFileName) {
         pFileName++;
-    }
-    else {
+    } else {
         pFileName = currentExeName;
     }
 
@@ -306,7 +303,7 @@ static void TerminateAllGui(ServerSessionMonitor* self)
         ServerAgentProcessInfo* info = &self->agentProcesses.items[i];
 
         sprintf_s(buf, sizeof(buf), "Terminating GUI PID=%d (Session %d)",
-            (int)info->processId, (int)info->sessionId);
+                  (int)info->processId, (int)info->sessionId);
         Mprintf(buf);
 
         // 检查进程是否还活着
@@ -316,18 +313,16 @@ static void TerminateAllGui(ServerSessionMonitor* self)
                 // 进程还在运行，终止它
                 if (!TerminateProcess(info->hProcess, 0)) {
                     sprintf_s(buf, sizeof(buf), "WARNING: Failed to terminate PID=%d, error=%d",
-                        (int)info->processId, (int)GetLastError());
+                              (int)info->processId, (int)GetLastError());
                     Mprintf(buf);
-                }
-                else {
+                } else {
                     Mprintf("GUI terminated successfully");
                     // 等待进程完全退出
                     WaitForSingleObject(info->hProcess, 5000);
                 }
-            }
-            else {
+            } else {
                 sprintf_s(buf, sizeof(buf), "GUI PID=%d already exited with code %d",
-                    (int)info->processId, (int)exitCode);
+                          (int)info->processId, (int)exitCode);
                 Mprintf(buf);
             }
         }
@@ -357,18 +352,17 @@ static void CleanupDeadProcesses(ServerSessionMonitor* self)
             if (exitCode != STILL_ACTIVE) {
                 // 进程已退出
                 sprintf_s(buf, sizeof(buf), "GUI PID=%d exited with code %d, cleaning up",
-                    (int)info->processId, (int)exitCode);
+                          (int)info->processId, (int)exitCode);
                 Mprintf(buf);
 
                 SAFE_CLOSE_HANDLE(info->hProcess);
                 AgentArray_RemoveAt(&self->agentProcesses, i);
                 continue;  // 不增加 i，因为删除了元素
             }
-        }
-        else {
+        } else {
             // 无法获取退出代码，可能进程已不存在
             sprintf_s(buf, sizeof(buf), "Cannot query GUI PID=%d, removing from list",
-                (int)info->processId);
+                      (int)info->processId);
             Mprintf(buf);
 
             SAFE_CLOSE_HANDLE(info->hProcess);
@@ -408,7 +402,7 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
     // 复制为可用于创建进程的主令牌
     HANDLE hDupToken = NULL;
     if (!DuplicateTokenEx(hToken, MAXIMUM_ALLOWED, NULL,
-        SecurityImpersonation, TokenPrimary, &hDupToken)) {
+                          SecurityImpersonation, TokenPrimary, &hDupToken)) {
         sprintf_s(buf, sizeof(buf), "DuplicateTokenEx failed: %d", (int)GetLastError());
         Mprintf(buf);
         SAFE_CLOSE_HANDLE(hToken);
@@ -473,18 +467,18 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
 
     // 在用户会话中创建进程（GUI程序，不隐藏窗口）
     BOOL result = CreateProcessAsUserA(
-        hDupToken,
-        NULL,           // 应用程序名（在命令行中解析）
-        cmdLine,        // 命令行参数：Yama.exe -agent
-        NULL,           // 进程安全属性
-        NULL,           // 线程安全属性
-        FALSE,          // 不继承句柄
-        NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT,  // GUI程序不需要 CREATE_NO_WINDOW
-        lpEnvironment,  // 环境变量
-        NULL,           // 当前目录
-        &si,
-        &pi
-    );
+                      hDupToken,
+                      NULL,           // 应用程序名（在命令行中解析）
+                      cmdLine,        // 命令行参数：Yama.exe -agent
+                      NULL,           // 进程安全属性
+                      NULL,           // 线程安全属性
+                      FALSE,          // 不继承句柄
+                      NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT,  // GUI程序不需要 CREATE_NO_WINDOW
+                      lpEnvironment,  // 环境变量
+                      NULL,           // 当前目录
+                      &si,
+                      &pi
+                  );
 
     if (lpEnvironment) {
         DestroyEnvironmentBlock(lpEnvironment);
@@ -504,8 +498,7 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
         LeaveCriticalSection(&self->csProcessList);
 
         SAFE_CLOSE_HANDLE(pi.hThread);  // 线程句柄可以关闭
-    }
-    else {
+    } else {
         DWORD err = GetLastError();
         sprintf_s(buf, sizeof(buf), "CreateProcessAsUser failed: %d", (int)err);
         Mprintf(buf);
@@ -513,11 +506,9 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
         // 提供更详细的错误信息
         if (err == ERROR_FILE_NOT_FOUND) {
             Mprintf("ERROR: Executable not found");
-        }
-        else if (err == ERROR_ACCESS_DENIED) {
+        } else if (err == ERROR_ACCESS_DENIED) {
             Mprintf("ERROR: Access denied - service may not have sufficient privileges");
-        }
-        else if (err == 1314) {
+        } else if (err == 1314) {
             Mprintf("ERROR: Service does not have SE_INCREASE_QUOTA privilege");
         }
     }

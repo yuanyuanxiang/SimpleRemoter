@@ -25,8 +25,7 @@ public:
     {
         for (size_t i = 0; i < numThreads; ++i) {
             workers.emplace_back([this] {
-                while (true)
-                {
+                while (true) {
                     std::function<void()> task;
                     {
                         std::unique_lock<std::mutex> lock(this->queueMutex);
@@ -226,13 +225,15 @@ public:
         return m_nScreenCount;
     }
 
-    virtual bool IsOriginalSize() const {
-        return m_BitmapInfor_Full->bmiHeader.biWidth == m_BitmapInfor_Send->bmiHeader.biWidth && 
-            m_BitmapInfor_Full->bmiHeader.biHeight == m_BitmapInfor_Send->bmiHeader.biHeight;
+    virtual bool IsOriginalSize() const
+    {
+        return m_BitmapInfor_Full->bmiHeader.biWidth == m_BitmapInfor_Send->bmiHeader.biWidth &&
+               m_BitmapInfor_Full->bmiHeader.biHeight == m_BitmapInfor_Send->bmiHeader.biHeight;
     }
 
-    virtual bool IsLargeScreen(int width, int height) const {
-		return m_BitmapInfor_Send->bmiHeader.biWidth > width && m_BitmapInfor_Send->bmiHeader.biHeight > height;
+    virtual bool IsLargeScreen(int width, int height) const
+    {
+        return m_BitmapInfor_Send->bmiHeader.biWidth > width && m_BitmapInfor_Send->bmiHeader.biHeight > height;
     }
 
     virtual BOOL IsMultiScreenEnabled() const
@@ -477,18 +478,15 @@ public:
         return offset;  // 返回缓冲区的大小
     }
 
-    virtual int GetFrameID() const
-    {
+    virtual int GetFrameID() const {
         return m_FrameID;
     }
 
-    virtual LPBYTE GetFirstBuffer() const
-    {
+    virtual LPBYTE GetFirstBuffer() const {
         return m_FirstBuffer;
     }
 
-    virtual int GetBMPSize() const
-    {
+    virtual int GetBMPSize() const {
         assert(m_BitmapInfor_Send);
         return m_BitmapInfor_Send->bmiHeader.biSizeImage;
     }
@@ -603,7 +601,7 @@ public:
                 uint8_t* encoded_data = nullptr;
                 uint32_t  encoded_size = 0;
                 int err = m_encoder->encode(nextData, 32, 4* m_BitmapInfor_Send->bmiHeader.biWidth,
-                    m_BitmapInfor_Send->bmiHeader.biWidth, m_BitmapInfor_Send->bmiHeader.biHeight, &encoded_data, &encoded_size);
+                                            m_BitmapInfor_Send->bmiHeader.biWidth, m_BitmapInfor_Send->bmiHeader.biHeight, &encoded_data, &encoded_size);
                 if (err) {
                     return nullptr;
                 }
@@ -626,7 +624,7 @@ public:
                 uint8_t* encoded_data = nullptr;
                 uint32_t  encoded_size = 0;
                 int err = m_encoder->encode(nextData, 32, 4 * m_BitmapInfor_Send->bmiHeader.biWidth,
-                    m_BitmapInfor_Send->bmiHeader.biWidth, m_BitmapInfor_Send->bmiHeader.biHeight, &encoded_data, &encoded_size);
+                                            m_BitmapInfor_Send->bmiHeader.biWidth, m_BitmapInfor_Send->bmiHeader.biHeight, &encoded_data, &encoded_size);
                 if (err) {
                     return nullptr;
                 }
@@ -675,10 +673,11 @@ public: // 纯虚接口
     // 获取下一帧屏幕
     virtual LPBYTE ScanNextScreen() = 0;
 
-    virtual LPBYTE scaleBitmap(LPBYTE target, LPBYTE bitmap) {
+    virtual LPBYTE scaleBitmap(LPBYTE target, LPBYTE bitmap)
+    {
         if (m_ulFullWidth == m_BitmapInfor_Send->bmiHeader.biWidth && m_ulFullHeight == m_BitmapInfor_Send->bmiHeader.biHeight)
             return bitmap;
         return ScaleBitmap(target, (uint8_t*)bitmap, m_ulFullWidth, m_ulFullHeight, m_BitmapInfor_Send->bmiHeader.biWidth,
-            m_BitmapInfor_Send->bmiHeader.biHeight);
+                           m_BitmapInfor_Send->bmiHeader.biHeight);
     }
 };

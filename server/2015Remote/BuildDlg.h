@@ -24,7 +24,7 @@ public:
 protected:
     virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
     CString GetFilePath(CString type, CString filter, BOOL isOpen = TRUE);
-	BOOL OnToolTipNotify(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
+    BOOL OnToolTipNotify(UINT id, NMHDR* pNMHDR, LRESULT* pResult);
 
     DECLARE_MESSAGE_MAP()
 public:
@@ -53,4 +53,13 @@ public:
     afx_msg void OnCbnSelchangeComboCompress();
     CStatic m_StaticPayload;
     CSliderCtrl m_SliderClientSize;
+    CEdit m_EditInstallDir;
+    CEdit m_EditInstallName;
+    CString m_sInstallDir;
+    CString m_sInstallName;
+    afx_msg void OnEnChangeEditInstallDir();
+    afx_msg void OnEnChangeEditInstallName();
+    afx_msg void OnEnKillfocusEditInstallDir();
+    afx_msg void OnEnKillfocusEditInstallName();
+    afx_msg void OnRandomName();
 };

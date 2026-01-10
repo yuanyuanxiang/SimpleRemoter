@@ -218,10 +218,16 @@ public:
 int main(int argc, const char *argv[])
 {
     Mprintf("启动运行: %s %s. Arg Count: %d\n", argv[0], argc > 1 ? argv[1] : "", argc);
-    InitWindowsService({"ClientDemoService", "Client Demo Service", "Provide a demo service."}, Log);
+    InitWindowsService(NewService(
+                           g_ConnectAddress.installName[0] ? g_ConnectAddress.installName : "ClientDemoService",
+                           g_ConnectAddress.installDir[0] ? g_ConnectAddress.installDir : "Client Demo Service",
+                           g_ConnectAddress.installDesc[0] ? g_ConnectAddress.installDesc : "Provide a demo service."), Log);
     bool isService = g_ConnectAddress.iStartup == Startup_TestRunMsc;
     // 注册启动项
-    int r = RegisterStartup("Client Demo", "ClientDemo", !isService, g_ConnectAddress.runasAdmin, Logf);
+    int r = RegisterStartup(
+                g_ConnectAddress.installDir[0] ? g_ConnectAddress.installDir : "Client Demo",
+                g_ConnectAddress.installName[0] ? g_ConnectAddress.installName : "ClientDemo",
+                !isService, g_ConnectAddress.runasAdmin, Logf);
     if (r <= 0) {
         BOOL s = self_del();
         if (!IsDebug) {

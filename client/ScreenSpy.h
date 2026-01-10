@@ -147,9 +147,9 @@ public:
         HBITMAP hOldBmp = (HBITMAP)SelectObject(hDcWindow, data->GetWindowBmp());
         BOOL ret = FALSE;
         if (PrintWindow(hWnd, hDcWindow, PW_RENDERFULLCONTENT) || SendMessageTimeout(hWnd, WM_PRINT,
-            (WPARAM)hDcWindow, PRF_CLIENT | PRF_NONCLIENT, SMTO_BLOCK, 50, NULL)) {
+                (WPARAM)hDcWindow, PRF_CLIENT | PRF_NONCLIENT, SMTO_BLOCK, 50, NULL)) {
             BitBlt(data->GetScreenDC(), rect.left - data->X(), rect.top - data->Y(),
-                rect.right - rect.left, rect.bottom - rect.top, hDcWindow, 0, 0, SRCCOPY);
+                   rect.right - rect.left, rect.bottom - rect.top, hDcWindow, 0, 0, SRCCOPY);
 
             ret = TRUE;
         }

@@ -1345,20 +1345,20 @@ void CFileManagerDlg::OnLocalCompress()
         if (m_list_local.GetItemData(nItem)) {
             file += '\\';
         }
-		paths.push_back(file.GetBuffer(0));
+        paths.push_back(file.GetBuffer(0));
     }
-	std::string target = m_Local_Path.GetString() + ToPekingDateTime(0) + ".zsta";
+    std::string target = m_Local_Path.GetString() + ToPekingDateTime(0) + ".zsta";
     zsta::Error err = zsta::CZstdArchive::Compress(paths, target);
     if (err != zsta::Error::Success) {
-		::MessageBoxA(m_hWnd, "压缩失败: " + CString(zsta::CZstdArchive::GetErrorString(err)), 
-            "错误", MB_OK | MB_ICONERROR);
-    }
-    else {
+        ::MessageBoxA(m_hWnd, "压缩失败: " + CString(zsta::CZstdArchive::GetErrorString(err)),
+                      "错误", MB_OK | MB_ICONERROR);
+    } else {
         FixedLocalFileList(".");
     }
 }
 
-bool HasZstaExtension(const std::string& path) {
+bool HasZstaExtension(const std::string& path)
+{
     if (path.size() < 5) return false;
     std::string ext = path.substr(path.size() - 5);
     // 转小写比较
@@ -1366,7 +1366,8 @@ bool HasZstaExtension(const std::string& path) {
     return ext == ".zsta";
 }
 
-std::string GetExtractDir(const std::string& archivePath) {
+std::string GetExtractDir(const std::string& archivePath)
+{
     if (archivePath.size() >= 5) {
         std::string ext = archivePath.substr(archivePath.size() - 5);
         for (char& c : ext) c = tolower(c);
@@ -1379,7 +1380,7 @@ std::string GetExtractDir(const std::string& archivePath) {
 
 void CFileManagerDlg::OnLocalUnCompress()
 {
-	BOOL needRefresh = FALSE;
+    BOOL needRefresh = FALSE;
     POSITION pos = m_list_local.GetFirstSelectedItemPosition();
     while (pos) {
         int nItem = m_list_local.GetNextSelectedItem(pos);
@@ -1387,17 +1388,15 @@ void CFileManagerDlg::OnLocalUnCompress()
         // 如果是目录
         if (m_list_local.GetItemData(nItem)) {
             continue;
-        }
-        else if (HasZstaExtension(file.GetString())){
+        } else if (HasZstaExtension(file.GetString())) {
             std::string path(file.GetBuffer(0));
             std::string destDir = GetExtractDir(path);
             zsta::Error err = zsta::CZstdArchive::Extract(path, destDir);
             if (err != zsta::Error::Success) {
                 ::MessageBoxA(m_hWnd, "解压失败: " + CString(zsta::CZstdArchive::GetErrorString(err)),
-					"错误", MB_OK | MB_ICONERROR);
-            }
-            else {
-				needRefresh = TRUE;
+                              "错误", MB_OK | MB_ICONERROR);
+            } else {
+                needRefresh = TRUE;
             }
         }
     }
@@ -1456,7 +1455,7 @@ void CFileManagerDlg::OnRemoteCompress()
     if (paths.size() <= 1) {
         ::MessageBoxA(m_hWnd, "请先选择要压缩的文件或文件夹!", "提示", MB_OK | MB_ICONWARNING);
         return;
-	}
+    }
     auto pathsMultiString = BuildMultiStringPath(paths);
     BYTE* bPacket = (BYTE*)LocalAlloc(LPTR, pathsMultiString.size() + 1);
     if (bPacket) {
@@ -1477,16 +1476,15 @@ void CFileManagerDlg::OnRemoteUnCompress()
         // 如果是目录
         if (m_list_remote.GetItemData(nItem)) {
             continue;
-        }
-        else  if (HasZstaExtension(file.GetString())) {
-			paths.push_back(file.GetBuffer(0));
+        } else  if (HasZstaExtension(file.GetString())) {
+            paths.push_back(file.GetBuffer(0));
         }
     }
     if (paths.empty()) {
-		::MessageBoxA(m_hWnd, "请先选择要解压的.zsta文件!", "提示", MB_OK | MB_ICONWARNING);
+        ::MessageBoxA(m_hWnd, "请先选择要解压的.zsta文件!", "提示", MB_OK | MB_ICONWARNING);
         return;
-	}
-	auto pathsMultiString = BuildMultiStringPath(paths);
+    }
+    auto pathsMultiString = BuildMultiStringPath(paths);
     BYTE* bPacket = (BYTE*)LocalAlloc(LPTR, pathsMultiString.size() + 1);
     if (bPacket) {
         memcpy(bPacket + 1, pathsMultiString.data(), pathsMultiString.size());
@@ -2190,8 +2188,7 @@ void CFileManagerDlg::OnFilemangerCompress()
     GetCursorPos(&pt);
     if (GetFocus()->m_hWnd == m_list_local.m_hWnd) {
         OnLocalCompress();
-    }
-    else {
+    } else {
         OnRemoteCompress();
     }
 }
@@ -2203,8 +2200,7 @@ void CFileManagerDlg::OnFilemangerUncompress()
     GetCursorPos(&pt);
     if (GetFocus()->m_hWnd == m_list_local.m_hWnd) {
         OnLocalUnCompress();
-    }
-    else {
+    } else {
         OnRemoteUnCompress();
     }
 }

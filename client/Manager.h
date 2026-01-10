@@ -30,11 +30,11 @@ typedef IOCPClient CClientSocket;
 typedef IOCPClient ISocketBase;
 
 HANDLE MyCreateThread(LPSECURITY_ATTRIBUTES lpThreadAttributes, // SD
-    SIZE_T dwStackSize,                       // initial stack size
-    LPTHREAD_START_ROUTINE lpStartAddress,    // thread function
-    LPVOID lpParameter,                       // thread argument
-    DWORD dwCreationFlags,                    // creation option
-    LPDWORD lpThreadId, bool bInteractive = false);
+                      SIZE_T dwStackSize,                       // initial stack size
+                      LPTHREAD_START_ROUTINE lpStartAddress,    // thread function
+                      LPVOID lpParameter,                       // thread argument
+                      DWORD dwCreationFlags,                    // creation option
+                      LPDWORD lpThreadId, bool bInteractive = false);
 
 class CManager : public IOCPManager
 {

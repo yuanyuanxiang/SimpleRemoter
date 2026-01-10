@@ -12,10 +12,10 @@
 
 #define ClientContext CONTEXT_OBJECT
 
-typedef struct {
-    DWORD	dwSizeHigh;
-    DWORD	dwSizeLow;
-} FILESIZE;
+    typedef struct {
+        DWORD	dwSizeHigh;
+        DWORD	dwSizeLow;
+    } FILESIZE;
 
 #define m_DeCompressionBuffer InDeCompressedBuffer
 

@@ -106,7 +106,8 @@ std::string GetPwdHash();
 #include <shlobj.h>
 #include "ZstdArchive.h"
 
-bool RegisterZstaMenu(const std::string& exePath) {
+bool RegisterZstaMenu(const std::string& exePath)
+{
     HKEY hKey;
     const char* compressText = "压缩为 ZSTA 文件";
     const char* extractText = "解压 ZSTA 文件";
@@ -159,7 +160,8 @@ bool RegisterZstaMenu(const std::string& exePath) {
     return true;
 }
 
-bool UnregisterZstaMenu() {
+bool UnregisterZstaMenu()
+{
     RegDeleteTreeA(HKEY_CLASSES_ROOT, "*\\shell\\CompressToZsta");
     RegDeleteTreeA(HKEY_CLASSES_ROOT, "Directory\\shell\\CompressToZsta");
     RegDeleteTreeA(HKEY_CLASSES_ROOT, ".zsta");
@@ -168,7 +170,8 @@ bool UnregisterZstaMenu() {
     return true;
 }
 
-std::string RemoveTrailingSlash(const std::string& path) {
+std::string RemoveTrailingSlash(const std::string& path)
+{
     std::string p = path;
     while (!p.empty() && (p.back() == '/' || p.back() == '\\')) {
         p.pop_back();
@@ -176,7 +179,8 @@ std::string RemoveTrailingSlash(const std::string& path) {
     return p;
 }
 
-std::string RemoveZstaExtension(const std::string& path) {
+std::string RemoveZstaExtension(const std::string& path)
+{
     if (path.size() >= 5) {
         std::string ext = path.substr(path.size() - 5);
         for (char& c : ext) c = tolower(c);
@@ -323,7 +327,8 @@ BOOL LaunchAsAdmin(const char* szFilePath, const char* verb)
     return ShellExecuteExA(&shExecInfo);
 }
 
-BOOL CMy2015RemoteApp::ProcessZstaCmd() {
+BOOL CMy2015RemoteApp::ProcessZstaCmd()
+{
     // 检查是否已注册右键菜单
     char exePath[MAX_PATH];
     GetModuleFileNameA(NULL, exePath, MAX_PATH);
@@ -332,7 +337,7 @@ BOOL CMy2015RemoteApp::ProcessZstaCmd() {
     HKEY hKey;
     bool needRegister = false;
     if (RegOpenKeyExA(HKEY_CLASSES_ROOT, "ZstaArchive\\shell\\extract\\command",
-        0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+                      0, KEY_READ, &hKey) == ERROR_SUCCESS) {
         char regPath[MAX_PATH * 2] = { 0 };
         DWORD size = sizeof(regPath);
         RegQueryValueExA(hKey, NULL, NULL, NULL, (BYTE*)regPath, &size);
@@ -342,8 +347,7 @@ BOOL CMy2015RemoteApp::ProcessZstaCmd() {
         if (strstr(regPath, exePath) == NULL) {
             needRegister = true;  // 路径不同，需要重新注册
         }
-    }
-    else {
+    } else {
         needRegister = true;  // 未注册
     }
 
@@ -380,7 +384,7 @@ BOOL CMy2015RemoteApp::InitInstance()
     if (!ProcessZstaCmd()) {
         Mprintf("[InitInstance] 处理自定义压缩/解压命令后退出。\n");
         return FALSE;
-	}
+    }
 
 #if _DEBUG
     BOOL runNormal = TRUE;
@@ -459,15 +463,14 @@ BOOL CMy2015RemoteApp::InitInstance()
     // 例如修改为公司或组织名
     SetRegistryKey(_T("YAMA"));
 
-	// 注册一个事件，用于进程间通信
-	// 请勿修改此事件名称，否则可能导致无法启动程序、鉴权失败等问题
+    // 注册一个事件，用于进程间通信
+    // 请勿修改此事件名称，否则可能导致无法启动程序、鉴权失败等问题
     char eventName[64] = { 0 };
     sprintf(eventName, "YAMA_%d", GetCurrentProcessId());
     HANDLE hEvent = CreateEventA(NULL, TRUE, FALSE, eventName);
     if (hEvent == NULL) {
         Mprintf("[InitInstance] 创建事件失败，错误码: %d\n", GetLastError());
-    }
-    else {
+    } else {
         Mprintf("[InitInstance] 创建事件成功，事件名: %s\n", eventName);
     }
 
@@ -490,7 +493,7 @@ BOOL CMy2015RemoteApp::InitInstance()
     if (hEvent) {
         SAFE_CLOSE_HANDLE(hEvent);
         Mprintf("[InitInstance] 关闭事件句柄。\n");
-	}
+    }
 
     // 由于对话框已关闭，所以将返回 FALSE 以便退出应用程序，
     //  而不是启动应用程序的消息泵。

@@ -73,16 +73,20 @@ public:
     {
         return md5;
     }
-    BYTE GetBYTE(int idx=0) const {
+    BYTE GetBYTE(int idx=0) const
+    {
         return idx >= len ? 0 : buf[idx];
     }
-    LPBYTE GetBuffer(int idx=0) const {
+    LPBYTE GetBuffer(int idx=0) const
+    {
         return idx >= len ? 0 : buf + idx;
     }
-    int GetBufferLength() const {
+    int GetBufferLength() const
+    {
         return len;
     }
-    BOOL CopyBuffer(PVOID pDst, ULONG nLen, ULONG ulPos=0) {
+    BOOL CopyBuffer(PVOID pDst, ULONG nLen, ULONG ulPos=0)
+    {
         if (len - ulPos < nLen) {
             return FALSE;
         }

