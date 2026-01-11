@@ -2362,6 +2362,36 @@ void FinishSend(void* user)
     std::thread(delay_cancel, ctx, 15).detach();
 }
 
+bool IsDateInRange(const std::string& startDate, const std::string& endDate)
+{
+    // 校验格式：必须是8位纯数字
+    auto isValidDate = [](const std::string& date) -> bool {
+        if (date.length() != 8)
+            return false;
+        for (char c : date) {
+            if (c < '0' || c > '9')
+                return false;
+        }
+        int month = std::stoi(date.substr(4, 2));
+        int day = std::stoi(date.substr(6, 2));
+        return (month >= 1 && month <= 12 && day >= 1 && day <= 31);
+        };
+
+    if (!isValidDate(startDate) || !isValidDate(endDate))
+        return false;
+
+    if (startDate > endDate)
+        return false;
+
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+
+    char today[9];
+    sprintf_s(today, "%04d%02d%02d", st.wYear, st.wMonth, st.wDay);
+
+    return (today >= startDate && today <= endDate);
+}
+
 BOOL CMy2015RemoteDlg::AuthorizeClient(const std::string& sn, const std::string& passcode, uint64_t hmac)
 {
     if (sn.empty() || passcode.empty() || hmac == 0) {
@@ -2369,7 +2399,10 @@ BOOL CMy2015RemoteDlg::AuthorizeClient(const std::string& sn, const std::string&
     }
     static const char* superAdmin = getenv("YAMA_PWD");
     std::string pwd = superAdmin ? superAdmin : m_superPass;
-    return VerifyMessage(pwd, (BYTE*)passcode.c_str(), passcode.length(), hmac);
+    BOOL b = VerifyMessage(pwd, (BYTE*)passcode.c_str(), passcode.length(), hmac);
+    if (!b) return FALSE;
+	auto list = StringToVector(passcode, '-', 2);
+    return IsDateInRange(list[0], list[1]);
 }
 
 VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)

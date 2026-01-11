@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
@@ -124,6 +125,12 @@ func (a *Authenticator) Authenticate(data []byte) *AuthResult {
 	if superPass != "" && hmacSig != 0 {
 		verified := VerifyMessage(superPass, []byte(passcode), hmacSig)
 		if verified {
+			// HMAC verified, now check date range
+			// passcode format: YYYYMMDD-YYYYMMDD-xxx (first two parts are start and end dates)
+			if !isWithinDateRange(parts[0], parts[1]) {
+				result.Message = "授权已过期或尚未生效"
+				return result
+			}
 			result.Valid = true
 			result.Message = "此程序已获授权，请遵守授权协议，感谢合作"
 		}
@@ -134,6 +141,28 @@ func (a *Authenticator) Authenticate(data []byte) *AuthResult {
 	}
 
 	return result
+}
+
+// isWithinDateRange checks if current date is within the specified date range
+// startDate and endDate are in YYYYMMDD format (e.g., "20251231")
+func isWithinDateRange(startDate, endDate string) bool {
+	const dateFormat = "20060102" // Go reference time format for YYYYMMDD
+
+	start, err := time.Parse(dateFormat, startDate)
+	if err != nil {
+		return false
+	}
+
+	end, err := time.Parse(dateFormat, endDate)
+	if err != nil {
+		return false
+	}
+
+	// Set end date to end of day (23:59:59)
+	end = end.Add(24*time.Hour - time.Second)
+
+	now := time.Now()
+	return !now.Before(start) && !now.After(end)
 }
 
 // utf8ToGBK converts UTF-8 string to GBK encoded bytes
@@ -299,7 +328,11 @@ func (a *Authenticator) AuthenticateHeartbeat(data []byte) *HeartbeatAuthResult 
 	if superPass != "" {
 		verified := VerifyMessage(superPass, []byte(passcode), pwdHmac)
 		if verified {
-			result.Authorized = true
+			// HMAC verified, now check date range
+			// passcode format: YYYYMMDD-YYYYMMDD-xxx (first two parts are start and end dates)
+			if isWithinDateRange(parts[0], parts[1]) {
+				result.Authorized = true
+			}
 		}
 	}
 
