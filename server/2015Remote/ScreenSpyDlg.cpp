@@ -310,6 +310,8 @@ BOOL CScreenSpyDlg::OnInitDialog()
 
 VOID CScreenSpyDlg::OnClose()
 {
+	KillTimer(1);
+	KillTimer(2);
     if (!m_aviFile.IsEmpty()) {
         KillTimer(TIMER_ID);
         m_aviFile = "";
@@ -340,6 +342,9 @@ VOID CScreenSpyDlg::OnClose()
 afx_msg LRESULT CScreenSpyDlg::OnDisconnect(WPARAM wParam, LPARAM lParam)
 {
     m_bConnected = FALSE;
+	// Close the dialog if reconnect not succeed in 15 seconds
+    SetTimer(2, 15000, NULL);
+    PostMessage(WM_PAINT);
     return S_OK;
 }
 
@@ -566,6 +571,7 @@ bool CScreenSpyDlg::Decode(LPBYTE Buffer, int size)
 
 void CScreenSpyDlg::OnPaint()
 {
+	if (m_bIsClosed) return;
     CPaintDC dc(this); // device context for painting
 
     if (m_bIsFirst) {
@@ -588,23 +594,53 @@ void CScreenSpyDlg::OnPaint()
             NULL,
             DI_NORMAL | DI_COMPAT
         );
+    if (!m_bConnected) {
+        DrawTipString("正在重连......", 2);
+	}
 }
 
-VOID CScreenSpyDlg::DrawTipString(CString strString)
+VOID CScreenSpyDlg::DrawTipString(CString strString, int fillMode)
 {
-    RECT Rect;
-    GetClientRect(&Rect);
-    //COLORREF用来描绘一个RGB颜色
-    COLORREF  BackgroundColor = RGB(0x00, 0x00, 0x00);
-    COLORREF  OldBackgroundColor  = SetBkColor(m_hFullDC, BackgroundColor);
-    COLORREF  OldTextColor = SetTextColor(m_hFullDC, RGB(0xff,0x00,0x00));
-    //ExtTextOut函数可以提供一个可供选择的矩形，用当前选择的字体、背景颜色和正文颜色来绘制一个字符串
-    ExtTextOut(m_hFullDC, 0, 0, ETO_OPAQUE, &Rect, NULL, 0, NULL);
+	// fillMode: 0=不填充, 1=全黑, 2=半透明
+	RECT Rect;
+	GetClientRect(&Rect);
+	int width = Rect.right - Rect.left;
+	int height = Rect.bottom - Rect.top;
 
-    DrawText (m_hFullDC, strString, -1, &Rect,DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+	if (fillMode == 1)
+	{
+		// 原来的全黑效果
+		COLORREF BackgroundColor = RGB(0x00, 0x00, 0x00);
+		SetBkColor(m_hFullDC, BackgroundColor);
+		ExtTextOut(m_hFullDC, 0, 0, ETO_OPAQUE, &Rect, NULL, 0, NULL);
+	}
+	else if (fillMode == 2)
+	{
+		// 半透明效果
+		HDC hMemDC = CreateCompatibleDC(m_hFullDC);
+		HBITMAP hBitmap = CreateCompatibleBitmap(m_hFullDC, width, height);
+		HBITMAP hOldBitmap = (HBITMAP)SelectObject(hMemDC, hBitmap);
 
-    SetBkColor(m_hFullDC, BackgroundColor);
-    SetTextColor(m_hFullDC, OldBackgroundColor);
+		HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+		FillRect(hMemDC, &Rect, hBrush);
+		DeleteObject(hBrush);
+
+		BLENDFUNCTION blend = { 0 };
+		blend.BlendOp = AC_SRC_OVER;
+		blend.SourceConstantAlpha = 150;
+		blend.AlphaFormat = 0;
+
+		AlphaBlend(m_hFullDC, 0, 0, width, height,
+			hMemDC, 0, 0, width, height, blend);
+
+		SelectObject(hMemDC, hOldBitmap);
+		DeleteObject(hBitmap);
+		DeleteDC(hMemDC);
+	}
+
+	SetBkMode(m_hFullDC, TRANSPARENT);
+	SetTextColor(m_hFullDC, RGB(0xff, 0x00, 0x00));
+	DrawText(m_hFullDC, strString, -1, &Rect, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
 }
 
 bool DirectoryExists(const char* path)
@@ -794,6 +830,18 @@ void CScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
     if (nIDEvent == 1 && m_Settings.FullScreen && m_pToolbar) {
         m_pToolbar->CheckMousePosition();
     }
+    if (nIDEvent == 2) {
+        KillTimer(2);
+        if (m_bConnected) {
+            return;
+        }
+        CWnd* pMain = AfxGetMainWnd();
+        if (pMain)
+            ::PostMessageA(pMain->GetSafeHwnd(), WM_SHOWNOTIFY, (WPARAM)new CharMsg("连接已断开"), 
+                (LPARAM)new CharMsg(m_IPAddress + " - 远程桌面连接已断开"));
+        this->PostMessageA(WM_CLOSE, 0, 0);
+        return;
+	}
     CDialog::OnTimer(nIDEvent);
 }
 

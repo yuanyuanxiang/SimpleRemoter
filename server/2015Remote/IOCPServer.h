@@ -165,8 +165,8 @@ public:
     }
     void OnClose()
     {
-        m_bConnected = FALSE;
         m_bIsClosed = true;
+        m_bConnected = FALSE;
         while (m_bIsProcessing)
             Sleep(200);
         if(m_hIcon) DestroyIcon(m_hIcon);

@@ -68,7 +68,8 @@ public:
     BOOL         m_bIsFirst;
     ULONG m_ulHScrollPos;
     ULONG m_ulVScrollPos;
-    VOID DrawTipString(CString strString);
+    // fillMode: 0=不填充, 1=全黑, 2=半透明
+    VOID DrawTipString(CString strString, int fillMode=1);
 
     POINT  m_ClientCursorPos;
     BYTE m_bCursorIndex;

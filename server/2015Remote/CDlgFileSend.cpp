@@ -81,6 +81,8 @@ LRESULT CDlgFileSend::OnUpdateFileProgress(WPARAM wParam, LPARAM lParam)
     SetDlgItemTextA(IDC_STATIC_CURRENT_FILE, *pFile);
     m_Progress.SetPos(percent);
     ShowWindow(SW_SHOW);
+	BringWindowToTop();
+	SetForegroundWindow();
 
     delete pChunk;
     delete pFile;
