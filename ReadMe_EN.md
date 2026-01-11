@@ -206,6 +206,20 @@ For cross-network, cross-border, or international remote control system deployme
 
 For earlier changes, see: [history](./history.md)
 
+**Release v1.2.2 (2026.1.11):**
+
+This release enhances remote desktop settings persistence, file management features, and improves authorization and keyboard forwarding.
+
+- Improve: Save remote desktop screen settings in registry
+- Fix: Authorization return failure if date is out of range
+- Improve: `GetForegroundSelectedFiles` if `GetClipboardFiles` failed
+- Feature: Show screen resolution and client id in popup window
+- Feature: Support customizing client name and install directory
+- Feature: Add menu to set screen strategy for remote control
+- Improve: Showing file transmit progress dialog
+- Feature: Support compress files in file management dialog
+- Improve: Add F10, WM_SYSKEYDOWN, WM_SYSKEYUP to forward
+
 **Release v1.2.1 (2026.1.1):**
 
 This release enhances remote desktop features (FPS control, screen switching, file drag-and-drop support), improves Windows service mode, and fixes several stability issues.
