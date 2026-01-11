@@ -29,6 +29,7 @@ public:
     CScreenManager(IOCPClient* ClientObject, int n, void* user = nullptr);
     virtual ~CScreenManager();
     HANDLE  m_hWorkThread;
+    ScreenSettings m_ScreenSettings = { 20 };
 
     void InitScreenSpy();
     static DWORD WINAPI WorkThreadProc(LPVOID lParam);
@@ -76,7 +77,7 @@ public:
     virtual BOOL OnReconnect();
     uint64_t            m_DlgID = 0;
     BOOL                m_SendFirst = FALSE;
-    int                 m_nMaxFPS = 20;
+
     // 虚拟桌面
     BOOL                m_virtual;
     POINT               m_point;

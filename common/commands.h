@@ -201,6 +201,7 @@ enum {
     CMD_COMPRESS_FILES = 72,        // 压缩文件
     CMD_UNCOMPRESS_FILES = 73,      // 解压文件
     CMD_SCREEN_SIZE = 74,
+	CMD_FULL_SCREEN = 75,
 
     // 服务端发出的标识
     TOKEN_AUTH = 100,				// 要求验证
@@ -912,6 +913,16 @@ typedef struct MasterSettings {
 } MasterSettings;
 
 #define MasterSettingsOldSize 500
+
+typedef struct ScreenSettings {
+	int         MaxFPS;                     // 最大帧率
+	int         CompressThread;             // 压缩线程数
+	int         ScreenStrategy;             // 屏幕策略
+	int         ScreenWidth;                // 屏幕宽度
+	int         ScreenHeight;               // 屏幕高度
+	int         FullScreen;                 // 全屏模式
+	char        Reserved[76];               // 保留字段
+} ScreenSettings;
 
 #pragma pack(push, 1)
 // 100字节: 运行类型 + 大小 + 调用方式 + DLL名称

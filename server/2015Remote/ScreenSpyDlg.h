@@ -46,6 +46,7 @@ class CScreenSpyDlg : public DialogBase
     DECLARE_DYNAMIC(CScreenSpyDlg)
     CToolbarDlg* m_pToolbar = nullptr;
     CMy2015RemoteDlg* m_pParent = nullptr;
+    ScreenSettings m_Settings = { 20 };
 
 public:
     CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);
@@ -89,8 +90,6 @@ public:
     // 对话框数据
     enum { IDD = IDD_DIALOG_SCREEN_SPY };
 
-    BOOL m_bFullScreen;
-
     WINDOWPLACEMENT m_struOldWndpl;
 
     AVCodec*			m_pCodec;
@@ -129,6 +128,8 @@ public:
     afx_msg LRESULT OnDisconnect(WPARAM wParam, LPARAM lParam);
     afx_msg void OnExitFullscreen()
     {
+		BYTE cmd[4] = { CMD_FULL_SCREEN, m_Settings.FullScreen = FALSE };
+		m_ContextObject->Send2Client(cmd, sizeof(cmd));
         LeaveFullScreen();
     }
 
