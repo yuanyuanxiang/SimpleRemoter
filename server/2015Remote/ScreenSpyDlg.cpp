@@ -300,7 +300,27 @@ BOOL CScreenSpyDlg::OnInitDialog()
     SysMenu->CheckMenuItem(IDM_ADAPTIVE_SIZE, m_bAdaptiveSize ? MF_CHECKED : MF_UNCHECKED);
     SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
     ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);
-    ShowWindow(SW_MAXIMIZE);
+
+    // 设置合理的"正常"窗口大小（屏幕的 80%），否则还原时窗口极小
+    int cxScreen = GetSystemMetrics(SM_CXSCREEN);
+    int cyScreen = GetSystemMetrics(SM_CYSCREEN);
+    int normalWidth = cxScreen * 80 / 100;
+    int normalHeight = cyScreen * 80 / 100;
+    int normalX = (cxScreen - normalWidth) / 2;
+    int normalY = (cyScreen - normalHeight) / 2;
+
+    // 使用 WINDOWPLACEMENT 确保 rcNormalPosition 被正确设置
+    WINDOWPLACEMENT wp = { sizeof(WINDOWPLACEMENT) };
+    GetWindowPlacement(&wp);
+    wp.rcNormalPosition.left = normalX;
+    wp.rcNormalPosition.top = normalY;
+    wp.rcNormalPosition.right = normalX + normalWidth;
+    wp.rcNormalPosition.bottom = normalY + normalHeight;
+    wp.showCmd = SW_MAXIMIZE;
+    SetWindowPlacement(&wp);
+
+    // 同时初始化 m_struOldWndpl，供全屏退出时使用
+    m_struOldWndpl = wp;
     m_Settings.FullScreen ? EnterFullScreen() : LeaveFullScreen();
     SendNext();
 
