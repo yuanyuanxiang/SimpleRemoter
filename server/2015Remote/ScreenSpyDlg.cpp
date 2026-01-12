@@ -304,8 +304,8 @@ BOOL CScreenSpyDlg::OnInitDialog()
     // 设置合理的"正常"窗口大小（屏幕的 80%），否则还原时窗口极小
     int cxScreen = GetSystemMetrics(SM_CXSCREEN);
     int cyScreen = GetSystemMetrics(SM_CYSCREEN);
-    int normalWidth = cxScreen * 80 / 100;
-    int normalHeight = cyScreen * 80 / 100;
+    int normalWidth = cxScreen * 0.382;
+    int normalHeight = cyScreen * 0.382;
     int normalX = (cxScreen - normalWidth) / 2;
     int normalY = (cyScreen - normalHeight) / 2;
 
@@ -332,6 +332,7 @@ VOID CScreenSpyDlg::OnClose()
 {
 	KillTimer(1);
 	KillTimer(2);
+    KillTimer(3);
     if (!m_aviFile.IsEmpty()) {
         KillTimer(TIMER_ID);
         m_aviFile = "";
@@ -365,6 +366,7 @@ afx_msg LRESULT CScreenSpyDlg::OnDisconnect(WPARAM wParam, LPARAM lParam)
 	m_nDisconnectTime = GetTickCount64();
 	// Close the dialog if reconnect not succeed in 15 seconds
     SetTimer(2, 15000, NULL);
+    SetTimer(3, 3000, NULL);
     PostMessage(WM_PAINT);
     return S_OK;
 }
@@ -615,7 +617,7 @@ void CScreenSpyDlg::OnPaint()
             NULL,
             DI_NORMAL | DI_COMPAT
         );
-    if (!m_bConnected && GetTickCount64()-m_nDisconnectTime>2000) {
+    if (!m_bConnected && GetTickCount64() - m_nDisconnectTime>2000) {
         DrawTipString("正在重连......", 2);
 	}
 }
@@ -863,6 +865,10 @@ void CScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
         this->PostMessageA(WM_CLOSE, 0, 0);
         return;
 	}
+    if (nIDEvent == 3) {
+        KillTimer(3);
+        PostMessageA(WM_PAINT);
+    }
     CDialog::OnTimer(nIDEvent);
 }
 

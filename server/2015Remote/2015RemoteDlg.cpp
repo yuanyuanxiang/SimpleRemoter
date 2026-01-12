@@ -2350,7 +2350,8 @@ void delay_cancel(CONTEXT_OBJECT* ctx, int sec)
     CDlgFileSend* dlg = (CDlgFileSend*)ctx->hDlg;
     dlg->FinishFileSend(TRUE);
     Sleep(sec*1000);
-    dlg->PostMessageA(WM_CLOSE);
+    if (::IsWindow(dlg->GetSafeHwnd()))
+        dlg->PostMessageA(WM_CLOSE);
     ctx->hDlg = NULL;
     ctx->CancelIO();
 }

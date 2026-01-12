@@ -110,7 +110,7 @@ public:
             // 9. 初始化 BITMAPINFO
             m_BitmapInfor_Full = ConstructBitmapInfo(32, m_ulFullWidth, m_ulFullHeight);
             iniFile cfg(CLIENT_PATH);
-            int strategy = cfg.GetInt("settings", "ScreenStrategy", 0);
+            int strategy = HasSSE2() ? cfg.GetInt("settings", "ScreenStrategy", 0) : 1;
             switch (strategy) {
             case 1:
                 break;

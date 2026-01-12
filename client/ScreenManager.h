@@ -75,6 +75,7 @@ public:
     bool SwitchScreen();
     bool RestartScreen();
     virtual BOOL OnReconnect();
+    uint64_t            m_nReconnectTime = 0; // 重连开始时间
     uint64_t            m_DlgID = 0;
     BOOL                m_SendFirst = FALSE;
 

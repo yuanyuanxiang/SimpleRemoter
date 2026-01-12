@@ -17,6 +17,15 @@
 #include "X264Encoder.h"
 #include "common/file_upload.h"
 
+inline bool HasSSE2() {
+#ifdef _DEBUG
+    return false;
+#else
+    auto static has = IsProcessorFeaturePresent(PF_XMMI64_INSTRUCTIONS_AVAILABLE);
+    return has;
+#endif
+}
+
 class ThreadPool
 {
 public:
@@ -304,7 +313,7 @@ public:
     virtual ULONG CompareBitmap(LPBYTE CompareSourData, LPBYTE CompareDestData, LPBYTE szBuffer,
                                 DWORD ulCompareLength, BYTE algo, int startPostion = 0)
     {
-        if (UsingDXGI())
+        if (UsingDXGI() || !HasSSE2())
             return CompareBitmapDXGI(CompareSourData, CompareDestData, szBuffer, ulCompareLength, algo, startPostion);
 
         LPBYTE p = szBuffer;
