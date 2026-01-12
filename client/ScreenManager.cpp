@@ -332,6 +332,11 @@ BOOL IsRunningAsSystem()
 
 BOOL CScreenManager::OnReconnect()
 {
+	auto duration = GetTickCount64() - m_nReconnectTime;
+    if (duration <= 3000)
+        Sleep(3000 - duration);
+	m_nReconnectTime = GetTickCount64();
+
     m_SendFirst = FALSE;
     BOOL r = m_ClientObject ? m_ClientObject->Reconnect(this) : FALSE;
     Mprintf("CScreenManager OnReconnect '%s'\n", r ? "succeed" : "failed");
