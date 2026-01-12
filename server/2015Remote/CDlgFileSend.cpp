@@ -27,6 +27,7 @@ void CDlgFileSend::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CDlgFileSend, CDialog)
     ON_WM_CLOSE()
+	ON_WM_TIMER()
     ON_MESSAGE(WM_UPDATEFILEPROGRESS, &CDlgFileSend::OnUpdateFileProgress)
     ON_MESSAGE(WM_FINISHFILESEND, &CDlgFileSend::OnFinishFileSend)
 END_MESSAGE_MAP()
@@ -83,6 +84,7 @@ LRESULT CDlgFileSend::OnUpdateFileProgress(WPARAM wParam, LPARAM lParam)
     ShowWindow(SW_SHOW);
 	BringWindowToTop();
 	SetForegroundWindow();
+    if (percent>=100.) SetTimer(1, 3000, NULL);
 
     delete pChunk;
     delete pFile;
@@ -127,4 +129,11 @@ void CDlgFileSend::OnClose()
     }
 
     DialogBase::OnClose();
+}
+
+void CDlgFileSend::OnTimer(UINT_PTR nIDEvent) {
+    if (nIDEvent == 1) {
+        KillTimer(1);
+		PostMessageA(WM_CLOSE, 0, 0);
+	}
 }

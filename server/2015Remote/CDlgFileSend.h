@@ -37,4 +37,5 @@ public:
     CProgressCtrl m_Progress;
     virtual BOOL OnInitDialog();
     afx_msg void OnClose();
+    afx_msg void OnTimer(UINT_PTR nIDEvent);
 };

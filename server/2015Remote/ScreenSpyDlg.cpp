@@ -342,6 +342,7 @@ VOID CScreenSpyDlg::OnClose()
 afx_msg LRESULT CScreenSpyDlg::OnDisconnect(WPARAM wParam, LPARAM lParam)
 {
     m_bConnected = FALSE;
+	m_nDisconnectTime = GetTickCount64();
 	// Close the dialog if reconnect not succeed in 15 seconds
     SetTimer(2, 15000, NULL);
     PostMessage(WM_PAINT);
@@ -594,7 +595,7 @@ void CScreenSpyDlg::OnPaint()
             NULL,
             DI_NORMAL | DI_COMPAT
         );
-    if (!m_bConnected) {
+    if (!m_bConnected && GetTickCount64()-m_nDisconnectTime>2000) {
         DrawTipString("正在重连......", 2);
 	}
 }
@@ -1126,9 +1127,14 @@ void CScreenSpyDlg::EnterFullScreen()
         if (!m_pToolbar) {
             m_pToolbar = new CToolbarDlg(this);
             m_pToolbar->Create(IDD_TOOLBAR_DLG, this);
-            int cx = GetSystemMetrics(SM_CXSCREEN);
-            int cy = GetSystemMetrics(SM_CYSCREEN);
-            m_pToolbar->SetWindowPos(&wndTopMost, 0, -40, cx, 40, SWP_HIDEWINDOW);
+            // OnInitDialog() 会根据 m_bLocked 和 m_bOnTop 设置正确的位置和可见性
+            // 如果未锁定，初始隐藏在屏幕外
+            if (!m_pToolbar->m_bLocked) {
+                int cx = GetSystemMetrics(SM_CXSCREEN);
+                int cy = GetSystemMetrics(SM_CYSCREEN);
+                int y = m_pToolbar->m_bOnTop ? -40 : cy;  // 根据位置设置隐藏在上方或下方
+                m_pToolbar->SetWindowPos(&wndTopMost, 0, y, cx, 40, SWP_HIDEWINDOW);
+            }
         }
 
         // 7. 标记全屏模式
