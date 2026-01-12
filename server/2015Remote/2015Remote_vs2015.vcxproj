@@ -254,6 +254,8 @@
     <None Include="res\My2015Remote.rc2" />
     <None Include="res\pc.ico" />
     <None Include="res\rcedit.exe" />
+    <None Include="res\SCLoader_32.exe" />
+    <None Include="res\SCLoader_64.exe" />
     <None Include="res\string.ico" />
     <None Include="res\upx.exe" />
     <None Include="stub2\stub32.bin" />

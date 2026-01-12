@@ -591,6 +591,7 @@ enum ClientCompressType {
     CLIENT_COMPRESS_UPX = 1,
     CLIENT_COMPRESS_SC_AES = 2,
     CLIENT_PE_TO_SEHLLCODE = 3,
+    CLIENT_COMPRESS_SC_AES_OLD = 4,
 };
 
 #pragma pack(push, 4)

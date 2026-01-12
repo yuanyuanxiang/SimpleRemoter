@@ -195,6 +195,9 @@
 #define IDB_BITMAP_PORTPROXY            317
 #define IDD_TOOLBAR_DLG                 318
 #define IDD_DIALOG_FILESEND             320
+#define IDR_SCLOADER_X86_OLD            322
+#define IDR_BINARY7                     323
+#define IDR_SCLOADER_X64_OLD            323
 #define IDC_MESSAGE                     1000
 #define IDC_ONLINE                      1001
 #define IDC_STATIC_TIPS                 1002
@@ -619,10 +622,10 @@
 #define ID_EXIT_FULLSCREEN              40001
 
 // Next default values for new objects
-//
+// 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        322
+#define _APS_NEXT_RESOURCE_VALUE        324
 #define _APS_NEXT_COMMAND_VALUE         32995
 #define _APS_NEXT_CONTROL_VALUE         2222
 #define _APS_NEXT_SYMED_VALUE           105
