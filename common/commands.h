@@ -557,7 +557,7 @@ enum TestRunType {
 
 inline int MemoryFind(const char* szBuffer, const char* Key, int iBufferSize, int iKeySize)
 {
-    for (int i = 0; i < iBufferSize - iKeySize; ++i) {
+    for (int i = 0; i <= iBufferSize - iKeySize; ++i) {
         if (0 == memcmp(szBuffer + i, Key, iKeySize)) {
             return i;
         }

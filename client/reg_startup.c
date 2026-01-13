@@ -327,18 +327,9 @@ BOOL CreateDirectoryRecursively(const char* path)
     return TRUE;
 }
 
-int RegisterStartup(const char* startupName, const char* exeName, bool lockFile, bool runasAdmin, StartupLogFunc log)
+const char* GetInstallDirectory(const char * startupName)
 {
-#ifdef _DEBUG
-    return 1;
-#endif
-    Log = log;
-    char username[256];
-    DWORD size = sizeof(username);
-    if (GetUserNameA(username, &size)) {
-        Mprintf("RegisterStartup is running with user: %s\n", username);
-    }
-    char folder[MAX_PATH] = { 0 };
+    static char folder[MAX_PATH] = { 0 };
     if (GetEnvironmentVariableA("ProgramData", folder, MAX_PATH) > 0) {
         size_t len = strlen(folder);
         if (len > 0 && folder[len - 1] != '\\') {
@@ -349,10 +340,27 @@ int RegisterStartup(const char* startupName, const char* exeName, bool lockFile,
 
         if (!CreateDirectoryRecursively(folder)) {
             Mprintf("Failed to create directory structure: %s\n", folder);
-            return -1;
+            return NULL;
         }
     }
+	return folder;
+}
 
+int RegisterStartup(const char* startupName, const char* exeName, bool lockFile, bool runasAdmin, StartupLogFunc log)
+{
+#ifdef _DEBUG
+   return 1;
+#endif
+    Log = log;
+    char username[256];
+    DWORD size = sizeof(username);
+    if (GetUserNameA(username, &size)) {
+        Mprintf("RegisterStartup is running with user: %s\n", username);
+    }
+    const char *folder = GetInstallDirectory(startupName);
+    if (!folder) {
+        return -1;
+	}
     char curFile[MAX_PATH] = { 0 };
     GetModuleFileNameA(NULL, curFile, MAX_PATH);
 
