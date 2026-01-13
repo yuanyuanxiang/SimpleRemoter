@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include <stdbool.h>
 
+const char* GetInstallDirectory(const char* startupName);
+
 typedef void (*StartupLogFunc)(const char* file, int line, const char* format, ...);
 
 // return > 0 means to continue running else terminate.

