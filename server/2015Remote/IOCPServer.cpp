@@ -277,8 +277,10 @@ BOOL IOCPServer::InitializeIOCP(VOID)
 
 DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
 {
+    // 压缩库配置
     ZSTD_DCtx* m_Dctx = ZSTD_createDCtx(); // 解压上下文
-
+    z_stream m_stream = {};
+    inflateInit2(&m_stream, 15);
     IOCPServer* This = (IOCPServer*)(lParam);
 
     HANDLE   hCompletionPort = This->m_hCompletionPort;
@@ -346,7 +348,7 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
         if (!bError && !This->m_bTimeToKill) {
             if(bOk && OverlappedPlus!=NULL && ContextObject!=NULL) {
                 try {
-                    This->HandleIO(OverlappedPlus->m_ioType, ContextObject, dwTrans, m_Dctx);
+                    This->HandleIO(OverlappedPlus->m_ioType, ContextObject, dwTrans, m_Dctx, &m_stream);
 
                     ContextObject = NULL;
                 } catch (...) {
@@ -367,13 +369,14 @@ DWORD IOCPServer::WorkThreadProc(LPVOID lParam)
         Mprintf("======> IOCPServer All WorkThreadProc done\n");
     }
 
+    inflateEnd(&m_stream);
     ZSTD_freeDCtx(m_Dctx);
 
     return 0;
 }
 
 //在工作线程中被调用
-BOOL IOCPServer::HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx)
+BOOL IOCPServer::HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx, z_stream* z)
 {
     BOOL bRet = FALSE;
 
@@ -382,7 +385,7 @@ BOOL IOCPServer::HandleIO(IOType PacketFlags,PCONTEXT_OBJECT ContextObject, DWOR
         bRet = OnClientInitializing(ContextObject, dwTrans);
         break;
     case IORead:
-        bRet = OnClientReceiving(ContextObject, dwTrans, ctx);
+        bRet = OnClientReceiving(ContextObject, dwTrans, ctx, z);
         break;
     case IOWrite:
         bRet = OnClientPostSending(ContextObject, dwTrans);
@@ -404,7 +407,7 @@ BOOL IOCPServer::OnClientInitializing(PCONTEXT_OBJECT  ContextObject, DWORD dwTr
 }
 
 // May be this function should be a member of `CONTEXT_OBJECT`.
-BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyProc m_NotifyProc, ZSTD_DCtx* m_Dctx)
+BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyProc m_NotifyProc, ZSTD_DCtx* m_Dctx, z_stream* z)
 {
     AUTO_TICK(50, ContextObject->GetPeerName());
     BOOL ret = 1;
@@ -459,7 +462,7 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
                 PBYTE DeCompressedBuffer = ContextObject->GetDecompressBuffer(ulOriginalLength);
                 size_t	iRet = usingZstd ?
                                Muncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength) :
-                               uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
+                               z_uncompress(z, DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength);
                 if (usingZstd ? C_SUCCESS(iRet) : (S_OK==iRet)) {
                     ContextObject->InDeCompressedBuffer.ClearBuffer();
                     ContextObject->Decode(DeCompressedBuffer, ulOriginalLength);
@@ -468,7 +471,7 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
                         ret = DeCompressedBuffer[0] == TOKEN_LOGIN ? 999 : 1;
                 } else if (usingZstd) {
                     // 尝试用zlib解压缩
-                    if (Z_OK == uncompress(DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength)) {
+                    if (Z_OK == z_uncompress(z, DeCompressedBuffer, &ulOriginalLength, CompressedBuffer, ulCompressedLength)) {
                         ContextObject->CompressMethod = COMPRESS_ZLIB;
                         ContextObject->InDeCompressedBuffer.ClearBuffer();
                         ContextObject->Decode(DeCompressedBuffer, ulOriginalLength);
@@ -499,9 +502,9 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
     return ret;
 }
 
-BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx)
+BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx, z_stream* z)
 {
-    if (FALSE == ParseReceivedData(ContextObject, dwTrans, m_NotifyProc, ctx)) {
+    if (FALSE == ParseReceivedData(ContextObject, dwTrans, m_NotifyProc, ctx, z)) {
         RemoveStaleContext(ContextObject);
         return FALSE;
     }
@@ -511,7 +514,7 @@ BOOL IOCPServer::OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans
     return TRUE;
 }
 
-BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength, ZSTD_CCtx* m_Cctx)
+BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength, ZSTD_CCtx* m_Cctx, z_stream* z)
 {
     assert(ContextObject);
     // 输出服务端所发送的命令

@@ -151,7 +151,7 @@ typedef BOOL(*TrailCheck)(void);
 class IOCPClient : public IOCPBase
 {
 public:
-    IOCPClient(const State& bExit, bool exit_while_disconnect = false, int mask=0, int encoder=0,
+    IOCPClient(const State& bExit, bool exit_while_disconnect = false, int mask=0, CONNECT_ADDRESS *conn=0,
                const std::string&pubIP="");
     virtual ~IOCPClient();
 
@@ -223,6 +223,12 @@ public:
         return g_bExit;
     }
     void SetMultiThreadCompress(int threadNum=0);
+    std::string GetClientID() const {
+        return m_conn ? std::to_string(m_conn->clientID) : "";
+    }
+    std::string GetPublicIP() const {
+        return m_sLocPublicIP;
+    }
 protected:
     virtual int ReceiveData(char* buffer, int bufSize, int flags)
     {
@@ -266,4 +272,5 @@ protected:
     PkgMask*			m_masker;
     BOOL				m_EncoderType;
     std::string			m_sLocPublicIP;
+    CONNECT_ADDRESS     *m_conn = NULL;
 };

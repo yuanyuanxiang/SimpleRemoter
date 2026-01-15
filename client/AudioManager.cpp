@@ -22,6 +22,11 @@ CAudioManager::CAudioManager(IOCPClient* ClientObject, int n, void* user):CManag
     if (Initialize()==FALSE) {
         szPacket = NULL;
         m_hWorkThread = NULL;
+        char buf[128];
+        sprintf_s(buf, "打开语音设备失败[IP: %s]", m_ClientObject->GetPublicIP().c_str());
+        Mprintf("%s\n", buf);
+        ClientMsg msg("语音管理", buf);
+        m_ClientObject->Send2Server((char*)&msg, sizeof(msg));
         return;
     }
 

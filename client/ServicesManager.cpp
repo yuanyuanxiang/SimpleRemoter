@@ -23,8 +23,14 @@ CServicesManager::~CServicesManager()
 VOID CServicesManager::SendServicesList()
 {
     LPBYTE	szBuffer = GetServicesList();
-    if (szBuffer == NULL)
+    if (szBuffer == NULL) {
+        char buf[128];
+        sprintf_s(buf, "获取服务列表失败[IP: %s]", m_ClientObject->GetPublicIP().c_str());
+        Mprintf("%s\n", buf);
+        ClientMsg msg("服务管理", buf);
+        m_ClientObject->Send2Server((char*)&msg, sizeof(msg));
         return;
+    }
     HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
     m_ClientObject->Send2Server((char*)szBuffer, LocalSize(szBuffer), &mask);
     LocalFree(szBuffer);

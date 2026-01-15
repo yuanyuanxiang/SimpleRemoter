@@ -469,7 +469,7 @@ void RunFileReceiver(CScreenManager *mgr, const std::string &folder, const std::
 {
     auto start = time(0);
     Mprintf("Enter thread RunFileReceiver: %d\n", GetCurrentThreadId());
-    IOCPClient* pClient = new IOCPClient(mgr->g_bExit, true, MaskTypeNone, mgr->m_conn->GetHeaderEncType());
+    IOCPClient* pClient = new IOCPClient(mgr->g_bExit, true, MaskTypeNone, mgr->m_conn);
     if (pClient->ConnectServer(mgr->m_ClientObject->ServerIP().c_str(), mgr->m_ClientObject->ServerPort())) {
         pClient->setManagerCallBack(mgr, CManager::DataProcess, CManager::ReconnectProcess);
         // 发送目录并准备接收文件
@@ -657,7 +657,7 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 			files = GetClipboardFiles(result);
         }
         if (!files.empty() && !dir.empty()) {
-            IOCPClient* pClient = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn->GetHeaderEncType());
+            IOCPClient* pClient = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn);
             if (pClient->ConnectServer(m_ClientObject->ServerIP().c_str(), m_ClientObject->ServerPort())) {
                 std::thread(FileBatchTransferWorker, files, dir, pClient, ::SendData, ::FinishSend,
                             m_hash, m_hmac).detach();

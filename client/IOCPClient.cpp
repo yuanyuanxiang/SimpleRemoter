@@ -93,9 +93,10 @@ VOID IOCPClient::setManagerCallBack(void* Manager,  DataProcessCB dataProcess, O
 }
 
 
-IOCPClient::IOCPClient(const State&bExit, bool exit_while_disconnect, int mask, int encoder,
+IOCPClient::IOCPClient(const State&bExit, bool exit_while_disconnect, int mask, CONNECT_ADDRESS* conn,
                        const std::string& pubIP) : g_bExit(bExit)
 {
+    int encoder = conn ? conn->GetHeaderEncType() : 0;
     m_sLocPublicIP = pubIP;
     m_ServerAddr = {};
     m_nHostPort = 0;

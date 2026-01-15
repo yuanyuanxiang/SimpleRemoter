@@ -13,6 +13,23 @@
 // ZLIB 压缩库
 #include "zlib/zlib.h"
 
+inline int z_uncompress(z_stream* strm, Bytef* dest, uLongf* destLen, const Bytef* src, uLong srcLen)
+{
+    inflateReset(strm);
+
+    strm->next_in = (Bytef*)src;
+    strm->avail_in = srcLen;
+    strm->next_out = dest;
+    strm->avail_out = *destLen;
+
+    int ret = inflate(strm, Z_FINISH);
+
+    *destLen = strm->total_out;
+
+    if (ret == Z_STREAM_END) return Z_OK;
+    return ret;
+}
+
 // ZSTD
 #include "zstd/zstd.h"
 #ifdef _WIN64
@@ -66,9 +83,9 @@ private:
     BOOL RemoveStaleContext(CONTEXT_OBJECT* ContextObject);
     VOID MoveContextToFreePoolList(CONTEXT_OBJECT* ContextObject);
     VOID PostRecv(CONTEXT_OBJECT* ContextObject);
-    BOOL HandleIO(IOType PacketFlags, PCONTEXT_OBJECT ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx);
+    BOOL HandleIO(IOType PacketFlags, PCONTEXT_OBJECT ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx, z_stream *z);
     BOOL OnClientInitializing(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans);
-    BOOL OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx);
+    BOOL OnClientReceiving(PCONTEXT_OBJECT  ContextObject, DWORD dwTrans, ZSTD_DCtx* ctx, z_stream* z);
     BOOL OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength);
     BOOL OnClientPostSending(CONTEXT_OBJECT* ContextObject, ULONG ulCompressedLength);
     int AddWorkThread(int n)
@@ -210,6 +227,6 @@ public:
 
 typedef CDialogBase DialogBase;
 
-BOOL ParseReceivedData(CONTEXT_OBJECT* ContextObject, DWORD dwTrans, pfnNotifyProc m_NotifyProc, ZSTD_DCtx *ctx=NULL);
+BOOL ParseReceivedData(CONTEXT_OBJECT* ContextObject, DWORD dwTrans, pfnNotifyProc m_NotifyProc, ZSTD_DCtx *ctx=NULL, z_stream* z=NULL);
 
-BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength, ZSTD_CCtx *ctx=NULL);
+BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength, ZSTD_CCtx *ctx=NULL, z_stream* z = NULL);
