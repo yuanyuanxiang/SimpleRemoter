@@ -35,6 +35,9 @@
 #ifndef VLD_RPTHOOK_REMOVE
 #error 检测内存泄漏，需安装VLD；否则请注释#include "vld.h"，或使用Release编译
 #endif
+#else
+#define VLDGlobalDisable()
+#define VLDGlobalEnable()
 #endif
 
 #include "targetver.h"

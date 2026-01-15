@@ -551,7 +551,7 @@ BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOr
             ContextObject->Encode(szBuffer, ulOriginalLength);
             if (!m_Cctx) ContextObject->Encode(szBuffer, ulOriginalLength, usingZstd);
             size_t	iRet = usingZstd ?
-                           Mcompress(CompressedBuffer, &ulCompressedLength, (LPBYTE)szBuffer, ulOriginalLength):
+                           Mcompress(CompressedBuffer, &ulCompressedLength, (LPBYTE)szBuffer, ulOriginalLength, ContextObject->GetZstdLevel()):
                            compress(CompressedBuffer, &ulCompressedLength, (LPBYTE)szBuffer, ulOriginalLength);
 
             if (usingZstd ? C_FAILED(iRet) : (S_OK != iRet)) {
@@ -575,7 +575,7 @@ BOOL WriteContextData(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOr
 
 BOOL IOCPServer::OnClientPreSending(CONTEXT_OBJECT* ContextObject, PBYTE szBuffer, size_t ulOriginalLength)
 {
-    if (WriteContextData(ContextObject, szBuffer, ulOriginalLength)) {
+    if (WriteContextData(ContextObject, szBuffer, ulOriginalLength, ContextObject->Zcctx)) {
         OVERLAPPEDPLUS* OverlappedPlus = new OVERLAPPEDPLUS(IOWrite);
         BOOL bOk = PostQueuedCompletionStatus(m_hCompletionPort, 0, (ULONG_PTR)ContextObject, &OverlappedPlus->m_ol);
         if ( (!bOk && GetLastError() != ERROR_IO_PENDING) ) { //如果投递失败

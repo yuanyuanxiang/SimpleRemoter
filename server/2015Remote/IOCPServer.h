@@ -30,23 +30,6 @@ inline int z_uncompress(z_stream* strm, Bytef* dest, uLongf* destLen, const Byte
     return ret;
 }
 
-// ZSTD
-#include "zstd/zstd.h"
-#ifdef _WIN64
-#pragma comment(lib, "zstd/zstd_x64.lib")
-#else
-#pragma comment(lib, "zstd/zstd.lib")
-#endif
-#define C_FAILED(p) ZSTD_isError(p)
-#define C_SUCCESS(p) (!C_FAILED(p))
-#define ZSTD_CLEVEL 5
-
-#define Mcompress(dest, destLen, source, sourceLen) m_Cctx ? ZSTD_compress2(m_Cctx, dest, *(destLen), source, sourceLen):\
-	ZSTD_compress(dest, *(destLen), source, sourceLen, ZSTD_CLEVEL_DEFAULT)
-
-#define Muncompress(dest, destLen, source, sourceLen) m_Dctx ? ZSTD_decompressDCtx(m_Dctx, dest, *(destLen), source, sourceLen):\
-	ZSTD_decompress(dest, *(destLen), source, sourceLen)
-
 class IOCPServer : public Server
 {
 protected:

@@ -140,7 +140,7 @@ END_MESSAGE_MAP()
 // CFileManagerDlg message handlers
 
 
-int	GetIconIndex(LPCTSTR lpFileName, DWORD dwFileAttributes)
+int	GetIconIndex_(LPCTSTR lpFileName, DWORD dwFileAttributes)
 {
     SHFILEINFO	sfi = {};
     if (dwFileAttributes == INVALID_FILE_ATTRIBUTES)
@@ -158,6 +158,15 @@ int	GetIconIndex(LPCTSTR lpFileName, DWORD dwFileAttributes)
     );
 
     return sfi.iIcon;
+}
+
+int	GetIconIndex(LPCTSTR lpFileName, DWORD dwFileAttributes)
+{
+    VLDGlobalDisable();
+    // 代码中排除: Windows.Storage.dll 内部缓存，不是代码泄漏，是误报。
+    int index = GetIconIndex_(lpFileName, dwFileAttributes);
+    VLDGlobalEnable();
+    return index;
 }
 
 BOOL CFileManagerDlg::OnInitDialog()

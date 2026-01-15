@@ -16,6 +16,22 @@
 std::string GetPeerName(SOCKET sock);
 std::string GetRemoteIP(SOCKET sock);
 
+// ZSTD
+#include "zstd/zstd.h"
+#ifdef _WIN64
+#pragma comment(lib, "zstd/zstd_x64.lib")
+#else
+#pragma comment(lib, "zstd/zstd.lib")
+#endif
+#define C_FAILED(p) ZSTD_isError(p)
+#define C_SUCCESS(p) (!C_FAILED(p))
+
+#define Mcompress(dest, destLen, source, sourceLen, level) m_Cctx ? ZSTD_compress2(m_Cctx, dest, *(destLen), source, sourceLen):\
+	ZSTD_compress(dest, *(destLen), source, sourceLen, level)
+
+#define Muncompress(dest, destLen, source, sourceLen) m_Dctx ? ZSTD_decompressDCtx(m_Dctx, dest, *(destLen), source, sourceLen):\
+	ZSTD_decompress(dest, *(destLen), source, sourceLen)
+
 enum {
     ONLINELIST_IP = 0,          // IP的列顺序
     ONLINELIST_ADDR,            // 地址
@@ -364,6 +380,10 @@ public:
         FreeDecompressBuffer();
         FreeCompressBuffer();
         FreeSendCompressBuffer();
+        if (Zcctx) {
+            ZSTD_freeCCtx(Zcctx);
+            Zcctx = nullptr;
+        }
     }
     CString  sClientInfo[ONLINELIST_MAX];
     CString  additonalInfo[RES_MAX];
@@ -398,7 +418,27 @@ public:
     // 预分配的发送压缩缓冲区（发送时压缩后）
     PBYTE               SendCompressBuffer = nullptr;
     ULONG               SendCompressBufferSize = 0;
+    int                 CompressLevel = ZSTD_CLEVEL_DEFAULT;
+    ZSTD_CCtx*          Zcctx = nullptr;
 
+    void EnableZstdContext(int level = ZSTD_CLEVEL_DEFAULT) {
+        CAutoCLock L(SendLock);
+        CompressLevel = level;
+        if (Zcctx == nullptr) {
+            Zcctx = ZSTD_createCCtx();
+            ZSTD_CCtx_setParameter(Zcctx, ZSTD_c_compressionLevel, level);
+        }
+    }
+    void SetCompressionLevel(int level) {
+        CAutoCLock L(SendLock);
+        CompressLevel = level;
+        if (Zcctx) {
+            ZSTD_CCtx_setParameter(Zcctx, ZSTD_c_compressionLevel, level);
+        }
+    }
+    int GetZstdLevel() const {
+        return CompressLevel;
+    }
     // 获取或分配解压缩缓冲区
     PBYTE GetDecompressBuffer(ULONG requiredSize)
     {

