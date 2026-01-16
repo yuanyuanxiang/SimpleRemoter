@@ -37,6 +37,7 @@ enum {
     IDM_FPS_UNLIMITED,
     IDM_ORIGINAL_SIZE,
     IDM_SCREEN_1080P,
+    IDM_REMOTE_CURSOR,
 };
 
 IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
@@ -162,6 +163,7 @@ void CScreenSpyDlg::DoDataExchange(CDataExchange* pDX)
 BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialog)
     ON_WM_CLOSE()
     ON_WM_PAINT()
+    ON_WM_SETCURSOR()
     ON_WM_SYSCOMMAND()
     ON_WM_HSCROLL()
     ON_WM_VSCROLL()
@@ -242,6 +244,7 @@ BOOL CScreenSpyDlg::OnInitDialog()
         SysMenu->AppendMenu(MF_SEPARATOR);
         SysMenu->AppendMenu(MF_STRING, IDM_CONTROL, "控制屏幕(&Y)");
         SysMenu->AppendMenu(MF_STRING, IDM_FULLSCREEN, "全屏(&F)");
+        SysMenu->AppendMenu(MF_STRING, IDM_REMOTE_CURSOR, "使用远程光标(&C)");
         SysMenu->AppendMenu(MF_STRING, IDM_ADAPTIVE_SIZE, "自适应窗口大小(&A)");
         SysMenu->AppendMenu(MF_STRING, IDM_TRACE_CURSOR, "跟踪被控端鼠标(&T)");
         SysMenu->AppendMenu(MF_STRING, IDM_BLOCK_INPUT, "锁定被控端鼠标和键盘(&L)");
@@ -257,6 +260,9 @@ BOOL CScreenSpyDlg::OnInitDialog()
         SysMenu->AppendMenu(MF_STRING, IDM_ORIGINAL_SIZE, "原始分辨率(&3)");
         SysMenu->AppendMenu(MF_STRING, IDM_SCREEN_1080P, "限制为1080P(&4)");
         SysMenu->AppendMenu(MF_SEPARATOR);
+
+        SysMenu->CheckMenuItem(IDM_FULLSCREEN, m_Settings.FullScreen ? MF_CHECKED : MF_UNCHECKED);
+        SysMenu->CheckMenuItem(IDM_REMOTE_CURSOR, m_Settings.RemoteCursor ? MF_CHECKED : MF_UNCHECKED);
 
         CMenu fpsMenu;
         if (fpsMenu.CreatePopupMenu()) {
@@ -477,12 +483,14 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(bool keyFrame)
     m_bCursorIndex = m_ContextObject->InDeCompressedBuffer.GetBuffer(2+sizeof(POINT))[0];
     if (bOldCursorIndex != m_bCursorIndex) {
         bChange = TRUE;
-        if (m_bIsCtrl && !m_bIsTraceCursor)//替换指定窗口所属类的WNDCLASSEX结构
+        if (m_bIsCtrl && !m_bIsTraceCursor) {//替换指定窗口所属类的WNDCLASSEX结构
+            HCURSOR cursor = m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex);
 #ifdef _WIN64
-            SetClassLongPtrA(m_hWnd, GCLP_HCURSOR, (ULONG_PTR)m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex));
+            SetClassLongPtrA(m_hWnd, GCLP_HCURSOR, (ULONG_PTR)cursor);
 #else
-            SetClassLongA(m_hWnd, GCL_HCURSOR, (LONG)m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex));
+            SetClassLongA(m_hWnd, GCL_HCURSOR, (LONG)cursor);
 #endif
+        }
     }
 
     // 屏幕是否变化
@@ -606,20 +614,43 @@ void CScreenSpyDlg::OnPaint()
     StretchBlt(m_hFullDC, 0, 0, m_CRect.Width(), m_CRect.Height(), m_hFullMemDC, 0, 0, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight, SRCCOPY) :
     BitBlt(m_hFullDC, 0, 0, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight, m_hFullMemDC, m_ulHScrollPos, m_ulVScrollPos, SRCCOPY);
 
-    if (m_bIsTraceCursor)
-        DrawIconEx(
-            m_hFullDC,
-            m_ClientCursorPos.x  - m_ulHScrollPos,
-            m_ClientCursorPos.y  - m_ulVScrollPos,
-            m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex),
-            0,0,
-            0,
-            NULL,
-            DI_NORMAL | DI_COMPAT
-        );
+    if ((m_bIsCtrl && m_Settings.RemoteCursor) || m_bIsTraceCursor) {
+		CPoint ptLocal;
+		GetCursorPos(&ptLocal);
+		ScreenToClient(&ptLocal);
+
+		CRect rcToolbar(0, 0, 0, 0);
+		if (m_pToolbar) m_pToolbar->GetWindowRect(&rcToolbar), ScreenToClient(&rcToolbar);
+		// 只有当本地鼠标不在工具栏区域时，才绘制远程位图光标
+        if (!rcToolbar.PtInRect(ptLocal)) {
+
+            // 1. 计算缩放位置
+            int drawX = m_bAdaptiveSize ? (int)(m_ClientCursorPos.x / m_wZoom) : (m_ClientCursorPos.x - m_ulHScrollPos);
+            int drawY = m_bAdaptiveSize ? (int)(m_ClientCursorPos.y / m_hZoom) : (m_ClientCursorPos.y - m_ulVScrollPos);
+
+            // 2. 强制绘制
+            DrawIconEx(
+                m_hFullDC,
+                drawX,
+                drawY,
+                m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex),
+                0, 0, 0, NULL, DI_NORMAL | DI_COMPAT
+            );
+        }
+    }
     if (!m_bConnected && GetTickCount64() - m_nDisconnectTime>2000) {
         DrawTipString("正在重连......", 2);
 	}
+}
+
+BOOL CScreenSpyDlg::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
+{
+	if ((m_bIsCtrl && m_Settings.RemoteCursor) && nHitTest == HTCLIENT)
+	{
+		::SetCursor(NULL); // 只要在客户区，始终隐藏系统光标
+		return TRUE;       // 告诉 Windows 我们处理过了
+	}
+	return CDialog::OnSetCursor(pWnd, nHitTest, message);
 }
 
 VOID CScreenSpyDlg::DrawTipString(CString strString, int fillMode)
@@ -715,6 +746,12 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 		BYTE cmd[4] = { CMD_FULL_SCREEN, m_Settings.FullScreen = TRUE };
 		m_ContextObject->Send2Client(cmd, sizeof(cmd));
         break;
+    }
+    case IDM_REMOTE_CURSOR: {
+		BYTE cmd[4] = { CMD_REMOTE_CURSOR, m_Settings.RemoteCursor = !m_Settings.RemoteCursor };
+        SysMenu->CheckMenuItem(IDM_REMOTE_CURSOR, m_Settings.RemoteCursor ? MF_CHECKED : MF_UNCHECKED);
+		m_ContextObject->Send2Client(cmd, sizeof(cmd));
+		break;
     }
     case IDM_SAVEDIB: {  // 快照保存
         SaveSnapshot();
@@ -1224,7 +1261,25 @@ BOOL CScreenSpyDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 
 void CScreenSpyDlg::OnMouseMove(UINT nFlags, CPoint point)
 {
-    if (!m_bMouseTracking) {
+    if (m_Settings.RemoteCursor) {
+        if (m_pToolbar != NULL && ::IsWindow(m_pToolbar->m_hWnd) && m_pToolbar->IsWindowVisible())
+        {
+            CRect rcToolbar;
+            m_pToolbar->GetWindowRect(&rcToolbar);
+            ScreenToClient(&rcToolbar); // 转换到主窗口坐标系
+
+            if (rcToolbar.PtInRect(point))
+            {
+                // 如果鼠标在工具栏区域，直接显示本地光标并返回，不发送远程指令
+                ::SetCursor(LoadCursor(NULL, IDC_ARROW));
+                return;
+            }
+        }
+        if (m_bIsCtrl) {
+            // 关键：在控制模式下，强制设置光标为空，隐藏本地物理箭头
+            ::SetCursor(NULL);
+        }
+    }else if (!m_bMouseTracking) {
         m_bMouseTracking = true;
         SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
     }

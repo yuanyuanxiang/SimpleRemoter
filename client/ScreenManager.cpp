@@ -100,6 +100,7 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 	m_ScreenSettings.ScreenWidth = cfg.GetInt("settings", "ScreenWidth", 0);
 	m_ScreenSettings.ScreenHeight = cfg.GetInt("settings", "ScreenHeight", 0);
 	m_ScreenSettings.FullScreen = cfg.GetInt("settings", "FullScreen", 0);
+    m_ScreenSettings.RemoteCursor = cfg.GetInt("settings", "RemoteCursor", 0);
 
     m_hWorkThread = __CreateThread(NULL,0, WorkThreadProc,this,0,NULL);
 }
@@ -535,6 +536,13 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		m_ScreenSettings.FullScreen = fullScreen;
 		break;
 	}
+    case CMD_REMOTE_CURSOR: {
+		int remoteCursor = szBuffer[1];
+		iniFile cfg(CLIENT_PATH);
+		cfg.SetInt("settings", "RemoteCursor", remoteCursor);
+		m_ScreenSettings.RemoteCursor = remoteCursor;
+        break;
+    }
     case CMD_MULTITHREAD_COMPRESS: {
         int threadNum = szBuffer[1];
         m_ClientObject->SetMultiThreadCompress(threadNum);

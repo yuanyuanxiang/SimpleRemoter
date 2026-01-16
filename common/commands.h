@@ -202,6 +202,7 @@ enum {
     CMD_UNCOMPRESS_FILES = 73,      // 解压文件
     CMD_SCREEN_SIZE = 74,
 	CMD_FULL_SCREEN = 75,
+    CMD_REMOTE_CURSOR = 76,
 
     // 服务端发出的标识
     TOKEN_AUTH = 100,				// 要求验证
@@ -922,7 +923,8 @@ typedef struct ScreenSettings {
 	int         ScreenWidth;                // 屏幕宽度
 	int         ScreenHeight;               // 屏幕高度
 	int         FullScreen;                 // 全屏模式
-	char        Reserved[76];               // 保留字段
+    int         RemoteCursor;               // 使用远程光标
+	char        Reserved[72];               // 保留字段
 } ScreenSettings;
 
 #pragma pack(push, 1)

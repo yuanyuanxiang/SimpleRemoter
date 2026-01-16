@@ -6,9 +6,10 @@
 
 IMPLEMENT_DYNAMIC(CToolbarDlg, CDialogEx)
 
-CToolbarDlg::CToolbarDlg(CWnd* pParent)
+CToolbarDlg::CToolbarDlg(CScreenSpyDlg* pParent)
     : CDialogEx(IDD_TOOLBAR_DLG, pParent)
 {
+    m_pParent = pParent;
 }
 
 CToolbarDlg::~CToolbarDlg()

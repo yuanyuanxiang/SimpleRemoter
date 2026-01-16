@@ -143,6 +143,7 @@ public:
     virtual BOOL OnInitDialog();
     afx_msg void OnClose();
     afx_msg void OnPaint();
+    BOOL OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message);
     afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
     virtual BOOL PreTranslateMessage(MSG* pMsg);
     void OnLButtonDblClk(UINT nFlags, CPoint point);

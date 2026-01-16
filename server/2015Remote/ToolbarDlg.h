@@ -1,6 +1,8 @@
 ﻿#pragma once
 #include "Resource.h"
 
+class CScreenSpyDlg;
+
 class CToolbarDlg : public CDialogEx
 {
     DECLARE_DYNAMIC(CToolbarDlg)
@@ -8,7 +10,8 @@ private:
     int m_lastY = 0; // 记录上一次的 Y 坐标
 
 public:
-    CToolbarDlg(CWnd* pParent = nullptr);
+    CScreenSpyDlg* m_pParent = nullptr;
+    CToolbarDlg(CScreenSpyDlg* pParent = nullptr);
     virtual ~CToolbarDlg();
 
     enum { IDD = IDD_TOOLBAR_DLG };
