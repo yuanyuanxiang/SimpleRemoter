@@ -12,41 +12,93 @@
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "oleaut32.lib")
 
-static std::vector<std::string> GetDesktopSelectedFiles()
+void ExpandDirectory(const std::string& dir, std::vector<std::string>& result) {
+    std::string searchPath = dir + "\\*";
+    WIN32_FIND_DATAA fd;
+    HANDLE hFind = FindFirstFileA(searchPath.c_str(), &fd);
+
+    if (hFind == INVALID_HANDLE_VALUE) return;
+
+    do {
+        if (strcmp(fd.cFileName, ".") == 0 || strcmp(fd.cFileName, "..") == 0)
+            continue;
+
+        std::string fullPath = dir + "\\" + fd.cFileName;
+        result.push_back(fullPath);  // 文件和目录都加入
+
+        if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+            ExpandDirectory(fullPath, result);  // 递归
+        }
+    } while (FindNextFileA(hFind, &fd));
+
+    FindClose(hFind);
+}
+
+std::vector<std::string> ExpandDirectories(const std::vector<std::string>& selected) {
+    std::vector<std::string> result;
+
+    for (const auto& path : selected) {
+        DWORD attr = GetFileAttributesA(path.c_str());
+        if (attr == INVALID_FILE_ATTRIBUTES) continue;
+
+        result.push_back(path);  // 先加入自身
+
+        if (attr & FILE_ATTRIBUTE_DIRECTORY) {
+            ExpandDirectory(path, result);
+        }
+    }
+    return result;
+}
+
+static std::vector<std::string> GetDesktopSelectedFiles(int& result)
 {
     CComPtr<IShellWindows> pShellWindows;
-    if (FAILED(pShellWindows.CoCreateInstance(CLSID_ShellWindows)))
+    if (FAILED(pShellWindows.CoCreateInstance(CLSID_ShellWindows))) {
+        result = 101;
         return {};
+    }
 
     CComVariant vLoc(CSIDL_DESKTOP);
     CComVariant vEmpty;
     long lhwnd;
     CComPtr<IDispatch> pDisp;
 
-    if (FAILED(pShellWindows->FindWindowSW(&vLoc, &vEmpty, SWC_DESKTOP, &lhwnd, SWFO_NEEDDISPATCH, &pDisp)))
+    if (FAILED(pShellWindows->FindWindowSW(&vLoc, &vEmpty, SWC_DESKTOP, &lhwnd, SWFO_NEEDDISPATCH, &pDisp))) {
+        result = 102;
         return {};
+    }
 
     CComQIPtr<IServiceProvider> pServiceProvider(pDisp);
-    if (!pServiceProvider)
+    if (!pServiceProvider) {
+        result = 103;
         return {};
+    }
 
     CComPtr<IShellBrowser> pShellBrowser;
-    if (FAILED(pServiceProvider->QueryService(SID_STopLevelBrowser, IID_IShellBrowser, (void**)&pShellBrowser)))
+    if (FAILED(pServiceProvider->QueryService(SID_STopLevelBrowser, IID_IShellBrowser, (void**)&pShellBrowser))) {
+        result = 104;
         return {};
+    }
 
     CComPtr<IShellView> pShellView;
-    if (FAILED(pShellBrowser->QueryActiveShellView(&pShellView)))
+    if (FAILED(pShellBrowser->QueryActiveShellView(&pShellView))) {
+        result = 105;
         return {};
+    }
 
     CComPtr<IDataObject> pDataObject;
-    if (FAILED(pShellView->GetItemObject(SVGIO_SELECTION, IID_IDataObject, (void**)&pDataObject)))
+    if (FAILED(pShellView->GetItemObject(SVGIO_SELECTION, IID_IDataObject, (void**)&pDataObject))) {
+        result = 106;
         return {};
+    }
 
     FORMATETC fmt = { CF_HDROP, NULL, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
     STGMEDIUM stg = {};
 
-    if (FAILED(pDataObject->GetData(&fmt, &stg)))
+    if (FAILED(pDataObject->GetData(&fmt, &stg))) {
+        result = 107;
         return {};
+    }
 
     std::vector<std::string> vecFiles;
     HDROP hDrop = (HDROP)GlobalLock(stg.hGlobal);
@@ -65,11 +117,13 @@ static std::vector<std::string> GetDesktopSelectedFiles()
     }
     ReleaseStgMedium(&stg);
 
+    vecFiles = ExpandDirectories(vecFiles);
     return vecFiles;
 }
 
-std::vector<std::string> GetForegroundSelectedFiles()
+std::vector<std::string> GetForegroundSelectedFiles(int& result)
 {
+	result = 0;
     HRESULT hrInit = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     bool bNeedUninit = SUCCEEDED(hrInit);
 
@@ -90,7 +144,7 @@ std::vector<std::string> GetForegroundSelectedFiles()
 
     if (hFore == hDesktop || hFore == hWorkerW) {
         if (bNeedUninit) CoUninitialize();
-        return GetDesktopSelectedFiles();
+        return GetDesktopSelectedFiles(result);
     }
 
     // 检查是否是资源管理器窗口
@@ -99,6 +153,7 @@ std::vector<std::string> GetForegroundSelectedFiles()
 
     if (strcmp(szClass, "CabinetWClass") != 0 && strcmp(szClass, "ExploreWClass") != 0) {
         if (bNeedUninit) CoUninitialize();
+        result = 1;
         return {};
     }
 
@@ -106,6 +161,7 @@ std::vector<std::string> GetForegroundSelectedFiles()
     CComPtr<IShellWindows> pShellWindows;
     if (FAILED(pShellWindows.CoCreateInstance(CLSID_ShellWindows))) {
         if (bNeedUninit) CoUninitialize();
+        result = 2;
         return {};
     } 
 
@@ -130,16 +186,22 @@ std::vector<std::string> GetForegroundSelectedFiles()
             continue;
 
         CComPtr<IDispatch> pDoc;
-        if (FAILED(pBrowser->get_Document(&pDoc)) || !pDoc)
+        if (FAILED(pBrowser->get_Document(&pDoc)) || !pDoc) {
+            result = 3;
             break;
+        }
 
         CComQIPtr<IShellFolderViewDual> pView(pDoc);
-        if (!pView)
+        if (!pView) {
+            result = 4;
             break;
+        }
 
         CComPtr<FolderItems> pItems;
-        if (FAILED(pView->SelectedItems(&pItems)) || !pItems)
+        if (FAILED(pView->SelectedItems(&pItems)) || !pItems) {
+            result = 5;
             break;
+        }
 
         long nItems = 0;
         pItems->get_Count(&nItems);
@@ -169,6 +231,7 @@ std::vector<std::string> GetForegroundSelectedFiles()
 
     if (bNeedUninit) CoUninitialize();
 
+    vecFiles = ExpandDirectories(vecFiles);
     return vecFiles;
 }
 

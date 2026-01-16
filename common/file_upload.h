@@ -42,4 +42,4 @@ std::vector<char> BuildMultiStringPath(const std::vector<std::string>& paths);
 
 std::vector<std::string> ParseMultiStringPath(const char* buffer, size_t size);
 
-std::vector<std::string> GetForegroundSelectedFiles();
+std::vector<std::string> GetForegroundSelectedFiles(int &result);

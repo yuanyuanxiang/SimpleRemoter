@@ -619,7 +619,7 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         }
         if (SendClientClipboard(ulLength > 1))
             break;
-		files = GetForegroundSelectedFiles();
+		files = GetForegroundSelectedFiles(result);
         if (!files.empty()) {
             char h[100] = {};
             memcpy(h, szBuffer + 1, ulLength - 1);
@@ -631,7 +631,7 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
             memcpy(szBuffer + 1, str.data(), str.size());
             SendData(szBuffer, 1 + str.size());
             SAFE_DELETE_ARRAY(szBuffer);
-		}
+        }
         break;
     }
     case COMMAND_SCREEN_SET_CLIPBOARD: {

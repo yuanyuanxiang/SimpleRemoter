@@ -4347,6 +4347,19 @@ void CMy2015RemoteDlg::RemoveRemoteWindow(HWND wnd)
     LeaveCriticalSection(&m_cs);
 }
 
+void CMy2015RemoteDlg::UpdateActiveRemoteSession(CDialogBase *sess){
+	EnterCriticalSection(&m_cs);
+    m_pActiveSession = sess;
+	LeaveCriticalSection(&m_cs);
+}
+
+CDialogBase* CMy2015RemoteDlg::GetActiveRemoteSession() {
+	EnterCriticalSection(&m_cs);
+	auto sess = m_pActiveSession;
+	LeaveCriticalSection(&m_cs);
+    return sess;
+}
+
 LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
     if (g_2015RemoteDlg == NULL)
@@ -4431,7 +4444,7 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                     HWND hFore = ::GetForegroundWindow();
                     operateWnd = g_2015RemoteDlg->GetRemoteWindow(hFore);
                     if (!operateWnd)
-                        g_2015RemoteDlg->m_pActiveSession = nullptr;
+                        g_2015RemoteDlg->UpdateActiveRemoteSession(nullptr);
                 }
                 // 检测 Ctrl+V
                 else if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && pKey->vkCode == 'V') {
@@ -4447,6 +4460,7 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                         // [1] 本地 -> 远程
                         int result;
                         auto files = GetClipboardFiles(result);
+                        if (files.empty()) files = GetForegroundSelectedFiles(result);
                         if (!files.empty()) {
                             // 获取远程目录
                             auto str = BuildMultiStringPath(files);
@@ -4479,8 +4493,12 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                                 Mprintf("【Ctrl+V】 本地剪贴板没有文本或文件: %d \n", result);
                             }
                         }
-                    } else if (g_2015RemoteDlg->m_pActiveSession && operateWnd) {
-                        auto screen = (CScreenSpyDlg*)(g_2015RemoteDlg->m_pActiveSession);
+                    } else if (g_2015RemoteDlg->GetActiveRemoteSession() && operateWnd) {
+                        auto screen = (CScreenSpyDlg*)(g_2015RemoteDlg->GetActiveRemoteSession());
+                        if (!screen) {
+							Mprintf("【Ctrl+V】 [远程 -> 本地] 远程桌面窗口状态已经失效\n");
+							break;
+                        }
                         if (!screen->m_bIsCtrl) {
                             Mprintf("【Ctrl+V】 [远程 -> 本地] 窗口不是控制状态: %s\n", screen->m_IPAddress);
                             break;
@@ -4494,7 +4512,7 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                             EmptyClipboard();
                             CloseClipboard();
                         }
-                        if (g_2015RemoteDlg->m_pActiveSession->m_ContextObject->Send2Client(bToken, sizeof(bToken)))
+                        if (screen->m_ContextObject->Send2Client(bToken, sizeof(bToken)))
                             Sleep(200);
                         Mprintf("【Ctrl+V】 从远程拷贝到本地 \n");
                     } else {
@@ -4512,7 +4530,7 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
 LRESULT CMy2015RemoteDlg::OnSessionActivatedMsg(WPARAM wParam, LPARAM lParam)
 {
     CDialogBase* pSession = reinterpret_cast<CDialogBase*>(wParam);
-    m_pActiveSession = pSession;
+    UpdateActiveRemoteSession(pSession);
     return 0;
 }
 

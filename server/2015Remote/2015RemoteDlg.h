@@ -279,6 +279,8 @@ public:
     CDialogBase* GetRemoteWindow(CDialogBase* dlg);
     void RemoveRemoteWindow(HWND wnd);
     CDialogBase* m_pActiveSession = nullptr; // 当前活动会话窗口指针 / NULL 表示无
+    void UpdateActiveRemoteSession(CDialogBase* sess);
+    CDialogBase* GetActiveRemoteSession();
     afx_msg LRESULT OnSessionActivatedMsg(WPARAM wParam, LPARAM lParam);
     static LRESULT CALLBACK LowLevelKeyboardProc(int nCode, WPARAM wParam, LPARAM lParam);
     HHOOK g_hKeyboardHook = NULL;
