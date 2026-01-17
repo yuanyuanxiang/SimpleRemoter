@@ -7,6 +7,7 @@
 #include "IOCPServer.h"
 #include <common/location.h>
 #include <map>
+#include"file_server.h"
 
 //////////////////////////////////////////////////////////////////////////
 // 以下为特殊需求使用
@@ -187,6 +188,7 @@ protected:
     DWORD g_StartTick;
     BOOL m_bHookWIN = TRUE;
     BOOL m_runNormal = FALSE;
+    FileDownloadServer* m_FileServer = nullptr;
     // 生成的消息映射函数
     virtual BOOL OnInitDialog();
     afx_msg void OnSysCommand(UINT nID, LPARAM lParam);

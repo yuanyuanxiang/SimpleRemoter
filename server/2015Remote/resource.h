@@ -196,7 +196,6 @@
 #define IDD_TOOLBAR_DLG                 318
 #define IDD_DIALOG_FILESEND             320
 #define IDR_SCLOADER_X86_OLD            322
-#define IDR_BINARY7                     323
 #define IDR_SCLOADER_X64_OLD            323
 #define IDC_MESSAGE                     1000
 #define IDC_ONLINE                      1001
@@ -441,6 +440,10 @@
 #define IDC_BTN_POSITION                2219
 #define IDC_BTN_OPACITY                 2220
 #define IDC_BTN_SCREENSHOT              2221
+#define IDC_CHECK1                      2222
+#define IDC_CHECK_FILESERVER            2222
+#define IDC_STATIC_DOWNLOAD             2223
+#define IDC_EDIT_DOWNLOAD_URL           2224
 #define ID_ONLINE_UPDATE                32772
 #define ID_ONLINE_MESSAGE               32773
 #define ID_ONLINE_DELETE                32775
@@ -627,7 +630,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        324
 #define _APS_NEXT_COMMAND_VALUE         32995
-#define _APS_NEXT_CONTROL_VALUE         2222
+#define _APS_NEXT_CONTROL_VALUE         2225
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

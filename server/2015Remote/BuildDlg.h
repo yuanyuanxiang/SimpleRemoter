@@ -62,4 +62,10 @@ public:
     afx_msg void OnEnKillfocusEditInstallDir();
     afx_msg void OnEnKillfocusEditInstallName();
     afx_msg void OnRandomName();
+    CButton m_BtnFileServer;
+    CStatic m_StaticDownload;
+    CEdit m_EditDownloadUrl;
+    CString m_sDownloadUrl;
+    afx_msg void OnBnClickedCheckFileserver();
+    afx_msg void OnCbnSelchangeComboPayload();
 };

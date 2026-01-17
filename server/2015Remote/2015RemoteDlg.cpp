@@ -481,6 +481,10 @@ CMy2015RemoteDlg::~CMy2015RemoteDlg()
         MemoryFreeLibrary(m_tinyDLL);
         m_tinyDLL = NULL;
     }
+    if (m_FileServer) {
+        m_FileServer->Stop();
+        SAFE_DELETE(m_FileServer);
+    }
 }
 
 void CMy2015RemoteDlg::DoDataExchange(CDataExchange* pDX)
@@ -1149,6 +1153,12 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     THIS_CFG.SetStr("settings", "SN", getDeviceID(GetHardwareID()));
     THIS_CFG.SetStr("settings", "PwdHash", GetPwdHash());
     THIS_CFG.SetStr("settings", "MasterHash", GetMasterHash());
+
+    UPDATE_SPLASH(16, "正在启动下载服务...");
+    m_FileServer = new FileDownloadServer(THIS_CFG.GetInt("settings", "FileSvrPort", 80));
+    if (!m_FileServer->Start()) {
+        THIS_APP->MessageBoxA("下载服务启动失败，可能是端口被占用了。", "提示");
+    }
 
     UPDATE_SPLASH(20, "正在初始化文件上传模块...");
     int ret = InitFileUpload(GetHMAC(), 64, 50, Logf);
