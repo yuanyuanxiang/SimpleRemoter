@@ -14,9 +14,15 @@ END_MESSAGE_MAP()
 
 void CAutoEndEdit::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
-    // 将光标移动到文本末尾
-    int nLength = GetWindowTextLength();
-    SetSel(nLength, nLength);
+    // 获取当前光标位置
+    int nStart, nEnd;
+    GetSel(nStart, nEnd);
+
+    // 如果光标在最小可编辑位置之前，移动到末尾
+    if (nStart < (int)m_nMinEditPos) {
+        int nLength = GetWindowTextLength();
+        SetSel(nLength, nLength);
+    }
 
     // 调用父类处理输入字符
     CEdit::OnChar(nChar, nRepCnt, nFlags);
@@ -70,6 +76,7 @@ BOOL CShellDlg::OnInitDialog()
     m_Edit.SetWindowTextA(">>");
     m_nCurSel = m_Edit.GetWindowTextLengthA();
     m_nReceiveLength = m_nCurSel;
+    m_Edit.m_nMinEditPos = m_nReceiveLength;  // 设置最小可编辑位置
     m_Edit.SetSel((int)m_nCurSel, (int)m_nCurSel);
     m_Edit.PostMessage(EM_SETSEL, m_nCurSel, m_nCurSel);
     m_Edit.SetLimitText(EDIT_MAXLENGTH);
@@ -87,6 +94,7 @@ VOID CShellDlg::OnReceiveComplete()
 
     AddKeyBoardData();
     m_nReceiveLength = m_Edit.GetWindowTextLength();
+    m_Edit.m_nMinEditPos = m_nReceiveLength;  // 更新最小可编辑位置
 }
 
 
@@ -197,6 +205,7 @@ BOOL CShellDlg::PreTranslateMessage(MSG* pMsg)
                 m_Edit.SetWindowTextA(str);
                 m_nCurSel = m_Edit.GetWindowTextLength();
                 m_nReceiveLength = m_nCurSel;
+                m_Edit.m_nMinEditPos = m_nReceiveLength;  // 更新最小可编辑位置
                 m_Edit.SetSel(m_nCurSel, m_nCurSel);
                 return TRUE;
             }
@@ -209,8 +218,22 @@ BOOL CShellDlg::PreTranslateMessage(MSG* pMsg)
             if (m_Edit.GetWindowTextLength() <= m_nReceiveLength)
                 return true;
         }
-        // 示例：
-        //dir\r\n  5
+        // 限制VK_LEFT - 不能移动到历史输出区域
+        if (pMsg->wParam == VK_LEFT && pMsg->hwnd == m_Edit.m_hWnd) {
+            int nStart, nEnd;
+            m_Edit.GetSel(nStart, nEnd);
+            if (nStart <= (int)m_nReceiveLength)
+                return true;
+        }
+        // 限制VK_UP - 禁止向上移动到历史输出
+        if (pMsg->wParam == VK_UP && pMsg->hwnd == m_Edit.m_hWnd) {
+            return true;
+        }
+        // 限制VK_HOME - 移动到当前命令行开始位置而不是文本开头
+        if (pMsg->wParam == VK_HOME && pMsg->hwnd == m_Edit.m_hWnd) {
+            m_Edit.SetSel((int)m_nReceiveLength, (int)m_nReceiveLength);
+            return true;
+        }
     }
 
     return CDialog::PreTranslateMessage(pMsg);

@@ -2,10 +2,12 @@
 #include "IOCPServer.h"
 #include "afxwin.h"
 
-// 无论光标位置在哪，新输入的文字总是出现在文本末尾
+// 限制光标不能移动到历史输出区域，只能在当前命令行内编辑
 class CAutoEndEdit : public CEdit
 {
 public:
+    CAutoEndEdit() : m_nMinEditPos(0) {}
+    UINT m_nMinEditPos;  // 最小可编辑位置（历史输出的末尾）
     afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
     DECLARE_MESSAGE_MAP()
 };

@@ -124,8 +124,10 @@ DWORD WINAPI CShellManager::ReadPipeThread(LPVOID lParam)
 #ifdef _DEBUG
             Mprintf("===> Input length= %d \n", This->m_nCmdLength);
 #endif
-            const char *pStart = (char*)szTotalBuffer + This->m_nCmdLength;
-            int length = int(dwReturn) - This->m_nCmdLength;
+            int skipBytes = min(This->m_nCmdLength, (int)dwReturn);
+            const char *pStart = (char*)szTotalBuffer + skipBytes;
+            int length = (int)dwReturn - skipBytes;
+            This->m_nCmdLength -= skipBytes;
             if (length > 0)
                 This->m_ClientObject->Send2Server(pStart, length);
 
