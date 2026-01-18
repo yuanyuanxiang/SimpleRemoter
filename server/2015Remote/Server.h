@@ -33,24 +33,6 @@ std::string GetRemoteIP(SOCKET sock);
 	ZSTD_decompress(dest, *(destLen), source, sourceLen)
 
 enum {
-    ONLINELIST_IP = 0,          // IP的列顺序
-    ONLINELIST_ADDR,            // 地址
-    ONLINELIST_LOCATION,        // 地理位置
-    ONLINELIST_COMPUTER_NAME,   // 计算机名/备注
-    ONLINELIST_OS,              // 操作系统
-    ONLINELIST_CPU,             // CPU
-    ONLINELIST_VIDEO,           // 摄像头(有无)
-    ONLINELIST_PING,            // PING(对方的网速)
-    ONLINELIST_VERSION,	        // 版本信息
-    ONLINELIST_INSTALLTIME,     // 安装时间
-    ONLINELIST_LOGINTIME,       // 活动窗口
-    ONLINELIST_CLIENTTYPE,		// 客户端类型
-    ONLINELIST_PATH,			// 文件路径
-    ONLINELIST_PUBIP,
-    ONLINELIST_MAX,
-};
-
-enum {
     PARSER_WINOS = -2,
     PARSER_FAILED = -1,			// 解析失败
     PARSER_NEEDMORE = 0,		// 需要更多数据
@@ -311,6 +293,7 @@ public:
     }
 };
 
+class CONTEXT_OBJECT;
 typedef BOOL (CALLBACK* pfnNotifyProc)(CONTEXT_OBJECT* ContextObject);
 typedef BOOL (CALLBACK* pfnOfflineProc)(CONTEXT_OBJECT* ContextObject);
 
@@ -335,39 +318,10 @@ public:
     virtual void Disconnect(CONTEXT_OBJECT* ctx) {}
 };
 
-class context
-{
-public:
-    // 纯虚函数
-    virtual VOID InitMember(SOCKET s, Server* svr)=0;
-    virtual BOOL Send2Client(PBYTE szBuffer, ULONG ulOriginalLength) = 0;
-    virtual CString GetClientData(int index)const = 0;
-    virtual void GetAdditionalData(CString(&s)[RES_MAX]) const =0;
-    virtual CString GetAdditionalData(int index) const = 0;
-    virtual uint64_t GetClientID() const = 0;
-    virtual std::string GetPeerName() const = 0;
-    virtual int GetPort() const = 0;
-    virtual std::string GetProtocol() const = 0;
-    virtual int GetServerPort() const = 0;
-    virtual FlagType GetFlagType() const = 0;
-    virtual std::string GetGroupName() const = 0;
-    virtual uint64_t GetAliveTime()const = 0;
-public:
-    virtual ~context() {}
-    virtual void Destroy() {}
-    virtual BOOL IsLogin() const
-    {
-        return TRUE;
-    }
-    virtual bool IsEqual(context *ctx) const
-    {
-        return this == ctx || this->GetPort() == ctx->GetPort();
-    }
-};
-
 // 预分配解压缩缓冲区大小
 #define PREALLOC_DECOMPRESS_SIZE (4 * 1024)
 
+#include "context.h"
 typedef class CONTEXT_OBJECT : public context
 {
 public:
@@ -508,7 +462,7 @@ public:
     {
         return server->GetPort();
     }
-    VOID InitMember(SOCKET s, Server *svr)
+    VOID InitMember(SOCKET s, VOID*svr)
     {
         memset(szBuffer, 0, sizeof(char) * PACKET_LENGTH);
         hDlg = NULL;
@@ -527,7 +481,7 @@ public:
         Parser.Reset();
         bLogin = FALSE;
         m_bProxyConnected = FALSE;
-        server = svr;
+        server = (Server*)svr;
         OnlineTime = time(0);
     }
     uint64_t GetAliveTime()const
@@ -761,7 +715,7 @@ public:
     {
         return "UDP";
     }
-    VOID InitMember(SOCKET s, Server* svr) override
+    VOID InitMember(SOCKET s, VOID* svr) override
     {
         CONTEXT_OBJECT::InitMember(s, svr);
         clientAddr = {};

@@ -282,10 +282,12 @@
     <ClInclude Include="Bmp2Video.h" />
     <ClInclude Include="Buffer.h" />
     <ClInclude Include="BuildDlg.h" />
+    <ClInclude Include="CClientListDlg.h" />
     <ClInclude Include="CDlgFileSend.h" />
     <ClInclude Include="CDrawingBoard.h" />
     <ClInclude Include="CGridDialog.h" />
     <ClInclude Include="Chat.h" />
+    <ClInclude Include="context.h" />
     <ClInclude Include="CPasswordDlg.h" />
     <ClInclude Include="CRcEditDlg.h" />
     <ClInclude Include="CTextDlg.h" />
@@ -299,6 +301,7 @@
     <ClInclude Include="file\CFileManagerDlg.h" />
     <ClInclude Include="file\CFileTransferModeDlg.h" />
     <ClInclude Include="HideScreenSpyDlg.h" />
+    <ClInclude Include="HostInfo.h" />
     <ClInclude Include="InputDlg.h" />
     <ClInclude Include="IOCPKCPServer.h" />
     <ClInclude Include="IOCPServer.h" />
@@ -373,6 +376,7 @@
     <ClCompile Include="Bmp2Video.cpp" />
     <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="BuildDlg.cpp" />
+    <ClCompile Include="CClientListDlg.cpp" />
     <ClCompile Include="CDlgFileSend.cpp" />
     <ClCompile Include="CDrawingBoard.cpp" />
     <ClCompile Include="CGridDialog.cpp" />

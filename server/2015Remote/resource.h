@@ -197,6 +197,7 @@
 #define IDD_DIALOG_FILESEND             320
 #define IDR_SCLOADER_X86_OLD            322
 #define IDR_SCLOADER_X64_OLD            323
+#define IDD_DIALOG_CLIENTLIST           324
 #define IDC_MESSAGE                     1000
 #define IDC_ONLINE                      1001
 #define IDC_STATIC_TIPS                 1002
@@ -445,6 +446,7 @@
 #define IDC_STATIC_DOWNLOAD             2223
 #define IDC_EDIT_DOWNLOAD_URL           2224
 #define IDC_EDIT_FILESERVER_PORT        2225
+#define IDC_CLIENT_LIST                 2227
 #define ID_ONLINE_UPDATE                32772
 #define ID_ONLINE_MESSAGE               32773
 #define ID_ONLINE_DELETE                32775
@@ -625,15 +627,17 @@
 #define ID_RANDOM_NAME                  32994
 #define ID_32995                        32995
 #define ID_DOWNLOAD_SERVERPORT          32996
+#define ID_32997                        32997
+#define ID_HISTORY_CLIENTS              32998
 #define ID_EXIT_FULLSCREEN              40001
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        324
-#define _APS_NEXT_COMMAND_VALUE         32997
-#define _APS_NEXT_CONTROL_VALUE         2226
+#define _APS_NEXT_RESOURCE_VALUE        326
+#define _APS_NEXT_COMMAND_VALUE         32999
+#define _APS_NEXT_CONTROL_VALUE         2228
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

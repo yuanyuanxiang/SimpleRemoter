@@ -11,138 +11,89 @@
 #include <location.h>
 #include "ScreenCapture.h"
 
-// by ChatGPT
-bool IsWindows11()
-{
-    typedef NTSTATUS(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
-    RTL_OSVERSIONINFOW rovi = { 0 };
-    rovi.dwOSVersionInfoSize = sizeof(rovi);
-
-    HMODULE hMod = GetModuleHandleW(L"ntdll.dll");
-    if (hMod) {
-        RtlGetVersionPtr rtlGetVersion = (RtlGetVersionPtr)GetProcAddress(hMod, "RtlGetVersion");
-        if (rtlGetVersion) {
-            rtlGetVersion(&rovi);
-            return (rovi.dwMajorVersion == 10 && rovi.dwMinorVersion == 0 && rovi.dwBuildNumber >= 22000);
-        }
-    }
-    return false;
-}
-
-/************************************************************************
----------------------
-作者：IT1995
-来源：CSDN
-原文：https://blog.csdn.net/qq78442761/article/details/64440535
-版权声明：本文为博主原创文章，转载请附上博文链接！
-修改说明：2019.3.29由袁沅祥修改
-************************************************************************/
 std::string getSystemName()
 {
-    std::string vname("未知操作系统");
-    //先判断是否为win8.1或win10
-    typedef void(__stdcall*NTPROC)(DWORD*, DWORD*, DWORD*);
-    HINSTANCE hinst = LoadLibrary("ntdll.dll");
-    if (hinst == NULL) {
-        return vname;
-    }
-    if (IsWindows11()) {
-        vname = "Windows 11";
-        Mprintf("此电脑的版本为:%s\n", vname.c_str());
-        return vname;
-    }
-    DWORD dwMajor, dwMinor, dwBuildNumber;
-    NTPROC proc = (NTPROC)GetProcAddress(hinst, "RtlGetNtVersionNumbers");
-    if (proc==NULL) {
-        return vname;
-    }
-    proc(&dwMajor, &dwMinor, &dwBuildNumber);
-    if (dwMajor == 6 && dwMinor == 3) {	//win 8.1
-        vname = "Windows 8.1";
-        Mprintf("此电脑的版本为:%s\n", vname.c_str());
-        return vname;
-    }
-    if (dwMajor == 10 && dwMinor == 0) {	//win 10
-        vname = "Windows 10";
-        Mprintf("此电脑的版本为:%s\n", vname.c_str());
-        return vname;
-    }
-    //下面不能判断Win Server，因为本人还未有这种系统的机子，暂时不给出
+    typedef void(__stdcall* NTPROC)(DWORD*, DWORD*, DWORD*);
 
-    //判断win8.1以下的版本
-    SYSTEM_INFO info;                //用SYSTEM_INFO结构判断64位AMD处理器
-    GetSystemInfo(&info);            //调用GetSystemInfo函数填充结构
-    OSVERSIONINFOEX os;
-    os.dwOSVersionInfoSize = sizeof(OSVERSIONINFOEX);
-    if (GetVersionEx((OSVERSIONINFO *)&os)) {
-        //下面根据版本信息判断操作系统名称
-        switch (os.dwMajorVersion) {
-        //判断主版本号
-        case 4:
-            switch (os.dwMinorVersion) {
-            //判断次版本号
-            case 0:
-                if (os.dwPlatformId == VER_PLATFORM_WIN32_NT)
-                    vname ="Windows NT 4.0";  //1996年7月发布
-                else if (os.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS)
-                    vname = "Windows 95";
-                break;
-            case 10:
-                vname ="Windows 98";
-                break;
-            case 90:
-                vname = "Windows Me";
-                break;
-            }
-            break;
-        case 5:
-            switch (os.dwMinorVersion) {
-            //再比较dwMinorVersion的值
-            case 0:
-                vname = "Windows 2000";    //1999年12月发布
-                break;
-            case 1:
-                vname = "Windows XP";      //2001年8月发布
-                break;
-            case 2:
-                if (os.wProductType == VER_NT_WORKSTATION &&
-                    info.wProcessorArchitecture == PROCESSOR_ARCHITECTURE_AMD64)
-                    vname = "Windows XP Professional x64 Edition";
-                else if (GetSystemMetrics(SM_SERVERR2) == 0)
-                    vname = "Windows Server 2003";   //2003年3月发布
-                else if (GetSystemMetrics(SM_SERVERR2) != 0)
-                    vname = "Windows Server 2003 R2";
-                break;
-            }
-            break;
-        case 6:
-            switch (os.dwMinorVersion) {
-            case 0:
-                if (os.wProductType == VER_NT_WORKSTATION)
-                    vname = "Windows Vista";
-                else
-                    vname = "Windows Server 2008";   //服务器版本
-                break;
-            case 1:
-                if (os.wProductType == VER_NT_WORKSTATION)
-                    vname = "Windows 7";
-                else
-                    vname = "Windows Server 2008 R2";
-                break;
-            case 2:
-                if (os.wProductType == VER_NT_WORKSTATION)
-                    vname = "Windows 8";
-                else
-                    vname = "Windows Server 2012";
-                break;
-            }
-            break;
-        default:
-            vname = "未知操作系统";
+    HINSTANCE hinst = LoadLibrary("ntdll.dll");
+    if (!hinst) {
+        return "未知操作系统";
+    }
+
+    NTPROC proc = (NTPROC)GetProcAddress(hinst, "RtlGetNtVersionNumbers");
+    if (!proc) {
+        FreeLibrary(hinst);
+        return "未知操作系统";
+    }
+
+    DWORD dwMajor, dwMinor, dwBuildNumber;
+    proc(&dwMajor, &dwMinor, &dwBuildNumber);
+    dwBuildNumber &= 0xFFFF;  // 高位是标志位，只取低16位
+
+    FreeLibrary(hinst);
+
+    // 判断是否为 Server 版本
+    OSVERSIONINFOEX osvi = { sizeof(osvi) };
+    GetVersionEx((OSVERSIONINFO*)&osvi);
+    bool isServer = (osvi.wProductType != VER_NT_WORKSTATION);
+
+    std::string vname;
+
+    if (dwMajor == 10 && dwMinor == 0) {
+        if (isServer) {
+            // Windows Server
+            if (dwBuildNumber >= 20348)
+                vname = "Windows Server 2022";
+            else if (dwBuildNumber >= 17763)
+                vname = "Windows Server 2019";
+            else
+                vname = "Windows Server 2016";
         }
-        Mprintf("此电脑的版本为:%s\n", vname.c_str());
-    } else
-        Mprintf("版本获取失败\n");
+        else {
+            // Windows 桌面版
+            if (dwBuildNumber >= 22000)
+                vname = "Windows 11";
+            else
+                vname = "Windows 10";
+        }
+    }
+    else if (dwMajor == 6) {
+        switch (dwMinor) {
+        case 3:
+            vname = isServer ? "Windows Server 2012 R2" : "Windows 8.1";
+            break;
+        case 2:
+            vname = isServer ? "Windows Server 2012" : "Windows 8";
+            break;
+        case 1:
+            vname = isServer ? "Windows Server 2008 R2" : "Windows 7";
+            break;
+        case 0:
+            vname = isServer ? "Windows Server 2008" : "Windows Vista";
+            break;
+        }
+    }
+    else if (dwMajor == 5) {
+        switch (dwMinor) {
+        case 2:
+            vname = "Windows Server 2003";
+            break;
+        case 1:
+            vname = "Windows XP";
+            break;
+        case 0:
+            vname = "Windows 2000";
+            break;
+        }
+    }
+
+    if (vname.empty()) {
+        char buf[64];
+        sprintf(buf, "Windows (Build %d)", dwBuildNumber);
+        vname = buf;
+    }
+
+    Mprintf("此电脑的版本为:%s (Build %d)\n", vname.c_str(), dwBuildNumber);
     return vname;
 }
 

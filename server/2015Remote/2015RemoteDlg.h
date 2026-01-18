@@ -47,75 +47,8 @@ typedef struct FileTransformCmd {
 } FileTransformCmd;
 
 #define ID_DYNAMIC_MENU_BASE 36500
-
-//////////////////////////////////////////////////////////////////////////
-#include <unordered_map>
-#include <fstream>
+#include "HostInfo.h"
 #include "CGridDialog.h"
-#include <set>
-
-enum {
-    MAP_NOTE,
-    MAP_LOCATION,
-    MAP_LEVEL,
-};
-
-struct _ClientValue {
-    char Note[64];
-    char Location[64];
-    char Level;
-    char Reserved[127]; // 预留
-    _ClientValue()
-    {
-        memset(this, 0, sizeof(_ClientValue));
-    }
-    _ClientValue(const CString& loc, const CString& s)
-    {
-        memset(this, 0, sizeof(_ClientValue));
-        strcpy_s(Note, s.GetString());
-        strcpy_s(Location, loc.GetString());
-    }
-    void UpdateNote(const CString& s)
-    {
-        strcpy_s(Note, s.GetString());
-    }
-    void UpdateLocation(const CString& loc)
-    {
-        strcpy_s(Location, loc.GetString());
-    }
-    void UpdateLevel(int level)
-    {
-        Level = level;
-    }
-    const char* GetNote() const
-    {
-        return Note;
-    }
-    const char* GetLocation() const
-    {
-        return Location;
-    }
-    int GetLevel() const
-    {
-        return Level;
-    }
-    int GetLength() const
-    {
-        return sizeof(_ClientValue);
-    }
-};
-
-typedef uint64_t ClientKey;
-
-typedef _ClientValue ClientValue;
-
-typedef  std::unordered_map<ClientKey, ClientValue> ComputerNoteMap;
-
-// 保存 unordered_map 到文件
-void SaveToFile(const ComputerNoteMap& data, const std::string& filename);
-
-// 从文件读取 unordered_map 数据
-void LoadFromFile(ComputerNoteMap& data, const std::string& filename);
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -126,6 +59,7 @@ enum {
 };
 
 class CSplashDlg;  // 前向声明
+class CClientListDlg;
 
 #include "pwd_gen.h"
 
@@ -134,43 +68,9 @@ class CMy2015RemoteDlg : public CDialogEx
 {
 public:
     static std::string GetHardwareID(int v=-1);
-protected:
-    ComputerNoteMap m_ClientMap;
-    CString GetClientMapData(ClientKey key, int typ)
-    {
-        EnterCriticalSection(&m_cs);
-        auto f = m_ClientMap.find(key);
-        CString r;
-        if (f != m_ClientMap.end()) {
-            switch (typ) {
-            case MAP_NOTE:
-                r = f->second.GetNote();
-                break;
-            case MAP_LOCATION:
-                r = f->second.GetLocation();
-                break;
-            default:
-                break;
-            }
-        }
-        LeaveCriticalSection(&m_cs);
-        return r;
-    }
-    void SetClientMapData(ClientKey key, int typ, const char* value)
-    {
-        EnterCriticalSection(&m_cs);
-        switch (typ) {
-        case MAP_NOTE:
-            m_ClientMap[key].UpdateNote(value);
-            break;
-        case MAP_LOCATION:
-            m_ClientMap[key].UpdateLocation(value);
-            break;
-        default:
-            break;
-        }
-        LeaveCriticalSection(&m_cs);
-    }
+    _ClientList *m_ClientMap = nullptr;
+    CClientListDlg* m_pClientListDlg = nullptr;
+
     // 构造
 public:
     CMy2015RemoteDlg(CWnd* pParent = NULL);	// 标准构造函数
@@ -412,4 +312,5 @@ public:
     afx_msg void OnProxyPort();
     afx_msg void OnHookWin();
     afx_msg void OnRunasService();
+    afx_msg void OnHistoryClients();
 };
