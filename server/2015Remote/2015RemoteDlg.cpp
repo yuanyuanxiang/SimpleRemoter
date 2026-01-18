@@ -1432,6 +1432,11 @@ void CMy2015RemoteDlg::ApplyFrpSettings()
         cfg.SetStr(udp, "local_port", arr[i]);
         cfg.SetStr(udp, "remote_port", arr[i]);
     }
+    int fileServerPort = THIS_CFG.GetInt("settings", "FileSvrPort", 80);
+    std::string name = "YAMA-FileServer";
+	cfg.SetStr(name, "type", "tcp");
+	cfg.SetInt(name, "local_port", fileServerPort);
+	cfg.SetInt(name, "remote_port", fileServerPort);
 }
 
 void CMy2015RemoteDlg::OnSysCommand(UINT nID, LPARAM lParam)

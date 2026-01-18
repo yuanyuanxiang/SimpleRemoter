@@ -24,6 +24,7 @@ CSettingDlg::CSettingDlg(CWnd* pParent)
     , m_sUdpOption(_T(""))
     , m_nFrpPort(7000)
     , m_sFrpToken(_T(""))
+    , m_nFileServerPort(0)
 {
 }
 
@@ -62,6 +63,9 @@ void CSettingDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Text(pDX, IDC_EDIT_FRP_TOKEN, m_sFrpToken);
     DDV_MaxChars(pDX, m_sFrpToken, 24);
     DDX_Control(pDX, IDC_COMBO_VIDEO_WALL, m_ComboVideoWall);
+    DDX_Control(pDX, IDC_EDIT_FILESERVER_PORT, m_EditFileServerPort);
+    DDX_Text(pDX, IDC_EDIT_FILESERVER_PORT, m_nFileServerPort);
+	DDV_MinMaxInt(pDX, m_nFileServerPort, 1, 65535);
 }
 
 BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)
@@ -147,6 +151,7 @@ BOOL CSettingDlg::OnInitDialog()
 #endif
     m_nFrpPort = THIS_CFG.GetInt("frp", "server_port", 7000);
     m_sFrpToken = THIS_CFG.GetStr("frp", "token").c_str();
+    m_nFileServerPort = THIS_CFG.GetInt("settings", "FileSvrPort", 80);
 
     int size = THIS_CFG.GetInt("settings", "VideoWallSize");
     m_ComboVideoWall.InsertString(0, "无");
@@ -187,6 +192,7 @@ void CSettingDlg::OnBnClickedButtonSettingapply()
     THIS_CFG.SetInt("frp", "UseFrp", frp);
     THIS_CFG.SetInt("frp", "server_port", m_nFrpPort);
     THIS_CFG.SetStr("frp", "token", m_sFrpToken.GetString());
+    THIS_CFG.SetInt("settings", "FileSvrPort", m_nFileServerPort);
 
     THIS_CFG.SetInt("settings", "VideoWallSize", m_ComboVideoWall.GetCurSel()+1);
 

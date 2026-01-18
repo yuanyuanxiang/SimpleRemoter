@@ -444,6 +444,7 @@
 #define IDC_CHECK_FILESERVER            2222
 #define IDC_STATIC_DOWNLOAD             2223
 #define IDC_EDIT_DOWNLOAD_URL           2224
+#define IDC_EDIT_FILESERVER_PORT        2225
 #define ID_ONLINE_UPDATE                32772
 #define ID_ONLINE_MESSAGE               32773
 #define ID_ONLINE_DELETE                32775
@@ -622,6 +623,8 @@
 #define ID_FILEMANGER_UNCOMPRESS        32992
 #define ID_32993                        32993
 #define ID_RANDOM_NAME                  32994
+#define ID_32995                        32995
+#define ID_DOWNLOAD_SERVERPORT          32996
 #define ID_EXIT_FULLSCREEN              40001
 
 // Next default values for new objects
@@ -629,8 +632,8 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        324
-#define _APS_NEXT_COMMAND_VALUE         32995
-#define _APS_NEXT_CONTROL_VALUE         2225
+#define _APS_NEXT_COMMAND_VALUE         32997
+#define _APS_NEXT_CONTROL_VALUE         2226
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
