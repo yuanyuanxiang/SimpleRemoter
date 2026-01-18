@@ -47,6 +47,7 @@
 #include "SplashDlg.h"
 #include <ServerServiceWrapper.h>
 #include "CDlgFileSend.h"
+#include "CClientListDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -113,49 +114,6 @@ std::string PluginPath()
     GetModuleFileNameA(NULL, path, _MAX_PATH);
     GET_FILEPATH(path, "Plugins");
     return path;
-}
-
-
-//////////////////////////////////////////////////////////////////////////
-
-// 保存 unordered_map 到文件
-void SaveToFile(const ComputerNoteMap& data, const std::string& filename)
-{
-    std::ofstream outFile(filename, std::ios::binary);  // 打开文件（以二进制模式）
-    if (outFile.is_open()) {
-        for (const auto& pair : data) {
-            outFile.write(reinterpret_cast<const char*>(&pair.first), sizeof(ClientKey));  // 保存 key
-            int valueSize = pair.second.GetLength();
-            outFile.write(reinterpret_cast<const char*>(&valueSize), sizeof(int));  // 保存 value 的大小
-            outFile.write((char*)&pair.second, valueSize);  // 保存 value 字符串
-        }
-        outFile.close();
-    } else {
-        Mprintf("Unable to open file '%s' for writing!\n", filename.c_str());
-    }
-}
-
-// 从文件读取 unordered_map 数据
-void LoadFromFile(ComputerNoteMap& data, const std::string& filename)
-{
-    std::ifstream inFile(filename, std::ios::binary);  // 打开文件（以二进制模式）
-    if (inFile.is_open()) {
-        while (inFile.peek() != EOF) {
-            ClientKey key;
-            inFile.read(reinterpret_cast<char*>(&key), sizeof(ClientKey));  // 读取 key
-
-            int valueSize;
-            inFile.read(reinterpret_cast<char*>(&valueSize), sizeof(int));  // 读取 value 的大小
-
-            ClientValue value;
-            inFile.read((char*)&value, valueSize);  // 读取 value 字符串
-
-            data[key] = value;  // 插入到 map 中
-        }
-        inFile.close();
-    } else {
-        Mprintf("Unable to open file '%s' for reading!\n", filename.c_str());
-    }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -417,6 +375,7 @@ std::string CMy2015RemoteDlg::GetHardwareID(int v)
 
 CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::IDD, pParent)
 {
+    m_ClientMap = NewClientList();
     g_StartTick = GetTickCount();
     auto s = GetMasterHash();
     char buf[17] = { 0 };
@@ -469,6 +428,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::I
 
 CMy2015RemoteDlg::~CMy2015RemoteDlg()
 {
+    SAFE_DELETE(m_ClientMap);
     DeleteCriticalSection(&m_cs);
     for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
         SAFE_DELETE(m_ServerDLL[i]);
@@ -612,7 +572,8 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_PROXY_PORT, &CMy2015RemoteDlg::OnProxyPort)
     ON_COMMAND(ID_HOOK_WIN, &CMy2015RemoteDlg::OnHookWin)
     ON_COMMAND(ID_RUNAS_SERVICE, &CMy2015RemoteDlg::OnRunasService)
-END_MESSAGE_MAP()
+        ON_COMMAND(ID_HISTORY_CLIENTS, &CMy2015RemoteDlg::OnHistoryClients)
+        END_MESSAGE_MAP()
 
 
 // CMy2015RemoteDlg 消息处理程序
@@ -651,7 +612,7 @@ VOID CMy2015RemoteDlg::CreateSolidMenu()
     if (GetPwdHash() != masterHash) {
         SubMenu->DeleteMenu(ID_TOOL_GEN_MASTER, MF_BYCOMMAND);
     }
-    SubMenu = m_MainMenu.GetSubMenu(3);
+    SubMenu = m_MainMenu.GetSubMenu(4);
     if (!THIS_CFG.GetStr("settings", "Password").empty()) {
         SubMenu->ModifyMenuA(ID_TOOL_REQUEST_AUTH, MF_STRING, ID_TOOL_REQUEST_AUTH, _T("序列号"));
     }
@@ -802,16 +763,12 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
             id, v[RES_CLIENT_ID].c_str(), strIP.GetString(), path.GetString());
     }
     bool modify = false;
-    CString loc = GetClientMapData(id, MAP_LOCATION);
+    CString loc = m_ClientMap->GetClientMapData(id, MAP_LOCATION);
     if (loc.IsEmpty()) {
         loc = v[RES_CLIENT_LOC].c_str();
         if (loc.IsEmpty()) {
             IPConverter cvt;
             loc = cvt.GetGeoLocation(data[ONLINELIST_IP].GetString()).c_str();
-        }
-        if (!loc.IsEmpty()) {
-            modify = true;
-            SetClientMapData(id, MAP_LOCATION, loc);
         }
     }
     bool flag = strIP == "127.0.0.1" && !v[RES_CLIENT_PUBIP].empty();
@@ -820,6 +777,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     ContextObject->SetClientInfo(data, v);
     ContextObject->SetID(id);
     ContextObject->SetGroup(groupName);
+    m_ClientMap->SaveClientMapData(ContextObject);
 
     EnterCriticalSection(&m_cs);
 
@@ -843,14 +801,14 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     }
 
     if (modify)
-        SaveToFile(m_ClientMap, GetDbPath());
-    auto& m = m_ClientMap[ContextObject->ID];
+        m_ClientMap->SaveToFile(GetDbPath());
     m_HostList.insert(ContextObject);
     if (groupName == m_selectedGroup || (groupName.empty() && m_selectedGroup == "default")) {
         int i = m_CList_Online.InsertItem(m_CList_Online.GetItemCount(), data[ONLINELIST_IP]);
         for (int n = ONLINELIST_ADDR; n <= ONLINELIST_CLIENTTYPE; n++) {
+            auto note = m_ClientMap->GetClientMapData(ContextObject->GetClientID(), MAP_NOTE);
             n == ONLINELIST_COMPUTER_NAME ?
-            m_CList_Online.SetItemText(i, n, m.GetNote()[0] ? m.GetNote() : data[n]) :
+            m_CList_Online.SetItemText(i, n, !note.IsEmpty() ? note : data[n]) :
                           m_CList_Online.SetItemText(i, n, data[n].IsEmpty() ? "?" : data[n]);
         }
         m_CList_Online.SetItemData(i, (DWORD_PTR)ContextObject);
@@ -1195,7 +1153,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     UPDATE_SPLASH(35, "正在加载客户端数据库...");
     // 将"关于..."菜单项添加到系统菜单中。
     SetWindowText(_T("Yama"));
-    LoadFromFile(m_ClientMap, GetDbPath());
+    m_ClientMap->LoadFromFile(GetDbPath());
 
     // IDM_ABOUTBOX 必须在系统命令范围内。
     ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
@@ -1662,6 +1620,15 @@ void CMy2015RemoteDlg::Release()
         ContextObject->Destroy();
     }
     LeaveCriticalSection(&m_cs);
+    m_ClientMap->SaveToFile(GetDbPath());
+    if (m_pClientListDlg != nullptr && ::IsWindow(m_pClientListDlg->GetSafeHwnd())) {
+        // 关键：调用 DestroyWindow，它会触发窗口的关闭和销毁流程
+        m_pClientListDlg->DestroyWindow();
+
+        // 注意：如果你在对话框的 PostNcDestroy 里写了 delete this;
+        // 那么此时不要再 delete m_pClientListDlg，只需将指针置 NULL 即可
+        m_pClientListDlg = nullptr;
+    }
     Sleep(500);
     while (m_hFRPThread)
         Sleep(20);
@@ -2837,6 +2804,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
         BOOL authorized = AuthorizeClient(hb.SN, hb.Passcode, hb.PwdHmac);
         if (authorized) {
             Mprintf("%s HMAC 校验成功: %lld\n", hb.Passcode, hb.PwdHmac);
+            m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
             std::string tip = std::string(hb.Passcode) + " 授权成功: ";
             tip += std::to_string(hb.PwdHmac) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
             CharMsg* msg = new CharMsg(tip.c_str());
@@ -3177,19 +3145,13 @@ void CMy2015RemoteDlg::OnOnlineHostnote()
     while (Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
         context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
-        auto f = m_ClientMap.find(ContextObject->GetClientID());
-        if (f == m_ClientMap.end())
-            m_ClientMap[ContextObject->GetClientID()] = ClientValue("", dlg.m_str);
-        else
-            m_ClientMap[ContextObject->GetClientID()].UpdateNote(dlg.m_str);
+        m_ClientMap->SetClientMapData(ContextObject->GetClientID(), MAP_NOTE, dlg.m_str);
         m_CList_Online.SetItemText(iItem, ONLINELIST_COMPUTER_NAME, dlg.m_str);
         modified = TRUE;
     }
     LeaveCriticalSection(&m_cs);
     if (modified) {
-        EnterCriticalSection(&m_cs);
-        SaveToFile(m_ClientMap, GetDbPath());
-        LeaveCriticalSection(&m_cs);
+        m_ClientMap->SaveToFile(GetDbPath());
     }
 }
 
@@ -3992,11 +3954,10 @@ void CMy2015RemoteDlg::OnOnlineAddWatch()
     while (Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
         context* ctx = (context*)m_CList_Online.GetItemData(iItem);
-        auto f = m_ClientMap.find(ctx->GetClientID());
-        int r = f != m_ClientMap.end() ? f->second.GetLevel() : 0;
-        m_ClientMap[ctx->GetClientID()].UpdateLevel(++r >= 4 ? 0 : r);
+        int r = m_ClientMap->GetClientMapInteger(ctx->GetClientID(), MAP_LEVEL);
+        m_ClientMap->SetClientMapInteger(ctx->GetClientID(), MAP_LEVEL, ++r >= 4 ? 0 : r);
     }
-    SaveToFile(m_ClientMap, GetDbPath());
+    m_ClientMap->SaveToFile(GetDbPath());
     LeaveCriticalSection(&m_cs);
 }
 
@@ -4015,9 +3976,8 @@ void CMy2015RemoteDlg::OnNMCustomdrawOnline(NMHDR* pNMHDR, LRESULT* pResult)
         int nRow = static_cast<int>(pLVCD->nmcd.dwItemSpec);
         EnterCriticalSection(&m_cs);
         context* ctx = (context*)m_CList_Online.GetItemData(nRow);
-        auto f = m_ClientMap.find(ctx->GetClientID());
-        int r = f != m_ClientMap.end() ? f->second.GetLevel() : 0;
         LeaveCriticalSection(&m_cs);
+        int r = m_ClientMap->GetClientMapInteger(ctx->GetClientID(), MAP_LEVEL);
         if (r >= 1) pLVCD->clrText = RGB(0, 0, 255); // 字体蓝
         if (r >= 2) pLVCD->clrText = RGB(255, 0, 0); // 字体红
         if (r >= 3) pLVCD->clrTextBk = RGB(255, 160, 160); // 背景红
@@ -4113,14 +4073,14 @@ void CMy2015RemoteDlg::LoadListData(const std::string& group)
         auto g = ctx->GetGroupName();
         if ((group == _T("default") && g.empty()) || g == group) {
             CString strIP=ctx->GetClientData(ONLINELIST_IP);
-            auto& m = m_ClientMap[ctx->GetClientID()];
             auto pubIP = ctx->GetAdditionalData(RES_CLIENT_PUBIP);
             bool flag = strIP == "127.0.0.1" && !pubIP.IsEmpty();
             int i = m_CList_Online.InsertItem(m_CList_Online.GetItemCount(), flag ? pubIP : strIP);
             for (int n = ONLINELIST_ADDR; n <= ONLINELIST_CLIENTTYPE; n++) {
                 auto data = ctx->GetClientData(n);
+                auto note = m_ClientMap->GetClientMapData(ctx->GetClientID(), MAP_NOTE);
                 n == ONLINELIST_COMPUTER_NAME ?
-                m_CList_Online.SetItemText(i, n, m.GetNote()[0] ? m.GetNote() : data) :
+                m_CList_Online.SetItemText(i, n, !note.IsEmpty() ? note : data) :
                               m_CList_Online.SetItemText(i, n, data.IsEmpty() ? "?" : data);
             }
             m_CList_Online.SetItemData(i, (DWORD_PTR)ctx);
@@ -4804,4 +4764,23 @@ void CMy2015RemoteDlg::OnRunasService()
     CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
     SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, !m_runNormal ? MF_CHECKED : MF_UNCHECKED);
     BOOL r = m_runNormal ? ServerService_Uninstall() : ServerService_Install();
+}
+
+void CMy2015RemoteDlg::OnHistoryClients()
+{
+    // 1. 如果窗口已经存在，直接带到前台，不要重复创建
+    if (m_pClientListDlg != nullptr && ::IsWindow(m_pClientListDlg->GetSafeHwnd())) {
+        m_pClientListDlg->ShowWindow(SW_SHOW);
+        m_pClientListDlg->SetForegroundWindow();
+        return;
+    }
+
+    // 2. 创建对话框实例
+    // 注意：如果是非模态，传进去的 m_ClientMap 引用要确保在对话框存在期间一直有效
+    m_pClientListDlg = new CClientListDlg(m_ClientMap, this);
+
+    // IDD_CLIENT_LIST 是你对话框的 ID
+    if (m_pClientListDlg->Create(IDD_DIALOG_CLIENTLIST, GetDesktopWindow())) {
+        m_pClientListDlg->ShowWindow(SW_SHOW);
+    }
 }

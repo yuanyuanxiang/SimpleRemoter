@@ -17,7 +17,7 @@ public:
     {
         return "KCP";
     }
-    VOID InitMember(SOCKET s, Server* svr) override
+    VOID InitMember(SOCKET s, VOID* svr) override
     {
         CONTEXT_OBJECT::InitMember(s, svr);
         clientAddr = {};
