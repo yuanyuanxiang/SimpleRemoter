@@ -629,6 +629,14 @@
 #define ID_DOWNLOAD_SERVERPORT          32996
 #define ID_32997                        32997
 #define ID_HISTORY_CLIENTS              32998
+#define ID_32999                        32999
+#define ID_BACKUP_DATA                  33000
+#define ID_33001                        33001
+#define ID_PLUGIN_REQUEST               33002
+#define ID_33003                        33003
+#define ID_CHANGE_LANG                  33004
+#define ID_33005                        33005
+#define ID_IMPORT_DATA                  33006
 #define ID_EXIT_FULLSCREEN              40001
 
 // Next default values for new objects
@@ -636,7 +644,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        326
-#define _APS_NEXT_COMMAND_VALUE         32999
+#define _APS_NEXT_COMMAND_VALUE         33007
 #define _APS_NEXT_CONTROL_VALUE         2228
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

@@ -573,6 +573,10 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_HOOK_WIN, &CMy2015RemoteDlg::OnHookWin)
     ON_COMMAND(ID_RUNAS_SERVICE, &CMy2015RemoteDlg::OnRunasService)
         ON_COMMAND(ID_HISTORY_CLIENTS, &CMy2015RemoteDlg::OnHistoryClients)
+        ON_COMMAND(ID_BACKUP_DATA, &CMy2015RemoteDlg::OnBackupData)
+        ON_COMMAND(ID_PLUGIN_REQUEST, &CMy2015RemoteDlg::OnPluginRequest)
+        ON_COMMAND(ID_CHANGE_LANG, &CMy2015RemoteDlg::OnChangeLang)
+        ON_COMMAND(ID_IMPORT_DATA, &CMy2015RemoteDlg::OnImportData)
         END_MESSAGE_MAP()
 
 
@@ -4782,5 +4786,46 @@ void CMy2015RemoteDlg::OnHistoryClients()
     // IDD_CLIENT_LIST 是你对话框的 ID
     if (m_pClientListDlg->Create(IDD_DIALOG_CLIENTLIST, GetDesktopWindow())) {
         m_pClientListDlg->ShowWindow(SW_SHOW);
+    }
+}
+
+void CMy2015RemoteDlg::OnBackupData()
+{
+    MessageBoxA("如果更换主控IP，必须将主机迁移到新的主控IP名下。注意，更换主控程序的机器可能导致授权失效!"
+        "请将数据库文件拷贝到目标机器，否则将丢失全部备注信息。", "提示");
+    std::filesystem::path path = GetDbPath();
+    std::filesystem::path dir = path.parent_path();
+    ShellExecuteW(NULL, L"open", dir.c_str(), NULL, NULL, SW_SHOWNORMAL);
+}
+
+void CMy2015RemoteDlg::OnPluginRequest()
+{
+    TODO_NOTICE;
+}
+
+void CMy2015RemoteDlg::OnChangeLang()
+{
+    TODO_NOTICE;
+}
+
+void CMy2015RemoteDlg::OnImportData()
+{
+    if (IDOK!=MessageBoxA("导入主控程序的历史主机记录。此操作会覆盖本机的历史记录，请仅在迁移主控程序时进行操作。"
+        "数据库文件仅用于恢复主机备注信息。是否继续?", "提示",IDOK)) return;
+    CFileDialog fileDlg(TRUE, NULL, "YAMA.db", OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+        _T("YAMA DB (*.db)|*.db|All Files (*.*)|*.*||"), AfxGetMainWnd());
+    int ret = 0;
+    try {
+        ret = fileDlg.DoModal();
+    }
+    catch (...) {
+        AfxMessageBox("文件对话框未成功打开! 请稍后再试。", MB_ICONWARNING);
+        return;
+    }
+    if (ret == IDOK) {
+        CString name = fileDlg.GetPathName();
+        auto backup = GetDbPath() + "." + ToPekingDateTime(0);
+        CopyFileA(GetDbPath().c_str(), backup.c_str(), FALSE);
+        m_ClientMap->LoadFromFile(name.GetString());
     }
 }

@@ -313,4 +313,8 @@ public:
     afx_msg void OnHookWin();
     afx_msg void OnRunasService();
     afx_msg void OnHistoryClients();
+    afx_msg void OnBackupData();
+    afx_msg void OnPluginRequest();
+    afx_msg void OnChangeLang();
+    afx_msg void OnImportData();
 };
