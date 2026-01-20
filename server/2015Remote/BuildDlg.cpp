@@ -499,7 +499,7 @@ void CBuildDlg::OnBnClickedOk()
                                     if (m_sDownloadUrl.IsEmpty()) MessageBox(CString("文件下载地址: \r\n") + sc->downloadUrl, "提示");
                                 }
                                 tip = payload.IsEmpty() ? "\r\n警告: 没有生成载荷!" : 
-                                    checked ? "\r\n提示: 载荷文件必须拷贝至\"Payloads\"目录。" : "\r\n提示: 载荷文件必须拷贝至程序目录。";
+                                    checked ? "\r\n提示: 本机提供下载时，载荷文件必须拷贝至\"Payloads\"目录。" : "\r\n提示: 载荷文件必须拷贝至程序目录。";
                             }
                             BOOL r = WriteBinaryToFile(strSeverFile.GetString(), (char*)data, dwSize);
                             if (r) {

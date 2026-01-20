@@ -65,6 +65,7 @@
     <ClCompile Include="..\..\common\file_upload.cpp" />
     <ClCompile Include="..\..\client\reg_startup.c" />
     <ClCompile Include="CClientListDlg.cpp" />
+    <ClCompile Include="CUpdateDlg.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
@@ -144,6 +145,7 @@
     <ClInclude Include="HostInfo.h" />
     <ClInclude Include="CClientListDlg.h" />
     <ClInclude Include="context.h" />
+    <ClInclude Include="CUpdateDlg.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />

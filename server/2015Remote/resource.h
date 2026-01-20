@@ -198,6 +198,8 @@
 #define IDR_SCLOADER_X86_OLD            322
 #define IDR_SCLOADER_X64_OLD            323
 #define IDD_DIALOG_CLIENTLIST           324
+#define IDD_DIALOG7                     326
+#define IDD_DIALOG_UPDATE               326
 #define IDC_MESSAGE                     1000
 #define IDC_ONLINE                      1001
 #define IDC_STATIC_TIPS                 1002
@@ -402,6 +404,7 @@
 #define IDC_COMBO_VIDEO_WALL            2195
 #define IDC_COMBO_BINDING               2195
 #define IDC_COMBO_BIND                  2195
+#define IDC_COMBO_UPDATE_SELECT         2195
 #define IDC_EDIT_WALLET_BTC             2196
 #define IDC_EDIT_WALLET_ERC20           2197
 #define IDC_EDIT_EXE_FILE               2197
@@ -643,7 +646,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        326
+#define _APS_NEXT_RESOURCE_VALUE        328
 #define _APS_NEXT_COMMAND_VALUE         33007
 #define _APS_NEXT_CONTROL_VALUE         2228
 #define _APS_NEXT_SYMED_VALUE           105

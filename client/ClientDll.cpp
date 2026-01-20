@@ -265,6 +265,11 @@ int main(int argc, const char *argv[])
 
     SAFE_CLOSE_HANDLE(hMutex);
     Mprintf("结束运行.\n");
+    Sleep(500);
+    if (isService) {
+        Mprintf("CALL ServiceWrapper_Stop.\n");
+        int r = ServiceWrapper_Stop();
+    }
     Logger::getInstance().stop();
 
     return 0;

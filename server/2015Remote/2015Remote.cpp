@@ -514,14 +514,14 @@ int CMy2015RemoteApp::ExitInstance()
 
     SAFE_DELETE(m_iniFile);
 
+    Mprintf("[InitInstance] 主控程序退出运行。\n");
+    Sleep(500);
+
     // 只有在代理模式退出时才停止服务
     if (IsAgentMode()) {
-        ServerService_Stop();
         Mprintf("[InitInstance] 主控程序为代理模式，停止服务。\n");
+        ServerService_Stop();
     }
-
-    Mprintf("[InitInstance] 主控程序退出运行。\n");
-    Sleep(1000);
 
     return CWinApp::ExitInstance();
 }

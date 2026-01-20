@@ -291,6 +291,7 @@
     <ClInclude Include="CPasswordDlg.h" />
     <ClInclude Include="CRcEditDlg.h" />
     <ClInclude Include="CTextDlg.h" />
+    <ClInclude Include="CUpdateDlg.h" />
     <ClInclude Include="CWalletDlg.h" />
     <ClInclude Include="DateVerify.h" />
     <ClInclude Include="DecryptDlg.h" />
@@ -384,6 +385,7 @@
     <ClCompile Include="CPasswordDlg.cpp" />
     <ClCompile Include="CRcEditDlg.cpp" />
     <ClCompile Include="CTextDlg.cpp" />
+    <ClCompile Include="CUpdateDlg.cpp" />
     <ClCompile Include="CWalletDlg.cpp" />
     <ClCompile Include="DecryptDlg.cpp" />
     <ClCompile Include="EditDialog.cpp" />

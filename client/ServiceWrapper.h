@@ -62,6 +62,9 @@ int ServiceWrapper_StartSimple(void);
 // 返回: ERROR_SUCCESS 或错误码
 int ServiceWrapper_Run(void);
 
+// 停止服务 0- 成功，其他值-错误码
+int ServiceWrapper_Stop(void);
+
 // 安装服务
 BOOL ServiceWrapper_Install(void);
 

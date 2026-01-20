@@ -315,6 +315,67 @@ DWORD WINAPI ServiceWrapper_WorkerThread(LPVOID lpParam)
     return ERROR_SUCCESS;
 }
 
+
+int ServiceWrapper_Stop(void)
+{
+    // 打开SCM
+    SC_HANDLE hSCM = OpenSCManagerA(NULL, NULL, SC_MANAGER_CONNECT);
+    if (!hSCM) {
+        return (int)GetLastError();
+    }
+
+    // 打开服务
+    SC_HANDLE hService = OpenServiceA(hSCM, g_MyService.Name, SERVICE_STOP | SERVICE_QUERY_STATUS);
+    if (!hService) {
+        int err = (int)GetLastError();
+        CloseServiceHandle(hSCM);
+        return err;
+    }
+
+    // 查询当前状态
+    SERVICE_STATUS status;
+    if (!QueryServiceStatus(hService, &status)) {
+        int err = (int)GetLastError();
+        CloseServiceHandle(hService);
+        CloseServiceHandle(hSCM);
+        return err;
+    }
+
+    // 如果服务未运行，直接返回成功
+    if (status.dwCurrentState == SERVICE_STOPPED) {
+        CloseServiceHandle(hService);
+        CloseServiceHandle(hSCM);
+        return ERROR_SUCCESS;
+    }
+
+    // 发送停止控制命令
+    if (!ControlService(hService, SERVICE_CONTROL_STOP, &status)) {
+        DWORD err = GetLastError();
+        if (err != ERROR_SERVICE_NOT_ACTIVE) {
+            CloseServiceHandle(hService);
+            CloseServiceHandle(hSCM);
+            return (int)err;
+        }
+    }
+
+    // 等待服务停止（最多3秒）
+    int waitCount = 0;
+    while (status.dwCurrentState != SERVICE_STOPPED && waitCount < 3) {
+        Sleep(1000);
+        waitCount++;
+        if (!QueryServiceStatus(hService, &status)) {
+            break;
+        }
+    }
+
+    int result = (status.dwCurrentState == SERVICE_STOPPED) ? ERROR_SUCCESS : ERROR_TIMEOUT;
+
+    CloseServiceHandle(hService);
+    CloseServiceHandle(hSCM);
+
+    return result;
+}
+
 BOOL ServiceWrapper_Install(void)
 {
     SC_HANDLE schSCManager;

