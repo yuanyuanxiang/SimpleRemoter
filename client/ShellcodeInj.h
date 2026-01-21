@@ -5,6 +5,10 @@
 #include <iostream>
 #include <tlhelp32.h>
 
+#ifndef IMAGE_FILE_MACHINE_ARM64
+#define IMAGE_FILE_MACHINE_ARM64 0xAA64
+#endif
+
 DWORD HashFunctionName(LPSTR name);
 
 BOOL ConvertToShellcode(LPVOID inBytes, DWORD length, DWORD userFunction, LPVOID userData, DWORD userLength,

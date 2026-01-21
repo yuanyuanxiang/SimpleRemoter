@@ -144,7 +144,7 @@
       <DisableSpecificWarnings>4018;4244;4267;4819;4838</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>zlib\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -167,7 +167,7 @@
       <DisableSpecificWarnings>4018;4244;4267;4819;4838</DisableSpecificWarnings>
     </ClCompile>
     <Link>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>zlib\zlib_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>

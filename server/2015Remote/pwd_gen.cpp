@@ -17,6 +17,7 @@
 #include <wincrypt.h>
 #include <iostream>
 #include "common/commands.h"
+#include <algorithm>
 
 #pragma comment(lib, "Advapi32.lib")
 #pragma comment(lib, "bcrypt.lib")
@@ -85,8 +86,8 @@ std::string execCommand(const char* cmd)
     SAFE_CLOSE_HANDLE(pi.hThread);
 
     // 去除换行符和空格
-    result.erase(remove(result.begin(), result.end(), '\n'), result.end());
-    result.erase(remove(result.begin(), result.end(), '\r'), result.end());
+    result.erase(std::remove(result.begin(), result.end(), '\n'), result.end());
+    result.erase(std::remove(result.begin(), result.end(), '\r'), result.end());
 
     // 返回命令的输出结果
     return result.empty() ? "ERROR" : result;

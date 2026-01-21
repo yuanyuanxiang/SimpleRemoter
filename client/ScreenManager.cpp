@@ -16,7 +16,7 @@
 #include "ScreenSpy.h"
 #include "ScreenCapturerDXGI.h"
 #include <Shlwapi.h>
-#include <shlobj_core.h>
+#include <shlobj.h>
 #include "common/file_upload.h"
 #include <thread>
 #include "ClientDll.h"

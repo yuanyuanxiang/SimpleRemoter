@@ -2,6 +2,13 @@
 
 #include "header.h"
 
+#ifndef IMAGE_FILE_MACHINE_ARM64
+#define IMAGE_FILE_MACHINE_ARM64 0xAA64
+#endif
+#ifndef PROCESSOR_ARCHITECTURE_ARM64
+#define PROCESSOR_ARCHITECTURE_ARM64 12
+#endif
+
 // 数据包协议封装格式
 // Copy left: 962914132@qq.com & ChatGPT
 enum PkgMaskType {

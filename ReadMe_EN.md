@@ -206,6 +206,31 @@ For cross-network, cross-border, or international remote control system deployme
 
 For earlier changes, see: [history](./history.md)
 
+**Release v1.2.3 (2026.1.21):**
+
+This release enhances remote desktop control experience, optimizes client update logic, and fixes several stability issues.
+
+- Feature: Support download payload from http(s) server
+- Feature: Refactor ClientList and add dialog to show it
+- Feature: Support using remote cursor in screen control
+- Improve: Use FRP to proxy payload download request
+- Improve: `ExpandDirectories` after `GetForegroundSelectedFiles`
+- Improve: Change zstd compression options for some dialog
+- Improve: Update zlib to version `1.3.1.2` and use context in decompression
+- Improve: Use old shellcode+AES loader to build client for Windows Server
+- Improve: Add more features/buttons for remote desktop toolbar
+- Improve: Improve remote control `ScreenSpyDlg` reconnect logic
+- Improve: Show all windows status in system dialog
+- Improve: Add client update logic for client type EXE
+- Fix: `GetPort` issue causing not show host offline log
+- Fix: OnOnlineUpdate caused by commit 2fb77d5
+- Fix: `GetProcessList` can't get some process full path
+- Fix: Check time to make reassigned client restore immediately
+- Fix: #288 Command line issues
+- Fix: Copy payload file to target directory when installing
+- Fix: #281 Check if CPU has SSE2 to avoid client crash
+- Fix: Remote desktop window restore size issue
+
 **Release v1.2.2 (2026.1.11):**
 
 This release enhances remote desktop settings persistence, file management features, and improves authorization and keyboard forwarding.

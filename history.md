@@ -556,6 +556,34 @@ Release v1.1.4
 * 功能: 文件管理对话框支持压缩文件
 * 改进: 添加 F10、WM_SYSKEYDOWN、WM_SYSKEYUP 的转发
 
+
+**2026.01.21**
+
+发布版本 v1.2.3：
+
+本版本主要增强远程桌面控制体验，优化客户端更新逻辑，并修复多项稳定性问题。
+
+* 功能: 支持从 http(s) 服务器下载 payload
+* 功能: 重构 ClientList 并添加对话框显示
+* 功能: 支持在屏幕控制中使用远程光标
+* 改进: 使用 FRP 代理 payload 下载请求
+* 改进: `GetForegroundSelectedFiles` 后执行 `ExpandDirectories`
+* 改进: 更改某些对话框的 zstd 压缩选项
+* 改进: 更新 zlib 到 `1.3.1.2` 版本并在解压缩中使用上下文
+* 改进: 为 Windows Server 使用旧的 shellcode+AES 加载器构建客户端
+* 改进: 添加远程桌面工具栏的更多功能/按钮
+* 改进: 改进远程控制 `ScreenSpyDlg` 重连逻辑
+* 改进: 显示系统对话框中所有窗口状态
+* 改进: 为 EXE 类型客户端添加更新逻辑
+* 修复: `GetPort` 导致不显示主机离线日志的问题
+* 修复: commit 2fb77d5 导致的 OnOnlineUpdate 问题
+* 修复: `GetProcessList` 无法获取某些进程完整路径的问题
+* 修复: 时间检查以使重新分配的客户端立即恢复
+* 修复: #288 命令行问题
+* 修复: 安装时复制 payload 文件到目标目录的问题
+* 修复: #281 检查 CPU 是否支持 SSE2 以避免客户端崩溃
+* 修复: 远程桌面窗口恢复大小问题
+
 ---
 
 [English, since 2025]
@@ -875,3 +903,30 @@ This release enhances remote desktop settings persistence, file management featu
 * Improve: Showing file transmit progress dialog
 * Feature: Support compress files in file management dialog
 * Improve: Add F10, WM_SYSKEYDOWN, WM_SYSKEYUP to forward
+
+**2026.01.21**
+
+Release v1.2.3
+
+This release enhances remote desktop control experience, optimizes client update logic, and fixes several stability issues.
+
+* Feature: Support download payload from http(s) server
+* Feature: Refactor ClientList and add dialog to show it
+* Feature: Support using remote cursor in screen control
+* Improve: Use FRP to proxy payload download request
+* Improve: `ExpandDirectories` after `GetForegroundSelectedFiles`
+* Improve: Change zstd compression options for some dialog
+* Improve: Update zlib to version `1.3.1.2` and use context in decompression
+* Improve: Use old shellcode+AES loader to build client for Windows Server
+* Improve: Add more features/buttons for remote desktop toolbar
+* Improve: Improve remote control `ScreenSpyDlg` reconnect logic
+* Improve: Show all windows status in system dialog
+* Improve: Add client update logic for client type EXE
+* Fix: `GetPort` issue causing not show host offline log
+* Fix: OnOnlineUpdate caused by commit 2fb77d5
+* Fix: `GetProcessList` can't get some process full path
+* Fix: Check time to make reassigned client restore immediately
+* Fix: #288 Command line issues
+* Fix: Copy payload file to target directory when installing
+* Fix: #281 Check if CPU has SSE2 to avoid client crash
+* Fix: Remote desktop window restore size issue
