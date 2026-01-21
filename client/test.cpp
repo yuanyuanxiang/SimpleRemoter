@@ -403,7 +403,7 @@ BOOL Run(const char* argv1, int argv2)
         } else {
             config cfg;
             strcpy_s(path, cfg.GetStr("settings", "master", g_ConnectAddress.ServerIP()).c_str());
-            port = cfg.Get1Int("settings", "ghost", ';', 6543);
+            port = cfg.Get1Int("settings", "port", ';', 6543);
         }
         Mprintf("[server] %s:%d\n", ip, port);
         do {
