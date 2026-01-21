@@ -1890,6 +1890,7 @@ void CMy2015RemoteDlg::OnOnlineDelete()
         ctx->Destroy();
         strIP+="断开连接";
         ShowMessage("操作成功",strIP + "[" + aliveInfo.c_str() + "]");
+        Mprintf("%s 断开链接 [%s]\n", strIP, aliveInfo.c_str());
     }
     LeaveCriticalSection(&m_cs);
 }
@@ -2814,24 +2815,27 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
         return S_OK;
     }
 
-    CString ip, port;
+    CString port;
     port.Format("%d", lParam);
     EnterCriticalSection(&m_cs);
     int n = m_CList_Online.GetItemCount();
     for (int i = 0; i < n; ++i) {
         CString cur = m_CList_Online.GetItemText(i, ONLINELIST_ADDR);
         if (cur == port) {
-            ip = m_CList_Online.GetItemText(i, ONLINELIST_IP);
             auto ctx = (context*)m_CList_Online.GetItemData(i);
             m_CList_Online.DeleteItem(i);
             m_HostList.erase(ctx);
-            auto tm = ctx->GetAliveTime();
-            std::string aliveInfo = tm>=86400 ? floatToString(tm / 86400.f) + " d" :
-                                    tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
-                                    tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
-            ShowMessage("操作成功", ip + "主机下线[" + aliveInfo.c_str() + "]");
             break;
         }
+    }
+    if (host) {
+		CString ip = host->GetClientData(ONLINELIST_IP);
+        auto tm = host->GetAliveTime();
+        std::string aliveInfo = tm >= 86400 ? floatToString(tm / 86400.f) + " d" :
+            tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
+            tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
+        ShowMessage("操作成功", ip + "主机下线[" + aliveInfo.c_str() + "]");
+        Mprintf("%s 主机下线 [%s]\n", ip, aliveInfo.c_str());
     }
     LeaveCriticalSection(&m_cs);
 

@@ -527,7 +527,10 @@ public:
     }
     virtual int GetPort() const
     {
-        return sClientSocket;
+		// 第一次返回套接字，后续返回地址栏端口号
+        if (sClientInfo[ONLINELIST_ADDR].IsEmpty())
+            return sClientSocket;
+        return atoi(sClientInfo[ONLINELIST_ADDR]);
     }
     CString GetClientData(int index)  const override
     {
