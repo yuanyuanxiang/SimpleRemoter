@@ -588,6 +588,7 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         break;
     }
     case COMMAND_SCREEN_CONTROL: {
+        if (m_ScreenSpyObject == NULL) break;
         BlockInput(false);
         ProcessCommand(szBuffer + 1, ulLength - 1);
         BlockInput(m_bIsBlockInput);  //再恢复成用户的设置
@@ -790,6 +791,19 @@ std::string GetTitle(HWND hWnd)
     char title[256]; // 预留缓冲区
     GetWindowTextA(hWnd, title, sizeof(title));
     return title;
+}
+
+// 辅助判断是否为扩展键
+bool IsExtendedKey(WPARAM vKey) {
+    switch (vKey) {
+    case VK_INSERT: case VK_DELETE: case VK_HOME: case VK_END:
+    case VK_PRIOR:  case VK_NEXT:   case VK_LEFT: case VK_UP:
+    case VK_RIGHT:  case VK_DOWN:   case VK_RCONTROL: case VK_RMENU:
+    case VK_DIVIDE: // 小键盘的 /
+        return true;
+    default:
+        return false;
+    }
 }
 
 VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
@@ -1028,17 +1042,12 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
     }
     for (int i = 0; i < ulMsgCount; ++i, ptr += msgSize) {
         MSG64* Msg = msgSize == 48 ? (MSG64*)ptr :
-                     (MSG64*)msg64.Create(msg32.Create(ptr, msgSize));
-        switch (Msg->message) {
-        case WM_LBUTTONDOWN:
-        case WM_LBUTTONUP:
-        case WM_RBUTTONDOWN:
-        case WM_RBUTTONUP:
-        case WM_LBUTTONDBLCLK:
-        case WM_RBUTTONDBLCLK:
-        case WM_MBUTTONDOWN:
-        case WM_MBUTTONUP:
-        case WM_MOUSEMOVE: {
+            (MSG64*)msg64.Create(msg32.Create(ptr, msgSize));
+
+        INPUT input = { 0 };
+        input.type = INPUT_MOUSE;
+        // 处理坐标：无论是点击还是移动，都先更新坐标
+        if (Msg->message >= WM_MOUSEFIRST && Msg->message <= WM_MOUSELAST) {
             POINT Point;
             Point.x = LOWORD(Msg->lParam);
             Point.y = HIWORD(Msg->lParam);
@@ -1049,65 +1058,93 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
                 ReleaseCapture();
                 return;
             }
-        }
-        break;
-        default:
-            break;
+
+            // 映射到 0-65535 的绝对坐标空间
+			if (m_ScreenSpyObject->GetScreenCount() > 1) {
+				// 多显示器模式下，必须重新计算 dx, dy 映射到全虚拟桌面空间
+				// 且必须带上 MOUSEEVENTF_VIRTUALDESK 标志
+				input.mi.dx = ((Point.x - m_ScreenSpyObject->GetVScreenLeft()) * 65535) / (m_ScreenSpyObject->GetVScreenWidth() - 1);
+				input.mi.dy = ((Point.y - m_ScreenSpyObject->GetVScreenTop()) * 65535) / (m_ScreenSpyObject->GetVScreenHeight() - 1);
+                input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE | MOUSEEVENTF_VIRTUALDESK;
+            } else {
+				input.mi.dx = (Point.x * 65535) / (m_ScreenSpyObject->GetScreenWidth() - 1);
+				input.mi.dy = (Point.y * 65535) / (m_ScreenSpyObject->GetScreenHeight() - 1);
+				input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE;
+            }
         }
 
-        switch(Msg->message) { //端口发加快递费
+        switch (Msg->message) {
+        case WM_MOUSEMOVE:
+            // 仅移动，上面已经设置了 MOUSEEVENTF_MOVE
+            SendInput(1, &input, sizeof(INPUT));
+            break;
+
         case WM_LBUTTONDOWN:
-            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+            input.mi.dwFlags |= MOUSEEVENTF_LEFTDOWN;
+            SendInput(1, &input, sizeof(INPUT));
             break;
+
         case WM_LBUTTONUP:
-            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            input.mi.dwFlags |= MOUSEEVENTF_LEFTUP;
+            SendInput(1, &input, sizeof(INPUT));
             break;
+
         case WM_RBUTTONDOWN:
-            mouse_event(MOUSEEVENTF_RIGHTDOWN, 0, 0, 0, 0);
+            input.mi.dwFlags |= MOUSEEVENTF_RIGHTDOWN;
+            SendInput(1, &input, sizeof(INPUT));
             break;
+
         case WM_RBUTTONUP:
-            mouse_event(MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
+            input.mi.dwFlags |= MOUSEEVENTF_RIGHTUP;
+            SendInput(1, &input, sizeof(INPUT));
             break;
+
         case WM_LBUTTONDBLCLK:
-            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
-            mouse_event(MOUSEEVENTF_LEFTDOWN | MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+            // 前面已经收到了一个完整的 Down/Up, 这里我们只需要补一个“按下”动作, 系统就会认定这是双击
+            input.mi.dwFlags |= MOUSEEVENTF_LEFTDOWN;
+            SendInput(1, &input, sizeof(INPUT));
             break;
-        case WM_RBUTTONDBLCLK:
-            mouse_event(MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
-            mouse_event(MOUSEEVENTF_RIGHTDOWN | MOUSEEVENTF_RIGHTUP, 0, 0, 0, 0);
-            break;
+
         case WM_MBUTTONDOWN:
-            mouse_event(MOUSEEVENTF_MIDDLEDOWN, 0, 0, 0, 0);
+            input.mi.dwFlags |= MOUSEEVENTF_MIDDLEDOWN;
+            SendInput(1, &input, sizeof(INPUT));
             break;
+
         case WM_MBUTTONUP:
-            mouse_event(MOUSEEVENTF_MIDDLEUP, 0, 0, 0, 0);
+            input.mi.dwFlags |= MOUSEEVENTF_MIDDLEUP;
+            SendInput(1, &input, sizeof(INPUT));
             break;
+
         case WM_MOUSEWHEEL:
-            mouse_event(MOUSEEVENTF_WHEEL, 0, 0,
-                        GET_WHEEL_DELTA_WPARAM(Msg->wParam), 0);
+            input.mi.dwFlags = MOUSEEVENTF_WHEEL;
+            input.mi.mouseData = GET_WHEEL_DELTA_WPARAM(Msg->wParam);
+            SendInput(1, &input, sizeof(INPUT));
             break;
+
         case WM_KEYDOWN:
         case WM_SYSKEYDOWN: {
-            INPUT input = { 0 };
-            input.type = INPUT_KEYBOARD;
-            input.ki.wVk = (WORD)Msg->wParam;
-            input.ki.wScan = MapVirtualKey(Msg->wParam, 0);
-            input.ki.dwFlags = 0;
-            SendInput(1, &input, sizeof(INPUT));
+            INPUT k_input = { 0 };
+            k_input.type = INPUT_KEYBOARD;
+            k_input.ki.wVk = (WORD)Msg->wParam;
+            k_input.ki.wScan = MapVirtualKey((UINT)Msg->wParam, 0);
+            k_input.ki.dwFlags = 0;
+            if (IsExtendedKey(Msg->wParam))
+                k_input.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
+            SendInput(1, &k_input, sizeof(INPUT));
             break;
         }
         case WM_KEYUP:
         case WM_SYSKEYUP: {
-            INPUT input = { 0 };
-            input.type = INPUT_KEYBOARD;
-            input.ki.wVk = (WORD)Msg->wParam;
-            input.ki.wScan = MapVirtualKey(Msg->wParam, 0);
-            input.ki.dwFlags = KEYEVENTF_KEYUP;
-            SendInput(1, &input, sizeof(INPUT));
+            INPUT k_input = { 0 };
+            k_input.type = INPUT_KEYBOARD;
+            k_input.ki.wVk = (WORD)Msg->wParam;
+            k_input.ki.wScan = MapVirtualKey((UINT)Msg->wParam, 0);
+            k_input.ki.dwFlags = KEYEVENTF_KEYUP;
+            if (IsExtendedKey(Msg->wParam))
+                k_input.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
+            SendInput(1, &k_input, sizeof(INPUT));
             break;
         }
-        default:
-            break;
         }
     }
 }
