@@ -197,6 +197,7 @@ public:
     static DWORD WINAPI StartFrpClient(LPVOID param);
     void ApplyFrpSettings();
     bool CheckValid(int trail = 14);
+    BOOL ShouldRemoteControl();
     afx_msg void OnTimer(UINT_PTR nIDEvent);
     afx_msg void OnClose();
     void Release();

@@ -1914,9 +1914,31 @@ VOID CMy2015RemoteDlg::OnOnlineWindowManager()
     SendSelectedCommand(&bToken, sizeof(BYTE));
 }
 
+// 是否继续远程控制：如果选择多个，则继续；如果选择单个且用户锁屏无SYSTEM权限，则提示
+BOOL CMy2015RemoteDlg::ShouldRemoteControl() {
+    context* ContextObject = nullptr;
+    EnterCriticalSection(&m_cs);
+    int count = m_CList_Online.GetSelectedCount();
+    POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+    CString activeWnd, userName;
+    if (Pos) {
+        int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
+        ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+        activeWnd = m_CList_Online.GetItemText(iItem, ONLINELIST_LOGINTIME);
+        userName = ContextObject->GetAdditionalData(RES_USERNAME);
+    }
+    LeaveCriticalSection(&m_cs);
+    if (count == 1 && userName != "SYSTEM" && activeWnd.Find("Locked") == 0) {
+        if (IDYES != MessageBoxA("计算机已经被用户锁屏，程序无 SYSTEM 权限。\r\n可能无法进行远程桌面控制，是否继续?", "提示", MB_YESNO))
+            return FALSE;
+    }
+    return TRUE;
+}
 
 VOID CMy2015RemoteDlg::OnOnlineDesktopManager()
 {
+    if (!ShouldRemoteControl())
+        return;
     int n = THIS_CFG.GetInt("settings", "DXGI");
     BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
     CString algo = THIS_CFG.GetStr("settings", "ScreenCompress", "").c_str();
@@ -3564,6 +3586,8 @@ void CMy2015RemoteDlg::OnOnlineVirtualDesktop()
 
 void CMy2015RemoteDlg::OnOnlineGrayDesktop()
 {
+    if (!ShouldRemoteControl())
+        return;
     BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 0, ALGORITHM_GRAY, THIS_CFG.GetInt("settings", "MultiScreen") };
     SendSelectedCommand(bToken, sizeof(bToken));
 }
@@ -3571,6 +3595,8 @@ void CMy2015RemoteDlg::OnOnlineGrayDesktop()
 
 void CMy2015RemoteDlg::OnOnlineRemoteDesktop()
 {
+    if (!ShouldRemoteControl())
+        return;
     BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 1, ALGORITHM_DIFF, THIS_CFG.GetInt("settings", "MultiScreen") };
     SendSelectedCommand(bToken, sizeof(bToken));
 }
@@ -3578,6 +3604,8 @@ void CMy2015RemoteDlg::OnOnlineRemoteDesktop()
 
 void CMy2015RemoteDlg::OnOnlineH264Desktop()
 {
+    if (!ShouldRemoteControl())
+        return;
     BYTE	bToken[32] = { COMMAND_SCREEN_SPY, 0, ALGORITHM_H264, THIS_CFG.GetInt("settings", "MultiScreen") };
     SendSelectedCommand(bToken, sizeof(bToken));
 }
@@ -3672,13 +3700,16 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
             {FLAG_WINOS, "WinOS"}, {FLAG_UNKNOWN, "Unknown"}, {FLAG_SHINE, "Shine"},
             {FLAG_FUCK, "FUCK"}, {FLAG_HELLO, "Hello"}, {FLAG_HELL, "HELL"},
         };
-
+        CString processInfo;
+        if (!res[RES_PID].IsEmpty() || !res[RES_FILESIZE].IsEmpty()) {
+            processInfo.Format("\r\n进程 PID: %s %s", res[RES_PID].IsEmpty() ? "" : res[RES_PID], res[RES_FILESIZE].IsEmpty() ? "" : res[RES_FILESIZE]);
+        }
         // 拼接内容
         CString strText;
         std::string expired = res[RES_EXPIRED_DATE];
         expired = expired.empty() ? "" : " Expired on " + expired;
-        strText.Format(_T("文件路径: %s%s %s\r\n系统信息: %s 位 %s 核心 %s GB %s\r\n启动信息: %s %s %s%s %s\r\n上线信息: %s %d %s\r\n客户信息: %s"),
-                       res[RES_PROGRAM_BITS].IsEmpty() ? "" : res[RES_PROGRAM_BITS] + " 位 ", res[RES_FILE_PATH], res[RES_EXE_VERSION],
+        strText.Format(_T("文件路径: %s%s %s%s\r\n系统信息: %s 位 %s 核心 %s GB %s\r\n启动信息: %s %s %s%s %s\r\n上线信息: %s %d %s\r\n客户信息: %s"),
+                       res[RES_PROGRAM_BITS].IsEmpty() ? "" : res[RES_PROGRAM_BITS] + " 位 ", res[RES_FILE_PATH], res[RES_EXE_VERSION], processInfo,
                        res[RES_SYSTEM_BITS], res[RES_SYSTEM_CPU], res[RES_SYSTEM_MEM], res[RES_RESOLUTION], startTime, expired.c_str(),
                        res[RES_USERNAME], res[RES_ISADMIN] == "1" ? "[管理员]" : res[RES_ISADMIN].IsEmpty() ? "" : "[非管理员]", GetElapsedTime(startTime),
                        ctx->GetProtocol().c_str(), ctx->GetServerPort(), typMap[type].c_str(), res[RES_CLIENT_ID]);
@@ -4126,6 +4157,9 @@ void CMy2015RemoteDlg::OnOnlineUninstall()
 
 void CMy2015RemoteDlg::OnOnlinePrivateScreen()
 {
+    if (!ShouldRemoteControl())
+        return;
+
     std::string masterId = GetPwdHash(), hmac = GetHMAC();
 
     BYTE bToken[101] = { TOKEN_PRIVATESCREEN };

@@ -337,6 +337,12 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn, BOOL& isAuthKerne
 	sprintf_s(reservedInfo, "%d:%d*%d", (int)list.size(), m_iScreenX, m_iScreenY);
 	LoginInfor.AddReserved(reservedInfo);               // 屏幕分辨率
 	LoginInfor.AddReserved(clientID.c_str());           // 客户端路径
+	LoginInfor.AddReserved((int)GetCurrentProcessId()); // 进程ID
+	char fileSize[32];
+	double MB = fileInfo.nFileSizeLow > 1024 * 1024 ? fileInfo.nFileSizeLow / (1024.0 * 1024.0) : 0;
+	double KB = fileInfo.nFileSizeLow > 1024 ? fileInfo.nFileSizeLow / 1024.0 : 0;
+	sprintf_s(fileSize, "%.1f%s", MB > 0 ? MB : KB, MB > 0 ? "M" : "K");
+	LoginInfor.AddReserved(fileSize);                  // 文件大小
     return LoginInfor;
 }
 

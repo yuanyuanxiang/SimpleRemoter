@@ -797,6 +797,8 @@ enum LOGIN_RES {
     RES_ISADMIN = 14,                       // 是否具有管理员权限
 	RES_RESOLUTION = 15,                    // 屏幕分辨率
 	RES_CLIENT_ID = 16,                     // 客户端唯一ID
+	RES_PID = 17,                           // 进程ID
+	RES_FILESIZE = 18,                       // 文件大小
     RES_MAX,
 };
 

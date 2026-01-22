@@ -85,6 +85,9 @@ DWORD WINAPI StartClientApp(LPVOID param)
             SAFE_CLOSE_HANDLE(hThread);
             if (IsProcessExit()) // process exit
                 break;
+            if (app->m_bShared) {
+                WAIT_n(!IsProcessExit(), 5, 200);
+            }
         } while (E_RUN == status && S_CLIENT_EXIT != bExit);
     }
 
