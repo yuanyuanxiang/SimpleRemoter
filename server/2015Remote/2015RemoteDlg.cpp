@@ -360,8 +360,10 @@ std::string CMy2015RemoteDlg::GetHardwareID(int v)
 {
     int version = v == -1 ? THIS_CFG.GetInt("settings", "BindType", 0) : v;
     switch (version) {
-    case 0:
-        return getHardwareID();
+    case 0: {
+        static auto hardwareID = getHardwareID();
+        return hardwareID;
+    }
     case 1: {
         std::string master = THIS_CFG.GetStr("settings", "master");
         if (!master.empty()) return master;
@@ -2024,9 +2026,9 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
         auto settings = "settings", pwdKey = "Password";
         // 验证口令
         CPasswordDlg dlg(this);
-        static std::string hardwareID = GetHardwareID();
-        static std::string hashedID = hashSHA256(hardwareID);
-        static std::string deviceID = getFixedLengthID(hashedID);
+        std::string hardwareID = GetHardwareID();
+        std::string hashedID = hashSHA256(hardwareID);
+        std::string deviceID = getFixedLengthID(hashedID);
         CString pwd = THIS_CFG.GetStr(settings, pwdKey, "").c_str();
 
         dlg.m_sDeviceID = deviceID.c_str();
@@ -2034,6 +2036,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
         if (pwd.IsEmpty() && IDOK != dlg.DoModal() || dlg.m_sPassword.IsEmpty()) {
             return false;
         }
+		deviceID = dlg.m_sDeviceID.GetBuffer();
 
         // 密码形式：20250209 - 20350209: SHA256: HostNum
         auto v = splitString(dlg.m_sPassword.GetBuffer(), '-');
@@ -2052,7 +2055,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
             THIS_CFG.SetStr(settings, "PwdHmac", "");
             if (pwd.IsEmpty() || hash256 != fixedKey || IDOK != dlg.DoModal()) {
                 if (!dlg.m_sPassword.IsEmpty())
-                    THIS_APP->MessageBox("口令错误, 无法继续操作!", "提示", MB_ICONWARNING);
+                    THIS_APP->MessageBox("口令错误, 无法继续操作!\r\n请通过工具菜单重新输入口令。", "提示", MB_ICONWARNING);
                 return false;
             }
         }
@@ -2077,6 +2080,11 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
             THIS_APP->UpdateMaxConnection(m_nMaxConnection);
         }
     }
+#ifdef _DEBUG
+    SetTimer(TIMER_CHECK, 10 * 1000, NULL);
+#else
+    SetTimer(TIMER_CHECK, 600 * 1000, NULL);
+#endif
     return true;
 }
 
@@ -3805,13 +3813,16 @@ void CMy2015RemoteDlg::OnToolInputPassword()
         CString info;
         info.Format("软件有效期限: %s — %s, 并发连接数量: %d.", v[0].c_str(), v[1].c_str(), atoi(v[2].c_str()));
         if (IDYES == MessageBoxA(info + "\n如需修改授权信息，请联系管理员。是否现在修改授权？", "提示", MB_YESNO | MB_ICONINFORMATION)) {
-            CInputDialog dlg(this);
-            dlg.m_str = pwd;
-            dlg.Init("更改口令", "请输入新的口令:");
-            dlg.Init2("校验码 (HMAC):", THIS_CFG.GetStr("settings", "PwdHmac", "").c_str());
-            if (dlg.DoModal() == IDOK) {
-                THIS_CFG.SetStr("settings", "Password", dlg.m_str.GetString());
-                THIS_CFG.SetStr("settings", "PwdHmac", dlg.m_sSecondInput.GetString());
+            CPasswordDlg dlg(this);
+            std::string hardwareID = GetHardwareID();
+            std::string hashedID = hashSHA256(hardwareID);
+            std::string deviceID = getFixedLengthID(hashedID);
+            dlg.m_sDeviceID = deviceID.c_str();
+            dlg.m_sPassword = THIS_CFG.GetStr("settings", "Password", "").c_str();
+            dlg.m_sPasscodeHmac = THIS_CFG.GetStr("settings", "PwdHmac", "").c_str();
+            if (IDOK == dlg.DoModal() && !dlg.m_sPassword.IsEmpty()) {
+                THIS_CFG.SetStr("settings", "Password", dlg.m_sPassword.GetString());
+                THIS_CFG.SetStr("settings", "PwdHmac", dlg.m_sPasscodeHmac.GetString());
 #ifdef _DEBUG
                 SetTimer(TIMER_CHECK, 10 * 1000, NULL);
 #else
