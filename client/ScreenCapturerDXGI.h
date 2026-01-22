@@ -111,11 +111,11 @@ public:
             m_BitmapInfor_Full = ConstructBitmapInfo(32, m_ulFullWidth, m_ulFullHeight);
             iniFile cfg(CLIENT_PATH);
             int strategy = HasSSE2() ? cfg.GetInt("settings", "ScreenStrategy", 0) : 1;
+            m_BitmapInfor_Send = new BITMAPINFO(*m_BitmapInfor_Full);
             switch (strategy) {
             case 1:
                 break;
             default:
-                m_BitmapInfor_Send = new BITMAPINFO(*m_BitmapInfor_Full);
                 if (m_bAlgorithm != ALGORITHM_H264) {
                     m_BitmapInfor_Send->bmiHeader.biWidth = min(1920, m_BitmapInfor_Send->bmiHeader.biWidth);
                     m_BitmapInfor_Send->bmiHeader.biHeight = min(1080, m_BitmapInfor_Send->bmiHeader.biHeight);
