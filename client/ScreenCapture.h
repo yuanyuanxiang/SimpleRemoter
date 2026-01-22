@@ -150,6 +150,13 @@ public:
     int             m_nScreenCount;      // 屏幕数量
     BOOL            m_bEnableMultiScreen;// 多显示器支持
 
+protected:
+    int             m_nVScreenLeft = GetSystemMetrics(SM_XVIRTUALSCREEN);
+    int             m_nVScreenTop = GetSystemMetrics(SM_YVIRTUALSCREEN);
+    int             m_nVScreenWidth = GetSystemMetrics(SM_CXVIRTUALSCREEN);
+    int             m_nVScreenHeight = GetSystemMetrics(SM_CYVIRTUALSCREEN);
+
+public:
     ScreenCapture(int n = 32, BYTE algo = ALGORITHM_DIFF, BOOL all = FALSE) :
         m_ThreadPool(nullptr), m_FirstBuffer(nullptr), m_RectBuffer(nullptr),
         m_BitmapInfor_Full(nullptr), m_bAlgorithm(algo), m_SendQuality(100),
@@ -162,7 +169,7 @@ public:
         m_BmpZoomFirst = nullptr;
         m_BlockNum = 8;
         m_ThreadPool = new ThreadPool(m_BlockNum);
-        static auto monitors = GetAllMonitors();
+        auto monitors = GetAllMonitors();
         static int index = 0;
         m_nScreenCount = monitors.size();
         m_bEnableMultiScreen = all;
@@ -234,6 +241,36 @@ public:
     {
         return m_nScreenCount;
     }
+
+	virtual int GetScreenWidth() const
+	{
+		return m_ulFullWidth;
+	}
+	virtual int GetScreenHeight() const
+	{
+		return m_ulFullHeight;
+	}
+	virtual int GetScreenLeft() const {
+		return m_iScreenX;
+	}
+	virtual int GetScreenTop() const {
+		return m_iScreenY;
+	}
+
+	inline int GetVScreenWidth() const
+	{
+		return m_nVScreenWidth;
+	}
+    inline int GetVScreenHeight() const
+	{
+		return m_nVScreenHeight;
+	}
+    inline int GetVScreenLeft() const {
+		return m_nVScreenLeft;
+	}
+    inline int GetVScreenTop() const {
+		return m_nVScreenTop;
+	}
 
     virtual bool IsOriginalSize() const
     {
