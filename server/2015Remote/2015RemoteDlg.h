@@ -158,9 +158,8 @@ public:
     std::string m_selectedGroup;
     void LoadListData(const std::string& group);
     void DeletePopupWindow(BOOL bForce = FALSE);
-    context* FindHost(context* ctx);
     context* FindHost(int port);
-    context* FindHost(uint64_t port);
+    context* FindHost(uint64_t id);
 
     CStatusBar m_StatusBar;          //状态条
     CTrueColorToolBar m_ToolBar;

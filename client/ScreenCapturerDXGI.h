@@ -7,7 +7,7 @@
 // 仅在 Windows 8 及更新版本上受支持
 #include <dxgi1_2.h>
 #include <d3d11.h>
-#include <iniFile.h>
+#include <common/iniFile.h>
 
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")

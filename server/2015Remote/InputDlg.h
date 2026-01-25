@@ -38,4 +38,6 @@ public:
     CEdit m_Edit2thInput;
     CString m_sItemName;
     CString m_sSecondInput;
+    CStatic m_StaticTipInfo;
+    CString m_sTipInfo;
 };

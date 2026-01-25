@@ -1923,11 +1923,16 @@ void CFileManagerDlg::ShowProgress()
     else
         lpDirection = "接收文件";
 
-    if ((int)m_nCounter == -1) {
+    // 防止除零导致未定义行为
+    if (m_nOperatingFileLength <= 0) {
+        return;
+    }
+
+    if (m_nCounter < 0 || m_nCounter > m_nOperatingFileLength) {
         m_nCounter = m_nOperatingFileLength;
     }
 
-    int	progress = (float)(m_nCounter * 100) / m_nOperatingFileLength;
+    int	progress = (int)((double)m_nCounter / m_nOperatingFileLength * 100);
     ShowMessage("%s %s %dKB (%d%%)", lpDirection, m_strOperatingFile, (int)(m_nCounter / 1024), progress);
     m_ProgressCtrl->SetPos(progress);
 

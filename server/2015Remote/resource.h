@@ -450,6 +450,7 @@
 #define IDC_EDIT_DOWNLOAD_URL           2224
 #define IDC_EDIT_FILESERVER_PORT        2225
 #define IDC_CLIENT_LIST                 2227
+#define IDC_STATIC_TIPINFO              2228
 #define ID_ONLINE_UPDATE                32772
 #define ID_ONLINE_MESSAGE               32773
 #define ID_ONLINE_DELETE                32775
@@ -648,7 +649,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        328
 #define _APS_NEXT_COMMAND_VALUE         33007
-#define _APS_NEXT_CONTROL_VALUE         2228
+#define _APS_NEXT_CONTROL_VALUE         2229
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

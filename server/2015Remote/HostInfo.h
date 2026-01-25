@@ -26,7 +26,9 @@ public:
     char OsName[32];
     char Authorized;
     uint64_t ID;
-    char Reserved[768];
+    char ComputerName[64];
+    char ProgramPath[256];
+    char Reserved[448];
 
     _ClientValue()
     {

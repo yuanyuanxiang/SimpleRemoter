@@ -683,10 +683,6 @@ public:
         s.Delete(s.GetLength() - 1);
         return XXH64(s.GetString(), s.GetLength(), 0);
     }
-    uint64_t GetID() const
-    {
-        return ID;
-    }
     void SetID(uint64_t id)
     {
         ID = id;

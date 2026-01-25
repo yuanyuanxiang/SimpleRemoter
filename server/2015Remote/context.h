@@ -46,8 +46,4 @@ public:
     {
         return TRUE;
     }
-    virtual bool IsEqual(context* ctx) const
-    {
-        return this == ctx || this->GetPort() == ctx->GetPort();
-    }
 };

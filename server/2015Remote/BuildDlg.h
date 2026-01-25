@@ -6,6 +6,8 @@ LPBYTE ReadResource(int resourceId, DWORD& dwSize);
 
 std::string ReleaseEXE(int resID, const char* name);
 
+CString BuildPayloadUrl(const char* ip, const char* name);
+
 // CBuildDlg 对话框
 
 class CBuildDlg : public CDialog

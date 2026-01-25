@@ -13,6 +13,7 @@ IMPLEMENT_DYNAMIC(CInputDialog, CDialogEx)
 CInputDialog::CInputDialog(CWnd* pParent /*=nullptr*/)
     : CDialogEx(IDD_DIALOG_INPUT, pParent)
     , m_sSecondInput(_T(""))
+    , m_sTipInfo(_T(""))
 {
     m_hIcon = NULL;
 }
@@ -28,6 +29,9 @@ void CInputDialog::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_EDIT_SECOND, m_Edit2thInput);
     DDX_Text(pDX, IDC_EDIT_SECOND, m_sSecondInput);
     DDV_MaxChars(pDX, m_sSecondInput, 100);
+    DDX_Control(pDX, IDC_STATIC_TIPINFO, m_StaticTipInfo);
+    DDX_Text(pDX, IDC_STATIC_TIPINFO, m_sTipInfo);
+	DDV_MaxChars(pDX, m_sTipInfo, 64);
 }
 
 
@@ -65,6 +69,8 @@ BOOL CInputDialog::OnInitDialog()
     m_Static2thInput.ShowWindow(m_sItemName.IsEmpty() ? SW_HIDE : SW_SHOW);
     m_Edit2thInput.SetWindowTextA(m_sSecondInput);
     m_Edit2thInput.ShowWindow(m_sItemName.IsEmpty() ? SW_HIDE : SW_SHOW);
+	m_StaticTipInfo.SetWindowTextA(m_sTipInfo);
+    m_StaticTipInfo.ShowWindow(m_sTipInfo.IsEmpty() ? SW_HIDE : SW_SHOW);
 
     return TRUE;  // return TRUE unless you set the focus to a control
     // 异常: OCX 属性页应返回 FALSE

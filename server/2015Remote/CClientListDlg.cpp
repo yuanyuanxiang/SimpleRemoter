@@ -4,9 +4,121 @@
 #include "stdafx.h"
 #include "afxdialogex.h"
 #include "CClientListDlg.h"
+#include "2015Remote.h"
 
 
 // CClientListDlg 对话框
+
+typedef struct {
+    LPCTSTR Name;
+    int     Width;
+    float   Percent;
+} ColumnInfo;
+
+static ColumnInfo g_ColumnInfos[] = {
+    { _T("序号"),       40,  0.0f },
+    { _T("ID"),         130, 0.0f },
+    { _T("备注"),       60,  0.0f },
+    { _T("计算机名称"), 105, 0.0f },
+    { _T("位置"),       115, 0.0f },
+    { _T("IP"),         95,  0.0f },
+    { _T("系统"),       100, 0.0f },
+    { _T("安装时间"),   115, 0.0f },
+    { _T("最后登录"),   115, 0.0f },
+    { _T("程序路径"),   150, 0.0f },
+    { _T("关注"),       40,  0.0f },
+    { _T("授权"),       40,  0.0f },
+};
+
+static const int g_nColumnCount = _countof(g_ColumnInfos);
+
+// 列索引枚举（与 g_ColumnInfos 顺序一致）
+enum ColumnIndex {
+    COL_NO = 0,         // 序号
+    COL_ID,             // ID
+    COL_NOTE,           // 备注
+    COL_COMPUTER_NAME,  // 计算机名称
+    COL_LOCATION,       // 位置
+    COL_IP,             // IP
+    COL_OS,             // 系统
+    COL_INSTALL_TIME,   // 安装时间
+    COL_LAST_LOGIN,     // 最后登录
+    COL_PROGRAM_PATH,   // 程序路径
+    COL_LEVEL,          // 关注
+    COL_AUTH,           // 授权
+};
+
+// ========== 分组字段配置 ==========
+// 可用的分组字段枚举
+enum GroupField {
+    GF_IP,
+    GF_ComputerName,
+    GF_OsName,
+    GF_Location,
+    GF_ProgramPath,
+};
+
+// 分组字段配置：字段枚举 + 对应的列索引
+struct GroupFieldConfig {
+    GroupField Field;
+    int ColumnIndex;
+};
+
+// ★★★ 修改这里即可改变分组方式 ★★★
+static GroupFieldConfig g_GroupFieldConfigs[] = {
+    { GF_IP,           COL_IP },             // 按 IP 分组
+    { GF_ComputerName, COL_COMPUTER_NAME },  // 按 计算机名称 分组
+    // { GF_OsName,    COL_OS },             // 取消注释：增加按操作系统分组
+    // { GF_Location,  COL_LOCATION },       // 取消注释：增加按位置分组
+};
+
+static const int g_nGroupFieldCount = _countof(g_GroupFieldConfigs);
+
+// 根据字段枚举获取 ClientValue 中的值
+static CString GetFieldValue(const ClientValue& val, GroupField field)
+{
+    switch (field) {
+    case GF_IP:          return CString(val.IP);
+    case GF_ComputerName: return CString(val.ComputerName);
+    case GF_OsName:      return CString(val.OsName);
+    case GF_Location:    return CString(val.Location);
+    case GF_ProgramPath: return CString(val.ProgramPath);
+    default:             return _T("");
+    }
+}
+
+// 比较两个客户端的指定列，返回 <0, 0, >0
+static int CompareClientByColumn(const std::pair<ClientKey, ClientValue>& a,
+                                  const std::pair<ClientKey, ClientValue>& b,
+                                  int nColumn)
+{
+    switch (nColumn) {
+    case COL_ID:
+        return (a.first < b.first) ? -1 : ((a.first > b.first) ? 1 : 0);
+    case COL_NOTE:
+        return strcmp(a.second.Note, b.second.Note);
+    case COL_COMPUTER_NAME:
+        return strcmp(a.second.ComputerName, b.second.ComputerName);
+    case COL_LOCATION:
+        return strcmp(a.second.Location, b.second.Location);
+    case COL_IP:
+        return strcmp(a.second.IP, b.second.IP);
+    case COL_OS:
+        return strcmp(a.second.OsName, b.second.OsName);
+    case COL_INSTALL_TIME:
+        return strcmp(a.second.InstallTime, b.second.InstallTime);
+    case COL_LAST_LOGIN:
+        return strcmp(a.second.LastLoginTime, b.second.LastLoginTime);
+    case COL_PROGRAM_PATH:
+        return strcmp(a.second.ProgramPath, b.second.ProgramPath);
+    case COL_LEVEL:
+        return a.second.Level - b.second.Level;
+    case COL_AUTH:
+        return a.second.Authorized - b.second.Authorized;
+    default:
+        return 0;
+    }
+}
 
 IMPLEMENT_DYNAMIC(CClientListDlg, CDialogEx)
 
@@ -14,6 +126,8 @@ CClientListDlg::CClientListDlg(_ClientList* clients, CMy2015RemoteDlg* pParent)
     : g_ClientList(clients), g_pParent(pParent), CDialogEx(IDD_DIALOG_CLIENTLIST, pParent)
     , m_nSortColumn(-1)
     , m_bSortAscending(TRUE)
+    , m_nTipItem(-1)
+    , m_nTipSubItem(-1)
 {
 }
 
@@ -30,7 +144,9 @@ void CClientListDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CClientListDlg, CDialogEx)
     ON_WM_SIZE()
+    ON_WM_CONTEXTMENU()
     ON_NOTIFY(LVN_COLUMNCLICK, IDC_CLIENT_LIST, &CClientListDlg::OnColumnClick)
+    ON_NOTIFY(NM_CLICK, IDC_CLIENT_LIST, &CClientListDlg::OnListClick)
 END_MESSAGE_MAP()
 
 
@@ -49,17 +165,26 @@ BOOL CClientListDlg::OnInitDialog()
         LVS_EX_GRIDLINES       // 显示网格线
     );
 
+    // 初始化ToolTip
+    m_ToolTip.Create(this, TTS_ALWAYSTIP | TTS_NOPREFIX);
+    m_ToolTip.AddTool(&m_ClientList);
+    m_ToolTip.SetMaxTipWidth(500);
+    m_ToolTip.SetDelayTime(TTDT_AUTOPOP, 10000);
+    m_ToolTip.Activate(TRUE);
+
+    // 初始化列可见性（从配置加载）
+    m_ColumnVisible.resize(g_nColumnCount, TRUE);
+    LoadColumnVisibility();
+
     // 添加列
-    m_ClientList.InsertColumn(0, _T("序号"), LVCFMT_LEFT, 50);
-    m_ClientList.InsertColumn(1, _T("ID"), LVCFMT_LEFT, 120);
-    m_ClientList.InsertColumn(2, _T("备注"), LVCFMT_LEFT, 80);
-    m_ClientList.InsertColumn(3, _T("位置"), LVCFMT_LEFT, 100);
-    m_ClientList.InsertColumn(4, _T("IP"), LVCFMT_LEFT, 120);
-    m_ClientList.InsertColumn(5, _T("系统"), LVCFMT_LEFT, 120);
-    m_ClientList.InsertColumn(6, _T("安装时间"), LVCFMT_LEFT, 130);
-    m_ClientList.InsertColumn(7, _T("最后登录"), LVCFMT_LEFT, 130);
-    m_ClientList.InsertColumn(8, _T("关注级别"), LVCFMT_LEFT, 70);
-    m_ClientList.InsertColumn(9, _T("已授权"), LVCFMT_LEFT, 60);
+    int totalWidth = 0;
+    for (int i = 0; i < g_nColumnCount; i++) {
+        totalWidth += g_ColumnInfos[i].Width;
+    }
+    for (int i = 0; i < g_nColumnCount; i++) {
+        g_ColumnInfos[i].Percent = (float)g_ColumnInfos[i].Width / totalWidth;
+        m_ClientList.InsertColumn(i, g_ColumnInfos[i].Name, LVCFMT_LEFT, g_ColumnInfos[i].Width);
+    }
 
     // 首次加载数据
     AdjustColumnWidths();
@@ -71,16 +196,40 @@ BOOL CClientListDlg::OnInitDialog()
 void CClientListDlg::RefreshClientList()
 {
     m_clients = g_ClientList->GetAll();  // 保存到成员变量
+    BuildGroups();  // 构建分组
 
-    // 如果之前有排序，保持排序
-    if (m_nSortColumn >= 0) {
-        SortByColumn(m_nSortColumn, m_bSortAscending);
+    m_ClientList.SetRedraw(FALSE);
+    DisplayClients();
+    m_ClientList.SetRedraw(TRUE);
+    m_ClientList.Invalidate();
+}
+
+void CClientListDlg::BuildGroups()
+{
+    // 保留已有分组的展开状态
+    std::map<GroupKey, BOOL> expandedStates;
+    for (const auto& pair : m_groups) {
+        expandedStates[pair.first] = pair.second.bExpanded;
     }
-    else {
-        m_ClientList.SetRedraw(FALSE);
-        DisplayClients();
-        m_ClientList.SetRedraw(TRUE);
-        m_ClientList.Invalidate();
+
+    m_groups.clear();
+
+    // 根据配置的字段进行分组
+    for (const auto& client : m_clients) {
+        GroupKey key;
+        for (int i = 0; i < g_nGroupFieldCount; i++) {
+            key.Values.push_back(GetFieldValue(client.second, g_GroupFieldConfigs[i].Field));
+        }
+
+        if (m_groups.find(key) == m_groups.end()) {
+            GroupInfo info;
+            info.GroupId = 0;  // 显示时重新编号
+            // 恢复展开状态，新分组默认收起
+            auto it = expandedStates.find(key);
+            info.bExpanded = (it != expandedStates.end()) ? it->second : FALSE;
+            m_groups[key] = info;
+        }
+        m_groups[key].Clients.push_back(client);
     }
 }
 
@@ -88,34 +237,124 @@ void CClientListDlg::DisplayClients()
 {
     m_ClientList.DeleteAllItems();
 
-    int i = 0;
-    for (const auto& pair : m_clients) {
-        const ClientKey& key = pair.first;
-        const ClientValue& val = pair.second;
+    // 创建分组指针列表用于排序
+    std::vector<std::pair<const GroupKey, GroupInfo>*> sortedGroups;
+    for (auto& pair : m_groups) {
+        sortedGroups.push_back(&pair);
+    }
 
-        CString strNo;
-        strNo.Format(_T("%d"), i + 1);  // 序号从1开始
+    // 如果有排序列，按第一个设备的该列值排序
+    if (m_nSortColumn >= 0) {
+        int sortCol = m_nSortColumn;
+        BOOL ascending = m_bSortAscending;
+        std::sort(sortedGroups.begin(), sortedGroups.end(),
+            [sortCol, ascending](const std::pair<const GroupKey, GroupInfo>* a,
+                                  const std::pair<const GroupKey, GroupInfo>* b) {
+                // 取每个分组的第一个设备进行比较
+                const auto& clientA = a->second.Clients[0];
+                const auto& clientB = b->second.Clients[0];
+                int result = CompareClientByColumn(clientA, clientB, sortCol);
+                return ascending ? (result < 0) : (result > 0);
+            });
+    }
 
-        CString strID;
-        strID.Format(_T("%llu"), key);
+    int nRow = 0;
+    int nGroupIndex = 0;
+    for (auto* pPair : sortedGroups) {
+        const GroupKey& groupKey = pPair->first;
+        GroupInfo& groupInfo = pPair->second;
+        nGroupIndex++;
+        groupInfo.GroupId = nGroupIndex;  // 按显示顺序重新编号
 
-        CString strLevel;
-        strLevel.Format(_T("%d"), val.Level);
+        int nItem;
+        size_t clientCount = groupInfo.Clients.size();
 
-        CString strAuth = val.Authorized ? _T("Y") : _T("N");
+        // 只有一个设备时，直接显示设备详情
+        if (clientCount == 1) {
+            const ClientKey& key = groupInfo.Clients[0].first;
+            const ClientValue& val = groupInfo.Clients[0].second;
 
-        int nItem = m_ClientList.InsertItem(i, strNo);  // 第一列是序号
-        m_ClientList.SetItemText(nItem, 1, strID);
-        m_ClientList.SetItemText(nItem, 2, val.Note);
-        m_ClientList.SetItemText(nItem, 3, val.Location);
-        m_ClientList.SetItemText(nItem, 4, val.IP);
-        m_ClientList.SetItemText(nItem, 5, val.OsName);
-        m_ClientList.SetItemText(nItem, 6, val.InstallTime);
-        m_ClientList.SetItemText(nItem, 7, val.LastLoginTime);
-        m_ClientList.SetItemText(nItem, 8, strLevel);
-        m_ClientList.SetItemText(nItem, 9, strAuth);
-        m_ClientList.SetItemData(nItem, (DWORD_PTR)key);
-        i++;
+            CString strNo;
+            strNo.Format(_T("%d"), groupInfo.GroupId);
+
+            CString strID;
+            strID.Format(_T("%llu"), key);
+
+            CString strLevel;
+            strLevel.Format(_T("%d"), val.Level);
+
+            CString strAuth = val.Authorized ? _T("Y") : _T("N");
+
+            nItem = m_ClientList.InsertItem(nRow, strNo);
+            m_ClientList.SetItemText(nItem, COL_ID, strID);
+            m_ClientList.SetItemText(nItem, COL_NOTE, val.Note);
+            m_ClientList.SetItemText(nItem, COL_COMPUTER_NAME, CString(val.ComputerName));
+            m_ClientList.SetItemText(nItem, COL_LOCATION, val.Location);
+            m_ClientList.SetItemText(nItem, COL_IP, val.IP);
+            m_ClientList.SetItemText(nItem, COL_OS, val.OsName);
+            m_ClientList.SetItemText(nItem, COL_INSTALL_TIME, val.InstallTime);
+            m_ClientList.SetItemText(nItem, COL_LAST_LOGIN, val.LastLoginTime);
+            m_ClientList.SetItemText(nItem, COL_PROGRAM_PATH, CString(val.ProgramPath));
+            m_ClientList.SetItemText(nItem, COL_LEVEL, strLevel);
+            m_ClientList.SetItemText(nItem, COL_AUTH, strAuth);
+            m_ClientList.SetItemData(nItem, (DWORD_PTR)key);
+            nRow++;
+        }
+        else {
+            // 多个设备时，显示可展开的分组行
+            CString strNo;
+            strNo.Format(_T("%d"), groupInfo.GroupId);
+
+            CString strCount;
+            strCount.Format(_T("%s (%d台设备)"), groupInfo.bExpanded ? _T("-") : _T("+"), (int)clientCount);
+
+            nItem = m_ClientList.InsertItem(nRow, strNo);
+            m_ClientList.SetItemText(nItem, COL_ID, strCount);
+
+            // 清空所有列
+            for (int col = COL_NOTE; col < g_nColumnCount; col++) {
+                m_ClientList.SetItemText(nItem, col, _T(""));
+            }
+            // 根据配置填充分组字段到对应列
+            for (int i = 0; i < g_nGroupFieldCount; i++) {
+                m_ClientList.SetItemText(nItem, g_GroupFieldConfigs[i].ColumnIndex, groupKey.Values[i]);
+            }
+
+            // 分组行的 ItemData 使用高位标记: 0x8000000000000000 | groupId
+            m_ClientList.SetItemData(nItem, 0x8000000000000000ULL | groupInfo.GroupId);
+            nRow++;
+
+            // 如果展开，显示组内设备
+            if (groupInfo.bExpanded) {
+                for (const auto& client : groupInfo.Clients) {
+                    const ClientKey& key = client.first;
+                    const ClientValue& val = client.second;
+
+                    CString strSubNo, strID;
+                    strID.Format(_T("%llu"), key);
+
+                    CString strLevel;
+                    strLevel.Format(_T("%d"), val.Level);
+
+                    CString strAuth = val.Authorized ? _T("Y") : _T("N");
+
+                    nItem = m_ClientList.InsertItem(nRow, strSubNo);
+                    m_ClientList.SetItemText(nItem, COL_ID, strID);
+                    m_ClientList.SetItemText(nItem, COL_NOTE, val.Note);
+                    m_ClientList.SetItemText(nItem, COL_COMPUTER_NAME, CString(val.ComputerName));
+                    m_ClientList.SetItemText(nItem, COL_LOCATION, val.Location);
+                    m_ClientList.SetItemText(nItem, COL_IP, val.IP);
+                    m_ClientList.SetItemText(nItem, COL_OS, val.OsName);
+                    m_ClientList.SetItemText(nItem, COL_INSTALL_TIME, val.InstallTime);
+                    m_ClientList.SetItemText(nItem, COL_LAST_LOGIN, val.LastLoginTime);
+                    m_ClientList.SetItemText(nItem, COL_PROGRAM_PATH, CString(val.ProgramPath));
+                    m_ClientList.SetItemText(nItem, COL_LEVEL, strLevel);
+                    m_ClientList.SetItemText(nItem, COL_AUTH, strAuth);
+                    m_ClientList.SetItemData(nItem, (DWORD_PTR)key);
+                    nRow++;
+                }
+            }
+        }
     }
 }
 
@@ -125,7 +364,7 @@ void CClientListDlg::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
     int nColumn = pNMLV->iSubItem;
 
     // 序号列不排序
-    if (nColumn == 0) {
+    if (nColumn == COL_NO) {
         *pResult = 0;
         return;
     }
@@ -144,48 +383,9 @@ void CClientListDlg::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
     *pResult = 0;
 }
 
-void CClientListDlg::SortByColumn(int nColumn, BOOL bAscending)
+void CClientListDlg::SortByColumn(int /*nColumn*/, BOOL /*bAscending*/)
 {
-    std::sort(m_clients.begin(), m_clients.end(),
-        [nColumn, bAscending](const std::pair<ClientKey, ClientValue>& a,
-            const std::pair<ClientKey, ClientValue>& b) {
-                int result = 0;
-
-                switch (nColumn) {
-                case 1:  // ID
-                    result = (a.first < b.first) ? -1 : ((a.first > b.first) ? 1 : 0);
-                    break;
-                case 2:  // 备注
-                    result = strcmp(a.second.Note, b.second.Note);
-                    break;
-                case 3:  // 位置
-                    result = strcmp(a.second.Location, b.second.Location);
-                    break;
-                case 4:  // IP
-                    result = strcmp(a.second.IP, b.second.IP);
-                    break;
-                case 5:  // 系统
-                    result = strcmp(a.second.OsName, b.second.OsName);
-                    break;
-                case 6:  // 安装时间
-                    result = strcmp(a.second.InstallTime, b.second.InstallTime);
-                    break;
-                case 7:  // 最后登录
-                    result = strcmp(a.second.LastLoginTime, b.second.LastLoginTime);
-                    break;
-                case 8:  // 关注级别
-                    result = a.second.Level - b.second.Level;
-                    break;
-                case 9:  // 已授权
-                    result = a.second.Authorized - b.second.Authorized;
-                    break;
-                default:
-                    return false;
-                }
-
-                return bAscending ? (result < 0) : (result > 0);
-        });
-
+    // 排序在 DisplayClients 中进行（使用成员变量 m_nSortColumn, m_bSortAscending）
     m_ClientList.SetRedraw(FALSE);
     DisplayClients();
     m_ClientList.SetRedraw(TRUE);
@@ -198,16 +398,23 @@ void CClientListDlg::AdjustColumnWidths()
     m_ClientList.GetClientRect(&rect);
     int totalWidth = rect.Width() - 20;
 
-    m_ClientList.SetColumnWidth(0, totalWidth * 5 / 100);   // 序号
-    m_ClientList.SetColumnWidth(1, totalWidth * 12 / 100);  // ID
-    m_ClientList.SetColumnWidth(2, totalWidth * 10 / 100);  // 备注
-    m_ClientList.SetColumnWidth(3, totalWidth * 11 / 100);  // 位置
-    m_ClientList.SetColumnWidth(4, totalWidth * 11 / 100);  // IP
-    m_ClientList.SetColumnWidth(5, totalWidth * 11 / 100);  // 系统
-    m_ClientList.SetColumnWidth(6, totalWidth * 13 / 100);  // 安装时间
-    m_ClientList.SetColumnWidth(7, totalWidth * 13 / 100);  // 最后登录
-    m_ClientList.SetColumnWidth(8, totalWidth * 7 / 100);   // 关注级别
-    m_ClientList.SetColumnWidth(9, totalWidth * 7 / 100);   // 已授权
+    // 计算可见列的总百分比
+    float visiblePercent = 0.0f;
+    for (int i = 0; i < g_nColumnCount; i++) {
+        if (m_ColumnVisible[i]) {
+            visiblePercent += g_ColumnInfos[i].Percent;
+        }
+    }
+
+    // 按比例分配宽度给可见列
+    for (int i = 0; i < g_nColumnCount; i++) {
+        if (m_ColumnVisible[i]) {
+            int width = (visiblePercent > 0) ? (int)(totalWidth * g_ColumnInfos[i].Percent / visiblePercent) : 0;
+            m_ClientList.SetColumnWidth(i, width);
+        } else {
+            m_ClientList.SetColumnWidth(i, 0);  // 隐藏列
+        }
+    }
 }
 
 void CClientListDlg::OnSize(UINT nType, int cx, int cy)
@@ -225,6 +432,93 @@ void CClientListDlg::OnSize(UINT nType, int cx, int cy)
     m_ClientList.MoveWindow(margin, margin, cx - margin * 2, cy - margin * 2);
 
     AdjustColumnWidths();
+}
+
+void CClientListDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
+{
+    LPNMITEMACTIVATE pNMIA = reinterpret_cast<LPNMITEMACTIVATE>(pNMHDR);
+    int nItem = pNMIA->iItem;
+
+    if (nItem < 0) {
+        *pResult = 0;
+        return;
+    }
+
+    DWORD_PTR itemData = m_ClientList.GetItemData(nItem);
+
+    // 检查是否为分组行 (高位被设置)
+    if (itemData & 0x8000000000000000ULL) {
+        int groupId = (int)(itemData & 0x7FFFFFFFFFFFFFFFULL);
+
+        // 查找对应的分组并切换展开状态
+        for (auto& pair : m_groups) {
+            if (pair.second.GroupId == groupId) {
+                pair.second.bExpanded = !pair.second.bExpanded;
+                break;
+            }
+        }
+
+        // 刷新显示
+        m_ClientList.SetRedraw(FALSE);
+        DisplayClients();
+        m_ClientList.SetRedraw(TRUE);
+
+        // 恢复选中状态：找到刷新后的分组行并选中
+        for (int i = 0; i < m_ClientList.GetItemCount(); i++) {
+            DWORD_PTR data = m_ClientList.GetItemData(i);
+            if ((data & 0x8000000000000000ULL) &&
+                (int)(data & 0x7FFFFFFFFFFFFFFFULL) == groupId) {
+                m_ClientList.SetItemState(i, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+                m_ClientList.EnsureVisible(i, FALSE);
+                break;
+            }
+        }
+
+        m_ClientList.Invalidate();
+    }
+
+    *pResult = 0;
+}
+
+BOOL CClientListDlg::PreTranslateMessage(MSG* pMsg)
+{
+    if (pMsg->message == WM_MOUSEMOVE && pMsg->hwnd == m_ClientList.GetSafeHwnd()) {
+        m_ToolTip.RelayEvent(pMsg);
+
+        CPoint pt(pMsg->lParam);
+        LVHITTESTINFO hitInfo = {};
+        hitInfo.pt = pt;
+        m_ClientList.SubItemHitTest(&hitInfo);
+
+        int nItem = hitInfo.iItem;
+        int nSubItem = hitInfo.iSubItem;
+
+        if (nItem != m_nTipItem || nSubItem != m_nTipSubItem) {
+            m_nTipItem = nItem;
+            m_nTipSubItem = nSubItem;
+
+            if (nItem >= 0) {
+                CString strText = m_ClientList.GetItemText(nItem, nSubItem);
+
+                // 判断文本是否被截断
+                CClientDC dc(&m_ClientList);
+                CFont* pOldFont = dc.SelectObject(m_ClientList.GetFont());
+                CSize textSize = dc.GetTextExtent(strText);
+                dc.SelectObject(pOldFont);
+
+                int colWidth = m_ClientList.GetColumnWidth(nSubItem);
+                if (textSize.cx + 12 > colWidth && !strText.IsEmpty()) {
+                    m_ToolTip.UpdateTipText(strText, &m_ClientList);
+                } else {
+                    m_ToolTip.UpdateTipText(_T(""), &m_ClientList);
+                }
+            } else {
+                m_ToolTip.UpdateTipText(_T(""), &m_ClientList);
+            }
+        }
+    }
+
+    return CDialogEx::PreTranslateMessage(pMsg);
 }
 
 void CClientListDlg::OnCancel()
@@ -245,4 +539,104 @@ void CClientListDlg::PostNcDestroy()
 
 void CClientListDlg::OnOK()
 {
+}
+
+void CClientListDlg::OnContextMenu(CWnd* pWnd, CPoint pt)
+{
+    // 检查是否点击在表头区域
+    CHeaderCtrl* pHeader = m_ClientList.GetHeaderCtrl();
+    if (pHeader) {
+        CRect headerRect;
+        pHeader->GetWindowRect(&headerRect);
+        if (headerRect.PtInRect(pt)) {
+            ShowColumnContextMenu(pt);
+            return;
+        }
+    }
+
+    // 非表头区域，调用默认处理
+    CDialogEx::OnContextMenu(pWnd, pt);
+}
+
+void CClientListDlg::ShowColumnContextMenu(CPoint pt)
+{
+    CMenu menu;
+    menu.CreatePopupMenu();
+
+    // 添加所有列到菜单
+    for (int i = 0; i < g_nColumnCount; i++) {
+        UINT flags = MF_STRING;
+        if (m_ColumnVisible[i]) {
+            flags |= MF_CHECKED;
+        }
+        // 序号列始终显示，不允许隐藏
+        if (i == COL_NO) {
+            flags |= MF_GRAYED;
+        }
+        menu.AppendMenu(flags, 1000 + i, g_ColumnInfos[i].Name);
+    }
+
+    // 显示菜单并获取选择
+    int nCmd = menu.TrackPopupMenu(TPM_RETURNCMD | TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, this);
+    if (nCmd >= 1000 && nCmd < 1000 + g_nColumnCount) {
+        ToggleColumnVisibility(nCmd - 1000);
+    }
+}
+
+void CClientListDlg::ToggleColumnVisibility(int nColumn)
+{
+    // 序号列不允许隐藏
+    if (nColumn == COL_NO) {
+        return;
+    }
+
+    // 切换可见性
+    m_ColumnVisible[nColumn] = !m_ColumnVisible[nColumn];
+
+    // 保存到配置
+    SaveColumnVisibility();
+
+    // 重新调整列宽
+    AdjustColumnWidths();
+}
+
+void CClientListDlg::LoadColumnVisibility()
+{
+    // 格式：逗号分隔的隐藏列名，如 "备注,程序路径"
+    std::string strHidden = THIS_CFG.GetStr("ClientList", "HiddenColumns", "");
+    if (strHidden.empty()) {
+        return;  // 使用默认值（全部显示）
+    }
+
+    // 解析隐藏的列名
+    std::vector<std::string> hiddenNames = StringToVector(strHidden, ',');
+    for (const auto& name : hiddenNames) {
+        // 查找列名对应的索引
+        for (int i = 0; i < g_nColumnCount; i++) {
+            CString colName = g_ColumnInfos[i].Name;
+            CT2A colNameA(colName);
+            if (name == std::string(colNameA)) {
+                m_ColumnVisible[i] = FALSE;
+                break;
+            }
+        }
+    }
+
+    // 序号列始终显示
+    m_ColumnVisible[COL_NO] = TRUE;
+}
+
+void CClientListDlg::SaveColumnVisibility()
+{
+    // 只保存隐藏的列名
+    std::string strHidden;
+    for (int i = 0; i < g_nColumnCount; i++) {
+        if (!m_ColumnVisible[i]) {
+            if (!strHidden.empty()) strHidden += ",";
+            CString colName = g_ColumnInfos[i].Name;
+            CT2A colNameA(colName);
+            strHidden += std::string(colNameA);
+        }
+    }
+    THIS_CFG.SetStr("ClientList", "HiddenColumns", strHidden);
 }

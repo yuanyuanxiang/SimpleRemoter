@@ -6,7 +6,7 @@
 #include "ScreenSpy.h"
 #include "Common.h"
 #include <stdio.h>
-#include <iniFile.h>
+#include <common/iniFile.h>
 
 //////////////////////////////////////////////////////////////////////
 // Construction/Destruction

@@ -20,11 +20,10 @@
 #include "common/file_upload.h"
 #include <thread>
 #include "ClientDll.h"
-#include <iniFile.h>
+#include <common/iniFile.h>
 
 #pragma comment(lib, "Shlwapi.lib")
 
-#ifndef PLUGIN
 #ifdef _WIN64
 #ifdef _DEBUG
 #pragma comment(lib, "FileUpload_Libx64d.lib")
@@ -36,7 +35,6 @@
 #pragma comment(lib, "FileUpload_Libd.lib")
 #else
 #pragma comment(lib, "FileUpload_Lib.lib")
-#endif
 #endif
 #endif
 

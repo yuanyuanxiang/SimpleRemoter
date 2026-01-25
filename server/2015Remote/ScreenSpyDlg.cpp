@@ -211,7 +211,7 @@ void CScreenSpyDlg::PrepareDrawing(const LPBITMAPINFO bmp)
     strString.Format("%s - 远程桌面控制 %d×%d", m_IPAddress, bmp->bmiHeader.biWidth, bmp->bmiHeader.biHeight);
     SetWindowText(strString);
     uint64_t dlg = (uint64_t)this;
-    Mprintf("%s [对话框ID: %lld]\n", strString.GetString(), dlg);
+    Mprintf("%s [对话框ID: %llu]\n", strString.GetString(), dlg);
 
     m_hFullDC = ::GetDC(m_hWnd);
     SetStretchBltMode(m_hFullDC, HALFTONE);
