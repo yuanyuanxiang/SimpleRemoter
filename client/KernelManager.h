@@ -102,6 +102,11 @@ struct RttEstimator {
 
     void update_from_sample(double rtt_ms)
     {
+        // 过滤异常值：RTT应在合理范围内 (0, 30000] 毫秒
+        if (rtt_ms <= 0 || rtt_ms > 30000) {
+            return;
+        }
+
         const double alpha = 1.0 / 8;
         const double beta = 1.0 / 4;
 
@@ -158,7 +163,7 @@ public:
 
         ActivityWindow checker;
         auto s = checker.Check();
-        Heartbeat a(s, m_nNetPing.srtt);
+        Heartbeat a(s, (int)(m_nNetPing.srtt * 1000));  // srtt是秒，转为毫秒
 
         a.HasSoftware = SoftwareCheck(m_settings.DetectSoftware);
 

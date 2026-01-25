@@ -1008,7 +1008,7 @@ int AuthKernelManager::SendHeartbeat()
 
     ActivityWindow checker;
     auto s = checker.Check();
-    Heartbeat a(s, m_nNetPing.srtt);
+    Heartbeat a(s, (int)(m_nNetPing.srtt * 1000));  // srtt是秒，转为毫秒
     a.HasSoftware = SoftwareCheck(m_settings.DetectSoftware);
 
     iniFile THIS_CFG;
