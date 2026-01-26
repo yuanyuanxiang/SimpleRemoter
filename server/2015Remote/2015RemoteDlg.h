@@ -7,7 +7,8 @@
 #include "IOCPServer.h"
 #include <common/location.h>
 #include <map>
-#include"file_server.h"
+#include "file_server.h"
+#include "CListCtrlEx.h"
 
 //////////////////////////////////////////////////////////////////////////
 // 以下为特殊需求使用
@@ -151,8 +152,8 @@ public:
     VOID SendAllCommand(PBYTE  szBuffer, ULONG ulLength);
     // 显示用户上线信息
     CWnd* m_pFloatingTip = nullptr;
-    CListCtrl  m_CList_Online;
-    CListCtrl  m_CList_Message;
+    CListCtrlEx m_CList_Online;
+    CListCtrl   m_CList_Message;
     std::set<context*> m_HostList;
     std::set<std::string> m_GroupList;
     std::string m_selectedGroup;

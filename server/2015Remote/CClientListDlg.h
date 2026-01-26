@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <map>
 #include "2015RemoteDlg.h"
+#include "CListCtrlEx.h"
 
 // 分组键：支持任意字段组合
 struct GroupKey {
@@ -53,19 +54,14 @@ protected:
 	CToolTipCtrl m_ToolTip;
 	int m_nTipItem;         // 当前提示的行
 	int m_nTipSubItem;      // 当前提示的列
-	std::vector<BOOL> m_ColumnVisible;  // 各列的显示状态
 
 	void BuildGroups();     // 构建分组数据
-	void ShowColumnContextMenu(CPoint pt);  // 显示列选择菜单
-	void ToggleColumnVisibility(int nColumn);  // 切换列的显示/隐藏
-	void LoadColumnVisibility();   // 从配置加载列可见性
-	void SaveColumnVisibility();   // 保存列可见性到配置
 
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
 
 	DECLARE_MESSAGE_MAP()
 public:
-	CListCtrl m_ClientList;
+	CListCtrlEx m_ClientList;
 	virtual BOOL OnInitDialog();
 	void RefreshClientList();
 	void DisplayClients();
@@ -74,7 +70,6 @@ public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnListClick(NMHDR* pNMHDR, LRESULT* pResult);
-	afx_msg void OnContextMenu(CWnd* pWnd, CPoint pt);
 	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	virtual void OnCancel();
 	virtual void PostNcDestroy();

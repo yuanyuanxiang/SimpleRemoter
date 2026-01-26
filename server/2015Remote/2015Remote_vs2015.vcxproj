@@ -287,6 +287,7 @@
     <ClInclude Include="CDrawingBoard.h" />
     <ClInclude Include="CGridDialog.h" />
     <ClInclude Include="Chat.h" />
+    <ClInclude Include="CListCtrlEx.h" />
     <ClInclude Include="context.h" />
     <ClInclude Include="CPasswordDlg.h" />
     <ClInclude Include="CRcEditDlg.h" />
@@ -382,6 +383,7 @@
     <ClCompile Include="CDrawingBoard.cpp" />
     <ClCompile Include="CGridDialog.cpp" />
     <ClCompile Include="Chat.cpp" />
+    <ClCompile Include="CListCtrlEx.cpp" />
     <ClCompile Include="CPasswordDlg.cpp" />
     <ClCompile Include="CRcEditDlg.cpp" />
     <ClCompile Include="CTextDlg.cpp" />

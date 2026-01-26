@@ -66,6 +66,7 @@
     <ClCompile Include="..\..\client\reg_startup.c" />
     <ClCompile Include="CClientListDlg.cpp" />
     <ClCompile Include="CUpdateDlg.cpp" />
+    <ClCompile Include="CListCtrlEx.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
@@ -146,6 +147,7 @@
     <ClInclude Include="CClientListDlg.h" />
     <ClInclude Include="context.h" />
     <ClInclude Include="CUpdateDlg.h" />
+    <ClInclude Include="CListCtrlEx.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />

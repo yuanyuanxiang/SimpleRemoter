@@ -706,11 +706,12 @@ VOID CMy2015RemoteDlg::InitControl()
     rect.bottom+=20;
     MoveWindow(rect);
     auto style = LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER | LVS_EX_HEADERDRAGDROP | LVS_EX_LABELTIP;
+    m_CList_Online.SetConfigKey(_T("OnlineList"));
     for (int i = 0; i<g_Column_Count_Online; ++i) {
-        m_CList_Online.InsertColumn(i, g_Column_Data_Online[i].szTitle,LVCFMT_CENTER,g_Column_Data_Online[i].nWidth);
-
+        m_CList_Online.AddColumn(i, g_Column_Data_Online[i].szTitle, g_Column_Data_Online[i].nWidth, LVCFMT_CENTER);
         g_Column_Online_Width+=g_Column_Data_Online[i].nWidth;
     }
+    m_CList_Online.InitColumns();
     m_CList_Online.ModifyStyle(0, LVS_SHOWSELALWAYS);
     m_CList_Online.SetExtendedStyle(style);
     m_CList_Online.SetParent(&m_GroupTab);
@@ -1469,15 +1470,7 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
         m_GroupTab.AdjustRect(FALSE, &rcInside);
         rcInside.bottom -= 1;
         m_CList_Online.MoveWindow(&rcInside);
-
-        auto total = rcInside.Width() - 24;
-        for(int i=0; i<g_Column_Count_Online; ++i) {        //遍历每一个列
-            double Temp=g_Column_Data_Online[i].nWidth;     //得到当前列的宽度   138
-            Temp/=g_Column_Online_Width;                    //看一看当前宽度占总长度的几分之几
-            Temp*=total;                                    //用原来的长度乘以所占的几分之几得到当前的宽度
-            int lenth = Temp;                               //转换为int 类型
-            m_CList_Online.SetColumnWidth(i,(lenth));       //设置当前的宽度
-        }
+        m_CList_Online.AdjustColumnWidths();
     }
     LeaveCriticalSection(&m_cs);
 

@@ -144,7 +144,6 @@ void CClientListDlg::DoDataExchange(CDataExchange* pDX)
 
 BEGIN_MESSAGE_MAP(CClientListDlg, CDialogEx)
     ON_WM_SIZE()
-    ON_WM_CONTEXTMENU()
     ON_NOTIFY(LVN_COLUMNCLICK, IDC_CLIENT_LIST, &CClientListDlg::OnColumnClick)
     ON_NOTIFY(NM_CLICK, IDC_CLIENT_LIST, &CClientListDlg::OnListClick)
 END_MESSAGE_MAP()
@@ -172,22 +171,19 @@ BOOL CClientListDlg::OnInitDialog()
     m_ToolTip.SetDelayTime(TTDT_AUTOPOP, 10000);
     m_ToolTip.Activate(TRUE);
 
-    // 初始化列可见性（从配置加载）
-    m_ColumnVisible.resize(g_nColumnCount, TRUE);
-    LoadColumnVisibility();
+    // 设置配置键名
+    m_ClientList.SetConfigKey(_T("ClientList"));
 
-    // 添加列
-    int totalWidth = 0;
+    // 添加列（第一列序号不允许隐藏）
     for (int i = 0; i < g_nColumnCount; i++) {
-        totalWidth += g_ColumnInfos[i].Width;
+        BOOL bCanHide = (i != COL_NO);  // 序号列不允许隐藏
+        m_ClientList.AddColumn(i, g_ColumnInfos[i].Name, g_ColumnInfos[i].Width, LVCFMT_LEFT, bCanHide);
     }
-    for (int i = 0; i < g_nColumnCount; i++) {
-        g_ColumnInfos[i].Percent = (float)g_ColumnInfos[i].Width / totalWidth;
-        m_ClientList.InsertColumn(i, g_ColumnInfos[i].Name, LVCFMT_LEFT, g_ColumnInfos[i].Width);
-    }
+
+    // 初始化列（计算百分比、加载配置、应用列宽）
+    m_ClientList.InitColumns();
 
     // 首次加载数据
-    AdjustColumnWidths();
     RefreshClientList();
 
     return TRUE;
@@ -394,27 +390,7 @@ void CClientListDlg::SortByColumn(int /*nColumn*/, BOOL /*bAscending*/)
 
 void CClientListDlg::AdjustColumnWidths()
 {
-    CRect rect;
-    m_ClientList.GetClientRect(&rect);
-    int totalWidth = rect.Width() - 20;
-
-    // 计算可见列的总百分比
-    float visiblePercent = 0.0f;
-    for (int i = 0; i < g_nColumnCount; i++) {
-        if (m_ColumnVisible[i]) {
-            visiblePercent += g_ColumnInfos[i].Percent;
-        }
-    }
-
-    // 按比例分配宽度给可见列
-    for (int i = 0; i < g_nColumnCount; i++) {
-        if (m_ColumnVisible[i]) {
-            int width = (visiblePercent > 0) ? (int)(totalWidth * g_ColumnInfos[i].Percent / visiblePercent) : 0;
-            m_ClientList.SetColumnWidth(i, width);
-        } else {
-            m_ClientList.SetColumnWidth(i, 0);  // 隐藏列
-        }
-    }
+    m_ClientList.AdjustColumnWidths();
 }
 
 void CClientListDlg::OnSize(UINT nType, int cx, int cy)
@@ -539,104 +515,4 @@ void CClientListDlg::PostNcDestroy()
 
 void CClientListDlg::OnOK()
 {
-}
-
-void CClientListDlg::OnContextMenu(CWnd* pWnd, CPoint pt)
-{
-    // 检查是否点击在表头区域
-    CHeaderCtrl* pHeader = m_ClientList.GetHeaderCtrl();
-    if (pHeader) {
-        CRect headerRect;
-        pHeader->GetWindowRect(&headerRect);
-        if (headerRect.PtInRect(pt)) {
-            ShowColumnContextMenu(pt);
-            return;
-        }
-    }
-
-    // 非表头区域，调用默认处理
-    CDialogEx::OnContextMenu(pWnd, pt);
-}
-
-void CClientListDlg::ShowColumnContextMenu(CPoint pt)
-{
-    CMenu menu;
-    menu.CreatePopupMenu();
-
-    // 添加所有列到菜单
-    for (int i = 0; i < g_nColumnCount; i++) {
-        UINT flags = MF_STRING;
-        if (m_ColumnVisible[i]) {
-            flags |= MF_CHECKED;
-        }
-        // 序号列始终显示，不允许隐藏
-        if (i == COL_NO) {
-            flags |= MF_GRAYED;
-        }
-        menu.AppendMenu(flags, 1000 + i, g_ColumnInfos[i].Name);
-    }
-
-    // 显示菜单并获取选择
-    int nCmd = menu.TrackPopupMenu(TPM_RETURNCMD | TPM_LEFTALIGN | TPM_RIGHTBUTTON, pt.x, pt.y, this);
-    if (nCmd >= 1000 && nCmd < 1000 + g_nColumnCount) {
-        ToggleColumnVisibility(nCmd - 1000);
-    }
-}
-
-void CClientListDlg::ToggleColumnVisibility(int nColumn)
-{
-    // 序号列不允许隐藏
-    if (nColumn == COL_NO) {
-        return;
-    }
-
-    // 切换可见性
-    m_ColumnVisible[nColumn] = !m_ColumnVisible[nColumn];
-
-    // 保存到配置
-    SaveColumnVisibility();
-
-    // 重新调整列宽
-    AdjustColumnWidths();
-}
-
-void CClientListDlg::LoadColumnVisibility()
-{
-    // 格式：逗号分隔的隐藏列名，如 "备注,程序路径"
-    std::string strHidden = THIS_CFG.GetStr("ClientList", "HiddenColumns", "");
-    if (strHidden.empty()) {
-        return;  // 使用默认值（全部显示）
-    }
-
-    // 解析隐藏的列名
-    std::vector<std::string> hiddenNames = StringToVector(strHidden, ',');
-    for (const auto& name : hiddenNames) {
-        // 查找列名对应的索引
-        for (int i = 0; i < g_nColumnCount; i++) {
-            CString colName = g_ColumnInfos[i].Name;
-            CT2A colNameA(colName);
-            if (name == std::string(colNameA)) {
-                m_ColumnVisible[i] = FALSE;
-                break;
-            }
-        }
-    }
-
-    // 序号列始终显示
-    m_ColumnVisible[COL_NO] = TRUE;
-}
-
-void CClientListDlg::SaveColumnVisibility()
-{
-    // 只保存隐藏的列名
-    std::string strHidden;
-    for (int i = 0; i < g_nColumnCount; i++) {
-        if (!m_ColumnVisible[i]) {
-            if (!strHidden.empty()) strHidden += ",";
-            CString colName = g_ColumnInfos[i].Name;
-            CT2A colNameA(colName);
-            strHidden += std::string(colNameA);
-        }
-    }
-    THIS_CFG.SetStr("ClientList", "HiddenColumns", strHidden);
 }
