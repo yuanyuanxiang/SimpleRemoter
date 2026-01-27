@@ -159,6 +159,7 @@ public:
     std::string m_selectedGroup;
     void LoadListData(const std::string& group);
     void DeletePopupWindow(BOOL bForce = FALSE);
+    void CheckHeartbeat();
     context* FindHost(int port);
     context* FindHost(uint64_t id);
 

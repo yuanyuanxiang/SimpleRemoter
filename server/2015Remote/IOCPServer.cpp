@@ -700,7 +700,7 @@ void IOCPServer::OnAccept()
     //设置套接字的选项卡 Set KeepAlive 开启保活机制 SO_KEEPALIVE
     //保持连接检测对方主机是否崩溃如果2小时内在此套接口的任一方向都没
     //有数据交换，TCP就自动给对方 发一个保持存活
-    m_ulKeepLiveTime = 3;
+    m_ulKeepLiveTime = 1000 * 60 * 3;
     const BOOL bKeepAlive = TRUE;
     setsockopt(ContextObject->sClientSocket,SOL_SOCKET,SO_KEEPALIVE,(char*)&bKeepAlive,sizeof(bKeepAlive));
 

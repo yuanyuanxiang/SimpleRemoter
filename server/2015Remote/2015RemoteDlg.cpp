@@ -58,6 +58,7 @@
 #define TIMER_CHECK 1
 #define TIMER_CLOSEWND 2
 #define TIMER_CLEAR_BALLOON 3
+#define TIMER_HEARTBEAT_CHECK 4
 #define TODO_NOTICE MessageBoxA("This feature has not been implemented!\nPlease contact: 962914132@qq.com", "提示", MB_ICONINFORMATION);
 #define TINY_DLL_NAME "TinyRun.dll"
 #define FRPC_DLL_NAME "Frpc.dll"
@@ -1292,6 +1293,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 #else
     SetTimer(TIMER_CHECK, max(1, tm) * 60 * 1000, NULL);
 #endif
+    SetTimer(TIMER_HEARTBEAT_CHECK, 30 * 1000, NULL);
 
     UPDATE_SPLASH(85, "正在启动FRP代理...");
     m_hFRPThread = CreateThread(NULL, 0, StartFrpClient, this, NULL, NULL);
@@ -1565,10 +1567,39 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
         nid.szInfoTitle[0] = '\0';
         Shell_NotifyIcon(NIM_MODIFY, &nid);
     }
+    if (nIDEvent == TIMER_HEARTBEAT_CHECK && m_settings.ReportInterval > 0) {
+        CheckHeartbeat();
+	}
 
     CDialogEx::OnTimer(nIDEvent);
 }
 
+void CMy2015RemoteDlg::CheckHeartbeat() {
+	CLock lock(m_cs);
+    auto now = time(0);
+	int HEARTBEAT_TIMEOUT = max(30, m_settings.ReportInterval * 3);
+    for (auto it = m_HostList.begin(); it != m_HostList.end(); ) {
+        context* ContextObject = *it;
+        if (now - ContextObject->GetLastHeartbeat() > HEARTBEAT_TIMEOUT) {
+            auto host = ContextObject->GetAdditionalData(RES_CLIENT_PUBIP);
+			host = host.IsEmpty() ? std::to_string(ContextObject->GetClientID()).c_str() : host;
+            Mprintf("Client %s[%llu] heartbeat timeout!!! \n", host, ContextObject->GetClientID());
+            PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg("主机掉线"), 
+                (LPARAM)new CharMsg("主机长时间无心跳: " + host));
+            it = m_HostList.erase(it);
+            ContextObject->CancelIO();
+            for (int i = 0, n = m_CList_Online.GetItemCount(); i < n; i++) {
+				auto lParam = m_CList_Online.GetItemData(i);
+                if (lParam == (LPARAM)ContextObject) {
+                    m_CList_Online.DeleteItem(i);
+                    break;
+                }
+            }
+        } else {
+            ++it;
+        }
+	}
+}
 
 void CMy2015RemoteDlg::DeletePopupWindow(BOOL bForce)
 {
@@ -2907,6 +2938,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
         BYTE buf[sizeof(HeartbeatACK) + 1] = { CMD_HEARTBEAT_ACK};
         memcpy(buf + 1, &ack, sizeof(HeartbeatACK));
         ctx->Send2Client(buf, sizeof(buf));
+        ctx->SetLastHeartbeat(time(0));
     }
 
     CLock L(m_cs);
@@ -2918,6 +2950,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
             if (hb.Ping > 0)
                 m_CList_Online.SetItemText(i, ONLINELIST_PING, std::to_string(hb.Ping).c_str());
             m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, hb.HasSoftware ? "有" : "无");
+			id->SetLastHeartbeat(time(0));
             return;
         }
     }

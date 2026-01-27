@@ -339,6 +339,12 @@ public:
             Zcctx = nullptr;
         }
     }
+    virtual void SetLastHeartbeat(uint64_t time) override {
+		LastHeartbeatTime = time;
+	}
+    virtual uint64_t GetLastHeartbeat() override {
+		return LastHeartbeatTime;
+    }
     CString  sClientInfo[ONLINELIST_MAX];
     CString  additonalInfo[RES_MAX];
     SOCKET   sClientSocket;
@@ -361,7 +367,8 @@ public:
     ikcpcb*				kcp = nullptr;				// 新增，指向KCP会话
     std::string			GroupName;					// 分组名称
     CLock               SendLock;                   // fix #214
-    time_t              OnlineTime;                 // 上线时间
+    time_t              OnlineTime = 0;             // 上线时间
+	time_t              LastHeartbeatTime = 0;      // 最后心跳时间
 
     // 预分配的解压缩缓冲区，避免频繁内存分配
     PBYTE               DecompressBuffer = nullptr;
@@ -483,6 +490,7 @@ public:
         m_bProxyConnected = FALSE;
         server = (Server*)svr;
         OnlineTime = time(0);
+		LastHeartbeatTime = OnlineTime;
     }
     uint64_t GetAliveTime()const
     {
@@ -564,7 +572,7 @@ public:
     {
         return ID;
     }
-    void CancelIO()
+    void CancelIO() override
     {
         SAFE_CANCELIO(sClientSocket);
     }
