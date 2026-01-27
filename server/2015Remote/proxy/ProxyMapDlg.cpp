@@ -22,7 +22,7 @@ CProxyMapDlg::CProxyMapDlg(CWnd* pParent, Server* pIOCPServer, ClientContext* pC
 
 void CProxyMapDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_EDIT, m_Edit);
     DDX_Control(pDX, IDC_EDIT_OTHER, m_EditOther);
 }
@@ -36,7 +36,7 @@ END_MESSAGE_MAP()
 
 BOOL CProxyMapDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
 
     SetIcon(m_hIcon, TRUE);			// Set big icon
     SetIcon(m_hIcon, FALSE);		// Set small icon
@@ -54,7 +54,7 @@ BOOL CProxyMapDlg::OnInitDialog()
     // 开启IPCP服务器
     m_nPort = 5543;
     if (!m_iocpLocal->Initialize(NotifyProc, this, 100000, m_nPort)) {
-        MessageBox("初始化代理服务器失败!", "提示");
+        MessageBoxL("初始化代理服务器失败!", "提示", MB_ICONINFORMATION);
         return FALSE;
     }
     TCHAR ip[256] = {};
@@ -62,16 +62,16 @@ BOOL CProxyMapDlg::OnInitDialog()
     m_iocpLocal->m_TcpServer->GetListenAddress(ip, len, m_nPort);
 
     CString strString;
-    strString.Format("%s - 代理服务", m_IPAddress);
+    strString.FormatL("%s - 代理服务", m_IPAddress);
     SetWindowText(strString);
 
-    str.Format(_T("SOCKS 代理软件请设置服务器为: <127.0.0.1:%d>\r\n"), m_nPort);
+    str.FormatL(_T("SOCKS 代理软件请设置服务器为: <127.0.0.1:%d>\r\n"), m_nPort);
     AddLog(str.GetBuffer(0));
 
     CMenu* pSysMenu = GetSystemMenu(FALSE);
     if (pSysMenu != NULL) {
-        pSysMenu->AppendMenu(MF_SEPARATOR);
-        pSysMenu->AppendMenu(MF_STRING, IDM_PROXY_CHROME, _T("代理打开Chrome(请关闭所有Chrome进程)(&P)"));
+        pSysMenu->AppendMenuSeparator(MF_SEPARATOR);
+        pSysMenu->AppendMenuL(MF_STRING, IDM_PROXY_CHROME, _T("代理打开Chrome(请关闭所有Chrome进程)(&P)"));
     }
 
     return TRUE;
@@ -261,7 +261,7 @@ void CProxyMapDlg::AddLog_other(TCHAR* lpText)
 
 void CProxyMapDlg::OnSize(UINT nType, int cx, int cy)
 {
-    CDialog::OnSize(nType, cx, cy);
+    __super::OnSize(nType, cx, cy);
 
     // TODO: Add your message handler code here
     if (!IsWindowVisible())
@@ -283,10 +283,10 @@ void CProxyMapDlg::OnSysCommand(UINT nID, LPARAM lParam)
     switch (nID) {
     case IDM_PROXY_CHROME: {
         CString strCommand;
-        strCommand.Format(_T(" /c start chrome.exe --show-app-list  --proxy-server=\"SOCKS5://127.0.0.1:%d\""), m_nPort);
+        strCommand.FormatL(_T(" /c start chrome.exe --show-app-list  --proxy-server=\"SOCKS5://127.0.0.1:%d\""), m_nPort);
         ShellExecute(NULL, _T("open"), _T("cmd.exe"), strCommand, NULL, SW_SHOW);
     }
     break;
     }
-    CDialog::OnSysCommand(nID, lParam);
+    __super::OnSysCommand(nID, lParam);
 }

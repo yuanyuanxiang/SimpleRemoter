@@ -7,7 +7,7 @@
 IMPLEMENT_DYNAMIC(CToolbarDlg, CDialogEx)
 
 CToolbarDlg::CToolbarDlg(CScreenSpyDlg* pParent)
-    : CDialogEx(IDD_TOOLBAR_DLG, pParent)
+    : CDialogLangEx(IDD_TOOLBAR_DLG, pParent)
 {
     m_pParent = pParent;
 }
@@ -18,7 +18,7 @@ CToolbarDlg::~CToolbarDlg()
 
 void CToolbarDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialogEx::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
 }
 
 BEGIN_MESSAGE_MAP(CToolbarDlg, CDialogEx)
@@ -156,7 +156,7 @@ void CToolbarDlg::OnBnClickedClose()
 
 BOOL CToolbarDlg::OnInitDialog()
 {
-    CDialogEx::OnInitDialog();
+    __super::OnInitDialog();
 
     // 加载用户设置
     LoadSettings();

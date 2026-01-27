@@ -3,11 +3,12 @@
 
 /////////////////////////////////////////////////////////////////////////////
 // CFileTransferModeDlg dialog
+#include "LangManager.h"
 
 namespace file
 {
 
-class CFileTransferModeDlg : public CDialog
+class CFileTransferModeDlg : public CDialogLang
 {
 public:
     CString m_strFileName;

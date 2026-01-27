@@ -10,8 +10,11 @@ public:
     // 创建并显示启动画面
     BOOL Create(CWnd* pParent = NULL);
 
+private:
+	friend class CMy2015RemoteApp;
     int SafeMessageBox(LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType);
 
+public:
     // 更新进度 (0-100) - 通过消息队列（用于跨线程）
     void SetProgress(int nPercent);
 

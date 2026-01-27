@@ -14,14 +14,14 @@
 using namespace file;
 
 CFileTransferModeDlg::CFileTransferModeDlg(CWnd* pParent /*=NULL*/)
-    : CDialog(CFileTransferModeDlg::IDD, pParent)
+    : CDialogLang(CFileTransferModeDlg::IDD, pParent)
 {
 }
 
 
 void CFileTransferModeDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
 }
 
 
@@ -46,10 +46,10 @@ void CFileTransferModeDlg::OnEndDialog(UINT id)
 
 BOOL CFileTransferModeDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
 
     CString	str;
-    str.Format(_T("此文件夹已包含一个名为“%s”的文件"), m_strFileName);
+    str.FormatL(_T("此文件夹已包含一个名为“%s”的文件"), m_strFileName);
 
     for (int i = 0; i < str.GetLength(); i += 120) {
         str.Insert(i, _T("\n"));

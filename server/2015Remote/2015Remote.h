@@ -26,8 +26,8 @@ private:
     Server* m_tcpServer;
     Server* m_udpServer;
 public:
-    ServerPair(int method=0) :
-        m_tcpServer(new IOCPServer),
+    ServerPair(int method=0, HWND hWnd = 0) :
+        m_tcpServer(new IOCPServer(hWnd)),
         m_udpServer(method ? (Server*)new IOCPKCPServer : new IOCPUDPServer) {}
     virtual ~ServerPair()
     {
@@ -108,7 +108,7 @@ public:
         auto methods = StringToVector(method, ';', list.size());
         for (int i=0; i<list.size(); ++i) {
             int port = std::atoi(list[i].c_str());
-            auto svr = new ServerPair(atoi(methods[i].c_str()));
+            auto svr = new ServerPair(atoi(methods[i].c_str()), m_pMainWnd->GetSafeHwnd());
             BOOL ret = svr->StartServer(NotifyProc, OffProc, port);
             if (ret == FALSE) {
                 SAFE_DELETE(svr);

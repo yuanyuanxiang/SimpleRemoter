@@ -309,6 +309,7 @@
     <ClInclude Include="IOCPServer.h" />
     <ClInclude Include="IOCPUDPServer.h" />
     <ClInclude Include="KeyBoardDlg.h" />
+    <ClInclude Include="LangManager.h" />
     <ClInclude Include="proxy\HPSocket.h" />
     <ClInclude Include="proxy\HPTypeDef.h" />
     <ClInclude Include="proxy\ProxyConnectServer.h" />

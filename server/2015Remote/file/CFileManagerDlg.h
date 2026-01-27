@@ -73,7 +73,7 @@ public:
     strList m_Remote_Upload_Job;
     strList m_Remote_Delete_Job;
 
-    void ShowMessage(TCHAR* lpFmt, ...);
+    void ShowMessage(const TCHAR* lpFmt, ...);
     CString m_Remote_Path;
     CStringA CopyFileNAme;;
     BYTE m_bRemoteDriveList[2048];

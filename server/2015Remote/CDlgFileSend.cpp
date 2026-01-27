@@ -20,7 +20,7 @@ CDlgFileSend::~CDlgFileSend()
 
 void CDlgFileSend::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_PROGRESS_FILESEND, m_Progress);
 }
 
@@ -76,8 +76,8 @@ LRESULT CDlgFileSend::OnUpdateFileProgress(WPARAM wParam, LPARAM lParam)
     CString status;
     double percent = pChunk->fileSize ? (pChunk->offset + pChunk->dataLength) * 100. / pChunk->fileSize : 100.;
     m_bIsSending ?
-    status.Format("发送文件(%d/%d): %.2f%%", 1 + pChunk->fileIndex, pChunk->totalNum, percent):
-          status.Format("接收文件(%d/%d): %.2f%%", 1 + pChunk->fileIndex, pChunk->totalNum, percent);
+    status.FormatL("发送文件(%d/%d): %.2f%%", 1 + pChunk->fileIndex, pChunk->totalNum, percent):
+          status.FormatL("接收文件(%d/%d): %.2f%%", 1 + pChunk->fileIndex, pChunk->totalNum, percent);
     SetDlgItemTextA(IDC_STATIC_CURRENTINDEX, status);
     SetDlgItemTextA(IDC_STATIC_CURRENT_FILE, *pFile);
     m_Progress.SetPos(percent);

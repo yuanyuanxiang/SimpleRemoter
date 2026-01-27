@@ -123,7 +123,7 @@ static int CompareClientByColumn(const std::pair<ClientKey, ClientValue>& a,
 IMPLEMENT_DYNAMIC(CClientListDlg, CDialogEx)
 
 CClientListDlg::CClientListDlg(_ClientList* clients, CMy2015RemoteDlg* pParent)
-    : g_ClientList(clients), g_pParent(pParent), CDialogEx(IDD_DIALOG_CLIENTLIST, pParent)
+    : g_ClientList(clients), g_pParent(pParent), CDialogLangEx(IDD_DIALOG_CLIENTLIST, pParent)
     , m_nSortColumn(-1)
     , m_bSortAscending(TRUE)
     , m_nTipItem(-1)
@@ -137,7 +137,7 @@ CClientListDlg::~CClientListDlg()
 
 void CClientListDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialogEx::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_CLIENT_LIST, m_ClientList);
 }
 
@@ -153,7 +153,7 @@ END_MESSAGE_MAP()
 
 BOOL CClientListDlg::OnInitDialog()
 {
-    CDialogEx::OnInitDialog();
+    __super::OnInitDialog();
 
     HICON hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_MACHINE));
     SetIcon(hIcon, FALSE);
@@ -177,7 +177,7 @@ BOOL CClientListDlg::OnInitDialog()
     // 添加列（第一列序号不允许隐藏）
     for (int i = 0; i < g_nColumnCount; i++) {
         BOOL bCanHide = (i != COL_NO);  // 序号列不允许隐藏
-        m_ClientList.AddColumn(i, g_ColumnInfos[i].Name, g_ColumnInfos[i].Width, LVCFMT_LEFT, bCanHide);
+        m_ClientList.AddColumn(i, _L(g_ColumnInfos[i].Name), g_ColumnInfos[i].Width, LVCFMT_LEFT, bCanHide);
     }
 
     // 初始化列（计算百分比、加载配置、应用列宽）
@@ -271,13 +271,13 @@ void CClientListDlg::DisplayClients()
             const ClientValue& val = groupInfo.Clients[0].second;
 
             CString strNo;
-            strNo.Format(_T("%d"), groupInfo.GroupId);
+            strNo.FormatL(_T("%d"), groupInfo.GroupId);
 
             CString strID;
-            strID.Format(_T("%llu"), key);
+            strID.FormatL(_T("%llu"), key);
 
             CString strLevel;
-            strLevel.Format(_T("%d"), val.Level);
+            strLevel.FormatL(_T("%d"), val.Level);
 
             CString strAuth = val.Authorized ? _T("Y") : _T("N");
 
@@ -299,10 +299,10 @@ void CClientListDlg::DisplayClients()
         else {
             // 多个设备时，显示可展开的分组行
             CString strNo;
-            strNo.Format(_T("%d"), groupInfo.GroupId);
+            strNo.FormatL(_T("%d"), groupInfo.GroupId);
 
             CString strCount;
-            strCount.Format(_T("%s (%d台设备)"), groupInfo.bExpanded ? _T("-") : _T("+"), (int)clientCount);
+            strCount.FormatL(_T("%s (%d\u53f0\u8bbe\u5907)"), groupInfo.bExpanded ? _T("-") : _T("+"), (int)clientCount);
 
             nItem = m_ClientList.InsertItem(nRow, strNo);
             m_ClientList.SetItemText(nItem, COL_ID, strCount);
@@ -327,10 +327,10 @@ void CClientListDlg::DisplayClients()
                     const ClientValue& val = client.second;
 
                     CString strSubNo, strID;
-                    strID.Format(_T("%llu"), key);
+                    strID.FormatL(_T("%llu"), key);
 
                     CString strLevel;
-                    strLevel.Format(_T("%d"), val.Level);
+                    strLevel.FormatL(_T("%d"), val.Level);
 
                     CString strAuth = val.Authorized ? _T("Y") : _T("N");
 
@@ -395,7 +395,7 @@ void CClientListDlg::AdjustColumnWidths()
 
 void CClientListDlg::OnSize(UINT nType, int cx, int cy)
 {
-    CDialogEx::OnSize(nType, cx, cy);
+    __super::OnSize(nType, cx, cy);
 
     if (m_ClientList.GetSafeHwnd() == NULL) {
         return;  // 控件还没创建
@@ -494,7 +494,7 @@ BOOL CClientListDlg::PreTranslateMessage(MSG* pMsg)
         }
     }
 
-    return CDialogEx::PreTranslateMessage(pMsg);
+    return __super::PreTranslateMessage(pMsg);
 }
 
 void CClientListDlg::OnCancel()
@@ -508,7 +508,7 @@ void CClientListDlg::PostNcDestroy()
         g_pParent->m_pClientListDlg = nullptr;
     }
 
-    CDialogEx::PostNcDestroy();
+    __super::PostNcDestroy();
 
     delete this;
 }

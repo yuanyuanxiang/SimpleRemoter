@@ -59,7 +59,7 @@
 #define TIMER_CLOSEWND 2
 #define TIMER_CLEAR_BALLOON 3
 #define TIMER_HEARTBEAT_CHECK 4
-#define TODO_NOTICE MessageBoxA("This feature has not been implemented!\nPlease contact: 962914132@qq.com", "提示", MB_ICONINFORMATION);
+#define TODO_NOTICE MessageBoxL("This feature has not been implemented!\nPlease contact: 962914132@qq.com", "提示", MB_ICONINFORMATION);
 #define TINY_DLL_NAME "TinyRun.dll"
 #define FRPC_DLL_NAME "Frpc.dll"
 
@@ -120,7 +120,7 @@ std::string PluginPath()
 
 //////////////////////////////////////////////////////////////////////////
 
-class CAboutDlg : public CDialogEx
+class CAboutDlg : public CDialogLangEx
 {
 public:
     CAboutDlg();
@@ -136,13 +136,13 @@ protected:
     DECLARE_MESSAGE_MAP()
 };
 
-CAboutDlg::CAboutDlg() : CDialogEx(CAboutDlg::IDD)
+CAboutDlg::CAboutDlg() : CDialogLangEx(CAboutDlg::IDD)
 {
 }
 
 void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialogEx::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
 }
 
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
@@ -377,7 +377,7 @@ std::string CMy2015RemoteDlg::GetHardwareID(int v)
     }
 }
 
-CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogEx(CMy2015RemoteDlg::IDD, pParent)
+CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogLangEx(CMy2015RemoteDlg::IDD, pParent)
 {
     m_ClientMap = NewClientList();
     g_StartTick = GetTickCount();
@@ -453,7 +453,7 @@ CMy2015RemoteDlg::~CMy2015RemoteDlg()
 
 void CMy2015RemoteDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialogEx::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_ONLINE, m_CList_Online);
     DDX_Control(pDX, IDC_MESSAGE, m_CList_Message);
     DDX_Control(pDX, IDC_GROUP_TAB, m_GroupTab);
@@ -600,6 +600,7 @@ void CMy2015RemoteDlg::OnIconNotify(WPARAM wParam, LPARAM lParam)
     case WM_RBUTTONDOWN: {
         CMenu Menu;
         Menu.LoadMenu(IDR_MENU_NOTIFY);
+		TranslateMenu(&Menu);
         CPoint Point;
         GetCursorPos(&Point);
         SetForegroundWindow();   //设置当前窗口
@@ -615,6 +616,7 @@ void CMy2015RemoteDlg::OnIconNotify(WPARAM wParam, LPARAM lParam)
 VOID CMy2015RemoteDlg::CreateSolidMenu()
 {
     m_MainMenu.LoadMenu(IDR_MENU_MAIN);
+    TranslateMenu(&m_MainMenu);
     CMenu* SubMenu = m_MainMenu.GetSubMenu(1);
     std::string masterHash(GetMasterHash());
     if (GetPwdHash() != masterHash) {
@@ -622,7 +624,7 @@ VOID CMy2015RemoteDlg::CreateSolidMenu()
     }
     SubMenu = m_MainMenu.GetSubMenu(4);
     if (!THIS_CFG.GetStr("settings", "Password").empty()) {
-        SubMenu->ModifyMenuA(ID_TOOL_REQUEST_AUTH, MF_STRING, ID_TOOL_REQUEST_AUTH, _T("序列号"));
+        SubMenu->ModifyMenuL(ID_TOOL_REQUEST_AUTH, MF_STRING, ID_TOOL_REQUEST_AUTH, _T("序列号"));
     }
 
     ::SetMenu(this->GetSafeHwnd(), m_MainMenu.GetSafeHmenu()); //为窗口设置菜单
@@ -652,7 +654,7 @@ VOID CMy2015RemoteDlg::CreateNotifyBar()
     m_Nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;     //托盘所拥有的状态
     m_Nid.uCallbackMessage = UM_ICONNOTIFY;              //回调消息
     m_Nid.hIcon = m_hIcon;                               //icon 变量
-    CString strTips ="禁界: 远程协助软件";       //气泡提示
+    CString strTips = _TR("禁界: 远程协助软件");       //气泡提示
     lstrcpyn(m_Nid.szTip, (LPCSTR)strTips, sizeof(m_Nid.szTip) / sizeof(m_Nid.szTip[0]));
     Shell_NotifyIcon(NIM_ADD, &m_Nid);   //显示托盘
 }
@@ -679,19 +681,19 @@ VOID CMy2015RemoteDlg::CreateToolBar()
     Rect.right=RectMain.right-RectMain.left+10;
     m_ToolBar.MoveWindow(&Rect,TRUE);
 
-    m_ToolBar.SetButtonText(0,"终端管理");     //在位图的下面添加文件
-    m_ToolBar.SetButtonText(1,"进程管理");
-    m_ToolBar.SetButtonText(2,"窗口管理");
-    m_ToolBar.SetButtonText(3,"桌面管理");
-    m_ToolBar.SetButtonText(4,"文件管理");
-    m_ToolBar.SetButtonText(5,"语音管理");
-    m_ToolBar.SetButtonText(6,"视频管理");
-    m_ToolBar.SetButtonText(7,"服务管理");
-    m_ToolBar.SetButtonText(8,"注册表管理");
-    m_ToolBar.SetButtonText(9, "键盘记录");
-    m_ToolBar.SetButtonText(10,"参数设置");
-    m_ToolBar.SetButtonText(11,"生成服务端");
-    m_ToolBar.SetButtonText(12,"帮助");
+    m_ToolBar.SetButtonText(0, _TR("终端管理"));     //在位图的下面添加文件
+    m_ToolBar.SetButtonText(1, _TR("进程管理"));
+    m_ToolBar.SetButtonText(2, _TR("窗口管理"));
+    m_ToolBar.SetButtonText(3, _TR("桌面管理"));
+    m_ToolBar.SetButtonText(4, _TR("文件管理"));
+    m_ToolBar.SetButtonText(5, _TR("语音管理"));
+    m_ToolBar.SetButtonText(6, _TR("视频管理"));
+    m_ToolBar.SetButtonText(7, _TR("服务管理"));
+    m_ToolBar.SetButtonText(8, _TR("注册表管理"));
+    m_ToolBar.SetButtonText(9, _TR("键盘记录"));
+    m_ToolBar.SetButtonText(10, _TR("参数设置"));
+    m_ToolBar.SetButtonText(11, _TR("生成服务端"));
+    m_ToolBar.SetButtonText(12, _TR("帮助"));
     RepositionBars(AFX_IDW_CONTROLBAR_FIRST,AFX_IDW_CONTROLBAR_LAST,0);  //显示
 }
 
@@ -709,7 +711,7 @@ VOID CMy2015RemoteDlg::InitControl()
     auto style = LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER | LVS_EX_HEADERDRAGDROP | LVS_EX_LABELTIP;
     m_CList_Online.SetConfigKey(_T("OnlineList"));
     for (int i = 0; i<g_Column_Count_Online; ++i) {
-        m_CList_Online.AddColumn(i, g_Column_Data_Online[i].szTitle, g_Column_Data_Online[i].nWidth, LVCFMT_CENTER);
+        m_CList_Online.AddColumn(i, _L(g_Column_Data_Online[i].szTitle), g_Column_Data_Online[i].nWidth, LVCFMT_CENTER);
         g_Column_Online_Width+=g_Column_Data_Online[i].nWidth;
     }
     m_CList_Online.InitColumns();
@@ -719,7 +721,7 @@ VOID CMy2015RemoteDlg::InitControl()
     m_CList_Online.ModifyStyle(WS_HSCROLL, 0);
 
     for (int i = 0; i < g_Column_Count_Message; ++i) {
-        m_CList_Message.InsertColumn(i, g_Column_Data_Message[i].szTitle, LVCFMT_LEFT,g_Column_Data_Message[i].nWidth);
+        m_CList_Message.InsertColumnL(i, g_Column_Data_Message[i].szTitle, LVCFMT_LEFT,g_Column_Data_Message[i].nWidth);
         g_Column_Message_Width+=g_Column_Data_Message[i].nWidth;
     }
 
@@ -731,7 +733,7 @@ VOID CMy2015RemoteDlg::InitControl()
 
 VOID CMy2015RemoteDlg::TestOnline()
 {
-    ShowMessage("操作成功", "软件初始化成功...");
+    ShowMessage(_TR("操作成功"), _TR("软件初始化成功..."));
 }
 
 
@@ -825,10 +827,10 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
         m_CList_Online.SetItemData(i, (DWORD_PTR)ContextObject);
     }
     std::string tip = flag ? " (" + v[RES_CLIENT_PUBIP] + ") " : "";
-    ShowMessage("操作成功",strIP + tip.c_str() + "主机上线[" + loc + "]");
+    ShowMessage(_TR("操作成功"), strIP + tip.c_str() + _L(_T("主机上线")) + "[" + loc + "]");
 
-    CharMsg *title =  new CharMsg("主机上线");
-    CharMsg *text = new CharMsg(strIP + CString(tip.c_str()) + _T(" 主机上线 [") + loc + _T("]"));
+    CharMsg *title =  new CharMsg(_TR("主机上线"));
+    CharMsg *text = new CharMsg(strIP + CString(tip.c_str()) + _T(" ") + _L(_T("主机上线")) + _T(" [") + loc + _T("]"));
     LeaveCriticalSection(&m_cs);
     Mprintf("主机[%s]上线: %s[%s]\n", v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(),
             std::to_string(id).c_str(), loc);
@@ -865,13 +867,13 @@ LRESULT CMy2015RemoteDlg::OnShowMessage(WPARAM wParam, LPARAM lParam)
 {
     if (wParam && !lParam) {
         CharMsg* msg = (CharMsg*)wParam;
-        ShowMessage("提示信息", msg->data);
+        ShowMessage(_TR("提示信息"), msg->data);
         if (msg->needFree) delete msg;
         return S_OK;
     }
     std::string pwd = THIS_CFG.GetStr("settings", "Password");
     if (pwd.empty())
-        ShowMessage("授权提醒", "程序可能有使用限制，请联系管理员请求授权");
+        ShowMessage(_TR("授权提醒"), _TR("程序可能有使用限制，请联系管理员请求授权"));
 
     if (wParam && lParam) {
         uint32_t recvLow = (uint32_t)wParam;
@@ -887,7 +889,7 @@ VOID CMy2015RemoteDlg::ShowMessage(CString strType, CString strMsg)
 {
     AUTO_TICK(200, "");
     CTime Timer = CTime::GetCurrentTime();
-    CString strTime= Timer.Format("%H:%M:%S");
+    CString strTime= Timer.FormatL("%H:%M:%S");
 
     m_CList_Message.InsertItem(0, strType);    //向控件中设置数据
     m_CList_Message.SetItemText(0,1,strTime);
@@ -899,7 +901,7 @@ VOID CMy2015RemoteDlg::ShowMessage(CString strType, CString strMsg)
     int m_iCount = m_CList_Online.GetItemCount();
     LeaveCriticalSection(&m_cs);
 
-    strStatusMsg.Format("有%d个主机在线",m_iCount);
+    strStatusMsg.FormatL("有%d个主机在线",m_iCount);
     if (m_StatusBar.GetSafeHwnd())
         m_StatusBar.SetPaneText(0,strStatusMsg);   //在状态条上显示文字
 }
@@ -910,11 +912,11 @@ LRESULT CMy2015RemoteDlg::OnShowErrMessage(WPARAM wParam, LPARAM lParam)
     CString* title = (CString*)lParam;
 
     CTime Timer = CTime::GetCurrentTime();
-    CString strTime = Timer.Format("%H:%M:%S");
+    CString strTime = Timer.FormatL("%H:%M:%S");
 
-    m_CList_Message.InsertItem(0, title ? *title : "操作错误");
+    m_CList_Message.InsertItem(0, title ? *title : _TR("操作错误"));
     m_CList_Message.SetItemText(0, 1, strTime);
-    m_CList_Message.SetItemText(0, 2, text ? *text : "内部错误");
+    m_CList_Message.SetItemText(0, 2, text ? *text : _TR("内部错误"));
     if(title)delete title;
     if(text)delete text;
 
@@ -1115,7 +1117,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     } while(0)
 
     AUTO_TICK(500, "");
-    CDialogEx::OnInitDialog();
+    __super::OnInitDialog();
 
     UPDATE_SPLASH(15, "正在注册主控信息...");
     THIS_CFG.SetStr("settings", "MainWnd", std::to_string((uint64_t)GetSafeHwnd()));
@@ -1126,7 +1128,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     UPDATE_SPLASH(16, "正在启动下载服务...");
     m_FileServer = new FileDownloadServer(THIS_CFG.GetInt("settings", "FileSvrPort", 80));
     if (!m_FileServer->Start()) {
-        THIS_APP->MessageBoxA("下载服务启动失败，可能是端口被占用了。", "提示");
+        THIS_APP->MessageBox(_TR("下载服务启动失败，可能是端口被占用了。"), _TR("提示"), MB_ICONINFORMATION);
     }
 
     UPDATE_SPLASH(20, "正在初始化文件上传模块...");
@@ -1177,8 +1179,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
         bNameValid = strAboutMenu.LoadString(IDS_ABOUTBOX);
         ASSERT(bNameValid);
         if (!strAboutMenu.IsEmpty()) {
-            pSysMenu->AppendMenu(MF_SEPARATOR);
-            pSysMenu->AppendMenu(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
+            pSysMenu->AppendMenuSeparator(MF_SEPARATOR);
+            pSysMenu->AppendMenuL(MF_STRING, IDM_ABOUTBOX, strAboutMenu);
         }
     }
 
@@ -1275,7 +1277,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     SubMenu->CheckMenuItem(ID_HOOK_WIN, m_bHookWIN ? MF_CHECKED : MF_UNCHECKED);
     m_runNormal = THIS_CFG.GetInt("settings", "RunNormal", 0);
     SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, !m_runNormal ? MF_CHECKED : MF_UNCHECKED);
-    std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, "摄像头"}, {SOFTWARE_TELEGRAM, "电报" }};
+    std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, std::string(_TR("摄像头"))}, {SOFTWARE_TELEGRAM,  std::string(_TR("电报")) }};
     std::string str = myMap[n];
     LVCOLUMN lvColumn;
     memset(&lvColumn, 0, sizeof(LVCOLUMN));
@@ -1284,7 +1286,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     m_CList_Online.SetColumn(ONLINELIST_VIDEO, &lvColumn);
     timeBeginPeriod(1);
     if (IsFunctionReallyHooked("user32.dll","SetTimer") || IsFunctionReallyHooked("user32.dll", "KillTimer")) {
-        THIS_APP->MessageBox("FUCK!!! 请勿HOOK此程序!", "提示", MB_ICONERROR);
+        THIS_APP->MessageBox(_TR("FUCK!!! 请勿HOOK此程序!"), _TR("提示"), MB_ICONERROR);
         ExitProcess(-1);
         return FALSE;
     }
@@ -1415,7 +1417,7 @@ void CMy2015RemoteDlg::OnSysCommand(UINT nID, LPARAM lParam)
         CAboutDlg dlgAbout;
         dlgAbout.DoModal();
     } else {
-        CDialogEx::OnSysCommand(nID, lParam);
+        __super::OnSysCommand(nID, lParam);
     }
 }
 
@@ -1441,7 +1443,7 @@ void CMy2015RemoteDlg::OnPaint()
         // 绘制图标
         dc.DrawIcon(x, y, m_hIcon);
     } else {
-        CDialogEx::OnPaint();
+        __super::OnPaint();
     }
 }
 
@@ -1454,7 +1456,7 @@ HCURSOR CMy2015RemoteDlg::OnQueryDragIcon()
 
 void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
 {
-    CDialogEx::OnSize(nType, cx, cy);
+    __super::OnSize(nType, cx, cy);
 
     // TODO: 在此处添加消息处理程序代码
     if (SIZE_MINIMIZED==nType) {
@@ -1573,7 +1575,7 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
         CheckHeartbeat();
 	}
 
-    CDialogEx::OnTimer(nIDEvent);
+    __super::OnTimer(nIDEvent);
 }
 
 void CMy2015RemoteDlg::CheckHeartbeat() {
@@ -1730,7 +1732,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 
     CMenu	Menu;
     Menu.LoadMenu(IDR_MENU_LIST_ONLINE);               //加载菜单资源   资源和类对象关联
-
+    TranslateMenu(&Menu);
     CMenu* SubMenu = Menu.GetSubMenu(0);
 
     CPoint	Point;
@@ -1766,20 +1768,20 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
     // 创建一个新的子菜单
     CMenu newMenu;
     if (!newMenu.CreatePopupMenu()) {
-        MessageBox(_T("创建执行代码的子菜单失败!"), "提示");
+        MessageBoxL(_T("创建执行代码的子菜单失败!"), "提示", MB_ICONINFORMATION);
         return;
     }
 
     int i = 0;
     for (const auto& s : m_DllList) {
         // 向子菜单中添加菜单项
-        newMenu.AppendMenuA(MF_STRING, ID_DYNAMIC_MENU_BASE + i++, s->Name.c_str());
+        newMenu.AppendMenuL(MF_STRING, ID_DYNAMIC_MENU_BASE + i++, s->Name.c_str());
     }
     if (i == 0) {
-        newMenu.AppendMenuA(MF_STRING, ID_DYNAMIC_MENU_BASE, "操作指导");
+        newMenu.AppendMenuL(MF_STRING, ID_DYNAMIC_MENU_BASE, "操作指导");
     }
     // 将子菜单添加到主菜单中
-    SubMenu->AppendMenuA(MF_STRING | MF_POPUP, (UINT_PTR)newMenu.Detach(), _T("执行代码"));
+    SubMenu->AppendMenuL(MF_STRING | MF_POPUP, (UINT_PTR)newMenu.Detach(), _T("执行代码"));
 
     int	iCount = SubMenu->GetMenuItemCount();
     EnterCriticalSection(&m_cs);
@@ -1820,10 +1822,10 @@ void CMy2015RemoteDlg::OnOnlineUpdate()
     }
 	LeaveCriticalSection(&m_cs);
     if (n != 1 || !ContextObject) {
-		MessageBox(_T("请选择一个被控程序进行升级!"), _T("提示"), MB_ICONWARNING);
+		MessageBoxL(_T("请选择一个被控程序进行升级!"), _T("提示"), MB_ICONWARNING);
         return;
     }
-    if (IDYES != MessageBox(_T("确定升级选定的被控程序吗?\n需受控程序支持方可生效!"),
+    if (IDYES != MessageBoxL(_T("确定升级选定的被控程序吗?\n需受控程序支持方可生效!"),
                             _T("提示"), MB_ICONQUESTION | MB_YESNO))
         return;
     PBYTE buffer = nullptr;
@@ -1896,7 +1898,7 @@ std::string floatToString(float f)
 void CMy2015RemoteDlg::OnOnlineDelete()
 {
     // TODO: 在此添加命令处理程序代码
-    if (IDYES != MessageBox(_T("确定删除选定的被控计算机吗?"), _T("提示"), MB_ICONQUESTION | MB_YESNO))
+    if (IDYES != MessageBoxL(_T("确定删除选定的被控计算机吗?"), _T("提示"), MB_ICONQUESTION | MB_YESNO))
         return;
 
     BYTE bToken = COMMAND_BYE;   //向被控端发送一个COMMAND_SYSTEM
@@ -1916,8 +1918,8 @@ void CMy2015RemoteDlg::OnOnlineDelete()
                                 tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
                                 tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
         ctx->Destroy();
-        strIP+="断开连接";
-        ShowMessage("操作成功",strIP + "[" + aliveInfo.c_str() + "]");
+        strIP += _L(_T("断开连接"));
+        ShowMessage(_TR("操作成功"), strIP + "[" + aliveInfo.c_str() + "]");
         Mprintf("%s 断开链接 [%s]\n", strIP, aliveInfo.c_str());
     }
     LeaveCriticalSection(&m_cs);
@@ -1957,7 +1959,7 @@ BOOL CMy2015RemoteDlg::ShouldRemoteControl() {
     }
     LeaveCriticalSection(&m_cs);
     if (count == 1 && userName != "SYSTEM" && activeWnd.Find("Locked") == 0) {
-        if (IDYES != MessageBoxA("计算机已经被用户锁屏，程序无 SYSTEM 权限。\r\n可能无法进行远程桌面控制，是否继续?", "提示", MB_YESNO))
+        if (IDYES != MessageBoxL("计算机已经被用户锁屏，程序无 SYSTEM 权限。\r\n可能无法进行远程桌面控制，是否继续?", "提示", MB_YESNO))
             return FALSE;
     }
     return TRUE;
@@ -2068,7 +2070,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
         auto v = splitString(dlg.m_sPassword.GetBuffer(), '-');
         if (v.size() != 6 && v.size() != 7) {
             THIS_CFG.SetStr(settings, pwdKey, "");
-            THIS_APP->MessageBox("格式错误，请重新申请口令!", "提示", MB_ICONINFORMATION);
+            THIS_APP->MessageBox(_TR("格式错误，请重新申请口令!"), _TR("提示"), MB_ICONINFORMATION);
             return false;
         }
         std::vector<std::string> subvector(v.end() - 4, v.end());
@@ -2081,7 +2083,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
             THIS_CFG.SetStr(settings, "PwdHmac", "");
             if (pwd.IsEmpty() || hash256 != fixedKey || IDOK != dlg.DoModal()) {
                 if (!dlg.m_sPassword.IsEmpty())
-                    THIS_APP->MessageBox("口令错误, 无法继续操作!\r\n请通过工具菜单重新输入口令。", "提示", MB_ICONWARNING);
+                    THIS_APP->MessageBox(_TR("口令错误, 无法继续操作!\r\n请通过工具菜单重新输入口令。"), _TR("提示"), MB_ICONWARNING);
                 return false;
             }
         }
@@ -2092,7 +2094,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
         if (curDate < v[0] || curDate > v[1]) {
             THIS_CFG.SetStr(settings, pwdKey, "");
             THIS_CFG.SetStr(settings, "PwdHmac", "");
-            THIS_APP->MessageBox("口令过期，请重新申请口令!", "提示", MB_ICONINFORMATION);
+            THIS_APP->MessageBox(_TR("口令过期，请重新申请口令!"), _TR("提示"), MB_ICONINFORMATION);
             return false;
         }
         if (dlg.m_sPassword != pwd)
@@ -2169,8 +2171,8 @@ VOID CMy2015RemoteDlg::SendAllCommand(PBYTE  szBuffer, ULONG ulLength)
 //真彩Bar
 VOID CMy2015RemoteDlg::OnAbout()
 {
-    MessageBox("Copyleft (c) FTU 2019—2026" + CString("\n编译日期: ") + __DATE__ +
-               CString(sizeof(void*)==8 ? " (x64)" : " (x86)"), "关于");
+    MessageBoxL("Copyleft (c) FTU 2019—2026" + _L("\n编译日期: ") + __DATE__ +
+               CString(sizeof(void*)==8 ? " (x64)" : " (x86)"), "关于", MB_ICONINFORMATION);
 }
 
 //托盘Menu
@@ -2184,7 +2186,7 @@ void CMy2015RemoteDlg::OnNotifyShow()
 void CMy2015RemoteDlg::OnNotifyExit()
 {
     Release();
-    CDialogEx::OnOK(); // 关闭对话框
+    __super::OnOK(); // 关闭对话框
 }
 
 
@@ -2204,7 +2206,7 @@ void CMy2015RemoteDlg::OnMainSet()
     auto token_new = THIS_CFG.GetStr("frp", "token");
     ApplyFrpSettings();
     if (use_new != use) {
-        MessageBoxA("修改FRP代理开关，需要重启当前应用程序方可生效。", "提示", MB_ICONINFORMATION);
+        MessageBoxL("修改FRP代理开关，需要重启当前应用程序方可生效。", "提示", MB_ICONINFORMATION);
     } else if (port != port_new || token != token_new) {
         m_frpStatus = STATUS_STOP;
         Sleep(200);
@@ -2212,7 +2214,7 @@ void CMy2015RemoteDlg::OnMainSet()
     }
     if (use && use_new && m_hFRPThread == NULL) {
 #ifdef _WIN64
-        MessageBoxA("FRP代理服务异常，需要重启当前应用程序进行重试。", "提示", MB_ICONINFORMATION);
+        MessageBoxL("FRP代理服务异常，需要重启当前应用程序进行重试。", "提示", MB_ICONINFORMATION);
 #endif
     }
     int m = atoi(THIS_CFG.GetStr("settings", "ReportInterval", "5").c_str());
@@ -2236,7 +2238,7 @@ void CMy2015RemoteDlg::OnMainSet()
 void CMy2015RemoteDlg::OnMainExit()
 {
     Release();
-    CDialogEx::OnOK(); // 关闭对话框
+    __super::OnOK(); // 关闭对话框
 }
 
 std::string exec(const std::string& cmd)
@@ -2330,8 +2332,8 @@ BOOL CMy2015RemoteDlg::Activate(const std::string& nPort,int nMaxConnection, con
             if (!pids.empty()) {
                 pids.back() = '?';
             }
-            if (IDYES == THIS_APP->MessageBox("调用函数StartServer失败! 错误代码:" + CString(std::to_string(ret).c_str()) +
-                                              "\r\n是否关闭以下进程重试: " + pids.c_str(), "提示", MB_YESNO)) {
+            if (IDYES == THIS_APP->MessageBox(_L(_T("调用函数StartServer失败! 错误代码:")) + CString(std::to_string(ret).c_str()) +
+                                              _L(_T("\r\n是否关闭以下进程重试: ")) + pids.c_str(), _TR("提示"), MB_YESNO)) {
                 for (const auto& line : lines) {
                     auto cmd = std::string("taskkill /f /pid ") + line;
                     exec(cmd.c_str());
@@ -2339,14 +2341,14 @@ BOOL CMy2015RemoteDlg::Activate(const std::string& nPort,int nMaxConnection, con
                 return Activate(nPort, nMaxConnection, method);
             }
         } else
-            THIS_APP->MessageBox("调用函数StartServer失败! 错误代码:" + CString(std::to_string(ret).c_str()));
+            THIS_APP->MessageBox(_L(_T("调用函数StartServer失败! 错误代码:")) + CString(std::to_string(ret).c_str()));
         return FALSE;
     }
 
-    ShowMessage("使用提示", "严禁用于非法侵入、控制、监听他人设备等违法行为");
+    ShowMessage(_TR("使用提示"), _TR("严禁用于非法侵入、控制、监听他人设备等违法行为"));
     CString strTemp;
-    strTemp.Format("监听端口: %s成功", nPort.c_str());
-    ShowMessage("操作成功",strTemp);
+    strTemp.FormatL("监听端口: %s成功", nPort.c_str());
+    ShowMessage(_TR("操作成功"),strTemp);
     return TRUE;
 }
 
@@ -2836,17 +2838,17 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 
         //CPU
         if (LoginInfor->dwCPUMHz != -1) {
-            strCPU.Format("%dMHz", LoginInfor->dwCPUMHz);
+            strCPU.FormatL("%dMHz", LoginInfor->dwCPUMHz);
         } else {
             strCPU = "Unknown";
         }
 
         //网速
-        strPing.Format("%d", LoginInfor->dwSpeed);
+        strPing.FormatL("%d", LoginInfor->dwSpeed);
 
-        strVideo = m_settings.DetectSoftware ? "无" : LoginInfor->bWebCamIsExist ? "有" : "无";
+        strVideo = m_settings.DetectSoftware ? _TR("无") : LoginInfor->bWebCamIsExist ? _TR("有") : _TR("无");
 
-        strAddr.Format("%d", ContextObject->GetPort());
+        strAddr.FormatL("%d", ContextObject->GetPort());
         auto v = LoginInfor->ParseReserved(RES_MAX);
         AddList(strIP,strAddr,strPCName,strOS,strCPU,strVideo,strPing,LoginInfor->moduleVersion,LoginInfor->szStartTime, v, ContextObject);
         delete LoginInfor;
@@ -2872,7 +2874,7 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
     }
 
     CString port;
-    port.Format("%d", lParam);
+    port.FormatL("%d", lParam);
     EnterCriticalSection(&m_cs);
     int n = m_CList_Online.GetItemCount();
     for (int i = 0; i < n; ++i) {
@@ -2890,7 +2892,7 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
         std::string aliveInfo = tm >= 86400 ? floatToString(tm / 86400.f) + " d" :
             tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
             tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
-        ShowMessage("操作成功", ip + "主机下线[" + aliveInfo.c_str() + "]");
+        ShowMessage(_TR("操作成功"), ip + _TR("主机下线") + "[" + aliveInfo.c_str() + "]");
         Mprintf("%s 主机下线 [%s]\n", ip, aliveInfo.c_str());
     }
     LeaveCriticalSection(&m_cs);
@@ -2931,8 +2933,8 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
         if (authorized) {
             Mprintf("%s HMAC 校验成功: %llu\n", hb.Passcode, hb.PwdHmac);
             m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
-            std::string tip = std::string(hb.Passcode) + " 授权成功: ";
-            tip += std::to_string(hb.PwdHmac) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
+            std::string tip = std::string(hb.Passcode) + std::string(_L("授权成功"));
+            tip += ": " + std::to_string(hb.PwdHmac) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
             CharMsg* msg = new CharMsg(tip.c_str());
             PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
         }
@@ -2951,7 +2953,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
             m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, hb.ActiveWnd);
             if (hb.Ping > 0)
                 m_CList_Online.SetItemText(i, ONLINELIST_PING, std::to_string(hb.Ping).c_str());
-            m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, hb.HasSoftware ? "有" : "无");
+            m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, hb.HasSoftware ? _TR("有") : _TR("无"));
 			id->SetLastHeartbeat(time(0));
             return;
         }
@@ -3154,19 +3156,19 @@ BOOL CMy2015RemoteDlg::PreTranslateMessage(MSG* pMsg)
         }
     }
 
-    return CDialogEx::PreTranslateMessage(pMsg);
+    return __super::PreTranslateMessage(pMsg);
 }
 
 LRESULT CMy2015RemoteDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 {
     // WM_COMMAND 不计时
     if (message == WM_COMMAND) {
-        return CDialogEx::WindowProc(message, wParam, lParam);
+        return __super::WindowProc(message, wParam, lParam);
     }
 
     auto start = std::chrono::steady_clock::now();
 
-    LRESULT result = CDialogEx::WindowProc(message, wParam, lParam);
+    LRESULT result = __super::WindowProc(message, wParam, lParam);
 
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
                   std::chrono::steady_clock::now() - start).count();
@@ -3189,7 +3191,7 @@ void CMy2015RemoteDlg::OnOnlineShare()
     if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty())
         return;
     if (dlg.m_str.GetLength() >= 250) {
-        MessageBox("字符串长度超出[0, 250]范围限制!", "提示", MB_ICONINFORMATION);
+        MessageBoxL("字符串长度超出[0, 250]范围限制!", "提示", MB_ICONINFORMATION);
         return;
     }
     CharMsg* buf = new CharMsg(dlg.m_str.GetLength()+1);
@@ -3253,7 +3255,7 @@ void CMy2015RemoteDlg::OnOnlineHostnote()
         return;
     }
     if (dlg.m_str.GetLength() >= 64) {
-        MessageBox("备注信息长度不能超过64个字符", "提示", MB_ICONINFORMATION);
+        MessageBoxL("备注信息长度不能超过64个字符", "提示", MB_ICONINFORMATION);
         dlg.m_str = dlg.m_str.Left(63);
     }
     BOOL modified = FALSE;
@@ -3446,7 +3448,7 @@ void run_upx_async(HWND hwnd, const std::string& upx, const std::string& file, b
 LRESULT CMy2015RemoteDlg::UPXProcResult(WPARAM wParam, LPARAM lParam)
 {
     int exitCode = static_cast<int>(wParam);
-    ShowMessage(exitCode == 0 ? "操作成功":"操作失败", "UPX 处理完成");
+    ShowMessage(exitCode == 0 ? _TR("操作成功"):_TR("操作失败"), _TR("UPX 处理完成"));
     return S_OK;
 }
 
@@ -3457,33 +3459,33 @@ void CMy2015RemoteDlg::OnToolGenMaster()
     // 主控程序公网IP
     std::string master = THIS_CFG.GetStr("settings", "master", "");
     if (master.empty())	{
-        MessageBox("请通过菜单设置当前主控程序的公网地址（域名）! 此地址会写入即将生成的主控程序中。"
+        MessageBoxL("请通过菜单设置当前主控程序的公网地址（域名）! 此地址会写入即将生成的主控程序中。"
                    "\n只有正确设置公网地址，才能在线延长由本程序所生成的主控程序的有效期。", "提示", MB_ICONINFORMATION);
     }
     std::string masterHash(GetMasterHash());
     if (m_superPass.empty()) {
         CInputDialog pass(this);
-        pass.Init("主控生成", "当前主控程序的密码:");
+        pass.Init(_TR("主控生成"), _TR("当前主控程序的密码:"));
         pass.m_str = m_superPass.c_str();
         if (pass.DoModal() != IDOK || pass.m_str.IsEmpty())
             return;
         if (hashSHA256(pass.m_str.GetBuffer()) != masterHash) {
-            MessageBox("密码不正确，无法生成主控程序!", "错误", MB_ICONWARNING);
+            MessageBoxL("密码不正确，无法生成主控程序!", "错误", MB_ICONWARNING);
             return;
         }
         m_superPass = pass.m_str.GetString();
     }
 
     CInputDialog dlg(this);
-    dlg.Init("主控密码", "新的主控程序的密码:");
+    dlg.Init(_TR("主控密码"), _TR("新的主控程序的密码:"));
     if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty())
         return;
     if (dlg.m_str.GetLength() > 15) {
-        MessageBox("密码长度不能大于15。", "错误", MB_ICONWARNING);
+        MessageBoxL("密码长度不能大于15。", "错误", MB_ICONWARNING);
         return;
     }
     CInputDialog days(this);
-    days.Init("使用天数", "新主控程序使用天数:");
+    days.Init(_TR("使用天数"), _TR("新主控程序使用天数:"));
     if (days.DoModal() != IDOK || days.m_str.IsEmpty())
         return;
     size_t size = 0;
@@ -3494,7 +3496,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
     }
     char* curEXE = ReadFileToBuffer(path, size);
     if (curEXE == nullptr) {
-        MessageBox("读取文件失败! 请稍后再次尝试。", "错误", MB_ICONWARNING);
+        MessageBoxL("读取文件失败! 请稍后再次尝试。", "错误", MB_ICONWARNING);
         return;
     }
     std::string pwdHash = hashSHA256(dlg.m_str.GetString());
@@ -3504,7 +3506,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
         SAFE_DELETE_ARRAY(curEXE);
         std::string tmp;
         if (!UPXUncompressFile(upx, tmp) || nullptr == (curEXE = ReadFileToBuffer(tmp.c_str(), size))) {
-            MessageBox("操作文件失败! 请稍后再次尝试。", "错误", MB_ICONWARNING);
+            MessageBoxL("操作文件失败! 请稍后再次尝试。", "错误", MB_ICONWARNING);
             if (!upx.empty()) DeleteFile(upx.c_str());
             if (!tmp.empty()) DeleteFile(tmp.c_str());
             return;
@@ -3513,7 +3515,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
         iOffset = MemoryFind(curEXE, masterHash.c_str(), size, masterHash.length());
         if (iOffset == -1) {
             SAFE_DELETE_ARRAY(curEXE);
-            MessageBox("操作文件失败! 请稍后再次尝试。", "错误", MB_ICONWARNING);
+            MessageBoxL("操作文件失败! 请稍后再次尝试。", "错误", MB_ICONWARNING);
             return;
         }
     }
@@ -3521,14 +3523,14 @@ void CMy2015RemoteDlg::OnToolGenMaster()
     std::string id = genHMAC(pwdHash, m_superPass);
     Validation verify(atof(days.m_str), master.c_str(), port<=0 ? 6543 : port, id.c_str());
     if (!WritePwdHash(curEXE + iOffset, pwdHash, verify)) {
-        MessageBox("写入哈希失败! 无法生成主控。", "错误", MB_ICONWARNING);
+        MessageBoxL("写入哈希失败! 无法生成主控。", "错误", MB_ICONWARNING);
         SAFE_DELETE_ARRAY(curEXE);
         return;
     }
     CComPtr<IShellFolder> spDesktop;
     HRESULT hr = SHGetDesktopFolder(&spDesktop);
     if (FAILED(hr)) {
-        MessageBox("Explorer 未正确初始化! 请稍后再试。", "提示");
+        MessageBoxL("Explorer 未正确初始化! 请稍后再试。", "提示", MB_ICONINFORMATION);
         SAFE_DELETE_ARRAY(curEXE);
         return;
     }
@@ -3539,7 +3541,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
     try {
         ret = fileDlg.DoModal();
     } catch (...) {
-        MessageBox("文件对话框未成功打开! 请稍后再试。", "提示");
+        MessageBoxL("文件对话框未成功打开! 请稍后再试。", "提示", MB_ICONINFORMATION);
         SAFE_DELETE_ARRAY(curEXE);
         return;
     }
@@ -3548,7 +3550,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
         CFile File;
         BOOL r = File.Open(name, CFile::typeBinary | CFile::modeCreate | CFile::modeWrite);
         if (!r) {
-            MessageBox("主控程序创建失败!\r\n" + name, "提示", MB_ICONWARNING);
+            MessageBoxL("主控程序创建失败!\r\n" + name, "提示", MB_ICONWARNING);
             SAFE_DELETE_ARRAY(curEXE);
             return;
         }
@@ -3557,10 +3559,10 @@ void CMy2015RemoteDlg::OnToolGenMaster()
         if (!upx.empty()) {
 #ifndef _DEBUG // DEBUG 模式用UPX压缩的程序可能无法正常运行
             run_upx_async(GetSafeHwnd(), upx, name.GetString(), true);
-            MessageBox("正在UPX压缩，请关注信息提示。\r\n文件位于: " + name, "提示", MB_ICONINFORMATION);
+            MessageBoxL("正在UPX压缩，请关注信息提示。\r\n文件位于: " + name, "提示", MB_ICONINFORMATION);
 #endif
         } else
-            MessageBox("生成成功! 文件位于:\r\n" + name, "提示", MB_ICONINFORMATION);
+            MessageBoxL("生成成功! 文件位于:\r\n" + name, "提示", MB_ICONINFORMATION);
     }
     SAFE_DELETE_ARRAY(curEXE);
 }
@@ -3572,7 +3574,7 @@ void CMy2015RemoteDlg::OnHelpImportant()
         "本软件以“现状”提供，不附带任何保证。使用本软件的风险由用户自行承担。"
         "我们不对任何因使用本软件而引发的非法或恶意用途负责。用户应遵守相关法律"
         "法规，并负责任地使用本软件。开发者对任何因使用本软件产生的损害不承担责任。";
-    MessageBox(msg, "免责声明", MB_ICONINFORMATION);
+    MessageBoxL(msg, "免责声明", MB_ICONINFORMATION);
 }
 
 
@@ -3585,7 +3587,7 @@ void CMy2015RemoteDlg::OnHelpFeedback()
 void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID)
 {
     if (m_DllList.size() == 0) {
-        MessageBoxA("请将64位的DLL放于主控程序的 'Plugins' 目录，再来点击此项菜单。"
+        MessageBoxL("请将64位的DLL放于主控程序的 'Plugins' 目录，再来点击此项菜单。"
                     "\n执行未经测试的代码可能造成程序崩溃。", "提示", MB_ICONINFORMATION);
         char path[_MAX_PATH];
         GetModuleFileNameA(NULL, path, _MAX_PATH);
@@ -3649,20 +3651,20 @@ void CMy2015RemoteDlg::OnOnlineAuthorize()
 {
     if (m_superPass.empty()) {
         CInputDialog pass(this);
-        pass.Init("需要密码", "当前主控程序的密码:");
+        pass.Init(_TR("需要密码"), _TR("当前主控程序的密码:"));
         if (pass.DoModal() != IDOK || pass.m_str.IsEmpty())
             return;
         std::string masterHash(GetMasterHash());
         if (hashSHA256(pass.m_str.GetBuffer()) != masterHash) {
-            MessageBox("密码不正确!", "错误", MB_ICONWARNING);
+            MessageBoxL("密码不正确!", "错误", MB_ICONWARNING);
             return;
         }
         m_superPass = pass.m_str;
     }
 
     CInputDialog dlg(this);
-    dlg.Init("延长授权", "主控程序授权天数:");
-    dlg.Init2("并发上线机器数量:", std::to_string(100).c_str());
+    dlg.Init(_TR("延长授权"), _TR("主控程序授权天数:"));
+    dlg.Init2(_TR("并发上线机器数量:"), std::to_string(100).c_str());
     if (dlg.DoModal() != IDOK || atoi(dlg.m_str) <= 0)
         return;
     BYTE	bToken[32] = { CMD_AUTHORIZATION };
@@ -3682,9 +3684,9 @@ CString FormatValue(double dValue, LPCTSTR szUnit)
 {
     CString str;
     if (dValue == (int)dValue)
-        str.Format(_T("%d%s"), (int)dValue, szUnit);
+        str.FormatL(_T("%d%s"), (int)dValue, szUnit);
     else
-        str.Format(_T("%.1f%s"), dValue, szUnit);
+        str.FormatL(_T("%.1f%s"), dValue, szUnit);
     return str;
 }
 
@@ -3729,13 +3731,13 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
         };
         CString processInfo;
         if (!res[RES_PID].IsEmpty() || !res[RES_FILESIZE].IsEmpty()) {
-            processInfo.Format("\r\n进程 PID: %s %s", res[RES_PID].IsEmpty() ? "" : res[RES_PID], res[RES_FILESIZE].IsEmpty() ? "" : res[RES_FILESIZE]);
+            processInfo.FormatL("\r\n进程 PID: %s %s", res[RES_PID].IsEmpty() ? "" : res[RES_PID], res[RES_FILESIZE].IsEmpty() ? "" : res[RES_FILESIZE]);
         }
         // 拼接内容
         CString strText;
         std::string expired = res[RES_EXPIRED_DATE];
         expired = expired.empty() ? "" : " Expired on " + expired;
-        strText.Format(_T("文件路径: %s%s %s%s\r\n系统信息: %s 位 %s 核心 %s GB %s\r\n启动信息: %s %s %s%s %s\r\n上线信息: %s %d %s\r\n客户信息: %s"),
+        strText.FormatL(_T("文件路径: %s%s %s%s\r\n系统信息: %s 位 %s 核心 %s GB %s\r\n启动信息: %s %s %s%s %s\r\n上线信息: %s %d %s\r\n客户信息: %s"),
                        res[RES_PROGRAM_BITS].IsEmpty() ? "" : res[RES_PROGRAM_BITS] + " 位 ", res[RES_FILE_PATH], res[RES_EXE_VERSION], processInfo,
                        res[RES_SYSTEM_BITS], res[RES_SYSTEM_CPU], res[RES_SYSTEM_MEM], res[RES_RESOLUTION], startTime, expired.c_str(),
                        res[RES_USERNAME], res[RES_ISADMIN] == "1" ? "[管理员]" : res[RES_ISADMIN].IsEmpty() ? "" : "[非管理员]", GetElapsedTime(startTime),
@@ -3780,12 +3782,12 @@ void CMy2015RemoteDlg::OnOnlineUnauthorize()
 {
     if (m_superPass.empty()) {
         CInputDialog pass(this);
-        pass.Init("需要密码", "当前主控程序的密码:");
+        pass.Init(_TR("需要密码"), _TR("当前主控程序的密码:"));
         if (pass.DoModal() != IDOK || pass.m_str.IsEmpty())
             return;
         std::string masterHash(GetMasterHash());
         if (hashSHA256(pass.m_str.GetBuffer()) != masterHash) {
-            MessageBox("密码不正确!", "错误", MB_ICONWARNING);
+            MessageBoxL("密码不正确!", "错误", MB_ICONWARNING);
             return;
         }
         m_superPass = pass.m_str;
@@ -3809,14 +3811,14 @@ void CMy2015RemoteDlg::OnToolRequestAuth()
 {
     std::string pwd = THIS_CFG.GetStr("settings", "Password");
     BOOL noPwd = pwd.empty();
-    if (noPwd && IDYES != MessageBoxA("本软件仅限于合法、正当、合规的用途。\r\n您是否同意？",
+    if (noPwd && IDYES != MessageBoxL("本软件仅限于合法、正当、合规的用途。\r\n您是否同意？",
                                       "声明", MB_ICONQUESTION | MB_YESNO))
         return;
     CInputDialog dlg(this);
     dlg.m_str = getDeviceID(GetHardwareID()).c_str();
-    dlg.Init(noPwd ? "请求授权" : "序列号", "序列号(唯一ID):");
+    dlg.Init(noPwd ? _TR("请求授权") : _TR("序列号"), _TR("序列号(唯一ID):"));
     if (!noPwd)
-        dlg.Init2("授权口令:", pwd.c_str());
+        dlg.Init2(_TR("授权口令:"), pwd.c_str());
     if (IDOK == dlg.DoModal() && noPwd) {
         CString url = _T("https://github.com/yuanyuanxiang/SimpleRemoter/wiki#请求授权");
         ShellExecute(NULL, _T("open"), url, NULL, NULL, SW_SHOWNORMAL);
@@ -3830,8 +3832,8 @@ void CMy2015RemoteDlg::OnToolInputPassword()
         CString pwd = THIS_CFG.GetStr("settings", "Password", "").c_str();
         auto v = splitString(pwd.GetBuffer(), '-');
         CString info;
-        info.Format("软件有效期限: %s — %s, 并发连接数量: %d.", v[0].c_str(), v[1].c_str(), atoi(v[2].c_str()));
-        if (IDYES == MessageBoxA(info + "\n如需修改授权信息，请联系管理员。是否现在修改授权？", "提示", MB_YESNO | MB_ICONINFORMATION)) {
+        info.FormatL("软件有效期限: %s — %s, 并发连接数量: %d.", v[0].c_str(), v[1].c_str(), atoi(v[2].c_str()));
+        if (IDYES == MessageBoxL(info + "\n如需修改授权信息，请联系管理员。是否现在修改授权？", "提示", MB_YESNO | MB_ICONINFORMATION)) {
             CPasswordDlg dlg(this);
             std::string hardwareID = GetHardwareID();
             std::string hashedID = hashSHA256(hardwareID);
@@ -3887,7 +3889,7 @@ void shellcode_process(ObfsBase *obfs, bool load = false, const char* suffix = "
     try {
         ret = fileDlg.DoModal();
     } catch (...) {
-        AfxMessageBox("文件对话框未成功打开! 请稍后再试。", MB_ICONWARNING);
+        AfxMessageBoxL("文件对话框未成功打开! 请稍后再试。", MB_ICONWARNING);
         return;
     }
     if (ret == IDOK) {
@@ -3895,7 +3897,7 @@ void shellcode_process(ObfsBase *obfs, bool load = false, const char* suffix = "
         CFile File;
         BOOL r = File.Open(name, CFile::typeBinary | CFile::modeRead);
         if (!r) {
-            AfxMessageBox("文件打开失败! 请稍后再试。\r\n" + name, MB_ICONWARNING);
+            AfxMessageBoxL("文件打开失败! 请稍后再试。\r\n" + name, MB_ICONWARNING);
             return;
         }
         int dwFileSize = File.GetLength();
@@ -3914,9 +3916,9 @@ void shellcode_process(ObfsBase *obfs, bool load = false, const char* suffix = "
             if (exec) {
                 memcpy(exec, szBuffer, dwFileSize);
                 if (safe_exec(exec)) {
-                    AfxMessageBox("Shellcode 执行成功! ", MB_ICONINFORMATION);
+                    AfxMessageBoxL("Shellcode 执行成功! ", MB_ICONINFORMATION);
                 } else {
-                    AfxMessageBox("Shellcode 执行失败! 请用本程序生成的 bin 文件进行测试! ", MB_ICONERROR);
+                    AfxMessageBoxL("Shellcode 执行失败! 请用本程序生成的 bin 文件进行测试! ", MB_ICONERROR);
                 }
             }
         } else if (MakeShellcode(srcData, srcLen, (LPBYTE)szBuffer, dwFileSize, true)) {
@@ -3926,7 +3928,7 @@ void shellcode_process(ObfsBase *obfs, bool load = false, const char* suffix = "
             const uint32_t key = 0xDEADBEEF;
             obfs->ObfuscateBuffer(srcData, srcLen, key);
             if (obfs->WriteFile(CString(buffer) + suffix, srcData, srcLen, "Shellcode")) {
-                AfxMessageBox("Shellcode 生成成功! 请自行编写调用程序。\r\n" + CString(buffer) + suffix,
+                AfxMessageBoxL("Shellcode 生成成功! 请自行编写调用程序。\r\n" + CString(buffer) + suffix,
                               MB_ICONINFORMATION);
             }
         }
@@ -3969,7 +3971,7 @@ void CMy2015RemoteDlg::OnObfsShellcodeBin()
 
 void CMy2015RemoteDlg::OnShellcodeLoadTest()
 {
-    if (MessageBox(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
+    if (MessageBoxL(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
                            "请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。",
                            "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
         ObfsBase obfs;
@@ -3980,7 +3982,7 @@ void CMy2015RemoteDlg::OnShellcodeLoadTest()
 
 void CMy2015RemoteDlg::OnShellcodeObfsLoadTest()
 {
-    if (MessageBox(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
+    if (MessageBoxL(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
                            "请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。",
                            "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
         Obfs obfs;
@@ -3998,7 +4000,7 @@ void CMy2015RemoteDlg::OnShellcodeAesBin()
 
 void CMy2015RemoteDlg::OnShellcodeTestAesBin()
 {
-    if (MessageBox(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
+    if (MessageBoxL(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
                            "请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。",
                            "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
         ObfsAes obfs;
@@ -4014,11 +4016,11 @@ void CMy2015RemoteDlg::OnOnlineAssignTo()
     if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty() || atof(dlg.m_sSecondInput.GetString())<=0)
         return;
     if (dlg.m_str.GetLength() >= 250) {
-        MessageBox("字符串长度超出[0, 250]范围限制!", "提示", MB_ICONINFORMATION);
+        MessageBoxL("字符串长度超出[0, 250]范围限制!", "提示", MB_ICONINFORMATION);
         return;
     }
     if (dlg.m_sSecondInput.GetLength() >= 6) {
-        MessageBox("超出使用时间可输入的字符数限制!", "提示", MB_ICONINFORMATION);
+        MessageBoxL("超出使用时间可输入的字符数限制!", "提示", MB_ICONINFORMATION);
         return;
     }
     CharMsg* buf1 = new CharMsg(dlg.m_str.GetLength() + 1);
@@ -4118,7 +4120,7 @@ void CMy2015RemoteDlg::OnNMCustomdrawOnline(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CMy2015RemoteDlg::OnOnlineRunAsAdmin()
 {
-    if (MessageBoxA("确定要以管理员权限重新启动目标应用程序吗?\n此操作可能触发 UAC 账户控制。",
+    if (MessageBoxL("确定要以管理员权限重新启动目标应用程序吗?\n此操作可能触发 UAC 账户控制。",
                     "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
         EnterCriticalSection(&m_cs);
         POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
@@ -4140,7 +4142,7 @@ void CMy2015RemoteDlg::OnMainWallet()
     if (dlg.DoModal() != IDOK || CString(m_settings.WalletAddress) == dlg.m_str)
         return;
     if (dlg.m_str.GetLength() > 470) {
-        MessageBox("超出钱包地址可输入的字符数限制!", "提示", MB_ICONINFORMATION);
+        MessageBoxL("超出钱包地址可输入的字符数限制!", "提示", MB_ICONINFORMATION);
         return;
     }
     strcpy(m_settings.WalletAddress, dlg.m_str);
@@ -4158,7 +4160,7 @@ void CMy2015RemoteDlg::OnToolRcedit()
 
 void CMy2015RemoteDlg::OnOnlineUninstall()
 {
-    if (IDYES != MessageBox(_T("确定卸载选定的被控程序吗?"), _T("提示"), MB_ICONQUESTION | MB_YESNO))
+    if (IDYES != MessageBoxL(_T("确定卸载选定的被控程序吗?"), _T("提示"), MB_ICONQUESTION | MB_YESNO))
         return;
 
     BYTE bToken = TOKEN_UNINSTALL;
@@ -4178,8 +4180,8 @@ void CMy2015RemoteDlg::OnOnlineUninstall()
                                 tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
                                 tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
         ctx->Destroy();
-        strIP += "断开连接";
-        ShowMessage("操作成功", strIP + "[" + aliveInfo.c_str() + "]");
+        strIP += _TR("断开连接");
+        ShowMessage(_TR("操作成功"), strIP + "[" + aliveInfo.c_str() + "]");
     }
     LeaveCriticalSection(&m_cs);
 }
@@ -4221,7 +4223,7 @@ void CMy2015RemoteDlg::LoadListData(const std::string& group)
         }
     }
     CString strStatusMsg;
-    strStatusMsg.Format("有%d个主机在线", iCount);
+    strStatusMsg.FormatL("有%d个主机在线", iCount);
     m_StatusBar.SetPaneText(0, strStatusMsg);
 }
 
@@ -4250,12 +4252,12 @@ void CMy2015RemoteDlg::OnSelchangeGroupTab(NMHDR* pNMHDR, LRESULT* pResult)
 void CMy2015RemoteDlg::OnOnlineRegroup()
 {
     CInputDialog dlg(this);
-    dlg.Init("修改分组", "请输入分组名称:");
+    dlg.Init(_TR("修改分组"), _TR("请输入分组名称:"));
     if (IDOK != dlg.DoModal()||dlg.m_str.IsEmpty()) {
         return;
     }
     if (dlg.m_str.GetLength() >= 24) {
-        MessageBoxA("分组名称长度不得超过24个字符!", "提示", MB_ICONINFORMATION);
+        MessageBoxL("分组名称长度不得超过24个字符!", "提示", MB_ICONINFORMATION);
         return;
     }
     BYTE cmd[50] = { CMD_SET_GROUP };
@@ -4266,7 +4268,7 @@ void CMy2015RemoteDlg::OnOnlineRegroup()
 
 void CMy2015RemoteDlg::MachineManage(MachineCommand type)
 {
-    if (MessageBoxA("此操作需客户端具有管理员权限，确定继续吗? ", "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
+    if (MessageBoxL("此操作需客户端具有管理员权限，确定继续吗? ", "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
         EnterCriticalSection(&m_cs);
         POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
         while (Pos) {
@@ -4300,10 +4302,10 @@ void CMy2015RemoteDlg::OnMachineReboot()
 void CMy2015RemoteDlg::OnExecuteDownload()
 {
     CInputDialog dlg(this);
-    dlg.Init("下载执行", "远程下载地址:");
+    dlg.Init(_TR("下载执行"), _TR("远程下载地址:"));
     auto ip = THIS_CFG.GetStr("settings", "master", "127.0.0.1");
     dlg.m_str = BuildPayloadUrl(ip.c_str(), "example.exe");
-    dlg.m_sTipInfo = "请将EXE放在\"Payloads\"目录或输入下载地址。";
+    dlg.m_sTipInfo = _TR("请将EXE放在\"Payloads\"目录或输入下载地址。");
 
     if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty())
         return;
@@ -4326,7 +4328,7 @@ void CMy2015RemoteDlg::OnExecuteDownload()
 void CMy2015RemoteDlg::OnExecuteUpload()
 {
     CFileDialog dlg(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST,
-                    _T("可执行文件 (*.exe)|*.exe||"), this);
+        _TR("可执行文件 (*.exe)|*.exe||"), this);
 
     if (dlg.DoModal() != IDOK)
         return;
@@ -4335,13 +4337,13 @@ void CMy2015RemoteDlg::OnExecuteUpload()
     CFile file;
 
     if (!file.Open(strFilePath, CFile::modeRead | CFile::typeBinary)) {
-        MessageBox("无法读取文件!\r\n" + strFilePath, "错误", MB_ICONERROR);
+        MessageBoxL("无法读取文件!\r\n" + strFilePath, "错误", MB_ICONERROR);
         return;
     }
 
     DWORD dwFileSize = (DWORD)file.GetLength();
     if (dwFileSize == 0 || dwFileSize > 12 * 1024 * 1024) {
-        MessageBox("文件为空或超过12MB，无法使用此功能!", "提示", MB_ICONWARNING);
+        MessageBoxL("文件为空或超过12MB，无法使用此功能!", "提示", MB_ICONWARNING);
         file.Close();
         return;
     }
@@ -4371,7 +4373,7 @@ void CMy2015RemoteDlg::OnDestroy()
         UnhookWindowsHookEx(g_hKeyboardHook);
         g_hKeyboardHook = NULL;
     }
-    CDialogEx::OnDestroy();
+    __super::OnDestroy();
 }
 
 CString GetClipboardText()
@@ -4648,7 +4650,7 @@ LRESULT CMy2015RemoteDlg::OnSessionActivatedMsg(WPARAM wParam, LPARAM lParam)
 
 void CMy2015RemoteDlg::OnToolReloadPlugins()
 {
-    if (IDYES!=MessageBoxA("请将64位的DLL放于主控程序的 'Plugins' 目录，是否继续?"
+    if (IDYES!=MessageBoxL("请将64位的DLL放于主控程序的 'Plugins' 目录，是否继续?"
                            "\n执行未经测试的代码可能造成程序崩溃。", "提示", MB_ICONINFORMATION | MB_YESNO))
         return;
     char path[_MAX_PATH];
@@ -4685,7 +4687,7 @@ void CMy2015RemoteDlg::InjectTinyRunDll(const std::string& ip, int pid)
 {
     auto ctx = FindHostByIP(ip);
     if (ctx == NULL) {
-        MessageBoxA(CString("没有找到在线主机: ") + ip.c_str(), "提示", MB_ICONINFORMATION);
+        MessageBoxL(_L("没有找到在线主机: ") + ip.c_str(), "提示", MB_ICONINFORMATION);
         return;
     }
 
@@ -4704,7 +4706,7 @@ LRESULT CMy2015RemoteDlg::AntiBlackScreen(WPARAM wParam, LPARAM lParam)
     auto ctx = FindHostByIP(ip);
     delete ip;
     if (ctx == NULL) {
-        MessageBoxA(CString("没有找到在线主机: ") + host.c_str(), "提示", MB_ICONINFORMATION);
+        MessageBoxL(_L("没有找到在线主机: ") + host.c_str(), "提示", MB_ICONINFORMATION);
         return S_FALSE;
     }
     bool is32Bit = arch == "x86";
@@ -4715,7 +4717,7 @@ LRESULT CMy2015RemoteDlg::AntiBlackScreen(WPARAM wParam, LPARAM lParam)
         ctx->Send2Client(buf->Buf(), 1 + sizeof(DllExecuteInfo));
         SAFE_DELETE(antiBlackScreen);
     } else
-        MessageBoxA(CString("没有反黑屏插件: ") + path.c_str(), "提示", MB_ICONINFORMATION);
+        MessageBoxL(_L("没有反黑屏插件: ") + path.c_str(), "提示", MB_ICONINFORMATION);
     return S_OK;
 }
 
@@ -4833,11 +4835,11 @@ void CMy2015RemoteDlg::OnProxyPort()
     std::string pwd = THIS_CFG.GetStr("frp", "token", "");
     std::string ip = THIS_CFG.GetStr("settings", "master", "");
     if (!useFrp || pwd.empty() || ip.empty()) {
-        MessageBoxA("需要正确启用FRP反向代理方可使用此功能!", "提示", MB_ICONINFORMATION);
+        MessageBoxL("需要正确启用FRP反向代理方可使用此功能!", "提示", MB_ICONINFORMATION);
         return;
     }
     CInputDialog dlg(this);
-    dlg.Init("代理端口", "请输入客户端端口:");
+    dlg.Init(_TR("代理端口"), _TR("请输入客户端端口:"));
     if (IDOK != dlg.DoModal() || atoi(dlg.m_str) <= 0 || atoi(dlg.m_str) >= 65536) {
         return;
     }
@@ -4865,15 +4867,15 @@ void CMy2015RemoteDlg::OnProxyPort()
             ctx->Send2Client(cmd, 1 + sizeof(DllExecuteInfoNew));
             sent = TRUE;
         } else {
-            PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg("版本不支持"),
-                         (LPARAM)new CharMsg("客户端版本最低要求: " + CString("Dec 22 2025")));
+            PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg(_L("版本不支持")),
+                         (LPARAM)new CharMsg(_L("客户端版本最低要求: ") + CString("Dec 22 2025")));
         }
         break;
     }
     LeaveCriticalSection(&m_cs);
     SAFE_DELETE(frpc);
     if (sent)
-        MessageBoxA(CString("请通过") + ip.c_str() + ":" + std::to_string(localPort).c_str() + "访问代理端口!",
+        MessageBoxL(_L("请通过") + ip.c_str() + ":" + std::to_string(localPort).c_str() + _L("访问代理端口!"),
                     "提示", MB_ICONINFORMATION);
 }
 
@@ -4881,7 +4883,7 @@ void CMy2015RemoteDlg::OnProxyPort()
 void CMy2015RemoteDlg::OnHookWin()
 {
     m_bHookWIN = !m_bHookWIN;
-    MessageBoxA(CString("远程控制时，") + (m_bHookWIN ? "" : "不") + CString("转发系统热键到远程桌面。"),
+    MessageBoxL(_L("远程控制时，") + (m_bHookWIN ? "" : "不") + _L("转发系统热键到远程桌面。"),
                 "提示", MB_ICONINFORMATION);
     THIS_CFG.SetInt("settings", "HookWIN", m_bHookWIN);
     CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
@@ -4892,8 +4894,8 @@ void CMy2015RemoteDlg::OnHookWin()
 void CMy2015RemoteDlg::OnRunasService()
 {
     m_runNormal = !m_runNormal;
-    MessageBoxA(m_runNormal ? CString("以传统方式启动主控程序，没有守护进程。") :
-                CString("以“服务+代理”形式启动主控程序，会开机自启及被守护。"),
+    MessageBoxL(m_runNormal ? _L("以传统方式启动主控程序，没有守护进程。") :
+                _L("以“服务+代理”形式启动主控程序，会开机自启及被守护。"),
                 "提示", MB_ICONINFORMATION);
     THIS_CFG.SetInt("settings", "RunNormal", m_runNormal);
     CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
@@ -4922,8 +4924,8 @@ void CMy2015RemoteDlg::OnHistoryClients()
 
 void CMy2015RemoteDlg::OnBackupData()
 {
-    MessageBoxA("如果更换主控IP，必须将主机迁移到新的主控IP名下。注意，更换主控程序的机器可能导致授权失效!"
-        "请将数据库文件拷贝到目标机器，否则将丢失全部备注信息。", "提示");
+    MessageBoxL("如果更换主控IP，必须将主机迁移到新的主控IP名下。注意，更换主控程序的机器可能导致授权失效!"
+        "请将数据库文件拷贝到目标机器，否则将丢失全部备注信息。", "提示", MB_ICONINFORMATION);
     std::filesystem::path path = GetDbPath();
     std::filesystem::path dir = path.parent_path();
     ShellExecuteW(NULL, L"open", dir.c_str(), NULL, NULL, SW_SHOWNORMAL);
@@ -4936,12 +4938,33 @@ void CMy2015RemoteDlg::OnPluginRequest()
 
 void CMy2015RemoteDlg::OnChangeLang()
 {
-    TODO_NOTICE;
+    size_t count = g_Lang.GetLanguageCount();
+    if (count == 1) {
+        // 只有简体中文，提示用户
+        MessageBoxA(_T("未检测到其他语言文件，请将语言文件放入 lang 目录!"), "提示", MB_ICONINFORMATION);
+        return;
+    }
+
+    CString langCode = CLangSelectDlg::Show(this);
+    if (!langCode.IsEmpty()) {
+        if (!g_Lang.CheckEncoding(langCode)) {
+            MessageBoxL("请使用ANSI编码的语言文件。", "提示", MB_ICONWARNING);
+            return;
+        }
+        // 用户选择了语言
+        g_Lang.Load(langCode);
+
+        // 保存到配置文件 
+        THIS_CFG.SetStr("settings", "Language", langCode.GetString());
+
+        // 提示用户重启生效
+        MessageBoxL("语言已切换，重启程序后生效。", "提示", MB_ICONINFORMATION);
+    }
 }
 
 void CMy2015RemoteDlg::OnImportData()
 {
-    if (IDOK!=MessageBoxA("导入主控程序的历史主机记录。此操作会覆盖本机的历史记录，请仅在迁移主控程序时进行操作。"
+    if (IDOK!=MessageBoxL("导入主控程序的历史主机记录。此操作会覆盖本机的历史记录，请仅在迁移主控程序时进行操作。"
         "数据库文件仅用于恢复主机备注信息。是否继续?", "提示",IDOK)) return;
     CFileDialog fileDlg(TRUE, NULL, "YAMA.db", OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
         _T("YAMA DB (*.db)|*.db|All Files (*.*)|*.*||"), AfxGetMainWnd());
@@ -4950,7 +4973,7 @@ void CMy2015RemoteDlg::OnImportData()
         ret = fileDlg.DoModal();
     }
     catch (...) {
-        AfxMessageBox("文件对话框未成功打开! 请稍后再试。", MB_ICONWARNING);
+        MessageBoxL("文件对话框未成功打开! 请稍后再试。", "提示", MB_ICONWARNING);
         return;
     }
     if (ret == IDOK) {

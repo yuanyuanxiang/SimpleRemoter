@@ -11,7 +11,7 @@
 
 
 CServiceInfoDlg::CServiceInfoDlg(CWnd* pParent /*=NULL*/)
-    : CDialog(CServiceInfoDlg::IDD, pParent)
+    : CDialogLang(CServiceInfoDlg::IDD, pParent)
 {
     m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_SERVICE));
 }
@@ -19,7 +19,7 @@ CServiceInfoDlg::CServiceInfoDlg(CWnd* pParent /*=NULL*/)
 
 void CServiceInfoDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_COMBO_RUNWAY, m_combox_runway);
 }
 
@@ -37,15 +37,15 @@ END_MESSAGE_MAP()
 
 BOOL CServiceInfoDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
 
     SetIcon(m_hIcon, TRUE);			// Set big icon
     SetIcon(m_hIcon, FALSE);		// Set small icon
 
     // TODO: Add extra initialization here
-    m_combox_runway.InsertString(0, _T("自动")); // 0
-    m_combox_runway.InsertString(1, _T("手动")); // 1
-    m_combox_runway.InsertString(2, _T("已禁用")); // 2
+    m_combox_runway.InsertStringL(0, _T("自动")); // 0
+    m_combox_runway.InsertStringL(1, _T("手动")); // 1
+    m_combox_runway.InsertStringL(2, _T("已禁用")); // 2
 
     SetDlgItemText(IDC_EDIT_SERNAME, m_ServiceInfo.strSerName);
     SetDlgItemText(IDC_EDIT_SERDISPLAYNAME, m_ServiceInfo.strSerDisPlayname);

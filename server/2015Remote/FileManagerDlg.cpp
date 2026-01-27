@@ -66,7 +66,7 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, Server* pIOCPServer, ClientConte
 
 void CFileManagerDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     //{{AFX_DATA_MAP(CFileManagerDlg)
     DDX_Control(pDX, IDC_REMOTE_PATH, m_Remote_Directory_ComboBox);
     DDX_Control(pDX, IDC_LOCAL_PATH, m_Local_Directory_ComboBox);
@@ -171,7 +171,7 @@ int	GetIconIndex(LPCTSTR lpFileName, DWORD dwFileAttributes)
 
 BOOL CFileManagerDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
 
     // TODO: Add extra initialization here
 
@@ -227,7 +227,7 @@ BOOL CFileManagerDlg::OnInitDialog()
 
     // 设置标题
     CString str;
-    str.Format("%s - 文件管理",m_IPAddress);
+    str.FormatL("%s - 文件管理",m_IPAddress);
     SetWindowText(str);
 
     // 为列表视图设置ImageList
@@ -270,7 +270,7 @@ BOOL CFileManagerDlg::OnInitDialog()
 
 void CFileManagerDlg::OnSize(UINT nType, int cx, int cy)
 {
-    CDialog::OnSize(nType, cx, cy);
+    __super::OnSize(nType, cx, cy);
 
     // TODO: Add your message handler code here
     // 状态栏还没有创建
@@ -309,10 +309,10 @@ void CFileManagerDlg::FixedLocalDriveList()
     char	*pDrive = NULL;
     m_list_local.DeleteAllItems();
     while(m_list_local.DeleteColumn(0) != 0);
-    m_list_local.InsertColumn(0, "名称",  LVCFMT_LEFT, 200);
-    m_list_local.InsertColumn(1, "类型", LVCFMT_LEFT, 100);
-    m_list_local.InsertColumn(2, "总大小", LVCFMT_LEFT, 100);
-    m_list_local.InsertColumn(3, "可用空间", LVCFMT_LEFT, 115);
+    m_list_local.InsertColumnL(0, "名称",  LVCFMT_LEFT, 200);
+    m_list_local.InsertColumnL(1, "类型", LVCFMT_LEFT, 100);
+    m_list_local.InsertColumnL(2, "总大小", LVCFMT_LEFT, 100);
+    m_list_local.InsertColumnL(3, "可用空间", LVCFMT_LEFT, 115);
 
     GetLogicalDriveStrings(sizeof(DriveString), DriveString);
     pDrive = DriveString;
@@ -348,16 +348,16 @@ void CFileManagerDlg::FixedLocalDriveList()
             m_list_local.SetItemText(nItem, 1, FileSystem);
         }
         CString	str;
-        str.Format("%10.1f GB", (float)AmntMB / 1024);
+        str.FormatL("%10.1f GB", (float)AmntMB / 1024);
         m_list_local.SetItemText(nItem, 2, str);
-        str.Format("%10.1f GB", (float)FreeMB / 1024);
+        str.FormatL("%10.1f GB", (float)FreeMB / 1024);
         m_list_local.SetItemText(nItem, 3, str);
     }
     // 重置本地当前路径
     m_Local_Path = "";
     m_Local_Directory_ComboBox.ResetContent();
 
-    ShowMessage("本地：装载目录 %s 完成", m_Local_Path);
+    ShowMessage(_TRF("本地：装载目录 %s 完成"), m_Local_Path);
 }
 
 void CFileManagerDlg::OnDblclkListLocal(NMHDR* pNMHDR, LRESULT* pResult)
@@ -403,16 +403,16 @@ void CFileManagerDlg::FixedLocalFileList(CString directory)
         return;
     }
 
-    m_Local_Directory_ComboBox.InsertString(0, m_Local_Path);
+    m_Local_Directory_ComboBox.InsertStringL(0, m_Local_Path);
     m_Local_Directory_ComboBox.SetCurSel(0);
 
     // 重建标题
     m_list_local.DeleteAllItems();
     while(m_list_local.DeleteColumn(0) != 0);
-    m_list_local.InsertColumn(0, "名称",  LVCFMT_LEFT, 200);
-    m_list_local.InsertColumn(1, "大小", LVCFMT_LEFT, 100);
-    m_list_local.InsertColumn(2, "类型", LVCFMT_LEFT, 100);
-    m_list_local.InsertColumn(3, "修改日期", LVCFMT_LEFT, 115);
+    m_list_local.InsertColumnL(0, "名称",  LVCFMT_LEFT, 200);
+    m_list_local.InsertColumnL(1, "大小", LVCFMT_LEFT, 100);
+    m_list_local.InsertColumnL(2, "类型", LVCFMT_LEFT, 100);
+    m_list_local.InsertColumnL(3, "修改日期", LVCFMT_LEFT, 115);
 
     int			nItemIndex = 0;
     m_list_local.SetItemData
@@ -443,15 +443,15 @@ void CFileManagerDlg::FixedLocalFileList(CString directory)
             m_list_local.SetItemText(nItem, 2, sfi.szTypeName);
 
             CString str;
-            str.Format("%10d KB", file.GetLength() / 1024 + (file.GetLength() % 1024 ? 1 : 0));
+            str.FormatL("%10d KB", file.GetLength() / 1024 + (file.GetLength() % 1024 ? 1 : 0));
             m_list_local.SetItemText(nItem, 1, str);
             CTime time;
             file.GetLastWriteTime(time);
-            m_list_local.SetItemText(nItem, 3, time.Format("%Y-%m-%d %H:%M"));
+            m_list_local.SetItemText(nItem, 3, time.FormatL("%Y-%m-%d %H:%M"));
         }
     }
 
-    ShowMessage("本地：装载目录 %s 完成", m_Local_Path);
+    ShowMessage(_TRF("本地：装载目录 %s 完成"), m_Local_Path);
 }
 
 void CFileManagerDlg::DropItemOnList(CListCtrl* pDragList, CListCtrl* pDropList)
@@ -628,7 +628,7 @@ void CFileManagerDlg::OnMouseMove(UINT nFlags, CPoint point)
             SetCursor(LoadCursor(NULL, IDC_NO));
         }
     }
-    CDialog::OnMouseMove(nFlags, point);
+    __super::OnMouseMove(nFlags, point);
 }
 
 void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
@@ -661,7 +661,7 @@ void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
             DropItemOnList(m_pDragList, m_pDropList); //Call routine to perform the actual drop
         }
     }
-    CDialog::OnLButtonUp(nFlags, point);
+    __super::OnLButtonUp(nFlags, point);
 }
 
 BOOL CFileManagerDlg::PreTranslateMessage(MSG* pMsg)
@@ -713,14 +713,14 @@ BOOL CFileManagerDlg::PreTranslateMessage(MSG* pMsg)
         m_wndToolBar_Remote.OnUpdateCmdUI((CFrameWnd*)this, TRUE);
     }
 
-    return CDialog::PreTranslateMessage(pMsg);
+    return __super::PreTranslateMessage(pMsg);
 }
 
 void CFileManagerDlg::OnTimer(UINT_PTR nIDEvent)
 {
     // TODO: Add your message handler code here and/or call default
     m_ProgressCtrl->StepIt();
-    CDialog::OnTimer(nIDEvent);
+    __super::OnTimer(nIDEvent);
 }
 
 void CFileManagerDlg::FixedRemoteDriveList()
@@ -735,10 +735,10 @@ void CFileManagerDlg::FixedRemoteDriveList()
     m_list_remote.DeleteAllItems();
     // 重建Column
     while(m_list_remote.DeleteColumn(0) != 0);
-    m_list_remote.InsertColumn(0, "名称",  LVCFMT_LEFT, 200);
-    m_list_remote.InsertColumn(1, "类型", LVCFMT_LEFT, 100);
-    m_list_remote.InsertColumn(2, "总大小", LVCFMT_LEFT, 100);
-    m_list_remote.InsertColumn(3, "可用空间", LVCFMT_LEFT, 115);
+    m_list_remote.InsertColumnL(0, "名称",  LVCFMT_LEFT, 200);
+    m_list_remote.InsertColumnL(1, "类型", LVCFMT_LEFT, 100);
+    m_list_remote.InsertColumnL(2, "总大小", LVCFMT_LEFT, 100);
+    m_list_remote.InsertColumnL(3, "可用空间", LVCFMT_LEFT, 115);
 
     char	*pDrive = NULL;
     pDrive = (char *)m_bRemoteDriveList;
@@ -780,15 +780,15 @@ void CFileManagerDlg::FixedRemoteDriveList()
             }
         }
         CString	str;
-        str.Format("%c:\\", pDrive[i]);
+        str.FormatL("%c:\\", pDrive[i]);
         int	nItem = m_list_remote.InsertItem(i, str, nIconIndex);
         m_list_remote.SetItemData(nItem, 1);
 
         memcpy(&AmntMB, pDrive + i + 2, 4);
         memcpy(&FreeMB, pDrive + i + 6, 4);
-        str.Format("%10.1f GB", (float)AmntMB / 1024);
+        str.FormatL("%10.1f GB", (float)AmntMB / 1024);
         m_list_remote.SetItemText(nItem, 2, str);
-        str.Format("%10.1f GB", (float)FreeMB / 1024);
+        str.FormatL("%10.1f GB", (float)FreeMB / 1024);
         m_list_remote.SetItemText(nItem, 3, str);
 
         i += 10;
@@ -813,7 +813,7 @@ void CFileManagerDlg::FixedRemoteDriveList()
     m_Remote_Path = "";
     m_Remote_Directory_ComboBox.ResetContent();
 
-    ShowMessage("远程：装载目录 %s 完成", m_Remote_Path);
+    ShowMessage(_TRF("远程：装载目录 %s 完成"), m_Remote_Path);
 }
 
 void CFileManagerDlg::OnClose()
@@ -947,7 +947,7 @@ void CFileManagerDlg::GetRemoteFileList(CString directory)
     m_ContextObject->Send2Client(bPacket, PacketSize);
     LocalFree(bPacket);
 
-    m_Remote_Directory_ComboBox.InsertString(0, m_Remote_Path);
+    m_Remote_Directory_ComboBox.InsertStringL(0, m_Remote_Path);
     m_Remote_Directory_ComboBox.SetCurSel(0);
 
     // 得到返回数据前禁窗口
@@ -976,10 +976,10 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen)
     // 重建标题
     m_list_remote.DeleteAllItems();
     while(m_list_remote.DeleteColumn(0) != 0);
-    m_list_remote.InsertColumn(0, "名称",  LVCFMT_LEFT, 200);
-    m_list_remote.InsertColumn(1, "大小", LVCFMT_LEFT, 100);
-    m_list_remote.InsertColumn(2, "类型", LVCFMT_LEFT, 100);
-    m_list_remote.InsertColumn(3, "修改日期", LVCFMT_LEFT, 115);
+    m_list_remote.InsertColumnL(0, "名称",  LVCFMT_LEFT, 200);
+    m_list_remote.InsertColumnL(1, "大小", LVCFMT_LEFT, 100);
+    m_list_remote.InsertColumnL(2, "类型", LVCFMT_LEFT, 100);
+    m_list_remote.InsertColumnL(3, "修改日期", LVCFMT_LEFT, 115);
 
     int	nItemIndex = 0;
     m_list_remote.SetItemData
@@ -1026,11 +1026,11 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen)
                     memcpy(&dwFileSizeHigh, pList, 4);
                     memcpy(&dwFileSizeLow, pList + 4, 4);
                     CString strSize;
-                    strSize.Format("%10d KB", (dwFileSizeHigh * (MAXDWORD+long long(1))) / 1024 + dwFileSizeLow / 1024 + (dwFileSizeLow % 1024 ? 1 : 0));
+                    strSize.FormatL("%10d KB", (dwFileSizeHigh * (MAXDWORD+long long(1))) / 1024 + dwFileSizeLow / 1024 + (dwFileSizeLow % 1024 ? 1 : 0));
                     m_list_remote.SetItemText(nItem, 1, strSize);
                     memcpy(&ftm_strReceiveLocalFileTime, pList + 8, sizeof(FILETIME));
                     CTime	time(ftm_strReceiveLocalFileTime);
-                    m_list_remote.SetItemText(nItem, 3, time.Format("%Y-%m-%d %H:%M"));
+                    m_list_remote.SetItemText(nItem, 3, time.FormatL("%Y-%m-%d %H:%M"));
                 }
                 pList += 16;
             }
@@ -1041,10 +1041,10 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen)
     // 恢复窗口
     m_list_remote.EnableWindow(TRUE);
 
-    ShowMessage("远程：装载目录 %s 完成", m_Remote_Path);
+    ShowMessage(_TRF("远程：装载目录 %s 完成"), m_Remote_Path);
 }
 
-void CFileManagerDlg::ShowMessage(char *lpFmt, ...)
+void CFileManagerDlg::ShowMessage(const char *lpFmt, ...)
 {
     char *buff = new char[1024];
     va_list    arglist;
@@ -1292,7 +1292,7 @@ bool CFileManagerDlg::FixedUploadDirectory(LPCTSTR lpPathName)
             FixedUploadDirectory(strDirectory); // 如果找到的是目录，则进入此目录进行递归
         } else {
             CString file;
-            file.Format("%s%s%s", lpPathName, lpszSlash, wfd.cFileName);
+            file.FormatL("%s%s%s", lpPathName, lpszSlash, wfd.cFileName);
             //Mprintf("send file %s\n",strFile);
             m_Remote_Upload_Job.AddTail(file);
             // 对文件进行操作
@@ -1336,7 +1336,7 @@ void CFileManagerDlg::OnLocalCopy()
 
     } //EO while(pos) -- at this point we have deleted the moving items and stored them in memory
     if (m_Remote_Upload_Job.IsEmpty()) {
-        ::MessageBox(m_hWnd, "文件夹为空", "警告", MB_OK|MB_ICONWARNING);
+        MessageBoxAPI_L(m_hWnd, "文件夹为空", "警告", MB_OK|MB_ICONWARNING);
         return;
     }
     EnableControl(FALSE);
@@ -1359,7 +1359,7 @@ void CFileManagerDlg::OnLocalCompress()
     std::string target = m_Local_Path.GetString() + ToPekingDateTime(0) + ".zsta";
     zsta::Error err = zsta::CZstdArchive::Compress(paths, target);
     if (err != zsta::Error::Success) {
-        ::MessageBoxA(m_hWnd, "压缩失败: " + CString(zsta::CZstdArchive::GetErrorString(err)),
+        MessageBoxAPI_L(m_hWnd, "压缩失败: " + CString(zsta::CZstdArchive::GetErrorString(err)),
                       "错误", MB_OK | MB_ICONERROR);
     } else {
         FixedLocalFileList(".");
@@ -1402,7 +1402,7 @@ void CFileManagerDlg::OnLocalUnCompress()
             std::string destDir = GetExtractDir(path);
             zsta::Error err = zsta::CZstdArchive::Extract(path, destDir);
             if (err != zsta::Error::Success) {
-                ::MessageBoxA(m_hWnd, "解压失败: " + CString(zsta::CZstdArchive::GetErrorString(err)),
+                MessageBoxAPI_L(m_hWnd, "解压失败: " + CString(zsta::CZstdArchive::GetErrorString(err)),
                               "错误", MB_OK | MB_ICONERROR);
             } else {
                 needRefresh = TRUE;
@@ -1462,7 +1462,7 @@ void CFileManagerDlg::OnRemoteCompress()
         paths.push_back(file.GetBuffer(0));
     }
     if (paths.size() <= 1) {
-        ::MessageBoxA(m_hWnd, "请先选择要压缩的文件或文件夹!", "提示", MB_OK | MB_ICONWARNING);
+        MessageBoxAPI_L(m_hWnd, "请先选择要压缩的文件或文件夹!", "提示", MB_OK | MB_ICONWARNING);
         return;
     }
     auto pathsMultiString = BuildMultiStringPath(paths);
@@ -1490,7 +1490,7 @@ void CFileManagerDlg::OnRemoteUnCompress()
         }
     }
     if (paths.empty()) {
-        ::MessageBoxA(m_hWnd, "请先选择要解压的.zsta文件!", "提示", MB_OK | MB_ICONWARNING);
+        MessageBoxAPI_L(m_hWnd, "请先选择要解压的.zsta文件!", "提示", MB_OK | MB_ICONWARNING);
         return;
     }
     auto pathsMultiString = BuildMultiStringPath(paths);
@@ -1591,10 +1591,10 @@ BOOL CFileManagerDlg::SendDeleteJob()
     BYTE	*bPacket = (BYTE *)LocalAlloc(LPTR, nPacketSize);
 
     if (file.GetAt(file.GetLength() - 1) == '\\') {
-        ShowMessage("远程：删除目录 %s\\*.* 完成", file);
+        ShowMessage(_TRF("远程：删除目录 %s\\*.* 完成"), file);
         bPacket[0] = COMMAND_DELETE_DIRECTORY;
     } else {
-        ShowMessage("远程：删除文件 %s 完成", file);
+        ShowMessage(_TRF("远程：删除文件 %s 完成"), file);
         bPacket[0] = COMMAND_DELETE_FILE;
     }
     // 文件偏移，续传时用
@@ -1755,7 +1755,7 @@ void CFileManagerDlg::CreateLocalRecvFile()
     if (hFile == INVALID_HANDLE_VALUE) {
         m_nOperatingFileLength = 0;
         m_nCounter = 0;
-        ::MessageBox(m_hWnd, m_strReceiveLocalFile + " 文件创建失败", "警告", MB_OK|MB_ICONWARNING);
+        MessageBoxAPI_L(m_hWnd, m_strReceiveLocalFile + " 文件创建失败", "警告", MB_OK|MB_ICONWARNING);
         return;
     }
     SAFE_CLOSE_HANDLE(hFile);
@@ -1820,7 +1820,7 @@ void CFileManagerDlg::WriteLocalRecvFile()
         }
     }
     if (i == MAX_WRITE_RETRY && nRet <= 0) {
-        ::MessageBox(m_hWnd, m_strReceiveLocalFile + " 文件写入失败!", "警告", MB_OK|MB_ICONWARNING);
+        MessageBoxAPI_L(m_hWnd, m_strReceiveLocalFile + " 文件写入失败!", "警告", MB_OK|MB_ICONWARNING);
         m_bIsStop = true;
     }
     SAFE_CLOSE_HANDLE(hFile);
@@ -1852,7 +1852,7 @@ void CFileManagerDlg::EndLocalRecvFile()
         m_nTransferMode = TRANSFER_MODE_NORMAL;
         EnableControl(TRUE);
         FixedLocalFileList(".");
-        ShowMessage("本地：装载目录 %s\\*.* 完成", m_Local_Path);
+        ShowMessage(_TRF("本地：装载目录 %s\\*.* 完成"), m_Local_Path);
     } else {
         // 我靠，不sleep下会出错，服了可能以前的数据还没send出去
         Sleep(5);
@@ -1872,7 +1872,7 @@ void CFileManagerDlg::EndLocalUploadFile()
         m_bIsStop = false;
         EnableControl(TRUE);
         GetRemoteFileList(".");
-        ShowMessage("远程：装载目录 %s\\*.* 完成", m_Remote_Path);
+        ShowMessage(_TRF("远程：装载目录 %s\\*.* 完成"), m_Remote_Path);
     } else {
         // 我靠，不sleep下会出错，服了可能以前的数据还没send出去
         Sleep(5);
@@ -1887,7 +1887,7 @@ void CFileManagerDlg::EndRemoteDeleteFile()
         m_bIsStop = false;
         EnableControl(TRUE);
         GetRemoteFileList(".");
-        ShowMessage("远程：装载目录 %s\\*.* 完成", m_Remote_Path);
+        ShowMessage(_TRF("远程：装载目录 %s\\*.* 完成"), m_Remote_Path);
     } else {
         // 我靠，不sleep下会出错，服了可能以前的数据还没send出去
         Sleep(5);
@@ -1917,11 +1917,12 @@ void CFileManagerDlg::SendStop()
 
 void CFileManagerDlg::ShowProgress()
 {
-    char	*lpDirection = NULL;
+    CString strDirection;
     if (m_bIsUpload)
-        lpDirection = "传送文件";
+        strDirection = _L(_T("传送文件"));
     else
-        lpDirection = "接收文件";
+        strDirection = _L(_T("接收文件"));
+    char *lpDirection = (char*)(LPCSTR)strDirection;
 
     // 防止除零导致未定义行为
     if (m_nOperatingFileLength <= 0) {
@@ -1947,15 +1948,15 @@ void CFileManagerDlg::OnLocalDelete()
     m_bIsUpload = true;
     CString str;
     if (m_list_local.GetSelectedCount() > 1)
-        str.Format("确定要将这 %d 项删除吗?", m_list_local.GetSelectedCount());
+        str.FormatL("确定要将这 %d 项删除吗?", m_list_local.GetSelectedCount());
     else {
         CString file = m_list_local.GetItemText(m_list_local.GetSelectionMark(), 0);
         if (m_list_local.GetItemData(m_list_local.GetSelectionMark()) == 1)
-            str.Format("确实要删除文件夹“%s”并将所有内容删除吗?", file);
+            str.FormatL("确实要删除文件夹“%s”并将所有内容删除吗?", file);
         else
-            str.Format("确实要把“%s”删除吗?", file);
+            str.FormatL("确实要把“%s”删除吗?", file);
     }
-    if (::MessageBox(m_hWnd, str, "确认删除", MB_YESNO|MB_ICONQUESTION) == IDNO)
+    if (MessageBoxAPI_L(m_hWnd, str, "确认删除", MB_YESNO|MB_ICONQUESTION) == IDNO)
         return;
 
     EnableControl(FALSE);
@@ -1984,15 +1985,15 @@ void CFileManagerDlg::OnRemoteDelete()
     // TODO: Add your command handler code here
     CString str;
     if (m_list_remote.GetSelectedCount() > 1)
-        str.Format("确定要将这 %d 项删除吗?", m_list_remote.GetSelectedCount());
+        str.FormatL("确定要将这 %d 项删除吗?", m_list_remote.GetSelectedCount());
     else {
         CString file = m_list_remote.GetItemText(m_list_remote.GetSelectionMark(), 0);
         if (m_list_remote.GetItemData(m_list_remote.GetSelectionMark()) == 1)
-            str.Format("确实要删除文件夹“%s”并将所有内容删除吗?", file);
+            str.FormatL("确实要删除文件夹“%s”并将所有内容删除吗?", file);
         else
-            str.Format("确实要把“%s”删除吗?", file);
+            str.FormatL("确实要把“%s”删除吗?", file);
     }
-    if (::MessageBox(m_hWnd, str, "确认删除", MB_YESNO|MB_ICONQUESTION) == IDNO)
+    if (MessageBoxAPI_L(m_hWnd, str, "确认删除", MB_YESNO|MB_ICONQUESTION) == IDNO)
         return;
     m_Remote_Delete_Job.RemoveAll();
     POSITION pos = m_list_remote.GetFirstSelectedItemPosition(); //iterator for the CListCtrl
@@ -2026,8 +2027,7 @@ void CFileManagerDlg::OnLocalStop()
 void CFileManagerDlg::PostNcDestroy()
 {
     // TODO: Add your specialized code here and/or call the base class
-    delete this;
-    CDialog::PostNcDestroy();
+    __super::PostNcDestroy();
 }
 
 void CFileManagerDlg::SendTransferMode()
@@ -2346,6 +2346,7 @@ void CFileManagerDlg::OnRclickListLocal(NMHDR* pNMHDR, LRESULT* pResult)
     CListCtrl	*pListCtrl = &m_list_local;
     CMenu	popup;
     popup.LoadMenu(IDR_FILEMANAGER);
+    TranslateMenu(&popup);
     CMenu*	pM = popup.GetSubMenu(0);
     CPoint	p;
     GetCursorPos(&p);
@@ -2381,6 +2382,7 @@ void CFileManagerDlg::OnRclickListRemote(NMHDR* pNMHDR, LRESULT* pResult)
     CListCtrl	*pListCtrl = &m_list_remote;
     CMenu	popup;
     popup.LoadMenu(IDR_FILEMANAGER);
+    TranslateMenu(&popup);
     CMenu*	pM = popup.GetSubMenu(0);
     CPoint	p;
     GetCursorPos(&p);

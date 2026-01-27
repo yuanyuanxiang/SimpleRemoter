@@ -1,10 +1,11 @@
 ﻿#pragma once
 
 #include "resource.h"
+#include "LangManager.h"
 
 // CInputDialog 对话框
 
-class CInputDialog : public CDialogEx
+class CInputDialog : public CDialogLangEx
 {
     DECLARE_DYNAMIC(CInputDialog)
 

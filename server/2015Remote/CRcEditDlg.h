@@ -2,11 +2,11 @@
 
 #include <afx.h>
 #include <afxwin.h>
-
+#include "LangManager.h"
 
 // CRcEditDlg 对话框
 
-class CRcEditDlg : public CDialogEx
+class CRcEditDlg : public CDialogLangEx
 {
     DECLARE_DYNAMIC(CRcEditDlg)
 

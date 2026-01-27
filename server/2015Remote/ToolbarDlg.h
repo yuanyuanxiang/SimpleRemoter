@@ -1,9 +1,10 @@
 ﻿#pragma once
 #include "Resource.h"
+#include "LangManager.h"
 
 class CScreenSpyDlg;
 
-class CToolbarDlg : public CDialogEx
+class CToolbarDlg : public CDialogLangEx
 {
     DECLARE_DYNAMIC(CToolbarDlg)
 private:

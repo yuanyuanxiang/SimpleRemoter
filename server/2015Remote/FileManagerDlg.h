@@ -78,7 +78,7 @@ public:
     strList m_Remote_Delete_Job;
     CTrueColorToolBar m_wndToolBar_Local;
     CTrueColorToolBar m_wndToolBar_Remote;
-    void ShowMessage(char *lpFmt, ...);
+    void ShowMessage(const char *lpFmt, ...);
     CString m_Remote_Path;
     BYTE m_bRemoteDriveList[1024];
     CString GetParentDirectory(CString strPath);

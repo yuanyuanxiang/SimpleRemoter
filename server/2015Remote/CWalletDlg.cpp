@@ -13,7 +13,7 @@
 IMPLEMENT_DYNAMIC(CWalletDlg, CDialogEx)
 
 CWalletDlg::CWalletDlg(CWnd* pParent /*=nullptr*/)
-    : CDialogEx(IDD_DIALOG_WALLET, pParent)
+    : CDialogLangEx(IDD_DIALOG_WALLET, pParent)
 {
 
 }
@@ -24,7 +24,7 @@ CWalletDlg::~CWalletDlg()
 
 void CWalletDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialogEx::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_EDIT_WALLET_BTC, m_EditBTC);
     DDX_Control(pDX, IDC_EDIT_WALLET_ERC20, m_EditERC20);
     DDX_Control(pDX, IDC_EDIT_WALLET_OMNI, m_EditOMNI);
@@ -47,7 +47,7 @@ END_MESSAGE_MAP()
 
 BOOL CWalletDlg::OnInitDialog()
 {
-    CDialogEx::OnInitDialog();
+    __super::OnInitDialog();
 
     auto a = StringToVector(m_str.GetString(), ';', MAX_WALLET_NUM);
     m_EditBTC.SetWindowTextA(a[ADDR_BTC].c_str());
@@ -94,11 +94,11 @@ void CWalletDlg::OnOK()
         if (WALLET_UNKNOWN == detectWalletType(a[i].GetString())) {
             char tip[100];
             sprintf(tip, "第 %d 个钱包地址不合法!", i + 1);
-            MessageBox(CString(tip), "提示", MB_ICONINFORMATION);
+            MessageBoxL(CString(tip), "提示", MB_ICONINFORMATION);
             return;
         }
     }
     m_str = JoinCStringArray(a, MAX_WALLET_NUM, _T(';'));
 
-    CDialogEx::OnOK();
+    __super::OnOK();
 }

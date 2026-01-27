@@ -1,9 +1,9 @@
 ﻿#pragma once
-
+#include "LangManager.h"
 
 // CTextDlg 对话框
 
-class CTextDlg : public CDialog
+class CTextDlg : public CDialogLang
 {
     DECLARE_DYNAMIC(CTextDlg)
 

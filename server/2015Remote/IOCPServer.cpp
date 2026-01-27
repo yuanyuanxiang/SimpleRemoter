@@ -32,8 +32,9 @@ std::string GetRemoteIP(SOCKET sock)
     return buf;
 }
 
-IOCPServer::IOCPServer(void)
+IOCPServer::IOCPServer(HWND hWnd)
 {
+	m_hMainWnd = hWnd;
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2,2), &wsaData)!=0) {
         return;
@@ -761,6 +762,18 @@ PCONTEXT_OBJECT IOCPServer::AllocateContext(SOCKET s)
     CLock cs(m_cs);
 
     if (m_ContextConnectionList.GetCount() >= m_ulMaxConnections) {
+        static uint64_t notifyTime = 0;
+		auto now = time(0);
+        if (now - notifyTime > 15) {
+            notifyTime = now;
+            Mprintf("!!! AllocateContext: 达到最大连接数 %lu，拒绝新连接\n", m_ulMaxConnections);
+            if (m_hMainWnd) {
+				char tip[256];
+				sprintf_s(tip, _TRF("达到最大连接数限制: %lu, 请释放连接"), m_ulMaxConnections);
+                PostMessageA(m_hMainWnd, WM_SHOWNOTIFY, (WPARAM)new CharMsg(_TR("达到最大连接数")),
+                    (LPARAM)new CharMsg(tip));
+            }
+		}
         return NULL;
     }
 

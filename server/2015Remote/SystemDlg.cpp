@@ -34,7 +34,7 @@ CSystemDlg::~CSystemDlg()
 
 void CSystemDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_LIST_SYSTEM, m_ControlList);
 }
 
@@ -62,29 +62,29 @@ END_MESSAGE_MAP()
 
 BOOL CSystemDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
 
     SetIcon(m_hIcon, TRUE);
     SetIcon(m_hIcon, FALSE);
     CString str;
     m_bHow==TOKEN_PSLIST
-    ? str.Format("%s - 进程管理", m_IPAddress)
-         :str.Format("%s - 窗口管理", m_IPAddress);
+    ? str.FormatL("%s - 进程管理", m_IPAddress)
+         :str.FormatL("%s - 窗口管理", m_IPAddress);
     SetWindowText(str);//设置对话框标题
 
     m_ControlList.SetExtendedStyle(LVS_EX_FLATSB | LVS_EX_FULLROWSELECT);
     if (m_bHow==TOKEN_PSLIST) {    //进程管理初始化列表
-        m_ControlList.InsertColumn(0, "映像名称", LVCFMT_LEFT, 180);
-        m_ControlList.InsertColumn(1, "PID", LVCFMT_LEFT, 70);
-        m_ControlList.InsertColumn(2, "程序路径", LVCFMT_LEFT, 320);
-        m_ControlList.InsertColumn(3, "架构", LVCFMT_LEFT, 70);
+        m_ControlList.InsertColumnL(0, "映像名称", LVCFMT_LEFT, 180);
+        m_ControlList.InsertColumnL(1, "PID", LVCFMT_LEFT, 70);
+        m_ControlList.InsertColumnL(2, "程序路径", LVCFMT_LEFT, 320);
+        m_ControlList.InsertColumnL(3, "架构", LVCFMT_LEFT, 70);
         ShowProcessList();   //由于第一个发送来的消息后面紧跟着进程的数据所以把数据显示到列表当中\0\0
     } else if (m_bHow==TOKEN_WSLIST) { //窗口管理初始化列表
         //初始化 窗口管理的列表
-        m_ControlList.InsertColumn(0, "句柄", LVCFMT_LEFT, 80);
-        m_ControlList.InsertColumn(1, "窗口名称", LVCFMT_LEFT, 420);
-        m_ControlList.InsertColumn(2, "窗口状态", LVCFMT_LEFT, 200);
-        m_ControlList.InsertColumn(3, "所属进程ID", LVCFMT_LEFT, 100);
+        m_ControlList.InsertColumnL(0, "句柄", LVCFMT_LEFT, 80);
+        m_ControlList.InsertColumnL(1, "窗口名称", LVCFMT_LEFT, 420);
+        m_ControlList.InsertColumnL(2, "窗口状态", LVCFMT_LEFT, 200);
+        m_ControlList.InsertColumnL(3, "所属进程ID", LVCFMT_LEFT, 100);
         ShowWindowsList();
     }
 
@@ -169,7 +169,7 @@ void CSystemDlg::ShowWindowsList(void)
         szTitle = (char *)szBuffer + dwOffset + sizeof(DWORD);   //窗口标题
         WindowAttrs attrs = {};
         ParseWindowAttrs(szTitle, &attrs);
-        str.Format("%5u", *lpPID);
+        str.FormatL("%5u", *lpPID);
         CString pidStr = attrs.dwPid ? std::to_string(attrs.dwPid).c_str() : "N/A";
         m_ControlList.InsertItem(i, str);                   // 句柄
         m_ControlList.SetItemText(i, 1, attrs.szTitle);     // 标题
@@ -180,7 +180,7 @@ void CSystemDlg::ShowWindowsList(void)
         m_ControlList.SetItemData(i, (DWORD_PTR)data);  //(d)
         dwOffset += sizeof(DWORD) + lstrlen(szTitle) + 1;
     }
-    str.Format("窗口名称    窗口个数【%d】", i);   //修改CtrlList
+    str.FormatL("窗口名称    窗口个数【%d】", i);   //修改CtrlList
     LVCOLUMN lvc;
     lvc.mask = LVCF_TEXT;
     lvc.pszText = str.GetBuffer(0);
@@ -207,7 +207,7 @@ void CSystemDlg::ShowProcessList(void)
         //他的数据结构的构建很巧妙
 
         m_ControlList.InsertItem(i, arr[0].c_str());       //将得到的数据加入到列表当中
-        str.Format("%5u", *PID);
+        str.FormatL("%5u", *PID);
         m_ControlList.SetItemText(i, 1, str);
         m_ControlList.SetItemText(i, 2, szProcessFullPath);
         m_ControlList.SetItemText(i, 3, arr[1].empty() ? "N/A" : arr[1].c_str());
@@ -218,7 +218,7 @@ void CSystemDlg::ShowProcessList(void)
         dwOffset += sizeof(DWORD) + lstrlen(szExeFile) + lstrlen(szProcessFullPath) + 2;   //跳过这个数据结构 进入下一个循环
     }
 
-    str.Format("程序个数 / %d", i);
+    str.FormatL("程序个数 / %d", i);
     LVCOLUMN lvc;
     lvc.mask = LVCF_TEXT;
     lvc.pszText = str.GetBuffer(0);
@@ -303,6 +303,7 @@ void CSystemDlg::OnNMRClickListSystem(NMHDR *pNMHDR, LRESULT *pResult)
     } else if (m_bHow==TOKEN_WSLIST) {
         Menu.LoadMenu(IDR_WINDOW_LIST);
     }
+    TranslateMenu(&Menu);
     CMenu*	SubMenu = Menu.GetSubMenu(0);
     CPoint	Point;
     GetCursorPos(&Point);
@@ -325,16 +326,15 @@ void CSystemDlg::OnPlistKill()
     //加入结束进程的数据头
     szBuffer[0] = COMMAND_KILLPROCESS;
     //显示警告信息
-    char *szTips = "警告: 终止进程会导致不希望发生的结果，\n"
-                   "包括数据丢失和系统不稳定。在被终止前，\n"
-                   "进程将没有机会保存其状态和数据。";
+    CString csTips = _TR("警告: 终止进程会导致不希望发生的结果，\n包括数据丢失和系统不稳定。在被终止前，\n进程将没有机会保存其状态和数据。");
+    char *szTips = (char*)(LPCSTR)csTips;
     CString str;
     if (ListCtrl->GetSelectedCount() > 1) {
-        str.Format("%s确实\n想终止这%d项进程吗?", szTips, ListCtrl->GetSelectedCount());
+        str.FormatL("%s确实\n想终止这%d项进程吗?", szTips, ListCtrl->GetSelectedCount());
     } else {
-        str.Format("%s确实\n想终止该项进程吗?", szTips);
+        str.FormatL("%s确实\n想终止该项进程吗?", szTips);
     }
-    if (::MessageBox(m_hWnd, str, "进程结束警告", MB_YESNO | MB_ICONQUESTION) == IDNO) {
+    if (MessageBoxAPI_L(m_hWnd, str, "进程结束警告", MB_YESNO | MB_ICONQUESTION) == IDNO) {
         LocalFree(szBuffer);
         return;
     }
@@ -514,7 +514,7 @@ void CSystemDlg::OnWlistMin()
 
 void CSystemDlg::OnSize(UINT nType, int cx, int cy)
 {
-    CDialog::OnSize(nType, cx, cy);
+    __super::OnSize(nType, cx, cy);
 
     if (!m_ControlList.GetSafeHwnd()) return; // 确保控件已创建
 
@@ -537,9 +537,9 @@ void CSystemDlg::OnPlistInject()
         return;
 
     if (ListCtrl->GetSelectedCount() != 1)
-        ::MessageBox(m_hWnd, "只能同时向一个进程进行代码注入!", "提示", MB_ICONINFORMATION);
+        MessageBoxAPI_L(m_hWnd, "只能同时向一个进程进行代码注入!", "提示", MB_ICONINFORMATION);
 
-    if (::MessageBox(m_hWnd, "确定要向目标进程 (仅限64位) 进行代码注入吗?\n此操作可能被安全软件阻止，或导致进程崩溃!",
+    if (MessageBoxAPI_L(m_hWnd, "确定要向目标进程 (仅限64位) 进行代码注入吗?\n此操作可能被安全软件阻止，或导致进程崩溃!",
                      "警告", MB_YESNO | MB_ICONQUESTION) == IDNO)
         return;
 
@@ -565,9 +565,9 @@ void CSystemDlg::OnPlistAntiBlackScreen()
         return;
 
     if (ListCtrl->GetSelectedCount() != 1)
-        ::MessageBox(m_hWnd, "只能同时向一个进程进行反黑屏操作!", "提示", MB_ICONINFORMATION);
+        MessageBoxAPI_L(m_hWnd, "只能同时向一个进程进行反黑屏操作!", "提示", MB_ICONINFORMATION);
 
-    if (::MessageBox(m_hWnd, "确定要向目标进程进行反黑屏吗?\n请确保目标进程、DLL及被控端架构务必相同!",
+    if (MessageBoxAPI_L(m_hWnd, "确定要向目标进程进行反黑屏吗?\n请确保目标进程、DLL及被控端架构务必相同!",
                      "警告", MB_YESNO | MB_ICONQUESTION) == IDNO)
         return;
 

@@ -21,7 +21,7 @@ CTalkDlg::~CTalkDlg()
 
 void CTalkDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_EDIT_TALK, m_EditTalk);
     m_EditTalk.SetLimitText(TALK_DLG_MAXLEN);
 }
@@ -38,7 +38,7 @@ END_MESSAGE_MAP()
 
 BOOL CTalkDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
 
     SetIcon(m_hIcon, FALSE);
     BYTE bToken = COMMAND_NEXT;
@@ -83,7 +83,7 @@ BOOL CTalkDlg::PreTranslateMessage(MSG* pMsg)
         }
     }
 
-    return CDialog::PreTranslateMessage(pMsg);
+    return __super::PreTranslateMessage(pMsg);
 }
 
 

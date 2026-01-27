@@ -31,7 +31,7 @@ CDrawingBoard::~CDrawingBoard()
 
 void CDrawingBoard::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
 }
 
 BEGIN_MESSAGE_MAP(CDrawingBoard, CDialog)
@@ -138,7 +138,7 @@ void CDrawingBoard::OnLButtonUp(UINT nFlags, CPoint point)
 
 void CDrawingBoard::OnWindowPosChanged(WINDOWPOS* lpwndpos)
 {
-    CDialog::OnWindowPosChanged(lpwndpos);
+    __super::OnWindowPosChanged(lpwndpos);
     if (!m_bMoving) return;
 
     CRect rect;
@@ -154,7 +154,7 @@ void CDrawingBoard::OnWindowPosChanged(WINDOWPOS* lpwndpos)
 
 void CDrawingBoard::OnSize(UINT nType, int cx, int cy)
 {
-    CDialog::OnSize(nType, cx, cy);
+    __super::OnSize(nType, cx, cy);
     if (!m_bSizing) return;
 
     // 发送新的窗口尺寸到客户端
@@ -212,7 +212,7 @@ BOOL CDrawingBoard::OnInitDialog()
     SetIcon(m_hIcon, FALSE);
 
     CString str;
-    str.Format("%s - 画板演示", m_IPAddress);
+    str.FormatL("%s - 画板演示", m_IPAddress);
     SetWindowText(str);
 
     m_font.CreateFont(
@@ -248,12 +248,13 @@ void CDrawingBoard::OnRButtonDown(UINT nFlags, CPoint point)
 
     CMenu menu;
     menu.LoadMenu(IDR_MENU_POPUP);
+    TranslateMenu(&menu);
     CMenu* pSubMenu = menu.GetSubMenu(0);
 
     if (pSubMenu)
         pSubMenu->TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, m_RightClickPos.x, m_RightClickPos.y, this);
 
-    CDialog::OnRButtonDown(nFlags, point);
+    __super::OnRButtonDown(nFlags, point);
 }
 
 
@@ -297,7 +298,7 @@ BOOL CDrawingBoard::PreTranslateMessage(MSG* pMsg)
             return TRUE; // 吞掉回车
         }
     }
-    return CDialog::PreTranslateMessage(pMsg);
+    return __super::PreTranslateMessage(pMsg);
 }
 
 void CDrawingBoard::SendTextsToRemote(const CPoint& pt, const CString& text)

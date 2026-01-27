@@ -10,7 +10,7 @@
 IMPLEMENT_DYNAMIC(CCreateTaskDlg, CDialog)
 
 CCreateTaskDlg::CCreateTaskDlg(CWnd* pParent /*=nullptr*/)
-    : CDialog(IDD_CREATETASK, pParent)
+    : CDialogLang(IDD_CREATETASK, pParent)
     , m_TaskPath(_T("\\"))
     , m_TaskNames(_T("bhyy"))
     , m_ExePath(_T("C:\\windows\\system32\\cmd.exe"))
@@ -25,7 +25,7 @@ CCreateTaskDlg::~CCreateTaskDlg()
 
 void CCreateTaskDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Text(pDX, IDC_EDIT_PATH, m_TaskPath);
     DDX_Control(pDX, IDC_EDIT_NAME, m_TaskName);
     DDX_Text(pDX, IDC_EDIT_NAME, m_TaskNames);
@@ -47,5 +47,5 @@ void CCreateTaskDlg::OnBnClickedButtonCREAT()
 {
     UpdateData(TRUE);
     // TODO: 在此添加控件通知处理程序代码
-    CDialog::OnOK();
+    __super::OnOK();
 }

@@ -17,6 +17,7 @@
 
 #include "stdafx.h"
 #include "TrueColorToolBar.h"
+#include "LangManager.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -126,6 +127,7 @@ void CTrueColorToolBar::OnToolbarDropDown(NMHDR* pnmh, LRESULT *plr)
 
             CMenu menu;
             menu.LoadMenu(DropDownInfo.uMenuID);
+            TranslateMenu(&menu);
             CMenu* pPopup = menu.GetSubMenu(0);
 
             CRect rc;

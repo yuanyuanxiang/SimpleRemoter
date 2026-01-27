@@ -58,7 +58,7 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, Server* pIOCPServer, ClientConte
 
 void CFileManagerDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_REMOTE_PATH, m_Remote_Directory_ComboBox);
     DDX_Control(pDX, IDC_LIST_REMOTE, m_list_remote);
     DDX_Control(pDX, IDC_LIST_REMOTE_DRIVER, m_list_remote_driver);
@@ -152,14 +152,14 @@ BOOL CFileManagerDlg::MyShell_GetImageLists()
 
 BOOL CFileManagerDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
 
     RECT	rect;
     GetClientRect(&rect);
 
     // 设置标题
     CString str;
-    str.Format(_T("文件管理 - %s"), m_ContextObject->PeerName.c_str()), SetWindowText(str);
+    str.FormatL(_T("文件管理 - %s"), m_ContextObject->PeerName.c_str()), SetWindowText(str);
 
     // 创建带进度条的状态栏
     if (!m_wndStatusBar.Create(this) ||
@@ -197,23 +197,23 @@ BOOL CFileManagerDlg::OnInitDialog()
     m_list_remote_search.SetImageList(&(THIS_APP->m_pImageList_Large), LVSIL_NORMAL);
     m_list_remote_search.SetImageList(&(THIS_APP->m_pImageList_Small), LVSIL_SMALL);
 
-    m_list_remote_driver.InsertColumn(0, _T("名称"), LVCFMT_LEFT, 50);
-    m_list_remote_driver.InsertColumn(1, _T("类型"), LVCFMT_LEFT, 38);
-    m_list_remote_driver.InsertColumn(2, _T("总大小"), LVCFMT_LEFT, 70);
-    m_list_remote_driver.InsertColumn(3, _T("可用空间"), LVCFMT_LEFT, 70);
+    m_list_remote_driver.InsertColumnL(0, _T("名称"), LVCFMT_LEFT, 50);
+    m_list_remote_driver.InsertColumnL(1, _T("类型"), LVCFMT_LEFT, 38);
+    m_list_remote_driver.InsertColumnL(2, _T("总大小"), LVCFMT_LEFT, 70);
+    m_list_remote_driver.InsertColumnL(3, _T("可用空间"), LVCFMT_LEFT, 70);
 
-    m_list_remote.InsertColumn(0, _T("名称"), LVCFMT_LEFT, 250);
-    m_list_remote.InsertColumn(1, _T("大小"), LVCFMT_LEFT, 70);
-    m_list_remote.InsertColumn(2, _T("类型"), LVCFMT_LEFT, 120);
-    m_list_remote.InsertColumn(3, _T("修改日期"), LVCFMT_LEFT, 115);
+    m_list_remote.InsertColumnL(0, _T("名称"), LVCFMT_LEFT, 250);
+    m_list_remote.InsertColumnL(1, _T("大小"), LVCFMT_LEFT, 70);
+    m_list_remote.InsertColumnL(2, _T("类型"), LVCFMT_LEFT, 120);
+    m_list_remote.InsertColumnL(3, _T("修改日期"), LVCFMT_LEFT, 115);
     m_list_remote.SetParenDlg(this);
 
     //设置搜索list表头
     m_list_remote_search.ShowWindow(SW_HIDE);
-    m_list_remote_search.InsertColumn(0, _T("文件名"), LVCFMT_LEFT, 130);
-    m_list_remote_search.InsertColumn(1, _T("大小"), LVCFMT_LEFT, 100);
-    m_list_remote_search.InsertColumn(2, _T("修改日期"), LVCFMT_LEFT, 100);
-    m_list_remote_search.InsertColumn(3, _T("文件路径"), LVCFMT_LEFT, 450);
+    m_list_remote_search.InsertColumnL(0, _T("文件名"), LVCFMT_LEFT, 130);
+    m_list_remote_search.InsertColumnL(1, _T("大小"), LVCFMT_LEFT, 100);
+    m_list_remote_search.InsertColumnL(2, _T("修改日期"), LVCFMT_LEFT, 100);
+    m_list_remote_search.InsertColumnL(3, _T("文件路径"), LVCFMT_LEFT, 450);
     SetWindowPos(NULL, 0, 0, 830, 500, SWP_NOMOVE);
 
     FixedRemoteDriveList();
@@ -223,7 +223,7 @@ BOOL CFileManagerDlg::OnInitDialog()
 
 void CFileManagerDlg::OnSize(UINT nType, int cx, int cy)
 {
-    CDialog::OnSize(nType, cx, cy);
+    __super::OnSize(nType, cx, cy);
 
     // TODO: Add your message handler code here
     // 状态栏还没有创建
@@ -297,7 +297,7 @@ void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
                 }
 
                 if (hwnd == NULL) {
-                    ::MessageBox(NULL, _T("请拖拽到文件管理器选定目录中"), TEXT("错误"), 0);
+                    MessageBoxAPI_L(NULL, _T("请拖拽到文件管理器选定目录中"), TEXT("错误"), 0);
                 } else {
                     ::SendMessage(hwnd, WM_GETTEXT, 1024, (LPARAM)str);
                     strLpath = str + 4;
@@ -323,7 +323,7 @@ void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
             }
             if (file.IsEmpty()) {
                 EnableControl(TRUE);
-                ::MessageBox(m_hWnd, _T("请选择文件！"), _T("警告"), MB_OK | MB_ICONWARNING);
+                MessageBoxAPI_L(m_hWnd, _T("请选择文件！"), _T("警告"), MB_OK | MB_ICONWARNING);
                 return;
             }
 
@@ -338,7 +338,7 @@ void CFileManagerDlg::OnLButtonUp(UINT nFlags, CPoint point)
             SendDownloadJob();
         }
     }
-    CDialog::OnLButtonUp(nFlags, point);
+    __super::OnLButtonUp(nFlags, point);
 }
 
 
@@ -361,14 +361,14 @@ BOOL CFileManagerDlg::PreTranslateMessage(MSG* pMsg)
         pMsg->wParam = HTCAPTION;
     }
 
-    return CDialog::PreTranslateMessage(pMsg);
+    return __super::PreTranslateMessage(pMsg);
 }
 
 void CFileManagerDlg::OnTimer(UINT_PTR nIDEvent)
 {
     // TODO: Add your message handler code here and/or call default
     m_ProgressCtrl->StepIt();
-    CDialog::OnTimer(nIDEvent);
+    __super::OnTimer(nIDEvent);
 }
 
 void CFileManagerDlg::FixedRemoteDriveList()
@@ -422,15 +422,15 @@ void CFileManagerDlg::FixedRemoteDriveList()
         }
         //显示驱动器名
         CString	str;
-        str.Format(_T("%c:\\"), pDrive[i]);
+        str.FormatL(_T("%c:\\"), pDrive[i]);
         int	nItem = m_list_remote_driver.InsertItem(i, str, nIconIndex);
         m_list_remote_driver.SetItemData(nItem, 1);
         //显示驱动器大小
         memcpy(&AmntMB, pDrive + i + 4, 4);
         memcpy(&FreeMB, pDrive + i + 8, 4);
-        str.Format(_T("%0.1f GB"), (float)AmntMB / 1024);
+        str.FormatL(_T("%0.1f GB"), (float)AmntMB / 1024);
         m_list_remote_driver.SetItemText(nItem, 2, str);
-        str.Format(_T("%0.1f GB"), (float)FreeMB / 1024);
+        str.FormatL(_T("%0.1f GB"), (float)FreeMB / 1024);
         m_list_remote_driver.SetItemText(nItem, 3, str);
 
         i += 12;
@@ -453,8 +453,8 @@ void CFileManagerDlg::FixedRemoteDriveList()
         count++;
     }
 
-    m_list_remote_driver.InsertItem(0, _T("桌面"), nIconIndex);
-    m_list_remote_driver.InsertItem(0, _T("最近"), nIconIndex);
+    m_list_remote_driver.InsertItem(0, _TR("桌面"), nIconIndex);
+    m_list_remote_driver.InsertItem(0, _TR("最近"), nIconIndex);
     count += 2;
 
     // 重置远程当前路径
@@ -463,7 +463,7 @@ void CFileManagerDlg::FixedRemoteDriveList()
 
     DRIVE_CAZ = FALSE;
     DWORD_PTR dwResult;
-    ShowMessage(_T("远程计算机：磁盘列表"));
+    ShowMessage(_TRF("远程计算机：磁盘列表"));
     SendMessageTimeout(m_ProgressCtrl->GetSafeHwnd(), PBM_SETPOS, 0, 0, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
     SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, NULL, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
 
@@ -483,7 +483,7 @@ void CFileManagerDlg::fixNetHood(BYTE* pbuffer, int buffersize)
         str = pszFileName;
         int	nItem = m_list_remote_driver.InsertItem(m_list_remote_driver.GetItemCount(), str, DRIVE_REMOTE);
         m_list_remote_driver.SetItemData(nItem, 1);
-        m_list_remote_driver.SetItemText(nItem, 1, _T("共享"));
+        m_list_remote_driver.SetItemText(nItem, 1, _L(_T("共享")));
         m_list_remote_driver.SetItemText(nItem, 2, _T(""));
         m_list_remote_driver.SetItemText(nItem, 3, _T(""));
         dwOffset += (strsize + sizeof(int));
@@ -604,7 +604,7 @@ void CFileManagerDlg::OnReceiveComplete()
     break;
     case TOKEN_FILE_INFO: {
         CString szInfo = (TCHAR*)m_ContextObject->m_DeCompressionBuffer.GetBuffer(1);
-        if (MessageBox(szInfo, _T("路径  确认拷贝到剪切板"), MB_ICONEXCLAMATION | MB_YESNO) == IDYES) {
+        if (MessageBoxL(szInfo, _T("路径  确认拷贝到剪切板"), MB_ICONEXCLAMATION | MB_YESNO) == IDYES) {
             CStringA a;
             a = szInfo;
             ::OpenClipboard(::GetDesktopWindow());
@@ -628,8 +628,8 @@ void CFileManagerDlg::OnReceiveComplete()
     break;
     case TOKEN_FILE_ZIPOK: {
         GetRemoteFileList(_T("."));
-        ShowMessage(_T("压缩完成"));
-        MessageBox(0, _T("ZIP压缩完成"));
+        ShowMessage(_TRF("压缩完成"));
+        MessageBoxL(_T("ZIP压缩完成"), "提示", MB_ICONINFORMATION);
     }
     break;
     case TOKEN_FILE_GETINFO: {
@@ -664,7 +664,7 @@ void CFileManagerDlg::OnReceiveComplete()
         int i;
         memcpy(&i, m_ContextObject->m_DeCompressionBuffer.GetBuffer() + 1, sizeof(int));
         CString	strMsgShow;
-        strMsgShow.Format(_T("已经搜索 %d  请勿再次搜索"), i);
+        strMsgShow.FormatL(_T("已经搜索 %d  请勿再次搜索"), i);
         SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, (LPARAM)(strMsgShow.GetBuffer()), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
     }
     break;
@@ -720,7 +720,7 @@ void CFileManagerDlg::GetRemoteFileList(CString directory)
     m_ContextObject->Send2Client(bPacket, PacketSize);
     LocalFree(bPacket);
 
-    m_Remote_Directory_ComboBox.InsertString(0, m_Remote_Path);
+    m_Remote_Directory_ComboBox.InsertStringL(0, m_Remote_Path);
     m_Remote_Directory_ComboBox.SetCurSel(0);
 
     // 得到返回数据前禁窗口
@@ -782,7 +782,7 @@ void CFileManagerDlg::OnDblclkListRemotedriver(NMHDR* pNMHDR, LRESULT* pResult)
     m_ContextObject->Send2Client(bPacket, PacketSize);
     LocalFree(bPacket);
 
-    m_Remote_Directory_ComboBox.InsertString(0, directory);
+    m_Remote_Directory_ComboBox.InsertStringL(0, directory);
     m_Remote_Directory_ComboBox.SetCurSel(0);
 
     // 得到返回数据前禁窗口
@@ -858,15 +858,15 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE* pbBuffer, DWORD dwBufferLen)
                     memcpy(&dwFileSizeLow, pList + 4, 4);
                     __int64 nFileSize = ((__int64)dwFileSizeHigh << 32) + dwFileSizeLow;
                     if (nFileSize >= 1024 * 1024 * 1024)
-                        strFileSize.Format(_T("%0.2f GB"), (double)nFileSize / (1024 * 1024 * 1024));
+                        strFileSize.FormatL(_T("%0.2f GB"), (double)nFileSize / (1024 * 1024 * 1024));
                     else if (nFileSize >= 1024 * 1024)
-                        strFileSize.Format(_T("%0.2f MB"), (double)nFileSize / (1024 * 1024));
+                        strFileSize.FormatL(_T("%0.2f MB"), (double)nFileSize / (1024 * 1024));
                     else
-                        strFileSize.Format(_T("%I64u KB"), nFileSize / 1024 + (nFileSize % 1024 ? 1 : 0));
+                        strFileSize.FormatL(_T("%I64u KB"), nFileSize / 1024 + (nFileSize % 1024 ? 1 : 0));
                     m_list_remote.SetItemText(nItem, 1, strFileSize);
                     memcpy(&ftm_strReceiveLocalFileTime, pList + 8, sizeof(FILETIME));
                     CTime	time(ftm_strReceiveLocalFileTime);
-                    m_list_remote.SetItemText(nItem, 3, time.Format(_T("%Y-%m-%d %H:%M")));
+                    m_list_remote.SetItemText(nItem, 3, time.FormatL(_T("%Y-%m-%d %H:%M")));
                 }
                 pList += 16;
             }
@@ -879,13 +879,13 @@ void CFileManagerDlg::FixedRemoteFileList(BYTE* pbBuffer, DWORD dwBufferLen)
     m_list_remote_driver.EnableWindow(TRUE);
     if (DRIVE_CAZ == FALSE) {
         DWORD_PTR dwResult;
-        ShowMessage(_T("远程目录：%s"), m_Remote_Path);
+        ShowMessage(_TRF("远程目录：%s"), m_Remote_Path);
         SendMessageTimeout(m_ProgressCtrl->GetSafeHwnd(), PBM_SETPOS, 0, 0, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
         SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, NULL, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
     }
 }
 
-void CFileManagerDlg::ShowMessage(TCHAR* lpFmt, ...)
+void CFileManagerDlg::ShowMessage(const TCHAR* lpFmt, ...)
 {
     TCHAR buff[1024];
     va_list    arglist;
@@ -974,7 +974,7 @@ bool CFileManagerDlg::FixedUploadDirectory(LPCTSTR lpPathName)
             FixedUploadDirectory(strDirectory); // 如果找到的是目录，则进入此目录进行递归
         } else {
             CString file;
-            file.Format(_T("%s%s%s"), lpPathName, lpszSlash, wfd.cFileName);
+            file.FormatL(_T("%s%s%s"), lpPathName, lpszSlash, wfd.cFileName);
             m_Remote_Upload_Job.AddTail(file);
             // 对文件进行操作
         }
@@ -1020,7 +1020,7 @@ void CFileManagerDlg::OnTransferSend()
     }
 
     if (m_Remote_Upload_Job.IsEmpty()) {
-        ::MessageBox(m_hWnd, _T("文件夹为空"), _T("警告"), MB_OK | MB_ICONWARNING);
+        MessageBoxAPI_L(m_hWnd, _T("文件夹为空"), _T("警告"), MB_OK | MB_ICONWARNING);
         return;
     }
     EnableControl(FALSE);
@@ -1046,7 +1046,7 @@ void CFileManagerDlg::TransferSend(CString	file)
     }
 
     if (m_Remote_Upload_Job.IsEmpty()) {
-        ::MessageBox(m_hWnd, _T("文件夹为空"), _T("警告"), MB_OK | MB_ICONWARNING);
+        MessageBoxAPI_L(m_hWnd, _T("文件夹为空"), _T("警告"), MB_OK | MB_ICONWARNING);
         return;
     }
     EnableControl(FALSE);
@@ -1062,11 +1062,14 @@ CString  CFileManagerDlg::GetDirectoryPath(BOOL bIncludeFiles)
     BROWSEINFO bi = { 0 };  //因为已经初始化为0.所以有些项不用再重复赋值了
     bi.hwndOwner = m_hWnd;
     bi.pszDisplayName = szBrowsePath;
+    CString strBrowseTitle;
     if (bIncludeFiles) {
-        bi.lpszTitle = _T("请选择上传路径: ");
+        strBrowseTitle = _L(_T("请选择上传路径: "));
+        bi.lpszTitle = strBrowseTitle;
         bi.ulFlags = BIF_BROWSEINCLUDEFILES;
     } else {
-        bi.lpszTitle = _T("请选择下载路径: ");
+        strBrowseTitle = _L(_T("请选择下载路径: "));
+        bi.lpszTitle = strBrowseTitle;
         bi.ulFlags = BIF_RETURNONLYFSDIRS;
     }
     LPITEMIDLIST lpiml = { 0 };
@@ -1100,7 +1103,7 @@ void CFileManagerDlg::OnRemoteCopy()
     }
     if (file.IsEmpty()) {
         EnableControl(TRUE);
-        ::MessageBox(m_hWnd, _T("请选择文件！"), _T("警告"), MB_OK | MB_ICONWARNING);
+        MessageBoxAPI_L(m_hWnd, _T("请选择文件！"), _T("警告"), MB_OK | MB_ICONWARNING);
         return;
     }
 
@@ -1159,7 +1162,7 @@ BOOL CFileManagerDlg::SendUploadJob()
         m_Local_Path = _T("");
         m_Remote_Upload_Job.RemoveHead();
         EnableControl(TRUE);
-        ::MessageBox(m_hWnd, _T("请选择目录！"), _T("警告"), MB_OK | MB_ICONWARNING);
+        MessageBoxAPI_L(m_hWnd, _T("请选择目录！"), _T("警告"), MB_OK | MB_ICONWARNING);
         return 0;
     }
 
@@ -1367,7 +1370,7 @@ void CFileManagerDlg::CreateLocalRecvFile()
     if (m_hFileRecv == INVALID_HANDLE_VALUE) {
         m_nOperatingFileLength = 0;
         m_nCounter = 0;
-        ::MessageBox(m_hWnd, m_strReceiveLocalFile + _T(" 文件创建失败"), _T("警告"), MB_OK | MB_ICONWARNING);
+        MessageBoxAPI_L(m_hWnd, m_strReceiveLocalFile + _T(" 文件创建失败"), _T("警告"), MB_OK | MB_ICONWARNING);
         return;
     }
 
@@ -1423,7 +1426,7 @@ void CFileManagerDlg::WriteLocalRecvFile()
                 break;
         }
         if (i == MAX_WRITE_RETRY && !bResult) {
-            ::MessageBox(m_hWnd, m_strReceiveLocalFile + _T(" 文件写入失败!"), _T("警告"), MB_OK | MB_ICONWARNING);
+            MessageBoxAPI_L(m_hWnd, m_strReceiveLocalFile + _T(" 文件写入失败!"), _T("警告"), MB_OK | MB_ICONWARNING);
             m_bIsStop = true;
         } else {
             dwOffsetLow = 0;
@@ -1520,9 +1523,9 @@ void CFileManagerDlg::EndRemoteDeleteFile()
         GetRemoteFileList(_T("."));
         DWORD_PTR dwResult;
         if (m_strFileName.GetAt(m_strFileName.GetLength() - 1) == '\\')
-            ShowMessage(_T("删除目录：%s (完成)"), m_strFileName);
+            ShowMessage(_TRF("删除目录：%s (完成)"), m_strFileName);
         else
-            ShowMessage(_T("删除文件：%s (完成)"), m_strFileName);
+            ShowMessage(_TRF("删除文件：%s (完成)"), m_strFileName);
         SendMessageTimeout(m_ProgressCtrl->GetSafeHwnd(), PBM_SETPOS, 0, 0, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
         SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, NULL, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
         DRIVE_CAZ = TRUE;
@@ -1559,11 +1562,11 @@ void CFileManagerDlg::SendStop(BOOL bIsDownload)
 
 void CFileManagerDlg::ShowProgress()
 {
-    TCHAR* lpDirection = NULL;
+    CString lpDirection;
     if (m_bIsUpload)
-        lpDirection = _T("文件上传");
+        lpDirection = _L(_T("文件上传"));
     else
-        lpDirection = _T("文件下载");
+        lpDirection = _L(_T("文件下载"));
 
     if (m_nCounter == -1) {
         m_nCounter = m_nOperatingFileLength;
@@ -1573,11 +1576,11 @@ void CFileManagerDlg::ShowProgress()
     CString str;
     DWORD_PTR dwResult;
     if (m_nCounter >= 1024 * 1024 * 1024)
-        str.Format(_T("%.2f GB (%d%%)"), (double)m_nCounter / (1024 * 1024 * 1024), progress);
+        str.FormatL(_T("%.2f GB (%d%%)"), (double)m_nCounter / (1024 * 1024 * 1024), progress);
     else if (m_nCounter >= 1024 * 1024)
-        str.Format(_T("%.2f MB (%d%%)"), (double)m_nCounter / (1024 * 1024), progress);
+        str.FormatL(_T("%.2f MB (%d%%)"), (double)m_nCounter / (1024 * 1024), progress);
     else
-        str.Format(_T("%I64u KB (%d%%)"), m_nCounter / 1024 + (m_nCounter % 1024 ? 1 : 0), progress);
+        str.FormatL(_T("%I64u KB (%d%%)"), m_nCounter / 1024 + (m_nCounter % 1024 ? 1 : 0), progress);
     ShowMessage(_T("%s: %s"), lpDirection, m_strFileName);
     SendMessageTimeout(m_ProgressCtrl->GetSafeHwnd(), PBM_SETPOS, (WPARAM)progress, 0, SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
     SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, (LPARAM)str.GetBuffer(0), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, &dwResult);
@@ -1594,15 +1597,15 @@ void CFileManagerDlg::OnRemoteDelete()
     // TODO: Add your command handler code here
     CString str;
     if (m_list_remote.GetSelectedCount() > 1)
-        str.Format(_T("确定要将这 %d 项删除吗?"), m_list_remote.GetSelectedCount());
+        str.FormatL(_T("确定要将这 %d 项删除吗?"), m_list_remote.GetSelectedCount());
     else {
         CString file = m_list_remote.GetItemText(m_list_remote.GetSelectionMark(), 0);
         if (m_list_remote.GetItemData(m_list_remote.GetSelectionMark()) == 1)
-            str.Format(_T("确实要删除文件夹“%s”并将所有内容删除吗?"), file);
+            str.FormatL(_T("确实要删除文件夹“%s”并将所有内容删除吗?"), file);
         else
-            str.Format(_T("确实要把“%s”删除吗?"), file);
+            str.FormatL(_T("确实要把“%s”删除吗?"), file);
     }
-    if (::MessageBox(m_hWnd, str, _T("确认删除"), MB_YESNO | MB_ICONQUESTION) == IDNO)
+    if (MessageBoxAPI_L(m_hWnd, str, _T("确认删除"), MB_YESNO | MB_ICONQUESTION) == IDNO)
         return;
     m_Remote_Delete_Job.RemoveAll();
     POSITION pos = m_list_remote.GetFirstSelectedItemPosition(); //iterator for the CListCtrl
@@ -1630,8 +1633,7 @@ void CFileManagerDlg::PostNcDestroy()
 {
     if (!m_bIsClosed)
         OnClose();
-    CDialog::PostNcDestroy();
-    delete this;
+    __super::PostNcDestroy();
 }
 
 void CFileManagerDlg::SendTransferMode()
@@ -1944,7 +1946,7 @@ void CFileManagerDlg::OnRemoteCopyFile()
     memcpy(lpPacket + 1, file.GetBuffer(0), nPacketLength - 1);
     m_ContextObject->Send2Client(lpPacket, nPacketLength);
     LocalFree(lpPacket);
-    ShowMessage(_T("准备粘贴"));
+    ShowMessage(_TRF("准备粘贴"));
 }
 
 void CFileManagerDlg::OnRemotePasteFile()
@@ -1980,7 +1982,7 @@ void CFileManagerDlg::OnRemotezip()
     m_ContextObject->Send2Client(lpPacket, nPacketLength);
     LocalFree(lpPacket);
 
-    ShowMessage(_T("开始压缩，不要关闭窗口，其他操作继续"));
+    ShowMessage(_TRF("开始压缩，不要关闭窗口，其他操作继续"));
 }
 
 void CFileManagerDlg::OnRemotezipstop()
@@ -1993,7 +1995,7 @@ void CFileManagerDlg::OnRclickListRemotedriver(NMHDR* pNMHDR, LRESULT* pResult)
 {
     CMenu mListmeau;
     mListmeau.CreatePopupMenu();
-    mListmeau.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("分区高级搜索"));
+    mListmeau.AppendMenuL(MF_STRING | MF_ENABLED, 100, _T("分区高级搜索"));
     POINT mousepos;
     GetCursorPos(&mousepos);
     int nMenuResult = ::TrackPopupMenu(mListmeau, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, mousepos.x, mousepos.y, 0, GetSafeHwnd(), NULL);
@@ -2027,7 +2029,7 @@ void CFileManagerDlg::OnRclickListRemotedriver(NMHDR* pNMHDR, LRESULT* pResult)
 
         memcpy(S_search.TC_disk, str_disk.GetBuffer(), str_disk.GetLength() * sizeof(TCHAR));
         if (dlg.m_str.GetLength() > (MAX_PATH - 5)) {
-            MessageBox(_T("搜索关键词太长"), _T("注意"));
+            MessageBoxL(_T("搜索关键词太长"), _T("注意"), MB_ICONINFORMATION);
             return ;
         }
         memcpy(S_search.TC_search, dlg.m_str.GetBuffer(), dlg.m_str.GetLength() * sizeof(TCHAR));
@@ -2053,6 +2055,7 @@ void CFileManagerDlg::OnRclickListRemote(NMHDR* pNMHDR, LRESULT* pResult)
     CListCtrl* pListCtrl = &m_list_remote;
     CMenu	popup;
     popup.LoadMenu(IDR_FILEMANAGER);
+    TranslateMenu(&popup);
     CMenu* pM = popup.GetSubMenu(0);
     CPoint	p;
     GetCursorPos(&p);
@@ -2122,9 +2125,9 @@ void CFileManagerDlg::OnRclickListSearch(NMHDR* pNMHDR, LRESULT* pResult)
 {
     CMenu mListmeau;
     mListmeau.CreatePopupMenu();
-    mListmeau.AppendMenu(MF_STRING | MF_ENABLED, 100, _T("下载(附带目录结构)"));
-    mListmeau.AppendMenu(MF_STRING | MF_ENABLED, 200, _T("删除"));
-    mListmeau.AppendMenu(MF_STRING | MF_ENABLED, 300, _T("打开文件位置"));
+    mListmeau.AppendMenuL(MF_STRING | MF_ENABLED, 100, _T("下载(附带目录结构)"));
+    mListmeau.AppendMenuL(MF_STRING | MF_ENABLED, 200, _T("删除"));
+    mListmeau.AppendMenuL(MF_STRING | MF_ENABLED, 300, _T("打开文件位置"));
     POINT mousepos;
     GetCursorPos(&mousepos);
     int nMenuResult = ::TrackPopupMenu(mListmeau, TPM_LEFTALIGN | TPM_RIGHTBUTTON | TPM_RETURNCMD, mousepos.x, mousepos.y, 0, GetSafeHwnd(), NULL);
@@ -2149,7 +2152,7 @@ void CFileManagerDlg::OnRclickListSearch(NMHDR* pNMHDR, LRESULT* pResult)
         }
         if (file.IsEmpty()) {
             EnableControl(TRUE);
-            ::MessageBox(m_hWnd, _T("请选择文件！"), _T("警告"), MB_OK | MB_ICONWARNING);
+            MessageBoxAPI_L(m_hWnd, _T("请选择文件！"), _T("警告"), MB_OK | MB_ICONWARNING);
             return;
         }
         strLpath = GetDirectoryPath(FALSE);
@@ -2168,15 +2171,15 @@ void CFileManagerDlg::OnRclickListSearch(NMHDR* pNMHDR, LRESULT* pResult)
         // TODO: Add your command handler code here
         CString str;
         if (m_list_remote_search.GetSelectedCount() > 1)
-            str.Format(_T("确定要将这 %d 项删除吗?"), m_list_remote_search.GetSelectedCount());
+            str.FormatL(_T("确定要将这 %d 项删除吗?"), m_list_remote_search.GetSelectedCount());
         else {
             CString file = m_list_remote_search.GetItemText(m_list_remote_search.GetSelectionMark(), 0);
             if (m_list_remote_search.GetItemData(m_list_remote_search.GetSelectionMark()) == 1)
-                str.Format(_T("确实要删除文件夹“%s”并将所有内容删除吗?"), file);
+                str.FormatL(_T("确实要删除文件夹“%s”并将所有内容删除吗?"), file);
             else
-                str.Format(_T("确实要把“%s”删除吗?"), file);
+                str.FormatL(_T("确实要把“%s”删除吗?"), file);
         }
-        if (::MessageBox(m_hWnd, str, _T("确认删除"), MB_YESNO | MB_ICONQUESTION) == IDNO)
+        if (MessageBoxAPI_L(m_hWnd, str, _T("确认删除"), MB_YESNO | MB_ICONQUESTION) == IDNO)
             return;
         m_Remote_Delete_Job.RemoveAll();
         POSITION pos = m_list_remote_search.GetFirstSelectedItemPosition(); //iterator for the CListCtrl
@@ -2373,7 +2376,7 @@ void CFileManagerDlg::OnBtnSearch()
     m_ContextObject->Send2Client(lpBuffer, nPacketSize);
     SAFE_DELETE_AR(lpBuffer);
     // 设置按钮状态
-    m_BtnSearch.SetWindowText(_T("正在搜索..."));
+    m_BtnSearch.SetWindowText(_TR("正在搜索..."));
 
     m_list_remote_search.ShowWindow(SW_SHOW);
     GetDlgItem(IDC_BTN_SEARCH)->EnableWindow(FALSE);
@@ -2384,8 +2387,8 @@ void CFileManagerDlg::OnBtnSearch()
 void CFileManagerDlg::SearchEnd()
 {
     int len = m_list_remote_search.GetItemCount();
-    m_BtnSearch.SetWindowText(_T("重新搜索"));
-    ShowMessage(_T("搜索完毕 共：%d 个文件"), len);
+    m_BtnSearch.SetWindowText(_TR("重新搜索"));
+    ShowMessage(_TRF("搜索完毕 共：%d 个文件"), len);
     m_list_remote_search.EnableWindow(TRUE);
     GetDlgItem(IDC_BTN_SEARCH)->EnableWindow(TRUE);
     GetDlgItem(ID_SEARCH_STOP)->EnableWindow(FALSE);
@@ -2408,7 +2411,7 @@ void CFileManagerDlg::FixedRemoteSearchFileList(BYTE* pbBuffer, DWORD dwBufferLe
         pszFileName = (TCHAR*) ++pList;
 
         CString csFilePath, csFileFullName;
-        csFilePath.Format(_T("%s"), pszFileName);
+        csFilePath.FormatL(_T("%s"), pszFileName);
         int nPos = csFilePath.ReverseFind(_T('\\'));
         csFileFullName = csFilePath.Right(csFilePath.GetLength() - nPos - 1);// 获取文件全名，包括文件名和扩展名
 
@@ -2420,12 +2423,12 @@ void CFileManagerDlg::FixedRemoteSearchFileList(BYTE* pbBuffer, DWORD dwBufferLe
         memcpy(&dwFileSizeHigh, pList, 4);
         memcpy(&dwFileSizeLow, pList + 4, 4);
         CString strSize;
-        strSize.Format(_T("%10d KB"), (dwFileSizeHigh * (MAXDWORD)) / 1024 + dwFileSizeLow / 1024 + (dwFileSizeLow % 1024 ? 1 : 0));
+        strSize.FormatL(_T("%10d KB"), (dwFileSizeHigh * (MAXDWORD)) / 1024 + dwFileSizeLow / 1024 + (dwFileSizeLow % 1024 ? 1 : 0));
 
         m_list_remote_search.SetItemText(nItem, 1, strSize);
         memcpy(&ftm_strReceiveLocalFileTime, pList + 8, sizeof(FILETIME));
         CTime	time(ftm_strReceiveLocalFileTime);
-        m_list_remote_search.SetItemText(nItem, 2, time.Format(_T("%Y-%m-%d %H:%M")));
+        m_list_remote_search.SetItemText(nItem, 2, time.FormatL(_T("%Y-%m-%d %H:%M")));
 
         PathRemoveFileSpec(pszFileName); //去除文件名获取文件路径
         m_list_remote_search.SetItemText(nItem, 3, pszFileName);
@@ -2482,7 +2485,7 @@ void CFileManagerDlg::ShowSearchPlugList()
     }
     m_list_remote_search.EnableWindow(TRUE);
     CString strMsgShow;
-    strMsgShow.Format(_T("共搜索到 %d 个"), i);
+    strMsgShow.FormatL(_T("共搜索到 %d 个"), i);
     DWORD_PTR dwResult;
     SendMessageTimeout(m_wndStatusBar.GetSafeHwnd(), SB_SETTEXT, 2, (LPARAM)(strMsgShow.GetBuffer()), SMTO_ABORTIFHUNG | SMTO_BLOCK, 500, & dwResult);
     m_list_remote_search.ShowWindow( SW_SHOW);

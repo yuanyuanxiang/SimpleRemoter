@@ -26,14 +26,14 @@ void CVideoDlg::SaveAvi(void)
         return;
     }
 
-    CString	strFileName = m_IPAddress + CTime::GetCurrentTime().Format("_%Y-%m-%d_%H-%M-%S.avi");
+    CString	strFileName = m_IPAddress + CTime::GetCurrentTime().FormatL("_%Y-%m-%d_%H-%M-%S.avi");
     CFileDialog dlg(FALSE, "avi", strFileName, OFN_OVERWRITEPROMPT, "视频文件(*.avi)|*.avi|", this);
     if(dlg.DoModal () != IDOK)
         return;
     m_aviFile = dlg.GetPathName();
     int code;
     if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full)) {
-        MessageBox("创建录像文件失败:"+m_aviFile + "\r\n错误代码: " + CBmpToAvi::GetErrMsg(code).c_str(), "提示");
+        MessageBoxL("创建录像文件失败:"+m_aviFile + "\r\n错误代码: " + CBmpToAvi::GetErrMsg(code).c_str(), "提示", MB_ICONINFORMATION);
         m_aviFile.Empty();
     } else {
         pSysMenu->CheckMenuItem(IDM_SAVEAVI, MF_CHECKED);
@@ -99,7 +99,7 @@ CVideoDlg::~CVideoDlg()
 
 void CVideoDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
 }
 
 
@@ -115,20 +115,20 @@ END_MESSAGE_MAP()
 
 BOOL CVideoDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
 
     CMenu* SysMenu = GetSystemMenu(FALSE);
     if (SysMenu != NULL) {
         m_hDD = DrawDibOpen();
 
         m_hDC = ::GetDC(m_hWnd);
-        SysMenu->AppendMenu(MF_STRING, IDM_ENABLECOMPRESS, "视频压缩(&C)");
-        SysMenu->AppendMenu(MF_STRING, IDM_SAVEAVI, "保存录像(&V)");
-        SysMenu->AppendMenu(MF_SEPARATOR);
+        SysMenu->AppendMenuL(MF_STRING, IDM_ENABLECOMPRESS, "视频压缩(&C)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_SAVEAVI, "保存录像(&V)");
+        SysMenu->AppendMenuSeparator(MF_SEPARATOR);
 
         CString strString;
 
-        strString.Format("%s - 视频管理 %d×%d", m_IPAddress, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
+        strString.FormatL("%s - 视频管理 %d×%d", m_IPAddress, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
 
         SetWindowText(strString);
 
@@ -248,7 +248,7 @@ void CVideoDlg::OnSysCommand(UINT nID, LPARAM lParam)
     }
     }
 
-    CDialog::OnSysCommand(nID, lParam);
+    __super::OnSysCommand(nID, lParam);
 }
 
 

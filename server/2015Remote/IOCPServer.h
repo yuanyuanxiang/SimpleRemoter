@@ -5,6 +5,7 @@
 #pragma comment(lib,"ws2_32.lib")
 #include "Server.h"
 #include <Mstcpip.h>
+#include "LangManager.h"
 
 #define	NC_CLIENT_CONNECT		0x0001
 #define	NC_RECEIVE				0x0004
@@ -55,6 +56,7 @@ protected:
     CRITICAL_SECTION	m_cs;
     ContextObjectList	m_ContextConnectionList;
     ContextObjectList	m_ContextFreePoolList;
+	HWND                m_hMainWnd = nullptr;
 
 private:
     static DWORD WINAPI ListenThreadProc(LPVOID lParam);
@@ -81,7 +83,7 @@ private:
     }
 
 public:
-    IOCPServer(void);
+    IOCPServer(HWND hWnd = nullptr);
     ~IOCPServer(void);
     int GetPort() const override
     {
@@ -111,7 +113,7 @@ typedef CONTEXT_OBJECT ClientContext;
 #define m_DeCompressionBuffer InDeCompressedBuffer
 
 // 所有动态创建的对话框的基类
-class CDialogBase : public CDialog
+class CDialogBase : public CDialogLang
 {
 public:
     CONTEXT_OBJECT* m_ContextObject;
@@ -126,7 +128,7 @@ public:
         m_bIsClosed(false), m_bIsProcessing(false),
         m_ContextObject(pContext),
         m_iocpServer(pIOCPServer),
-        CDialog(nIDTemplate, pParent)
+        CDialogLang(nIDTemplate, pParent)
     {
         m_bConnected = TRUE;
 		m_nDisconnectTime = 0;
@@ -174,7 +176,7 @@ public:
             Sleep(200);
         if(m_hIcon) DestroyIcon(m_hIcon);
         m_hIcon = NULL;
-        CDialog::OnClose();
+        __super::OnClose();
 
         if (GetSafeHwnd())
             DestroyWindow();

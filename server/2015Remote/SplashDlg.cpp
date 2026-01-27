@@ -220,7 +220,7 @@ void CSplashDlg::OnPaint()
 
     // 绘制进度百分比
     CString strPercent;
-    strPercent.Format(_T("%d%%"), m_nProgress);
+    strPercent.FormatL(_T("%d%%"), m_nProgress);
     memDC.SetTextColor(RGB(100, 200, 255));
     textRect = CRect(rect.Width() - 80, 150, rect.Width() - 30, 180);
     memDC.DrawText(strPercent, textRect, DT_RIGHT | DT_SINGLELINE | DT_VCENTER);

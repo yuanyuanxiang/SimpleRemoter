@@ -96,7 +96,7 @@ bool IsPwdHashValid(const char* hash)
 }
 
 CPasswordDlg::CPasswordDlg(CWnd* pParent /*=nullptr*/)
-    : CDialogEx(IDD_DIALOG_PASSWORD, pParent)
+    : CDialogLangEx(IDD_DIALOG_PASSWORD, pParent)
     , m_sDeviceID(_T(""))
     , m_sPassword(_T(""))
     , m_sPasscodeHmac(THIS_CFG.GetStr("settings", "PwdHmac", "").c_str())
@@ -111,7 +111,7 @@ CPasswordDlg::~CPasswordDlg()
 
 void CPasswordDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialogEx::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_EDIT_DEVICEID, m_EditDeviceID);
     DDX_Control(pDX, IDC_EDIT_DEVICEPWD, m_EditPassword);
     DDX_Text(pDX, IDC_EDIT_DEVICEID, m_sDeviceID);
@@ -132,14 +132,14 @@ END_MESSAGE_MAP()
 
 BOOL CPasswordDlg::OnInitDialog()
 {
-    CDialogEx::OnInitDialog();
+    __super::OnInitDialog();
 
     // TODO:  在此添加额外的初始化
     m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_PASSWORD));
     SetIcon(m_hIcon, FALSE);
 
-    m_ComboBinding.InsertString(0, "计算机硬件信息");
-    m_ComboBinding.InsertString(1, "主控IP或域名信息");
+    m_ComboBinding.InsertStringL(0, "计算机硬件信息");
+    m_ComboBinding.InsertStringL(1, "主控IP或域名信息");
     m_ComboBinding.SetCurSel(m_nBindType);
 
     return TRUE;  // return TRUE unless you set the focus to a control
@@ -154,7 +154,7 @@ void CPasswordDlg::OnCbnSelchangeComboBind()
     m_EditDeviceID.SetWindowTextA(m_sDeviceID);
     auto master = THIS_CFG.GetStr("settings", "master", "");
     if (m_nBindType == 1) {
-        MessageBoxA("请确认是否正确设置公网地址（IP或域名）？\r\n"
+        MessageBoxL("请确认是否正确设置公网地址（IP或域名）？\r\n"
                     "绑定IP后主控只能使用指定IP，绑定域名后\r\n"
                     "主控只能使用指定域名。当前公网地址: \r\n"
                     + CString(master.empty() ? "未设置" : master.c_str()), "提示", MB_OK | MB_ICONWARNING);
@@ -169,7 +169,7 @@ void CPasswordDlg::OnOK()
         THIS_CFG.SetStr("settings", "PwdHmac", m_sPasscodeHmac.GetString());
     }
 
-    CDialogEx::OnOK();
+    __super::OnOK();
 }
 
 // CPasswordDlg 消息处理程序
@@ -177,7 +177,7 @@ void CPasswordDlg::OnOK()
 IMPLEMENT_DYNAMIC(CPwdGenDlg, CDialogEx)
 
 CPwdGenDlg::CPwdGenDlg(CWnd* pParent /*=nullptr*/)
-    : CDialogEx(IDD_DIALOG_KEYGEN, pParent)
+    : CDialogLangEx(IDD_DIALOG_KEYGEN, pParent)
     , m_sDeviceID(_T(""))
     , m_sPassword(_T(""))
     , m_sUserPwd(_T(""))
@@ -194,7 +194,7 @@ CPwdGenDlg::~CPwdGenDlg()
 
 void CPwdGenDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialogEx::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_EDIT_DEVICEID, m_EditDeviceID);
     DDX_Control(pDX, IDC_EDIT_DEVICEPWD, m_EditPassword);
     DDX_Control(pDX, IDC_EDIT_USERPWD, m_EditUserPwd);
@@ -228,14 +228,14 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
     std::string pwdHash = hashSHA256(m_sUserPwd.GetString());
     if (pwdHash != GetPwdHash()) {
         Mprintf("hashSHA256 [%s]: %s\n", m_sUserPwd, pwdHash.c_str());
-        MessageBoxA("您输入的密码不正确，无法生成口令!", "提示", MB_OK | MB_ICONWARNING);
+        MessageBoxL("您输入的密码不正确，无法生成口令!", "提示", MB_OK | MB_ICONWARNING);
         m_sUserPwd.Empty();
         return;
     }
-    CString strBeginDate = m_StartTm.Format("%Y%m%d");
-    CString strEndDate = m_ExpireTm.Format("%Y%m%d");
+    CString strBeginDate = m_StartTm.FormatL("%Y%m%d");
+    CString strEndDate = m_ExpireTm.FormatL("%Y%m%d");
     CString hostNum;
-    hostNum.Format("%04d", m_nHostNum);
+    hostNum.FormatL("%04d", m_nHostNum);
     // 密码形式：20250209 - 20350209: SHA256: HostNum
     std::string password = std::string(strBeginDate.GetString()) + " - " + strEndDate.GetBuffer() + ": " + GetPwdHash() + ": " + hostNum.GetBuffer();
     std::string finalKey = deriveKey(password, m_sDeviceID.GetString());
@@ -260,7 +260,7 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
 
 BOOL CPwdGenDlg::OnInitDialog()
 {
-    CDialogEx::OnInitDialog();
+    __super::OnInitDialog();
 
     // TODO:  在此添加额外的初始化
     m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_PASSWORD));

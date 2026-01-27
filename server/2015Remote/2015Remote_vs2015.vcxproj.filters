@@ -148,6 +148,7 @@
     <ClInclude Include="context.h" />
     <ClInclude Include="CUpdateDlg.h" />
     <ClInclude Include="CListCtrlEx.h" />
+    <ClInclude Include="LangManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />
