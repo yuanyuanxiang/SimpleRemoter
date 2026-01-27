@@ -780,6 +780,8 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
             loc = cvt.GetGeoLocation(data[ONLINELIST_IP].GetString()).c_str();
         }
     }
+	// TODO: Remove SafeUtf8ToAnsi after migrating to UTF-8
+    loc = SafeUtf8ToAnsi(loc.GetString()).c_str();
     bool flag = strIP == "127.0.0.1" && !v[RES_CLIENT_PUBIP].empty();
     data[ONLINELIST_IP] = flag ? v[RES_CLIENT_PUBIP].c_str() : strIP;
     data[ONLINELIST_LOCATION] = loc;
@@ -828,8 +830,8 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     CharMsg *title =  new CharMsg("主机上线");
     CharMsg *text = new CharMsg(strIP + CString(tip.c_str()) + _T(" 主机上线 [") + loc + _T("]"));
     LeaveCriticalSection(&m_cs);
-    Mprintf("主机[%s]上线: %s\n", v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(),
-            std::to_string(id).c_str());
+    Mprintf("主机[%s]上线: %s[%s]\n", v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(),
+            std::to_string(id).c_str(), loc);
     SendMasterSettings(ContextObject);
     if (m_needNotify && (GetTickCount() - g_StartTick > 30*1000))
         PostMessageA(WM_SHOWNOTIFY, WPARAM(title), LPARAM(text));

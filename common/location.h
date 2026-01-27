@@ -24,6 +24,63 @@
 #pragma comment(lib, "wininet.lib")
 #pragma comment(lib, "Iphlpapi.lib")
 
+// UTF-8 转 ANSI（当前系统代码页）
+inline std::string Utf8ToAnsi(const std::string& utf8)
+{
+    if (utf8.empty()) return "";
+
+    // UTF-8 -> UTF-16
+    int wideLen = MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, NULL, 0);
+    if (wideLen <= 0) return utf8;
+
+    std::wstring wideStr(wideLen, 0);
+    MultiByteToWideChar(CP_UTF8, 0, utf8.c_str(), -1, &wideStr[0], wideLen);
+
+    // UTF-16 -> ANSI
+    int ansiLen = WideCharToMultiByte(CP_ACP, 0, wideStr.c_str(), -1, NULL, 0, NULL, NULL);
+    if (ansiLen <= 0) return utf8;
+
+    std::string ansiStr(ansiLen, 0);
+    WideCharToMultiByte(CP_ACP, 0, wideStr.c_str(), -1, &ansiStr[0], ansiLen, NULL, NULL);
+
+    // 去掉末尾的 null 字符
+    if (!ansiStr.empty() && ansiStr.back() == '\0') {
+        ansiStr.pop_back();
+    }
+
+    return ansiStr;
+}
+
+// 检测字符串是否可能是 UTF-8 编码（包含多字节序列）
+inline bool IsLikelyUtf8(const std::string& str)
+{
+    for (size_t i = 0; i < str.size(); i++) {
+        unsigned char c = str[i];
+        if (c >= 0x80) {
+            // 2字节序列: 110xxxxx 10xxxxxx
+            if ((c & 0xE0) == 0xC0 && i + 1 < str.size()) {
+                if ((str[i+1] & 0xC0) == 0x80) return true;
+            }
+            // 3字节序列: 1110xxxx 10xxxxxx 10xxxxxx
+            else if ((c & 0xF0) == 0xE0 && i + 2 < str.size()) {
+                if ((str[i+1] & 0xC0) == 0x80 && (str[i+2] & 0xC0) == 0x80) return true;
+            }
+            // 4字节序列: 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+            else if ((c & 0xF8) == 0xF0 && i + 3 < str.size()) {
+                if ((str[i+1] & 0xC0) == 0x80 && (str[i+2] & 0xC0) == 0x80 && (str[i+3] & 0xC0) == 0x80) return true;
+            }
+        }
+    }
+    return false;
+}
+
+// 安全转换：检测到 UTF-8 才转换，否则原样返回
+inline std::string SafeUtf8ToAnsi(const std::string& str)
+{
+    if (str.empty()) return str;
+    return IsLikelyUtf8(str) ? Utf8ToAnsi(str) : str;
+}
+
 inline void splitIpPort(const std::string& input, std::string& ip, std::string& port)
 {
     size_t pos = input.find(':');
@@ -126,8 +183,8 @@ public:
         std::string location;
 
         if (jsonReader.parse(readBuffer, jsonData)) {
-            std::string country = jsonData["country"].asString();
-            std::string city = jsonData["city"].asString();
+            std::string country = Utf8ToAnsi(jsonData["country"].asString());
+            std::string city = Utf8ToAnsi(jsonData["city"].asString());
             std::string loc = jsonData["loc"].asString();  // 经纬度信息
             if (city.empty() && country.empty()) {
             } else if (city.empty()) {
