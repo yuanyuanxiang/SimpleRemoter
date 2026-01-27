@@ -1,9 +1,9 @@
 ﻿#pragma once
-
+#include "LangManager.h"
 
 // CCreateTaskDlg 对话框
 
-class CCreateTaskDlg : public CDialog
+class CCreateTaskDlg : public CDialogLang
 {
     DECLARE_DYNAMIC(CCreateTaskDlg)
 

@@ -40,7 +40,7 @@ CRegisterDlg::~CRegisterDlg()
 
 void CRegisterDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_TREE, m_Tree);
     DDX_Control(pDX, IDC_LIST, m_ControlList);
 }
@@ -57,13 +57,13 @@ END_MESSAGE_MAP()
 
 BOOL CRegisterDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
     SetIcon(m_hIcon, TRUE);
     SetIcon(m_hIcon, FALSE);
 
     // TODO:  在此添加额外的初始化
     CString str;
-    str.Format("%s - 注册表管理", m_IPAddress);
+    str.FormatL("%s - 注册表管理", m_IPAddress);
     SetWindowText(str);
 
     m_ImageListTree.Create(18, 18, ILC_COLOR16,10, 0);   //制作 树控件上的图标
@@ -75,7 +75,7 @@ BOOL CRegisterDlg::OnInitDialog()
 
     m_Tree.SetImageList(&m_ImageListTree,TVSIL_NORMAL);
 
-    m_hRoot = m_Tree.InsertItem("注册表管理",0,0,0,0);      //0
+    m_hRoot = m_Tree.InsertItem(_TR("注册表管理"),0,0,0,0);      //0
     HKCU    = m_Tree.InsertItem("HKEY_CURRENT_USER",1,1,m_hRoot,0); //1
     HKLM    = m_Tree.InsertItem("HKEY_LOCAL_MACHINE",1,1,m_hRoot,0);
     HKUS    = m_Tree.InsertItem("HKEY_USERS",1,1,m_hRoot,0);
@@ -84,9 +84,9 @@ BOOL CRegisterDlg::OnInitDialog()
 
     m_Tree.Expand(m_hRoot,TVE_EXPAND);
 
-    m_ControlList.InsertColumn(0,"名称",LVCFMT_LEFT,150,-1);
-    m_ControlList.InsertColumn(1,"类型",LVCFMT_LEFT,60,-1);
-    m_ControlList.InsertColumn(2,"数据",LVCFMT_LEFT,300,-1);
+    m_ControlList.InsertColumnL(0,"名称",LVCFMT_LEFT,150,-1);
+    m_ControlList.InsertColumnL(1,"类型",LVCFMT_LEFT,60,-1);
+    m_ControlList.InsertColumnL(2,"数据",LVCFMT_LEFT,300,-1);
     m_ControlList.SetExtendedStyle(LVS_EX_FULLROWSELECT);
     //////添加图标//////
     m_ImageListControlList.Create(16,16,TRUE,2,2);
@@ -136,9 +136,9 @@ void CRegisterDlg::OnTvnSelchangedTree(NMHDR *pNMHDR, LRESULT *pResult)
 
     char bToken=GetFatherPath(strFullPath);       //[2] \1\2\3
     //愈加一个键
-    int nitem=m_ControlList.InsertItem(0,"(默认)",0);
+    int nitem=m_ControlList.InsertItem(0,_TR("(默认)"),0);
     m_ControlList.SetItemText(nitem,1,"REG_SZ");
-    m_ControlList.SetItemText(nitem,2,"(数据未设置值)");
+    m_ControlList.SetItemText(nitem,2,_TR("(数据未设置值)"));
 
     strFullPath.Insert(0,bToken);//插入  那个根键
     bToken=COMMAND_REG_FIND;
@@ -274,7 +274,7 @@ void CRegisterDlg::AddKey(char* szBuffer)
             INT_PTR d=(INT_PTR)szValueData;
             memcpy((void*)&d,szValueData,sizeof(INT_PTR));
             CString strValue;
-            strValue.Format("0x%x",d);
+            strValue.FormatL("0x%x",d);
             sprintf(ValueData,"  (%d)",d);
             strValue+=" ";
             strValue+=ValueData;

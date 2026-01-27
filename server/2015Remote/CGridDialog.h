@@ -2,10 +2,11 @@
 #include <vector>
 #include <map>
 #include <afxwin.h>
+#include "LangManager.h"
 
 #define WM_CHILD_CLOSED (WM_USER + 100)
 
-class CGridDialog : public CDialog
+class CGridDialog : public CDialogLang
 {
 public:
     CGridDialog();

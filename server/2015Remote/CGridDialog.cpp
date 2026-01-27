@@ -9,7 +9,7 @@ BEGIN_MESSAGE_MAP(CGridDialog, CDialog)
     ON_MESSAGE(WM_CHILD_CLOSED, &CGridDialog::OnChildClosed)
 END_MESSAGE_MAP()
 
-CGridDialog::CGridDialog() : CDialog()
+CGridDialog::CGridDialog() : CDialogLang()
 {
 }
 
@@ -18,7 +18,7 @@ BOOL CGridDialog::OnInitDialog()
     m_hIcon = ::LoadIconA(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDR_MAINFRAME));
     SetIcon(m_hIcon, FALSE);
 
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
     return TRUE;
 }
 
@@ -117,7 +117,7 @@ void CGridDialog::LayoutChildren()
 
 void CGridDialog::OnSize(UINT nType, int cx, int cy)
 {
-    CDialog::OnSize(nType, cx, cy);
+    __super::OnSize(nType, cx, cy);
 
     if (m_pMaxChild == nullptr) {
         LayoutChildren();
@@ -207,7 +207,7 @@ void CGridDialog::OnLButtonDblClk(UINT nFlags, CPoint point)
         }
     }
 
-    CDialog::OnLButtonDblClk(nFlags, point);
+    __super::OnLButtonDblClk(nFlags, point);
 }
 
 BOOL CGridDialog::PreTranslateMessage(MSG* pMsg)
@@ -215,5 +215,5 @@ BOOL CGridDialog::PreTranslateMessage(MSG* pMsg)
     if (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE) {
         return TRUE;// 屏蔽Enter和ESC关闭对话
     }
-    return CDialog::PreTranslateMessage(pMsg);
+    return __super::PreTranslateMessage(pMsg);
 }

@@ -1,9 +1,9 @@
 ﻿#pragma once
-
+#include "LangManager.h"
 
 // CInjectCodeDlg 对话框
 
-class CInjectCodeDlg : public CDialog
+class CInjectCodeDlg : public CDialogLang
 {
     DECLARE_DYNAMIC(CInjectCodeDlg)
 

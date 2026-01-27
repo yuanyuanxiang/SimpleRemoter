@@ -9,6 +9,7 @@
 #include <map>
 #include "file_server.h"
 #include "CListCtrlEx.h"
+#include "LangManager.h"
 
 //////////////////////////////////////////////////////////////////////////
 // 以下为特殊需求使用
@@ -65,7 +66,7 @@ class CClientListDlg;
 #include "pwd_gen.h"
 
 // CMy2015RemoteDlg 对话框
-class CMy2015RemoteDlg : public CDialogEx
+class CMy2015RemoteDlg : public CDialogLangEx
 {
 public:
     static std::string GetHardwareID(int v=-1);

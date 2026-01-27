@@ -156,7 +156,7 @@ CScreenSpyDlg::~CScreenSpyDlg()
 
 void CScreenSpyDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
 }
 
 
@@ -197,7 +197,7 @@ void CScreenSpyDlg::OnLButtonDblClk(UINT nFlags, CPoint point)
             GetParent()->SendMessage(WM_LBUTTONDBLCLK, nFlags, MAKELPARAM(ptScreen.x, ptScreen.y));
         }
     }
-    CDialog::OnLButtonDblClk(nFlags, point);
+    __super::OnLButtonDblClk(nFlags, point);
 }
 
 void CScreenSpyDlg::PrepareDrawing(const LPBITMAPINFO bmp)
@@ -208,7 +208,7 @@ void CScreenSpyDlg::PrepareDrawing(const LPBITMAPINFO bmp)
     m_BitmapData_Full = NULL;
 
     CString strString;
-    strString.Format("%s - 远程桌面控制 %d×%d", m_IPAddress, bmp->bmiHeader.biWidth, bmp->bmiHeader.biHeight);
+    strString.FormatL("%s - 远程桌面控制 %d×%d", m_IPAddress, bmp->bmiHeader.biWidth, bmp->bmiHeader.biHeight);
     SetWindowText(strString);
     uint64_t dlg = (uint64_t)this;
     Mprintf("%s [对话框ID: %llu]\n", strString.GetString(), dlg);
@@ -231,7 +231,7 @@ void CScreenSpyDlg::PrepareDrawing(const LPBITMAPINFO bmp)
 
 BOOL CScreenSpyDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
     SetIcon(m_hIcon,FALSE);
     DragAcceptFiles(TRUE);
     ChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
@@ -241,38 +241,38 @@ BOOL CScreenSpyDlg::OnInitDialog()
 
     CMenu* SysMenu = GetSystemMenu(FALSE);
     if (SysMenu != NULL) {
-        SysMenu->AppendMenu(MF_SEPARATOR);
-        SysMenu->AppendMenu(MF_STRING, IDM_CONTROL, "控制屏幕(&Y)");
-        SysMenu->AppendMenu(MF_STRING, IDM_FULLSCREEN, "全屏(&F)");
-        SysMenu->AppendMenu(MF_STRING, IDM_REMOTE_CURSOR, "使用远程光标(&C)");
-        SysMenu->AppendMenu(MF_STRING, IDM_ADAPTIVE_SIZE, "自适应窗口大小(&A)");
-        SysMenu->AppendMenu(MF_STRING, IDM_TRACE_CURSOR, "跟踪被控端鼠标(&T)");
-        SysMenu->AppendMenu(MF_STRING, IDM_BLOCK_INPUT, "锁定被控端鼠标和键盘(&L)");
-        SysMenu->AppendMenu(MF_SEPARATOR);
-        SysMenu->AppendMenu(MF_STRING, IDM_SAVEDIB, "保存快照(&S)");
-        SysMenu->AppendMenu(MF_STRING, IDM_SAVEAVI, _T("录像(MJPEG)"));
-        SysMenu->AppendMenu(MF_STRING, IDM_SAVEAVI_H264, _T("录像(H264)"));
-        SysMenu->AppendMenu(MF_STRING, IDM_GET_CLIPBOARD, "获取剪贴板(&R)");
-        SysMenu->AppendMenu(MF_STRING, IDM_SET_CLIPBOARD, "设置剪贴板(&L)");
-        SysMenu->AppendMenu(MF_SEPARATOR);
-        SysMenu->AppendMenu(MF_STRING, IDM_SWITCHSCREEN, "切换显示器(&1)");
-        SysMenu->AppendMenu(MF_STRING, IDM_MULTITHREAD_COMPRESS, "多线程压缩(&2)");
-        SysMenu->AppendMenu(MF_STRING, IDM_ORIGINAL_SIZE, "原始分辨率(&3)");
-        SysMenu->AppendMenu(MF_STRING, IDM_SCREEN_1080P, "限制为1080P(&4)");
-        SysMenu->AppendMenu(MF_SEPARATOR);
+        SysMenu->AppendMenuSeparator(MF_SEPARATOR);
+        SysMenu->AppendMenuL(MF_STRING, IDM_CONTROL, "控制屏幕(&Y)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_FULLSCREEN, "全屏(&F)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_REMOTE_CURSOR, "使用远程光标(&C)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_ADAPTIVE_SIZE, "自适应窗口大小(&A)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_TRACE_CURSOR, "跟踪被控端鼠标(&T)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_BLOCK_INPUT, "锁定被控端鼠标和键盘(&L)");
+        SysMenu->AppendMenuSeparator(MF_SEPARATOR);
+        SysMenu->AppendMenuL(MF_STRING, IDM_SAVEDIB, "保存快照(&S)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_SAVEAVI, _T("录像(MJPEG)"));
+        SysMenu->AppendMenuL(MF_STRING, IDM_SAVEAVI_H264, _T("录像(H264)"));
+        SysMenu->AppendMenuL(MF_STRING, IDM_GET_CLIPBOARD, "获取剪贴板(&R)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_SET_CLIPBOARD, "设置剪贴板(&L)");
+        SysMenu->AppendMenuSeparator(MF_SEPARATOR);
+        SysMenu->AppendMenuL(MF_STRING, IDM_SWITCHSCREEN, "切换显示器(&1)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_MULTITHREAD_COMPRESS, "多线程压缩(&2)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_ORIGINAL_SIZE, "原始分辨率(&3)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_SCREEN_1080P, "限制为1080P(&4)");
+        SysMenu->AppendMenuSeparator(MF_SEPARATOR);
 
         SysMenu->CheckMenuItem(IDM_FULLSCREEN, m_Settings.FullScreen ? MF_CHECKED : MF_UNCHECKED);
         SysMenu->CheckMenuItem(IDM_REMOTE_CURSOR, m_Settings.RemoteCursor ? MF_CHECKED : MF_UNCHECKED);
 
         CMenu fpsMenu;
         if (fpsMenu.CreatePopupMenu()) {
-            fpsMenu.AppendMenu(MF_STRING, IDM_FPS_10, "最大帧率FPS:10");
-            fpsMenu.AppendMenu(MF_STRING, IDM_FPS_15, "最大帧率FPS:15");
-            fpsMenu.AppendMenu(MF_STRING, IDM_FPS_20, "最大帧率FPS:20");
-            fpsMenu.AppendMenu(MF_STRING, IDM_FPS_25, "最大帧率FPS:25");
-            fpsMenu.AppendMenu(MF_STRING, IDM_FPS_30, "最大帧率FPS:30");
-            fpsMenu.AppendMenu(MF_STRING, IDM_FPS_UNLIMITED, "最大帧率无限制");
-            SysMenu->AppendMenuA(MF_STRING | MF_POPUP, (UINT_PTR)fpsMenu.Detach(), _T("帧率设置"));
+            fpsMenu.AppendMenuL(MF_STRING, IDM_FPS_10, "最大帧率FPS:10");
+            fpsMenu.AppendMenuL(MF_STRING, IDM_FPS_15, "最大帧率FPS:15");
+            fpsMenu.AppendMenuL(MF_STRING, IDM_FPS_20, "最大帧率FPS:20");
+            fpsMenu.AppendMenuL(MF_STRING, IDM_FPS_25, "最大帧率FPS:25");
+            fpsMenu.AppendMenuL(MF_STRING, IDM_FPS_30, "最大帧率FPS:30");
+            fpsMenu.AppendMenuL(MF_STRING, IDM_FPS_UNLIMITED, "最大帧率无限制");
+            SysMenu->AppendMenuL(MF_STRING | MF_POPUP, (UINT_PTR)fpsMenu.Detach(), _T("帧率设置"));
         }
 
         BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
@@ -650,7 +650,7 @@ BOOL CScreenSpyDlg::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 		::SetCursor(NULL); // 只要在客户区，始终隐藏系统光标
 		return TRUE;       // 告诉 Windows 我们处理过了
 	}
-	return CDialog::OnSetCursor(pWnd, nHitTest, message);
+	return __super::OnSetCursor(pWnd, nHitTest, message);
 }
 
 VOID CScreenSpyDlg::DrawTipString(CString strString, int fillMode)
@@ -709,7 +709,7 @@ std::string GetScreenShotPath(CWnd *parent, const CString& ip, const CString &fi
     std::string path;
     std::string folder = THIS_CFG.GetStr("settings", "ScreenShot", "");
     if (folder.empty() || !DirectoryExists(folder.c_str())) {
-        CString	strFileName = ip + CTime::GetCurrentTime().Format(_T("_%Y%m%d%H%M%S.")) + suffix;
+        CString	strFileName = ip + CTime::GetCurrentTime().FormatL(_T("_%Y%m%d%H%M%S.")) + suffix;
         CFileDialog dlg(FALSE, suffix, strFileName, OFN_OVERWRITEPROMPT, filter, parent);
         if (dlg.DoModal() != IDOK)
             return "";
@@ -773,8 +773,8 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         FCCHandler handler = nID == IDM_SAVEAVI ? ENCODER_MJPEG : ENCODER_H264;
         int code;
         if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full, rate, handler)) {
-            MessageBox(CString("Create Video(*.avi) Failed:\n") + m_aviFile + "\r\n错误代码: " +
-                       CBmpToAvi::GetErrMsg(code).c_str(), "提示");
+            MessageBoxL(CString("Create Video(*.avi) Failed:\n") + m_aviFile + "\r\n错误代码: " +
+                       CBmpToAvi::GetErrMsg(code).c_str(), "提示", MB_ICONINFORMATION);
             m_aviFile = _T("");
         } else {
             ::SetTimer(m_hWnd, TIMER_ID, duration, NULL);
@@ -873,7 +873,7 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
     }
     }
 
-    CDialog::OnSysCommand(nID, lParam);
+    __super::OnSysCommand(nID, lParam);
 }
 
 void CScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
@@ -906,7 +906,7 @@ void CScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
         KillTimer(3);
         PostMessageA(WM_PAINT);
     }
-    CDialog::OnTimer(nIDEvent);
+    __super::OnTimer(nIDEvent);
 }
 
 BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
@@ -953,7 +953,7 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
         break;
     }
 
-    return CDialog::PreTranslateMessage(pMsg);
+    return __super::PreTranslateMessage(pMsg);
 }
 
 
@@ -1108,7 +1108,7 @@ void CScreenSpyDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
         ScrollWindow(nPrevPos - si.nPos, 0, NULL, NULL);
     }
 
-    CDialog::OnHScroll(nSBCode, nPrevPos, pScrollBar);
+    __super::OnHScroll(nSBCode, nPrevPos, pScrollBar);
 }
 
 
@@ -1153,7 +1153,7 @@ void CScreenSpyDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
         ScrollWindow(0, nPrevPos - si.nPos, NULL, NULL);
     }
 
-    CDialog::OnVScroll(nSBCode, nPrevPos, pScrollBar);
+    __super::OnVScroll(nSBCode, nPrevPos, pScrollBar);
 }
 
 
@@ -1243,19 +1243,19 @@ bool CScreenSpyDlg::LeaveFullScreen()
 
 void CScreenSpyDlg::OnLButtonDown(UINT nFlags, CPoint point)
 {
-    CDialog::OnLButtonDown(nFlags, point);
+    __super::OnLButtonDown(nFlags, point);
 }
 
 
 void CScreenSpyDlg::OnLButtonUp(UINT nFlags, CPoint point)
 {
-    CDialog::OnLButtonUp(nFlags, point);
+    __super::OnLButtonUp(nFlags, point);
 }
 
 
 BOOL CScreenSpyDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
-    return CDialog::OnMouseWheel(nFlags, zDelta, pt);
+    return __super::OnMouseWheel(nFlags, zDelta, pt);
 }
 
 
@@ -1284,7 +1284,7 @@ void CScreenSpyDlg::OnMouseMove(UINT nFlags, CPoint point)
         SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
     }
 
-    CDialog::OnMouseMove(nFlags, point);
+    __super::OnMouseMove(nFlags, point);
 }
 
 void CScreenSpyDlg::OnMouseLeave()
@@ -1297,13 +1297,13 @@ void CScreenSpyDlg::OnMouseLeave()
 
 void CScreenSpyDlg::OnKillFocus(CWnd* pNewWnd)
 {
-    CDialog::OnKillFocus(pNewWnd);
+    __super::OnKillFocus(pNewWnd);
 }
 
 
 void CScreenSpyDlg::OnSize(UINT nType, int cx, int cy)
 {
-    CDialog::OnSize(nType, cx, cy);
+    __super::OnSize(nType, cx, cy);
 
     // TODO: Add your message handler code here
     if (!IsWindowVisible())

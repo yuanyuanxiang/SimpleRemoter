@@ -1,9 +1,9 @@
 ﻿#pragma once
-
+#include "LangManager.h"
 
 // CEditDialog 对话框
 
-class CEditDialog : public CDialog
+class CEditDialog : public CDialogLang
 {
     DECLARE_DYNAMIC(CEditDialog)
 

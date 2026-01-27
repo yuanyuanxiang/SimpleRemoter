@@ -45,7 +45,7 @@ void CListCtrlEx::SetConfigKey(const CString& strKey)
 int CListCtrlEx::AddColumn(int nCol, LPCTSTR lpszColumnHeading, int nWidth, int nFormat, BOOL bCanHide)
 {
     // 添加到列表控件
-    int nResult = InsertColumn(nCol, lpszColumnHeading, nFormat, nWidth);
+    int nResult = InsertColumnL(nCol, lpszColumnHeading, nFormat, nWidth);
 
     if (nResult != -1) {
         // 保存列信息
@@ -187,7 +187,7 @@ void CListCtrlEx::ShowColumnContextMenu(CPoint pt)
         if (!m_Columns[i].CanHide) {
             flags |= MF_GRAYED;
         }
-        menu.AppendMenu(flags, 1000 + i, m_Columns[i].Name);
+        menu.AppendMenuL(flags, 1000 + i, m_Columns[i].Name);
     }
 
     // 显示菜单并获取选择

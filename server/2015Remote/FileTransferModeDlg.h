@@ -6,11 +6,12 @@
 #endif // _MSC_VER > 1000
 // FileTransferModeDlg.h : header file
 //
+#include "LangManager.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // CFileTransferModeDlg dialog
 
-    class CFileTransferModeDlg : public CDialog
+    class CFileTransferModeDlg : public CDialogLang
     {
 // Construction
     public:

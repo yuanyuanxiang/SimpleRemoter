@@ -100,7 +100,7 @@ CString GenerateRandomName(int nLength)
 }
 
 CBuildDlg::CBuildDlg(CWnd* pParent)
-    : CDialog(CBuildDlg::IDD, pParent)
+    : CDialogLang(CBuildDlg::IDD, pParent)
     , m_strIP(_T(""))
     , m_strPort(_T(""))
     , m_strFindden(FLAG_FINDEN)
@@ -119,7 +119,7 @@ CBuildDlg::~CBuildDlg()
 
 void CBuildDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Text(pDX, IDC_EDIT_IP, m_strIP);
     DDX_Text(pDX, IDC_EDIT_PORT, m_strPort);
     DDX_Control(pDX, IDC_COMBO_EXE, m_ComboExe);
@@ -306,7 +306,7 @@ void CBuildDlg::OnBnClickedOk()
     int index = m_ComboExe.GetCurSel(), typ=index;
     int is64bit = m_ComboBits.GetCurSel() == 0;
     if (index == IndexTestRun_InjSC && !is64bit) {
-        MessageBox("Shellcode 只能向64位电脑注入，注入器也只能是64位!", "提示", MB_ICONWARNING);
+        MessageBoxL("Shellcode 只能向64位电脑注入，注入器也只能是64位!", "提示", MB_ICONWARNING);
         return;
     }
     int startup = Startup_DLL;
@@ -357,7 +357,7 @@ void CBuildDlg::OnBnClickedOk()
     case OTHER_ITEM: {
         m_OtherItem.GetWindowTextA(file);
         typ = -1;
-        if (file != "未选择文件") {
+        if (file != _TR("未选择文件")) {
             CFile File;
             File.Open(file, CFile::modeRead | CFile::typeBinary);
             dwFileSize = File.GetLength();
@@ -373,7 +373,7 @@ void CBuildDlg::OnBnClickedOk()
         break;
     }
     if (szBuffer == NULL) {
-        MessageBox("出现内部错误，请检查输入，重新编译程序!", "提示", MB_ICONWARNING);
+        MessageBoxL("出现内部错误，请检查输入，重新编译程序!", "提示", MB_ICONWARNING);
         return;
     }
     //////////上线信息//////////////////////
@@ -394,7 +394,7 @@ void CBuildDlg::OnBnClickedOk()
         SAFE_DELETE_ARRAY(szBuffer);
         return;
     }
-    bool encrypt = m_strEncryptIP == _T("是");
+    bool encrypt = m_strEncryptIP == _L(_T("是"));
     if (encrypt && startup != Startup_InjSC && index != IndexTinyRun)
         g_ConnectAddress.Encrypt();
     if (m_runasAdmin)
@@ -412,7 +412,7 @@ void CBuildDlg::OnBnClickedOk()
             CONNECT_ADDRESS* dst = (CONNECT_ADDRESS*)(ptr + iOffset);
             auto result = strlen(dst->szBuildDate) ? compareDates(dst->szBuildDate, g_ConnectAddress.szBuildDate) : -1;
             if (result > 0) {
-                MessageBox("客户端版本比主控程序更高, 无法生成!\r\n" + file, "提示", MB_ICONWARNING);
+                MessageBoxL("客户端版本比主控程序更高, 无法生成!\r\n" + file, "提示", MB_ICONWARNING);
                 return;
             }
             if (result != -2 && result <= 0) { // 客户端版本不能不大于主控端
@@ -424,7 +424,7 @@ void CBuildDlg::OnBnClickedOk()
             bufSize -= iOffset + sizeof(g_ConnectAddress);
         }
         if (!bFind) {
-            MessageBox("出现内部错误，未能找到标识信息!\r\n" + file, "提示", MB_ICONWARNING);
+            MessageBoxL("出现内部错误，未能找到标识信息!\r\n" + file, "提示", MB_ICONWARNING);
             SAFE_DELETE_ARRAY(szBuffer);
             return;
         }
@@ -441,19 +441,19 @@ void CBuildDlg::OnBnClickedOk()
         CFile File;
         BOOL r=File.Open(strSeverFile,CFile::typeBinary|CFile::modeCreate|CFile::modeWrite);
         if (!r) {
-            MessageBox("服务程序创建失败!\r\n" + strSeverFile, "提示", MB_ICONWARNING);
+            MessageBoxL("服务程序创建失败!\r\n" + strSeverFile, "提示", MB_ICONWARNING);
             SAFE_DELETE_ARRAY(szBuffer);
             return;
         }
         File.Write(szBuffer, dwFileSize);
         File.Close();
-        CString tip = index == IndexTestRun_DLL ? "\r\n提示: 请生成\"ServerDll.dll\"，以便程序正常运行。" : "";
-        tip += g_ConnectAddress.protoType==PROTO_KCP ? "\n提示: 使用KCP协议生成服务，必须设置主控UDP协议参数为1。" : "";
+        CString tip = index == IndexTestRun_DLL ? _TR("\r\n提示: 请生成\"ServerDll.dll\"，以便程序正常运行。") : _T("");
+        tip += g_ConnectAddress.protoType==PROTO_KCP ? _TR("\n提示: 使用KCP协议生成服务，必须设置主控UDP协议参数为1。") : _T("");
         std::string upx;
         if(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_UPX) upx = ReleaseUPX();
         if (!upx.empty()) {
             run_upx_async(GetParent()->GetSafeHwnd(), upx, strSeverFile.GetString(), true);
-            MessageBox("正在UPX压缩，请关注信息提示。\r\n文件位于: " + strSeverFile + tip, "提示", MB_ICONINFORMATION);
+            MessageBoxL("正在UPX压缩，请关注信息提示。\r\n文件位于: " + strSeverFile + tip, "提示", MB_ICONINFORMATION);
         } else {
             if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES) {
                 DWORD dwSize = 0;
@@ -496,7 +496,7 @@ void CBuildDlg::OnBnClickedOk()
                                 BOOL checked = m_BtnFileServer.GetCheck() == BST_CHECKED;
                                 if (checked){
                                     strcpy(sc->downloadUrl, m_sDownloadUrl.IsEmpty() ? BuildPayloadUrl(m_strIP, sc->file) : m_sDownloadUrl);
-                                    if (m_sDownloadUrl.IsEmpty()) MessageBox(CString("文件下载地址: \r\n") + sc->downloadUrl, "提示");
+                                    if (m_sDownloadUrl.IsEmpty()) MessageBoxL(CString("文件下载地址: \r\n") + sc->downloadUrl, "提示", MB_ICONINFORMATION);
                                 }
                                 tip = payload.IsEmpty() ? "\r\n警告: 没有生成载荷!" : 
                                     checked ? "\r\n提示: 本机提供下载时，载荷文件必须拷贝至\"Payloads\"目录。" : "\r\n提示: 载荷文件必须拷贝至程序目录。";
@@ -506,7 +506,7 @@ void CBuildDlg::OnBnClickedOk()
                                 r = WriteBinaryToFile(payload.GetString(), (char*)srcData, srcLen, n == Payload_Raw ? 0 : -1);
                                 if (!r) tip = "\r\n警告: 生成载荷失败!";
                             } else {
-                                MessageBox("文件生成失败: \r\n" + strSeverFile, "提示", MB_ICONINFORMATION);
+                                MessageBoxL("文件生成失败: \r\n" + strSeverFile, "提示", MB_ICONINFORMATION);
                             }
                             SAFE_DELETE_ARRAY(srcData);
                         }
@@ -516,7 +516,7 @@ void CBuildDlg::OnBnClickedOk()
             } else if (m_ComboCompress.GetCurSel() == CLIENT_PE_TO_SEHLLCODE) {
                 int pe_2_shellcode(const std::string & in_path, const std::string & out_str);
                 int ret = pe_2_shellcode(strSeverFile.GetString(), strSeverFile.GetString());
-                if (ret)MessageBox(CString("ShellCode 转换异常, 异常代码: ") + CString(std::to_string(ret).c_str()),
+                if (ret)MessageBoxL(CString("ShellCode 转换异常, 异常代码: ") + CString(std::to_string(ret).c_str()),
                                        "提示", MB_ICONINFORMATION);
             } else if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES_OLD) { // 兼容旧版本
                 DWORD dwSize = 0;
@@ -556,80 +556,80 @@ void CBuildDlg::OnBnClickedOk()
                 std::vector<char> padding(size, time(0)%256);
                 WriteBinaryToFile(strSeverFile.GetString(), padding.data(), size, -1);
             }
-            MessageBox("生成成功! 文件位于:\r\n" + strSeverFile + tip, "提示", MB_ICONINFORMATION);
+            MessageBoxL("生成成功! 文件位于:\r\n" + strSeverFile + tip, "提示", MB_ICONINFORMATION);
         }
         SAFE_DELETE_ARRAY(szBuffer);
         if (index == IndexTestRun_DLL) return;
     } catch (CMemoryException* e) {
         char err[100];
         e->GetErrorMessage(err, sizeof(err));
-        MessageBox("内存异常:" + CString(err), "异常", MB_ICONERROR);
+        MessageBoxL("内存异常:" + CString(err), "异常", MB_ICONERROR);
     } catch (CFileException* e) {
         char err[100];
         e->GetErrorMessage(err, sizeof(err));
-        MessageBox("文件异常:" + CString(err), "异常", MB_ICONERROR);
+        MessageBoxL("文件异常:" + CString(err), "异常", MB_ICONERROR);
     } catch (CException* e) {
         char err[100];
         e->GetErrorMessage(err, sizeof(err));
-        MessageBox("其他异常:" + CString(err), "异常", MB_ICONERROR);
+        MessageBoxL("其他异常:" + CString(err), "异常", MB_ICONERROR);
     }
 
     SAFE_DELETE_ARRAY(szBuffer);
-    CDialog::OnOK();
+    __super::OnOK();
 }
 
 BOOL CBuildDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
 
     // TODO:  在此添加额外的初始化
     CEdit* pEdit = (CEdit*)GetDlgItem(IDC_EDIT_IP);
     pEdit->LimitText(99);
-    m_ComboExe.InsertString(IndexTestRun_DLL, "TestRun - 磁盘DLL");
-    m_ComboExe.InsertString(IndexTestRun_MemDLL, "TestRun - 内存DLL");
-    m_ComboExe.InsertString(IndexTestRun_InjSC, "TestRun - 注入任务管理器");
+    m_ComboExe.InsertStringL(IndexTestRun_DLL, "TestRun - 磁盘DLL");
+    m_ComboExe.InsertStringL(IndexTestRun_MemDLL, "TestRun - 内存DLL");
+    m_ComboExe.InsertStringL(IndexTestRun_InjSC, "TestRun - 注入任务管理器");
 
-    m_ComboExe.InsertString(IndexGhost, "ghost.exe");
-    m_ComboExe.InsertString(IndexServerDll, "ServerDll.dll");
-    m_ComboExe.InsertString(IndexTinyRun, "TinyRun.dll");
-    m_ComboExe.InsertString(IndexGhostMsc, "ghost.exe - Windows 服务");
-    m_ComboExe.InsertString(IndexTestRunMsc, "TestRun - Windows 服务");
-    m_ComboExe.InsertString(OTHER_ITEM, CString("选择文件"));
+    m_ComboExe.InsertStringL(IndexGhost, "ghost.exe");
+    m_ComboExe.InsertStringL(IndexServerDll, "ServerDll.dll");
+    m_ComboExe.InsertStringL(IndexTinyRun, "TinyRun.dll");
+    m_ComboExe.InsertStringL(IndexGhostMsc, "ghost.exe - Windows 服务");
+    m_ComboExe.InsertStringL(IndexTestRunMsc, "TestRun - Windows 服务");
+    m_ComboExe.InsertStringL(OTHER_ITEM, CString("选择文件"));
     m_ComboExe.SetCurSel(IndexTestRun_MemDLL);
 
-    m_ComboBits.InsertString(0, "64位");
-    m_ComboBits.InsertString(1, "32位");
+    m_ComboBits.InsertStringL(0, "64位");
+    m_ComboBits.InsertStringL(1, "32位");
     m_ComboBits.SetCurSel(0);
 
-    m_ComboRunType.InsertString(RUNNING_RANDOM, "随机上线");
-    m_ComboRunType.InsertString(RUNNING_PARALLEL, "并发上线");
+    m_ComboRunType.InsertStringL(RUNNING_RANDOM, "随机上线");
+    m_ComboRunType.InsertStringL(RUNNING_PARALLEL, "并发上线");
     m_ComboRunType.SetCurSel(RUNNING_RANDOM);
 
-    m_ComboProto.InsertString(PROTO_TCP, "TCP");
-    m_ComboProto.InsertString(PROTO_UDP, "UDP");
-    m_ComboProto.InsertString(PROTO_HTTP, "HTTP");
-    m_ComboProto.InsertString(PROTO_RANDOM, "随机");
-    m_ComboProto.InsertString(PROTO_KCP, "KCP");
+    m_ComboProto.InsertStringL(PROTO_TCP, "TCP");
+    m_ComboProto.InsertStringL(PROTO_UDP, "UDP");
+    m_ComboProto.InsertStringL(PROTO_HTTP, "HTTP");
+    m_ComboProto.InsertStringL(PROTO_RANDOM, "随机");
+    m_ComboProto.InsertStringL(PROTO_KCP, "KCP");
     m_ComboProto.SetCurSel(PROTO_TCP);
 
-    m_ComboEncrypt.InsertString(PROTOCOL_SHINE, "Shine");
-    m_ComboEncrypt.InsertString(PROTOCOL_HELL, "HELL");
+    m_ComboEncrypt.InsertStringL(PROTOCOL_SHINE, "Shine");
+    m_ComboEncrypt.InsertStringL(PROTOCOL_HELL, "HELL");
     m_ComboEncrypt.SetCurSel(PROTOCOL_HELL);
 
-    m_ComboCompress.InsertString(CLIENT_COMPRESS_NONE, "无");
-    m_ComboCompress.InsertString(CLIENT_COMPRESS_UPX, "UPX");
-    m_ComboCompress.InsertString(CLIENT_COMPRESS_SC_AES, "ShellCode AES");
-    m_ComboCompress.InsertString(CLIENT_PE_TO_SEHLLCODE, "PE->ShellCode");
-    m_ComboCompress.InsertString(CLIENT_COMPRESS_SC_AES_OLD, "ShellCode AES<Old>");
+    m_ComboCompress.InsertStringL(CLIENT_COMPRESS_NONE, "无");
+    m_ComboCompress.InsertStringL(CLIENT_COMPRESS_UPX, "UPX");
+    m_ComboCompress.InsertStringL(CLIENT_COMPRESS_SC_AES, "ShellCode AES");
+    m_ComboCompress.InsertStringL(CLIENT_PE_TO_SEHLLCODE, "PE->ShellCode");
+    m_ComboCompress.InsertStringL(CLIENT_COMPRESS_SC_AES_OLD, "ShellCode AES<Old>");
     m_ComboCompress.SetCurSel(CLIENT_COMPRESS_SC_AES_OLD);
 
-    m_ComboPayload.InsertString(Payload_Self, "载荷写入当前程序尾部");
-    m_ComboPayload.InsertString(Payload_Raw, "载荷写入单独的二进制文件");
-    m_ComboPayload.InsertString(Payload_BMP, "载荷写入 BMP 格式图片");
-    m_ComboPayload.InsertString(Payload_JPG, "载荷写入 JPG 格式图片");
-    m_ComboPayload.InsertString(Payload_PNG, "载荷写入 PNG 格式图片");
-    m_ComboPayload.InsertString(Payload_ZIP, "载荷写入 ZIP 压缩包");
-    m_ComboPayload.InsertString(Payload_PDF, "载荷写入 PDF 文件");
+    m_ComboPayload.InsertStringL(Payload_Self, "载荷写入当前程序尾部");
+    m_ComboPayload.InsertStringL(Payload_Raw, "载荷写入单独的二进制文件");
+    m_ComboPayload.InsertStringL(Payload_BMP, "载荷写入 BMP 格式图片");
+    m_ComboPayload.InsertStringL(Payload_JPG, "载荷写入 JPG 格式图片");
+    m_ComboPayload.InsertStringL(Payload_PNG, "载荷写入 PNG 格式图片");
+    m_ComboPayload.InsertStringL(Payload_ZIP, "载荷写入 ZIP 压缩包");
+    m_ComboPayload.InsertStringL(Payload_PDF, "载荷写入 PDF 文件");
     m_ComboPayload.SetCurSel(Payload_Self);
     m_ComboPayload.ShowWindow(SW_HIDE);
     m_StaticPayload.ShowWindow(SW_HIDE);
@@ -643,6 +643,7 @@ BOOL CBuildDlg::OnInitDialog()
 
     m_runasAdmin = FALSE;
     m_MainMenu.LoadMenuA(IDR_MENU_BUILD);
+    TranslateMenu(&m_MainMenu);
     CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
     SubMenu->CheckMenuItem(ID_MENU_ENCRYPT_IP, MF_CHECKED);
     SubMenu->CheckMenuItem(ID_CLIENT_RUNAS_ADMIN, MF_UNCHECKED);
@@ -665,7 +666,7 @@ CString CBuildDlg::GetFilePath(CString type, CString filter, BOOL isOpen)
     CComPtr<IShellFolder> spDesktop;
     HRESULT hr = SHGetDesktopFolder(&spDesktop);
     if (FAILED(hr)) {
-        MessageBox("Explorer 未正确初始化! 请稍后再试。", "提示");
+        MessageBoxL("Explorer 未正确初始化! 请稍后再试。", "提示", MB_ICONINFORMATION);
         return "";
     }
     // 过滤器：显示所有文件和特定类型文件（例如文本文件）
@@ -674,7 +675,7 @@ CString CBuildDlg::GetFilePath(CString type, CString filter, BOOL isOpen)
     try {
         ret = fileDlg.DoModal();
     } catch (...) {
-        MessageBox("文件对话框未成功打开! 请稍后再试。", "提示");
+        MessageBoxL("文件对话框未成功打开! 请稍后再试。", "提示", MB_ICONINFORMATION);
         return "";
     }
     if (ret == IDOK) {
@@ -734,9 +735,9 @@ void CBuildDlg::OnHelpFindden()
 
 void CBuildDlg::OnMenuEncryptIp()
 {
-    m_strEncryptIP = m_strEncryptIP == "是" ? "否" : "是";
+    m_strEncryptIP = m_strEncryptIP == _L(_T("是")) ? _L(_T("否")) : _L(_T("是"));
     CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
-    SubMenu->CheckMenuItem(ID_MENU_ENCRYPT_IP, m_strEncryptIP == "是" ? MF_CHECKED : MF_UNCHECKED);
+    SubMenu->CheckMenuItem(ID_MENU_ENCRYPT_IP, m_strEncryptIP == _L(_T("是")) ? MF_CHECKED : MF_UNCHECKED);
 }
 
 
@@ -748,7 +749,7 @@ void CBuildDlg::OnClientRunasAdmin()
 	static bool warned = false;
     if (m_runasAdmin && !warned) {
         warned = true;
-        MessageBox("安装Windows服务必须设置，客户端运行时会请求管理员权限，可能会触发系统UAC提示。\n"
+        MessageBoxL("安装Windows服务必须设置，客户端运行时会请求管理员权限，可能会触发系统UAC提示。\n"
             "如果未设置，则程序会以当前用户的权限运行，通常也能安装成功。", "提示", MB_ICONINFORMATION);
     }
 }
@@ -767,7 +768,7 @@ void CBuildDlg::OnCbnSelchangeComboCompress()
 	static bool warned = false;
     if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES && !warned) {
 		warned = true;
-        MessageBoxA(_T("使用 ShellCode AES 在程序尾部追加载荷，可能无法在某些服务器系统运行! "
+        MessageBoxL(_T("使用 ShellCode AES 在程序尾部追加载荷，可能无法在某些服务器系统运行! "
             "请自行验证。或者选择其他载荷，或者切换为 ShellCode AES Old 模式生成!"), 
             "提示", MB_ICONWARNING);
 	}
@@ -860,7 +861,7 @@ void CBuildDlg::OnEnKillfocusEditInstallDir()
     if (strText.IsEmpty()) return;
 
     if (!IsValidFileName(strText)) {
-        MessageBoxA(_T("文件名不合法，请检查：\n")
+        MessageBoxL(_T("文件名不合法，请检查：\n")
                     _T("1. 不能包含 \\ / : * ? \" < > |\n")
                     _T("2. 不能是系统保留名称 (CON, PRN 等)\n")
                     _T("3. 不能以空格或点结尾"), "提示", MB_ICONWARNING);
@@ -880,7 +881,7 @@ void CBuildDlg::OnEnKillfocusEditInstallName()
     if (strText.IsEmpty()) return;
 
     if (!IsValidFileName(strText)) {
-        MessageBoxA(_T("文件名不合法，请检查：\n")
+        MessageBoxL(_T("文件名不合法，请检查：\n")
                     _T("1. 不能包含 \\ / : * ? \" < > |\n")
                     _T("2. 不能是系统保留名称 (CON, PRN 等)\n")
                     _T("3. 不能以空格或点结尾"), "提示", MB_ICONWARNING);
@@ -911,7 +912,7 @@ void CBuildDlg::OnBnClickedCheckFileserver()
     static bool warned = false;
     if (!warned && checked) {
         warned = true;
-        MessageBoxA("请提供载荷的下载地址。下载地址前缀为 http 或 https。"
+        MessageBoxL("请提供载荷的下载地址。下载地址前缀为 http 或 https。"
             "默认由本机提供载荷下载服务，请将载荷文件放在\"Payloads\"目录。"
             "由本机提供下载时，下载地址可以省略输入。", "提示", MB_ICONINFORMATION);
     }

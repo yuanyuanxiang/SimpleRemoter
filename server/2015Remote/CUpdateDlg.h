@@ -1,10 +1,10 @@
 ﻿#pragma once
 #include "afxdialogex.h"
-
+#include "LangManager.h"
 
 // CUpdateDlg 对话框
 
-class CUpdateDlg : public CDialogEx
+class CUpdateDlg : public CDialogLangEx
 {
 	DECLARE_DYNAMIC(CUpdateDlg)
 

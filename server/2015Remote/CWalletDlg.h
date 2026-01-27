@@ -1,9 +1,9 @@
 ﻿#pragma once
-
+#include "LangManager.h"
 
 // CWalletDlg 对话框
 
-class CWalletDlg : public CDialogEx
+class CWalletDlg : public CDialogLangEx
 {
     DECLARE_DYNAMIC(CWalletDlg)
 

@@ -11,7 +11,7 @@
 IMPLEMENT_DYNAMIC(CInputDialog, CDialogEx)
 
 CInputDialog::CInputDialog(CWnd* pParent /*=nullptr*/)
-    : CDialogEx(IDD_DIALOG_INPUT, pParent)
+    : CDialogLangEx(IDD_DIALOG_INPUT, pParent)
     , m_sSecondInput(_T(""))
     , m_sTipInfo(_T(""))
 {
@@ -24,7 +24,7 @@ CInputDialog::~CInputDialog()
 
 void CInputDialog::DoDataExchange(CDataExchange* pDX)
 {
-    CDialogEx::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_STATIC_SECOND, m_Static2thInput);
     DDX_Control(pDX, IDC_EDIT_SECOND, m_Edit2thInput);
     DDX_Text(pDX, IDC_EDIT_SECOND, m_sSecondInput);
@@ -57,7 +57,7 @@ void CInputDialog::Init2(LPCTSTR name, LPCTSTR defaultValue)
 
 BOOL CInputDialog::OnInitDialog()
 {
-    CDialogEx::OnInitDialog();
+    __super::OnInitDialog();
 
     SetIcon(m_hIcon, FALSE);
 
@@ -81,5 +81,5 @@ void CInputDialog::OnBnClickedOk()
 {
     GetDlgItem(IDC_EDIT_FOLDERNAME)->GetWindowText(m_str);
 
-    CDialogEx::OnOK();
+    __super::OnOK();
 }

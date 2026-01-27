@@ -4,6 +4,7 @@
 #include <afxwin.h>
 #include "Resource.h"
 #include "common/commands.h"
+#include "LangManager.h"
 
 // CPasswordDlg 对话框
 
@@ -22,7 +23,7 @@ bool IsPwdHashValid(const char* pwdHash = nullptr);
 
 bool WritePwdHash(char* target, const std::string& pwdHash, const Validation &verify);
 
-class CPasswordDlg : public CDialogEx
+class CPasswordDlg : public CDialogLangEx
 {
     DECLARE_DYNAMIC(CPasswordDlg)
 
@@ -52,7 +53,7 @@ public:
 };
 
 
-class CPwdGenDlg : public CDialogEx
+class CPwdGenDlg : public CDialogLangEx
 {
     DECLARE_DYNAMIC(CPwdGenDlg)
 

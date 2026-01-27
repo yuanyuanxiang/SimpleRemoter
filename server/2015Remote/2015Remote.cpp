@@ -22,11 +22,11 @@
 BOOL ServerPair::StartServer(pfnNotifyProc NotifyProc, pfnOfflineProc OffProc, USHORT uPort)
 {
     UINT ret1 = m_tcpServer->StartServer(NotifyProc, OffProc, uPort);
-    if (ret1) THIS_APP->MessageBox(CString("启动TCP服务失败: ") + std::to_string(uPort).c_str()
-                                       + CString("。错误码: ") + std::to_string(ret1).c_str(), "提示", MB_ICONINFORMATION);
+    if (ret1) THIS_APP->MessageBox(_L(_T("启动TCP服务失败: ")) + std::to_string(uPort).c_str()
+                                       + _L(_T("。错误码: ")) + std::to_string(ret1).c_str(), _TR("提示"), MB_ICONINFORMATION);
     UINT ret2 = m_udpServer->StartServer(NotifyProc, OffProc, uPort);
-    if (ret2) THIS_APP->MessageBox(CString("启动UDP服务失败: ") + std::to_string(uPort).c_str()
-                                       + CString("。错误码: ") + std::to_string(ret2).c_str(), "提示", MB_ICONINFORMATION);
+    if (ret2) THIS_APP->MessageBox(_L(_T("启动UDP服务失败: ")) + std::to_string(uPort).c_str()
+                                       + _L(_T("。错误码: ")) + std::to_string(ret2).c_str(), _TR("提示"), MB_ICONINFORMATION);
     return (ret1 == 0 || ret2 == 0);
 }
 
@@ -109,9 +109,12 @@ std::string GetPwdHash();
 bool RegisterZstaMenu(const std::string& exePath)
 {
     HKEY hKey;
-    const char* compressText = "压缩为 ZSTA 文件";
-    const char* extractText = "解压 ZSTA 文件";
-    const char* zstaDesc = "ZSTA 压缩文件";
+    CString _compressText = _TR("压缩为 ZSTA 文件");
+    CString _extractText = _TR("解压 ZSTA 文件");
+    CString _zstaDesc = _TR("ZSTA 压缩文件");
+    const char* compressText = (LPCSTR)_compressText;
+    const char* extractText = (LPCSTR)_extractText;
+    const char* zstaDesc = (LPCSTR)_zstaDesc;
     const char* zstaExt = "ZstaArchive";
 
     // 文件右键
@@ -412,7 +415,7 @@ BOOL CMy2015RemoteApp::InitInstance()
         if (ERROR_ALREADY_EXISTS == GetLastError()) {
             SAFE_CLOSE_HANDLE(m_Mutex);
             m_Mutex = NULL;
-            MessageBox("一个主控程序已经在运行，请检查任务管理器。",
+            MessageBoxL("一个主控程序已经在运行，请检查任务管理器。",
                        "提示", MB_ICONINFORMATION);
             Mprintf("[InitInstance] 一个主控程序已经在运行，退出。");
             return FALSE;
@@ -435,6 +438,11 @@ BOOL CMy2015RemoteApp::InitInstance()
     m_pImageList_Small.Attach(hImageList);
 
     pSplash->UpdateProgressDirect(10, _T("正在初始化公共控件..."));
+
+    pSplash->UpdateProgressDirect(12, "正在加载语言包...");
+    auto lang = THIS_CFG.GetStr("settings", "Language", "en_US");
+    g_Lang.Init();              // 初始化，自动找 exe 目录下的 lang 文件夹
+    g_Lang.Load(lang.c_str());
 
     // 如果一个运行在 Windows XP 上的应用程序清单指定要
     // 使用 ComCtl32.dll 版本 6 或更高版本来启用可视化方式，

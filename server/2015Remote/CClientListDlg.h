@@ -31,7 +31,7 @@ struct GroupInfo {
 
 // CClientListDlg 对话框
 
-class CClientListDlg : public CDialogEx
+class CClientListDlg : public CDialogLangEx
 {
 	DECLARE_DYNAMIC(CClientListDlg)
 

@@ -13,7 +13,7 @@
 IMPLEMENT_DYNAMIC(CSettingDlg, CDialog)
 
 CSettingDlg::CSettingDlg(CWnd* pParent)
-    : CDialog(CSettingDlg::IDD, pParent)
+    : CDialogLang(CSettingDlg::IDD, pParent)
     , m_nListenPort("6543")
     , m_nMax_Connect(0)
     , m_sScreenCapture(_T("GDI"))
@@ -34,7 +34,7 @@ CSettingDlg::~CSettingDlg()
 
 void CSettingDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Text(pDX, IDC_EDIT_PORT, m_nListenPort);
     DDV_MaxChars(pDX, m_nListenPort, 32);
     DDX_Text(pDX, IDC_EDIT_MAX, m_nMax_Connect);
@@ -84,7 +84,7 @@ END_MESSAGE_MAP()
 
 BOOL CSettingDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
     IPConverter cvt;
     m_sPublicIP = THIS_CFG.GetStr("settings", "master", "").c_str();
     m_sPublicIP = m_sPublicIP.IsEmpty() ? cvt.getPublicIP().c_str() : m_sPublicIP;
@@ -100,40 +100,40 @@ BOOL CSettingDlg::OnInitDialog()
     int n = algo.IsEmpty() ? ALGORITHM_DIFF : atoi(algo.GetString());
     switch (n) {
     case ALGORITHM_GRAY:
-        m_sScreenCompress = "灰度图像传输";
+        m_sScreenCompress = _L(_T("灰度图像传输"));
         break;
     case ALGORITHM_DIFF:
-        m_sScreenCompress = "屏幕差异算法";
+        m_sScreenCompress = _L(_T("屏幕差异算法"));
         break;
     case ALGORITHM_H264:
-        m_sScreenCompress = "H264压缩算法";
+        m_sScreenCompress = _L(_T("H264压缩算法"));
         break;
     default:
         break;
     }
-    m_ComboScreenCompress.InsertString(ALGORITHM_GRAY, "灰度图像传输");
-    m_ComboScreenCompress.InsertString(ALGORITHM_DIFF, "屏幕差异算法");
-    m_ComboScreenCompress.InsertString(ALGORITHM_H264, "H264压缩算法");
+    m_ComboScreenCompress.InsertStringL(ALGORITHM_GRAY, "灰度图像传输");
+    m_ComboScreenCompress.InsertStringL(ALGORITHM_DIFF, "屏幕差异算法");
+    m_ComboScreenCompress.InsertStringL(ALGORITHM_H264, "H264压缩算法");
 
-    m_ComboScreenCapture.InsertString(0, "GDI");
-    m_ComboScreenCapture.InsertString(1, "DXGI");
-    m_ComboScreenCapture.InsertString(2, "VIRTUAL");
+    m_ComboScreenCapture.InsertStringL(0, "GDI");
+    m_ComboScreenCapture.InsertStringL(1, "DXGI");
+    m_ComboScreenCapture.InsertStringL(2, "VIRTUAL");
     m_sScreenCapture = DXGI==1 ? "DXGI" : (DXGI == 2 ? "VIRTUAL" : "GDI");
 
-    m_ComboSoftwareDetect.InsertString(SOFTWARE_CAMERA, "摄像头");
-    m_ComboSoftwareDetect.InsertString(SOFTWARE_TELEGRAM, "电报");
+    m_ComboSoftwareDetect.InsertStringL(SOFTWARE_CAMERA, "摄像头");
+    m_ComboSoftwareDetect.InsertStringL(SOFTWARE_TELEGRAM, "电报");
     auto str = THIS_CFG.GetStr("settings", "ReportInterval", "5");
     m_nReportInterval = atoi(str.c_str());
     n = THIS_CFG.GetInt("settings", "SoftwareDetect");
     switch (n) {
     case SOFTWARE_CAMERA:
-        m_sSoftwareDetect = "摄像头";
+        m_sSoftwareDetect = _L(_T("摄像头"));
         break;
     case SOFTWARE_TELEGRAM:
-        m_sSoftwareDetect = "电报";
+        m_sSoftwareDetect = _L(_T("电报"));
         break;
     default:
-        m_sSoftwareDetect = "摄像头";
+        m_sSoftwareDetect = _L(_T("摄像头"));
         break;
     }
     BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
@@ -154,11 +154,11 @@ BOOL CSettingDlg::OnInitDialog()
     m_nFileServerPort = THIS_CFG.GetInt("settings", "FileSvrPort", 80);
 
     int size = THIS_CFG.GetInt("settings", "VideoWallSize");
-    m_ComboVideoWall.InsertString(0, "无");
-    m_ComboVideoWall.InsertString(1, "2 x 2");
-    m_ComboVideoWall.InsertString(2, "3 x 3");
-    m_ComboVideoWall.InsertString(3, "4 x 4");
-    m_ComboVideoWall.InsertString(4, "5 x 5");
+    m_ComboVideoWall.InsertStringL(0, "无");
+    m_ComboVideoWall.InsertStringL(1, "2 x 2");
+    m_ComboVideoWall.InsertStringL(2, "3 x 3");
+    m_ComboVideoWall.InsertStringL(3, "4 x 4");
+    m_ComboVideoWall.InsertStringL(4, "5 x 5");
     if (size < 1 || size > 5) size = 1;
     m_ComboVideoWall.SetCurSel(size-1);
 
@@ -204,7 +204,7 @@ void CSettingDlg::OnBnClickedButtonSettingapply()
 void CSettingDlg::OnEnChangeEditPort()
 {
     // TODO:  如果该控件是 RICHEDIT 控件，它将不
-    // 发送此通知，除非重写 CDialog::OnInitDialog()
+    // 发送此通知，除非重写 __super::OnInitDialog()
     // 函数并调用 CRichEditCtrl().SetEventMask()，
     // 同时将 ENM_CHANGE 标志“或”运算到掩码中。
 
@@ -218,7 +218,7 @@ void CSettingDlg::OnEnChangeEditPort()
 void CSettingDlg::OnEnChangeEditMax()
 {
     // TODO:  如果该控件是 RICHEDIT 控件，它将不
-    // 发送此通知，除非重写 CDialog::OnInitDialog()
+    // 发送此通知，除非重写 __super::OnInitDialog()
     // 函数并调用 CRichEditCtrl().SetEventMask()，
     // 同时将 ENM_CHANGE 标志“或”运算到掩码中。
 
@@ -234,7 +234,7 @@ void CSettingDlg::OnOK()
 {
     OnBnClickedButtonSettingapply();
 
-    CDialog::OnOK();
+    __super::OnOK();
 }
 
 

@@ -31,7 +31,7 @@ CServicesDlg::~CServicesDlg()
 
 void CServicesDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_LIST, m_ControlList);
     DDX_Control(pDX, IDC_STATIC_COUNT, m_ServicesCount);
 }
@@ -55,20 +55,20 @@ END_MESSAGE_MAP()
 
 BOOL CServicesDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
 
     SetIcon(m_hIcon, TRUE);
     SetIcon(m_hIcon, FALSE);
     CString strString;
-    strString.Format("%s - 服务管理",m_IPAddress);
+    strString.FormatL("%s - 服务管理",m_IPAddress);
     SetWindowText(strString);
 
     m_ControlList.SetExtendedStyle( LVS_EX_FULLROWSELECT);
-    m_ControlList.InsertColumn(0, "真实名称", LVCFMT_LEFT, 150);
-    m_ControlList.InsertColumn(1, "显示名称", LVCFMT_LEFT, 260);
-    m_ControlList.InsertColumn(2, "启动类型", LVCFMT_LEFT, 80);
-    m_ControlList.InsertColumn(3, "运行状态", LVCFMT_LEFT, 80);
-    m_ControlList.InsertColumn(4, "可执行文件路径", LVCFMT_LEFT, 380);
+    m_ControlList.InsertColumnL(0, "真实名称", LVCFMT_LEFT, 150);
+    m_ControlList.InsertColumnL(1, "显示名称", LVCFMT_LEFT, 260);
+    m_ControlList.InsertColumnL(2, "启动类型", LVCFMT_LEFT, 80);
+    m_ControlList.InsertColumnL(3, "运行状态", LVCFMT_LEFT, 80);
+    m_ControlList.InsertColumnL(4, "可执行文件路径", LVCFMT_LEFT, 380);
 
     ShowServicesList();
     return TRUE;  // return TRUE unless you set the focus to a control
@@ -107,7 +107,7 @@ int CServicesDlg::ShowServicesList(void)
     }
 
     CString strTemp;
-    strTemp.Format("服务个数:%d",i);
+    strTemp.FormatL("服务个数:%d",i);
 
     m_ServicesCount.SetWindowText(strTemp);
 
@@ -219,6 +219,7 @@ void CServicesDlg::OnNMRClickList(NMHDR *pNMHDR, LRESULT *pResult)
 
     CMenu Menu;
     Menu.LoadMenu(IDR_MENU_SERVICES);
+    TranslateMenu(&Menu);
     CMenu *SubMenu=Menu.GetSubMenu(0);
     CPoint	Point;
     GetCursorPos(&Point);
@@ -260,7 +261,7 @@ void CServicesDlg::ServicesConfig(BYTE bCmd)
 
 void CServicesDlg::OnSize(UINT nType, int cx, int cy)
 {
-    CDialog::OnSize(nType, cx, cy);
+    __super::OnSize(nType, cx, cy);
 
     if (!m_ControlList.GetSafeHwnd()) return; // 确保控件已创建
 

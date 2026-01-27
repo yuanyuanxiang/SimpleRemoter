@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Buffer.h"
+#include "LangManager.h"
 
 LPBYTE ReadResource(int resourceId, DWORD& dwSize);
 
@@ -10,7 +11,7 @@ CString BuildPayloadUrl(const char* ip, const char* name);
 
 // CBuildDlg 对话框
 
-class CBuildDlg : public CDialog
+class CBuildDlg : public CDialogLang
 {
     DECLARE_DYNAMIC(CBuildDlg)
 

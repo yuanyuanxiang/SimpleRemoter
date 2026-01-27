@@ -1,10 +1,10 @@
 ﻿#pragma once
 #include "afxwin.h"
-
+#include "LangManager.h"
 
 // CSettingDlg 对话框
 
-class CSettingDlg : public CDialog
+class CSettingDlg : public CDialogLang
 {
     DECLARE_DYNAMIC(CSettingDlg)
 

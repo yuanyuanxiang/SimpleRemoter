@@ -15,7 +15,7 @@ DecryptDlg::~DecryptDlg()
 
 void DecryptDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_DECRYPT_RESULT, m_EditDecrypedResult);
 }
 
@@ -37,11 +37,11 @@ END_MESSAGE_MAP()
 
 BOOL DecryptDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
     SetIcon(m_hIcon, FALSE);
 
     CString str;
-    str.Format("%s - 解密数据", m_IPAddress);
+    str.FormatL("%s - 解密数据", m_IPAddress);
     SetWindowText(str);
 
     BYTE bToken = COMMAND_NEXT;

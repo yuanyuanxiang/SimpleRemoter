@@ -12,7 +12,7 @@
 IMPLEMENT_DYNAMIC(CRcEditDlg, CDialogEx)
 
 CRcEditDlg::CRcEditDlg(CWnd* pParent /*=nullptr*/)
-    : CDialogEx(IDD_DIALOG_RCEDIT, pParent)
+    : CDialogLangEx(IDD_DIALOG_RCEDIT, pParent)
     , m_sExePath(_T(""))
     , m_sIcoPath(_T(""))
 {
@@ -25,7 +25,7 @@ CRcEditDlg::~CRcEditDlg()
 
 void CRcEditDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialogEx::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_EDIT_EXE_FILE, m_EditExe);
     DDX_Control(pDX, IDC_EDIT_ICO_FILE, m_EditIco);
     DDX_Text(pDX, IDC_EDIT_EXE_FILE, m_sExePath);
@@ -46,7 +46,7 @@ END_MESSAGE_MAP()
 
 BOOL CRcEditDlg::OnInitDialog()
 {
-    CDialogEx::OnInitDialog();
+    __super::OnInitDialog();
 
     // TODO:  在此添加额外的初始化
 
@@ -58,11 +58,11 @@ BOOL CRcEditDlg::OnInitDialog()
 void CRcEditDlg::OnOK()
 {
     if (m_sExePath.IsEmpty()) {
-        MessageBox("请选择目标应用程序!", "提示", MB_ICONINFORMATION);
+        MessageBoxL("请选择目标应用程序!", "提示", MB_ICONINFORMATION);
         return;
     }
     if (m_sIcoPath.IsEmpty()) {
-        MessageBox("请选择[*.ico]图标文件!", "提示", MB_ICONINFORMATION);
+        MessageBoxL("请选择[*.ico]图标文件!", "提示", MB_ICONINFORMATION);
         return;
     }
     std::string ReleaseEXE(int resID, const char* name);
@@ -70,7 +70,7 @@ void CRcEditDlg::OnOK()
 
     std::string rcedit = ReleaseEXE(IDR_BIN_RCEDIT, "rcedit.exe");
     if (rcedit.empty()) {
-        MessageBox("解压程序失败，无法替换图标!", "提示", MB_ICONINFORMATION);
+        MessageBoxL("解压程序失败，无法替换图标!", "提示", MB_ICONINFORMATION);
         return;
     }
     std::string exe = m_sExePath.GetString();
@@ -78,12 +78,12 @@ void CRcEditDlg::OnOK()
     std::string cmdLine = "\"" + rcedit + "\" " + "\"" + exe + "\" --set-icon \"" + icon + "\"";
     int result = run_cmd(cmdLine);
     if (result) {
-        MessageBox(CString("替换图标失败，错误代码: ") + std::to_string(result).c_str(),
+        MessageBoxL(CString("替换图标失败，错误代码: ") + std::to_string(result).c_str(),
                    "提示", MB_ICONINFORMATION);
         return;
     }
 
-    CDialogEx::OnOK();
+    __super::OnOK();
 }
 
 
@@ -95,7 +95,7 @@ void CRcEditDlg::OnBnClickedBtnSelectExe()
     try {
         ret = fileDlg.DoModal();
     } catch (...) {
-        MessageBox("文件对话框未成功打开! 请稍后再试。", "提示");
+        MessageBoxL("文件对话框未成功打开! 请稍后再试。", "提示", MB_ICONINFORMATION);
         return;
     }
     if (ret == IDOK) {
@@ -113,7 +113,7 @@ void CRcEditDlg::OnBnClickedBtnSelectIco()
     try {
         ret = fileDlg.DoModal();
     } catch (...) {
-        MessageBox("文件对话框未成功打开! 请稍后再试。", "提示");
+        MessageBoxL("文件对话框未成功打开! 请稍后再试。", "提示", MB_ICONINFORMATION);
         return;
     }
     if (ret == IDOK) {

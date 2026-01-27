@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include "MachineDlg.h"
+#include "LangManager.h"
 
 /////////////////////////////////////////////////////////////////////////////
 // CServiceInfoDlg dialog
@@ -13,7 +14,7 @@ typedef struct {
     CString strSerState;
 } SERVICEINFO;
 
-class CServiceInfoDlg : public CDialog
+class CServiceInfoDlg : public CDialogLang
 {
 public:
     CServiceInfoDlg(CWnd* pParent = NULL);

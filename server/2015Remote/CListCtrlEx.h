@@ -38,7 +38,7 @@ public:
     // 设置配置键名（用于区分不同列表的配置，如 "ClientList", "FileList"）
     void SetConfigKey(const CString& strKey);
 
-    // 添加列（替代 InsertColumn）
+    // 添加列（替代 InsertColumnL）
     // nCol: 列索引
     // lpszColumnHeading: 列标题
     // nFormat: 对齐方式，默认左对齐

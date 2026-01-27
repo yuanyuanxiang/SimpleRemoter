@@ -21,7 +21,7 @@ CChat::CChat(CWnd* pParent, Server* pIOCPServer, ClientContext* pContext)
 
 void CChat::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_EDIT_TIP, m_editTip);
     DDX_Control(pDX, IDC_EDIT_NEWMSG, m_editNewMsg);
     DDX_Control(pDX, IDC_EDIT_CHATLOG, m_editChatLog);
@@ -44,12 +44,12 @@ END_MESSAGE_MAP()
 
 BOOL CChat::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
 
     CString str;
-    str.Format(_T("远程交谈 - %s"), m_ContextObject->PeerName.c_str()),
+    str.FormatL(_T("远程交谈 - %s"), m_ContextObject->PeerName.c_str()),
                SetWindowText(str);
-    m_editTip.SetWindowText(_T("提示: 对方聊天对话框在发送消息后才会弹出"));
+    m_editTip.SetWindowTextL("提示: 对方聊天对话框在发送消息后才会弹出");
     m_editNewMsg.SetLimitText(4079);
     // TODO: Add extra initialization here
     BYTE bToken = COMMAND_NEXT_CHAT;
@@ -135,7 +135,7 @@ HBRUSH CChat::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
         pDC->SetBkColor(clr);     // 设置黄色的背景
         return CreateSolidBrush(clr);  // 作为约定，返回背景色对应的刷子句柄
     } else {
-        return CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+        return __super::OnCtlColor(pDC, pWnd, nCtlColor);
     }
 }
 
@@ -143,8 +143,7 @@ void CChat::PostNcDestroy()
 {
     if (!m_bIsClosed)
         OnCancel();
-    CDialog::PostNcDestroy();
-    delete this;
+    __super::PostNcDestroy();
 }
 
 BOOL CChat::PreTranslateMessage(MSG* pMsg)
@@ -152,7 +151,7 @@ BOOL CChat::PreTranslateMessage(MSG* pMsg)
     if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_ESCAPE) {
         return true;
     }
-    return CDialog::PreTranslateMessage(pMsg);
+    return __super::PreTranslateMessage(pMsg);
 }
 
 void CChat::OnSetfocusEditChatLog()

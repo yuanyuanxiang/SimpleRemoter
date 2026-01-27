@@ -43,7 +43,7 @@ CShellDlg::~CShellDlg()
 
 void CShellDlg::DoDataExchange(CDataExchange* pDX)
 {
-    CDialog::DoDataExchange(pDX);
+    __super::DoDataExchange(pDX);
     DDX_Control(pDX, IDC_EDIT, m_Edit);
 }
 
@@ -60,14 +60,14 @@ END_MESSAGE_MAP()
 
 BOOL CShellDlg::OnInitDialog()
 {
-    CDialog::OnInitDialog();
+    __super::OnInitDialog();
     m_nCurSel = 0;
     m_nReceiveLength = 0;
     SetIcon(m_hIcon, TRUE);
     SetIcon(m_hIcon,FALSE);
 
     CString str;
-    str.Format("%s - 远程终端", m_IPAddress);
+    str.FormatL("%s - 远程终端", m_IPAddress);
     SetWindowText(str);
 
     BYTE bToken = COMMAND_NEXT;
@@ -236,13 +236,13 @@ BOOL CShellDlg::PreTranslateMessage(MSG* pMsg)
         }
     }
 
-    return CDialog::PreTranslateMessage(pMsg);
+    return __super::PreTranslateMessage(pMsg);
 }
 
 
 HBRUSH CShellDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
-    HBRUSH hbr = CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+    HBRUSH hbr = __super::OnCtlColor(pDC, pWnd, nCtlColor);
 
     if ((pWnd->GetDlgCtrlID() == IDC_EDIT) && (nCtlColor == CTLCOLOR_EDIT)) {
         COLORREF clr = RGB(255, 255, 255);
@@ -251,7 +251,7 @@ HBRUSH CShellDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
         pDC->SetBkColor(clr);     //设置黑色的背景
         return CreateSolidBrush(clr);  //作为约定，返回背景色对应的刷子句柄
     } else {
-        return CDialog::OnCtlColor(pDC, pWnd, nCtlColor);
+        return __super::OnCtlColor(pDC, pWnd, nCtlColor);
     }
     return hbr;
 }
@@ -259,7 +259,7 @@ HBRUSH CShellDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 
 void CShellDlg::OnSize(UINT nType, int cx, int cy)
 {
-    CDialog::OnSize(nType, cx, cy);
+    __super::OnSize(nType, cx, cy);
 
     if (!m_Edit.GetSafeHwnd()) return; // 确保控件已创建
 
