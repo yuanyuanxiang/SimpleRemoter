@@ -641,6 +641,10 @@
 #define ID_CHANGE_LANG                  33004
 #define ID_33005                        33005
 #define ID_IMPORT_DATA                  33006
+#define ID_PROXY_PORT_STD               33007
+#define ID_33008                        33008
+#define ID_33009                        33009
+#define ID_CHOOSE_LANG_DIR              33010
 #define ID_EXIT_FULLSCREEN              40001
 
 // Next default values for new objects
@@ -648,7 +652,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        328
-#define _APS_NEXT_COMMAND_VALUE         33007
+#define _APS_NEXT_COMMAND_VALUE         33011
 #define _APS_NEXT_CONTROL_VALUE         2229
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

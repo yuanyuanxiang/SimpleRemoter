@@ -146,7 +146,7 @@ void CToolbarDlg::OnBnClickedCtrl()
     CScreenSpyDlg* pParent = (CScreenSpyDlg*)GetParent();
     pParent->m_bIsCtrl = !pParent->m_bIsCtrl;
     pParent->UpdateCtrlStatus(pParent->m_bIsCtrl);
-    GetDlgItem(CONTROL_BTN_ID)->SetWindowTextA(pParent->m_bIsCtrl ? "暂停控制" : "控制屏幕");
+    GetDlgItem(CONTROL_BTN_ID)->SetWindowTextA(pParent->m_bIsCtrl ? _TR("暂停控制") : _TR("控制屏幕"));
 }
 
 void CToolbarDlg::OnBnClickedClose()
@@ -201,19 +201,19 @@ BOOL CToolbarDlg::OnInitDialog()
 
     // 设置控制按钮文本
     CScreenSpyDlg* pParent = (CScreenSpyDlg*)GetParent();
-    GetDlgItem(CONTROL_BTN_ID)->SetWindowTextA(pParent->m_bIsCtrl ? "暂停控制" : "控制屏幕");
+    GetDlgItem(CONTROL_BTN_ID)->SetWindowTextA(pParent->m_bIsCtrl ? _TR("暂停控制") : _TR("控制屏幕"));
 
     // 设置锁定按钮文本
-    GetDlgItem(IDC_BTN_LOCK)->SetWindowTextA(m_bLocked ? "解锁" : "锁定");
+    GetDlgItem(IDC_BTN_LOCK)->SetWindowTextA(m_bLocked ? _TR("解锁") : _TR("锁定"));
 
     // 设置位置按钮文本
-    GetDlgItem(IDC_BTN_POSITION)->SetWindowTextA(m_bOnTop ? "放下面" : "放上面");
+    GetDlgItem(IDC_BTN_POSITION)->SetWindowTextA(m_bOnTop ? _TR("放下面") : _TR("放上面"));
 
     // 设置透明度按钮文本
     GetDlgItem(IDC_BTN_OPACITY)->SetWindowTextA(GetOpacityText());
 
     // 设置截图按钮文本
-    GetDlgItem(IDC_BTN_SCREENSHOT)->SetWindowTextA("截图");
+    GetDlgItem(IDC_BTN_SCREENSHOT)->SetWindowTextA(_TR("截图"));
 
     // 如果是锁定状态，立即显示工具栏（否则锁定时无法触发显示）
     if (m_bLocked) {
@@ -249,14 +249,14 @@ BOOL CToolbarDlg::OnEraseBkgnd(CDC* pDC)
 void CToolbarDlg::OnBnClickedLock()
 {
     m_bLocked = !m_bLocked;
-    GetDlgItem(IDC_BTN_LOCK)->SetWindowTextA(m_bLocked ? "解锁" : "锁定");
+    GetDlgItem(IDC_BTN_LOCK)->SetWindowTextA(m_bLocked ? _TR("解锁") : _TR("锁定"));
     SaveSettings();
 }
 
 void CToolbarDlg::OnBnClickedPosition()
 {
     m_bOnTop = !m_bOnTop;
-    GetDlgItem(IDC_BTN_POSITION)->SetWindowTextA(m_bOnTop ? "放下面" : "放上面");
+    GetDlgItem(IDC_BTN_POSITION)->SetWindowTextA(m_bOnTop ? _TR("放下面") : _TR("放上面"));
     UpdatePosition();
     SaveSettings();
 }
@@ -304,9 +304,9 @@ void CToolbarDlg::ApplyOpacity()
 CString CToolbarDlg::GetOpacityText()
 {
     switch (m_nOpacityLevel) {
-        case 1:  return "透明75%";
-        case 2:  return "透明50%";
-        default: return "透明度";
+        case 1:  return _TR("透明75%");
+        case 2:  return _TR("透明50%");
+        default: return _TR("透明度");
     }
 }
 

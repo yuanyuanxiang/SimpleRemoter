@@ -987,6 +987,7 @@ enum {
     CALLTYPE_DEFAULT = 0,		// 默认调用方式: 只是加载DLL,需要在DLL加载时执行代码
     CALLTYPE_IOCPTHREAD = 1,	// 调用run函数启动线程: DWORD (__stdcall *run)(void* lParam)
     CALLTYPE_FRPC_CALL = 2,     // 调用FRPC
+    CALLTYPE_FRPC_STDCALL = 3,  // 调用FRPC（标准方式，使用开源FRP项目）
 };
 
 typedef DWORD(__stdcall* PidCallback)(void);

@@ -52,11 +52,34 @@ BOOL CProxyMapDlg::OnInitDialog()
     CString		str;
 
     // 开启IPCP服务器
-    m_nPort = 5543;
-    if (!m_iocpLocal->Initialize(NotifyProc, this, 100000, m_nPort)) {
-        MessageBoxL("初始化代理服务器失败!", "提示", MB_ICONINFORMATION);
-        return FALSE;
-    }
+	srand((unsigned int)time(NULL));
+
+	m_nPort = 5543; // 初始尝试端口
+	BOOL bSuccess = FALSE;
+	const int nMaxRetries = 10;
+
+	for (int i = 0; i < nMaxRetries; ++i) {
+		if (m_iocpLocal->Initialize(NotifyProc, this, 100000, m_nPort)) {
+			bSuccess = TRUE;
+			break;
+		}
+
+		// 端口冲突，生成 10000-65535 之间的随机端口
+		// 提示：10000 + (0 到 55535)
+		int nextPort = 10000 + (rand() % 55536);
+
+		// 避免随机到和刚才一样的端口
+		while (nextPort == m_nPort) {
+			nextPort = 10000 + (rand() % 55536);
+		}
+		m_nPort = nextPort;
+	}
+
+	if (!bSuccess) {
+		MessageBoxL("初始化代理服务器失败!", "提示", MB_ICONINFORMATION);
+		return FALSE;
+	}
+
     TCHAR ip[256] = {};
     int len = sizeof(ip);
     m_iocpLocal->m_TcpServer->GetListenAddress(ip, len, m_nPort);

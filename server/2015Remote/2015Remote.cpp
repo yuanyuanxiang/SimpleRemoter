@@ -441,8 +441,13 @@ BOOL CMy2015RemoteApp::InitInstance()
 
     pSplash->UpdateProgressDirect(12, "正在加载语言包...");
     auto lang = THIS_CFG.GetStr("settings", "Language", "en_US");
-    g_Lang.Init();              // 初始化，自动找 exe 目录下的 lang 文件夹
-    g_Lang.Load(lang.c_str());
+    auto langDir = THIS_CFG.GetStr("settings", "LangDir", "./lang");
+    langDir = langDir.empty() ? "./lang" : langDir;
+    if (PathFileExists(langDir.c_str())) {
+        g_Lang.Init(langDir.c_str());
+        g_Lang.Load(lang.c_str());
+        Mprintf("语言包目录已经指定[%s], 语言数量: %d\n", langDir.c_str(), g_Lang.GetLanguageCount());
+    }
 
     // 如果一个运行在 Windows XP 上的应用程序清单指定要
     // 使用 ComCtl32.dll 版本 6 或更高版本来启用可视化方式，

@@ -312,6 +312,7 @@ public:
     afx_msg void OnOnlineInjNotepad();
     afx_msg void OnParamLoginNotify();
     afx_msg void OnParamEnableLog();
+    void ProxyClientTcpPort(bool isStandard);
     afx_msg void OnProxyPort();
     afx_msg void OnHookWin();
     afx_msg void OnRunasService();
@@ -320,4 +321,6 @@ public:
     afx_msg void OnPluginRequest();
     afx_msg void OnChangeLang();
     afx_msg void OnImportData();
+    afx_msg void OnProxyPortStd();
+    afx_msg void OnChooseLangDir();
 };
