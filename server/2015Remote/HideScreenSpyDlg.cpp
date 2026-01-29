@@ -608,7 +608,7 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         EnableWindow(FALSE);
 
         CInputDialog	dlg(this);
-        dlg.Init(_T("自定义"), _T("请输入CMD命令:"));
+        dlg.Init(_TR("自定义"), _TR("请输入CMD命令:"));
 
         if (dlg.DoModal() == IDOK && dlg.m_str.GetLength()) {
             int		nPacketLength = dlg.m_str.GetLength()*sizeof(TCHAR) + 3;

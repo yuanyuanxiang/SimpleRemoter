@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <afxwin.h>
+#include "common/IniParser.h"
 
 // 语言管理类 - 支持多语言切换
 class CLangManager
@@ -165,21 +166,17 @@ public:
             return false;
         }
 
-        // 读取 [Strings] 节的所有键值对
-        TCHAR buffer[32768] = { 0 };  // 用于获取所有键名
-        GetPrivateProfileSection(_T("Strings"), buffer, sizeof(buffer)/sizeof(TCHAR), langFile);
+        // 使用 CIniParser 解析，无文件大小限制，且不 trim key
+        CIniParser ini;
+        if (!ini.LoadFile((LPCSTR)langFile)) {
+            return false;
+        }
 
-        // 解析键值对 (格式: key=value\0key=value\0\0)
-        TCHAR* p = buffer;
-        while (*p) {
-            CString line(p);
-            int eqPos = line.Find(_T('='));
-            if (eqPos > 0) {
-                CString key = line.Left(eqPos);
-                CString value = line.Mid(eqPos + 1);
-                m_strings[key] = value;
+        const CIniParser::TKeyVal* pSection = ini.GetSection("Strings");
+        if (pSection) {
+            for (const auto& kv : *pSection) {
+                m_strings[CString(kv.first.c_str())] = CString(kv.second.c_str());
             }
-            p += _tcslen(p) + 1;
         }
 
         return true;

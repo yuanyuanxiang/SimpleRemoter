@@ -2154,7 +2154,7 @@ void CFileManagerDlg::OnLocalNewfolder()
     // TODO: Add your command handler code here
 
     CInputDialog	dlg(this);
-    dlg.Init(_T("新建目录"), _T("请输入目录名称:"));
+    dlg.Init(_TR("新建目录"), _TR("请输入目录名称:"));
 
     if (dlg.DoModal() == IDOK && dlg.m_str.GetLength()) {
         // 创建多层目录
@@ -2170,7 +2170,7 @@ void CFileManagerDlg::OnRemoteNewfolder()
     // TODO: Add your command handler code here
     // TODO: Add your command handler code here
     CInputDialog	dlg(this);
-    dlg.Init(_T("新建目录"), _T("请输入目录名称:"));
+    dlg.Init(_TR("新建目录"), _TR("请输入目录名称:"));
 
     if (dlg.DoModal() == IDOK && dlg.m_str.GetLength()) {
         CString file = m_Remote_Path + dlg.m_str + "\\";

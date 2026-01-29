@@ -1756,7 +1756,7 @@ void CFileManagerDlg::OnRemoteNewFolder()
         return;
 
     CInputDialog	dlg(this);
-    dlg.Init(_T("新建目录"), _T("请输入目录名称:"));
+    dlg.Init(_TR("新建目录"), _TR("请输入目录名称:"));
     if (dlg.DoModal() == IDOK && dlg.m_str.GetLength()) {
         CString file = m_Remote_Path + dlg.m_str + _T("\\");
         UINT	nPacketSize = (file.GetLength() + 1) * sizeof(TCHAR) + 1;
@@ -2014,7 +2014,7 @@ void CFileManagerDlg::OnRclickListRemotedriver(NMHDR* pNMHDR, LRESULT* pResult)
             if (str_disk.Find(_T(":")) == -1) return;;
         }
         CInputDialog	dlg(this);
-        dlg.Init(_T("确认后 必须等待出现结果"), _T("请输入要搜索的关键词"));
+        dlg.Init(_TR("确认后 必须等待出现结果"), _TR("请输入要搜索的关键词"));
         if (dlg.DoModal() != IDOK)return;
 
         // 得到返回数据前禁窗口

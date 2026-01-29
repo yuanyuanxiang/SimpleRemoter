@@ -726,7 +726,7 @@ void CBuildDlg::OnHelpFindden()
 {
     CInputDialog dlg(this);
     dlg.m_str = m_strFindden;
-    dlg.Init("生成标识", "请设置标识信息:");
+    dlg.Init(_TR("生成标识"), _TR("请设置标识信息:"));
     if (dlg.DoModal() == IDOK) {
         m_strFindden = dlg.m_str;
     }
