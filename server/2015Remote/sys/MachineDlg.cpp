@@ -1643,7 +1643,8 @@ void CMachineDlg::ShowHostsList_menu()
         LPBYTE lpBuffer = NULL;
         CFileDialog dlg(TRUE, _T("*.txt"), NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY,
                         _T("图片文件(*.txt;*.txt)|*.txt;*.txt| All Files (*.*) |*.*||"), NULL);
-        dlg.m_ofn.lpstrTitle = _L(_T("选择文件"));
+        CString strTitle = _L(_T("选择文件"));
+        dlg.m_ofn.lpstrTitle = strTitle;
 
         if (dlg.DoModal() != IDOK)
             break;

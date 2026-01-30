@@ -4999,7 +4999,8 @@ void CMy2015RemoteDlg::OnChangeLang()
 void CMy2015RemoteDlg::OnChooseLangDir()
 {
     CFolderPickerDialog folderDlg(THIS_CFG.GetStr("settings", "LangDir", "./lang").c_str(), NULL, this, 0);
-    folderDlg.m_ofn.lpstrTitle = _TR("请选择目录");
+    CString strTitle = _TR("请选择目录");
+    folderDlg.m_ofn.lpstrTitle = strTitle;
 	if (folderDlg.DoModal() == IDOK)
 	{
 		CString folderPath = folderDlg.GetPathName();
