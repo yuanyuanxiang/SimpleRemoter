@@ -336,6 +336,10 @@ BOOL CScreenSpyDlg::OnInitDialog()
 
 VOID CScreenSpyDlg::OnClose()
 {
+    m_bIsCtrl = FALSE;
+    CWnd* pMain = AfxGetMainWnd();
+    if (pMain)
+        ::PostMessage(pMain->GetSafeHwnd(), WM_SESSION_ACTIVATED, (WPARAM)nullptr, 0);
 	KillTimer(1);
 	KillTimer(2);
     KillTimer(3);

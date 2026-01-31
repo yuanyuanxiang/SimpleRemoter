@@ -32,4 +32,6 @@ public:
     virtual void OnOK();
     afx_msg void OnBnClickedBtnSelectExe();
     afx_msg void OnBnClickedBtnSelectIco();
+    CEdit m_EditProcessDesc;
+    CString m_sProcessDesc;
 };

@@ -15,6 +15,7 @@ CRcEditDlg::CRcEditDlg(CWnd* pParent /*=nullptr*/)
     : CDialogLangEx(IDD_DIALOG_RCEDIT, pParent)
     , m_sExePath(_T(""))
     , m_sIcoPath(_T(""))
+    , m_sProcessDesc(_T(""))
 {
 
 }
@@ -32,6 +33,9 @@ void CRcEditDlg::DoDataExchange(CDataExchange* pDX)
     DDV_MaxChars(pDX, m_sExePath, 256);
     DDX_Text(pDX, IDC_EDIT_ICO_FILE, m_sIcoPath);
     DDV_MaxChars(pDX, m_sIcoPath, 256);
+    DDX_Control(pDX, IDC_EDIT_PROCESS_DESC, m_EditProcessDesc);
+    DDX_Text(pDX, IDC_EDIT_PROCESS_DESC, m_sProcessDesc);
+	DDV_MaxChars(pDX, m_sProcessDesc, 135);
 }
 
 
@@ -61,8 +65,9 @@ void CRcEditDlg::OnOK()
         MessageBoxL("请选择目标应用程序!", "提示", MB_ICONINFORMATION);
         return;
     }
-    if (m_sIcoPath.IsEmpty()) {
-        MessageBoxL("请选择[*.ico]图标文件!", "提示", MB_ICONINFORMATION);
+	m_EditProcessDesc.GetWindowTextA(m_sProcessDesc);
+    if (m_sIcoPath.IsEmpty() && m_sProcessDesc.IsEmpty()) {
+        MessageBoxL("请选择[*.ico]图标文件或输入进程描述!", "提示", MB_ICONINFORMATION);
         return;
     }
     std::string ReleaseEXE(int resID, const char* name);
@@ -70,15 +75,20 @@ void CRcEditDlg::OnOK()
 
     std::string rcedit = ReleaseEXE(IDR_BIN_RCEDIT, "rcedit.exe");
     if (rcedit.empty()) {
-        MessageBoxL("解压程序失败，无法替换图标!", "提示", MB_ICONINFORMATION);
+        MessageBoxL("解压程序失败，无法操作PE!", "提示", MB_ICONINFORMATION);
         return;
     }
     std::string exe = m_sExePath.GetString();
     std::string icon = m_sIcoPath.GetString();
-    std::string cmdLine = "\"" + rcedit + "\" " + "\"" + exe + "\" --set-icon \"" + icon + "\"";
+	std::string desc = m_sProcessDesc.GetString();
+    std::string cmdLine = "\"" + rcedit + "\" \"" + exe + "\"";
+    if (!icon.empty())
+        cmdLine += " --set-icon \"" + icon + "\"";
+    if (!desc.empty())
+        cmdLine += " --set-version-string \"FileDescription\" \"" + desc + "\"";
     int result = run_cmd(cmdLine);
     if (result) {
-        MessageBoxL(CString("替换图标失败，错误代码: ") + std::to_string(result).c_str(),
+        MessageBoxL(_TR("PE 操作失败，错误代码: ") + std::to_string(result).c_str(),
                    "提示", MB_ICONINFORMATION);
         return;
     }
