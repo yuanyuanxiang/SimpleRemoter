@@ -113,6 +113,7 @@
       <OutputFile>$(SolutionDir)Bin\$(TargetName)_x86d$(TargetExt)</OutputFile>
       <ImageHasSafeExceptionHandlers>true</ImageHasSafeExceptionHandlers>
       <AdditionalOptions>/ignore:4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\SimplePlugins\bin</AdditionalLibraryDirectories>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -145,6 +146,7 @@
       <IgnoreSpecificDefaultLibraries>LIBCMT.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <OutputFile>$(SolutionDir)Bin\$(TargetName)_x64d$(TargetExt)</OutputFile>
       <AdditionalOptions>/ignore:4099 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\SimplePlugins\bin</AdditionalLibraryDirectories>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -179,6 +181,7 @@
       <AdditionalDependencies>zlib\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions> /SAFESEH:NO /ignore:4099 %(AdditionalOptions)</AdditionalOptions>
       <OutputFile>$(SolutionDir)Bin\$(TargetName)_x86$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\SimplePlugins\bin</AdditionalLibraryDirectories>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -214,6 +217,7 @@
       <AdditionalDependencies>zlib\zlib_x64.lib</AdditionalDependencies>
       <AdditionalOptions> /SAFESEH:NO /ignore:4099 %(AdditionalOptions)</AdditionalOptions>
       <OutputFile>$(SolutionDir)Bin\$(TargetName)_x64$(TargetExt)</OutputFile>
+      <AdditionalLibraryDirectories>$(SolutionDir)..\SimplePlugins\bin</AdditionalLibraryDirectories>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>

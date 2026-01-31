@@ -1131,7 +1131,11 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
         THIS_APP->MessageBox(_TR("下载服务启动失败，可能是端口被占用了。"), _TR("提示"), MB_ICONINFORMATION);
     }
 
-    UPDATE_SPLASH(17, "正在加载IP数据库...");
+    UPDATE_SPLASH(18, "正在初始化文件上传模块...");
+    int ret = InitFileUpload(GetHMAC(), 64, 50, Logf);
+    g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, AfxGetInstanceHandle(), 0);
+
+    UPDATE_SPLASH(20, "正在加载IP数据库...");
 	char path[MAX_PATH] = {};
 	GetModuleFileNameA(NULL, path, MAX_PATH);
     GET_FILEPATH(path, "qqwry.dat");
@@ -1141,10 +1145,6 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
         m_IPConverter = new IPConverter();
 	}
 	Mprintf("IP数据库加载: %s\n", m_HasQQwry ? "succeed" : "failed");
-
-    UPDATE_SPLASH(20, "正在初始化文件上传模块...");
-    int ret = InitFileUpload(GetHMAC(), 64, 50, Logf);
-    g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, AfxGetInstanceHandle(), 0);
 
     UPDATE_SPLASH(25, "正在初始化视频墙...");
     m_GroupList = {"default"};
