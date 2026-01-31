@@ -2472,6 +2472,7 @@ bool SendData(void* user, FileChunkPacket* chunk, BYTE* data, int size)
         return false;
     }
     CDlgFileSend* dlg = (CDlgFileSend*)ctx->hDlg;
+    if (!dlg) return false;
     BYTE* name = data + sizeof(FileChunkPacket);
     dlg->UpdateProgress(CString((char*)name, chunk->nameLength), chunk);
 
@@ -2482,9 +2483,9 @@ void delay_cancel(CONTEXT_OBJECT* ctx, int sec)
 {
     if (!ctx) return;
     CDlgFileSend* dlg = (CDlgFileSend*)ctx->hDlg;
-    dlg->FinishFileSend(TRUE);
+    if (dlg) dlg->FinishFileSend(TRUE);
     Sleep(sec*1000);
-    if (::IsWindow(dlg->GetSafeHwnd()))
+    if (dlg && ::IsWindow(dlg->GetSafeHwnd()))
         dlg->PostMessageA(WM_CLOSE);
     ctx->hDlg = NULL;
     ctx->CancelIO();

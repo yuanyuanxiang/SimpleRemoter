@@ -60,11 +60,13 @@ void CDlgFileSend::OnReceiveComplete(void)
 
 void CDlgFileSend::UpdateProgress(CString file, const FileChunkPacket *chunk)
 {
+    if (!GetSafeHwnd()) return;
     PostMessageA(WM_UPDATEFILEPROGRESS, (WPARAM)new CString(file), (LPARAM)new FileChunkPacket(*chunk));
 }
 
 void CDlgFileSend::FinishFileSend(BOOL succeed)
 {
+    if (!GetSafeHwnd()) return;
     PostMessageA(WM_FINISHFILESEND, NULL, (LPARAM)succeed);
 }
 
