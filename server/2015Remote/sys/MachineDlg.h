@@ -33,7 +33,6 @@ protected:
     bool                m_bIsReceiving;
     CMy2015RemoteDlg*   m_pMainWnd;
     CStatusBar          m_wndStatusBar;
-    IPConverter*        m_IPConverter;
     CLocker             m_Locker;
     bool IsReceivingData()
     {

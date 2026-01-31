@@ -12,7 +12,7 @@
 
 IMPLEMENT_DYNAMIC(CSettingDlg, CDialog)
 
-CSettingDlg::CSettingDlg(CWnd* pParent)
+CSettingDlg::CSettingDlg(CMy2015RemoteDlg* pParent)
     : CDialogLang(CSettingDlg::IDD, pParent)
     , m_nListenPort("6543")
     , m_nMax_Connect(0)
@@ -26,6 +26,7 @@ CSettingDlg::CSettingDlg(CWnd* pParent)
     , m_sFrpToken(_T(""))
     , m_nFileServerPort(0)
 {
+	g_2015RemoteDlg = pParent;
 }
 
 CSettingDlg::~CSettingDlg()
@@ -85,9 +86,8 @@ END_MESSAGE_MAP()
 BOOL CSettingDlg::OnInitDialog()
 {
     __super::OnInitDialog();
-    IPConverter cvt;
     m_sPublicIP = THIS_CFG.GetStr("settings", "master", "").c_str();
-    m_sPublicIP = m_sPublicIP.IsEmpty() ? cvt.getPublicIP().c_str() : m_sPublicIP;
+    m_sPublicIP = m_sPublicIP.IsEmpty() ? g_2015RemoteDlg->m_IPConverter->getPublicIP().c_str() : m_sPublicIP;
     std::string nPort = THIS_CFG.GetStr("settings", "ghost", "6543");
     m_sUdpOption = THIS_CFG.GetStr("settings", "UDPOption", "0").c_str();
 

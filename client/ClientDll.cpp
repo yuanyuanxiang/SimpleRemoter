@@ -177,7 +177,12 @@ DWORD WaitForMultipleHandlesEx(
 
 BOOL CALLBACK callback(DWORD CtrlType)
 {
-    if (CtrlType == CTRL_CLOSE_EVENT) {
+#ifdef _DEBUG
+	BOOL isClose = (CtrlType == CTRL_C_EVENT) || (CtrlType == CTRL_CLOSE_EVENT);
+#else
+	BOOL isClose = (CtrlType == CTRL_CLOSE_EVENT);
+#endif
+    if (isClose) {
         g_MyApp.g_bExit = S_CLIENT_EXIT;
         while (E_RUN == status)
             Sleep(20);

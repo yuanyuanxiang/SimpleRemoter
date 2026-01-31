@@ -368,8 +368,7 @@ std::string CMy2015RemoteDlg::GetHardwareID(int v)
     case 1: {
         std::string master = THIS_CFG.GetStr("settings", "master");
         if (!master.empty()) return master;
-        IPConverter cvt;
-        std::string id = cvt.getPublicIP();
+        std::string id = g_2015RemoteDlg ? g_2015RemoteDlg->m_IPConverter->getPublicIP() : "";
         return id;
     }
     default:
@@ -780,8 +779,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     if (loc.IsEmpty()) {
         loc = v[RES_CLIENT_LOC].c_str();
         if (loc.IsEmpty()) {
-            IPConverter cvt;
-            loc = cvt.GetGeoLocation(data[ONLINELIST_IP].GetString()).c_str();
+            loc = m_IPConverter->GetGeoLocation(data[ONLINELIST_IP].GetString()).c_str();
         }
     }
 	// TODO: Remove SafeUtf8ToAnsi after migrating to UTF-8
@@ -1133,6 +1131,17 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
         THIS_APP->MessageBox(_TR("下载服务启动失败，可能是端口被占用了。"), _TR("提示"), MB_ICONINFORMATION);
     }
 
+    UPDATE_SPLASH(17, "正在加载IP数据库...");
+	char path[MAX_PATH] = {};
+	GetModuleFileNameA(NULL, path, MAX_PATH);
+    GET_FILEPATH(path, "qqwry.dat");
+    m_IPConverter = LoadFileQQWry(path);
+	m_HasQQwry = m_IPConverter != nullptr;
+    if (!m_HasQQwry) {
+        m_IPConverter = new IPConverter();
+	}
+	Mprintf("IP数据库加载: %s\n", m_HasQQwry ? "succeed" : "failed");
+
     UPDATE_SPLASH(20, "正在初始化文件上传模块...");
     int ret = InitFileUpload(GetHMAC(), 64, 50, Logf);
     g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, AfxGetInstanceHandle(), 0);
@@ -1194,7 +1203,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     const Validation* v = GetValidation();
     if (!(strlen(v->Admin) && v->Port > 0)) {
         // IMPORTANT: For authorization only.
-        // NO NOT CHANGE: The program may not work if following code changed.
+        // DO NOT CHANGE: The program may not work if following code changed.
         PrintableXORCipher cipher;
         char buf1[] = { "? &!x1:x<!{<6 " }, buf2[] = { 'a','a','f',0 };
         cipher.process(buf1, strlen(buf1));
@@ -1321,14 +1330,13 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 DWORD WINAPI CMy2015RemoteDlg::StartFrpClient(LPVOID param)
 {
     CMy2015RemoteDlg* This = (CMy2015RemoteDlg*)param;
-    IPConverter cvt;
 #ifdef _WIN64
     int usingFRP = THIS_CFG.GetInt("frp", "UseFrp");
 #else
     int usingFRP = 0;
 #endif
     std::string ip = THIS_CFG.GetStr("settings", "master", "");
-    CString tip = !ip.empty() && ip != cvt.getPublicIP() ?
+    CString tip = !ip.empty() && ip != This->m_IPConverter->getPublicIP() ?
         CString(ip.c_str()) + _L(" 必须是\"公网IP\"或反向代理服务器IP") :
         _L("请设置\"公网IP\"，或使用反向代理服务器的IP");
     tip += usingFRP ? _TR("[使用FRP]") : _TR("[未使用FRP]");
@@ -1341,6 +1349,10 @@ DWORD WINAPI CMy2015RemoteDlg::StartFrpClient(LPVOID param)
 		CharMsg* msg = new CharMsg(_TR("请通过“扩展”菜单指定语言包目录以支持多语言"));
 		This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
 	}
+    if (!This->m_HasQQwry) {
+        CharMsg* msg = new CharMsg(_TR("请将纯真数据库“qqwry.dat”放于当前程序目录"));
+        This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+    }
 
 #ifdef _WIN64
     usingFRP = ip.empty() ? 0 : usingFRP;
@@ -1690,6 +1702,7 @@ void CMy2015RemoteDlg::Release()
     SAFE_CLOSE_HANDLE(m_hExit);
     m_hExit = NULL;
     Sleep(500);
+    SAFE_DELETE(m_IPConverter);
 
     timeEndPeriod(1);
 }
@@ -2208,7 +2221,7 @@ void CMy2015RemoteDlg::OnNotifyExit()
 //固态菜单
 void CMy2015RemoteDlg::OnMainSet()
 {
-    CSettingDlg  Dlg;
+    CSettingDlg  Dlg(this);
     Dlg.m_nMax_Connect = m_nMaxConnection;
     BOOL use = THIS_CFG.GetInt("frp", "UseFrp");
     int port = THIS_CFG.GetInt("frp", "server_port", 7000);
@@ -3755,8 +3768,14 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
         strText.FormatL(_T("文件路径: %s%s %s%s\r\n系统信息: %s 位 %s 核心 %s GB %s\r\n启动信息: %s %s %s%s %s\r\n上线信息: %s %d %s\r\n客户信息: %s"),
                        res[RES_PROGRAM_BITS].IsEmpty() ? "" : res[RES_PROGRAM_BITS] + " 位 ", res[RES_FILE_PATH], res[RES_EXE_VERSION], processInfo,
                        res[RES_SYSTEM_BITS], res[RES_SYSTEM_CPU], res[RES_SYSTEM_MEM], res[RES_RESOLUTION], startTime, expired.c_str(),
-                       res[RES_USERNAME], res[RES_ISADMIN] == "1" ? "[管理员]" : res[RES_ISADMIN].IsEmpty() ? "" : "[非管理员]", GetElapsedTime(startTime),
+                       res[RES_USERNAME], res[RES_ISADMIN] == "1" ? _L("[管理员]") : res[RES_ISADMIN].IsEmpty() ? "" : _L("[非管理员]"), GetElapsedTime(startTime),
                        ctx->GetProtocol().c_str(), ctx->GetServerPort(), typMap[type].c_str(), res[RES_CLIENT_ID]);
+        std::string geo = res[RES_CLIENT_PUBIP].IsEmpty() ? "" : m_IPConverter->GetGeoLocation(res[RES_CLIENT_PUBIP].GetString());
+        if (m_HasQQwry) {
+            CString qqwryLoc;
+            qqwryLoc.FormatL("\r\n地理信息: %s", geo.c_str());
+            strText += qqwryLoc;
+        }
 
         // 获取鼠标位置
         CPoint pt;
@@ -3769,7 +3788,7 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
         m_pFloatingTip = new CWnd();
         int width = res[RES_FILE_PATH].GetLength() * 10 + 36;
         width = min(max(width, 360), 800);
-        CRect rect(pt.x, pt.y, pt.x + width, pt.y + 100); // 宽度、高度
+        CRect rect(pt.x, pt.y, pt.x + width, pt.y + 120); // 宽度、高度
 
         BOOL bOk = m_pFloatingTip->CreateEx(
                        WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE,

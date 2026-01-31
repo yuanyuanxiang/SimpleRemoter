@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "afxwin.h"
 #include "LangManager.h"
+#include "2015RemoteDlg.h"    
 
 // CSettingDlg 对话框
 
@@ -9,8 +10,9 @@ class CSettingDlg : public CDialogLang
     DECLARE_DYNAMIC(CSettingDlg)
 
 public:
-    CSettingDlg(CWnd* pParent = NULL);   // 标准构造函数
+    CSettingDlg(CMy2015RemoteDlg* pParent);   // 标准构造函数
     virtual ~CSettingDlg();
+    CMy2015RemoteDlg* g_2015RemoteDlg = nullptr;
 
     // 对话框数据
     enum { IDD = IDD_DIALOG_SET };

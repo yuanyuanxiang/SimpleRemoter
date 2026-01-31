@@ -100,7 +100,9 @@ inline void splitIpPort(const std::string& input, std::string& ip, std::string& 
 class IPConverter
 {
 public:
-    std::string IPtoAddress(const std::string& ip)
+    virtual ~IPConverter() {}
+
+    virtual std::string IPtoAddress(const std::string& ip)
     {
         return "implement me";
     }
@@ -140,7 +142,7 @@ public:
     }
 
     // 获取 IP 地址地理位置(基于[ipinfo.io])
-    std::string GetGeoLocation(const std::string& IP)
+    virtual std::string GetGeoLocation(const std::string& IP)
     {
         if (IP.empty()) return "";
 
@@ -307,3 +309,5 @@ public:
         return result;
     }
 };
+
+IPConverter* LoadFileQQWry(const char* datPath);

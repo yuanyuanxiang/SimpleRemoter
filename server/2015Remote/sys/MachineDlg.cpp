@@ -31,13 +31,11 @@ CMachineDlg::CMachineDlg(CWnd* pParent, Server* pIOCPServer, ClientContext* pCon
     m_nSortedCol = 1;
     m_bAscending = true;
     m_bIsReceiving = false;
-    m_IPConverter = new IPConverter;
 }
 
 CMachineDlg::~CMachineDlg()
 {
     m_bIsClosed = TRUE;
-    SAFE_DELETE(m_IPConverter);
     DeleteList();
 }
 
@@ -329,7 +327,6 @@ void CMachineDlg::OnClose()
     DeleteList();
     if (m_wndStatusBar.GetSafeHwnd())
         m_wndStatusBar.DestroyWindow();
-    SAFE_DELETE(m_IPConverter);
     CDialogBase::OnClose();
 }
 
@@ -535,7 +532,7 @@ void CMachineDlg::ShowNetStateList()
                     if (!IPAddress.Compare(_T("0.0.0.0")) || !IPAddress.Compare(_T("*.*.*.*"))) {
                         str = _T("---");
                     } else {
-                        str = m_IPConverter->IPtoAddress(IPAddress.GetString()).c_str();
+                        str = m_pMainWnd->m_IPConverter->IPtoAddress(IPAddress.GetString()).c_str();
                     }
                     m_list.SetItemText(i, j, str);
                 }

@@ -43,7 +43,12 @@ CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "6543", CLIENT_TY
 
 BOOL CALLBACK callback(DWORD CtrlType)
 {
-    if (CtrlType == CTRL_CLOSE_EVENT) {
+#ifdef _DEBUG
+    BOOL isClose = (CtrlType == CTRL_C_EVENT) || (CtrlType == CTRL_CLOSE_EVENT);
+#else
+    BOOL isClose = (CtrlType == CTRL_CLOSE_EVENT);
+#endif
+    if (isClose) {
         status = 1;
         if (hEvent) SetEvent(hEvent);
         if(stop) stop();
