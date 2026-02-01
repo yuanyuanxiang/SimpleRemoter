@@ -7,6 +7,9 @@
 
 #include "IOCPServer.h"
 #include "SortListCtrl.h"
+#include <map>
+#include <string>
+#include <vector>
 
 #define CIOCPServer IOCPServer
 
@@ -30,6 +33,8 @@
 #define	MAX_WRITE_RETRY			15 // 重试写入文件次数
 
 #define WM_MY_MESSAGE (WM_USER+300)
+#define WM_LOCAL_SEARCH_DONE (WM_USER+302)
+#define WM_LOCAL_SEARCH_PROGRESS (WM_USER+303)
 
 // FileManagerDlg.h : header file
 //
@@ -95,12 +100,57 @@ public:
     void FixedLocalFileList(CString directory = "");
     void GetRemoteFileList(CString directory = "");
     void FixedRemoteFileList(BYTE *pbBuffer, DWORD dwBufferLen);
+    void FixedRemoteSearchFileList(BYTE *pbBuffer, DWORD dwBufferLen);
+    bool m_bSearching;
+    bool m_bSearchStopped;
+    int  m_nSearchResultCount;
+    DWORD m_dwSearchStartTime;
+    CString m_strSearchPath;
+    CString m_strSearchName;
+    std::map<std::string, int> m_IconCache;
+
+    // 本地搜索
+    bool m_bLocalSearching;
+    bool m_bLocalSearchStopped;
+    int  m_nLocalSearchResultCount;
+    DWORD m_dwLocalSearchStartTime;
+    CString m_strLocalSearchPath;
+    CString m_strLocalSearchName;
+    std::map<std::string, int> m_LocalIconCache;
+    HANDLE m_hLocalSearchThread;
+    static DWORD WINAPI LocalSearchThreadProc(LPVOID lpParam);
+    void LocalSearchWorker();
+    static bool WildcardMatch(LPCTSTR pattern, LPCTSTR str);
+
+    struct LocalSearchItem {
+        CString fileName;
+        CString dir;
+        CString ext;
+        BOOL bIsDir;
+        DWORD sizeHigh, sizeLow;
+        FILETIME ftWrite;
+    };
+    afx_msg LRESULT OnLocalSearchDone(WPARAM wParam, LPARAM lParam);
+    afx_msg LRESULT OnLocalSearchProgress(WPARAM wParam, LPARAM lParam);
 
     CStatusBar m_wndStatusBar;
     CFileManagerDlg(CWnd* pParent = NULL, Server* pIOCPServer = NULL, ClientContext *pContext = NULL);   // standard constructor
 
     ~CFileManagerDlg()
     {
+        m_bLocalSearching = false;
+        m_bLocalSearchStopped = true;
+        if (m_hLocalSearchThread) {
+            // 处理消息避免SendMessage死锁
+            while (MsgWaitForMultipleObjects(1, &m_hLocalSearchThread, FALSE, 5000, QS_ALLINPUT) == WAIT_OBJECT_0 + 1) {
+                MSG msg;
+                while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+                    TranslateMessage(&msg);
+                    DispatchMessage(&msg);
+                }
+            }
+            CloseHandle(m_hLocalSearchThread);
+        }
         if(m_ProgressCtrl) delete m_ProgressCtrl;
     }
 // Dialog Data
@@ -162,6 +212,8 @@ protected:
     afx_msg void OnUpdateRemoteNewfolder(CCmdUI* pCmdUI);
     afx_msg void OnUpdateLocalDelete(CCmdUI* pCmdUI);
     afx_msg void OnUpdateLocalNewfolder(CCmdUI* pCmdUI);
+    afx_msg void OnUpdateLocalSearch(CCmdUI* pCmdUI);
+    afx_msg void OnUpdateRemoteSearch(CCmdUI* pCmdUI);
     afx_msg void OnRemoteCopy();
     afx_msg void OnLocalCopy();
     afx_msg void OnRemoteCompress();
@@ -186,6 +238,14 @@ protected:
     afx_msg void OnRemoteOpenHide();
     afx_msg void OnRclickListLocal(NMHDR* pNMHDR, LRESULT* pResult);
     afx_msg void OnRclickListRemote(NMHDR* pNMHDR, LRESULT* pResult);
+    afx_msg void OnLocalDesktop();
+    afx_msg void OnLocalDownloads();
+    afx_msg void OnLocalHome();
+    afx_msg void OnLocalSearch();
+    afx_msg void OnRemoteDesktop();
+    afx_msg void OnRemoteDownloads();
+    afx_msg void OnRemoteHome();
+    afx_msg void OnRemoteSearch();
     //}}AFX_MSG
     DECLARE_MESSAGE_MAP()
 

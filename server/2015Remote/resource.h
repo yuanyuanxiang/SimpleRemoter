@@ -336,6 +336,14 @@
 #define IDT_REMOTE_VIEW                 2102
 #define IDT_REMOTE_STOP                 2103
 #define IDT_LOCAL_STOP                  2104
+#define IDT_LOCAL_DESKTOP               2230
+#define IDT_LOCAL_DOWNLOADS             2231
+#define IDT_LOCAL_HOME                  2232
+#define IDT_LOCAL_SEARCH                2233
+#define IDT_REMOTE_DESKTOP              2234
+#define IDT_REMOTE_DOWNLOADS            2235
+#define IDT_REMOTE_HOME                 2236
+#define IDT_REMOTE_SEARCH               2237
 #define IDM_LOCAL_BIGICON               2105
 #define IDM_LOCAL_SMALLICON             2106
 #define IDM_LOCAL_LIST                  2107
@@ -654,7 +662,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        328
 #define _APS_NEXT_COMMAND_VALUE         33011
-#define _APS_NEXT_CONTROL_VALUE         2230
+#define _APS_NEXT_CONTROL_VALUE         2240
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

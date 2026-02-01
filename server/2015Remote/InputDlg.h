@@ -42,3 +42,5 @@ public:
     CStatic m_StaticTipInfo;
     CString m_sTipInfo;
 };
+
+typedef CInputDialog CInputDlg;

