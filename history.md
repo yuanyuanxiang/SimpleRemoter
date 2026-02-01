@@ -584,6 +584,30 @@ Release v1.1.4
 * 修复: #281 检查 CPU 是否支持 SSE2 以避免客户端崩溃
 * 修复: 远程桌面窗口恢复大小问题
 
+**2026.02.01**
+
+发布版本 v1.2.4：
+
+本版本扩展了 PE 编辑功能，新增多语言支持和纯真 IP 数据库，增强客户端列表体验，并修复多项稳定性问题。
+
+* 功能: 将 `Replace Icon` 扩展为 `PE Edit`，使用 "rcedit" 实现
+* 功能: 支持纯真 (QQWRY) IP 数据库
+* 功能: 添加使用标准 FRP 代理客户端端口的菜单
+* 功能: 添加多语言支持（Beta，尚未完成）
+* 功能: 新增 CListCtrlEx 支持列的显示/隐藏
+* 改进: 使用隐私远程桌面时隐藏远程光标
+* 改进: 增强 CClientListDlg 分组功能和用户体验
+* 改进: 远程桌面控制可能失败时通知用户
+* 修复: 向已断开的客户端发送文件时主控崩溃的问题
+* 修复: 将 _TR/_L 结果赋值给 LPCTSTR 时的悬空指针问题
+* 修复: Windows INI 文件读取 API 存在 32KB 限制的问题
+* 修复: #294 需要转换 `IPConverter` 的结果编码
+* 修复: #293 IOCPServer 设置了错误的 keep-alive 时间
+* 修复: #292 RTT 显示 0 或 1 而非实际毫秒值
+* 修复: 鼠标双击无法选中目标文本的问题
+* 修复: 更改屏幕分辨率策略导致 DXGI 崩溃
+* 修复: 密码绑定域名时的主控授权问题
+
 ---
 
 [English, since 2025]
@@ -930,3 +954,27 @@ This release enhances remote desktop control experience, optimizes client update
 * Fix: Copy payload file to target directory when installing
 * Fix: #281 Check if CPU has SSE2 to avoid client crash
 * Fix: Remote desktop window restore size issue
+
+**2026.02.01**
+
+Release v1.2.4
+
+This release extends PE editing capabilities, adds multi-language support and QQWRY IP database, enhances client list experience, and fixes several stability issues.
+
+* Feature: Extend `Replace Icon` to `PE Edit` using "rcedit"
+* Feature: Support QQWRY IP database
+* Feature: Add menu to use standard FRP to proxy client's port
+* Feature: Add language support (beta, not completed)
+* Feature: Add CListCtrlEx with column show/hide support
+* Improve: Hide remote cursor while using private remote desktop
+* Improve: Enhance CClientListDlg with grouping and better UX
+* Improve: Notify user if remote desktop control may be failed
+* Fix: Master crash on sending files to client while disconnect
+* Fix: Dangling pointer when assigning _TR/_L result to LPCTSTR
+* Fix: Windows INI file reading API has 32KB limitation
+* Fix: #294 Need to convert the result encoding of `IPConverter`
+* Fix: #293 Wrong keep-alive time set for IOCPServer
+* Fix: #292 RTT display showing 0 or 1 instead of actual milliseconds
+* Fix: Mouse double click can't select the wanted text
+* Fix: Change screen resolution strategy causing DXGI crash
+* Fix: Master Authorization issue while password binding domain

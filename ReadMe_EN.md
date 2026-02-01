@@ -206,6 +206,28 @@ For cross-network, cross-border, or international remote control system deployme
 
 For earlier changes, see: [history](./history.md)
 
+**Release v1.2.4 (2026.2.1):**
+
+This release extends PE editing capabilities, adds multi-language support and QQWRY IP database, enhances client list experience, and fixes several stability issues.
+
+- Feature: Extend `Replace Icon` to `PE Edit` using "rcedit"
+- Feature: Support QQWRY IP database
+- Feature: Add menu to use standard FRP to proxy client's port
+- Feature: Add language support (beta, not completed)
+- Feature: Add CListCtrlEx with column show/hide support
+- Improve: Hide remote cursor while using private remote desktop
+- Improve: Enhance CClientListDlg with grouping and better UX
+- Improve: Notify user if remote desktop control may be failed
+- Fix: Master crash on sending files to client while disconnect
+- Fix: Dangling pointer when assigning _TR/_L result to LPCTSTR
+- Fix: Windows INI file reading API has 32KB limitation
+- Fix: #294 Need to convert the result encoding of `IPConverter`
+- Fix: #293 Wrong keep-alive time set for IOCPServer
+- Fix: #292 RTT display showing 0 or 1 instead of actual milliseconds
+- Fix: Mouse double click can't select the wanted text
+- Fix: Change screen resolution strategy causing DXGI crash
+- Fix: Master Authorization issue while password binding domain
+
 **Release v1.2.3 (2026.1.21):**
 
 This release enhances remote desktop control experience, optimizes client update logic, and fixes several stability issues.

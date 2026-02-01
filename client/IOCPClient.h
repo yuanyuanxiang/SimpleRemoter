@@ -229,6 +229,12 @@ public:
     std::string GetPublicIP() const {
         return m_sLocPublicIP;
     }
+    CONNECT_ADDRESS* GetConnectionAddress() const {
+        return m_conn;
+	}
+    IOCPManager* GetManager() const {
+        return (IOCPManager*)m_Manager;
+	}
 protected:
     virtual int ReceiveData(char* buffer, int bufSize, int flags)
     {

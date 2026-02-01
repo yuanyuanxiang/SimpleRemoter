@@ -2541,6 +2541,11 @@ BOOL CMy2015RemoteDlg::AuthorizeClient(const std::string& sn, const std::string&
     return IsDateInRange(list[0], list[1]);
 }
 
+BOOL IsTrail(const std::string& sn) {
+    auto id = getDeviceID("127.0.0.1");
+	return sn == id;
+}
+
 VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 {
     if (isClosed) {
@@ -2958,16 +2963,20 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
     // 回复心跳
     // if(0)
     {
+		BOOL isTrail = FALSE;
         BOOL authorized = AuthorizeClient(hb.SN, hb.Passcode, hb.PwdHmac);
         if (authorized) {
             Mprintf("%s HMAC 校验成功: %llu\n", hb.Passcode, hb.PwdHmac);
             m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
-            std::string tip = std::string(hb.Passcode) + std::string(_L("授权成功"));
-            tip += ": " + std::to_string(hb.PwdHmac) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
-            CharMsg* msg = new CharMsg(tip.c_str());
-            PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+            isTrail = IsTrail(hb.SN);
+            if (!isTrail) {
+                std::string tip = std::string(hb.Passcode) + std::string(_L("授权成功"));
+                tip += ": " + std::to_string(hb.PwdHmac) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
+                CharMsg* msg = new CharMsg(tip.c_str());
+                PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+            }
         }
-        HeartbeatACK ack = { hb.Time, (char)authorized };
+        HeartbeatACK ack = { hb.Time, (char)authorized, (char)isTrail };
         BYTE buf[sizeof(HeartbeatACK) + 1] = { CMD_HEARTBEAT_ACK};
         memcpy(buf + 1, &ack, sizeof(HeartbeatACK));
         ctx->Send2Client(buf, sizeof(buf));

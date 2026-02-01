@@ -7,7 +7,7 @@
 //
 // Generated from the TEXTINCLUDE 2 resource.
 //
-#include <winres.h>
+#include "afxres.h"
 
 /////////////////////////////////////////////////////////////////////////////
 #undef APSTUDIO_READONLY_SYMBOLS
@@ -88,7 +88,7 @@ IDR_WAVE                WAVE                    "Res\\msg.wav"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,2,3
+ FILEVERSION 1,0,2,4
  PRODUCTVERSION 1,0,0,1
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
@@ -106,7 +106,7 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "FUCK THE UNIVERSE"
             VALUE "FileDescription", "A GHOST"
-            VALUE "FileVersion", "1.0.2.3"
+            VALUE "FileVersion", "1.0.2.4"
             VALUE "InternalName", "ServerDll.dll"
             VALUE "LegalCopyright", "Copyright (C) 2019-2026"
             VALUE "OriginalFilename", "ServerDll.dll"

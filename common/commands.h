@@ -900,7 +900,8 @@ typedef struct Heartbeat {
 typedef struct HeartbeatACK {
     uint64_t Time;
     char Authorized;
-    char Reserved[23];
+    char IsTrail;
+    char Reserved[22];
 } HeartbeatACK;
 
 // 固定500字节

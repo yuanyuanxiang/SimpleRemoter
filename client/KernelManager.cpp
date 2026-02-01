@@ -1063,6 +1063,7 @@ void AuthKernelManager::OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength)
         m_nNetPing.update_from_sample(GetUnixMs() - n.Time);
         if (n.Authorized == TRUE) {
             Mprintf("======> Client authorized successfully.\n");
+			if (n.IsTrail) return; // Trial version, do not exit
             // Once the client is authorized, authentication is no longer needed
             // So we can set exit flag to terminate the AuthKernelManager
             g_bExit = S_CLIENT_EXIT;
