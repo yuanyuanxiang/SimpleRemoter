@@ -947,7 +947,7 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
             }
         }
         if (pMsg->wParam != VK_LWIN && pMsg->wParam != VK_RWIN) {
-            SendScaledMouseMessage(pMsg, true);
+            SendScaledMouseMessage(pMsg, false);  // false: 保留键盘 lParam
         }
         if (pMsg->message == WM_SYSKEYDOWN && pMsg->wParam == VK_F4) {
             return TRUE; // 屏蔽 Alt + F4

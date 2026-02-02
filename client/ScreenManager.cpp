@@ -1124,9 +1124,9 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
             INPUT k_input = { 0 };
             k_input.type = INPUT_KEYBOARD;
             k_input.ki.wVk = (WORD)Msg->wParam;
-            k_input.ki.wScan = MapVirtualKey((UINT)Msg->wParam, 0);
+            k_input.ki.wScan = (Msg->lParam >> 16) & 0xFF;   // 从 lParam 取真实扫描码
             k_input.ki.dwFlags = 0;
-            if (IsExtendedKey(Msg->wParam))
+            if ((Msg->lParam >> 24) & 1)                       // 从 lParam bit24 取扩展键标志
                 k_input.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
             SendInput(1, &k_input, sizeof(INPUT));
             break;
@@ -1136,9 +1136,9 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
             INPUT k_input = { 0 };
             k_input.type = INPUT_KEYBOARD;
             k_input.ki.wVk = (WORD)Msg->wParam;
-            k_input.ki.wScan = MapVirtualKey((UINT)Msg->wParam, 0);
+            k_input.ki.wScan = (Msg->lParam >> 16) & 0xFF;   // 从 lParam 取真实扫描码
             k_input.ki.dwFlags = KEYEVENTF_KEYUP;
-            if (IsExtendedKey(Msg->wParam))
+            if ((Msg->lParam >> 24) & 1)                       // 从 lParam bit24 取扩展键标志
                 k_input.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
             SendInput(1, &k_input, sizeof(INPUT));
             break;
