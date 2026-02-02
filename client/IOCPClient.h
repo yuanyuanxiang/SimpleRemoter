@@ -18,8 +18,20 @@
 #include "common/header.h"
 #define NO_AES
 #include "common/encrypt.h"
+#ifdef _WIN32
 #include "SafeThread.h"
+#else
+#ifndef SAFE_DELETE
+#define SAFE_DELETE(p) if(NULL !=(p)){ delete (p);(p) = NULL;}
+#endif
+#ifndef SAFE_DELETE_ARRAY
+#define SAFE_DELETE_ARRAY(p) if(NULL !=(p)){ delete[] (p);(p) = NULL;}
+#endif
+#include <sys/socket.h>
+#include <netinet/in.h>
+#endif
 #include "IOCPBase.h"
+#include <mutex>
 
 #define MAX_RECV_BUFFER  1024*32
 #define MAX_SEND_BUFFER  1024*128  // 增大分块大小以提高发送效率
@@ -260,7 +272,7 @@ protected:
     BOOL				m_bIsRunning;
     BOOL				m_bConnected;
 
-    CLock               m_Locker;
+    std::mutex          m_Locker;
 #if USING_CTX
     ZSTD_CCtx*			m_Cctx;						// 压缩上下文
     ZSTD_DCtx*			m_Dctx;						// 解压上下文

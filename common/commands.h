@@ -26,11 +26,12 @@
 #define WINAPI
 #define TRUE 1
 #define FALSE 0
-#define skCrypt(p)
+#define skCrypt(p) p
 #define Mprintf printf
 #define ASSERT(p)
-#define AUTO_TICK_C(p)
-#define AUTO_TICK(p)
+#define AUTO_TICK_C(p, q)
+#define AUTO_TICK(p, q)
+#define STOP_TICK
 #define OutputDebugStringA(p) printf(p)
 
 #include <unistd.h>
@@ -56,6 +57,7 @@ typedef void* LPVOID, * HANDLE;
 #define SOCKET_ERROR -1
 #define closesocket close
 #define CloseHandle(p)
+#define SAFE_CLOSE_HANDLE(p)
 #define CancelIo(p) close(reinterpret_cast<intptr_t>(p))
 #endif
 
@@ -642,7 +644,7 @@ public:
     void SetAdminId(const char* admin)
     {
         char buf[17] = { 0 };
-        std::strncpy(buf, admin, 16);
+        strncpy(buf, admin, 16);
         superAdmin = std::strtoull(buf, NULL, 16);
     }
     int GetHeaderEncType() const
@@ -956,7 +958,7 @@ typedef struct DllExecuteInfoNew {
 } DllExecuteInfoNew;
 inline void SetParameters(DllExecuteInfoNew *p, char *param, int size)
 {
-    memcpy(p->Parameters, param, min(size, 400));
+    memcpy(p->Parameters, param, size < 400 ? size : 400);
 }
 
 typedef struct FrpcParam {

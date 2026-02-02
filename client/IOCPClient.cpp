@@ -214,6 +214,7 @@ std::string GetIPAddress(const char *hostName)
 #endif
 }
 
+#ifdef _WIN32
 BOOL ConnectWithTimeout(SOCKET sock, SOCKADDR *addr, int timeout_sec=5)
 {
     // 临时设为非阻塞
@@ -257,6 +258,7 @@ BOOL ConnectWithTimeout(SOCKET sock, SOCKADDR *addr, int timeout_sec=5)
 
     return TRUE;
 }
+#endif
 
 BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
 {
@@ -421,12 +423,18 @@ bool IOCPClient::ProcessRecvData(CBuffer *m_CompressedBuffer, char *szBuffer, in
 // 如果 f 执行过程中 抛出了异常（比如空指针访问），将被 __except 捕获，返回异常码（如 0xC0000005 表示访问违规）
 int DataProcessWithSEH(DataProcessCB f, void* manager, LPBYTE data, ULONG len)
 {
+#ifdef _WIN32
     __try {
         if (f) f(manager, data, len);
         return 0;
     } __except (EXCEPTION_EXECUTE_HANDLER) {
         return GetExceptionCode();
     }
+#else
+	// 非 Windows 平台暂不支持 SEH 异常处理，直接调用
+    if (f) f(manager, data, len);
+	return 0;
+#endif
 }
 
 
@@ -531,9 +539,11 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength, P
 #endif
         BYTE			buf[1024];
         LPBYTE			CompressedBuffer = ulCompressedLength>1024 ? new BYTE[ulCompressedLength] : buf;
-        m_Locker.Lock();
-        int	iRet = compress(CompressedBuffer, &ulCompressedLength, (PBYTE)szBuffer, ulOriginalLength);
-        m_Locker.Unlock();
+        int	iRet = 0;
+        {
+            std::lock_guard<std::mutex> lock(m_Locker);
+            iRet = compress(CompressedBuffer, &ulCompressedLength, (PBYTE)szBuffer, ulOriginalLength);
+        }
         if (Z_FAILED(iRet)) {
             Mprintf("[ERROR] compress failed: srcLen %d, dstLen %d \n", ulOriginalLength, ulCompressedLength);
             if (CompressedBuffer != buf)  delete [] CompressedBuffer;

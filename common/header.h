@@ -1,7 +1,11 @@
 ﻿#pragma once
 // This file implements a serial of data header encoding methods.
 #include <cstring>
+#ifdef _WIN32
 #include <common/skCrypter.h>
+#else
+#define skCrypt(x) x
+#endif
 #include "common/encfuncs.h"
 
 #define MSG_HEADER "HELL"

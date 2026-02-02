@@ -774,16 +774,18 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
         Mprintf("上线消息 - 主机ID错误: calc=%llu, recv=%s, IP=%s, Path=%s\n",
             id, v[RES_CLIENT_ID].c_str(), strIP.GetString(), path.GetString());
     }
-    bool modify = false;
+    bool modify = false, needConvert = true;
     CString loc = m_ClientMap->GetClientMapData(id, MAP_LOCATION);
     if (loc.IsEmpty()) {
         loc = v[RES_CLIENT_LOC].c_str();
         if (loc.IsEmpty()) {
             loc = m_IPConverter->GetGeoLocation(data[ONLINELIST_IP].GetString()).c_str();
+			needConvert = !m_HasQQwry;
         }
     }
 	// TODO: Remove SafeUtf8ToAnsi after migrating to UTF-8
-    loc = SafeUtf8ToAnsi(loc.GetString()).c_str();
+    if (needConvert)
+        loc = SafeUtf8ToAnsi(loc.GetString()).c_str();
     bool flag = strIP == "127.0.0.1" && !v[RES_CLIENT_PUBIP].empty();
     data[ONLINELIST_IP] = flag ? v[RES_CLIENT_PUBIP].c_str() : strIP;
     data[ONLINELIST_LOCATION] = loc;
@@ -1611,6 +1613,10 @@ void CMy2015RemoteDlg::CheckHeartbeat() {
 	int HEARTBEAT_TIMEOUT = max(30, m_settings.ReportInterval * 3);
     for (auto it = m_HostList.begin(); it != m_HostList.end(); ) {
         context* ContextObject = *it;
+        if (ContextObject->GetClientData(ONLINELIST_CLIENTTYPE) == "LNX") {
+            ++it;
+            continue;
+        }
         if (now - ContextObject->GetLastHeartbeat() > HEARTBEAT_TIMEOUT) {
             auto host = ContextObject->GetAdditionalData(RES_CLIENT_PUBIP);
 			host = host.IsEmpty() ? std::to_string(ContextObject->GetClientID()).c_str() : host;
