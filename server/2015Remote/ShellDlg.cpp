@@ -105,6 +105,23 @@ std::string removeAnsiCodes(const std::string& input)
     return std::regex_replace(input, ansi_regex, "");
 }
 
+// UTF-8 → ANSI(GBK) 转换，如果输入不是合法 UTF-8 则原样返回
+static std::string Utf8ToLocal(const std::string& text)
+{
+    if (text.empty()) return text;
+    // 尝试以 UTF-8 解码，MB_ERR_INVALID_CHARS 会让非法 UTF-8 失败
+    int wLen = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, text.c_str(), -1, NULL, 0);
+    if (wLen <= 0) return text;  // 不是合法 UTF-8，原样返回（Windows 客户端 GBK 数据走这里）
+    std::wstring wstr(wLen, 0);
+    MultiByteToWideChar(CP_UTF8, 0, text.c_str(), -1, &wstr[0], wLen);
+    int aLen = WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, NULL, 0, NULL, NULL);
+    if (aLen <= 0) return text;
+    std::string ansi(aLen, 0);
+    WideCharToMultiByte(CP_ACP, 0, wstr.c_str(), -1, &ansi[0], aLen, NULL, NULL);
+    if (!ansi.empty() && ansi.back() == '\0') ansi.pop_back();
+    return ansi;
+}
+
 VOID CShellDlg::AddKeyBoardData(void)
 {
     // 最后填上0
@@ -113,7 +130,9 @@ VOID CShellDlg::AddKeyBoardData(void)
     m_ContextObject->InDeCompressedBuffer.WriteBuffer((LPBYTE)"", 1);           //从被控制端来的数据我们要加上一个\0
     Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(0);
     bool firstRecv = tmp.c_str() == std::string(">");
-    CString strResult = firstRecv ? "" : CString("\r\n") + removeAnsiCodes(tmp.c_str()).c_str(); //获得所有的数据 包括 \0
+    std::string cleaned = removeAnsiCodes(tmp.c_str());
+    std::string converted = Utf8ToLocal(cleaned);  // Linux 客户端 UTF-8 → GBK；Windows 客户端原样通过
+    CString strResult = firstRecv ? "" : CString("\r\n") + converted.c_str();
 
     //替换掉原来的换行符  可能cmd 的换行同w32下的编辑控件的换行符不一致   所有的回车换行
     strResult.Replace("\n", "\r\n");

@@ -46,6 +46,8 @@ typedef void VOID;
 typedef unsigned char BYTE;
 typedef BYTE* PBYTE, * LPBYTE;
 typedef void* LPVOID, * HANDLE;
+typedef int32_t LONG;
+typedef struct { LONG x; LONG y; } POINT;
 
 #define GET_PROCESS(a1, a2)
 #define MVirtualFree(a1, a2, a3) delete[]a1
@@ -1170,11 +1172,24 @@ public:
     uint64_t            time;
     POINT               pt;
 
+#ifdef _WIN32
     MSG64(const MSG& msg) :hwnd((uint64_t)msg.hwnd), message(msg.message), wParam(msg.wParam),
         lParam(msg.lParam), time(msg.time), pt(msg.pt) {}
 
     MSG64(const MSG32& msg) :hwnd((uint64_t)msg.hwnd), message(msg.message), wParam(msg.wParam),
         lParam(msg.lParam), time(msg.time), pt(msg.pt) {}
+
+    MSG64* Create(const MSG32* msg32)
+    {
+        hwnd = msg32->hwnd;
+        message = msg32->message;
+        wParam = msg32->wParam;
+        lParam = msg32->lParam;
+        time = msg32->time;
+        pt = msg32->pt;
+        return this;
+    }
+#endif
 
     MSG64(const void* buffer, int size)
     {
@@ -1188,17 +1203,6 @@ public:
     MSG64()
     {
         memset(this, 0, sizeof(MSG64));
-    }
-
-    MSG64* Create(const MSG32* msg32)
-    {
-        hwnd = msg32->hwnd;
-        message = msg32->message;
-        wParam = msg32->wParam;
-        lParam = msg32->lParam;
-        time = msg32->time;
-        pt = msg32->pt;
-        return this;
     }
 };
 

@@ -1,11 +1,21 @@
 ﻿#pragma once
+#ifdef _MSC_VER
 #pragma warning(disable: 4996)
+#endif
+
 #ifdef _WIN32
 #ifdef _WINDOWS
 #include <afxwin.h>
 #else
 #include <windows.h>
 #endif
+#include "skCrypter.h"
+#else
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#endif
+
 #include <iostream>
 #include <fstream>
 #include <mutex>
@@ -17,7 +27,6 @@
 #include <chrono>
 #include <sstream>
 #include <cstdarg>
-#include "skCrypter.h"
 #include <iomanip>
 #include <algorithm>
 
@@ -41,6 +50,7 @@ public:
     {
         static Logger instance;
         if (instance.pid.empty()) {
+#ifdef _WIN32
             char buf[16] = {};
             sprintf_s(buf, "%d", GetCurrentProcessId());
             instance.pid = buf;
@@ -57,6 +67,33 @@ public:
             DWORD size = GetEnvironmentVariableA(name, var, sizeof(var));
             instance.enable = stringToBool(var);
             instance.log("logger.h", __LINE__, "GetEnvironmentVariable: %s=%s\n", name, var);
+#endif
+#else // Linux
+            char buf[16] = {};
+            snprintf(buf, sizeof(buf), "%d", (int)getpid());
+            instance.pid = buf;
+            // ~/.config/ghost/ 目录写日志
+            std::string logDir;
+            const char* xdg = getenv("XDG_CONFIG_HOME");
+            if (xdg && xdg[0]) {
+                logDir = std::string(xdg) + "/ghost";
+            } else {
+                const char* home = getenv("HOME");
+                if (home && home[0]) {
+                    logDir = std::string(home) + "/.config/ghost";
+                } else {
+                    logDir = "/tmp";
+                }
+            }
+            mkdir(logDir.c_str(), 0755); // 确保日志目录存在
+            instance.InitLogFile(logDir, instance.pid);
+            // daemon 模式默认打开日志，可通过 ENABLE_LOG=0 关闭
+            const char* envLog = getenv("ENABLE_LOG");
+            if (envLog) {
+                instance.enable = stringToBool(envLog);
+            } else {
+                instance.enable = true;
+            }
 #endif
         }
         return instance;
@@ -129,7 +166,11 @@ public:
                 printf("Join failed: %s [%d]\n", e.what(), e.code().value());
             }
         }
+#ifdef _WIN32
         for (int i = 0; threadRun && i++ < 1000; Sleep(1));
+#else
+        for (int i = 0; threadRun && i++ < 1000; usleep(1000));
+#endif
     }
 
 private:
@@ -143,8 +184,10 @@ private:
         char fileName[100];
 #ifdef _WINDOWS
         sprintf_s(fileName, "\\YAMA_%s_%s.txt", timeString, pid.c_str());
-#else
+#elif defined(_WIN32)
         sprintf_s(fileName, "\\log_%s_%s.txt", timeString, pid.c_str());
+#else
+        snprintf(fileName, sizeof(fileName), "/log_%s_%s.txt", timeString, pid.c_str());
 #endif
         logFileName = dir + fileName;
     }
@@ -258,8 +301,14 @@ inline const char* getFileName(const char* path)
 #else
 #define Mprintf(format, ...) Logger::getInstance().log(getFileName(__FILE__), __LINE__, format, __VA_ARGS__)
 #endif
-#else
+#elif defined(_WIN32)
 #define Mprintf(format, ...) Logger::getInstance().log(getFileName(skCrypt(__FILE__)), __LINE__, skCrypt(format), __VA_ARGS__)
+#else
+// Linux: 覆盖 commands.h 中的 printf 回退定义，改用 Logger 写文件
+#ifdef Mprintf
+#undef Mprintf
+#endif
+#define Mprintf(format, ...) Logger::getInstance().log(getFileName(__FILE__), __LINE__, format, ##__VA_ARGS__)
 #endif
 
 inline void Log(const char* message)
@@ -276,5 +325,3 @@ inline void Logf(const char* file, int line, const char* format, ...)
     va_end(args);
     return Logger::getInstance().log(getFileName(file), line, "%s", message);
 }
-
-#endif // _WIN32
