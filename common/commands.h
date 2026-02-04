@@ -425,7 +425,7 @@ enum ChatManager {
 };
 
 // 文件管理
-enum FileManager {
+enum _FileManager {
     COMMAND_COMPRESS_FILE_PARAM=220,
     COMMAND_FILES_SEARCH_START,
     COMMAND_FILES_SEARCH_STOP,
