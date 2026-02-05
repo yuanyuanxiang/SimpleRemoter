@@ -1613,10 +1613,6 @@ void CMy2015RemoteDlg::CheckHeartbeat() {
 	int HEARTBEAT_TIMEOUT = max(30, m_settings.ReportInterval * 3);
     for (auto it = m_HostList.begin(); it != m_HostList.end(); ) {
         context* ContextObject = *it;
-        if (ContextObject->GetClientData(ONLINELIST_CLIENTTYPE) == "LNX") {
-            ++it;
-            continue;
-        }
         if (now - ContextObject->GetLastHeartbeat() > HEARTBEAT_TIMEOUT) {
             auto host = ContextObject->GetAdditionalData(RES_CLIENT_PUBIP);
 			host = host.IsEmpty() ? std::to_string(ContextObject->GetClientID()).c_str() : host;
