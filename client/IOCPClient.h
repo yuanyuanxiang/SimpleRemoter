@@ -164,7 +164,7 @@ class IOCPClient : public IOCPBase
 {
 public:
     IOCPClient(const State& bExit, bool exit_while_disconnect = false, int mask=0, CONNECT_ADDRESS *conn=0,
-               const std::string&pubIP="");
+               const std::string&pubIP="", void*main=0);
     virtual ~IOCPClient();
 
     int SendLoginInfo(const LOGIN_INFOR& logInfo)
@@ -247,6 +247,9 @@ public:
     IOCPManager* GetManager() const {
         return (IOCPManager*)m_Manager;
 	}
+    void* GetMain() const {
+        return m_main;
+	}
 protected:
     virtual int ReceiveData(char* buffer, int bufSize, int flags)
     {
@@ -291,4 +294,6 @@ protected:
     BOOL				m_EncoderType;
     std::string			m_sLocPublicIP;
     CONNECT_ADDRESS     *m_conn = NULL;
+
+    void                *m_main = NULL;
 };

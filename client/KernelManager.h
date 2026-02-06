@@ -148,6 +148,9 @@ public:
     static int g_IsAppExit;
     MasterSettings m_settings;
     RttEstimator m_nNetPing; // 网络状况
+	std::string m_LoginMsg; // 登录消息摘要
+	std::string m_LoginSignature; // 登录消息签名
+	void SetLoginMsg(const std::string& msg) { m_LoginMsg = msg; }
     // 发送心跳
     virtual int SendHeartbeat()
     {

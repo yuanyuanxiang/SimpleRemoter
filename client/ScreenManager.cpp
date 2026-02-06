@@ -21,6 +21,7 @@
 #include <thread>
 #include "ClientDll.h"
 #include <common/iniFile.h>
+#include "KernelManager.h"
 
 #pragma comment(lib, "Shlwapi.lib")
 
@@ -67,7 +68,8 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 #ifndef PLUGIN
     extern ClientApp g_MyApp;
     m_conn = g_MyApp.g_Connection;
-    InitFileUpload("", 64, 50, Logf);
+    CKernelManager* main = (CKernelManager*)ClientObject->GetMain();
+    InitFileUpload({}, main ? main->m_LoginMsg : "", main ? main->m_LoginSignature : "", 64, 50, Logf);
 #endif
     m_isGDI = TRUE;
     m_virtual = FALSE;

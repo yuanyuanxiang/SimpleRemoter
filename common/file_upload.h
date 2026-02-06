@@ -17,7 +17,8 @@ struct FileChunkPacket {
 
 typedef void (*LogFunc)(const char* file, int line, const char* format, ...);
 
-int InitFileUpload(const std::string hmac, int chunkSizeKb = 64, int sendDurationMs = 50, LogFunc logFunc = NULL);
+int InitFileUpload(const std::string& key, const std::string& msg, const std::string& hmac, 
+    int chunkSizeKb = 64, int sendDurationMs = 50, LogFunc logFunc = NULL);
 
 int UninitFileUpload();
 

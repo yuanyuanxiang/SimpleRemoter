@@ -908,6 +908,7 @@ typedef struct HeartbeatACK {
     char Reserved[22];
 } HeartbeatACK;
 
+#pragma pack(push, 4)
 // 固定500字节
 typedef struct MasterSettings {
     int         ReportInterval;             // 上报间隔
@@ -918,8 +919,10 @@ typedef struct MasterSettings {
     char		WalletAddress[472];			// Wallets
     int         EnableKBLogger;             // Since 2025-11-27
     int         EnableLog;                  // Since 2025-12-17
-    char        Reserved[492];              // Since 2025-11-27
+    char        Signature[64];              // Since 2026-02-05
+    char        Reserved[428];              // Since 2025-11-27
 } MasterSettings;
+#pragma pack(pop)
 
 #define MasterSettingsOldSize 500
 

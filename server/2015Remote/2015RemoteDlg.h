@@ -142,7 +142,7 @@ public:
     int m_nMaxConnection;
     BOOL Activate(const std::string& nPort, int nMaxConnection, const std::string& method);
     void UpdateActiveWindow(CONTEXT_OBJECT* ctx);
-    void SendMasterSettings(CONTEXT_OBJECT* ctx);
+    void SendMasterSettings(CONTEXT_OBJECT* ctx, const MasterSettings& m);
     BOOL SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, bool is64Bit);
     Buffer* m_ServerDLL[PAYLOAD_MAXTYPE];
     Buffer* m_ServerBin[PAYLOAD_MAXTYPE];

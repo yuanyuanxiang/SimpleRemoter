@@ -544,6 +544,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
         LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings, auth);
         Manager = auth ? new AuthKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit) :
                   new CKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit);
+		Manager->SetLoginMsg(login.szStartTime + std::string("|") + std::to_string(settings.clientID));
         while (ClientObject->IsRunning() && ClientObject->IsConnected() && !ClientObject->SendLoginInfo(login))
             WAIT_n(app.m_bIsRunning(&app), 5 + time(0)%10, 200);
         WAIT_n(app.m_bIsRunning(&app)&& ClientObject->IsRunning() && ClientObject->IsConnected(), 10, 200);
