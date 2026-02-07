@@ -564,6 +564,9 @@ public:
     {
         return GroupName;
     }
+    virtual void SetGroupName(const std::string& group)override {
+		GroupName = group;
+    }
     BOOL IsLogin() const override
     {
         return bLogin;

@@ -45,8 +45,6 @@ public:
 public:
     virtual ~context() {}
     virtual void Destroy() {}
-    virtual BOOL IsLogin() const
-    {
-        return TRUE;
-    }
+    virtual BOOL IsLogin() const { return TRUE; }
+    virtual void SetGroupName(const std::string& group) {}
 };

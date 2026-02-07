@@ -2165,8 +2165,7 @@ void CMy2015RemoteDlg::OnOnlineBuildClient()
     Dlg.DoModal();
 }
 
-
-VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
+VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength, contextModifier cb, void* user)
 {
     EnterCriticalSection(&m_cs);
     POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
@@ -2183,6 +2182,7 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength)
             }
         }
         ContextObject->Send2Client(szBuffer, ulLength);
+		if (cb) cb(ContextObject, user);
     }
     LeaveCriticalSection(&m_cs);
 }
@@ -4301,6 +4301,10 @@ void CMy2015RemoteDlg::OnSelchangeGroupTab(NMHDR* pNMHDR, LRESULT* pResult)
     *pResult = 0;
 }
 
+void RefreshGroupList(context* ctx, void* user) {
+	CString* groupName = (CString*)user;
+    ctx->SetGroupName(groupName->GetString());
+}
 
 void CMy2015RemoteDlg::OnOnlineRegroup()
 {
@@ -4315,7 +4319,26 @@ void CMy2015RemoteDlg::OnOnlineRegroup()
     }
     BYTE cmd[50] = { CMD_SET_GROUP };
     memcpy(cmd + 1, dlg.m_str, dlg.m_str.GetLength());
-    SendSelectedCommand(cmd, sizeof(cmd));
+    SendSelectedCommand(cmd, sizeof(cmd), RefreshGroupList, &(dlg.m_str));
+	CAutoLock lock(m_cs);
+    m_selectedGroup = dlg.m_str;
+    if (m_GroupList.end() == m_GroupList.find(m_selectedGroup)) {
+        m_GroupTab.InsertItem(m_GroupList.size(), m_selectedGroup.c_str());
+        m_GroupList.insert(m_selectedGroup);
+    }
+    int idx = 0;
+    for (auto i = m_GroupList.begin(); i != m_GroupList.end(); ++i, ++idx) {
+        if (*i == m_selectedGroup) {
+            m_GroupTab.SetCurSel(idx);
+            NMHDR nmhdr;
+            nmhdr.hwndFrom = m_GroupTab.GetSafeHwnd();
+            nmhdr.idFrom = m_GroupTab.GetDlgCtrlID();
+            nmhdr.code = TCN_SELCHANGE;
+            SendMessage(WM_NOTIFY, nmhdr.idFrom, (LPARAM)&nmhdr);
+            break;
+		}
+    }
+    LoadListData(m_selectedGroup);
 }
 
 

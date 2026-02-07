@@ -65,6 +65,8 @@ class CClientListDlg;
 
 #include "pwd_gen.h"
 
+typedef void (*contextModifier)(context* ctx, void* user);
+
 // CMy2015RemoteDlg 对话框
 class CMy2015RemoteDlg : public CDialogLangEx
 {
@@ -151,7 +153,7 @@ public:
     static BOOL CALLBACK OfflineProc(CONTEXT_OBJECT* ContextObject);
     BOOL AuthorizeClient(const std::string& sn, const std::string& passcode, uint64_t hmac);
     VOID MessageHandle(CONTEXT_OBJECT* ContextObject);
-    VOID SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength);
+    VOID SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength, contextModifier cb = NULL, void* user=NULL);
     VOID SendAllCommand(PBYTE  szBuffer, ULONG ulLength);
     // 显示用户上线信息
     CWnd* m_pFloatingTip = nullptr;
