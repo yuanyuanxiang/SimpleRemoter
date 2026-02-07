@@ -132,7 +132,7 @@ public:
     }
     VOID InitControl();             //初始控件
     VOID TestOnline();              //测试函数
-	BOOL m_HasQQwry = FALSE;
+	BOOL m_HasLocDB = FALSE;
     IPConverter* m_IPConverter = nullptr;
     VOID AddList(CString strIP, CString strAddr, CString strPCName, CString strOS, CString strCPU, CString strVideo, CString strPing,
                  CString ver, CString startTime, std::vector<std::string>& v, CONTEXT_OBJECT* ContextObject);
@@ -327,4 +327,6 @@ public:
     afx_msg void OnImportData();
     afx_msg void OnProxyPortStd();
     afx_msg void OnChooseLangDir();
+    afx_msg void OnLocationQqwry();
+    afx_msg void OnLocationIp2region();
 };

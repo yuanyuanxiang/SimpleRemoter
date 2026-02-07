@@ -336,14 +336,6 @@
 #define IDT_REMOTE_VIEW                 2102
 #define IDT_REMOTE_STOP                 2103
 #define IDT_LOCAL_STOP                  2104
-#define IDT_LOCAL_DESKTOP               2230
-#define IDT_LOCAL_DOWNLOADS             2231
-#define IDT_LOCAL_HOME                  2232
-#define IDT_LOCAL_SEARCH                2233
-#define IDT_REMOTE_DESKTOP              2234
-#define IDT_REMOTE_DOWNLOADS            2235
-#define IDT_REMOTE_HOME                 2236
-#define IDT_REMOTE_SEARCH               2237
 #define IDM_LOCAL_BIGICON               2105
 #define IDM_LOCAL_SMALLICON             2106
 #define IDM_LOCAL_LIST                  2107
@@ -460,6 +452,14 @@
 #define IDC_CLIENT_LIST                 2227
 #define IDC_STATIC_TIPINFO              2228
 #define IDC_EDIT_PROCESS_DESC           2229
+#define IDT_LOCAL_DESKTOP               2230
+#define IDT_LOCAL_DOWNLOADS             2231
+#define IDT_LOCAL_HOME                  2232
+#define IDT_LOCAL_SEARCH                2233
+#define IDT_REMOTE_DESKTOP              2234
+#define IDT_REMOTE_DOWNLOADS            2235
+#define IDT_REMOTE_HOME                 2236
+#define IDT_REMOTE_SEARCH               2237
 #define ID_ONLINE_UPDATE                32772
 #define ID_ONLINE_MESSAGE               32773
 #define ID_ONLINE_DELETE                32775
@@ -654,6 +654,12 @@
 #define ID_33008                        33008
 #define ID_33009                        33009
 #define ID_CHOOSE_LANG_DIR              33010
+#define ID_33011                        33011
+#define ID_LOCATION                     33012
+#define ID_33013                        33013
+#define ID_LOCATION_QQWRY               33014
+#define ID_33015                        33015
+#define ID_LOCATION_IP2REGION           33016
 #define ID_EXIT_FULLSCREEN              40001
 
 // Next default values for new objects
@@ -661,7 +667,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        328
-#define _APS_NEXT_COMMAND_VALUE         33011
+#define _APS_NEXT_COMMAND_VALUE         33017
 #define _APS_NEXT_CONTROL_VALUE         2240
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

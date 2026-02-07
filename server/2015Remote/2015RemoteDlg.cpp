@@ -582,6 +582,8 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
         ON_COMMAND(ID_IMPORT_DATA, &CMy2015RemoteDlg::OnImportData)
         ON_COMMAND(ID_PROXY_PORT_STD, &CMy2015RemoteDlg::OnProxyPortStd)
         ON_COMMAND(ID_CHOOSE_LANG_DIR, &CMy2015RemoteDlg::OnChooseLangDir)
+        ON_COMMAND(ID_LOCATION_QQWRY, &CMy2015RemoteDlg::OnLocationQqwry)
+        ON_COMMAND(ID_LOCATION_IP2REGION, &CMy2015RemoteDlg::OnLocationIp2region)
         END_MESSAGE_MAP()
 
 
@@ -780,7 +782,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
         loc = v[RES_CLIENT_LOC].c_str();
         if (loc.IsEmpty()) {
             loc = m_IPConverter->GetGeoLocation(data[ONLINELIST_IP].GetString()).c_str();
-			needConvert = !m_HasQQwry;
+			needConvert = !m_HasLocDB;
         }
     }
 	// TODO: Remove SafeUtf8ToAnsi after migrating to UTF-8
@@ -1146,15 +1148,24 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, AfxGetInstanceHandle(), 0);
 
     UPDATE_SPLASH(20, "正在加载IP数据库...");
+	int locType = THIS_CFG.GetInt("settings", "IPLocType", 0);
 	char path[MAX_PATH] = {};
 	GetModuleFileNameA(NULL, path, MAX_PATH);
-    GET_FILEPATH(path, "qqwry.dat");
-    m_IPConverter = LoadFileQQWry(path);
-	m_HasQQwry = m_IPConverter != nullptr;
-    if (!m_HasQQwry) {
-        m_IPConverter = new IPConverter();
+    switch (locType) {
+    case QQWry:
+        GET_FILEPATH(path, "qqwry.dat");
+        m_IPConverter = LoadFileQQWry(path);
+        break;
+    case Ip2Region:
+        GET_FILEPATH(path, "ip2region_v4.xdb");
+        m_IPConverter = LoadFileIp2Region(path);
+        break;
+    }
+	m_HasLocDB = m_IPConverter != nullptr;
+    if (!m_HasLocDB) {
+        m_IPConverter = new IPConverter(); //default
 	}
-	Mprintf("IP数据库加载: %s\n", m_HasQQwry ? "succeed" : "failed");
+	Mprintf("IP数据库加载: %s\n", m_HasLocDB ? "succeed" : "failed");
 
     UPDATE_SPLASH(25, "正在初始化视频墙...");
     m_GroupList = {"default"};
@@ -1298,6 +1309,11 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     SubMenu->CheckMenuItem(ID_HOOK_WIN, m_bHookWIN ? MF_CHECKED : MF_UNCHECKED);
     m_runNormal = THIS_CFG.GetInt("settings", "RunNormal", 0);
     SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, !m_runNormal ? MF_CHECKED : MF_UNCHECKED);
+
+    SubMenu = m_MainMenu.GetSubMenu(3);
+    SubMenu = SubMenu->GetSubMenu(5);
+    SubMenu->CheckMenuItem(ID_LOCATION_QQWRY, locType == QQWry ? MF_CHECKED : MF_UNCHECKED);
+    SubMenu->CheckMenuItem(ID_LOCATION_IP2REGION, locType == Ip2Region ? MF_CHECKED : MF_UNCHECKED);
     std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, std::string(_TR("摄像头"))}, {SOFTWARE_TELEGRAM,  std::string(_TR("电报")) }};
     std::string str = myMap[n];
     LVCOLUMN lvColumn;
@@ -1359,8 +1375,8 @@ DWORD WINAPI CMy2015RemoteDlg::StartFrpClient(LPVOID param)
 		CharMsg* msg = new CharMsg(_TR("请通过“扩展”菜单指定语言包目录以支持多语言"));
 		This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
 	}
-    if (!This->m_HasQQwry) {
-        CharMsg* msg = new CharMsg(_TR("请将纯真数据库“qqwry.dat”放于当前程序目录"));
+    if (!This->m_HasLocDB) {
+        CharMsg* msg = new CharMsg(_TR("请将IP数据库文件放于当前程序目录"));
         This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
     }
 
@@ -3790,7 +3806,7 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
                        res[RES_USERNAME], res[RES_ISADMIN] == "1" ? _L("[管理员]") : res[RES_ISADMIN].IsEmpty() ? "" : _L("[非管理员]"), GetElapsedTime(startTime),
                        ctx->GetProtocol().c_str(), ctx->GetServerPort(), typMap[type].c_str(), res[RES_CLIENT_ID]);
         std::string geo = res[RES_CLIENT_PUBIP].IsEmpty() ? "" : m_IPConverter->GetGeoLocation(res[RES_CLIENT_PUBIP].GetString());
-        if (m_HasQQwry) {
+        if (m_HasLocDB) {
             CString qqwryLoc;
             qqwryLoc.FormatL("\r\n地理信息: %s", geo.c_str());
             strText += qqwryLoc;
@@ -5095,4 +5111,23 @@ void CMy2015RemoteDlg::OnImportData()
         CopyFileA(GetDbPath().c_str(), backup.c_str(), FALSE);
         m_ClientMap->LoadFromFile(name.GetString());
     }
+}
+
+void CMy2015RemoteDlg::OnLocationQqwry(){
+    THIS_CFG.SetInt("settings", "IPLocType", QQWry);
+    auto SubMenu = m_MainMenu.GetSubMenu(3);
+    SubMenu = SubMenu->GetSubMenu(5);
+    SubMenu->CheckMenuItem(ID_LOCATION_QQWRY, MF_CHECKED);
+    SubMenu->CheckMenuItem(ID_LOCATION_IP2REGION, MF_UNCHECKED);
+    MessageBoxL("请确保“qqwry.dat”文件存在! 重启程序生效。", "提示", MB_ICONINFORMATION);
+}
+
+void CMy2015RemoteDlg::OnLocationIp2region()
+{
+    THIS_CFG.SetInt("settings", "IPLocType", Ip2Region);
+    auto SubMenu = m_MainMenu.GetSubMenu(3);
+    SubMenu = SubMenu->GetSubMenu(5);
+    SubMenu->CheckMenuItem(ID_LOCATION_QQWRY, MF_UNCHECKED);
+    SubMenu->CheckMenuItem(ID_LOCATION_IP2REGION, MF_CHECKED);
+    MessageBoxL("请确保“ip2region_v4.xdb”文件存在! 重启程序生效。", "提示", MB_ICONINFORMATION);
 }

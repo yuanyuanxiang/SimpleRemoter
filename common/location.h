@@ -310,4 +310,13 @@ public:
     }
 };
 
+enum IPDatabaseType
+{
+    NoneDB = 0,
+    QQWry = 1,
+    Ip2Region = 2,
+};
+
 IPConverter* LoadFileQQWry(const char* datPath);
+
+IPConverter* LoadFileIp2Region(const char* xdbPath);
