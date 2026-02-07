@@ -20,6 +20,7 @@ enum {
 #define ALGORITHM_DEFAULT 1
 #define ALGORITHM_H264 2
 #define ALGORITHM_HOME 3
+#define ALGORITHM_RGB565 3
 
 #define MAX_CURSOR_TYPE	16
 

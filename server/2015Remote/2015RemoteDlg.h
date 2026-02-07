@@ -67,6 +67,8 @@ class CClientListDlg;
 
 typedef void (*contextModifier)(context* ctx, void* user);
 
+bool IsDateGreaterOrEqual(const char* date1, const char* date2);
+
 // CMy2015RemoteDlg 对话框
 class CMy2015RemoteDlg : public CDialogLangEx
 {

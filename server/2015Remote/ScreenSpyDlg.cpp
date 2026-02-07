@@ -11,6 +11,7 @@
 #include "2015RemoteDlg.h"
 #include <file_upload.h>
 #include <md5.h>
+#include <cstdint>  // for uint16_t
 
 
 // CScreenSpyDlg 对话框
@@ -42,8 +43,33 @@ enum {
 
 IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
 
+// 算法标识 (与客户端 CursorInfo.h 保持一致)
+#define ALGORITHM_GRAY 0
 #define ALGORITHM_DIFF 1
+#define ALGORITHM_H264 2
+#define ALGORITHM_HOME 3
+#define ALGORITHM_RGB565 3
+
 #define TIMER_ID 132
+
+// RGB565 → BGRA32 转换函数
+// 输入: RGB565 像素数据 (每像素 2 字节)
+// 输出: BGRA 像素数据 (每像素 4 字节)
+// RGB565 格式: RRRRRGGG GGGBBBBB (R:5位, G:6位, B:5位)
+inline void ConvertRGB565ToBGRA(const uint16_t* src, BYTE* dst, ULONG pixelCount)
+{
+    for (ULONG i = 0; i < pixelCount; i++, src++, dst += 4) {
+        uint16_t c = *src;
+        // 位复制填充低位，还原更精确
+        BYTE r5 = (c >> 11) & 0x1F;
+        BYTE g6 = (c >> 5) & 0x3F;
+        BYTE b5 = c & 0x1F;
+        dst[2] = (r5 << 3) | (r5 >> 2);  // R: 5→8位
+        dst[1] = (g6 << 2) | (g6 >> 4);  // G: 6→8位
+        dst[0] = (b5 << 3) | (b5 >> 2);  // B: 5→8位
+        dst[3] = 0xFF;                    // A: 不透明
+    }
+}
 
 #ifdef _WIN64
 #ifdef _DEBUG
@@ -275,7 +301,7 @@ BOOL CScreenSpyDlg::OnInitDialog()
             SysMenu->AppendMenuL(MF_STRING | MF_POPUP, (UINT_PTR)fpsMenu.Detach(), _T("帧率设置"));
         }
 
-        BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
+        BOOL all = THIS_CFG.GetInt("settings", "MultiScreen", TRUE);
         SysMenu->EnableMenuItem(IDM_SWITCHSCREEN, all ? MF_ENABLED : MF_GRAYED);
         SysMenu->CheckMenuItem(IDM_MULTITHREAD_COMPRESS, m_Settings.CompressThread ? MF_CHECKED : MF_UNCHECKED);
         if (m_Settings.ScreenStrategy == 0) {
@@ -512,6 +538,13 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(bool keyFrame)
                 memcpy(dst, p, m_BitmapInfor_Full->bmiHeader.biSizeImage);
             break;
         }
+        case ALGORITHM_RGB565: {
+            // RGB565 关键帧：将 RGB565 整帧还原为 BGRA
+            ULONG pixelCount = m_BitmapInfor_Full->bmiHeader.biSizeImage / 4;
+            if (pixelCount * 2 == NextScreenLength)
+                ConvertRGB565ToBGRA((const uint16_t*)p, dst, pixelCount);
+            break;
+        }
         case ALGORITHM_H264: {
             break;
         }
@@ -537,6 +570,19 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(bool keyFrame)
                     memset(p1, *p2++, sizeof(DWORD));
 
                 p += 2 * sizeof(ULONG) + ulCount;
+            }
+            break;
+        }
+        case ALGORITHM_RGB565: {
+            // RGB565 差分帧：解码每个差异块
+            for (LPBYTE end = p + NextScreenLength; p < end; ) {
+                ULONG pos = *(LPDWORD)p;                    // BGRA 字节偏移
+                ULONG pixelCount = *(LPDWORD)(p + sizeof(ULONG));  // 像素数量
+                p += 2 * sizeof(ULONG);
+
+                // RGB565 → BGRA 还原到目标位置
+                ConvertRGB565ToBGRA((const uint16_t*)p, dst + pos, pixelCount);
+                p += pixelCount * 2;  // RGB565 每像素 2 字节
             }
             break;
         }

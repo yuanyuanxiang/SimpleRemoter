@@ -17,7 +17,7 @@ CSettingDlg::CSettingDlg(CMy2015RemoteDlg* pParent)
     , m_nListenPort("6543")
     , m_nMax_Connect(0)
     , m_sScreenCapture(_T("GDI"))
-    , m_sScreenCompress(_T("屏幕差异算法"))
+    , m_sScreenCompress(_T("RGBA->RGB565"))
     , m_nReportInterval(5)
     , m_sSoftwareDetect(_T("摄像头"))
     , m_sPublicIP(_T(""))
@@ -108,12 +108,16 @@ BOOL CSettingDlg::OnInitDialog()
     case ALGORITHM_H264:
         m_sScreenCompress = _L(_T("H264压缩算法"));
         break;
+    case ALGORITHM_RGB565:
+        m_sScreenCompress = _L(_T("RGBA->RGB565"));
+        break;
     default:
         break;
     }
     m_ComboScreenCompress.InsertStringL(ALGORITHM_GRAY, "灰度图像传输");
     m_ComboScreenCompress.InsertStringL(ALGORITHM_DIFF, "屏幕差异算法");
     m_ComboScreenCompress.InsertStringL(ALGORITHM_H264, "H264压缩算法");
+    m_ComboScreenCompress.InsertStringL(ALGORITHM_RGB565, "RGBA->RGB565");
 
     m_ComboScreenCapture.InsertStringL(0, "GDI");
     m_ComboScreenCapture.InsertStringL(1, "DXGI");
@@ -136,7 +140,7 @@ BOOL CSettingDlg::OnInitDialog()
         m_sSoftwareDetect = _L(_T("摄像头"));
         break;
     }
-    BOOL all = THIS_CFG.GetInt("settings", "MultiScreen");
+    BOOL all = THIS_CFG.GetInt("settings", "MultiScreen", TRUE);
     ((CButton*)GetDlgItem(IDC_RADIO_ALL_SCREEN))->SetCheck(!all);
     ((CButton*)GetDlgItem(IDC_RADIO_MAIN_SCREEN))->SetCheck(all);
 

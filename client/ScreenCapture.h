@@ -317,8 +317,10 @@ public:
         // Windows规定一个扫描行所占的字节数必须是4的倍数, 所以用DWORD比较
         LPDWORD	p1 = (LPDWORD)CompareDestData, p2 = (LPDWORD)CompareSourData;
         LPBYTE p = szBuffer;
-        ULONG channel = algo == ALGORITHM_GRAY ? 1 : 4;
-        ULONG ratio = algo == ALGORITHM_GRAY ? 4 : 1;
+        // channel: 输出每像素字节数
+        // ratio: 长度字段的除数 (GRAY/RGB565 发送像素数量，DIFF 发送字节数)
+        ULONG channel = (algo == ALGORITHM_GRAY) ? 1 : (algo == ALGORITHM_RGB565) ? 2 : 4;
+        ULONG ratio = (algo == ALGORITHM_GRAY || algo == ALGORITHM_RGB565) ? 4 : 1;
         for (ULONG i = 0; i < ulCompareLength; i += 4, ++p1, ++p2) {
             if (*p1 == *p2)
                 continue;
@@ -332,7 +334,11 @@ public:
             *(LPDWORD)(p) = index + startPostion;
             *(LPDWORD)(p + sizeof(ULONG)) = ulCount / ratio;
             p += 2 * sizeof(ULONG);
-            if (channel != 1) {
+            if (algo == ALGORITHM_RGB565) {
+                // BGRA → RGB565 转换
+                ConvertBGRAtoRGB565((const BYTE*)pos2, (uint16_t*)p, ulCount / 4);
+                p += ulCount / 2;
+            } else if (channel != 1) {
                 memcpy(p, pos2, ulCount);
                 p += ulCount;
             } else {
@@ -354,8 +360,10 @@ public:
             return CompareBitmapDXGI(CompareSourData, CompareDestData, szBuffer, ulCompareLength, algo, startPostion);
 
         LPBYTE p = szBuffer;
-        ULONG channel = algo == ALGORITHM_GRAY ? 1 : 4;
-        ULONG ratio = algo == ALGORITHM_GRAY ? 4 : 1;
+        // channel: 输出每像素字节数
+        // ratio: 长度字段的除数 (GRAY/RGB565 发送像素数量，DIFF 发送字节数)
+        ULONG channel = (algo == ALGORITHM_GRAY) ? 1 : (algo == ALGORITHM_RGB565) ? 2 : 4;
+        ULONG ratio = (algo == ALGORITHM_GRAY || algo == ALGORITHM_RGB565) ? 4 : 1;
 
         // SSE2: 每次比较 16 字节 (4 个像素)
         const ULONG SSE_BLOCK = 16;
@@ -436,7 +444,11 @@ public:
             *(LPDWORD)(p + sizeof(ULONG)) = ulCount / ratio;
             p += 2 * sizeof(ULONG);
 
-            if (channel != 1) {
+            if (algo == ALGORITHM_RGB565) {
+                // RGB565 转换：使用 SSE2 优化
+                ConvertBGRAtoRGB565(pos2, (uint16_t*)p, ulCount / 4);
+                p += ulCount / 2;
+            } else if (channel != 1) {
                 memcpy(p, pos2, ulCount);
                 p += ulCount;
             } else {
@@ -467,7 +479,11 @@ public:
                 *(LPDWORD)(p + sizeof(ULONG)) = ulCount / ratio;
                 p += 2 * sizeof(ULONG);
 
-                if (channel != 1) {
+                if (algo == ALGORITHM_RGB565) {
+                    // RGB565 转换
+                    ConvertBGRAtoRGB565((const BYTE*)pos2, (uint16_t*)p, ulCount / 4);
+                    p += ulCount / 2;
+                } else if (channel != 1) {
                     memcpy(p, pos2, ulCount);
                     p += ulCount;
                 } else {
@@ -576,6 +592,75 @@ public:
         }
     }
 
+    // ===================== RGB565 转换函数 =====================
+
+    // BGRA → RGB565 标量版本 (后备，用于不支持 SSE2 的 CPU)
+    // 输入: BGRA 像素数据 (每像素 4 字节)
+    // 输出: RGB565 像素数据 (每像素 2 字节)
+    // RGB565 格式: RRRRRGGG GGGBBBBB (R:5位, G:6位, B:5位)
+    inline void ConvertBGRAtoRGB565_Scalar(const BYTE* src, uint16_t* dst, ULONG pixelCount)
+    {
+        for (ULONG i = 0; i < pixelCount; i++, src += 4, dst++) {
+            // src[0]=B, src[1]=G, src[2]=R, src[3]=A
+            *dst = ((src[2] >> 3) << 11) | ((src[1] >> 2) << 5) | (src[0] >> 3);
+        }
+    }
+
+    // BGRA → RGB565 SSE2 优化版本
+    // 一次处理 4 个像素 (16字节输入 → 8字节输出)
+    inline void ConvertBGRAtoRGB565_SSE2(const BYTE* src, uint16_t* dst, ULONG pixelCount)
+    {
+        ULONG i = 0;
+
+        // SSE2 掩码: 提取 R、G、B 高位
+        __m128i r_mask = _mm_set1_epi32(0x00F80000);  // R: bit16-23 中取高5位
+        __m128i g_mask = _mm_set1_epi32(0x0000FC00);  // G: bit8-15 中取高6位
+        __m128i b_mask = _mm_set1_epi32(0x000000F8);  // B: bit0-7 中取高5位
+
+        // 无符号打包技巧：先减去 0x8000，有符号打包后再加回来
+        __m128i offset32 = _mm_set1_epi32(0x8000);
+        __m128i offset16 = _mm_set1_epi16((short)0x8000);
+
+        // 每次处理 4 个像素
+        for (; i + 4 <= pixelCount; i += 4, src += 16, dst += 4) {
+            // 加载 4 个 BGRA 像素 [B0G0R0A0 | B1G1R1A1 | B2G2R2A2 | B3G3R3A3]
+            __m128i bgra = _mm_loadu_si128((const __m128i*)src);
+
+            // 提取并移位各通道
+            __m128i r = _mm_srli_epi32(_mm_and_si128(bgra, r_mask), 8);   // R >> 8 → bit11-15
+            __m128i g = _mm_srli_epi32(_mm_and_si128(bgra, g_mask), 5);   // G >> 5 → bit5-10
+            __m128i b = _mm_srli_epi32(_mm_and_si128(bgra, b_mask), 3);   // B >> 3 → bit0-4
+
+            // 合并 RGB565 (值范围 0-65535)
+            __m128i rgb565_32 = _mm_or_si128(_mm_or_si128(r, g), b);
+
+            // 无符号 32→16 打包：减去 0x8000 使其变成有符号范围
+            __m128i rgb565_signed = _mm_sub_epi32(rgb565_32, offset32);
+            // 有符号饱和打包 (现在不会截断了)
+            __m128i packed_signed = _mm_packs_epi32(rgb565_signed, _mm_setzero_si128());
+            // 加回 0x8000 还原为无符号值
+            __m128i packed = _mm_add_epi16(packed_signed, offset16);
+
+            // 存储 4 个 RGB565 像素 (8字节)
+            _mm_storel_epi64((__m128i*)dst, packed);
+        }
+
+        // 处理剩余像素 (标量)
+        for (; i < pixelCount; i++, src += 4, dst++) {
+            *dst = ((src[2] >> 3) << 11) | ((src[1] >> 2) << 5) | (src[0] >> 3);
+        }
+    }
+
+    // BGRA → RGB565 运行时分发 (根据 CPU 特性自动选择)
+    inline void ConvertBGRAtoRGB565(const BYTE* src, uint16_t* dst, ULONG pixelCount)
+    {
+        if (HasSSE2()) {
+            ConvertBGRAtoRGB565_SSE2(src, dst, pixelCount);
+        } else {
+            ConvertBGRAtoRGB565_Scalar(src, dst, pixelCount);
+        }
+    }
+
     virtual LPBITMAPINFO ConstructBitmapInfo(int biBitCount, int biWidth, int biHeight)
     {
         assert(biBitCount == 32);
@@ -644,6 +729,14 @@ public:
                 ToGray(data + offset, nextData, m_BitmapInfor_Send->bmiHeader.biSizeImage);
                 break;
             }
+            case ALGORITHM_RGB565: {
+                // RGB565 关键帧：BGRA 整帧转换为 RGB565
+                ULONG pixelCount = m_BitmapInfor_Send->bmiHeader.biSizeImage / 4;
+                ULONG rgb565Size = pixelCount * 2;
+                ConvertBGRAtoRGB565(nextData, (uint16_t*)(data + offset), pixelCount);
+                *ulNextSendLength = 1 + offset + rgb565Size;
+                break;
+            }
             case ALGORITHM_H264: {
                 uint8_t* encoded_data = nullptr;
                 uint32_t  encoded_size = 0;
@@ -663,7 +756,9 @@ public:
         } else {
             switch (algo) {
             case ALGORITHM_DIFF:
-            case ALGORITHM_GRAY: {
+            case ALGORITHM_GRAY:
+            case ALGORITHM_RGB565: {
+                // DIFF/GRAY/RGB565 都走差分逻辑，区别在 CompareBitmap 内部处理
                 *ulNextSendLength = 1 + offset + MultiCompareBitmap(nextData, GetFirstBuffer(), data + offset, GetBMPSize(), algo);
                 break;
             }
