@@ -46,7 +46,8 @@ class CScreenSpyDlg : public DialogBase
     DECLARE_DYNAMIC(CScreenSpyDlg)
     CToolbarDlg* m_pToolbar = nullptr;
     CMy2015RemoteDlg* m_pParent = nullptr;
-    ScreenSettings m_Settings = { 20 };
+    // MaxFPS=20, ScrollDetectInterval=2, Reserved={}, Capabilities=0
+    ScreenSettings m_Settings = { 20, 0, 0, 0, 0, 0, 0, 2, {}, 0 };
 
 public:
     CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);
@@ -65,6 +66,7 @@ public:
     LPBITMAPINFO m_BitmapInfor_Full;
     VOID DrawFirstScreen(void);
     VOID DrawNextScreenDiff(bool keyFrame);
+    VOID DrawScrollFrame(void);
     BOOL         m_bIsFirst;
     ULONG m_ulHScrollPos;
     ULONG m_ulVScrollPos;

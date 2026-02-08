@@ -15,6 +15,7 @@
 #include <future>
 #include <emmintrin.h>  // SSE2
 #include "X264Encoder.h"
+#include "ScrollDetector.h"
 #include "common/file_upload.h"
 
 inline bool HasSSE2() {
@@ -150,6 +151,13 @@ public:
     int             m_nScreenCount;      // 屏幕数量
     BOOL            m_bEnableMultiScreen;// 多显示器支持
 
+    // 滚动检测相关
+    CScrollDetector* m_pScrollDetector;  // 滚动检测器
+    bool            m_bEnableScrollDetect;   // 是否启用滚动检测
+    bool            m_bServerSupportsScroll; // 服务端是否支持滚动
+    bool            m_bLastFrameWasScroll;   // 上一帧是否是滚动帧（用于强制同步）
+    int             m_nScrollDetectInterval; // 滚动检测间隔（0=禁用, 1=每帧, 2=每2帧, ...）
+
 protected:
     int             m_nVScreenLeft = GetSystemMetrics(SM_XVIRTUALSCREEN);
     int             m_nVScreenTop = GetSystemMetrics(SM_YVIRTUALSCREEN);
@@ -162,7 +170,9 @@ public:
         m_BitmapInfor_Full(nullptr), m_bAlgorithm(algo), m_SendQuality(100),
         m_ulFullWidth(0), m_ulFullHeight(0), m_bZoomed(false), m_wZoom(1), m_hZoom(1),
         m_FrameID(0), m_GOP(DEFAULT_GOP), m_iScreenX(0), m_iScreenY(0), m_biBitCount(n),
-        m_SendKeyFrame(false), m_encoder(nullptr)
+        m_SendKeyFrame(false), m_encoder(nullptr),
+        m_pScrollDetector(nullptr), m_bEnableScrollDetect(false), m_bServerSupportsScroll(false),
+        m_bLastFrameWasScroll(false), m_nScrollDetectInterval(1)
     {
         m_BitmapInfor_Send = nullptr;
         m_BmpZoomBuffer = nullptr;
@@ -235,6 +245,7 @@ public:
 
         SAFE_DELETE(m_ThreadPool);
         SAFE_DELETE(m_encoder);
+        SAFE_DELETE(m_pScrollDetector);
     }
 
     virtual int GetScreenCount() const
@@ -554,6 +565,133 @@ public:
         return m_BitmapInfor_Send->bmiHeader.biSizeImage;
     }
 
+    // ===================== 滚动检测相关方法 =====================
+
+    // 启用/禁用滚动检测
+    virtual void EnableScrollDetection(bool enable)
+    {
+        m_bEnableScrollDetect = enable;
+        if (enable && !m_pScrollDetector && m_BitmapInfor_Send) {
+            m_pScrollDetector = new CScrollDetector(
+                m_BitmapInfor_Send->bmiHeader.biWidth,
+                m_BitmapInfor_Send->bmiHeader.biHeight,
+                4  // BGRA
+            );
+        }
+    }
+
+    // 设置服务端能力标志
+    virtual void SetServerCapabilities(uint32_t caps)
+    {
+        m_bServerSupportsScroll = (caps & CAP_SCROLL_DETECT) != 0;
+    }
+
+    // 设置滚动检测间隔（0=禁用, 1=每帧, 2=每2帧, ...）
+    virtual void SetScrollDetectInterval(int interval)
+    {
+        m_nScrollDetectInterval = interval;
+        // 间隔为0时禁用滚动检测
+        if (interval <= 0) {
+            m_bEnableScrollDetect = false;
+        }
+    }
+
+    // 构建滚动帧
+    // scrollAmount > 0: 向下滚动，底部露出新内容
+    // scrollAmount < 0: 向上滚动，顶部露出新内容
+    virtual LPBYTE BuildScrollFrame(int scrollAmount, LPBYTE currentFrame, ULONG* outLength)
+    {
+        BYTE algo = m_bAlgorithm;
+        BYTE direction = (scrollAmount > 0) ? SCROLL_DIR_DOWN : SCROLL_DIR_UP;
+        int absScroll = abs(scrollAmount);
+
+        // 消息头: TOKEN(1) + 算法(1) + 光标位置(8) + 光标类型(1) = 11字节
+        m_RectBuffer[0] = TOKEN_SCROLL_FRAME;
+        LPBYTE data = m_RectBuffer + 1;
+
+        // 写入算法类型
+        data[0] = algo;
+
+        // 写入光标位置
+        POINT CursorPos;
+        GetCursorPos(&CursorPos);
+        CursorPos.x /= m_wZoom;
+        CursorPos.y /= m_hZoom;
+        memcpy(data + 1, &CursorPos, sizeof(POINT));
+
+        // 写入当前光标类型
+        static CCursorInfo m_CursorInfor;
+        BYTE bCursorIndex = m_CursorInfor.getCurrentCursorIndex();
+        data[1 + sizeof(POINT)] = bCursorIndex;
+
+        ULONG headerOffset = 1 + sizeof(POINT) + sizeof(BYTE);  // 11字节
+
+        // 滚动帧特有字段
+        // 方向(1) + 滚动量(4) + 边缘偏移(4) + 边缘长度(4) = 13字节
+        data[headerOffset] = direction;
+        *(int*)(data + headerOffset + 1) = absScroll;
+
+        int edgeOffset, edgePixelCount;
+        m_pScrollDetector->GetEdgeRegion(scrollAmount, &edgeOffset, &edgePixelCount);
+
+        *(int*)(data + headerOffset + 5) = edgeOffset;
+        *(int*)(data + headerOffset + 9) = edgePixelCount;
+
+        ULONG scrollHeaderSize = 13;  // 滚动特有头部大小
+        LPBYTE edgeData = data + headerOffset + scrollHeaderSize;
+
+        // 复制边缘数据（根据算法格式转换）
+        LPBYTE srcEdge = currentFrame + edgeOffset;
+        ULONG edgeByteSize;
+
+        switch (algo) {
+        case ALGORITHM_RGB565:
+            ConvertBGRAtoRGB565(srcEdge, (uint16_t*)edgeData, edgePixelCount);
+            edgeByteSize = edgePixelCount * 2;
+            break;
+        case ALGORITHM_GRAY:
+            ConvertToGray_SSE2(edgeData, srcEdge, edgePixelCount * 4);
+            edgeByteSize = edgePixelCount;
+            break;
+        case ALGORITHM_DIFF:
+        default:
+            memcpy(edgeData, srcEdge, edgePixelCount * 4);
+            edgeByteSize = edgePixelCount * 4;
+            break;
+        }
+
+        *outLength = 1 + headerOffset + scrollHeaderSize + edgeByteSize;
+
+        // 更新 FirstBuffer：应用滚动并复制新边缘数据
+        ApplyScrollToFirstBuffer(scrollAmount, currentFrame);
+
+        m_FrameID++;
+        return m_RectBuffer;
+    }
+
+    // 将滚动应用到 FirstBuffer（必须与服务端 DrawScrollFrame 操作完全一致）
+    // 这样下一帧的差分计算才能正确反映实际变化
+    virtual void ApplyScrollToFirstBuffer(int scrollAmount, LPBYTE currentFrame)
+    {
+        int stride = m_BitmapInfor_Send->bmiHeader.biWidth * 4;
+        int height = m_BitmapInfor_Send->bmiHeader.biHeight;
+        int absScroll = abs(scrollAmount);
+        LPBYTE first = GetFirstBuffer();
+        int copyHeight = height - absScroll;
+
+        if (scrollAmount > 0) {
+            // 向下滚动：BMP 中低地址移到高地址
+            memmove(first + absScroll * stride, first, copyHeight * stride);
+            // 边缘数据填充到低地址
+            memcpy(first, currentFrame, absScroll * stride);
+        } else {
+            // 向上滚动：BMP 中高地址移到低地址
+            memmove(first, first + absScroll * stride, copyHeight * stride);
+            // 边缘数据填充到高地址
+            memcpy(first + copyHeight * stride, currentFrame + copyHeight * stride, absScroll * stride);
+        }
+    }
+
     // SSE2 优化：BGRA 转单通道灰度，一次处理 4 个像素，输出 4 字节
     // 灰度公式: Y = 0.299*R + 0.587*G + 0.114*B ≈ (306*R + 601*G + 117*B) >> 10
     // 输入: BGRA 像素数据 (每像素 4 字节)
@@ -706,6 +844,25 @@ public:
             *ulNextSendLength = 1 + offset;
             return m_RectBuffer;
         }
+
+        // 滚动检测：在非关键帧且启用滚动检测时进行
+        // 注意：H264 模式跳过（编码器内置运动估计会自动处理）
+        // 如果上一帧是滚动帧，则跳过本帧的滚动检测，发送差分帧来同步可能的误差
+        // m_nScrollDetectInterval: 0=禁用, 1=每帧, 2=每2帧, ...
+        bool shouldDetectScroll = !keyFrame && algo != ALGORITHM_H264 &&
+            m_bEnableScrollDetect && m_bServerSupportsScroll && m_pScrollDetector &&
+            !m_bLastFrameWasScroll && m_nScrollDetectInterval > 0 &&
+            (m_FrameID % m_nScrollDetectInterval == 0);
+
+        if (shouldDetectScroll) {
+            int scrollAmount = m_pScrollDetector->DetectVerticalScroll(GetFirstBuffer(), nextData);
+            if (scrollAmount != 0 && abs(scrollAmount) >= MIN_SCROLL_LINES) {
+                // 检测到滚动，构建滚动帧
+                m_bLastFrameWasScroll = true;
+                return BuildScrollFrame(scrollAmount, nextData, ulNextSendLength);
+            }
+        }
+        m_bLastFrameWasScroll = false;
 
 #if SCREENYSPY_IMPROVE
         memcpy(data + offset, &++m_FrameID, sizeof(int));

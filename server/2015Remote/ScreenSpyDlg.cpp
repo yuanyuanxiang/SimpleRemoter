@@ -39,6 +39,10 @@ enum {
     IDM_ORIGINAL_SIZE,
     IDM_SCREEN_1080P,
     IDM_REMOTE_CURSOR,
+    IDM_SCROLL_DETECT_OFF,      // 滚动检测：关闭（局域网）
+    IDM_SCROLL_DETECT_2,        // 滚动检测：跨网推荐
+    IDM_SCROLL_DETECT_4,        // 滚动检测：标准模式
+    IDM_SCROLL_DETECT_8,        // 滚动检测：省CPU模式
 };
 
 IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
@@ -150,6 +154,12 @@ VOID CScreenSpyDlg::SendNext(void)
     BYTE	bToken[32] = { COMMAND_NEXT };
     uint64_t dlg = (uint64_t)this;
     memcpy(bToken+1, &dlg, sizeof(uint64_t));
+    // 附加服务端能力标志
+    uint32_t capabilities = CAP_SCROLL_DETECT;  // 支持滚动检测优化
+    memcpy(bToken + 9, &capabilities, sizeof(uint32_t));
+    // 附加滚动检测间隔（0=禁用, 1=每帧, 2=每2帧, ...）
+    int scrollInterval = m_Settings.ScrollDetectInterval > 0 ? m_Settings.ScrollDetectInterval : 1;
+    memcpy(bToken + 9 + sizeof(uint32_t), &scrollInterval, sizeof(int));
     m_ContextObject->Send2Client(bToken, sizeof(bToken));
 }
 
@@ -301,6 +311,17 @@ BOOL CScreenSpyDlg::OnInitDialog()
             SysMenu->AppendMenuL(MF_STRING | MF_POPUP, (UINT_PTR)fpsMenu.Detach(), _T("帧率设置"));
         }
 
+        // 滚动检测间隔菜单
+        // 滚动检测菜单（用户友好描述）
+        CMenu scrollMenu;
+        if (scrollMenu.CreatePopupMenu()) {
+            scrollMenu.AppendMenuL(MF_STRING, IDM_SCROLL_DETECT_OFF, "关闭(局域网)");
+            scrollMenu.AppendMenuL(MF_STRING, IDM_SCROLL_DETECT_2, "跨网推荐(最省流量)");
+            scrollMenu.AppendMenuL(MF_STRING, IDM_SCROLL_DETECT_4, "标准模式");
+            scrollMenu.AppendMenuL(MF_STRING, IDM_SCROLL_DETECT_8, "低频模式(省CPU)");
+            SysMenu->AppendMenuL(MF_STRING | MF_POPUP, (UINT_PTR)scrollMenu.Detach(), _T("滚动优化"));
+        }
+
         BOOL all = THIS_CFG.GetInt("settings", "MultiScreen", TRUE);
         SysMenu->EnableMenuItem(IDM_SWITCHSCREEN, all ? MF_ENABLED : MF_GRAYED);
         SysMenu->CheckMenuItem(IDM_MULTITHREAD_COMPRESS, m_Settings.CompressThread ? MF_CHECKED : MF_UNCHECKED);
@@ -317,6 +338,17 @@ BOOL CScreenSpyDlg::OnInitDialog()
             SysMenu->CheckMenuItem(i, MF_UNCHECKED);
 		}
 		SysMenu->CheckMenuItem(fpsIndex, MF_CHECKED);
+
+        // 设置滚动检测间隔选中状态
+        SysMenu->CheckMenuItem(IDM_SCROLL_DETECT_OFF, MF_UNCHECKED);
+        SysMenu->CheckMenuItem(IDM_SCROLL_DETECT_2, MF_UNCHECKED);
+        SysMenu->CheckMenuItem(IDM_SCROLL_DETECT_4, MF_UNCHECKED);
+        SysMenu->CheckMenuItem(IDM_SCROLL_DETECT_8, MF_UNCHECKED);
+        int scrollInterval = m_Settings.ScrollDetectInterval;
+        int scrollMenuID = scrollInterval <= 0 ? IDM_SCROLL_DETECT_OFF :
+                           scrollInterval <= 2 ? IDM_SCROLL_DETECT_2 :
+                           scrollInterval <= 4 ? IDM_SCROLL_DETECT_4 : IDM_SCROLL_DETECT_8;
+        SysMenu->CheckMenuItem(scrollMenuID, MF_CHECKED);
     }
 
     m_bIsCtrl = THIS_CFG.GetInt("settings", "DXGI") == USING_VIRTUAL;
@@ -443,6 +475,12 @@ VOID CScreenSpyDlg::OnReceiveComplete()
     case TOKEN_KEYFRAME: {
         if (!m_bIsFirst) {
             DrawNextScreenDiff(true);
+        }
+        break;
+    }
+    case TOKEN_SCROLL_FRAME: {
+        if (!m_bIsFirst) {
+            DrawScrollFrame();
         }
         break;
     }
@@ -608,6 +646,95 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(bool keyFrame)
     }
 }
 
+
+VOID CScreenSpyDlg::DrawScrollFrame()
+{
+    // 滚动帧消息格式:
+    // 字节 0:        TOKEN_SCROLL_FRAME (99)
+    // 字节 1:        算法类型
+    // 字节 2-5:      光标 X
+    // 字节 6-9:      光标 Y
+    // 字节 10:       光标类型
+    // 字节 11:       滚动方向 (0=上, 1=下)
+    // 字节 12-15:    滚动距离 (像素)
+    // 字节 16-19:    边缘数据偏移 (字节)
+    // 字节 20-23:    边缘数据长度 (像素数)
+    // 字节 24+:      边缘像素数据
+
+    BOOL bChange = FALSE;
+    ULONG ulHeadLength = 1 + 1 + sizeof(POINT) + sizeof(BYTE);  // 11 字节
+
+    LPVOID FirstScreenData = m_BitmapData_Full;
+    if (FirstScreenData == NULL) return;
+
+    // 读取光标位置
+    POINT OldClientCursorPos;
+    memcpy(&OldClientCursorPos, &m_ClientCursorPos, sizeof(POINT));
+    memcpy(&m_ClientCursorPos, m_ContextObject->InDeCompressedBuffer.GetBuffer(2), sizeof(POINT));
+
+    if (memcmp(&OldClientCursorPos, &m_ClientCursorPos, sizeof(POINT)) != 0) {
+        bChange = TRUE;
+    }
+
+    // 读取光标类型
+    BYTE bOldCursorIndex = m_bCursorIndex;
+    m_bCursorIndex = m_ContextObject->InDeCompressedBuffer.GetBuffer(2 + sizeof(POINT))[0];
+    if (bOldCursorIndex != m_bCursorIndex) {
+        bChange = TRUE;
+    }
+
+    // 读取滚动参数
+    LPBYTE buffer = m_ContextObject->InDeCompressedBuffer.GetBuffer(ulHeadLength);
+    BYTE direction = buffer[0];
+    int scrollAmount = *(int*)(buffer + 1);
+    int edgeOffset = *(int*)(buffer + 5);
+    int edgePixelCount = *(int*)(buffer + 9);
+    LPBYTE edgeData = buffer + 13;
+
+    BYTE algorithm = m_ContextObject->InDeCompressedBuffer.GetBYTE(1);
+    LPBYTE dst = (LPBYTE)FirstScreenData;
+
+    // 1. 滚动现有位图缓冲区
+    // BMP is bottom-up: row 0 = screen bottom, row height-1 = screen top
+    int stride = m_BitmapInfor_Full->bmiHeader.biWidth * 4;
+    int height = m_BitmapInfor_Full->bmiHeader.biHeight;
+    int copyHeight = height - scrollAmount;
+
+    if (direction == SCROLL_DIR_UP) {
+        // 向上滚动：屏幕内容向下移，BMP 中高地址移到低地址
+        // 新内容填充到 BMP 高地址（屏幕顶部）
+        memmove(dst, dst + scrollAmount * stride, copyHeight * stride);
+    } else {
+        // 向下滚动：屏幕内容向上移，BMP 中低地址移到高地址
+        // 新内容填充到 BMP 低地址（屏幕底部）
+        memmove(dst + scrollAmount * stride, dst, copyHeight * stride);
+    }
+
+    // 2. 复制边缘数据
+    LPBYTE edgeDst = dst + edgeOffset;
+    switch (algorithm) {
+    case ALGORITHM_RGB565:
+        ConvertRGB565ToBGRA((const uint16_t*)edgeData, edgeDst, edgePixelCount);
+        break;
+    case ALGORITHM_GRAY:
+        for (int i = 0; i < edgePixelCount; ++i, edgeDst += 4) {
+            memset(edgeDst, edgeData[i], 3);
+            edgeDst[3] = 0xFF;
+        }
+        break;
+    case ALGORITHM_DIFF:
+    default:
+        memcpy(edgeDst, edgeData, edgePixelCount * 4);
+        break;
+    }
+
+    bChange = TRUE;
+    m_FrameID++;
+
+    if (bChange && !m_bHide) {
+        PostMessage(WM_PAINT);
+    }
+}
 
 bool CScreenSpyDlg::Decode(LPBYTE Buffer, int size)
 {
@@ -884,6 +1011,28 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
 			SysMenu->CheckMenuItem(i, MF_UNCHECKED);
 		}
 		SysMenu->CheckMenuItem(nID, MF_CHECKED);
+        break;
+    }
+
+    case IDM_SCROLL_DETECT_OFF:
+    case IDM_SCROLL_DETECT_2:
+    case IDM_SCROLL_DETECT_4:
+    case IDM_SCROLL_DETECT_8: {
+        // 菜单ID到间隔值的映射
+        int interval = nID == IDM_SCROLL_DETECT_OFF ? 0 :
+                       nID == IDM_SCROLL_DETECT_2 ? 2 :
+                       nID == IDM_SCROLL_DETECT_4 ? 4 : 8;
+        m_Settings.ScrollDetectInterval = interval;
+        // 更新菜单选中状态
+        SysMenu->CheckMenuItem(IDM_SCROLL_DETECT_OFF, MF_UNCHECKED);
+        SysMenu->CheckMenuItem(IDM_SCROLL_DETECT_2, MF_UNCHECKED);
+        SysMenu->CheckMenuItem(IDM_SCROLL_DETECT_4, MF_UNCHECKED);
+        SysMenu->CheckMenuItem(IDM_SCROLL_DETECT_8, MF_UNCHECKED);
+        SysMenu->CheckMenuItem(nID, MF_CHECKED);
+        // 实时通知客户端更新间隔
+        BYTE cmd[8] = { CMD_SCROLL_INTERVAL };
+        memcpy(cmd + 1, &interval, sizeof(int));
+        m_ContextObject->Send2Client(cmd, 1 + sizeof(int));
         break;
     }
 

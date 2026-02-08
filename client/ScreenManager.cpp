@@ -101,6 +101,7 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
 	m_ScreenSettings.ScreenHeight = cfg.GetInt("settings", "ScreenHeight", 0);
 	m_ScreenSettings.FullScreen = cfg.GetInt("settings", "FullScreen", 0);
     m_ScreenSettings.RemoteCursor = cfg.GetInt("settings", "RemoteCursor", 0);
+    m_ScreenSettings.ScrollDetectInterval = cfg.GetInt("settings", "ScrollDetectInterval", 2);  // 默认每2帧
 
     m_hWorkThread = __CreateThread(NULL,0, WorkThreadProc,this,0,NULL);
 }
@@ -582,8 +583,43 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 		m_ScreenSettings.MaxFPS = m_nMaxFPS;
         break;
     }
+    case CMD_SCROLL_INTERVAL: {
+        // 实时更新滚动检测间隔并保存
+        int interval = *(int*)(szBuffer + 1);
+        if (m_ScreenSpyObject) {
+            m_ScreenSpyObject->SetScrollDetectInterval(interval);
+            Mprintf("滚动检测间隔更新: %d\n", interval);
+        }
+        m_ScreenSettings.ScrollDetectInterval = interval;
+        iniFile cfg(CLIENT_PATH);
+        cfg.SetInt("settings", "ScrollDetectInterval", interval);
+        break;
+    }
     case COMMAND_NEXT: {
         m_DlgID = ulLength >= 9 ? *((uint64_t*)(szBuffer + 1)) : 0;
+        // 解析服务端能力标志（如果有）
+        if (ulLength >= 9 + sizeof(uint32_t)) {
+            uint32_t capabilities = *(uint32_t*)(szBuffer + 9);
+            if (m_ScreenSpyObject) {
+                m_ScreenSpyObject->SetServerCapabilities(capabilities);
+                if (capabilities & CAP_SCROLL_DETECT) {
+                    m_ScreenSpyObject->EnableScrollDetection(true);
+                    Mprintf("滚动检测已启用 (服务端支持)\n");
+                }
+            }
+        }
+        // 解析滚动检测间隔（优先使用服务端发送的值，否则使用本地保存的值）
+        if (ulLength >= 9 + sizeof(uint32_t) + sizeof(int)) {
+            int scrollInterval = *(int*)(szBuffer + 9 + sizeof(uint32_t));
+            if (m_ScreenSpyObject) {
+                m_ScreenSpyObject->SetScrollDetectInterval(scrollInterval);
+                Mprintf("滚动检测间隔(服务端): %d\n", scrollInterval);
+            }
+        } else if (m_ScreenSpyObject && m_ScreenSettings.ScrollDetectInterval > 0) {
+            // 使用本地保存的间隔设置
+            m_ScreenSpyObject->SetScrollDetectInterval(m_ScreenSettings.ScrollDetectInterval);
+            Mprintf("滚动检测间隔(本地): %d\n", m_ScreenSettings.ScrollDetectInterval);
+        }
         NotifyDialogIsOpen();
         break;
     }

@@ -207,7 +207,9 @@ enum {
     CMD_SCREEN_SIZE = 74,
 	CMD_FULL_SCREEN = 75,
     CMD_REMOTE_CURSOR = 76,
+    CMD_SCROLL_INTERVAL = 77,       // 滚动检测间隔
 
+    TOKEN_SCROLL_FRAME = 99,        // 滚动优化帧
     // 服务端发出的标识
     TOKEN_AUTH = 100,				// 要求验证
     TOKEN_HEARTBEAT,				// 心跳包
@@ -926,16 +928,25 @@ typedef struct MasterSettings {
 
 #define MasterSettingsOldSize 500
 
+// 屏幕能力标志
+#define CAP_SCROLL_DETECT  0x0001           // 支持滚动检测优化
+
+// 滚动方向常量
+#define SCROLL_DIR_UP       0               // 向上滚动（屏幕内容向下移）
+#define SCROLL_DIR_DOWN     1               // 向下滚动（屏幕内容向上移）
+
 typedef struct ScreenSettings {
-	int         MaxFPS;                     // 最大帧率
-	int         CompressThread;             // 压缩线程数
-	int         ScreenStrategy;             // 屏幕策略
-	int         ScreenWidth;                // 屏幕宽度
-	int         ScreenHeight;               // 屏幕高度
-	int         FullScreen;                 // 全屏模式
-    int         RemoteCursor;               // 使用远程光标
-	char        Reserved[72];               // 保留字段
-} ScreenSettings;
+	int         MaxFPS;                     // 偏移 0,  最大帧率
+	int         CompressThread;             // 偏移 4,  压缩线程数
+	int         ScreenStrategy;             // 偏移 8,  屏幕策略
+	int         ScreenWidth;                // 偏移 12, 屏幕宽度
+	int         ScreenHeight;               // 偏移 16, 屏幕高度
+	int         FullScreen;                 // 偏移 20, 全屏模式
+    int         RemoteCursor;               // 偏移 24, 使用远程光标
+    int         ScrollDetectInterval;       // 偏移 28, 滚动检测间隔（0=禁用, 1=每帧, 2=每2帧, ...）
+	char        Reserved[64];               // 偏移 32, 保留字段（新能力参数从此处扩展）
+    uint32_t    Capabilities;               // 偏移 96, 能力位标志（放最后）
+} ScreenSettings;                           // 总大小 100 字节
 
 #pragma pack(push, 1)
 // 100字节: 运行类型 + 大小 + 调用方式 + DLL名称
