@@ -249,8 +249,14 @@ public:
 
 // 翻译函数 - 用于 CString 变量或 LPCTSTR
 // 用法: _L(strVar) 或 _L(_T("中文"))
-inline CString _L(const CString& str) { return g_Lang.Get(str); }
-inline CString _L(LPCTSTR str) { return g_Lang.Get(CString(str)); }
+inline CString _L(const CString& str)
+{
+    return g_Lang.Get(str);
+}
+inline CString _L(LPCTSTR str)
+{
+    return g_Lang.Get(CString(str));
+}
 
 // 翻译宏 - 用于格式化函数中的变量 (返回 LPCTSTR)
 // 用法: _stprintf_s(buf, _LF(strVar), arg);
@@ -402,11 +408,11 @@ inline void TranslateMenu(CMenu* pMenu)
                 if (pSubMenu) {
                     // 弹出菜单使用 MF_POPUP
                     pMenu->ModifyMenu(i, MF_BYPOSITION | MF_POPUP | MF_STRING,
-                        (UINT_PTR)pSubMenu->GetSafeHmenu(), newText);
+                                      (UINT_PTR)pSubMenu->GetSafeHmenu(), newText);
                 } else {
                     // 普通菜单项
                     pMenu->ModifyMenu(i, MF_BYPOSITION | MF_STRING,
-                        pMenu->GetMenuItemID(i), newText);
+                                      pMenu->GetMenuItemID(i), newText);
                 }
             }
         }
@@ -469,7 +475,7 @@ inline void TranslateListHeader(CListCtrl* pList)
 class CDialogLang : public CDialog
 {
 public:
-    CDialogLang(){}
+    CDialogLang() {}
 
     CDialogLang(UINT nIDTemplate, CWnd* pParent = NULL)
         : CDialog(nIDTemplate, pParent) {}
@@ -571,19 +577,19 @@ protected:
 
         // 静态文本
         AddControl(0x0082, 15, 15, 40, 12, (WORD)-1,
-            SS_LEFT | WS_CHILD | WS_VISIBLE, _T("语言:"));
+                   SS_LEFT | WS_CHILD | WS_VISIBLE, _T("语言:"));
 
         // ComboBox
         AddControl(0x0085, 55, 13, 130, 150, 1001,
-            CBS_DROPDOWNLIST | WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL, _T(""));
+                   CBS_DROPDOWNLIST | WS_CHILD | WS_VISIBLE | WS_TABSTOP | WS_VSCROLL, _T(""));
 
         // 确定按钮
         AddControl(0x0080, 45, 50, 50, 14, IDOK,
-            BS_DEFPUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP, _T("确定"));
+                   BS_DEFPUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP, _T("确定"));
 
         // 取消按钮
         AddControl(0x0080, 105, 50, 50, 14, IDCANCEL,
-            BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP, _T("取消"));
+                   BS_PUSHBUTTON | WS_CHILD | WS_VISIBLE | WS_TABSTOP, _T("取消"));
 
         return (LPCDLGTEMPLATE)m_templateBuffer.data();
     }
@@ -594,7 +600,10 @@ protected:
         m_templateBuffer.insert(m_templateBuffer.end(), p, p + size);
     }
 
-    void AppendWord(WORD w) { AppendData(&w, sizeof(WORD)); }
+    void AppendWord(WORD w)
+    {
+        AppendData(&w, sizeof(WORD));
+    }
 
     void AppendString(LPCTSTR str)
     {
@@ -615,12 +624,15 @@ protected:
     }
 
     void AddControl(WORD classAtom, short x, short y, short cx, short cy,
-        WORD id, DWORD style, LPCTSTR text)
+                    WORD id, DWORD style, LPCTSTR text)
     {
         AlignToDword();
         DLGITEMTEMPLATE item = { 0 };
         item.style = style;
-        item.x = x; item.y = y; item.cx = cx; item.cy = cy;
+        item.x = x;
+        item.y = y;
+        item.cx = cx;
+        item.cy = cy;
         item.id = id;
         AppendData(&item, sizeof(DLGITEMTEMPLATE));
         AppendWord(0xFFFF);

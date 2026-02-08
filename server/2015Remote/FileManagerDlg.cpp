@@ -1320,7 +1320,10 @@ void CFileManagerDlg::LocalSearchWorker()
     else
         lstrcpy(szPattern, (LPCSTR)m_strLocalSearchName);
 
-    struct SearchDir { CString path; int depth; };
+    struct SearchDir {
+        CString path;
+        int depth;
+    };
     std::vector<SearchDir> dirStack;
     dirStack.push_back({m_strLocalSearchPath, 0});
 
@@ -1387,7 +1390,7 @@ LRESULT CFileManagerDlg::OnLocalSearchProgress(WPARAM wParam, LPARAM lParam)
     if (!m_bLocalSearching || m_bLocalSearchStopped) return 0;
     DWORD dwElapsed = (GetTickCount() - m_dwLocalSearchStartTime) / 1000;
     ShowMessage(_TRF("搜索 \"%s\" 在 %s ... 已找到 %d 个 (%d秒)"),
-        m_strLocalSearchName, m_strLocalSearchPath, (int)wParam, dwElapsed);
+                m_strLocalSearchName, m_strLocalSearchPath, (int)wParam, dwElapsed);
     return 0;
 }
 
@@ -1439,10 +1442,10 @@ LRESULT CFileManagerDlg::OnLocalSearchDone(WPARAM wParam, LPARAM lParam)
     DWORD dwElapsed = (GetTickCount() - m_dwLocalSearchStartTime) / 1000;
     if (wParam) // 正常完成
         ShowMessage(_TRF("搜索 \"%s\" 在 %s 完成，共 %d 个结果 (耗时 %d秒)"),
-            m_strLocalSearchName, m_strLocalSearchPath, m_nLocalSearchResultCount, dwElapsed);
+                    m_strLocalSearchName, m_strLocalSearchPath, m_nLocalSearchResultCount, dwElapsed);
     else // 被停止
         ShowMessage(_TRF("搜索 \"%s\" 在 %s 已停止，共 %d 个结果 (耗时 %d秒)"),
-            m_strLocalSearchName, m_strLocalSearchPath, m_nLocalSearchResultCount, dwElapsed);
+                    m_strLocalSearchName, m_strLocalSearchPath, m_nLocalSearchResultCount, dwElapsed);
 
     m_bLocalSearching = false;
     m_list_local.EnableWindow(TRUE);
@@ -1883,7 +1886,7 @@ void CFileManagerDlg::OnLocalCompress()
     zsta::Error err = zsta::CZstdArchive::Compress(paths, target);
     if (err != zsta::Error::Success) {
         MessageBoxAPI_L(m_hWnd, "压缩失败: " + CString(zsta::CZstdArchive::GetErrorString(err)),
-                      "错误", MB_OK | MB_ICONERROR);
+                        "错误", MB_OK | MB_ICONERROR);
     } else {
         FixedLocalFileList(".");
     }
@@ -1926,7 +1929,7 @@ void CFileManagerDlg::OnLocalUnCompress()
             zsta::Error err = zsta::CZstdArchive::Extract(path, destDir);
             if (err != zsta::Error::Success) {
                 MessageBoxAPI_L(m_hWnd, "解压失败: " + CString(zsta::CZstdArchive::GetErrorString(err)),
-                              "错误", MB_OK | MB_ICONERROR);
+                                "错误", MB_OK | MB_ICONERROR);
             } else {
                 needRefresh = TRUE;
             }

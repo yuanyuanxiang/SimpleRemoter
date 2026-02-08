@@ -30,8 +30,8 @@ public:
     {
         char client_ip[INET_ADDRSTRLEN];
 #if (defined(_WIN32_WINNT) && _WIN32_WINNT <= 0x0501)
-		strncpy(client_ip, inet_ntoa(clientAddr.sin_addr), INET_ADDRSTRLEN - 1);
-		client_ip[INET_ADDRSTRLEN - 1] = '\0';
+        strncpy(client_ip, inet_ntoa(clientAddr.sin_addr), INET_ADDRSTRLEN - 1);
+        client_ip[INET_ADDRSTRLEN - 1] = '\0';
 #else
         inet_ntop(AF_INET, &clientAddr.sin_addr, client_ip, INET_ADDRSTRLEN);
 #endif

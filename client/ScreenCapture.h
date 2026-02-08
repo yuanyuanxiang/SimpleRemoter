@@ -18,7 +18,8 @@
 #include "ScrollDetector.h"
 #include "common/file_upload.h"
 
-inline bool HasSSE2() {
+inline bool HasSSE2()
+{
 #ifdef _DEBUG
     return false;
 #else
@@ -35,7 +36,8 @@ public:
     {
         for (size_t i = 0; i < numThreads; ++i) {
             workers.emplace_back([this] {
-                while (true) {
+                while (true)
+                {
                     std::function<void()> task;
                     {
                         std::unique_lock<std::mutex> lock(this->queueMutex);
@@ -253,35 +255,39 @@ public:
         return m_nScreenCount;
     }
 
-	virtual int GetScreenWidth() const
-	{
-		return m_ulFullWidth;
-	}
-	virtual int GetScreenHeight() const
-	{
-		return m_ulFullHeight;
-	}
-	virtual int GetScreenLeft() const {
-		return m_iScreenX;
-	}
-	virtual int GetScreenTop() const {
-		return m_iScreenY;
-	}
+    virtual int GetScreenWidth() const
+    {
+        return m_ulFullWidth;
+    }
+    virtual int GetScreenHeight() const
+    {
+        return m_ulFullHeight;
+    }
+    virtual int GetScreenLeft() const
+    {
+        return m_iScreenX;
+    }
+    virtual int GetScreenTop() const
+    {
+        return m_iScreenY;
+    }
 
-	inline int GetVScreenWidth() const
-	{
-		return m_nVScreenWidth;
-	}
+    inline int GetVScreenWidth() const
+    {
+        return m_nVScreenWidth;
+    }
     inline int GetVScreenHeight() const
-	{
-		return m_nVScreenHeight;
-	}
-    inline int GetVScreenLeft() const {
-		return m_nVScreenLeft;
-	}
-    inline int GetVScreenTop() const {
-		return m_nVScreenTop;
-	}
+    {
+        return m_nVScreenHeight;
+    }
+    inline int GetVScreenLeft() const
+    {
+        return m_nVScreenLeft;
+    }
+    inline int GetVScreenTop() const
+    {
+        return m_nVScreenTop;
+    }
 
     virtual bool IsOriginalSize() const
     {
@@ -552,15 +558,18 @@ public:
         return offset;  // 返回缓冲区的大小
     }
 
-    virtual int GetFrameID() const {
+    virtual int GetFrameID() const
+    {
         return m_FrameID;
     }
 
-    virtual LPBYTE GetFirstBuffer() const {
+    virtual LPBYTE GetFirstBuffer() const
+    {
         return m_FirstBuffer;
     }
 
-    virtual int GetBMPSize() const {
+    virtual int GetBMPSize() const
+    {
         assert(m_BitmapInfor_Send);
         return m_BitmapInfor_Send->bmiHeader.biSizeImage;
     }
@@ -850,9 +859,9 @@ public:
         // 如果上一帧是滚动帧，则跳过本帧的滚动检测，发送差分帧来同步可能的误差
         // m_nScrollDetectInterval: 0=禁用, 1=每帧, 2=每2帧, ...
         bool shouldDetectScroll = !keyFrame && algo != ALGORITHM_H264 &&
-            m_bEnableScrollDetect && m_bServerSupportsScroll && m_pScrollDetector &&
-            !m_bLastFrameWasScroll && m_nScrollDetectInterval > 0 &&
-            (m_FrameID % m_nScrollDetectInterval == 0);
+                                  m_bEnableScrollDetect && m_bServerSupportsScroll && m_pScrollDetector &&
+                                  !m_bLastFrameWasScroll && m_nScrollDetectInterval > 0 &&
+                                  (m_FrameID % m_nScrollDetectInterval == 0);
 
         if (shouldDetectScroll) {
             int scrollAmount = m_pScrollDetector->DetectVerticalScroll(GetFirstBuffer(), nextData);

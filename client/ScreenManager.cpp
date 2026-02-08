@@ -91,15 +91,15 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
     iniFile cfg(CLIENT_PATH);
     int m_nMaxFPS = cfg.GetInt("settings", "ScreenMaxFPS", 20);
     m_nMaxFPS = max(m_nMaxFPS, 1);
-	int threadNum = cfg.GetInt("settings", "ScreenCompressThread", 0);
+    int threadNum = cfg.GetInt("settings", "ScreenCompressThread", 0);
     m_ClientObject->SetMultiThreadCompress(threadNum);
 
     m_ScreenSettings.MaxFPS = m_nMaxFPS;
-	m_ScreenSettings.CompressThread = threadNum;
+    m_ScreenSettings.CompressThread = threadNum;
     m_ScreenSettings.ScreenStrategy = cfg.GetInt("settings", "ScreenStrategy", 0);
-	m_ScreenSettings.ScreenWidth = cfg.GetInt("settings", "ScreenWidth", 0);
-	m_ScreenSettings.ScreenHeight = cfg.GetInt("settings", "ScreenHeight", 0);
-	m_ScreenSettings.FullScreen = cfg.GetInt("settings", "FullScreen", 0);
+    m_ScreenSettings.ScreenWidth = cfg.GetInt("settings", "ScreenWidth", 0);
+    m_ScreenSettings.ScreenHeight = cfg.GetInt("settings", "ScreenHeight", 0);
+    m_ScreenSettings.FullScreen = cfg.GetInt("settings", "FullScreen", 0);
     m_ScreenSettings.RemoteCursor = cfg.GetInt("settings", "RemoteCursor", 0);
     m_ScreenSettings.ScrollDetectInterval = cfg.GetInt("settings", "ScrollDetectInterval", 2);  // 默认每2帧
 
@@ -216,7 +216,8 @@ BOOL IsProcessRunningInDesktop(HDESK hDesk, const char* targetExeName)
 
         // 获取进程名
         HANDLE hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, dwProcessId);
-        if (hProcess) {
+        if (hProcess)
+        {
             char exePath[MAX_PATH];
             DWORD size = MAX_PATH;
             if (QueryFullProcessImageName(hProcess, 0, exePath, &size)) {
@@ -334,10 +335,10 @@ BOOL IsRunningAsSystem()
 
 BOOL CScreenManager::OnReconnect()
 {
-	auto duration = GetTickCount64() - m_nReconnectTime;
+    auto duration = GetTickCount64() - m_nReconnectTime;
     if (duration <= 3000)
         Sleep(3000 - duration);
-	m_nReconnectTime = GetTickCount64();
+    m_nReconnectTime = GetTickCount64();
 
     m_SendFirst = FALSE;
     BOOL r = m_ClientObject ? m_ClientObject->Reconnect(this) : FALSE;
@@ -530,18 +531,18 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         SwitchScreen();
         break;
     }
-	case CMD_FULL_SCREEN: {
-		int fullScreen = szBuffer[1];
-		iniFile cfg(CLIENT_PATH);
-		cfg.SetInt("settings", "FullScreen", fullScreen);
-		m_ScreenSettings.FullScreen = fullScreen;
-		break;
-	}
+    case CMD_FULL_SCREEN: {
+        int fullScreen = szBuffer[1];
+        iniFile cfg(CLIENT_PATH);
+        cfg.SetInt("settings", "FullScreen", fullScreen);
+        m_ScreenSettings.FullScreen = fullScreen;
+        break;
+    }
     case CMD_REMOTE_CURSOR: {
-		int remoteCursor = szBuffer[1];
-		iniFile cfg(CLIENT_PATH);
-		cfg.SetInt("settings", "RemoteCursor", remoteCursor);
-		m_ScreenSettings.RemoteCursor = remoteCursor;
+        int remoteCursor = szBuffer[1];
+        iniFile cfg(CLIENT_PATH);
+        cfg.SetInt("settings", "RemoteCursor", remoteCursor);
+        m_ScreenSettings.RemoteCursor = remoteCursor;
         break;
     }
     case CMD_MULTITHREAD_COMPRESS: {
@@ -549,7 +550,7 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         m_ClientObject->SetMultiThreadCompress(threadNum);
         iniFile cfg(CLIENT_PATH);
         cfg.SetInt("settings", "ScreenCompressThread", threadNum);
-		m_ScreenSettings.CompressThread = threadNum;
+        m_ScreenSettings.CompressThread = threadNum;
         break;
     }
     case CMD_SCREEN_SIZE: {
@@ -570,9 +571,9 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         default:
             break;
         }
-		m_ScreenSettings.ScreenStrategy = strategy;
-		m_ScreenSettings.ScreenWidth = width;
-		m_ScreenSettings.ScreenHeight = height;
+        m_ScreenSettings.ScreenStrategy = strategy;
+        m_ScreenSettings.ScreenWidth = width;
+        m_ScreenSettings.ScreenHeight = height;
         break;
     }
     case CMD_FPS: {
@@ -580,7 +581,7 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         m_nMaxFPS = max(m_nMaxFPS, 1);
         iniFile cfg(CLIENT_PATH);
         cfg.SetInt("settings", "ScreenMaxFPS", m_nMaxFPS);
-		m_ScreenSettings.MaxFPS = m_nMaxFPS;
+        m_ScreenSettings.MaxFPS = m_nMaxFPS;
         break;
     }
     case CMD_SCROLL_INTERVAL: {
@@ -651,12 +652,12 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
             szBuffer[0] = { COMMAND_GET_FOLDER };
             memcpy(szBuffer + 1, str.data(), str.size());
             SendData(szBuffer, 1 + str.size());
-			SAFE_DELETE_ARRAY(szBuffer);
+            SAFE_DELETE_ARRAY(szBuffer);
             break;
         }
         if (SendClientClipboard(ulLength > 1))
             break;
-		files = GetForegroundSelectedFiles(result);
+        files = GetForegroundSelectedFiles(result);
         if (!files.empty()) {
             char h[100] = {};
             memcpy(h, szBuffer + 1, ulLength - 1);
@@ -696,10 +697,10 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         // 发送文件
         std::string dir = (char*)(szBuffer + 1);
         char* ptr = (char*)szBuffer + 1 + dir.length() + 1;
-        auto files = *ptr ? ParseMultiStringPath(ptr, ulLength - 2 - dir.length()) : std::vector<std::string>{};
+        auto files = *ptr ? ParseMultiStringPath(ptr, ulLength - 2 - dir.length()) : std::vector<std::string> {};
         if (files.empty()) {
-			BOOL result = 0;
-			files = GetClipboardFiles(result);
+            BOOL result = 0;
+            files = GetClipboardFiles(result);
         }
         if (!files.empty() && !dir.empty()) {
             IOCPClient* pClient = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn);
@@ -830,11 +831,21 @@ std::string GetTitle(HWND hWnd)
 }
 
 // 辅助判断是否为扩展键
-bool IsExtendedKey(WPARAM vKey) {
+bool IsExtendedKey(WPARAM vKey)
+{
     switch (vKey) {
-    case VK_INSERT: case VK_DELETE: case VK_HOME: case VK_END:
-    case VK_PRIOR:  case VK_NEXT:   case VK_LEFT: case VK_UP:
-    case VK_RIGHT:  case VK_DOWN:   case VK_RCONTROL: case VK_RMENU:
+    case VK_INSERT:
+    case VK_DELETE:
+    case VK_HOME:
+    case VK_END:
+    case VK_PRIOR:
+    case VK_NEXT:
+    case VK_LEFT:
+    case VK_UP:
+    case VK_RIGHT:
+    case VK_DOWN:
+    case VK_RCONTROL:
+    case VK_RMENU:
     case VK_DIVIDE: // 小键盘的 /
         return true;
     default:
@@ -1078,7 +1089,7 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
     }
     for (int i = 0; i < ulMsgCount; ++i, ptr += msgSize) {
         MSG64* Msg = msgSize == 48 ? (MSG64*)ptr :
-            (MSG64*)msg64.Create(msg32.Create(ptr, msgSize));
+                     (MSG64*)msg64.Create(msg32.Create(ptr, msgSize));
 
         INPUT input = { 0 };
         input.type = INPUT_MOUSE;
@@ -1096,16 +1107,16 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
             }
 
             // 映射到 0-65535 的绝对坐标空间
-			if (m_ScreenSpyObject->GetScreenCount() > 1) {
-				// 多显示器模式下，必须重新计算 dx, dy 映射到全虚拟桌面空间
-				// 且必须带上 MOUSEEVENTF_VIRTUALDESK 标志
-				input.mi.dx = ((Point.x - m_ScreenSpyObject->GetVScreenLeft()) * 65535) / (m_ScreenSpyObject->GetVScreenWidth() - 1);
-				input.mi.dy = ((Point.y - m_ScreenSpyObject->GetVScreenTop()) * 65535) / (m_ScreenSpyObject->GetVScreenHeight() - 1);
+            if (m_ScreenSpyObject->GetScreenCount() > 1) {
+                // 多显示器模式下，必须重新计算 dx, dy 映射到全虚拟桌面空间
+                // 且必须带上 MOUSEEVENTF_VIRTUALDESK 标志
+                input.mi.dx = ((Point.x - m_ScreenSpyObject->GetVScreenLeft()) * 65535) / (m_ScreenSpyObject->GetVScreenWidth() - 1);
+                input.mi.dy = ((Point.y - m_ScreenSpyObject->GetVScreenTop()) * 65535) / (m_ScreenSpyObject->GetVScreenHeight() - 1);
                 input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE | MOUSEEVENTF_VIRTUALDESK;
             } else {
-				input.mi.dx = (Point.x * 65535) / (m_ScreenSpyObject->GetScreenWidth() - 1);
-				input.mi.dy = (Point.y * 65535) / (m_ScreenSpyObject->GetScreenHeight() - 1);
-				input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE;
+                input.mi.dx = (Point.x * 65535) / (m_ScreenSpyObject->GetScreenWidth() - 1);
+                input.mi.dy = (Point.y * 65535) / (m_ScreenSpyObject->GetScreenHeight() - 1);
+                input.mi.dwFlags = MOUSEEVENTF_ABSOLUTE | MOUSEEVENTF_MOVE;
             }
         }
 

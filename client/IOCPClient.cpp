@@ -432,9 +432,9 @@ int DataProcessWithSEH(DataProcessCB f, void* manager, LPBYTE data, ULONG len)
         return GetExceptionCode();
     }
 #else
-	// 非 Windows 平台暂不支持 SEH 异常处理，直接调用
+    // 非 Windows 平台暂不支持 SEH 异常处理，直接调用
     if (f) f(manager, data, len);
-	return 0;
+    return 0;
 #endif
 }
 

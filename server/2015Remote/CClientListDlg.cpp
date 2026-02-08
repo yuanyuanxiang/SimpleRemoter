@@ -78,19 +78,25 @@ static const int g_nGroupFieldCount = _countof(g_GroupFieldConfigs);
 static CString GetFieldValue(const ClientValue& val, GroupField field)
 {
     switch (field) {
-    case GF_IP:          return CString(val.IP);
-    case GF_ComputerName: return CString(val.ComputerName);
-    case GF_OsName:      return CString(val.OsName);
-    case GF_Location:    return CString(val.Location);
-    case GF_ProgramPath: return CString(val.ProgramPath);
-    default:             return _T("");
+    case GF_IP:
+        return CString(val.IP);
+    case GF_ComputerName:
+        return CString(val.ComputerName);
+    case GF_OsName:
+        return CString(val.OsName);
+    case GF_Location:
+        return CString(val.Location);
+    case GF_ProgramPath:
+        return CString(val.ProgramPath);
+    default:
+        return _T("");
     }
 }
 
 // 比较两个客户端的指定列，返回 <0, 0, >0
 static int CompareClientByColumn(const std::pair<ClientKey, ClientValue>& a,
-                                  const std::pair<ClientKey, ClientValue>& b,
-                                  int nColumn)
+                                 const std::pair<ClientKey, ClientValue>& b,
+                                 int nColumn)
 {
     switch (nColumn) {
     case COL_ID:
@@ -244,14 +250,14 @@ void CClientListDlg::DisplayClients()
         int sortCol = m_nSortColumn;
         BOOL ascending = m_bSortAscending;
         std::sort(sortedGroups.begin(), sortedGroups.end(),
-            [sortCol, ascending](const std::pair<const GroupKey, GroupInfo>* a,
-                                  const std::pair<const GroupKey, GroupInfo>* b) {
-                // 取每个分组的第一个设备进行比较
-                const auto& clientA = a->second.Clients[0];
-                const auto& clientB = b->second.Clients[0];
-                int result = CompareClientByColumn(clientA, clientB, sortCol);
-                return ascending ? (result < 0) : (result > 0);
-            });
+                  [sortCol, ascending](const std::pair<const GroupKey, GroupInfo>* a,
+        const std::pair<const GroupKey, GroupInfo>* b) {
+            // 取每个分组的第一个设备进行比较
+            const auto& clientA = a->second.Clients[0];
+            const auto& clientB = b->second.Clients[0];
+            int result = CompareClientByColumn(clientA, clientB, sortCol);
+            return ascending ? (result < 0) : (result > 0);
+        });
     }
 
     int nRow = 0;
@@ -295,8 +301,7 @@ void CClientListDlg::DisplayClients()
             m_ClientList.SetItemText(nItem, COL_AUTH, strAuth);
             m_ClientList.SetItemData(nItem, (DWORD_PTR)key);
             nRow++;
-        }
-        else {
+        } else {
             // 多个设备时，显示可展开的分组行
             CString strNo;
             strNo.FormatL(_T("%d"), groupInfo.GroupId);
@@ -368,8 +373,7 @@ void CClientListDlg::OnColumnClick(NMHDR* pNMHDR, LRESULT* pResult)
     // 点击同一列切换排序方向
     if (nColumn == m_nSortColumn) {
         m_bSortAscending = !m_bSortAscending;
-    }
-    else {
+    } else {
         m_nSortColumn = nColumn;
         m_bSortAscending = TRUE;
     }

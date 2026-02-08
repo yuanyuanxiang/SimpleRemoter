@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include "afxwin.h"
 #include "LangManager.h"
-#include "2015RemoteDlg.h"    
+#include "2015RemoteDlg.h"
 
 // CSettingDlg 对话框
 

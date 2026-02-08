@@ -147,12 +147,29 @@ private:
         for (size_t i = 0; i < s.size(); i++) {
             if (s[i] == '\\' && i + 1 < s.size()) {
                 switch (s[i + 1]) {
-                case 'n':  result += '\n'; i++; break;
-                case 'r':  result += '\r'; i++; break;
-                case 't':  result += '\t'; i++; break;
-                case '\\': result += '\\'; i++; break;
-                case '"':  result += '"';  i++; break;
-                default:   result += s[i]; break;  // 未知转义保留原样
+                case 'n':
+                    result += '\n';
+                    i++;
+                    break;
+                case 'r':
+                    result += '\r';
+                    i++;
+                    break;
+                case 't':
+                    result += '\t';
+                    i++;
+                    break;
+                case '\\':
+                    result += '\\';
+                    i++;
+                    break;
+                case '"':
+                    result += '"';
+                    i++;
+                    break;
+                default:
+                    result += s[i];
+                    break;  // 未知转义保留原样
                 }
             } else {
                 result += s[i];

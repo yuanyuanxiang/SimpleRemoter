@@ -416,7 +416,7 @@ BOOL CMy2015RemoteApp::InitInstance()
             SAFE_CLOSE_HANDLE(m_Mutex);
             m_Mutex = NULL;
             MessageBoxL("一个主控程序已经在运行，请检查任务管理器。",
-                       "提示", MB_ICONINFORMATION);
+                        "提示", MB_ICONINFORMATION);
             Mprintf("[InitInstance] 一个主控程序已经在运行，退出。");
             return FALSE;
         }

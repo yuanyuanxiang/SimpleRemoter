@@ -54,10 +54,10 @@ void Test_BasicKeyValue()
 {
     printf("[Test 1] Basic key=value parsing\n");
     std::string path = WriteTempFile("basic",
-        "[Strings]\n"
-        "hello=world\n"
-        "foo=bar\n"
-    );
+                                     "[Strings]\n"
+                                     "hello=world\n"
+                                     "foo=bar\n"
+                                    );
 
     CIniParser ini;
     TEST_ASSERT(ini.LoadFile(path.c_str()), "LoadFile should succeed");
@@ -77,11 +77,11 @@ void Test_KeyTrailingSpace()
     // 模拟: "请输入主机备注: =Enter host note:"
     // key 是 "请输入主机备注: "（冒号+空格），不能被 trim
     std::string path = WriteTempFile("trailing_space",
-        "[Strings]\n"
-        "key_no_space=value1\n"
-        "key_with_space =value2\n"
-        "key_with_2spaces  =value3\n"
-    );
+                                     "[Strings]\n"
+                                     "key_no_space=value1\n"
+                                     "key_with_space =value2\n"
+                                     "key_with_2spaces  =value3\n"
+                                    );
 
     CIniParser ini;
     ini.LoadFile(path.c_str());
@@ -107,12 +107,12 @@ void Test_SpecialCharsInValue()
 {
     printf("[Test 3] Special characters in value\n");
     std::string path = WriteTempFile("special_chars",
-        "[Strings]\n"
-        "menu=Menu(&F)\n"
-        "addr=<IP:PORT>\n"
-        "fmt=%s connected %d times\n"
-        "paren=(auto-restore on expiry)\n"
-    );
+                                     "[Strings]\n"
+                                     "menu=Menu(&F)\n"
+                                     "addr=<IP:PORT>\n"
+                                     "fmt=%s connected %d times\n"
+                                     "paren=(auto-restore on expiry)\n"
+                                    );
 
     CIniParser ini;
     ini.LoadFile(path.c_str());
@@ -132,15 +132,15 @@ void Test_Comments()
 {
     printf("[Test 4] Comment lines skipped\n");
     std::string path = WriteTempFile("comments",
-        "; This is a comment\n"
-        "# This is also a comment\n"
-        "[Strings]\n"
-        "; ============================================\n"
-        "# Section header comment\n"
-        "key1=value1\n"
-        "; key2=should_not_exist\n"
-        "key3=value3\n"
-    );
+                                     "; This is a comment\n"
+                                     "# This is also a comment\n"
+                                     "[Strings]\n"
+                                     "; ============================================\n"
+                                     "# Section header comment\n"
+                                     "key1=value1\n"
+                                     "; key2=should_not_exist\n"
+                                     "key3=value3\n"
+                                    );
 
     CIniParser ini;
     ini.LoadFile(path.c_str());
@@ -161,16 +161,16 @@ void Test_EmptyLines()
 {
     printf("[Test 5] Empty lines skipped\n");
     std::string path = WriteTempFile("empty_lines",
-        "\n"
-        "\n"
-        "[Strings]\n"
-        "\n"
-        "key1=value1\n"
-        "\n"
-        "\n"
-        "key2=value2\n"
-        "\n"
-    );
+                                     "\n"
+                                     "\n"
+                                     "[Strings]\n"
+                                     "\n"
+                                     "key1=value1\n"
+                                     "\n"
+                                     "\n"
+                                     "key2=value2\n"
+                                     "\n"
+                                    );
 
     CIniParser ini;
     ini.LoadFile(path.c_str());
@@ -189,15 +189,15 @@ void Test_MultipleSections()
 {
     printf("[Test 6] Multiple sections\n");
     std::string path = WriteTempFile("sections",
-        "[Strings]\n"
-        "key1=value1\n"
-        "key2=value2\n"
-        "[Other]\n"
-        "key1=other_value1\n"
-        "key3=other_value3\n"
-        "[Strings2]\n"
-        "keyA=valueA\n"
-    );
+                                     "[Strings]\n"
+                                     "key1=value1\n"
+                                     "key2=value2\n"
+                                     "[Other]\n"
+                                     "key1=other_value1\n"
+                                     "key3=other_value3\n"
+                                     "[Strings2]\n"
+                                     "keyA=valueA\n"
+                                    );
 
     CIniParser ini;
     ini.LoadFile(path.c_str());
@@ -311,11 +311,11 @@ void Test_EqualsInValue()
 {
     printf("[Test 10] Equals sign in value\n");
     std::string path = WriteTempFile("equals",
-        "[Strings]\n"
-        "formula=a=b+c\n"
-        "equation=x=1=2=3\n"
-        "normal=hello\n"
-    );
+                                     "[Strings]\n"
+                                     "formula=a=b+c\n"
+                                     "equation=x=1=2=3\n"
+                                     "normal=hello\n"
+                                    );
 
     CIniParser ini;
     ini.LoadFile(path.c_str());
@@ -339,11 +339,11 @@ void Test_EscapeCRLF_InKey()
     // INI 文件中写字面量 \r\n，解析器应转为真正的 0x0D 0x0A
     // 模拟代码中: _TR("\n编译日期: ") 和 _TR("操作失败\r\n请重试")
     std::string path = WriteTempFile("escape_key",
-        "[Strings]\n"
-        "\\n compile date: =\\n Build Date: \n"
-        "fail\\r\\nretry=Fail\\r\\nRetry\n"
-        "line1\\nline2\\nline3=L1\\nL2\\nL3\n"
-    );
+                                     "[Strings]\n"
+                                     "\\n compile date: =\\n Build Date: \n"
+                                     "fail\\r\\nretry=Fail\\r\\nRetry\n"
+                                     "line1\\nline2\\nline3=L1\\nL2\\nL3\n"
+                                    );
 
     CIniParser ini;
     ini.LoadFile(path.c_str());
@@ -370,10 +370,10 @@ void Test_EscapeCRLF_InValue()
 {
     printf("[Test 12] Escape \\r\\n in value\n");
     std::string path = WriteTempFile("escape_value",
-        "[Strings]\n"
-        "msg=hello\\r\\nworld\n"
-        "multiline=line1\\nline2\\nline3\n"
-    );
+                                     "[Strings]\n"
+                                     "msg=hello\\r\\nworld\n"
+                                     "multiline=line1\\nline2\\nline3\n"
+                                    );
 
     CIniParser ini;
     ini.LoadFile(path.c_str());
@@ -393,11 +393,11 @@ void Test_EscapeBackslashAndQuote()
 {
     printf("[Test 13] Escape \\\\ and \\\" sequences\n");
     std::string path = WriteTempFile("escape_bsq",
-        "[Strings]\n"
-        "path=C:\\\\Users\\\\test\n"
-        "quoted=say \\\"hello\\\"\n"
-        "mixed=\\\"line1\\n line2\\\"\n"
-    );
+                                     "[Strings]\n"
+                                     "path=C:\\\\Users\\\\test\n"
+                                     "quoted=say \\\"hello\\\"\n"
+                                     "mixed=\\\"line1\\n line2\\\"\n"
+                                    );
 
     CIniParser ini;
     ini.LoadFile(path.c_str());
@@ -419,10 +419,10 @@ void Test_EscapeTab()
 {
     printf("[Test 14] Escape \\t sequence\n");
     std::string path = WriteTempFile("escape_tab",
-        "[Strings]\n"
-        "col=name\\tvalue\n"
-        "header=ID\\tName\\tStatus\n"
-    );
+                                     "[Strings]\n"
+                                     "col=name\\tvalue\n"
+                                     "header=ID\\tName\\tStatus\n"
+                                    );
 
     CIniParser ini;
     ini.LoadFile(path.c_str());
@@ -442,10 +442,10 @@ void Test_UnknownEscapePassthrough()
 {
     printf("[Test 15] Unknown escape passthrough\n");
     std::string path = WriteTempFile("escape_unknown",
-        "[Strings]\n"
-        "unknown=hello\\xworld\n"
-        "trailing_bs=end\\\n"
-    );
+                                     "[Strings]\n"
+                                     "unknown=hello\\xworld\n"
+                                     "trailing_bs=end\\\n"
+                                    );
 
     CIniParser ini;
     ini.LoadFile(path.c_str());
@@ -468,9 +468,9 @@ void Test_EscapeWithTrailingSpace()
     printf("[Test 16] Escape + trailing space in key\n");
     // 模拟: _TR("\n编译日期: ") — key 以 \n 开头，以冒号+空格结尾
     std::string path = WriteTempFile("escape_trail",
-        "[Strings]\n"
-        "\\n date: =\\n Date: \n"
-    );
+                                     "[Strings]\n"
+                                     "\\n date: =\\n Date: \n"
+                                    );
 
     CIniParser ini;
     ini.LoadFile(path.c_str());
@@ -494,12 +494,12 @@ void Test_BracketKey()
     printf("[Test 17] Key starting with '[' (not a section header)\n");
     // 模拟: _TR("[使用FRP]") 和 _TR("[未使用FRP]")
     std::string path = WriteTempFile("bracket_key",
-        "[Strings]\n"
-        "normal=value1\n"
-        "[tag1]=[Tag One]\n"
-        "[tag2]=[Tag Two]\n"
-        "after=value2\n"
-    );
+                                     "[Strings]\n"
+                                     "normal=value1\n"
+                                     "[tag1]=[Tag One]\n"
+                                     "[tag2]=[Tag Two]\n"
+                                     "after=value2\n"
+                                    );
 
     CIniParser ini;
     ini.LoadFile(path.c_str());

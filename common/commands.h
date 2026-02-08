@@ -47,7 +47,10 @@ typedef unsigned char BYTE;
 typedef BYTE* PBYTE, * LPBYTE;
 typedef void* LPVOID, * HANDLE;
 typedef int32_t LONG;
-typedef struct { LONG x; LONG y; } POINT;
+typedef struct {
+    LONG x;
+    LONG y;
+} POINT;
 
 #define GET_PROCESS(a1, a2)
 #define MVirtualFree(a1, a2, a3) delete[]a1
@@ -205,7 +208,7 @@ enum {
     CMD_COMPRESS_FILES = 72,        // 压缩文件
     CMD_UNCOMPRESS_FILES = 73,      // 解压文件
     CMD_SCREEN_SIZE = 74,
-	CMD_FULL_SCREEN = 75,
+    CMD_FULL_SCREEN = 75,
     CMD_REMOTE_CURSOR = 76,
     CMD_SCROLL_INTERVAL = 77,       // 滚动检测间隔
 
@@ -801,10 +804,10 @@ enum LOGIN_RES {
     RES_EXE_VERSION = 12,					// EXE版本
     RES_USERNAME = 13,                      // 电脑用户名称
     RES_ISADMIN = 14,                       // 是否具有管理员权限
-	RES_RESOLUTION = 15,                    // 屏幕分辨率
-	RES_CLIENT_ID = 16,                     // 客户端唯一ID
-	RES_PID = 17,                           // 进程ID
-	RES_FILESIZE = 18,                       // 文件大小
+    RES_RESOLUTION = 15,                    // 屏幕分辨率
+    RES_CLIENT_ID = 16,                     // 客户端唯一ID
+    RES_PID = 17,                           // 进程ID
+    RES_FILESIZE = 18,                       // 文件大小
     RES_MAX,
 };
 
@@ -936,15 +939,15 @@ typedef struct MasterSettings {
 #define SCROLL_DIR_DOWN     1               // 向下滚动（屏幕内容向上移）
 
 typedef struct ScreenSettings {
-	int         MaxFPS;                     // 偏移 0,  最大帧率
-	int         CompressThread;             // 偏移 4,  压缩线程数
-	int         ScreenStrategy;             // 偏移 8,  屏幕策略
-	int         ScreenWidth;                // 偏移 12, 屏幕宽度
-	int         ScreenHeight;               // 偏移 16, 屏幕高度
-	int         FullScreen;                 // 偏移 20, 全屏模式
+    int         MaxFPS;                     // 偏移 0,  最大帧率
+    int         CompressThread;             // 偏移 4,  压缩线程数
+    int         ScreenStrategy;             // 偏移 8,  屏幕策略
+    int         ScreenWidth;                // 偏移 12, 屏幕宽度
+    int         ScreenHeight;               // 偏移 16, 屏幕高度
+    int         FullScreen;                 // 偏移 20, 全屏模式
     int         RemoteCursor;               // 偏移 24, 使用远程光标
     int         ScrollDetectInterval;       // 偏移 28, 滚动检测间隔（0=禁用, 1=每帧, 2=每2帧, ...）
-	char        Reserved[64];               // 偏移 32, 保留字段（新能力参数从此处扩展）
+    char        Reserved[64];               // 偏移 32, 保留字段（新能力参数从此处扩展）
     uint32_t    Capabilities;               // 偏移 96, 能力位标志（放最后）
 } ScreenSettings;                           // 总大小 100 字节
 

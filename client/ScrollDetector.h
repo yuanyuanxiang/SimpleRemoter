@@ -159,10 +159,22 @@ public:
         }
     }
 
-    int GetLastScrollAmount() const { return m_lastScrollAmount; }
-    int GetWidth() const { return m_width; }
-    int GetHeight() const { return m_height; }
-    int GetStride() const { return m_stride; }
+    int GetLastScrollAmount() const
+    {
+        return m_lastScrollAmount;
+    }
+    int GetWidth() const
+    {
+        return m_width;
+    }
+    int GetHeight() const
+    {
+        return m_height;
+    }
+    int GetStride() const
+    {
+        return m_stride;
+    }
 
 private:
     // Count matching rows for a given scroll amount

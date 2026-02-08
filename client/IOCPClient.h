@@ -235,21 +235,26 @@ public:
         return g_bExit;
     }
     void SetMultiThreadCompress(int threadNum=0);
-    std::string GetClientID() const {
+    std::string GetClientID() const
+    {
         return m_conn ? std::to_string(m_conn->clientID) : "";
     }
-    std::string GetPublicIP() const {
+    std::string GetPublicIP() const
+    {
         return m_sLocPublicIP;
     }
-    CONNECT_ADDRESS* GetConnectionAddress() const {
+    CONNECT_ADDRESS* GetConnectionAddress() const
+    {
         return m_conn;
-	}
-    IOCPManager* GetManager() const {
+    }
+    IOCPManager* GetManager() const
+    {
         return (IOCPManager*)m_Manager;
-	}
-    void* GetMain() const {
+    }
+    void* GetMain() const
+    {
         return m_main;
-	}
+    }
 protected:
     virtual int ReceiveData(char* buffer, int bufSize, int flags)
     {

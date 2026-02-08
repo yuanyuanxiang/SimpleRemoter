@@ -11,7 +11,7 @@ public:
     BOOL Create(CWnd* pParent = NULL);
 
 private:
-	friend class CMy2015RemoteApp;
+    friend class CMy2015RemoteApp;
     int SafeMessageBox(LPCTSTR lpszText, LPCTSTR lpszCaption, UINT nType);
 
 public:

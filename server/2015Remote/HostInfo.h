@@ -15,7 +15,8 @@ enum {
 };
 
 #pragma pack(push, 1)
-class _ClientValue {
+class _ClientValue
+{
 public:
     char Note[64];
     char Location[64];
@@ -43,7 +44,8 @@ typedef _ClientValue ClientValue;
 
 typedef std::unordered_map<ClientKey, ClientValue> ClientMap;
 
-class _ClientList {
+class _ClientList
+{
 public:
     virtual ~_ClientList() {}
     virtual bool Exists(ClientKey key) = 0;

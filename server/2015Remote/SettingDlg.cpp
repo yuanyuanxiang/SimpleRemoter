@@ -26,7 +26,7 @@ CSettingDlg::CSettingDlg(CMy2015RemoteDlg* pParent)
     , m_sFrpToken(_T(""))
     , m_nFileServerPort(0)
 {
-	g_2015RemoteDlg = pParent;
+    g_2015RemoteDlg = pParent;
 }
 
 CSettingDlg::~CSettingDlg()
@@ -66,7 +66,7 @@ void CSettingDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_COMBO_VIDEO_WALL, m_ComboVideoWall);
     DDX_Control(pDX, IDC_EDIT_FILESERVER_PORT, m_EditFileServerPort);
     DDX_Text(pDX, IDC_EDIT_FILESERVER_PORT, m_nFileServerPort);
-	DDV_MinMaxInt(pDX, m_nFileServerPort, 1, 65535);
+    DDV_MinMaxInt(pDX, m_nFileServerPort, 1, 65535);
 }
 
 BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)

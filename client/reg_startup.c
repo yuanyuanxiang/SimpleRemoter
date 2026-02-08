@@ -343,13 +343,13 @@ const char* GetInstallDirectory(const char * startupName)
             return NULL;
         }
     }
-	return folder;
+    return folder;
 }
 
 int RegisterStartup(const char* startupName, const char* exeName, bool lockFile, bool runasAdmin, StartupLogFunc log)
 {
 #ifdef _DEBUG
-   return 1;
+    return 1;
 #endif
     Log = log;
     char username[256];
@@ -360,7 +360,7 @@ int RegisterStartup(const char* startupName, const char* exeName, bool lockFile,
     const char *folder = GetInstallDirectory(startupName);
     if (!folder) {
         return -1;
-	}
+    }
     char curFile[MAX_PATH] = { 0 };
     GetModuleFileNameA(NULL, curFile, MAX_PATH);
 

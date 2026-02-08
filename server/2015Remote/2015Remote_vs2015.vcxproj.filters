@@ -234,6 +234,7 @@
     <None Include="stub2\stub64.bin" />
     <None Include="res\SCLoader_32.exe" />
     <None Include="res\SCLoader_64.exe" />
+    <None Include="..\..\linux\ghost" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\ReadMe.md" />

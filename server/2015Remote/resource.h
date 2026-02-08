@@ -200,6 +200,8 @@
 #define IDD_DIALOG_CLIENTLIST           324
 #define IDD_DIALOG7                     326
 #define IDD_DIALOG_UPDATE               326
+#define IDR_BINARY6                     328
+#define IDR_LINUX_GHOST                 328
 #define IDC_MESSAGE                     1000
 #define IDC_ONLINE                      1001
 #define IDC_STATIC_TIPS                 1002
@@ -663,10 +665,10 @@
 #define ID_EXIT_FULLSCREEN              40001
 
 // Next default values for new objects
-// 
+//
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        328
+#define _APS_NEXT_RESOURCE_VALUE        329
 #define _APS_NEXT_COMMAND_VALUE         33017
 #define _APS_NEXT_CONTROL_VALUE         2240
 #define _APS_NEXT_SYMED_VALUE           105

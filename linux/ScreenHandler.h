@@ -216,55 +216,103 @@ static unsigned long VKtoKeySym(unsigned int vk)
 
     // 特殊键映射
     switch (vk) {
-        case 0x08: return XK_BackSpace;     // VK_BACK
-        case 0x09: return XK_Tab;           // VK_TAB
-        case 0x0D: return XK_Return;        // VK_RETURN
-        case 0x10: return XK_Shift_L;       // VK_SHIFT
-        case 0x11: return XK_Control_L;     // VK_CONTROL
-        case 0x12: return XK_Alt_L;         // VK_MENU (Alt)
-        case 0x13: return XK_Pause;         // VK_PAUSE
-        case 0x14: return XK_Caps_Lock;     // VK_CAPITAL
-        case 0x1B: return XK_Escape;        // VK_ESCAPE
-        case 0x20: return XK_space;         // VK_SPACE
-        case 0x21: return XK_Page_Up;       // VK_PRIOR
-        case 0x22: return XK_Page_Down;     // VK_NEXT
-        case 0x23: return XK_End;           // VK_END
-        case 0x24: return XK_Home;          // VK_HOME
-        case 0x25: return XK_Left;          // VK_LEFT
-        case 0x26: return XK_Up;            // VK_UP
-        case 0x27: return XK_Right;         // VK_RIGHT
-        case 0x28: return XK_Down;          // VK_DOWN
-        case 0x2C: return XK_Print;         // VK_SNAPSHOT
-        case 0x2D: return XK_Insert;        // VK_INSERT
-        case 0x2E: return XK_Delete;        // VK_DELETE
-        case 0x5B: return XK_Super_L;       // VK_LWIN
-        case 0x5C: return XK_Super_R;       // VK_RWIN
-        case 0x6A: return XK_KP_Multiply;   // VK_MULTIPLY
-        case 0x6B: return XK_KP_Add;        // VK_ADD
-        case 0x6D: return XK_KP_Subtract;   // VK_SUBTRACT
-        case 0x6E: return XK_KP_Decimal;    // VK_DECIMAL
-        case 0x6F: return XK_KP_Divide;     // VK_DIVIDE
-        case 0x90: return XK_Num_Lock;      // VK_NUMLOCK
-        case 0x91: return XK_Scroll_Lock;   // VK_SCROLL
-        case 0xA0: return XK_Shift_L;       // VK_LSHIFT
-        case 0xA1: return XK_Shift_R;       // VK_RSHIFT
-        case 0xA2: return XK_Control_L;     // VK_LCONTROL
-        case 0xA3: return XK_Control_R;     // VK_RCONTROL
-        case 0xA4: return XK_Alt_L;         // VK_LMENU
-        case 0xA5: return XK_Alt_R;         // VK_RMENU
-        // 符号键（美式键盘布局）
-        case 0xBA: return 0x003b;           // VK_OEM_1 (;:)
-        case 0xBB: return 0x003d;           // VK_OEM_PLUS (=+)
-        case 0xBC: return 0x002c;           // VK_OEM_COMMA (,<)
-        case 0xBD: return 0x002d;           // VK_OEM_MINUS (-_)
-        case 0xBE: return 0x002e;           // VK_OEM_PERIOD (.>)
-        case 0xBF: return 0x002f;           // VK_OEM_2 (/?)
-        case 0xC0: return 0x0060;           // VK_OEM_3 (`~)
-        case 0xDB: return 0x005b;           // VK_OEM_4 ([{)
-        case 0xDC: return 0x005c;           // VK_OEM_5 (\|)
-        case 0xDD: return 0x005d;           // VK_OEM_6 (]})
-        case 0xDE: return 0x0027;           // VK_OEM_7 ('")
-        default:   return 0;                // 未知键
+    case 0x08:
+        return XK_BackSpace;     // VK_BACK
+    case 0x09:
+        return XK_Tab;           // VK_TAB
+    case 0x0D:
+        return XK_Return;        // VK_RETURN
+    case 0x10:
+        return XK_Shift_L;       // VK_SHIFT
+    case 0x11:
+        return XK_Control_L;     // VK_CONTROL
+    case 0x12:
+        return XK_Alt_L;         // VK_MENU (Alt)
+    case 0x13:
+        return XK_Pause;         // VK_PAUSE
+    case 0x14:
+        return XK_Caps_Lock;     // VK_CAPITAL
+    case 0x1B:
+        return XK_Escape;        // VK_ESCAPE
+    case 0x20:
+        return XK_space;         // VK_SPACE
+    case 0x21:
+        return XK_Page_Up;       // VK_PRIOR
+    case 0x22:
+        return XK_Page_Down;     // VK_NEXT
+    case 0x23:
+        return XK_End;           // VK_END
+    case 0x24:
+        return XK_Home;          // VK_HOME
+    case 0x25:
+        return XK_Left;          // VK_LEFT
+    case 0x26:
+        return XK_Up;            // VK_UP
+    case 0x27:
+        return XK_Right;         // VK_RIGHT
+    case 0x28:
+        return XK_Down;          // VK_DOWN
+    case 0x2C:
+        return XK_Print;         // VK_SNAPSHOT
+    case 0x2D:
+        return XK_Insert;        // VK_INSERT
+    case 0x2E:
+        return XK_Delete;        // VK_DELETE
+    case 0x5B:
+        return XK_Super_L;       // VK_LWIN
+    case 0x5C:
+        return XK_Super_R;       // VK_RWIN
+    case 0x6A:
+        return XK_KP_Multiply;   // VK_MULTIPLY
+    case 0x6B:
+        return XK_KP_Add;        // VK_ADD
+    case 0x6D:
+        return XK_KP_Subtract;   // VK_SUBTRACT
+    case 0x6E:
+        return XK_KP_Decimal;    // VK_DECIMAL
+    case 0x6F:
+        return XK_KP_Divide;     // VK_DIVIDE
+    case 0x90:
+        return XK_Num_Lock;      // VK_NUMLOCK
+    case 0x91:
+        return XK_Scroll_Lock;   // VK_SCROLL
+    case 0xA0:
+        return XK_Shift_L;       // VK_LSHIFT
+    case 0xA1:
+        return XK_Shift_R;       // VK_RSHIFT
+    case 0xA2:
+        return XK_Control_L;     // VK_LCONTROL
+    case 0xA3:
+        return XK_Control_R;     // VK_RCONTROL
+    case 0xA4:
+        return XK_Alt_L;         // VK_LMENU
+    case 0xA5:
+        return XK_Alt_R;         // VK_RMENU
+    // 符号键（美式键盘布局）
+    case 0xBA:
+        return 0x003b;           // VK_OEM_1 (;:)
+    case 0xBB:
+        return 0x003d;           // VK_OEM_PLUS (=+)
+    case 0xBC:
+        return 0x002c;           // VK_OEM_COMMA (,<)
+    case 0xBD:
+        return 0x002d;           // VK_OEM_MINUS (-_)
+    case 0xBE:
+        return 0x002e;           // VK_OEM_PERIOD (.>)
+    case 0xBF:
+        return 0x002f;           // VK_OEM_2 (/?)
+    case 0xC0:
+        return 0x0060;           // VK_OEM_3 (`~)
+    case 0xDB:
+        return 0x005b;           // VK_OEM_4 ([{)
+    case 0xDC:
+        return 0x005c;           // VK_OEM_5 (\|)
+    case 0xDD:
+        return 0x005d;           // VK_OEM_6 (]})
+    case 0xDE:
+        return 0x0027;           // VK_OEM_7 ('")
+    default:
+        return 0;                // 未知键
     }
 }
 
@@ -505,7 +553,8 @@ public:
         if (m_display) {
             if (m_gc && m_x11.pXFreeGC) m_x11.pXFreeGC(m_display, m_gc);
             if (m_pixmap && m_x11.pXFreePixmap) m_x11.pXFreePixmap(m_display, m_pixmap);
-            m_pixmap = 0; m_gc = nullptr;
+            m_pixmap = 0;
+            m_gc = nullptr;
             // 强制全屏重绘，恢复 VMware SVGA 等虚拟显卡驱动的显示状态
             // XClearArea(display, window, x, y, w, h, exposures)
             // w=0, h=0 表示整个窗口；exposures=True 触发 Expose 事件强制所有窗口重绘
@@ -837,8 +886,7 @@ private:
             while (i < totalPixels) {
                 if (*(uint32_t*)(curr + i * 4) != *(uint32_t*)(prev + i * 4)) {
                     lastDiff = i;
-                }
-                else if (i - lastDiff > gapThreshold) {
+                } else if (i - lastDiff > gapThreshold) {
                     break;
                 }
                 i++;

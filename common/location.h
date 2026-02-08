@@ -310,8 +310,7 @@ public:
     }
 };
 
-enum IPDatabaseType
-{
+enum IPDatabaseType {
     NoneDB = 0,
     QQWry = 1,
     Ip2Region = 2,

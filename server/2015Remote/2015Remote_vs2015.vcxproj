@@ -230,6 +230,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <None Include="..\..\linux\ghost" />
     <None Include="..\..\Release\ghost.exe" />
     <None Include="..\..\Release\SCLoader.exe" />
     <None Include="..\..\Release\ServerDll.dll" />

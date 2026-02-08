@@ -48,16 +48,14 @@ std::string getSystemName()
                 vname = "Windows Server 2019";
             else
                 vname = "Windows Server 2016";
-        }
-        else {
+        } else {
             // Windows 桌面版
             if (dwBuildNumber >= 22000)
                 vname = "Windows 11";
             else
                 vname = "Windows 10";
         }
-    }
-    else if (dwMajor == 6) {
+    } else if (dwMajor == 6) {
         switch (dwMinor) {
         case 3:
             vname = isServer ? "Windows Server 2012 R2" : "Windows 8.1";
@@ -72,8 +70,7 @@ std::string getSystemName()
             vname = isServer ? "Windows Server 2008" : "Windows Vista";
             break;
         }
-    }
-    else if (dwMajor == 5) {
+    } else if (dwMajor == 5) {
         switch (dwMinor) {
         case 2:
             vname = "Windows Server 2003";
@@ -328,21 +325,21 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn, BOOL& isAuthKerne
     char cpuInfo[32];
     sprintf(cpuInfo, "%dMHz", dwCPUMHz);
     conn.clientID = CalcalateID({ pubIP, szPCName, LoginInfor.OsVerInfoEx, cpuInfo, buf });
-	auto clientID = std::to_string(conn.clientID);
+    auto clientID = std::to_string(conn.clientID);
     Mprintf("此客户端的唯一标识为: %s\n", clientID.c_str());
-	char reservedInfo[64];
+    char reservedInfo[64];
     int m_iScreenX = GetSystemMetrics(SM_CXVIRTUALSCREEN);
     int m_iScreenY = GetSystemMetrics(SM_CYVIRTUALSCREEN);
-	auto list = ScreenCapture::GetAllMonitors();
-	sprintf_s(reservedInfo, "%d:%d*%d", (int)list.size(), m_iScreenX, m_iScreenY);
-	LoginInfor.AddReserved(reservedInfo);               // 屏幕分辨率
-	LoginInfor.AddReserved(clientID.c_str());           // 客户端路径
-	LoginInfor.AddReserved((int)GetCurrentProcessId()); // 进程ID
-	char fileSize[32];
-	double MB = fileInfo.nFileSizeLow > 1024 * 1024 ? fileInfo.nFileSizeLow / (1024.0 * 1024.0) : 0;
-	double KB = fileInfo.nFileSizeLow > 1024 ? fileInfo.nFileSizeLow / 1024.0 : 0;
-	sprintf_s(fileSize, "%.1f%s", MB > 0 ? MB : KB, MB > 0 ? "M" : "K");
-	LoginInfor.AddReserved(fileSize);                  // 文件大小
+    auto list = ScreenCapture::GetAllMonitors();
+    sprintf_s(reservedInfo, "%d:%d*%d", (int)list.size(), m_iScreenX, m_iScreenY);
+    LoginInfor.AddReserved(reservedInfo);               // 屏幕分辨率
+    LoginInfor.AddReserved(clientID.c_str());           // 客户端路径
+    LoginInfor.AddReserved((int)GetCurrentProcessId()); // 进程ID
+    char fileSize[32];
+    double MB = fileInfo.nFileSizeLow > 1024 * 1024 ? fileInfo.nFileSizeLow / (1024.0 * 1024.0) : 0;
+    double KB = fileInfo.nFileSizeLow > 1024 ? fileInfo.nFileSizeLow / 1024.0 : 0;
+    sprintf_s(fileSize, "%.1f%s", MB > 0 ? MB : KB, MB > 0 ? "M" : "K");
+    LoginInfor.AddReserved(fileSize);                  // 文件大小
     return LoginInfor;
 }
 

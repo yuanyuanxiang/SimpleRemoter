@@ -39,12 +39,15 @@ public:
     virtual FlagType GetFlagType() const = 0;
     virtual std::string GetGroupName() const = 0;
     virtual uint64_t GetAliveTime()const = 0;
-	virtual void SetLastHeartbeat(uint64_t time) = 0;
+    virtual void SetLastHeartbeat(uint64_t time) = 0;
     virtual uint64_t GetLastHeartbeat() = 0;
     virtual void CancelIO() = 0;
 public:
     virtual ~context() {}
     virtual void Destroy() {}
-    virtual BOOL IsLogin() const { return TRUE; }
+    virtual BOOL IsLogin() const
+    {
+        return TRUE;
+    }
     virtual void SetGroupName(const std::string& group) {}
 };

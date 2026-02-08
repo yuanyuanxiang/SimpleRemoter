@@ -250,19 +250,19 @@ ZCONF_H
 
 #ifdef Z_SOLO
 #  ifdef _WIN64
-     typedef unsigned long long z_size_t;
+typedef unsigned long long z_size_t;
 #  else
-     typedef unsigned long z_size_t;
+typedef unsigned long z_size_t;
 #  endif
 #else
 #  define z_longlong long long
 #  if defined(NO_SIZE_T)
-     typedef unsigned NO_SIZE_T z_size_t;
+typedef unsigned NO_SIZE_T z_size_t;
 #  elif defined(STDC)
 #    include <stddef.h>
-     typedef size_t z_size_t;
+typedef size_t z_size_t;
 #  else
-     typedef unsigned long z_size_t;
+typedef unsigned long z_size_t;
 #  endif
 #  undef z_longlong
 #endif
@@ -298,7 +298,7 @@ ZCONF_H
  for small objects.
 */
 
-                        /* Type declarations */
+/* Type declarations */
 
 #ifndef OF /* function prototypes */
 #  ifdef STDC
@@ -316,7 +316,7 @@ ZCONF_H
  */
 #ifdef SYS16BIT
 #  if defined(M_I86SM) || defined(M_I86MM)
-     /* MSC small or medium model */
+/* MSC small or medium model */
 #    define SMALL_MEDIUM
 #    ifdef _MSC_VER
 #      define FAR _far
@@ -325,7 +325,7 @@ ZCONF_H
 #    endif
 #  endif
 #  if (defined(__SMALL__) || defined(__MEDIUM__))
-     /* Turbo C small or medium model */
+/* Turbo C small or medium model */
 #    define SMALL_MEDIUM
 #    ifdef __BORLANDC__
 #      define FAR _far
@@ -336,9 +336,9 @@ ZCONF_H
 #endif
 
 #if defined(WINDOWS) || defined(WIN32)
-   /* If building or using zlib as a DLL, define ZLIB_DLL.
-    * This is not mandatory, but it offers a little performance increase.
-    */
+/* If building or using zlib as a DLL, define ZLIB_DLL.
+ * This is not mandatory, but it offers a little performance increase.
+ */
 #  ifdef ZLIB_DLL
 #    if defined(WIN32) && (!defined(__BORLANDC__) || (__BORLANDC__ >= 0x500))
 #      ifdef ZLIB_INTERNAL
@@ -348,10 +348,10 @@ ZCONF_H
 #      endif
 #    endif
 #  endif  /* ZLIB_DLL */
-   /* If building or using zlib with the WINAPI/WINAPIV calling convention,
-    * define ZLIB_WINAPI.
-    * Caution: the standard ZLIB1.DLL is NOT compiled using ZLIB_WINAPI.
-    */
+/* If building or using zlib with the WINAPI/WINAPIV calling convention,
+ * define ZLIB_WINAPI.
+ * Caution: the standard ZLIB1.DLL is NOT compiled using ZLIB_WINAPI.
+ */
 #  ifdef ZLIB_WINAPI
 #    ifdef FAR
 #      undef FAR
@@ -360,8 +360,8 @@ ZCONF_H
 #      define WIN32_LEAN_AND_MEAN
 #    endif
 #    include <windows.h>
-     /* No need for _export, use ZLIB.DEF instead. */
-     /* For complete Windows compatibility, use WINAPI, not __stdcall. */
+/* No need for _export, use ZLIB.DEF instead. */
+/* For complete Windows compatibility, use WINAPI, not __stdcall. */
 #    define ZEXPORT WINAPI
 #    ifdef WIN32
 #      define ZEXPORTVA WINAPIV
@@ -404,10 +404,10 @@ typedef unsigned int   uInt;  /* 16 bits or more */
 typedef unsigned long  uLong; /* 32 bits or more */
 
 #ifdef SMALL_MEDIUM
-   /* Borland C/C++ and some old MSC versions ignore FAR inside typedef */
+/* Borland C/C++ and some old MSC versions ignore FAR inside typedef */
 #  define Bytef Byte FAR
 #else
-   typedef Byte  FAR Bytef;
+typedef Byte  FAR Bytef;
 #endif
 typedef char  FAR charf;
 typedef int   FAR intf;
@@ -415,13 +415,13 @@ typedef uInt  FAR uIntf;
 typedef uLong FAR uLongf;
 
 #ifdef STDC
-   typedef void const *voidpc;
-   typedef void FAR   *voidpf;
-   typedef void       *voidp;
+typedef void const *voidpc;
+typedef void FAR   *voidpf;
+typedef void       *voidp;
 #else
-   typedef Byte const *voidpc;
-   typedef Byte FAR   *voidpf;
-   typedef Byte       *voidp;
+typedef Byte const *voidpc;
+typedef Byte FAR   *voidpf;
+typedef Byte       *voidp;
 #endif
 
 #if !defined(Z_U4) && !defined(Z_SOLO) && defined(STDC)
@@ -436,9 +436,9 @@ typedef uLong FAR uLongf;
 #endif
 
 #ifdef Z_U4
-   typedef Z_U4 z_crc_t;
+typedef Z_U4 z_crc_t;
 #else
-   typedef unsigned long z_crc_t;
+typedef unsigned long z_crc_t;
 #endif
 
 #if HAVE_UNISTD_H-0     /* may be set to #if 1 by ./configure */
@@ -531,19 +531,19 @@ typedef uLong FAR uLongf;
 
 /* MVS linker does not support external names larger than 8 bytes */
 #if defined(__MVS__)
-  #pragma map(deflateInit_,"DEIN")
-  #pragma map(deflateInit2_,"DEIN2")
-  #pragma map(deflateEnd,"DEEND")
-  #pragma map(deflateBound,"DEBND")
-  #pragma map(inflateInit_,"ININ")
-  #pragma map(inflateInit2_,"ININ2")
-  #pragma map(inflateEnd,"INEND")
-  #pragma map(inflateSync,"INSY")
-  #pragma map(inflateSetDictionary,"INSEDI")
-  #pragma map(compressBound,"CMBND")
-  #pragma map(inflate_table,"INTABL")
-  #pragma map(inflate_fast,"INFA")
-  #pragma map(inflate_copyright,"INCOPY")
+#pragma map(deflateInit_,"DEIN")
+#pragma map(deflateInit2_,"DEIN2")
+#pragma map(deflateEnd,"DEEND")
+#pragma map(deflateBound,"DEBND")
+#pragma map(inflateInit_,"ININ")
+#pragma map(inflateInit2_,"ININ2")
+#pragma map(inflateEnd,"INEND")
+#pragma map(inflateSync,"INSY")
+#pragma map(inflateSetDictionary,"INSEDI")
+#pragma map(compressBound,"CMBND")
+#pragma map(inflate_table,"INTABL")
+#pragma map(inflate_fast,"INFA")
+#pragma map(inflate_copyright,"INCOPY")
 #endif
 
 #endif /* ZCONF_H */

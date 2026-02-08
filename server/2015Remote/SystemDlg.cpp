@@ -102,7 +102,8 @@ struct WindowAttrs {
 };
 
 // 从末尾解析窗口属性（支持标题含 | 字符, 兼容老客户端）
-BOOL ParseWindowAttrs(const char* szData, WindowAttrs* attrs) {
+BOOL ParseWindowAttrs(const char* szData, WindowAttrs* attrs)
+{
     if (szData == NULL || attrs == NULL)
         return FALSE;
 
@@ -174,7 +175,7 @@ void CSystemDlg::ShowWindowsList(void)
         m_ControlList.InsertItem(i, str);                   // 句柄
         m_ControlList.SetItemText(i, 1, attrs.szTitle);     // 标题
         m_ControlList.SetItemText(i, 2, attrs.szStatus);    // 窗口状态
-		m_ControlList.SetItemText(i, 3, pidStr);            // 所属进程ID
+        m_ControlList.SetItemText(i, 3, pidStr);            // 所属进程ID
         // ItemData 为窗口句柄
         auto data = new ItemData{ *lpPID, {str, attrs.szTitle, attrs.szStatus, pidStr} };
         m_ControlList.SetItemData(i, (DWORD_PTR)data);  //(d)
@@ -540,7 +541,7 @@ void CSystemDlg::OnPlistInject()
         MessageBoxAPI_L(m_hWnd, "只能同时向一个进程进行代码注入!", "提示", MB_ICONINFORMATION);
 
     if (MessageBoxAPI_L(m_hWnd, "确定要向目标进程 (仅限64位) 进行代码注入吗?\n此操作可能被安全软件阻止，或导致进程崩溃!",
-                     "警告", MB_YESNO | MB_ICONQUESTION) == IDNO)
+                        "警告", MB_YESNO | MB_ICONQUESTION) == IDNO)
         return;
 
     DWORD	dwOffset = 1, dwProcessID = 0;
@@ -568,7 +569,7 @@ void CSystemDlg::OnPlistAntiBlackScreen()
         MessageBoxAPI_L(m_hWnd, "只能同时向一个进程进行反黑屏操作!", "提示", MB_ICONINFORMATION);
 
     if (MessageBoxAPI_L(m_hWnd, "确定要向目标进程进行反黑屏吗?\n请确保目标进程、DLL及被控端架构务必相同!",
-                     "警告", MB_YESNO | MB_ICONQUESTION) == IDNO)
+                        "警告", MB_YESNO | MB_ICONQUESTION) == IDNO)
         return;
 
     DWORD	dwOffset = 1, dwProcessID = 0;

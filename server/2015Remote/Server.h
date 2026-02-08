@@ -339,11 +339,13 @@ public:
             Zcctx = nullptr;
         }
     }
-    virtual void SetLastHeartbeat(uint64_t time) override {
-		LastHeartbeatTime = time;
-	}
-    virtual uint64_t GetLastHeartbeat() override {
-		return LastHeartbeatTime;
+    virtual void SetLastHeartbeat(uint64_t time) override
+    {
+        LastHeartbeatTime = time;
+    }
+    virtual uint64_t GetLastHeartbeat() override
+    {
+        return LastHeartbeatTime;
     }
     CString  sClientInfo[ONLINELIST_MAX];
     CString  additonalInfo[RES_MAX];
@@ -368,7 +370,7 @@ public:
     std::string			GroupName;					// 分组名称
     CLock               SendLock;                   // fix #214
     time_t              OnlineTime = 0;             // 上线时间
-	time_t              LastHeartbeatTime = 0;      // 最后心跳时间
+    time_t              LastHeartbeatTime = 0;      // 最后心跳时间
 
     // 预分配的解压缩缓冲区，避免频繁内存分配
     PBYTE               DecompressBuffer = nullptr;
@@ -382,7 +384,8 @@ public:
     int                 CompressLevel = ZSTD_CLEVEL_DEFAULT;
     ZSTD_CCtx*          Zcctx = nullptr;
 
-    void EnableZstdContext(int level = ZSTD_CLEVEL_DEFAULT) {
+    void EnableZstdContext(int level = ZSTD_CLEVEL_DEFAULT)
+    {
         CAutoCLock L(SendLock);
         CompressLevel = level;
         if (Zcctx == nullptr) {
@@ -390,14 +393,16 @@ public:
             ZSTD_CCtx_setParameter(Zcctx, ZSTD_c_compressionLevel, level);
         }
     }
-    void SetCompressionLevel(int level) {
+    void SetCompressionLevel(int level)
+    {
         CAutoCLock L(SendLock);
         CompressLevel = level;
         if (Zcctx) {
             ZSTD_CCtx_setParameter(Zcctx, ZSTD_c_compressionLevel, level);
         }
     }
-    int GetZstdLevel() const {
+    int GetZstdLevel() const
+    {
         return CompressLevel;
     }
     // 获取或分配解压缩缓冲区
@@ -490,7 +495,7 @@ public:
         m_bProxyConnected = FALSE;
         server = (Server*)svr;
         OnlineTime = time(0);
-		LastHeartbeatTime = OnlineTime;
+        LastHeartbeatTime = OnlineTime;
     }
     uint64_t GetAliveTime()const
     {
@@ -535,7 +540,7 @@ public:
     }
     virtual int GetPort() const
     {
-		// 第一次返回套接字，后续返回地址栏端口号
+        // 第一次返回套接字，后续返回地址栏端口号
         if (sClientInfo[ONLINELIST_ADDR].IsEmpty())
             return sClientSocket;
         return atoi(sClientInfo[ONLINELIST_ADDR]);
@@ -556,16 +561,17 @@ public:
     }
     void SetAdditionalData(int index, const std::string &value)
     {
-		if (index >= 0 && index < RES_MAX) {
+        if (index >= 0 && index < RES_MAX) {
             additonalInfo[index] = value.c_str();
         }
-	}
+    }
     std::string GetGroupName() const override
     {
         return GroupName;
     }
-    virtual void SetGroupName(const std::string& group)override {
-		GroupName = group;
+    virtual void SetGroupName(const std::string& group)override
+    {
+        GroupName = group;
     }
     BOOL IsLogin() const override
     {
@@ -739,8 +745,8 @@ public:
     {
         char client_ip[INET_ADDRSTRLEN];
 #if (defined(_WIN32_WINNT) && _WIN32_WINNT <= 0x0501)
-		strncpy(client_ip, inet_ntoa(clientAddr.sin_addr), INET_ADDRSTRLEN - 1);
-		client_ip[INET_ADDRSTRLEN - 1] = '\0';
+        strncpy(client_ip, inet_ntoa(clientAddr.sin_addr), INET_ADDRSTRLEN - 1);
+        client_ip[INET_ADDRSTRLEN - 1] = '\0';
 #else
         inet_ntop(AF_INET, &clientAddr.sin_addr, client_ip, INET_ADDRSTRLEN);
 #endif

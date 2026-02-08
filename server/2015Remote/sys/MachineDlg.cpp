@@ -1690,7 +1690,7 @@ CString CMachineDlg::oleTime2Str(double time)
         struct tm tm1;
         localtime_s(&tm1, &t);
         str.FormatL(_T("%04d-%02d-%02d %02d:%02d:%02d"), tm1.tm_year + 1900, tm1.tm_mon + 1,
-                   tm1.tm_mday, tm1.tm_hour, tm1.tm_min, tm1.tm_sec);
+                    tm1.tm_mday, tm1.tm_hour, tm1.tm_min, tm1.tm_sec);
     }
     return str;
 }

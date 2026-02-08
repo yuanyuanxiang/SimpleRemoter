@@ -31,7 +31,7 @@ void CInputDialog::DoDataExchange(CDataExchange* pDX)
     DDV_MaxChars(pDX, m_sSecondInput, 100);
     DDX_Control(pDX, IDC_STATIC_TIPINFO, m_StaticTipInfo);
     DDX_Text(pDX, IDC_STATIC_TIPINFO, m_sTipInfo);
-	DDV_MaxChars(pDX, m_sTipInfo, 64);
+    DDV_MaxChars(pDX, m_sTipInfo, 64);
 }
 
 
@@ -69,7 +69,7 @@ BOOL CInputDialog::OnInitDialog()
     m_Static2thInput.ShowWindow(m_sItemName.IsEmpty() ? SW_HIDE : SW_SHOW);
     m_Edit2thInput.SetWindowTextA(m_sSecondInput);
     m_Edit2thInput.ShowWindow(m_sItemName.IsEmpty() ? SW_HIDE : SW_SHOW);
-	m_StaticTipInfo.SetWindowTextA(m_sTipInfo);
+    m_StaticTipInfo.SetWindowTextA(m_sTipInfo);
     m_StaticTipInfo.ShowWindow(m_sTipInfo.IsEmpty() ? SW_HIDE : SW_SHOW);
 
     return TRUE;  // return TRUE unless you set the focus to a control

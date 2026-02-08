@@ -158,7 +158,7 @@ BOOL CHideScreenSpyDlg::OnInitDialog()
     __super::OnInitDialog();
     CString strString;
     strString.FormatL("%s - 远程虚拟屏幕 %d×%d", m_IPAddress,
-                     m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
+                      m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight);
     SetWindowText(strString);
 
     // Set the icon for this dialog.  The framework does this automatically
@@ -468,7 +468,7 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         int code;
         if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full, rate, handler)) {
             MessageBoxL(CString("Create Video(*.avi) Failed:\n") + m_aviFile + "\r\n错误代码: " +
-                       CBmpToAvi::GetErrMsg(code).c_str(), "提示", MB_ICONINFORMATION);
+                        CBmpToAvi::GetErrMsg(code).c_str(), "提示", MB_ICONINFORMATION);
             m_aviFile = _T("");
         } else {
             ::SetTimer(m_hWnd, TIMER_ID, duration, NULL);

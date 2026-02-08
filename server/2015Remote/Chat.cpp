@@ -48,7 +48,7 @@ BOOL CChat::OnInitDialog()
 
     CString str;
     str.FormatL(_T("远程交谈 - %s"), m_ContextObject->PeerName.c_str()),
-               SetWindowText(str);
+                SetWindowText(str);
     m_editTip.SetWindowTextL("提示: 对方聊天对话框在发送消息后才会弹出");
     m_editNewMsg.SetLimitText(4079);
     // TODO: Add extra initialization here

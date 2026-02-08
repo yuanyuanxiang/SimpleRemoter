@@ -294,9 +294,15 @@ void CToolbarDlg::ApplyOpacity()
     // 透明度级别: 0=100%(255), 1=75%(191), 2=50%(128)
     BYTE opacity;
     switch (m_nOpacityLevel) {
-        case 1:  opacity = 191; break;  // 75%
-        case 2:  opacity = 128; break;  // 50%
-        default: opacity = 255; break;  // 100%
+    case 1:
+        opacity = 191;
+        break;  // 75%
+    case 2:
+        opacity = 128;
+        break;  // 50%
+    default:
+        opacity = 255;
+        break;  // 100%
     }
     SetLayeredWindowAttributes(RGB(255, 0, 255), opacity, LWA_COLORKEY | LWA_ALPHA);
 }
@@ -304,9 +310,12 @@ void CToolbarDlg::ApplyOpacity()
 CString CToolbarDlg::GetOpacityText()
 {
     switch (m_nOpacityLevel) {
-        case 1:  return _TR("透明75%");
-        case 2:  return _TR("透明50%");
-        default: return _TR("透明度");
+    case 1:
+        return _TR("透明75%");
+    case 2:
+        return _TR("透明50%");
+    default:
+        return _TR("透明度");
     }
 }
 

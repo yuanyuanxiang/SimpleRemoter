@@ -328,16 +328,15 @@ BOOL CScreenSpyDlg::OnInitDialog()
         if (m_Settings.ScreenStrategy == 0) {
             SysMenu->CheckMenuItem(IDM_SCREEN_1080P, MF_CHECKED);
             SysMenu->CheckMenuItem(IDM_ORIGINAL_SIZE, MF_UNCHECKED);
-        }
-        else if (m_Settings.ScreenStrategy == 1) {
+        } else if (m_Settings.ScreenStrategy == 1) {
             SysMenu->CheckMenuItem(IDM_SCREEN_1080P, MF_UNCHECKED);
             SysMenu->CheckMenuItem(IDM_ORIGINAL_SIZE, MF_CHECKED);
         }
-		int fpsIndex = IDM_FPS_10 + (m_Settings.MaxFPS - 10)/5;
+        int fpsIndex = IDM_FPS_10 + (m_Settings.MaxFPS - 10)/5;
         for (int i = IDM_FPS_10; i <= IDM_FPS_UNLIMITED; i++) {
             SysMenu->CheckMenuItem(i, MF_UNCHECKED);
-		}
-		SysMenu->CheckMenuItem(fpsIndex, MF_CHECKED);
+        }
+        SysMenu->CheckMenuItem(fpsIndex, MF_CHECKED);
 
         // 设置滚动检测间隔选中状态
         SysMenu->CheckMenuItem(IDM_SCROLL_DETECT_OFF, MF_UNCHECKED);
@@ -402,8 +401,8 @@ VOID CScreenSpyDlg::OnClose()
     CWnd* pMain = AfxGetMainWnd();
     if (pMain)
         ::PostMessage(pMain->GetSafeHwnd(), WM_SESSION_ACTIVATED, (WPARAM)nullptr, 0);
-	KillTimer(1);
-	KillTimer(2);
+    KillTimer(1);
+    KillTimer(2);
     KillTimer(3);
     KillTimer(4);
     if (!m_aviFile.IsEmpty()) {
@@ -436,8 +435,8 @@ VOID CScreenSpyDlg::OnClose()
 afx_msg LRESULT CScreenSpyDlg::OnDisconnect(WPARAM wParam, LPARAM lParam)
 {
     m_bConnected = FALSE;
-	m_nDisconnectTime = GetTickCount64();
-	// Close the dialog if reconnect not succeed in 15 seconds
+    m_nDisconnectTime = GetTickCount64();
+    // Close the dialog if reconnect not succeed in 15 seconds
     SetTimer(2, 15000, NULL);
     SetTimer(3, 3000, NULL);
     PostMessage(WM_PAINT);
@@ -472,22 +471,26 @@ VOID CScreenSpyDlg::OnReceiveComplete()
     }
     case TOKEN_FIRSTSCREEN: {
         DrawFirstScreen();
+        m_ulFramesThisSecond++;
         break;
     }
     case TOKEN_NEXTSCREEN: {
         DrawNextScreenDiff(false);
+        m_ulFramesThisSecond++;
         break;
     }
     case TOKEN_KEYFRAME: {
         if (!m_bIsFirst) {
             DrawNextScreenDiff(true);
         }
+        m_ulFramesThisSecond++;
         break;
     }
     case TOKEN_SCROLL_FRAME: {
         if (!m_bIsFirst) {
             DrawScrollFrame();
         }
+        m_ulFramesThisSecond++;
         break;
     }
     case TOKEN_CLIPBOARD_TEXT: {
@@ -785,7 +788,7 @@ bool CScreenSpyDlg::Decode(LPBYTE Buffer, int size)
 
 void CScreenSpyDlg::OnPaint()
 {
-	if (m_bIsClosed) return;
+    if (m_bIsClosed) return;
     CPaintDC dc(this); // device context for painting
 
     if (m_bIsFirst) {
@@ -798,13 +801,13 @@ void CScreenSpyDlg::OnPaint()
     BitBlt(m_hFullDC, 0, 0, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight, m_hFullMemDC, m_ulHScrollPos, m_ulVScrollPos, SRCCOPY);
 
     if ((m_bIsCtrl && m_Settings.RemoteCursor) || m_bIsTraceCursor) {
-		CPoint ptLocal;
-		GetCursorPos(&ptLocal);
-		ScreenToClient(&ptLocal);
+        CPoint ptLocal;
+        GetCursorPos(&ptLocal);
+        ScreenToClient(&ptLocal);
 
-		CRect rcToolbar(0, 0, 0, 0);
-		if (m_pToolbar) m_pToolbar->GetWindowRect(&rcToolbar), ScreenToClient(&rcToolbar);
-		// 只有当本地鼠标不在工具栏区域时，才绘制远程位图光标
+        CRect rcToolbar(0, 0, 0, 0);
+        if (m_pToolbar) m_pToolbar->GetWindowRect(&rcToolbar), ScreenToClient(&rcToolbar);
+        // 只有当本地鼠标不在工具栏区域时，才绘制远程位图光标
         if (!rcToolbar.PtInRect(ptLocal)) {
 
             // 1. 计算缩放位置
@@ -823,61 +826,57 @@ void CScreenSpyDlg::OnPaint()
     }
     if (!m_bConnected && GetTickCount64() - m_nDisconnectTime>2000) {
         DrawTipString("正在重连......", 2);
-	}
+    }
 }
 
 BOOL CScreenSpyDlg::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 {
-	if ((m_bIsCtrl && m_Settings.RemoteCursor) && nHitTest == HTCLIENT)
-	{
-		::SetCursor(NULL); // 只要在客户区，始终隐藏系统光标
-		return TRUE;       // 告诉 Windows 我们处理过了
-	}
-	return __super::OnSetCursor(pWnd, nHitTest, message);
+    if ((m_bIsCtrl && m_Settings.RemoteCursor) && nHitTest == HTCLIENT) {
+        ::SetCursor(NULL); // 只要在客户区，始终隐藏系统光标
+        return TRUE;       // 告诉 Windows 我们处理过了
+    }
+    return __super::OnSetCursor(pWnd, nHitTest, message);
 }
 
 VOID CScreenSpyDlg::DrawTipString(CString strString, int fillMode)
 {
-	// fillMode: 0=不填充, 1=全黑, 2=半透明
-	RECT Rect;
-	GetClientRect(&Rect);
-	int width = Rect.right - Rect.left;
-	int height = Rect.bottom - Rect.top;
+    // fillMode: 0=不填充, 1=全黑, 2=半透明
+    RECT Rect;
+    GetClientRect(&Rect);
+    int width = Rect.right - Rect.left;
+    int height = Rect.bottom - Rect.top;
 
-	if (fillMode == 1)
-	{
-		// 原来的全黑效果
-		COLORREF BackgroundColor = RGB(0x00, 0x00, 0x00);
-		SetBkColor(m_hFullDC, BackgroundColor);
-		ExtTextOut(m_hFullDC, 0, 0, ETO_OPAQUE, &Rect, NULL, 0, NULL);
-	}
-	else if (fillMode == 2)
-	{
-		// 半透明效果
-		HDC hMemDC = CreateCompatibleDC(m_hFullDC);
-		HBITMAP hBitmap = CreateCompatibleBitmap(m_hFullDC, width, height);
-		HBITMAP hOldBitmap = (HBITMAP)SelectObject(hMemDC, hBitmap);
+    if (fillMode == 1) {
+        // 原来的全黑效果
+        COLORREF BackgroundColor = RGB(0x00, 0x00, 0x00);
+        SetBkColor(m_hFullDC, BackgroundColor);
+        ExtTextOut(m_hFullDC, 0, 0, ETO_OPAQUE, &Rect, NULL, 0, NULL);
+    } else if (fillMode == 2) {
+        // 半透明效果
+        HDC hMemDC = CreateCompatibleDC(m_hFullDC);
+        HBITMAP hBitmap = CreateCompatibleBitmap(m_hFullDC, width, height);
+        HBITMAP hOldBitmap = (HBITMAP)SelectObject(hMemDC, hBitmap);
 
-		HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
-		FillRect(hMemDC, &Rect, hBrush);
-		DeleteObject(hBrush);
+        HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+        FillRect(hMemDC, &Rect, hBrush);
+        DeleteObject(hBrush);
 
-		BLENDFUNCTION blend = { 0 };
-		blend.BlendOp = AC_SRC_OVER;
-		blend.SourceConstantAlpha = 150;
-		blend.AlphaFormat = 0;
+        BLENDFUNCTION blend = { 0 };
+        blend.BlendOp = AC_SRC_OVER;
+        blend.SourceConstantAlpha = 150;
+        blend.AlphaFormat = 0;
 
-		AlphaBlend(m_hFullDC, 0, 0, width, height,
-			hMemDC, 0, 0, width, height, blend);
+        AlphaBlend(m_hFullDC, 0, 0, width, height,
+                   hMemDC, 0, 0, width, height, blend);
 
-		SelectObject(hMemDC, hOldBitmap);
-		DeleteObject(hBitmap);
-		DeleteDC(hMemDC);
-	}
+        SelectObject(hMemDC, hOldBitmap);
+        DeleteObject(hBitmap);
+        DeleteDC(hMemDC);
+    }
 
-	SetBkMode(m_hFullDC, TRANSPARENT);
-	SetTextColor(m_hFullDC, RGB(0xff, 0x00, 0x00));
-	DrawText(m_hFullDC, strString, -1, &Rect, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+    SetBkMode(m_hFullDC, TRANSPARENT);
+    SetTextColor(m_hFullDC, RGB(0xff, 0x00, 0x00));
+    DrawText(m_hFullDC, strString, -1, &Rect, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
 }
 
 bool DirectoryExists(const char* path)
@@ -926,15 +925,15 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
     case IDM_FULLSCREEN: { // 全屏
         EnterFullScreen();
         SysMenu->CheckMenuItem(IDM_FULLSCREEN, MF_CHECKED); //菜单样式
-		BYTE cmd[4] = { CMD_FULL_SCREEN, m_Settings.FullScreen = TRUE };
-		m_ContextObject->Send2Client(cmd, sizeof(cmd));
+        BYTE cmd[4] = { CMD_FULL_SCREEN, m_Settings.FullScreen = TRUE };
+        m_ContextObject->Send2Client(cmd, sizeof(cmd));
         break;
     }
     case IDM_REMOTE_CURSOR: {
-		BYTE cmd[4] = { CMD_REMOTE_CURSOR, m_Settings.RemoteCursor = !m_Settings.RemoteCursor };
+        BYTE cmd[4] = { CMD_REMOTE_CURSOR, m_Settings.RemoteCursor = !m_Settings.RemoteCursor };
         SysMenu->CheckMenuItem(IDM_REMOTE_CURSOR, m_Settings.RemoteCursor ? MF_CHECKED : MF_UNCHECKED);
-		m_ContextObject->Send2Client(cmd, sizeof(cmd));
-		break;
+        m_ContextObject->Send2Client(cmd, sizeof(cmd));
+        break;
     }
     case IDM_SAVEDIB: {  // 快照保存
         SaveSnapshot();
@@ -957,7 +956,7 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         int code;
         if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full, rate, handler)) {
             MessageBoxL(CString("Create Video(*.avi) Failed:\n") + m_aviFile + "\r\n错误代码: " +
-                       CBmpToAvi::GetErrMsg(code).c_str(), "提示", MB_ICONINFORMATION);
+                        CBmpToAvi::GetErrMsg(code).c_str(), "提示", MB_ICONINFORMATION);
             m_aviFile = _T("");
         } else {
             ::SetTimer(m_hWnd, TIMER_ID, duration, NULL);
@@ -979,7 +978,7 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         BYTE	bToken[2] = { CMD_MULTITHREAD_COMPRESS, (BYTE)threadNum };
         m_ContextObject->Send2Client(bToken, sizeof(bToken));
         SysMenu->CheckMenuItem(nID, threadNum ? MF_CHECKED : MF_UNCHECKED);
-		m_Settings.CompressThread = threadNum;
+        m_Settings.CompressThread = threadNum;
         break;
     }
 
@@ -987,9 +986,9 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         const int strategy = 1;
         BYTE cmd[16] = { CMD_SCREEN_SIZE, (BYTE)strategy };
         m_ContextObject->Send2Client(cmd, sizeof(cmd));
-		m_Settings.ScreenStrategy = strategy;
-		SysMenu->CheckMenuItem(IDM_ORIGINAL_SIZE, MF_CHECKED);
-		SysMenu->CheckMenuItem(IDM_SCREEN_1080P, MF_UNCHECKED);
+        m_Settings.ScreenStrategy = strategy;
+        SysMenu->CheckMenuItem(IDM_ORIGINAL_SIZE, MF_CHECKED);
+        SysMenu->CheckMenuItem(IDM_SCREEN_1080P, MF_UNCHECKED);
         break;
     }
 
@@ -998,8 +997,8 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         BYTE cmd[16] = { CMD_SCREEN_SIZE, (BYTE)strategy };
         m_ContextObject->Send2Client(cmd, sizeof(cmd));
         m_Settings.ScreenStrategy = strategy;
-		SysMenu->CheckMenuItem(IDM_SCREEN_1080P, MF_CHECKED);
-		SysMenu->CheckMenuItem(IDM_ORIGINAL_SIZE, MF_UNCHECKED);
+        SysMenu->CheckMenuItem(IDM_SCREEN_1080P, MF_CHECKED);
+        SysMenu->CheckMenuItem(IDM_ORIGINAL_SIZE, MF_UNCHECKED);
         break;
     }
 
@@ -1012,11 +1011,11 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         int fps = 10 + (nID - IDM_FPS_10) * 5;
         BYTE	bToken[2] = { CMD_FPS, nID == IDM_FPS_UNLIMITED ? 255 : fps };
         m_ContextObject->Send2Client(bToken, sizeof(bToken));
-		m_Settings.MaxFPS = nID == IDM_FPS_UNLIMITED ? 255 : fps;
+        m_Settings.MaxFPS = nID == IDM_FPS_UNLIMITED ? 255 : fps;
         for (int i = IDM_FPS_10; i <= IDM_FPS_UNLIMITED; i++) {
-			SysMenu->CheckMenuItem(i, MF_UNCHECKED);
-		}
-		SysMenu->CheckMenuItem(nID, MF_CHECKED);
+            SysMenu->CheckMenuItem(i, MF_UNCHECKED);
+        }
+        SysMenu->CheckMenuItem(nID, MF_CHECKED);
         break;
     }
 
@@ -1102,19 +1101,21 @@ void CScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
         }
         CWnd* pMain = AfxGetMainWnd();
         if (pMain)
-            ::PostMessageA(pMain->GetSafeHwnd(), WM_SHOWNOTIFY, (WPARAM)new CharMsg("连接已断开"), 
-                (LPARAM)new CharMsg(m_IPAddress + " - 远程桌面连接已断开"));
+            ::PostMessageA(pMain->GetSafeHwnd(), WM_SHOWNOTIFY, (WPARAM)new CharMsg("连接已断开"),
+                           (LPARAM)new CharMsg(m_IPAddress + " - 远程桌面连接已断开"));
         this->PostMessageA(WM_CLOSE, 0, 0);
         return;
-	}
+    }
     if (nIDEvent == 3) {
         KillTimer(3);
         PostMessageA(WM_PAINT);
     }
     if (nIDEvent == 4) {
-        // 计算传输速率并更新标题
+        // 计算传输速率和帧率并更新标题
         m_dTransferRate = m_ulBytesThisSecond / 1024.0;  // KB/s
         m_ulBytesThisSecond = 0;
+        m_ulFrameRate = m_ulFramesThisSecond;
+        m_ulFramesThisSecond = 0;
         UpdateWindowTitle();
     }
     __super::OnTimer(nIDEvent);
@@ -1129,11 +1130,11 @@ void CScreenSpyDlg::UpdateWindowTitle()
 
     CString strTitle;
     if (m_dTransferRate >= 1024) {
-        strTitle.FormatL("%s - 远程桌面控制 %d×%d | %.1f MB/s",
-            m_IPAddress, width, height, m_dTransferRate / 1024);
+        strTitle.FormatL("%s - 远程桌面控制 %d×%d | %u FPS | %.1f MB/s",
+                         m_IPAddress, width, height, m_ulFrameRate, m_dTransferRate / 1024);
     } else {
-        strTitle.FormatL("%s - 远程桌面控制 %d×%d | %.0f KB/s",
-            m_IPAddress, width, height, m_dTransferRate);
+        strTitle.FormatL("%s - 远程桌面控制 %d×%d | %u FPS | %.0f KB/s",
+                         m_IPAddress, width, height, m_ulFrameRate, m_dTransferRate);
     }
     SetWindowText(strTitle);
 }
@@ -1166,8 +1167,8 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
                 (GetKeyState(VK_CONTROL) & 0x8000) &&
                 (GetKeyState(VK_MENU) & 0x8000)) {
                 LeaveFullScreen();
-				BYTE cmd[4] = { CMD_FULL_SCREEN, m_Settings.FullScreen = FALSE };
-				m_ContextObject->Send2Client(cmd, sizeof(cmd));
+                BYTE cmd[4] = { CMD_FULL_SCREEN, m_Settings.FullScreen = FALSE };
+                m_ContextObject->Send2Client(cmd, sizeof(cmd));
                 return TRUE;
             }
         }
@@ -1439,7 +1440,7 @@ void CScreenSpyDlg::EnterFullScreen()
 // 全屏退出成功则返回true
 bool CScreenSpyDlg::LeaveFullScreen()
 {
-    if (1){
+    if (1) {
         KillTimer(1);
         if (m_pToolbar) {
             m_pToolbar->DestroyWindow();
@@ -1491,14 +1492,12 @@ BOOL CScreenSpyDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 void CScreenSpyDlg::OnMouseMove(UINT nFlags, CPoint point)
 {
     if (m_Settings.RemoteCursor) {
-        if (m_pToolbar != NULL && ::IsWindow(m_pToolbar->m_hWnd) && m_pToolbar->IsWindowVisible())
-        {
+        if (m_pToolbar != NULL && ::IsWindow(m_pToolbar->m_hWnd) && m_pToolbar->IsWindowVisible()) {
             CRect rcToolbar;
             m_pToolbar->GetWindowRect(&rcToolbar);
             ScreenToClient(&rcToolbar); // 转换到主窗口坐标系
 
-            if (rcToolbar.PtInRect(point))
-            {
+            if (rcToolbar.PtInRect(point)) {
                 // 如果鼠标在工具栏区域，直接显示本地光标并返回，不发送远程指令
                 ::SetCursor(LoadCursor(NULL, IDC_ARROW));
                 return;
@@ -1508,7 +1507,7 @@ void CScreenSpyDlg::OnMouseMove(UINT nFlags, CPoint point)
             // 关键：在控制模式下，强制设置光标为空，隐藏本地物理箭头
             ::SetCursor(NULL);
         }
-    }else if (!m_bMouseTracking) {
+    } else if (!m_bMouseTracking) {
         m_bMouseTracking = true;
         SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
     }

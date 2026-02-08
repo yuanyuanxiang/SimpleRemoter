@@ -58,7 +58,8 @@ template<class _Ty>
 using clean_type = typename std::remove_const_t<std::remove_reference_t<_Ty>>;
 
 template <int _size, char _key1, char _key2, typename T>
-class skCrypter {
+class skCrypter
+{
 public:
     __forceinline constexpr skCrypter(T* data)
     {

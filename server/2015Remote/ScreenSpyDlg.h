@@ -114,6 +114,9 @@ public:
     // 传输速率统计
     ULONG               m_ulBytesThisSecond = 0;    // 本秒累计字节
     double              m_dTransferRate = 0;        // 当前速率 (KB/s)
+    // 帧率统计
+    ULONG               m_ulFramesThisSecond = 0;   // 本秒累计帧数
+    ULONG               m_ulFrameRate = 0;          // 当前帧率 (FPS)
 
     void OnTimer(UINT_PTR nIDEvent);
     void UpdateWindowTitle();
@@ -137,8 +140,8 @@ public:
     afx_msg LRESULT OnDisconnect(WPARAM wParam, LPARAM lParam);
     afx_msg void OnExitFullscreen()
     {
-		BYTE cmd[4] = { CMD_FULL_SCREEN, m_Settings.FullScreen = FALSE };
-		m_ContextObject->Send2Client(cmd, sizeof(cmd));
+        BYTE cmd[4] = { CMD_FULL_SCREEN, m_Settings.FullScreen = FALSE };
+        m_ContextObject->Send2Client(cmd, sizeof(cmd));
         LeaveFullScreen();
     }
 

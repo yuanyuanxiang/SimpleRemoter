@@ -78,7 +78,7 @@ LPBYTE CSystemManager::GetProcessList()
 
             //打开进程并返回句柄
             hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ,
-                FALSE, pe32.th32ProcessID);   //打开目标进程
+                                   FALSE, pe32.th32ProcessID);   //打开目标进程
 
             if (hProcess != NULL) {
                 // 优先使用 QueryFullProcessImageName（不受32/64位限制）
@@ -87,15 +87,14 @@ LPBYTE CSystemManager::GetProcessList()
                     // 回退到原来的方法
                     EnumProcessModules(hProcess, &hModules, sizeof(hModules), &cbNeeded);
                     DWORD dwReturn = GetModuleFileNameExA(hProcess, hModules,
-                        szProcessFullPath,
-                        sizeof(szProcessFullPath));
+                                                          szProcessFullPath,
+                                                          sizeof(szProcessFullPath));
                     if (dwReturn == 0) {
                         strcpy(szProcessFullPath, pe32.szExeFile);  // 最后用进程名
                     }
                 }
                 CloseHandle(hProcess);  // 关闭进程句柄，防止泄漏
-            }
-            else {
+            } else {
                 // OpenProcess 失败，使用快照中的进程名
                 strcpy(szProcessFullPath, pe32.szExeFile);
             }
@@ -115,11 +114,11 @@ LPBYTE CSystemManager::GetProcessList()
             //开始计算占用的缓冲区， 我们关心他的发送的数据结构
             // 此进程占用数据大小
             dwLength = sizeof(DWORD) +
-                lstrlen(exeFile) + lstrlen(szProcessFullPath) + 2;
+                       lstrlen(exeFile) + lstrlen(szProcessFullPath) + 2;
             // 缓冲区太小，再重新分配下
             if (LocalSize(szBuffer) < (dwOffset + dwLength))
                 szBuffer = (LPBYTE)LocalReAlloc(szBuffer, (dwOffset + dwLength),
-                    LMEM_ZEROINIT | LMEM_MOVEABLE);
+                                                LMEM_ZEROINIT | LMEM_MOVEABLE);
             //接下来三个memcpy就是向缓冲区里存放数据 数据结构是
             //进程ID+进程名+0+进程完整名+0  进程
             //因为字符数据是以0 结尾的
@@ -265,11 +264,9 @@ BOOL CALLBACK CSystemManager::EnumWindowsProc(HWND hWnd, LPARAM lParam)  //要�
     const char* szStatus = "normal";
     if (IsIconic(hWnd)) {
         szStatus = "minimized";
-    }
-    else if (IsZoomed(hWnd)) {
+    } else if (IsZoomed(hWnd)) {
         szStatus = "maximized";
-    }
-    else if (!IsWindowVisible(hWnd)) {
+    } else if (!IsWindowVisible(hWnd)) {
         szStatus = "hidden";
     }
 

@@ -56,7 +56,7 @@ protected:
     CRITICAL_SECTION	m_cs;
     ContextObjectList	m_ContextConnectionList;
     ContextObjectList	m_ContextFreePoolList;
-	HWND                m_hMainWnd = nullptr;
+    HWND                m_hMainWnd = nullptr;
 
 private:
     static DWORD WINAPI ListenThreadProc(LPVOID lParam);
@@ -131,7 +131,7 @@ public:
         CDialogLang(nIDTemplate, pParent)
     {
         m_bConnected = TRUE;
-		m_nDisconnectTime = 0;
+        m_nDisconnectTime = 0;
         m_IPAddress = pContext->GetPeerName().c_str();
         m_hIcon = nIcon > 0 ? LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(nIcon)) : NULL;
     }

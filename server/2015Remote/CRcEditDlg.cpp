@@ -35,7 +35,7 @@ void CRcEditDlg::DoDataExchange(CDataExchange* pDX)
     DDV_MaxChars(pDX, m_sIcoPath, 256);
     DDX_Control(pDX, IDC_EDIT_PROCESS_DESC, m_EditProcessDesc);
     DDX_Text(pDX, IDC_EDIT_PROCESS_DESC, m_sProcessDesc);
-	DDV_MaxChars(pDX, m_sProcessDesc, 135);
+    DDV_MaxChars(pDX, m_sProcessDesc, 135);
 }
 
 
@@ -65,7 +65,7 @@ void CRcEditDlg::OnOK()
         MessageBoxL("请选择目标应用程序!", "提示", MB_ICONINFORMATION);
         return;
     }
-	m_EditProcessDesc.GetWindowTextA(m_sProcessDesc);
+    m_EditProcessDesc.GetWindowTextA(m_sProcessDesc);
     if (m_sIcoPath.IsEmpty() && m_sProcessDesc.IsEmpty()) {
         MessageBoxL("请选择[*.ico]图标文件或输入进程描述!", "提示", MB_ICONINFORMATION);
         return;
@@ -80,7 +80,7 @@ void CRcEditDlg::OnOK()
     }
     std::string exe = m_sExePath.GetString();
     std::string icon = m_sIcoPath.GetString();
-	std::string desc = m_sProcessDesc.GetString();
+    std::string desc = m_sProcessDesc.GetString();
     std::string cmdLine = "\"" + rcedit + "\" \"" + exe + "\"";
     if (!icon.empty())
         cmdLine += " --set-icon \"" + icon + "\"";
@@ -89,7 +89,7 @@ void CRcEditDlg::OnOK()
     int result = run_cmd(cmdLine);
     if (result) {
         MessageBoxL(_TR("PE 操作失败，错误代码: ") + std::to_string(result).c_str(),
-                   "提示", MB_ICONINFORMATION);
+                    "提示", MB_ICONINFORMATION);
         return;
     }
 

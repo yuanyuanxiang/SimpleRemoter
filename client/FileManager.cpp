@@ -481,11 +481,14 @@ static bool ShouldSkipDirectory(LPCTSTR lpszName, DWORD dwAttributes)
 }
 
 void CFileManager::SearchFilesRecursive(LPCTSTR lpszDirectory, LPCTSTR lpszPattern,
-    LPBYTE &lpList, DWORD &dwOffset, DWORD &nBufferSize, int nDepth, DWORD &nResultCount, DWORD &dwLastSendTime)
+                                        LPBYTE &lpList, DWORD &dwOffset, DWORD &nBufferSize, int nDepth, DWORD &nResultCount, DWORD &dwLastSendTime)
 {
     if (!m_bSearching) return;
     if (nDepth > SEARCH_MAX_DEPTH) return;
-    if (nResultCount >= SEARCH_MAX_RESULTS) { m_bSearching = false; return; }
+    if (nResultCount >= SEARCH_MAX_RESULTS) {
+        m_bSearching = false;
+        return;
+    }
 
     char strPath[MAX_PATH];
     WIN32_FIND_DATA FindFileData;

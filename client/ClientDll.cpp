@@ -178,9 +178,9 @@ DWORD WaitForMultipleHandlesEx(
 BOOL CALLBACK callback(DWORD CtrlType)
 {
 #ifdef _DEBUG
-	BOOL isClose = (CtrlType == CTRL_C_EVENT) || (CtrlType == CTRL_CLOSE_EVENT);
+    BOOL isClose = (CtrlType == CTRL_C_EVENT) || (CtrlType == CTRL_CLOSE_EVENT);
 #else
-	BOOL isClose = (CtrlType == CTRL_CLOSE_EVENT);
+    BOOL isClose = (CtrlType == CTRL_CLOSE_EVENT);
 #endif
     if (isClose) {
         g_MyApp.g_bExit = S_CLIENT_EXIT;
@@ -497,8 +497,8 @@ DWORD WINAPI StartClient(LPVOID lParam)
             auto saved_ip = cfg.GetStr("settings", "master");
             auto saved_port = cfg.GetInt("settings", "port");
             settings.SetServer(saved_ip.c_str(), saved_port);
-            Mprintf("[StartClient] Client is assigned to %s:%d- %ds left.\n", saved_ip.c_str(), saved_port, 
-                int(valid_to-now));
+            Mprintf("[StartClient] Client is assigned to %s:%d- %ds left.\n", saved_ip.c_str(), saved_port,
+                    int(valid_to-now));
         }
     }
     auto list = app.GetSharedMasterList();
@@ -544,7 +544,7 @@ DWORD WINAPI StartClient(LPVOID lParam)
         LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings, auth);
         Manager = auth ? new AuthKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit) :
                   new CKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit);
-		Manager->SetLoginMsg(login.szStartTime + std::string("|") + std::to_string(settings.clientID));
+        Manager->SetLoginMsg(login.szStartTime + std::string("|") + std::to_string(settings.clientID));
         while (ClientObject->IsRunning() && ClientObject->IsConnected() && !ClientObject->SendLoginInfo(login))
             WAIT_n(app.m_bIsRunning(&app), 5 + time(0)%10, 200);
         WAIT_n(app.m_bIsRunning(&app)&& ClientObject->IsRunning() && ClientObject->IsConnected(), 10, 200);

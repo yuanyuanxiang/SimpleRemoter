@@ -12,7 +12,8 @@
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "oleaut32.lib")
 
-void ExpandDirectory(const std::string& dir, std::vector<std::string>& result) {
+void ExpandDirectory(const std::string& dir, std::vector<std::string>& result)
+{
     std::string searchPath = dir + "\\*";
     WIN32_FIND_DATAA fd;
     HANDLE hFind = FindFirstFileA(searchPath.c_str(), &fd);
@@ -34,7 +35,8 @@ void ExpandDirectory(const std::string& dir, std::vector<std::string>& result) {
     FindClose(hFind);
 }
 
-std::vector<std::string> ExpandDirectories(const std::vector<std::string>& selected) {
+std::vector<std::string> ExpandDirectories(const std::vector<std::string>& selected)
+{
     std::vector<std::string> result;
 
     for (const auto& path : selected) {
@@ -102,14 +104,11 @@ static std::vector<std::string> GetDesktopSelectedFiles(int& result)
 
     std::vector<std::string> vecFiles;
     HDROP hDrop = (HDROP)GlobalLock(stg.hGlobal);
-    if (hDrop)
-    {
+    if (hDrop) {
         UINT nFiles = DragQueryFileA(hDrop, 0xFFFFFFFF, NULL, 0);
-        for (UINT i = 0; i < nFiles; i++)
-        {
+        for (UINT i = 0; i < nFiles; i++) {
             char szPath[MAX_PATH];
-            if (DragQueryFileA(hDrop, i, szPath, MAX_PATH))
-            {
+            if (DragQueryFileA(hDrop, i, szPath, MAX_PATH)) {
                 vecFiles.push_back(szPath);
             }
         }
@@ -123,7 +122,7 @@ static std::vector<std::string> GetDesktopSelectedFiles(int& result)
 
 std::vector<std::string> GetForegroundSelectedFiles(int& result)
 {
-	result = 0;
+    result = 0;
     HRESULT hrInit = CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
     bool bNeedUninit = SUCCEEDED(hrInit);
 
@@ -140,7 +139,7 @@ std::vector<std::string> GetForegroundSelectedFiles(int& result)
             return FALSE;
         }
         return TRUE;
-        }, (LPARAM)&hWorkerW);
+    }, (LPARAM)&hWorkerW);
 
     if (hFore == hDesktop || hFore == hWorkerW) {
         if (bNeedUninit) CoUninitialize();
@@ -163,14 +162,13 @@ std::vector<std::string> GetForegroundSelectedFiles(int& result)
         if (bNeedUninit) CoUninitialize();
         result = 2;
         return {};
-    } 
+    }
 
     std::vector<std::string> vecFiles;
     long nCount = 0;
     pShellWindows->get_Count(&nCount);
 
-    for (long i = 0; i < nCount; i++)
-    {
+    for (long i = 0; i < nCount; i++) {
         CComVariant vIndex(i);
         CComPtr<IDispatch> pDisp;
         if (FAILED(pShellWindows->Item(vIndex, &pDisp)) || !pDisp)
@@ -206,19 +204,15 @@ std::vector<std::string> GetForegroundSelectedFiles(int& result)
         long nItems = 0;
         pItems->get_Count(&nItems);
 
-        for (long j = 0; j < nItems; j++)
-        {
+        for (long j = 0; j < nItems; j++) {
             CComVariant vj(j);
             CComPtr<FolderItem> pItem;
-            if (SUCCEEDED(pItems->Item(vj, &pItem)) && pItem)
-            {
+            if (SUCCEEDED(pItems->Item(vj, &pItem)) && pItem) {
                 CComBSTR bstrPath;
-                if (SUCCEEDED(pItem->get_Path(&bstrPath)))
-                {
+                if (SUCCEEDED(pItem->get_Path(&bstrPath))) {
                     // BSTR (宽字符) 转 多字节
                     int nLen = WideCharToMultiByte(CP_ACP, 0, bstrPath, -1, NULL, 0, NULL, NULL);
-                    if (nLen > 0)
-                    {
+                    if (nLen > 0) {
                         std::string strPath(nLen - 1, '\0');
                         WideCharToMultiByte(CP_ACP, 0, bstrPath, -1, &strPath[0], nLen, NULL, NULL);
                         vecFiles.push_back(strPath);
