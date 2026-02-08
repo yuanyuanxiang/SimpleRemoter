@@ -110,7 +110,13 @@ public:
 
     CString             m_aviFile;
     CBmpToAvi	        m_aviStream;
+
+    // 传输速率统计
+    ULONG               m_ulBytesThisSecond = 0;    // 本秒累计字节
+    double              m_dTransferRate = 0;        // 当前速率 (KB/s)
+
     void OnTimer(UINT_PTR nIDEvent);
+    void UpdateWindowTitle();
 
     bool Decode(LPBYTE Buffer, int size);
     void EnterFullScreen();

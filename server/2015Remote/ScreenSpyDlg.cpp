@@ -386,6 +386,10 @@ BOOL CScreenSpyDlg::OnInitDialog()
     // 同时初始化 m_struOldWndpl，供全屏退出时使用
     m_struOldWndpl = wp;
     m_Settings.FullScreen ? EnterFullScreen() : LeaveFullScreen();
+
+    // 启动传输速率更新定时器 (1秒)
+    SetTimer(4, 1000, NULL);
+
     SendNext();
 
     return TRUE;
@@ -401,6 +405,7 @@ VOID CScreenSpyDlg::OnClose()
 	KillTimer(1);
 	KillTimer(2);
     KillTimer(3);
+    KillTimer(4);
     if (!m_aviFile.IsEmpty()) {
         KillTimer(TIMER_ID);
         m_aviFile = "";
@@ -446,6 +451,7 @@ VOID CScreenSpyDlg::OnReceiveComplete()
     auto cmd = m_ContextObject->InDeCompressedBuffer.GetBYTE(0);
     LPBYTE szBuffer = m_ContextObject->InDeCompressedBuffer.GetBuffer();
     unsigned len = m_ContextObject->InDeCompressedBuffer.GetBufferLen();
+    m_ulBytesThisSecond += len;  // 累计传输字节
     switch(cmd) {
     case COMMAND_GET_FOLDER: {
         std::string folder;
@@ -1105,7 +1111,31 @@ void CScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
         KillTimer(3);
         PostMessageA(WM_PAINT);
     }
+    if (nIDEvent == 4) {
+        // 计算传输速率并更新标题
+        m_dTransferRate = m_ulBytesThisSecond / 1024.0;  // KB/s
+        m_ulBytesThisSecond = 0;
+        UpdateWindowTitle();
+    }
     __super::OnTimer(nIDEvent);
+}
+
+void CScreenSpyDlg::UpdateWindowTitle()
+{
+    if (!m_BitmapInfor_Full) return;
+
+    int width = m_BitmapInfor_Full->bmiHeader.biWidth;
+    int height = m_BitmapInfor_Full->bmiHeader.biHeight;
+
+    CString strTitle;
+    if (m_dTransferRate >= 1024) {
+        strTitle.FormatL("%s - 远程桌面控制 %d×%d | %.1f MB/s",
+            m_IPAddress, width, height, m_dTransferRate / 1024);
+    } else {
+        strTitle.FormatL("%s - 远程桌面控制 %d×%d | %.0f KB/s",
+            m_IPAddress, width, height, m_dTransferRate);
+    }
+    SetWindowText(strTitle);
 }
 
 BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
