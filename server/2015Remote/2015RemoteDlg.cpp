@@ -3027,8 +3027,10 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
         context* id = (context*)m_CList_Online.GetItemData(i);
         if (clientID == id->GetClientID()) {
             m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, hb.ActiveWnd);
-            if (hb.Ping > 0)
+            if (hb.Ping > 0) {
                 m_CList_Online.SetItemText(i, ONLINELIST_PING, std::to_string(hb.Ping).c_str());
+                ctx->SetClientData(ONLINELIST_PING, std::to_string(hb.Ping).c_str());
+            }
             m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, hb.HasSoftware ? _TR("有") : _TR("无"));
             id->SetLastHeartbeat(time(0));
             return;
@@ -3120,7 +3122,7 @@ LRESULT CMy2015RemoteDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
     if (mainCtx) ContextObject->SetPeerName(mainCtx->GetClientData(ONLINELIST_IP).GetString());
     if (dlg) {
         if (GetRemoteWindow(dlg))
-            return dlg->UpdateContext(ContextObject);
+            return dlg->UpdateContext(ContextObject, clientID);
         Mprintf("收到远程桌面打开消息, 对话框已经销毁: %llu\n", dlgID);
     }
     return OpenDialog<CScreenSpyDlg, IDD_DIALOG_SCREEN_SPY, SW_SHOWMAXIMIZED>(wParam, lParam);

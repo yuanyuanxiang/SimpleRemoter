@@ -35,7 +35,7 @@ int FileBatchTransferWorker(const std::vector<std::string>& files, const std::st
 
 int RecvFileChunk(char* buf, size_t len, void* user, OnFinish f, const std::string& hash, const std::string& hmac);
 
-uint8_t* ScaleBitmap(uint8_t* dst, const uint8_t* src, int srcW, int srcH, int dstW, int dstH);
+uint8_t* ScaleBitmap(uint8_t* dst, const uint8_t* src, int srcW, int srcH, int dstW, int dstH, int instructionSet);
 
 std::vector<std::string> PreprocessFilesSimple(const std::vector<std::string>& inputFiles);
 

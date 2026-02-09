@@ -123,6 +123,7 @@ public:
     bool m_bIsProcessing;
     HICON m_hIcon;
     BOOL m_bConnected;
+    uint64_t m_ClientID = 0;
     uint64_t m_nDisconnectTime = 0;
     CDialogBase(UINT nIDTemplate, CWnd* pParent, Server* pIOCPServer, CONTEXT_OBJECT* pContext, int nIcon) :
         m_bIsClosed(false), m_bIsProcessing(false),
@@ -135,8 +136,9 @@ public:
         m_IPAddress = pContext->GetPeerName().c_str();
         m_hIcon = nIcon > 0 ? LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(nIcon)) : NULL;
     }
-    int UpdateContext(CONTEXT_OBJECT* pContext)
+    int UpdateContext(CONTEXT_OBJECT* pContext, uint64_t clientID)
     {
+        m_ClientID = clientID;
         m_bConnected = TRUE;
         m_nDisconnectTime = 0;
         m_ContextObject = pContext;

@@ -20,12 +20,8 @@
 
 inline bool HasSSE2()
 {
-#ifdef _DEBUG
-    return false;
-#else
     auto static has = IsProcessorFeaturePresent(PF_XMMI64_INSTRUCTIONS_AVAILABLE);
     return has;
-#endif
 }
 
 class ThreadPool
@@ -159,6 +155,7 @@ public:
     bool            m_bServerSupportsScroll; // 服务端是否支持滚动
     bool            m_bLastFrameWasScroll;   // 上一帧是否是滚动帧（用于强制同步）
     int             m_nScrollDetectInterval; // 滚动检测间隔（0=禁用, 1=每帧, 2=每2帧, ...）
+    int             m_nInstructionSet = 0;
 
 protected:
     int             m_nVScreenLeft = GetSystemMetrics(SM_XVIRTUALSCREEN);
@@ -255,6 +252,14 @@ public:
         return m_nScreenCount;
     }
 
+    virtual int GetCurrentWidth() const
+    {
+        return m_BitmapInfor_Send->bmiHeader.biWidth;
+    }
+    virtual int GetCurrentHeight() const
+    {
+        return m_BitmapInfor_Send->bmiHeader.biHeight;
+    }
     virtual int GetScreenWidth() const
     {
         return m_ulFullWidth;
@@ -373,7 +378,7 @@ public:
     virtual ULONG CompareBitmap(LPBYTE CompareSourData, LPBYTE CompareDestData, LPBYTE szBuffer,
                                 DWORD ulCompareLength, BYTE algo, int startPostion = 0)
     {
-        if (UsingDXGI() || !HasSSE2())
+        if (m_nInstructionSet == 0 || UsingDXGI() || !HasSSE2())
             return CompareBitmapDXGI(CompareSourData, CompareDestData, szBuffer, ulCompareLength, algo, startPostion);
 
         LPBYTE p = szBuffer;
@@ -801,7 +806,7 @@ public:
     // BGRA → RGB565 运行时分发 (根据 CPU 特性自动选择)
     inline void ConvertBGRAtoRGB565(const BYTE* src, uint16_t* dst, ULONG pixelCount)
     {
-        if (HasSSE2()) {
+        if (m_nInstructionSet && HasSSE2()) {
             ConvertBGRAtoRGB565_SSE2(src, dst, pixelCount);
         } else {
             ConvertBGRAtoRGB565_Scalar(src, dst, pixelCount);
@@ -948,6 +953,12 @@ public:
         return m_RectBuffer;
     }
 
+    // 获取屏幕传输算法
+    virtual BYTE GetAlgorithm() const
+    {
+        return m_bAlgorithm;
+    }
+
     // 设置屏幕传输算法
     virtual BYTE SetAlgorithm(int algo)
     {
@@ -986,6 +997,6 @@ public: // 纯虚接口
         if (m_ulFullWidth == m_BitmapInfor_Send->bmiHeader.biWidth && m_ulFullHeight == m_BitmapInfor_Send->bmiHeader.biHeight)
             return bitmap;
         return ScaleBitmap(target, (uint8_t*)bitmap, m_ulFullWidth, m_ulFullHeight, m_BitmapInfor_Send->bmiHeader.biWidth,
-                           m_BitmapInfor_Send->bmiHeader.biHeight);
+                           m_BitmapInfor_Send->bmiHeader.biHeight, m_nInstructionSet);
     }
 };

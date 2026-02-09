@@ -47,7 +47,7 @@ class CScreenSpyDlg : public DialogBase
     CToolbarDlg* m_pToolbar = nullptr;
     CMy2015RemoteDlg* m_pParent = nullptr;
     // MaxFPS=20, ScrollDetectInterval=2, Reserved={}, Capabilities=0
-    ScreenSettings m_Settings = { 20, 0, 0, 0, 0, 0, 0, 2, {}, 0 };
+    ScreenSettings m_Settings = { 20, 0, 0, 0, 0, 0, 0, 2, -1, {}, 0 };
 
 public:
     CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);
@@ -88,6 +88,7 @@ public:
     ULONG m_ulMsgCount;
     int m_FrameID;
     bool m_bHide = false;
+    BOOL m_bUsingFRP = FALSE;
 
     BOOL SaveSnapshot(void);
     // 对话框数据
@@ -114,9 +115,26 @@ public:
     // 传输速率统计
     ULONG               m_ulBytesThisSecond = 0;    // 本秒累计字节
     double              m_dTransferRate = 0;        // 当前速率 (KB/s)
-    // 帧率统计
+    // 帧率统计 (使用EMA平滑)
     ULONG               m_ulFramesThisSecond = 0;   // 本秒累计帧数
-    ULONG               m_ulFrameRate = 0;          // 当前帧率 (FPS)
+    double              m_dFrameRate = 0;           // 平滑后的帧率 (FPS)
+
+    // 自适应质量
+    struct {
+        bool enabled = false;                // 是否启用自适应 (默认关闭)
+        int currentLevel = QUALITY_HIGH;     // 当前质量等级
+        int currentMaxWidth = 0;             // 当前分辨率限制 (0=原始)
+        int lastRTT = 0;                     // 上次RTT值
+        ULONGLONG lastChangeTime = 0;        // 上次切换时间
+        ULONGLONG lastResChangeTime = 0;     // 上次分辨率变化时间
+        int stableCount = 0;                 // 稳定计数 (用于防抖)
+    } m_AdaptiveQuality;
+
+    int  GetClientRTT();                     // 获取客户端RTT(ms)
+    void EvaluateQuality();                  // 评估并调整质量
+    void ApplyQualityLevel(int level, bool persist = false); // 应用质量等级
+    const char* GetQualityName(int level);   // 获取质量等级名称
+    void UpdateQualityMenuCheck(CMenu* SysMenu = nullptr); // 更新质量菜单勾选状态
 
     void OnTimer(UINT_PTR nIDEvent);
     void UpdateWindowTitle();

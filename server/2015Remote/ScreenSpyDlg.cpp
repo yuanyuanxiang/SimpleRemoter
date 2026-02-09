@@ -43,6 +43,13 @@ enum {
     IDM_SCROLL_DETECT_2,        // 滚动检测：跨网推荐
     IDM_SCROLL_DETECT_4,        // 滚动检测：标准模式
     IDM_SCROLL_DETECT_8,        // 滚动检测：省CPU模式
+    IDM_ADAPTIVE_QUALITY,       // 自适应质量
+    IDM_QUALITY_ULTRA,          // 手动质量：Ultra
+    IDM_QUALITY_HIGH,           // 手动质量：High
+    IDM_QUALITY_MEDIUM,         // 手动质量：Medium
+    IDM_QUALITY_LOW,            // 手动质量：Low
+    IDM_QUALITY_MINIMAL,        // 手动质量：Minimal
+    IDM_ENABLE_SSE2,
 };
 
 IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
@@ -106,6 +113,9 @@ extern "C" char* __imp_strtok(char* str, const char* delim)
 CScreenSpyDlg::CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer, CONTEXT_OBJECT* ContextObject)
     : DialogBase(CScreenSpyDlg::IDD, Parent, IOCPServer, ContextObject, 0)
 {
+    m_bUsingFRP = THIS_CFG.GetInt("frp", "UseFrp", 0);
+    if (m_bUsingFRP != 0 && m_bUsingFRP != 1)
+        m_bUsingFRP = 1;
     m_pParent = Parent;
     m_hFullDC = NULL;
     m_hFullMemDC = NULL;
@@ -144,6 +154,17 @@ CScreenSpyDlg::CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer, CONTE
     m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapInfor_Full, ulBitmapInforLength, 1);
     m_ContextObject->InDeCompressedBuffer.CopyBuffer(&m_Settings, sizeof(ScreenSettings), 57);
 
+    // 从客户端配置初始化自适应质量状态 (QualityLevel: -1=自适应, 0-4=具体等级)
+    if (m_Settings.QualityLevel == QUALITY_ADAPTIVE) {
+        m_AdaptiveQuality.enabled = true;
+        m_AdaptiveQuality.currentLevel = QUALITY_HIGH;  // 自适应默认从 High 开始
+    } else if (m_Settings.QualityLevel >= 0 && m_Settings.QualityLevel < QUALITY_COUNT) {
+        m_AdaptiveQuality.enabled = false;
+        m_AdaptiveQuality.currentLevel = m_Settings.QualityLevel;
+    }
+    // 初始化当前分辨率限制
+    m_AdaptiveQuality.currentMaxWidth = GetQualityProfile(m_AdaptiveQuality.currentLevel).maxWidth;
+
     m_bIsCtrl = FALSE;
     m_bIsTraceCursor = FALSE;
 }
@@ -157,8 +178,8 @@ VOID CScreenSpyDlg::SendNext(void)
     // 附加服务端能力标志
     uint32_t capabilities = CAP_SCROLL_DETECT;  // 支持滚动检测优化
     memcpy(bToken + 9, &capabilities, sizeof(uint32_t));
-    // 附加滚动检测间隔（0=禁用, 1=每帧, 2=每2帧, ...）
-    int scrollInterval = m_Settings.ScrollDetectInterval > 0 ? m_Settings.ScrollDetectInterval : 1;
+    // 附加滚动检测间隔（0=禁用, 2=每2帧, ...）
+    int scrollInterval = m_Settings.ScrollDetectInterval;
     memcpy(bToken + 9 + sizeof(uint32_t), &scrollInterval, sizeof(int));
     m_ContextObject->Send2Client(bToken, sizeof(bToken));
 }
@@ -295,10 +316,12 @@ BOOL CScreenSpyDlg::OnInitDialog()
         SysMenu->AppendMenuL(MF_STRING, IDM_MULTITHREAD_COMPRESS, "多线程压缩(&2)");
         SysMenu->AppendMenuL(MF_STRING, IDM_ORIGINAL_SIZE, "原始分辨率(&3)");
         SysMenu->AppendMenuL(MF_STRING, IDM_SCREEN_1080P, "限制为1080P(&4)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_ENABLE_SSE2, "启用SSE2指令集(&5)");
         SysMenu->AppendMenuSeparator(MF_SEPARATOR);
 
         SysMenu->CheckMenuItem(IDM_FULLSCREEN, m_Settings.FullScreen ? MF_CHECKED : MF_UNCHECKED);
         SysMenu->CheckMenuItem(IDM_REMOTE_CURSOR, m_Settings.RemoteCursor ? MF_CHECKED : MF_UNCHECKED);
+        SysMenu->CheckMenuItem(IDM_ENABLE_SSE2, m_Settings.CpuSpeedup == 1 ? MF_CHECKED : MF_UNCHECKED);
 
         CMenu fpsMenu;
         if (fpsMenu.CreatePopupMenu()) {
@@ -321,6 +344,21 @@ BOOL CScreenSpyDlg::OnInitDialog()
             scrollMenu.AppendMenuL(MF_STRING, IDM_SCROLL_DETECT_8, "低频模式(省CPU)");
             SysMenu->AppendMenuL(MF_STRING | MF_POPUP, (UINT_PTR)scrollMenu.Detach(), _T("滚动优化"));
         }
+
+        // 屏幕质量子菜单
+        CMenu qualityMenu;
+        if (qualityMenu.CreatePopupMenu()) {
+            qualityMenu.AppendMenuL(MF_STRING, IDM_ADAPTIVE_QUALITY, "自适应(&A)");
+            qualityMenu.AppendMenuSeparator(MF_SEPARATOR);
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_ULTRA, "Ultra (30FPS, DIFF)");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_HIGH, "High (20FPS, RGB565)");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_MEDIUM, "Medium (15FPS, RGB565)");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_LOW, "Low (10FPS, RGB565)");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_MINIMAL, "Minimal (5FPS, GRAY)");
+            SysMenu->AppendMenuL(MF_STRING | MF_POPUP, (UINT_PTR)qualityMenu.Detach(), _T("屏幕质量(&Q)"));
+        }
+        // 初始化勾选状态
+        UpdateQualityMenuCheck(SysMenu);
 
         BOOL all = THIS_CFG.GetInt("settings", "MultiScreen", TRUE);
         SysMenu->EnableMenuItem(IDM_SWITCHSCREEN, all ? MF_ENABLED : MF_GRAYED);
@@ -388,6 +426,19 @@ BOOL CScreenSpyDlg::OnInitDialog()
 
     // 启动传输速率更新定时器 (1秒)
     SetTimer(4, 1000, NULL);
+
+    // 如果非自适应模式，发送保存的质量等级给客户端应用
+    if (!m_AdaptiveQuality.enabled) {
+        BYTE cmd[4] = { CMD_QUALITY_LEVEL, (BYTE)m_AdaptiveQuality.currentLevel, 0 };
+        m_ContextObject->Send2Client(cmd, sizeof(cmd));
+
+        // 如果有分辨率限制，也发送
+        if (m_AdaptiveQuality.currentMaxWidth > 0) {
+            BYTE sizeCmd[16] = { CMD_SCREEN_SIZE, 2 };  // strategy=2 表示自定义maxWidth
+            memcpy(sizeCmd + 2, &m_AdaptiveQuality.currentMaxWidth, sizeof(int));
+            m_ContextObject->Send2Client(sizeCmd, 10);
+        }
+    }
 
     SendNext();
 
@@ -504,6 +555,9 @@ VOID CScreenSpyDlg::OnReceiveComplete()
         const ULONG	ulBitmapInforLength = sizeof(BITMAPINFOHEADER);
         m_BitmapInfor_Full = (BITMAPINFO*) new BYTE[ulBitmapInforLength];
         m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapInfor_Full, ulBitmapInforLength, 1);
+        if (len >= 1 + sizeof(BITMAPINFOHEADER) + sizeof(uint64_t)) {
+            m_ClientID = *((uint64_t*)(m_ContextObject->InDeCompressedBuffer.GetBuffer(1 + sizeof(BITMAPINFOHEADER))));
+        }
         PrepareDrawing(m_BitmapInfor_Full);
         break;
     }
@@ -792,7 +846,7 @@ void CScreenSpyDlg::OnPaint()
     CPaintDC dc(this); // device context for painting
 
     if (m_bIsFirst) {
-        DrawTipString("请等待......");
+        DrawTipString(_TR("请等待......"));
         return;
     }
 
@@ -825,7 +879,7 @@ void CScreenSpyDlg::OnPaint()
         }
     }
     if (!m_bConnected && GetTickCount64() - m_nDisconnectTime>2000) {
-        DrawTipString("正在重连......", 2);
+        DrawTipString(_TR("正在重连......"), 2);
     }
 }
 
@@ -955,7 +1009,7 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         FCCHandler handler = nID == IDM_SAVEAVI ? ENCODER_MJPEG : ENCODER_H264;
         int code;
         if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full, rate, handler)) {
-            MessageBoxL(CString("Create Video(*.avi) Failed:\n") + m_aviFile + "\r\n错误代码: " +
+            MessageBoxL(CString("Create Video(*.avi) Failed:\n") + m_aviFile + _TR("\r\n错误代码: ") +
                         CBmpToAvi::GetErrMsg(code).c_str(), "提示", MB_ICONINFORMATION);
             m_aviFile = _T("");
         } else {
@@ -1002,6 +1056,13 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         break;
     }
 
+    case IDM_ENABLE_SSE2: {
+        BYTE cmd[4] = { CMD_INSTRUCTION_SET, m_Settings.CpuSpeedup = !m_Settings.CpuSpeedup };
+        m_ContextObject->Send2Client(cmd, sizeof(cmd));
+        SysMenu->CheckMenuItem(IDM_ENABLE_SSE2, m_Settings.CpuSpeedup == 1 ? MF_CHECKED : MF_UNCHECKED);
+        break;
+    }
+
     case IDM_FPS_10:
     case IDM_FPS_15:
     case IDM_FPS_20:
@@ -1038,6 +1099,38 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         BYTE cmd[8] = { CMD_SCROLL_INTERVAL };
         memcpy(cmd + 1, &interval, sizeof(int));
         m_ContextObject->Send2Client(cmd, 1 + sizeof(int));
+        break;
+    }
+
+    case IDM_ADAPTIVE_QUALITY: { // 自适应质量开关
+        m_AdaptiveQuality.enabled = !m_AdaptiveQuality.enabled;
+        UpdateQualityMenuCheck(SysMenu);
+        // 发送给客户端保存 (QualityLevel=-1 表示自适应)
+        int8_t level = m_AdaptiveQuality.enabled ? QUALITY_ADAPTIVE : m_AdaptiveQuality.currentLevel;
+        BYTE cmd[4] = { CMD_QUALITY_LEVEL, (BYTE)level, 1 };  // persist=1
+        m_ContextObject->Send2Client(cmd, sizeof(cmd));
+        if (m_AdaptiveQuality.enabled) {
+            // 启用时立即评估一次
+            EvaluateQuality();
+        }
+        UpdateWindowTitle();
+        break;
+    }
+
+    case IDM_QUALITY_ULTRA:
+    case IDM_QUALITY_HIGH:
+    case IDM_QUALITY_MEDIUM:
+    case IDM_QUALITY_LOW:
+    case IDM_QUALITY_MINIMAL: {
+        // 手动设置质量等级
+        int level = nID - IDM_QUALITY_ULTRA;
+        // 关闭自适应模式
+        m_AdaptiveQuality.enabled = false;
+        // 应用选择的等级 (persist=true 保存到客户端)
+        ApplyQualityLevel(level, true);
+        UpdateQualityMenuCheck(SysMenu);
+        UpdateWindowTitle();
+        Mprintf("手动设置质量: %s\n", GetQualityName(level));
         break;
     }
 
@@ -1101,8 +1194,8 @@ void CScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
         }
         CWnd* pMain = AfxGetMainWnd();
         if (pMain)
-            ::PostMessageA(pMain->GetSafeHwnd(), WM_SHOWNOTIFY, (WPARAM)new CharMsg("连接已断开"),
-                           (LPARAM)new CharMsg(m_IPAddress + " - 远程桌面连接已断开"));
+            ::PostMessageA(pMain->GetSafeHwnd(), WM_SHOWNOTIFY, (WPARAM)new CharMsg(_TR("连接已断开")),
+                           (LPARAM)new CharMsg(m_IPAddress + _TR(" - 远程桌面连接已断开")));
         this->PostMessageA(WM_CLOSE, 0, 0);
         return;
     }
@@ -1111,11 +1204,19 @@ void CScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
         PostMessageA(WM_PAINT);
     }
     if (nIDEvent == 4) {
-        // 计算传输速率和帧率并更新标题
+        // 计算传输速率并更新标题
         m_dTransferRate = m_ulBytesThisSecond / 1024.0;  // KB/s
         m_ulBytesThisSecond = 0;
-        m_ulFrameRate = m_ulFramesThisSecond;
+        // 使用EMA平滑帧率 (alpha=0.3)，避免跳跃
+        double currentFPS = (double)m_ulFramesThisSecond;
+        if (m_dFrameRate == 0) {
+            m_dFrameRate = currentFPS;  // 首次直接赋值
+        } else {
+            m_dFrameRate = 0.3 * currentFPS + 0.7 * m_dFrameRate;
+        }
         m_ulFramesThisSecond = 0;
+        // 自适应质量评估
+        EvaluateQuality();
         UpdateWindowTitle();
     }
     __super::OnTimer(nIDEvent);
@@ -1127,16 +1228,149 @@ void CScreenSpyDlg::UpdateWindowTitle()
 
     int width = m_BitmapInfor_Full->bmiHeader.biWidth;
     int height = m_BitmapInfor_Full->bmiHeader.biHeight;
+    const char* qualityName = GetQualityName(m_AdaptiveQuality.currentLevel);
 
     CString strTitle;
+    UINT fps = (UINT)(m_dFrameRate + 0.5);  // 四舍五入显示
     if (m_dTransferRate >= 1024) {
-        strTitle.FormatL("%s - 远程桌面控制 %d×%d | %u FPS | %.1f MB/s",
-                         m_IPAddress, width, height, m_ulFrameRate, m_dTransferRate / 1024);
+        strTitle.FormatL("%s - 远程桌面控制 %d×%d | %u FPS | %.1f MB/s | %s",
+            m_IPAddress, width, height, fps, m_dTransferRate / 1024, qualityName);
     } else {
-        strTitle.FormatL("%s - 远程桌面控制 %d×%d | %u FPS | %.0f KB/s",
-                         m_IPAddress, width, height, m_ulFrameRate, m_dTransferRate);
+        strTitle.FormatL("%s - 远程桌面控制 %d×%d | %u FPS | %.0f KB/s | %s",
+            m_IPAddress, width, height, fps, m_dTransferRate, qualityName);
     }
     SetWindowText(strTitle);
+}
+
+const char* CScreenSpyDlg::GetQualityName(int level)
+{
+    static const char* names[] = {
+        "Ultra", "High", "Medium", "Low", "Minimal"
+    };
+    if (level >= 0 && level < QUALITY_COUNT)
+        return names[level];
+    return "Unknown";
+}
+
+void CScreenSpyDlg::UpdateQualityMenuCheck(CMenu* SysMenu)
+{
+    if (!SysMenu) SysMenu = GetSystemMenu(FALSE);
+    // 先全部取消勾选
+    SysMenu->CheckMenuItem(IDM_ADAPTIVE_QUALITY, MF_UNCHECKED);
+    SysMenu->CheckMenuItem(IDM_QUALITY_ULTRA, MF_UNCHECKED);
+    SysMenu->CheckMenuItem(IDM_QUALITY_HIGH, MF_UNCHECKED);
+    SysMenu->CheckMenuItem(IDM_QUALITY_MEDIUM, MF_UNCHECKED);
+    SysMenu->CheckMenuItem(IDM_QUALITY_LOW, MF_UNCHECKED);
+    SysMenu->CheckMenuItem(IDM_QUALITY_MINIMAL, MF_UNCHECKED);
+    // 勾选当前项
+    if (m_AdaptiveQuality.enabled) {
+        SysMenu->CheckMenuItem(IDM_ADAPTIVE_QUALITY, MF_CHECKED);
+    } else {
+        SysMenu->CheckMenuItem(IDM_QUALITY_ULTRA + m_AdaptiveQuality.currentLevel, MF_CHECKED);
+    }
+}
+
+int CScreenSpyDlg::GetClientRTT()
+{
+    if (!m_pParent || !m_ClientID) return 0;
+
+    // 遍历列表查找对应的 ClientID
+    auto ctx = m_pParent->FindHost(m_ClientID);
+    if (ctx) {
+        auto pingStr = ctx->GetClientData(ONLINELIST_PING);
+        return _ttoi(pingStr);
+    }
+    return 0;
+}
+
+void CScreenSpyDlg::EvaluateQuality()
+{
+    if (!m_AdaptiveQuality.enabled) return;
+
+    // 1. 获取RTT
+    int rtt = GetClientRTT();
+    if (rtt <= 0) return;
+    m_AdaptiveQuality.lastRTT = rtt;
+
+    // 2. 计算目标等级
+    int targetLevel = GetTargetQualityLevel(rtt, m_bUsingFRP);
+    int currentLevel = m_AdaptiveQuality.currentLevel;
+
+    if (targetLevel == currentLevel) {
+        m_AdaptiveQuality.stableCount = 0;
+        return;
+    }
+
+    ULONGLONG now = GetTickCount64();
+
+    // 3. 检查是否涉及分辨率变化
+    int currentMaxWidth = GetQualityProfile(currentLevel).maxWidth;
+    int targetMaxWidth = GetQualityProfile(targetLevel).maxWidth;
+    bool resolutionChange = (currentMaxWidth != targetMaxWidth);
+
+    // 4. 冷却时间检查
+    // - 分辨率变化：降级15秒，升级30秒
+    // - 纯FPS/算法变化：3秒
+    ULONGLONG cooldown = 3000;
+    if (resolutionChange) {
+        cooldown = (targetLevel > currentLevel) ? 15000 : 30000;
+        if (now - m_AdaptiveQuality.lastResChangeTime < cooldown)
+            return;
+    } else {
+        if (now - m_AdaptiveQuality.lastChangeTime < cooldown)
+            return;
+    }
+
+    // 5. 降级：快速响应 (连续2次)
+    if (targetLevel > currentLevel) {
+        m_AdaptiveQuality.stableCount++;
+        if (m_AdaptiveQuality.stableCount >= 2) {
+            ApplyQualityLevel(targetLevel);
+        }
+    }
+    // 6. 升级：谨慎处理 (连续5次，且只升一级)
+    else if (targetLevel < currentLevel) {
+        m_AdaptiveQuality.stableCount++;
+        if (m_AdaptiveQuality.stableCount >= 5) {
+            ApplyQualityLevel(currentLevel - 1);
+        }
+    }
+}
+
+void CScreenSpyDlg::ApplyQualityLevel(int level, bool persist)
+{
+    if (level < 0 || level >= QUALITY_COUNT) return;
+
+    const QualityProfile& profile = GetQualityProfile(level);
+    int oldMaxWidth = m_AdaptiveQuality.currentMaxWidth;
+    int newMaxWidth = profile.maxWidth;
+
+    Mprintf("ApplyQualityLevel: level=%d, oldMaxWidth=%d, newMaxWidth=%d, algo=%d\n",
+            level, oldMaxWidth, newMaxWidth, profile.algorithm);
+
+    m_AdaptiveQuality.currentLevel = level;
+    m_AdaptiveQuality.lastChangeTime = GetTickCount64();
+    m_AdaptiveQuality.stableCount = 0;
+
+    // 1. 发送 FPS 和算法 (persist=1 表示手动选择需要保存)
+    BYTE cmd[4] = { CMD_QUALITY_LEVEL, (BYTE)level, (BYTE)persist };
+    m_ContextObject->Send2Client(cmd, sizeof(cmd));
+
+    // 2. 如果分辨率变化，发送 CMD_SCREEN_SIZE
+    if (newMaxWidth != oldMaxWidth) {
+        m_AdaptiveQuality.currentMaxWidth = newMaxWidth;
+        m_AdaptiveQuality.lastResChangeTime = GetTickCount64();
+
+        BYTE sizeCmd[16] = { CMD_SCREEN_SIZE, 2 };  // strategy=2 表示自定义maxWidth
+        memcpy(sizeCmd + 2, &newMaxWidth, sizeof(int));
+        m_ContextObject->Send2Client(sizeCmd, 10);
+
+        Mprintf("发送 CMD_SCREEN_SIZE: strategy=2, maxWidth=%d\n", newMaxWidth);
+    } else {
+        Mprintf("分辨率未变化，不发送 CMD_SCREEN_SIZE\n");
+    }
+
+    Mprintf("质量切换: %s (FPS=%d, Algo=%d)\n", GetQualityName(level), profile.maxFPS, profile.algorithm);
 }
 
 BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
@@ -1234,7 +1468,7 @@ VOID CScreenSpyDlg::SendCommand(const MYMSG* Msg)
 
 BOOL CScreenSpyDlg::SaveSnapshot(void)
 {
-    auto path = GetScreenShotPath(this, m_IPAddress, "位图文件(*.bmp)|*.bmp|", "bmp");
+    auto path = GetScreenShotPath(this, m_IPAddress, _TR("位图文件(*.bmp)|*.bmp|"), "bmp");
     if (path.empty())
         return FALSE;
 

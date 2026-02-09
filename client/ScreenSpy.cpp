@@ -20,19 +20,37 @@ CScreenSpy::CScreenSpy(ULONG ulbiBitCount, BYTE algo, BOOL vDesk, int gop, BOOL 
     m_BitmapInfor_Full = ConstructBitmapInfo(ulbiBitCount, m_ulFullWidth, m_ulFullHeight);
 
     iniFile cfg(CLIENT_PATH);
-    int strategy = HasSSE2() ? cfg.GetInt("settings", "ScreenStrategy", 0) : 1;
+    int strategy = cfg.GetInt("settings", "ScreenStrategy", 0);
+    int maxWidth = cfg.GetInt("settings", "ScreenWidth", 0);
     m_BitmapInfor_Send = new BITMAPINFO(*m_BitmapInfor_Full);
-    switch (strategy) {
-    case 1: // 1 - Original size
-        break;
-    default: // 0 - 1080p
-        if (m_bAlgorithm != ALGORITHM_H264) {
-            m_BitmapInfor_Send->bmiHeader.biWidth = min(1920, m_BitmapInfor_Send->bmiHeader.biWidth);
-            m_BitmapInfor_Send->bmiHeader.biHeight = min(1080, m_BitmapInfor_Send->bmiHeader.biHeight);
-            m_BitmapInfor_Send->bmiHeader.biSizeImage =
-                ((m_BitmapInfor_Send->bmiHeader.biWidth * m_BitmapInfor_Send->bmiHeader.biBitCount + 31) / 32) *
-                4 * m_BitmapInfor_Send->bmiHeader.biHeight;
-        }
+    m_nInstructionSet = cfg.GetInt("settings", "CpuSpeedup", 0);
+
+    bool canScale = (m_bAlgorithm != ALGORITHM_H264);
+    Mprintf("CScreenSpy: strategy=%d, maxWidth=%d, fullWidth=%d\n",
+            strategy, maxWidth, m_BitmapInfor_Send->bmiHeader.biWidth);
+
+    if (strategy == 1 || !canScale) {
+        // strategy=1 或不支持缩放: 原始分辨率
+        Mprintf("CScreenSpy: 使用原始分辨率\n");
+    } else if (maxWidth > 0 && maxWidth < m_BitmapInfor_Send->bmiHeader.biWidth) {
+        // maxWidth>0: 自定义 maxWidth，等比缩放（自适应质量使用）
+        float ratio = (float)maxWidth / m_BitmapInfor_Send->bmiHeader.biWidth;
+        m_BitmapInfor_Send->bmiHeader.biWidth = maxWidth;
+        m_BitmapInfor_Send->bmiHeader.biHeight = (LONG)(m_BitmapInfor_Send->bmiHeader.biHeight * ratio);
+        m_BitmapInfor_Send->bmiHeader.biSizeImage =
+            ((m_BitmapInfor_Send->bmiHeader.biWidth * m_BitmapInfor_Send->bmiHeader.biBitCount + 31) / 32) *
+            4 * m_BitmapInfor_Send->bmiHeader.biHeight;
+        Mprintf("CScreenSpy: 自定义分辨率 %dx%d\n",
+                m_BitmapInfor_Send->bmiHeader.biWidth, m_BitmapInfor_Send->bmiHeader.biHeight);
+    } else {
+        // strategy=0 或 maxWidth=0: 默认 1080p 限制
+        m_BitmapInfor_Send->bmiHeader.biWidth = min(1920, m_BitmapInfor_Send->bmiHeader.biWidth);
+        m_BitmapInfor_Send->bmiHeader.biHeight = min(1080, m_BitmapInfor_Send->bmiHeader.biHeight);
+        m_BitmapInfor_Send->bmiHeader.biSizeImage =
+            ((m_BitmapInfor_Send->bmiHeader.biWidth * m_BitmapInfor_Send->bmiHeader.biBitCount + 31) / 32) *
+            4 * m_BitmapInfor_Send->bmiHeader.biHeight;
+        Mprintf("CScreenSpy: 1080p 限制 %dx%d\n",
+                m_BitmapInfor_Send->bmiHeader.biWidth, m_BitmapInfor_Send->bmiHeader.biHeight);
     }
 
     m_hDeskTopDC = GetDC(NULL);

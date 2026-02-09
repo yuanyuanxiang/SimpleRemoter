@@ -496,6 +496,8 @@ public:
         server = (Server*)svr;
         OnlineTime = time(0);
         LastHeartbeatTime = OnlineTime;
+        GroupName.clear();
+        ID = 0;
     }
     uint64_t GetAliveTime()const
     {
@@ -548,6 +550,11 @@ public:
     CString GetClientData(int index)  const override
     {
         return sClientInfo[index];
+    }
+    void SetClientData(int index, const CString& data ) {
+        if (index < ONLINELIST_MAX) {
+            sClientInfo[index] = data;
+        }
     }
     void GetAdditionalData(CString(&s)[RES_MAX])  const override
     {

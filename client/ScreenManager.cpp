@@ -102,6 +102,8 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
     m_ScreenSettings.FullScreen = cfg.GetInt("settings", "FullScreen", 0);
     m_ScreenSettings.RemoteCursor = cfg.GetInt("settings", "RemoteCursor", 0);
     m_ScreenSettings.ScrollDetectInterval = cfg.GetInt("settings", "ScrollDetectInterval", 2);  // 默认每2帧
+    m_ScreenSettings.QualityLevel = cfg.GetInt("settings", "QualityLevel", QUALITY_ADAPTIVE);  // 默认自适应
+    m_ScreenSettings.CpuSpeedup = cfg.GetInt("settings", "CpuSpeedup", 0);
 
     m_hWorkThread = __CreateThread(NULL,0, WorkThreadProc,this,0,NULL);
 }
@@ -118,11 +120,18 @@ bool CScreenManager::RestartScreen()
 {
     if (m_ScreenSpyObject == NULL)
         return false;
+
+    // 1. 停止工作线程
     m_bIsWorking = FALSE;
     DWORD s = WaitForSingleObject(m_hWorkThread, 3000);
     if (s == WAIT_TIMEOUT) {
         TerminateThread(m_hWorkThread, -1);
     }
+
+    // 2. 删除旧的截屏对象
+    SAFE_DELETE(m_ScreenSpyObject);
+
+    // 3. 重新启动工作线程（InitScreenSpy 会创建新对象）
     m_bIsWorking = TRUE;
     m_SendFirst = FALSE;
     m_hWorkThread = __CreateThread(NULL, 0, WorkThreadProc, this, 0, NULL);
@@ -251,7 +260,12 @@ void CScreenManager::InitScreenSpy()
     } else {
         DXGI = (int)user;
     }
-    Mprintf("CScreenManager: Type %d Algorithm: %d\n", DXGI, int(algo));
+    // 如果已设置质量等级，使用对应的算法（优先于启动参数）
+    int level = m_ScreenSettings.QualityLevel;
+    if (level >= 0 && level < QUALITY_COUNT) {
+        algo = GetQualityProfile(level).algorithm;
+    }
+    Mprintf("CScreenManager: Type %d Algorithm: %d (QualityLevel=%d)\n", DXGI, int(algo), level);
     if (DXGI == USING_VIRTUAL) {
         m_virtual = TRUE;
         HDESK hDesk = SelectDesktop((char*)m_DesktopID.c_str());
@@ -554,25 +568,77 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         break;
     }
     case CMD_SCREEN_SIZE: {
-        int width, height, strategy = szBuffer[1];
-        memcpy(&width, szBuffer + 2, 4);
+        int maxWidth = 0, height = 0, strategy = szBuffer[1];
+        memcpy(&maxWidth, szBuffer + 2, 4);
         memcpy(&height, szBuffer + 6, 4);
+        Mprintf("收到 CMD_SCREEN_SIZE: strategy=%d, maxWidth=%d, height=%d\n", strategy, maxWidth, height);
+
         iniFile cfg(CLIENT_PATH);
-        cfg.SetInt("settings", "ScreenStrategy", strategy);
-        cfg.SetInt("settings", "ScreenWidth", width);
-        cfg.SetInt("settings", "ScreenHeight", height);
-        switch (strategy) {
-        case 0:
-            if (m_ScreenSpyObject && m_ScreenSpyObject->IsLargeScreen(1920, 1080)) RestartScreen();
-            break;
-        case 1:
-            if (m_ScreenSpyObject && !m_ScreenSpyObject->IsOriginalSize()) RestartScreen();
-            break;
-        default:
-            break;
+
+        // strategy=2 是自适应质量使用的临时策略，不应覆盖用户的原始策略
+        if (strategy == 2) {
+            if (maxWidth == 0) {
+                // maxWidth=0 表示"使用默认策略"，读取用户原来的设置
+                strategy = cfg.GetInt("settings", "ScreenStrategy", 0);
+                // ScreenStrategy 只能是 0 或 1，如果是其他值则回退到 0
+                if (strategy != 0 && strategy != 1) {
+                    strategy = 0;
+                    cfg.SetInt("settings", "ScreenStrategy", 0);  // 修复无效值
+                }
+                Mprintf("maxWidth=0, 回退到默认策略: strategy=%d\n", strategy);
+            }
+            // strategy=2 只写入 ScreenWidth，不覆盖用户的 ScreenStrategy
+            cfg.SetInt("settings", "ScreenWidth", maxWidth);
+            Mprintf("写入配置: ScreenWidth=%d (保留原 ScreenStrategy)\n", maxWidth);
+        } else {
+            // strategy=0 或 1 是用户手动设置，写入配置
+            cfg.SetInt("settings", "ScreenStrategy", strategy);
+            cfg.SetInt("settings", "ScreenWidth", 0);  // 清除自定义 maxWidth
+            Mprintf("写入配置: ScreenStrategy=%d, ScreenWidth=0\n", strategy);
         }
+        cfg.SetInt("settings", "ScreenHeight", height);
+
+        bool needRestart = false;
+        if (m_ScreenSpyObject && m_ScreenSpyObject->GetBIData()) {
+            int currentWidth = m_ScreenSpyObject->GetCurrentWidth();
+            int fullWidth = m_ScreenSpyObject->GetScreenWidth();
+            Mprintf("当前宽度: %d, 原始宽度: %d\n", currentWidth, fullWidth);
+            switch (strategy) {
+            case 0:  // 1080p
+            {
+                // 当前分辨率与目标 1080p 限制不同时需要重启
+                int target1080Width = min(1920, fullWidth);
+                needRestart = (currentWidth != target1080Width);
+                Mprintf("strategy=0 (1080p), target=%d, needRestart=%d\n", target1080Width, needRestart);
+                break;
+            }
+            case 1:  // 原始
+                needRestart = !m_ScreenSpyObject->IsOriginalSize();
+                Mprintf("strategy=1 (原始), needRestart=%d\n", needRestart);
+                break;
+            case 2:  // 自定义 maxWidth (maxWidth > 0)
+                if (maxWidth > 0 && maxWidth != currentWidth) {
+                    needRestart = true;
+                }
+                Mprintf("strategy=2 (自定义), maxWidth=%d, currentWidth=%d, needRestart=%d\n",
+                        maxWidth, currentWidth, needRestart);
+                break;
+            }
+        } else {
+            // 截屏对象不存在或未初始化，直接根据 strategy 决定是否重启
+            needRestart = (strategy == 2 && maxWidth > 0);
+            Mprintf("截屏对象未就绪, needRestart=%d\n", needRestart);
+        }
+
+        if (needRestart) {
+            Mprintf("重启截屏...\n");
+            RestartScreen();
+        } else {
+            Mprintf("不需要重启截屏\n");
+        }
+
         m_ScreenSettings.ScreenStrategy = strategy;
-        m_ScreenSettings.ScreenWidth = width;
+        m_ScreenSettings.ScreenWidth = maxWidth;
         m_ScreenSettings.ScreenHeight = height;
         break;
     }
@@ -594,6 +660,39 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         m_ScreenSettings.ScrollDetectInterval = interval;
         iniFile cfg(CLIENT_PATH);
         cfg.SetInt("settings", "ScrollDetectInterval", interval);
+        break;
+    }
+    case CMD_QUALITY_LEVEL: {
+        // 质量等级调整 (level: -1=自适应, 0-4=具体等级)
+        int8_t level = (int8_t)szBuffer[1];  // 有符号，支持 -1
+        int persist = ulLength >= 3 ? szBuffer[2] : 0;  // 是否保存到配置
+        m_ScreenSettings.QualityLevel = level;
+        // 保存到配置
+        if (persist) {
+            iniFile cfg(CLIENT_PATH);
+            cfg.SetInt("settings", "QualityLevel", level);
+        }
+        // 应用具体等级的配置 (自适应模式由服务端动态调整)
+        if (level >= 0 && level < QUALITY_COUNT) {
+            const QualityProfile& profile = GetQualityProfile(level);
+            m_ScreenSettings.MaxFPS = profile.maxFPS;
+            if (m_ScreenSpyObject) {
+                m_ScreenSpyObject->SetAlgorithm(profile.algorithm);
+            }
+            Mprintf("质量等级: Level=%d, FPS=%d, Algo=%d\n", level, profile.maxFPS, profile.algorithm);
+        } else {
+            Mprintf("质量等级: 自适应模式\n");
+        }
+        break;
+    }
+    case CMD_INSTRUCTION_SET: {
+        int set = unsigned(szBuffer[1]);
+        iniFile cfg(CLIENT_PATH);
+        cfg.SetInt("settings", "CpuSpeedup", set);
+        if (m_ScreenSettings.CpuSpeedup != set)
+            RestartScreen();
+        m_ScreenSettings.CpuSpeedup = set;
+        Mprintf("使用的CPU加速指令集: %d\n", set);
         break;
     }
     case COMMAND_NEXT: {

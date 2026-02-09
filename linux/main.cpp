@@ -178,6 +178,7 @@ public:
         pXGetWindowProperty = (fn_XGetWindowProperty)dlsym(m_x11, "XGetWindowProperty");
         pXFree              = (fn_XFree)dlsym(m_x11, "XFree");
         pXSetErrorHandler   = (fn_XSetErrorHandler)dlsym(m_x11, "XSetErrorHandler");
+        pXQueryExtension    = (fn_XQueryExtension)dlsym(m_x11, "XQueryExtension");
 
         if (!pXOpenDisplay || !pXCloseDisplay || !pXDefaultScreen || !pXRootWindow ||
             !pXInternAtom || !pXGetWindowProperty || !pXFree)
@@ -201,11 +202,20 @@ public:
         m_root   = pXRootWindow(m_display, m_screen);
 
         // 加载 libXss（可选，没有则无法获取空闲时间）
-        m_xss = dlopen("libXss.so.1", RTLD_LAZY);
-        if (!m_xss) m_xss = dlopen("libXss.so", RTLD_LAZY);
-        if (m_xss) {
-            pXScreenSaverAllocInfo = (fn_XScreenSaverAllocInfo)dlsym(m_xss, "XScreenSaverAllocInfo");
-            pXScreenSaverQueryInfo = (fn_XScreenSaverQueryInfo)dlsym(m_xss, "XScreenSaverQueryInfo");
+        // 先检查 X 服务器是否支持 MIT-SCREEN-SAVER 扩展
+        bool hasScrnsaverExt = false;
+        if (pXQueryExtension) {
+            int major_opcode, first_event, first_error;
+            hasScrnsaverExt = pXQueryExtension(m_display, "MIT-SCREEN-SAVER",
+                                               &major_opcode, &first_event, &first_error);
+        }
+        if (hasScrnsaverExt) {
+            m_xss = dlopen("libXss.so.1", RTLD_LAZY);
+            if (!m_xss) m_xss = dlopen("libXss.so", RTLD_LAZY);
+            if (m_xss) {
+                pXScreenSaverAllocInfo = (fn_XScreenSaverAllocInfo)dlsym(m_xss, "XScreenSaverAllocInfo");
+                pXScreenSaverQueryInfo = (fn_XScreenSaverQueryInfo)dlsym(m_xss, "XScreenSaverQueryInfo");
+            }
         }
 
         m_available = true;
@@ -242,6 +252,7 @@ private:
             Atom, Atom*, int*, unsigned long*, unsigned long*, unsigned char**);
     typedef int         (*fn_XFree)(void*);
     typedef int         (*fn_XSetErrorHandler)(int(*)(Display*, void*));
+    typedef Bool_X      (*fn_XQueryExtension)(Display*, const char*, int*, int*, int*);
 
     // XScreenSaver 函数指针类型
     typedef XScreenSaverInfo_LNX* (*fn_XScreenSaverAllocInfo)();
@@ -256,6 +267,7 @@ private:
     fn_XGetWindowProperty pXGetWindowProperty = nullptr;
     fn_XFree              pXFree              = nullptr;
     fn_XSetErrorHandler   pXSetErrorHandler   = nullptr;
+    fn_XQueryExtension    pXQueryExtension    = nullptr;
 
     fn_XScreenSaverAllocInfo pXScreenSaverAllocInfo = nullptr;
     fn_XScreenSaverQueryInfo pXScreenSaverQueryInfo = nullptr;
@@ -650,7 +662,7 @@ int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength)
     return TRUE;
 }
 
-// 方法1: 解析 lscpu 命令（优先使用）
+// 方法1: 解析 lscpu 命令
 double parse_lscpu()
 {
     std::array<char, 128> buffer;
@@ -662,7 +674,7 @@ double parse_lscpu()
         result += buffer.data();
     }
 
-    // 匹配 "Model name" 中的频率（如 "Intel(R) Core(TM) i5-6300HQ CPU @ 2.30GHz"）
+    // 方法1a: 匹配 "Model name" 中的频率（如 "Intel(R) Core(TM) i5-6300HQ CPU @ 2.30GHz"）
     std::regex model_regex("@ ([0-9.]+)GHz");
     std::smatch match;
     if (std::regex_search(result, match, model_regex) && match.size() > 1) {
@@ -670,23 +682,65 @@ double parse_lscpu()
             return std::stod(match[1].str()) * 1000; // GHz -> MHz
         } catch (...) {}
     }
+
+    // 方法1b: 匹配 "CPU max MHz" 或 "CPU MHz" 字段
+    std::regex mhz_regex("CPU (?:max )?MHz:\\s*([0-9.]+)");
+    if (std::regex_search(result, match, mhz_regex) && match.size() > 1) {
+        try {
+            return std::stod(match[1].str());
+        } catch (...) {}
+    }
+
     return -1;
 }
 
-// 方法2: 解析 /proc/cpuinfo（备用）
+// 方法2: 解析 /proc/cpuinfo
 double parse_cpuinfo()
 {
     std::ifstream cpuinfo("/proc/cpuinfo");
     std::string line;
     std::regex freq_regex("@ ([0-9.]+)GHz");
+    std::regex mhz_regex("cpu MHz\\s*:\\s*([0-9.]+)");
 
     while (std::getline(cpuinfo, line)) {
+        // 方法2a: 从 model name 提取 @ X.XXGHz
         if (line.find("model name") != std::string::npos) {
             std::smatch match;
             if (std::regex_search(line, match, freq_regex) && match.size() > 1) {
                 try {
                     return std::stod(match[1].str()) * 1000; // GHz -> MHz
                 } catch (...) {}
+            }
+        }
+        // 方法2b: 从 "cpu MHz" 字段提取
+        if (line.find("cpu MHz") != std::string::npos) {
+            std::smatch match;
+            if (std::regex_search(line, match, mhz_regex) && match.size() > 1) {
+                try {
+                    return std::stod(match[1].str());
+                } catch (...) {}
+            }
+        }
+    }
+    return -1;
+}
+
+// 方法3: 从 sysfs 读取 CPU 频率 (最可靠)
+double parse_sysfs_freq()
+{
+    // 尝试读取最大频率
+    const char* paths[] = {
+        "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq",
+        "/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq",
+        "/sys/devices/system/cpu/cpu0/cpufreq/base_frequency",
+    };
+
+    for (const char* path : paths) {
+        std::ifstream f(path);
+        if (f.good()) {
+            long freq_khz = 0;
+            if (f >> freq_khz && freq_khz > 0) {
+                return freq_khz / 1000.0; // KHz -> MHz
             }
         }
     }
@@ -1021,7 +1075,8 @@ int main(int argc, char* argv[])
     logInfo.szStartTime[sizeof(logInfo.szStartTime) - 1] = '\0';
 
     // CPU 主频
-    double freq = parse_lscpu();
+    double freq = parse_sysfs_freq();  // 最可靠：从内核 sysfs 读取
+    if (freq < 0) freq = parse_lscpu();
     if (freq < 0) freq = parse_cpuinfo();
     logInfo.dwCPUMHz = freq > 0 ? static_cast<unsigned int>(freq) : 0;
 

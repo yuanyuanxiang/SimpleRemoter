@@ -211,6 +211,8 @@ enum {
     CMD_FULL_SCREEN = 75,
     CMD_REMOTE_CURSOR = 76,
     CMD_SCROLL_INTERVAL = 77,       // 滚动检测间隔
+    CMD_QUALITY_LEVEL = 78,         // 质量等级 (-1=自适应, 0-4=具体等级)
+    CMD_INSTRUCTION_SET = 79,
 
     TOKEN_SCROLL_FRAME = 99,        // 滚动优化帧
     // 服务端发出的标识
@@ -938,6 +940,52 @@ typedef struct MasterSettings {
 #define SCROLL_DIR_UP       0               // 向上滚动（屏幕内容向下移）
 #define SCROLL_DIR_DOWN     1               // 向下滚动（屏幕内容向上移）
 
+// 自适应质量等级
+enum QualityLevel {
+    QUALITY_ADAPTIVE = -1, // 自适应模式
+    QUALITY_ULTRA   = 0,  // 极佳 (局域网)
+    QUALITY_HIGH    = 1,  // 良好
+    QUALITY_MEDIUM  = 2,  // 一般
+    QUALITY_LOW     = 3,  // 较差
+    QUALITY_MINIMAL = 4,  // 最低
+    QUALITY_COUNT   = 5,
+};
+
+// 质量配置 (与 QualityLevel 对应)
+struct QualityProfile {
+    int maxFPS;           // 最大帧率
+    int maxWidth;         // 最大宽度 (0=不限)
+    int algorithm;        // 压缩算法: 0=GRAY, 1=DIFF, 3=RGB565
+};
+
+inline const QualityProfile& GetQualityProfile(int level) {
+    // 预定义质量配置: algorithm: 0=GRAY, 1=DIFF, 3=RGB565
+    static const QualityProfile g_QualityProfiles[QUALITY_COUNT] = {
+        {30, 0,    1},  // Ultra:   30FPS, 原始, DIFF
+        {20, 0,    3},  // High:    20FPS, 原始, RGB565
+        {15, 1920, 3},  // Medium:  15FPS, 1080P,RGB565
+        {10, 1920, 0},  // Low:     10FPS, 1080P,GRAY
+        {5,  1280, 0},  // Minimal: 5FPS,  720P, GRAY
+    };
+    return g_QualityProfiles[level];
+}
+
+// 根据RTT获取目标质量等级
+inline int GetTargetQualityLevel(int rtt, int usingFRP) {
+    // 根据模式应用不同 RTT阈值 (毫秒)
+    static const int g_RttThresholds[2][QUALITY_COUNT] = {
+        // 直连:    ULTRA, HIGH, MEDIUM, LOW, MINIMAL
+        /* DIRECT */ { 30,  100,   200,  400,  INT_MAX },
+        // FRP:
+        /* PROXY  */ { 60,  200,   400,  800,  INT_MAX },
+    };
+    for (int i = 0; i < QUALITY_COUNT; i++) {
+        if (rtt < g_RttThresholds[usingFRP][i])
+            return i;
+    }
+    return QUALITY_MINIMAL;
+}
+
 typedef struct ScreenSettings {
     int         MaxFPS;                     // 偏移 0,  最大帧率
     int         CompressThread;             // 偏移 4,  压缩线程数
@@ -947,7 +995,9 @@ typedef struct ScreenSettings {
     int         FullScreen;                 // 偏移 20, 全屏模式
     int         RemoteCursor;               // 偏移 24, 使用远程光标
     int         ScrollDetectInterval;       // 偏移 28, 滚动检测间隔（0=禁用, 1=每帧, 2=每2帧, ...）
-    char        Reserved[64];               // 偏移 32, 保留字段（新能力参数从此处扩展）
+    int         QualityLevel;               // 偏移 32, 质量等级 (-1=自适应, 0=Ultra, 1=High, ..., 4=Minimal)
+    int         CpuSpeedup;                 // 偏移 36, 指令集加速(0: 无, 1: SSE2)
+    char        Reserved[56];               // 偏移 40, 保留字段（新能力参数从此处扩展）
     uint32_t    Capabilities;               // 偏移 96, 能力位标志（放最后）
 } ScreenSettings;                           // 总大小 100 字节
 
