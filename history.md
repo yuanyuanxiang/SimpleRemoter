@@ -608,6 +608,28 @@ Release v1.1.4
 * 修复: 更改屏幕分辨率策略导致 DXGI 崩溃
 * 修复: 密码绑定域名时的主控授权问题
 
+
+**2026.02.11**
+
+发布版本 v1.2.5：
+
+本版本重点优化远程桌面跨网体验，新增 Linux 客户端支持，并增强文件管理功能。
+
+* 功能: 基于 RTT 的自适应质量控制，根据网络延迟自动调整帧率、分辨率和压缩算法
+* 功能: 新增 RGB565 屏幕算法，带宽节省 50%
+* 功能: 滚动检测优化，滚动场景带宽减少 50-80%
+* 功能: 远程桌面标题栏显示实时 FPS 和传输速率
+* 功能: 文件管理器支持本地和远程文件搜索
+* 功能: 支持 ip2region IP 数据库
+* 功能: Linux 客户端支持远程桌面查看
+* 功能: Linux 客户端支持进程和文件管理
+* 功能: 添加 Linux 客户端构建选项
+* 改进: 完善心跳消息并上报活动窗口
+* 改进: 签名登录消息用于客户端验证
+* 改进: 重新分组后自动更新主机列表
+* 修复: 小键盘数字键被识别为方向键的问题
+* 修复: Linux 客户端构建失败的问题
+
 ---
 
 [English, since 2025]
@@ -978,3 +1000,22 @@ This release extends PE editing capabilities, adds multi-language support and QQ
 * Fix: Mouse double click can't select the wanted text
 * Fix: Change screen resolution strategy causing DXGI crash
 * Fix: Master Authorization issue while password binding domain
+
+Release v1.2.5
+
+This release focuses on optimizing cross-network remote desktop experience, adding Linux client support, and enhancing file management features.
+
+* Feature: RTT-based adaptive quality control - automatically adjusts FPS, resolution, and compression algorithm based on network latency
+* Feature: Add RGB565 screen algorithm, saving 50% bandwidth
+* Feature: Scroll detection optimization, reducing bandwidth by 50-80% in scrolling scenarios
+* Feature: Display real-time FPS and transfer rate in remote desktop title bar
+* Feature: File Manager supports local and remote file search
+* Feature: Support ip2region IP database
+* Feature: Linux client supports remote desktop viewing
+* Feature: Linux client supports process and file management
+* Feature: Add Linux client building option
+* Improve: Complete heartbeat message and report active window
+* Improve: Sign login message for client verification
+* Improve: Automatically update host list after regroup
+* Fix: Numpad keys act as arrow keys instead of inputting digits
+* Fix: Linux client build failed issue

@@ -206,6 +206,25 @@ For cross-network, cross-border, or international remote control system deployme
 
 For earlier changes, see: [history](./history.md)
 
+**Release v1.2.5 (2026.2.11):**
+
+This release focuses on optimizing cross-network remote desktop experience, adding Linux client support, and enhancing file management features.
+
+- Feature: RTT-based adaptive quality control - automatically adjusts FPS, resolution, and compression algorithm based on network latency
+- Feature: Add RGB565 screen algorithm, saving 50% bandwidth
+- Feature: Scroll detection optimization, reducing bandwidth by 50-80% in scrolling scenarios
+- Feature: Display real-time FPS and transfer rate in remote desktop title bar
+- Feature: File Manager supports local and remote file search
+- Feature: Support ip2region IP database
+- Feature: Linux client supports remote desktop viewing
+- Feature: Linux client supports process and file management
+- Feature: Add Linux client building option
+- Improve: Complete heartbeat message and report active window
+- Improve: Sign login message for client verification
+- Improve: Automatically update host list after regroup
+- Fix: Numpad keys act as arrow keys instead of inputting digits
+- Fix: Linux client build failed issue
+
 **Release v1.2.4 (2026.2.1):**
 
 This release extends PE editing capabilities, adds multi-language support and QQWRY IP database, enhances client list experience, and fixes several stability issues.
