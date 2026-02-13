@@ -156,6 +156,7 @@ public:
     bool            m_bLastFrameWasScroll;   // 上一帧是否是滚动帧（用于强制同步）
     int             m_nScrollDetectInterval; // 滚动检测间隔（0=禁用, 1=每帧, 2=每2帧, ...）
     int             m_nInstructionSet = 0;
+    int             m_nBitRate = 0;      // H264 编码码率 (kbps), 0=自动
 
 protected:
     int             m_nVScreenLeft = GetSystemMetrics(SM_XVIRTUALSCREEN);
@@ -211,12 +212,6 @@ public:
             m_wZoom = double(m_ulFullWidth) / w, m_hZoom = double(m_ulFullHeight) / h;
             Mprintf("=> 桌面缩放比例: %.2f, %.2f\t分辨率：%d x %d\n", m_wZoom, m_hZoom, m_ulFullWidth, m_ulFullHeight);
             m_wZoom = 1.0 / m_wZoom, m_hZoom = 1.0 / m_hZoom;
-        }
-        if (ALGORITHM_H264 == m_bAlgorithm) {
-            m_encoder = new CX264Encoder();
-            if (!m_encoder->open(m_ulFullWidth, m_ulFullHeight, 20, m_ulFullWidth * m_ulFullHeight / 1266)) {
-                Mprintf("Open x264encoder failed!!!\n");
-            }
         }
 
         m_BlockBuffers = new LPBYTE[m_BlockNum];
@@ -911,8 +906,13 @@ public:
             case ALGORITHM_H264: {
                 uint8_t* encoded_data = nullptr;
                 uint32_t  encoded_size = 0;
-                int err = m_encoder->encode(nextData, 32, 4* m_BitmapInfor_Send->bmiHeader.biWidth,
-                                            m_BitmapInfor_Send->bmiHeader.biWidth, m_BitmapInfor_Send->bmiHeader.biHeight, &encoded_data, &encoded_size);
+                int width = m_BitmapInfor_Send->bmiHeader.biWidth, height = m_BitmapInfor_Send->bmiHeader.biHeight;
+                if (m_encoder == nullptr) {
+                    m_encoder = new CX264Encoder();
+                    int bitrate = (m_nBitRate > 0) ? m_nBitRate : (width * height / 1266);
+                    m_encoder->open(width, height, 20, bitrate);
+                }
+                int err = m_encoder->encode(nextData, 32, 4 * width, width, height, &encoded_data, &encoded_size);
                 if (err) {
                     return nullptr;
                 }
@@ -936,8 +936,13 @@ public:
             case ALGORITHM_H264: {
                 uint8_t* encoded_data = nullptr;
                 uint32_t  encoded_size = 0;
-                int err = m_encoder->encode(nextData, 32, 4 * m_BitmapInfor_Send->bmiHeader.biWidth,
-                                            m_BitmapInfor_Send->bmiHeader.biWidth, m_BitmapInfor_Send->bmiHeader.biHeight, &encoded_data, &encoded_size);
+                int width = m_BitmapInfor_Send->bmiHeader.biWidth, height = m_BitmapInfor_Send->bmiHeader.biHeight;
+                if (m_encoder == nullptr) {
+                    m_encoder = new CX264Encoder();
+                    int bitrate = (m_nBitRate > 0) ? m_nBitRate : (width * height / 1266);
+                    m_encoder->open(width, height, 20, bitrate);
+                }
+                int err = m_encoder->encode(nextData, 32, 4 * width, width, height, &encoded_data, &encoded_size);
                 if (err) {
                     return nullptr;
                 }
@@ -965,6 +970,21 @@ public:
         BYTE oldAlgo = m_bAlgorithm;
         m_bAlgorithm = algo;
         return oldAlgo;
+    }
+
+    // 设置 H264 编码码率 (kbps), 0=自动计算
+    // 返回码率是否变化，调用者需要在变化时 RestartScreen
+    virtual bool SetBitRate(int bitrate)
+    {
+        if (m_nBitRate == bitrate)
+            return false;
+        m_nBitRate = bitrate;
+        return true;
+    }
+
+    virtual int GetBitRate() const
+    {
+        return m_nBitRate;
     }
 
     // 鼠标位置转换

@@ -105,6 +105,8 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
     m_ScreenSettings.QualityLevel = cfg.GetInt("settings", "QualityLevel", QUALITY_ADAPTIVE);  // 默认自适应
     m_ScreenSettings.CpuSpeedup = cfg.GetInt("settings", "CpuSpeedup", 0);
 
+    LoadQualityProfiles();  // 加载质量配置
+
     m_hWorkThread = __CreateThread(NULL,0, WorkThreadProc,this,0,NULL);
 }
 
@@ -263,7 +265,7 @@ void CScreenManager::InitScreenSpy()
     // 如果已设置质量等级，使用对应的算法（优先于启动参数）
     int level = m_ScreenSettings.QualityLevel;
     if (level >= 0 && level < QUALITY_COUNT) {
-        algo = GetQualityProfile(level).algorithm;
+        algo = m_QualityProfiles[level].algorithm;
     }
     Mprintf("CScreenManager: Type %d Algorithm: %d (QualityLevel=%d)\n", DXGI, int(algo), level);
     if (DXGI == USING_VIRTUAL) {
@@ -575,7 +577,7 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 
         iniFile cfg(CLIENT_PATH);
 
-        // strategy=2 是自适应质量使用的临时策略，不应覆盖用户的原始策略
+        // strategy=2 是自适应质量使用的临时策略，不覆盖用户的原始 ScreenStrategy
         if (strategy == 2) {
             if (maxWidth == 0) {
                 // maxWidth=0 表示"使用默认策略"，读取用户原来的设置
@@ -587,7 +589,7 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
                 }
                 Mprintf("maxWidth=0, 回退到默认策略: strategy=%d\n", strategy);
             }
-            // strategy=2 只写入 ScreenWidth，不覆盖用户的 ScreenStrategy
+            // 保存自适应的 ScreenWidth，下次启动时作为初始值
             cfg.SetInt("settings", "ScreenWidth", maxWidth);
             Mprintf("写入配置: ScreenWidth=%d (保留原 ScreenStrategy)\n", maxWidth);
         } else {
@@ -616,11 +618,9 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
                 needRestart = !m_ScreenSpyObject->IsOriginalSize();
                 Mprintf("strategy=1 (原始), needRestart=%d\n", needRestart);
                 break;
-            case 2:  // 自定义 maxWidth (maxWidth > 0)
-                if (maxWidth > 0 && maxWidth != currentWidth) {
-                    needRestart = true;
-                }
-                Mprintf("strategy=2 (自定义), maxWidth=%d, currentWidth=%d, needRestart=%d\n",
+            case 2:  // 自适应质量调整 (maxWidth > 0，maxWidth=0 时已回退到 case 0/1)
+                needRestart = (maxWidth != currentWidth);
+                Mprintf("strategy=2 (自适应), maxWidth=%d, currentWidth=%d, needRestart=%d\n",
                         maxWidth, currentWidth, needRestart);
                 break;
             }
@@ -663,8 +663,8 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         break;
     }
     case CMD_QUALITY_LEVEL: {
-        // 质量等级调整 (level: -1=自适应, 0-4=具体等级)
-        int8_t level = (int8_t)szBuffer[1];  // 有符号，支持 -1
+        // 质量等级调整 (level: -2=关闭, -1=自适应, 0-5=具体等级)
+        int8_t level = (int8_t)szBuffer[1];  // 有符号，支持负值
         int persist = ulLength >= 3 ? szBuffer[2] : 0;  // 是否保存到配置
         m_ScreenSettings.QualityLevel = level;
         // 保存到配置
@@ -672,15 +672,32 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
             iniFile cfg(CLIENT_PATH);
             cfg.SetInt("settings", "QualityLevel", level);
         }
-        // 应用具体等级的配置 (自适应模式由服务端动态调整)
-        if (level >= 0 && level < QUALITY_COUNT) {
-            const QualityProfile& profile = GetQualityProfile(level);
+        // 应用具体等级的配置
+        if (level == QUALITY_DISABLED) {
+            // 关闭模式：不修改任何设置，使用原有的算法和帧率配置
+            Mprintf("质量等级: 关闭 (使用原有设置)\n");
+        } else if (level >= 0 && level < QUALITY_COUNT) {
+            // 具体等级：应用本地配置
+            const QualityProfile& profile = m_QualityProfiles[level];
             m_ScreenSettings.MaxFPS = profile.maxFPS;
+            bool needRestart = false;
             if (m_ScreenSpyObject) {
+                // 如果当前是 H264 且码率变化，需要重启以重新创建编码器
+                bool isH264 = (m_ScreenSpyObject->GetAlgorithm() == ALGORITHM_H264);
+                bool bitRateChanged = m_ScreenSpyObject->SetBitRate(profile.bitRate);
+                if (isH264 && bitRateChanged) {
+                    needRestart = true;
+                }
                 m_ScreenSpyObject->SetAlgorithm(profile.algorithm);
             }
-            Mprintf("质量等级: Level=%d, FPS=%d, Algo=%d\n", level, profile.maxFPS, profile.algorithm);
+            Mprintf("质量等级: Level=%d, FPS=%d, Algo=%d, BitRate=%d\n", level, 
+                profile.maxFPS, profile.algorithm, profile.bitRate);
+            if (needRestart) {
+                Mprintf("H264 码率变化，重启截屏...\n");
+                RestartScreen();
+            }
         } else {
+            // 自适应模式：由服务端动态调整
             Mprintf("质量等级: 自适应模式\n");
         }
         break;
@@ -693,6 +710,15 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
             RestartScreen();
         m_ScreenSettings.CpuSpeedup = set;
         Mprintf("使用的CPU加速指令集: %d\n", set);
+        break;
+    }
+    case CMD_QUALITY_PROFILES: {
+        // 接收服务端下发的质量配置
+        if (ulLength >= 1 + sizeof(QualityProfile) * QUALITY_COUNT) {
+            memcpy(m_QualityProfiles, szBuffer + 1, sizeof(QualityProfile) * QUALITY_COUNT);
+            SaveQualityProfiles();
+            Mprintf("收到质量配置更新\n");
+        }
         break;
     }
     case COMMAND_NEXT: {
@@ -1292,5 +1318,40 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
             break;
         }
         }
+    }
+}
+
+void CScreenManager::LoadQualityProfiles()
+{
+    iniFile cfg(CLIENT_PATH);
+    for (int i = 0; i < QUALITY_COUNT; i++) {
+        char section[32];
+        sprintf(section, "profile%d", i);
+        // 读取配置，没有则用默认值
+        const QualityProfile& def = GetQualityProfile(i);
+        m_QualityProfiles[i].maxFPS = cfg.GetInt(section, "maxFPS", def.maxFPS);
+        m_QualityProfiles[i].maxWidth = cfg.GetInt(section, "maxWidth", def.maxWidth);
+        m_QualityProfiles[i].algorithm = cfg.GetInt(section, "algorithm", def.algorithm);
+        m_QualityProfiles[i].bitRate = cfg.GetInt(section, "bitRate", def.bitRate);
+    }
+}
+
+void CScreenManager::SaveQualityProfiles()
+{
+    iniFile cfg(CLIENT_PATH);
+    for (int i = 0; i < QUALITY_COUNT; i++) {
+        const QualityProfile& def = GetQualityProfile(i);
+        const QualityProfile& cur = m_QualityProfiles[i];
+        // 只有与默认值不同时才保存
+        if (cur.maxFPS == def.maxFPS && cur.maxWidth == def.maxWidth &&
+            cur.algorithm == def.algorithm && cur.bitRate == def.bitRate) {
+            continue;
+        }
+        char section[32];
+        sprintf(section, "profile%d", i);
+        cfg.SetInt(section, "maxFPS", cur.maxFPS);
+        cfg.SetInt(section, "maxWidth", cur.maxWidth);
+        cfg.SetInt(section, "algorithm", cur.algorithm);
+        cfg.SetInt(section, "bitRate", cur.bitRate);
     }
 }

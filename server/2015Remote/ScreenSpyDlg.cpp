@@ -43,9 +43,11 @@ enum {
     IDM_SCROLL_DETECT_2,        // 滚动检测：跨网推荐
     IDM_SCROLL_DETECT_4,        // 滚动检测：标准模式
     IDM_SCROLL_DETECT_8,        // 滚动检测：省CPU模式
+    IDM_QUALITY_OFF,            // 关闭质量控制（使用原有算法）
     IDM_ADAPTIVE_QUALITY,       // 自适应质量
     IDM_QUALITY_ULTRA,          // 手动质量：Ultra
     IDM_QUALITY_HIGH,           // 手动质量：High
+    IDM_QUALITY_GOOD,           // 手动质量：Good
     IDM_QUALITY_MEDIUM,         // 手动质量：Medium
     IDM_QUALITY_LOW,            // 手动质量：Low
     IDM_QUALITY_MINIMAL,        // 手动质量：Minimal
@@ -154,16 +156,23 @@ CScreenSpyDlg::CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer, CONTE
     m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapInfor_Full, ulBitmapInforLength, 1);
     m_ContextObject->InDeCompressedBuffer.CopyBuffer(&m_Settings, sizeof(ScreenSettings), 57);
 
-    // 从客户端配置初始化自适应质量状态 (QualityLevel: -1=自适应, 0-4=具体等级)
-    if (m_Settings.QualityLevel == QUALITY_ADAPTIVE) {
+    // 从客户端配置初始化自适应质量状态 (QualityLevel: -2=关闭, -1=自适应, 0-5=具体等级)
+    if (m_Settings.QualityLevel == QUALITY_DISABLED) {
+        m_AdaptiveQuality.enabled = false;
+        m_AdaptiveQuality.currentLevel = QUALITY_HIGH;  // 关闭模式时不使用等级
+    } else if (m_Settings.QualityLevel == QUALITY_ADAPTIVE) {
         m_AdaptiveQuality.enabled = true;
         m_AdaptiveQuality.currentLevel = QUALITY_HIGH;  // 自适应默认从 High 开始
     } else if (m_Settings.QualityLevel >= 0 && m_Settings.QualityLevel < QUALITY_COUNT) {
         m_AdaptiveQuality.enabled = false;
         m_AdaptiveQuality.currentLevel = m_Settings.QualityLevel;
     }
-    // 初始化当前分辨率限制
-    m_AdaptiveQuality.currentMaxWidth = GetQualityProfile(m_AdaptiveQuality.currentLevel).maxWidth;
+    // 初始化当前分辨率限制（关闭模式时为0，不限制）
+    if (m_Settings.QualityLevel != QUALITY_DISABLED) {
+        m_AdaptiveQuality.currentMaxWidth = GetQualityProfile(m_AdaptiveQuality.currentLevel).maxWidth;
+    } else {
+        m_AdaptiveQuality.currentMaxWidth = 0;
+    }
 
     m_bIsCtrl = FALSE;
     m_bIsTraceCursor = FALSE;
@@ -348,13 +357,15 @@ BOOL CScreenSpyDlg::OnInitDialog()
         // 屏幕质量子菜单
         CMenu qualityMenu;
         if (qualityMenu.CreatePopupMenu()) {
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_OFF, "关闭(&O)");
             qualityMenu.AppendMenuL(MF_STRING, IDM_ADAPTIVE_QUALITY, "自适应(&A)");
             qualityMenu.AppendMenuSeparator(MF_SEPARATOR);
-            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_ULTRA, "Ultra (30FPS, DIFF)");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_ULTRA, "Ultra (25FPS, DIFF)");
             qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_HIGH, "High (20FPS, RGB565)");
-            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_MEDIUM, "Medium (15FPS, RGB565)");
-            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_LOW, "Low (10FPS, RGB565)");
-            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_MINIMAL, "Minimal (5FPS, GRAY)");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_GOOD, "Good (20FPS, H264)");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_MEDIUM, "Medium (15FPS, H264)");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_LOW, "Low (12FPS, H264)");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_MINIMAL, "Minimal (8FPS, H264)");
             SysMenu->AppendMenuL(MF_STRING | MF_POPUP, (UINT_PTR)qualityMenu.Detach(), _T("屏幕质量(&Q)"));
         }
         // 初始化勾选状态
@@ -427,17 +438,30 @@ BOOL CScreenSpyDlg::OnInitDialog()
     // 启动传输速率更新定时器 (1秒)
     SetTimer(4, 1000, NULL);
 
-    // 如果非自适应模式，发送保存的质量等级给客户端应用
-    if (!m_AdaptiveQuality.enabled) {
+    // 下发质量配置表（让客户端可以持久化保存）
+    {
+        BYTE profileCmd[1 + sizeof(QualityProfile) * QUALITY_COUNT];
+        profileCmd[0] = CMD_QUALITY_PROFILES;
+        for (int i = 0; i < QUALITY_COUNT; i++) {
+            memcpy(profileCmd + 1 + i * sizeof(QualityProfile),
+                   &GetQualityProfile(i), sizeof(QualityProfile));
+        }
+        m_ContextObject->Send2Client(profileCmd, sizeof(profileCmd));
+    }
+
+    // 发送初始质量配置给客户端
+    if (m_Settings.QualityLevel == QUALITY_DISABLED) {
+        // 关闭模式：不发送任何质量命令，保持客户端原有设置
+    } else {
+        // 自适应或固定等级模式：发送质量等级和分辨率
         BYTE cmd[4] = { CMD_QUALITY_LEVEL, (BYTE)m_AdaptiveQuality.currentLevel, 0 };
         m_ContextObject->Send2Client(cmd, sizeof(cmd));
 
-        // 如果有分辨率限制，也发送
-        if (m_AdaptiveQuality.currentMaxWidth > 0) {
-            BYTE sizeCmd[16] = { CMD_SCREEN_SIZE, 2 };  // strategy=2 表示自定义maxWidth
-            memcpy(sizeCmd + 2, &m_AdaptiveQuality.currentMaxWidth, sizeof(int));
-            m_ContextObject->Send2Client(sizeCmd, 10);
-        }
+        // 始终发送 CMD_SCREEN_SIZE，让客户端同步分辨率策略
+        // maxWidth=0 表示使用默认分辨率（1080p 限制）
+        BYTE sizeCmd[16] = { CMD_SCREEN_SIZE, 2 };  // strategy=2 表示自适应质量
+        memcpy(sizeCmd + 2, &m_AdaptiveQuality.currentMaxWidth, sizeof(int));
+        m_ContextObject->Send2Client(sizeCmd, 10);
     }
 
     SendNext();
@@ -1102,23 +1126,34 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         break;
     }
 
+    case IDM_QUALITY_OFF: { // 关闭质量控制
+        m_AdaptiveQuality.enabled = false;
+        m_Settings.QualityLevel = QUALITY_DISABLED;
+        UpdateQualityMenuCheck(SysMenu);
+        // 发送给客户端保存 (QualityLevel=-2 表示关闭)
+        BYTE cmd[4] = { CMD_QUALITY_LEVEL, (BYTE)QUALITY_DISABLED, 1 };  // persist=1
+        m_ContextObject->Send2Client(cmd, sizeof(cmd));
+        UpdateWindowTitle();
+        Mprintf("关闭质量控制，使用原有算法设置\n");
+        break;
+    }
+
     case IDM_ADAPTIVE_QUALITY: { // 自适应质量开关
-        m_AdaptiveQuality.enabled = !m_AdaptiveQuality.enabled;
+        m_AdaptiveQuality.enabled = true;
+        m_Settings.QualityLevel = QUALITY_ADAPTIVE;
         UpdateQualityMenuCheck(SysMenu);
         // 发送给客户端保存 (QualityLevel=-1 表示自适应)
-        int8_t level = m_AdaptiveQuality.enabled ? QUALITY_ADAPTIVE : m_AdaptiveQuality.currentLevel;
-        BYTE cmd[4] = { CMD_QUALITY_LEVEL, (BYTE)level, 1 };  // persist=1
+        BYTE cmd[4] = { CMD_QUALITY_LEVEL, (BYTE)QUALITY_ADAPTIVE, 1 };  // persist=1
         m_ContextObject->Send2Client(cmd, sizeof(cmd));
-        if (m_AdaptiveQuality.enabled) {
-            // 启用时立即评估一次
-            EvaluateQuality();
-        }
+        // 启用时立即评估一次
+        EvaluateQuality();
         UpdateWindowTitle();
         break;
     }
 
     case IDM_QUALITY_ULTRA:
     case IDM_QUALITY_HIGH:
+    case IDM_QUALITY_GOOD:
     case IDM_QUALITY_MEDIUM:
     case IDM_QUALITY_LOW:
     case IDM_QUALITY_MINIMAL: {
@@ -1126,6 +1161,7 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         int level = nID - IDM_QUALITY_ULTRA;
         // 关闭自适应模式
         m_AdaptiveQuality.enabled = false;
+        m_Settings.QualityLevel = level;
         // 应用选择的等级 (persist=true 保存到客户端)
         ApplyQualityLevel(level, true);
         UpdateQualityMenuCheck(SysMenu);
@@ -1228,16 +1264,19 @@ void CScreenSpyDlg::UpdateWindowTitle()
 
     int width = m_BitmapInfor_Full->bmiHeader.biWidth;
     int height = m_BitmapInfor_Full->bmiHeader.biHeight;
-    const char* qualityName = GetQualityName(m_AdaptiveQuality.currentLevel);
+
+    // 构建质量名称：关闭显示 "Off"，自适应和手动都会显示 "当前等级"
+    CString qualityName = m_Settings.QualityLevel == QUALITY_DISABLED ? "" : 
+            CString(" | ") + GetQualityName(m_AdaptiveQuality.currentLevel);
 
     CString strTitle;
     UINT fps = (UINT)(m_dFrameRate + 0.5);  // 四舍五入显示
     if (m_dTransferRate >= 1024) {
-        strTitle.FormatL("%s - 远程桌面控制 %d×%d | %u FPS | %.1f MB/s | %s",
-            m_IPAddress, width, height, fps, m_dTransferRate / 1024, qualityName);
+        strTitle.FormatL("%s - 远程桌面控制 %d×%d | %u FPS | %.1f MB/s%s",
+            m_IPAddress, width, height, fps, m_dTransferRate / 1024, qualityName.GetString());
     } else {
-        strTitle.FormatL("%s - 远程桌面控制 %d×%d | %u FPS | %.0f KB/s | %s",
-            m_IPAddress, width, height, fps, m_dTransferRate, qualityName);
+        strTitle.FormatL("%s - 远程桌面控制 %d×%d | %u FPS | %.0f KB/s%s",
+            m_IPAddress, width, height, fps, m_dTransferRate, qualityName.GetString());
     }
     SetWindowText(strTitle);
 }
@@ -1245,8 +1284,12 @@ void CScreenSpyDlg::UpdateWindowTitle()
 const char* CScreenSpyDlg::GetQualityName(int level)
 {
     static const char* names[] = {
-        "Ultra", "High", "Medium", "Low", "Minimal"
+        "Ultra", "High", "Good", "Medium", "Low", "Minimal"
     };
+    if (level == QUALITY_DISABLED)
+        return "Off";
+    if (level == QUALITY_ADAPTIVE)
+        return "Auto";
     if (level >= 0 && level < QUALITY_COUNT)
         return names[level];
     return "Unknown";
@@ -1256,16 +1299,20 @@ void CScreenSpyDlg::UpdateQualityMenuCheck(CMenu* SysMenu)
 {
     if (!SysMenu) SysMenu = GetSystemMenu(FALSE);
     // 先全部取消勾选
+    SysMenu->CheckMenuItem(IDM_QUALITY_OFF, MF_UNCHECKED);
     SysMenu->CheckMenuItem(IDM_ADAPTIVE_QUALITY, MF_UNCHECKED);
     SysMenu->CheckMenuItem(IDM_QUALITY_ULTRA, MF_UNCHECKED);
     SysMenu->CheckMenuItem(IDM_QUALITY_HIGH, MF_UNCHECKED);
+    SysMenu->CheckMenuItem(IDM_QUALITY_GOOD, MF_UNCHECKED);
     SysMenu->CheckMenuItem(IDM_QUALITY_MEDIUM, MF_UNCHECKED);
     SysMenu->CheckMenuItem(IDM_QUALITY_LOW, MF_UNCHECKED);
     SysMenu->CheckMenuItem(IDM_QUALITY_MINIMAL, MF_UNCHECKED);
     // 勾选当前项
-    if (m_AdaptiveQuality.enabled) {
+    if (m_Settings.QualityLevel == QUALITY_DISABLED) {
+        SysMenu->CheckMenuItem(IDM_QUALITY_OFF, MF_CHECKED);
+    } else if (m_AdaptiveQuality.enabled) {
         SysMenu->CheckMenuItem(IDM_ADAPTIVE_QUALITY, MF_CHECKED);
-    } else {
+    } else if (m_AdaptiveQuality.currentLevel >= 0 && m_AdaptiveQuality.currentLevel < QUALITY_COUNT) {
         SysMenu->CheckMenuItem(IDM_QUALITY_ULTRA + m_AdaptiveQuality.currentLevel, MF_CHECKED);
     }
 }

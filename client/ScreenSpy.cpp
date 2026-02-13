@@ -25,12 +25,11 @@ CScreenSpy::CScreenSpy(ULONG ulbiBitCount, BYTE algo, BOOL vDesk, int gop, BOOL 
     m_BitmapInfor_Send = new BITMAPINFO(*m_BitmapInfor_Full);
     m_nInstructionSet = cfg.GetInt("settings", "CpuSpeedup", 0);
 
-    bool canScale = (m_bAlgorithm != ALGORITHM_H264);
-    Mprintf("CScreenSpy: strategy=%d, maxWidth=%d, fullWidth=%d\n",
-            strategy, maxWidth, m_BitmapInfor_Send->bmiHeader.biWidth);
+    Mprintf("CScreenSpy: strategy=%d, maxWidth=%d, fullWidth=%d, algo=%d\n",
+            strategy, maxWidth, m_BitmapInfor_Send->bmiHeader.biWidth, m_bAlgorithm);
 
-    if (strategy == 1 || !canScale) {
-        // strategy=1 或不支持缩放: 原始分辨率
+    if (strategy == 1) {
+        // strategy=1: 用户明确选择原始分辨率
         Mprintf("CScreenSpy: 使用原始分辨率\n");
     } else if (maxWidth > 0 && maxWidth < m_BitmapInfor_Send->bmiHeader.biWidth) {
         // maxWidth>0: 自定义 maxWidth，等比缩放（自适应质量使用）

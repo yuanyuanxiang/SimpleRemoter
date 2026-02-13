@@ -30,8 +30,11 @@ public:
     virtual ~CScreenManager();
     HANDLE  m_hWorkThread;
     ScreenSettings m_ScreenSettings = { 20 };
+    QualityProfile m_QualityProfiles[QUALITY_COUNT];  // 本地质量配置（可被服务端覆盖）
 
     void InitScreenSpy();
+    void LoadQualityProfiles();   // 从配置文件加载质量配置
+    void SaveQualityProfiles();   // 保存质量配置到配置文件
     static DWORD WINAPI WorkThreadProc(LPVOID lParam);
     VOID SendBitMapInfo();
     VOID OnReceive(PBYTE szBuffer, ULONG ulLength);

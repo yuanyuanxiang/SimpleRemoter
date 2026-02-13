@@ -115,9 +115,7 @@ public:
             m_BitmapInfor_Send = new BITMAPINFO(*m_BitmapInfor_Full);
             m_nInstructionSet = cfg.GetInt("settings", "CpuSpeedup", 0);
 
-            bool canScale = (m_bAlgorithm != ALGORITHM_H264);
-
-            if (strategy == 1 || !canScale) {
+            if (strategy == 1) {
                 // strategy=1 或不支持缩放: 原始分辨率
             } else if (maxWidth > 0 && maxWidth < m_BitmapInfor_Send->bmiHeader.biWidth) {
                 // maxWidth>0: 自定义 maxWidth，等比缩放（自适应质量使用）

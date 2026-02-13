@@ -213,6 +213,7 @@ enum {
     CMD_SCROLL_INTERVAL = 77,       // 滚动检测间隔
     CMD_QUALITY_LEVEL = 78,         // 质量等级 (-1=自适应, 0-4=具体等级)
     CMD_INSTRUCTION_SET = 79,
+    CMD_QUALITY_PROFILES = 80,      // 下发质量配置表 (1 + QUALITY_COUNT * sizeof(QualityProfile))
 
     TOKEN_SCROLL_FRAME = 99,        // 滚动优化帧
     // 服务端发出的标识
@@ -942,42 +943,57 @@ typedef struct MasterSettings {
 
 // 自适应质量等级
 enum QualityLevel {
+    QUALITY_DISABLED = -2, // 关闭质量控制（使用原有算法设置）
     QUALITY_ADAPTIVE = -1, // 自适应模式
-    QUALITY_ULTRA   = 0,  // 极佳 (局域网)
-    QUALITY_HIGH    = 1,  // 良好
-    QUALITY_MEDIUM  = 2,  // 一般
-    QUALITY_LOW     = 3,  // 较差
-    QUALITY_MINIMAL = 4,  // 最低
-    QUALITY_COUNT   = 5,
+    QUALITY_ULTRA   = 0,  // 极佳 (局域网, DIFF)
+    QUALITY_HIGH    = 1,  // 优秀 (RGB565)
+    QUALITY_GOOD    = 2,  // 良好 (H264, 1080P)
+    QUALITY_MEDIUM  = 3,  // 一般 (H264, 900P)
+    QUALITY_LOW     = 4,  // 较差 (H264, 720P)
+    QUALITY_MINIMAL = 5,  // 最低 (H264, 540P)
+    QUALITY_COUNT   = 6,
 };
 
-// 质量配置 (与 QualityLevel 对应)
+/* 质量配置(与 QualityLevel 对应)
+- strategy = 0：1080p 限制
+- strategy = 1：原始分辨率
+- strategy = 2 + maxWidth > 0：自定义宽度
+- strategy = 2 + maxWidth = 0：回退到用户保存的 strategy（0 或 1）
+*/
 struct QualityProfile {
     int maxFPS;           // 最大帧率
     int maxWidth;         // 最大宽度 (0=不限)
-    int algorithm;        // 压缩算法: 0=GRAY, 1=DIFF, 3=RGB565
+    int algorithm;        // 压缩算法: 0=GRAY, 1=DIFF, 2=H264, 3=RGB565
+    int bitRate;          // kbps - H264
 };
 
+// 控制端使用，客户端优先从配置中读取
 inline const QualityProfile& GetQualityProfile(int level) {
-    // 预定义质量配置: algorithm: 0=GRAY, 1=DIFF, 3=RGB565
+    // 预定义质量配置: algorithm: 0=GRAY, 1=DIFF, 2=H264, 3=RGB565
+    // 注意: level 必须在 [0, QUALITY_COUNT) 范围内
     static const QualityProfile g_QualityProfiles[QUALITY_COUNT] = {
-        {30, 0,    1},  // Ultra:   30FPS, 原始, DIFF
-        {20, 0,    3},  // High:    20FPS, 原始, RGB565
-        {15, 1920, 3},  // Medium:  15FPS, 1080P,RGB565
-        {10, 1920, 0},  // Low:     10FPS, 1080P,GRAY
-        {5,  1280, 0},  // Minimal: 5FPS,  720P, GRAY
+        {25, 0,    1, 0   },  // Ultra:   25FPS, 原始,  DIFF     (局域网办公)
+        {20, 0,    3, 0   },  // High:    20FPS, 原始,  RGB565   (一般办公)
+        {20, 1920, 2, 3000},  // Good:    20FPS, 1080P, H264     (跨网/偶尔视频)
+        {15, 1600, 2, 2000},  // Medium:  15FPS, 900P,  H264
+        {12, 1280, 2, 1200},  // Low:     12FPS, 720P,  H264
+        {8,  1024, 2, 800 },  // Minimal: 8FPS,  540P,  H264     (极差网络)
     };
+    if (level < 0 || level >= QUALITY_COUNT) {
+        static const QualityProfile disabled = {0, 0, -1, 0};  // 关闭模式返回空配置
+        return disabled;
+    }
     return g_QualityProfiles[level];
 }
 
-// 根据RTT获取目标质量等级
+// 根据RTT获取目标质量等级 (控制端使用)
 inline int GetTargetQualityLevel(int rtt, int usingFRP) {
     // 根据模式应用不同 RTT阈值 (毫秒)
     static const int g_RttThresholds[2][QUALITY_COUNT] = {
-        // 直连:    ULTRA, HIGH, MEDIUM, LOW, MINIMAL
-        /* DIRECT */ { 30,  100,   200,  400,  INT_MAX },
+        // 直连:    ULTRA, HIGH, GOOD, MEDIUM, LOW, MINIMAL
+        /* DIRECT */ { 30,   80,  150,   250,  400, INT_MAX },
         // FRP:
-        /* PROXY  */ { 60,  200,   400,  800,  INT_MAX },
+        /* PROXY  */ { 60,  160,  300,   500,  800, INT_MAX },
     };
     for (int i = 0; i < QUALITY_COUNT; i++) {
         if (rtt < g_RttThresholds[usingFRP][i])
