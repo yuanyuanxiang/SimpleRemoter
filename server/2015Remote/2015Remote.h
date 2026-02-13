@@ -149,6 +149,13 @@ public:
 
     DECLARE_MESSAGE_MAP()
     virtual int ExitInstance();
+
+public:
+    // 发送系统通知
+    void PostNotify(const CString& title, const CString& msg) {
+        if (m_pMainWnd && m_pMainWnd->GetSafeHwnd())
+            m_pMainWnd->PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg(title), (LPARAM)new CharMsg(msg));
+    }
 };
 
 extern CMy2015RemoteApp theApp;

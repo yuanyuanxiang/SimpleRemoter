@@ -23,6 +23,12 @@ void CAutoEndEdit::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
         int nLength = GetWindowTextLength();
         SetSel(nLength, nLength);
     }
+    if (nStart == 30000){
+        static int hasNotify = 0;
+        if (hasNotify++ % 10 == 0) {
+            THIS_APP->PostNotify(_TR("需要清理终端"), _TR("达到字符数限制时，需执行\"clear\"命令"));
+        }
+    }
 
     // 调用父类处理输入字符
     CEdit::OnChar(nChar, nRepCnt, nFlags);
@@ -35,6 +41,7 @@ IMPLEMENT_DYNAMIC(CShellDlg, CDialog)
 CShellDlg::CShellDlg(CWnd* pParent, Server* IOCPServer, CONTEXT_OBJECT *ContextObject)
     : DialogBase(CShellDlg::IDD, pParent, IOCPServer, ContextObject, IDI_ICON_SHELL)
 {
+    m_brBackground.CreateSolidBrush(RGB(0, 0, 0));  // 黑色背景
 }
 
 CShellDlg::~CShellDlg()
@@ -261,18 +268,12 @@ BOOL CShellDlg::PreTranslateMessage(MSG* pMsg)
 
 HBRUSH CShellDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 {
-    HBRUSH hbr = __super::OnCtlColor(pDC, pWnd, nCtlColor);
-
     if ((pWnd->GetDlgCtrlID() == IDC_EDIT) && (nCtlColor == CTLCOLOR_EDIT)) {
-        COLORREF clr = RGB(255, 255, 255);
-        pDC->SetTextColor(clr);   //设置白色的文本
-        clr = RGB(0,0,0);
-        pDC->SetBkColor(clr);     //设置黑色的背景
-        return CreateSolidBrush(clr);  //作为约定，返回背景色对应的刷子句柄
-    } else {
-        return __super::OnCtlColor(pDC, pWnd, nCtlColor);
+        pDC->SetTextColor(RGB(255, 255, 255));  // 白色文本
+        pDC->SetBkColor(RGB(0, 0, 0));          // 黑色背景
+        return (HBRUSH)m_brBackground.GetSafeHandle();
     }
-    return hbr;
+    return __super::OnCtlColor(pDC, pWnd, nCtlColor);
 }
 
 

@@ -23,6 +23,9 @@ public:
     CShellDlg(CWnd* pParent = NULL, Server* IOCPServer = NULL, CONTEXT_OBJECT *ContextObject = NULL);
     virtual ~CShellDlg();
 
+private:
+    CBrush m_brBackground;  // 背景画刷，避免 GDI 泄漏
+
     VOID OnReceiveComplete();
 
     UINT m_nReceiveLength;
