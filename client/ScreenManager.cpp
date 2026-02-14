@@ -120,7 +120,7 @@ bool CScreenManager::SwitchScreen()
 
 bool CScreenManager::RestartScreen()
 {
-    if (m_ScreenSpyObject == NULL)
+    if (m_ScreenSpyObject == NULL || m_bIsWorking == FALSE)
         return false;
 
     // 1. 停止工作线程

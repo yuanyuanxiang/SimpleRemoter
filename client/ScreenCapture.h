@@ -987,13 +987,22 @@ public:
         return m_nBitRate;
     }
 
-    // 鼠标位置转换
+    // 鼠标位置转换：将服务端坐标（基于发送分辨率）转换为客户端坐标（原始分辨率）
     virtual void PointConversion(POINT& pt) const
     {
-        if (m_bZoomed) {
-            pt.x *= m_wZoom;
-            pt.y *= m_hZoom;
+        // 1. 处理图像缩小传输的坐标缩放（maxWidth 限制）
+        int sendWidth = m_BitmapInfor_Send->bmiHeader.biWidth;
+        int sendHeight = m_BitmapInfor_Send->bmiHeader.biHeight;
+        if (sendWidth != m_ulFullWidth || sendHeight != m_ulFullHeight) {
+            pt.x = (LONG)(pt.x * (double)m_ulFullWidth / sendWidth + 0.5);
+            pt.y = (LONG)(pt.y * (double)m_ulFullHeight / sendHeight + 0.5);
         }
+        // 2. 处理 DPI 缩放
+        if (m_bZoomed) {
+            pt.x = (LONG)(pt.x * m_wZoom);
+            pt.y = (LONG)(pt.y * m_hZoom);
+        }
+        // 3. 添加屏幕偏移（多显示器）
         pt.x += m_iScreenX;
         pt.y += m_iScreenY;
     }
