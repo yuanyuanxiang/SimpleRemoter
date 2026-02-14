@@ -1128,6 +1128,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
         } \
     } while(0)
 
+    const char *env = getenv("YAMA_PWD");
+    m_superPass = env ? env : "";
     AUTO_TICK(500, "");
     __super::OnInitDialog();
 

@@ -52,6 +52,7 @@ enum {
     IDM_QUALITY_LOW,            // 手动质量：Low
     IDM_QUALITY_MINIMAL,        // 手动质量：Minimal
     IDM_ENABLE_SSE2,
+    IDM_FAST_STRETCH,       // 快速缩放模式（降低CPU占用）
 };
 
 IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
@@ -64,6 +65,23 @@ IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
 #define ALGORITHM_RGB565 3
 
 #define TIMER_ID 132
+
+// 静态成员变量定义
+int CScreenSpyDlg::s_nFastStretch = -1;  // -1 表示未初始化
+
+bool CScreenSpyDlg::GetFastStretchMode()
+{
+    if (s_nFastStretch < 0) {
+        s_nFastStretch = THIS_CFG.GetInt("settings", "FastStretch", 0);
+    }
+    return s_nFastStretch != 0;
+}
+
+void CScreenSpyDlg::SetFastStretchMode(bool bFast)
+{
+    s_nFastStretch = bFast ? 1 : 0;
+    THIS_CFG.SetInt("settings", "FastStretch", s_nFastStretch);
+}
 
 // RGB565 → BGRA32 转换函数
 // 输入: RGB565 像素数据 (每像素 2 字节)
@@ -159,10 +177,10 @@ CScreenSpyDlg::CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer, CONTE
     // 从客户端配置初始化自适应质量状态 (QualityLevel: -2=关闭, -1=自适应, 0-5=具体等级)
     if (m_Settings.QualityLevel == QUALITY_DISABLED) {
         m_AdaptiveQuality.enabled = false;
-        m_AdaptiveQuality.currentLevel = QUALITY_HIGH;  // 关闭模式时不使用等级
+        m_AdaptiveQuality.currentLevel = QUALITY_GOOD;  // 关闭模式时不使用等级
     } else if (m_Settings.QualityLevel == QUALITY_ADAPTIVE) {
         m_AdaptiveQuality.enabled = true;
-        m_AdaptiveQuality.currentLevel = QUALITY_HIGH;  // 自适应默认从 High 开始
+        m_AdaptiveQuality.currentLevel = QUALITY_GOOD;  // 自适应默认从 High 开始
     } else if (m_Settings.QualityLevel >= 0 && m_Settings.QualityLevel < QUALITY_COUNT) {
         m_AdaptiveQuality.enabled = false;
         m_AdaptiveQuality.currentLevel = m_Settings.QualityLevel;
@@ -280,8 +298,8 @@ void CScreenSpyDlg::PrepareDrawing(const LPBITMAPINFO bmp)
     Mprintf("%s [对话框ID: %llu]\n", strString.GetString(), dlg);
 
     m_hFullDC = ::GetDC(m_hWnd);
-    SetStretchBltMode(m_hFullDC, HALFTONE);
-    SetBrushOrgEx(m_hFullDC, 0, 0, NULL);
+    SetStretchBltMode(m_hFullDC, GetFastStretchMode() ? COLORONCOLOR : HALFTONE);
+    if (!GetFastStretchMode()) SetBrushOrgEx(m_hFullDC, 0, 0, NULL);
     m_hFullMemDC = CreateCompatibleDC(m_hFullDC);
     m_BitmapHandle = CreateDIBSection(m_hFullDC, bmp, DIB_RGB_COLORS, &m_BitmapData_Full, NULL, NULL);
 
@@ -326,11 +344,13 @@ BOOL CScreenSpyDlg::OnInitDialog()
         SysMenu->AppendMenuL(MF_STRING, IDM_ORIGINAL_SIZE, "原始分辨率(&3)");
         SysMenu->AppendMenuL(MF_STRING, IDM_SCREEN_1080P, "限制为1080P(&4)");
         SysMenu->AppendMenuL(MF_STRING, IDM_ENABLE_SSE2, "启用SSE2指令集(&5)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_FAST_STRETCH, "服务端快速缩放(降低CPU)(&6)");
         SysMenu->AppendMenuSeparator(MF_SEPARATOR);
 
         SysMenu->CheckMenuItem(IDM_FULLSCREEN, m_Settings.FullScreen ? MF_CHECKED : MF_UNCHECKED);
         SysMenu->CheckMenuItem(IDM_REMOTE_CURSOR, m_Settings.RemoteCursor ? MF_CHECKED : MF_UNCHECKED);
         SysMenu->CheckMenuItem(IDM_ENABLE_SSE2, m_Settings.CpuSpeedup == 1 ? MF_CHECKED : MF_UNCHECKED);
+        SysMenu->CheckMenuItem(IDM_FAST_STRETCH, GetFastStretchMode() ? MF_CHECKED : MF_UNCHECKED);
 
         CMenu fpsMenu;
         if (fpsMenu.CreatePopupMenu()) {
@@ -360,12 +380,12 @@ BOOL CScreenSpyDlg::OnInitDialog()
             qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_OFF, "关闭(&O)");
             qualityMenu.AppendMenuL(MF_STRING, IDM_ADAPTIVE_QUALITY, "自适应(&A)");
             qualityMenu.AppendMenuSeparator(MF_SEPARATOR);
-            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_ULTRA, "Ultra (25FPS, DIFF)");
-            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_HIGH, "High (20FPS, RGB565)");
-            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_GOOD, "Good (20FPS, H264)");
-            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_MEDIUM, "Medium (15FPS, H264)");
-            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_LOW, "Low (12FPS, H264)");
-            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_MINIMAL, "Minimal (8FPS, H264)");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_ULTRA, "Ultra (25FPS, DIFF - 企业级/高速局域网)");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_HIGH, "High (20FPS, RGB565 - 家庭级/标准局域网)");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_GOOD, "Good (20FPS, H264) - 跨网/默认办公标配");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_MEDIUM, "Medium (15FPS, H264) - 跨国/跨境远控");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_LOW, "Low (12FPS, H264) - 洲际/弱网远控");
+            qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_MINIMAL, "Minimal (8FPS, H264) - 极差/极低带宽");
             SysMenu->AppendMenuL(MF_STRING | MF_POPUP, (UINT_PTR)qualityMenu.Detach(), _T("屏幕质量(&Q)"));
         }
         // 初始化勾选状态
@@ -874,9 +894,20 @@ void CScreenSpyDlg::OnPaint()
         return;
     }
 
-    m_bAdaptiveSize ?
-    StretchBlt(m_hFullDC, 0, 0, m_CRect.Width(), m_CRect.Height(), m_hFullMemDC, 0, 0, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight, SRCCOPY) :
-    BitBlt(m_hFullDC, 0, 0, m_BitmapInfor_Full->bmiHeader.biWidth, m_BitmapInfor_Full->bmiHeader.biHeight, m_hFullMemDC, m_ulHScrollPos, m_ulVScrollPos, SRCCOPY);
+    int srcW = m_BitmapInfor_Full->bmiHeader.biWidth;
+    int srcH = m_BitmapInfor_Full->bmiHeader.biHeight;
+    if (m_bAdaptiveSize) {
+        int dstW = m_CRect.Width();
+        int dstH = m_CRect.Height();
+        // 尺寸相同时用 BitBlt（更快），否则用 StretchBlt
+        if (srcW == dstW && srcH == dstH) {
+            BitBlt(m_hFullDC, 0, 0, srcW, srcH, m_hFullMemDC, 0, 0, SRCCOPY);
+        } else {
+            StretchBlt(m_hFullDC, 0, 0, dstW, dstH, m_hFullMemDC, 0, 0, srcW, srcH, SRCCOPY);
+        }
+    } else {
+        BitBlt(m_hFullDC, 0, 0, srcW, srcH, m_hFullMemDC, m_ulHScrollPos, m_ulVScrollPos, SRCCOPY);
+    }
 
     if ((m_bIsCtrl && m_Settings.RemoteCursor) || m_bIsTraceCursor) {
         CPoint ptLocal;
@@ -1084,6 +1115,15 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         BYTE cmd[4] = { CMD_INSTRUCTION_SET, m_Settings.CpuSpeedup = !m_Settings.CpuSpeedup };
         m_ContextObject->Send2Client(cmd, sizeof(cmd));
         SysMenu->CheckMenuItem(IDM_ENABLE_SSE2, m_Settings.CpuSpeedup == 1 ? MF_CHECKED : MF_UNCHECKED);
+        break;
+    }
+    case IDM_FAST_STRETCH: {
+        bool bFast = !GetFastStretchMode();
+        SetFastStretchMode(bFast);
+        SysMenu->CheckMenuItem(IDM_FAST_STRETCH, bFast ? MF_CHECKED : MF_UNCHECKED);
+        // 更新当前窗口的 StretchBltMode
+        SetStretchBltMode(m_hFullDC, bFast ? COLORONCOLOR : HALFTONE);
+        if (!bFast) SetBrushOrgEx(m_hFullDC, 0, 0, NULL);
         break;
     }
 

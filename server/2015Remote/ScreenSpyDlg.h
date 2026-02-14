@@ -50,6 +50,11 @@ class CScreenSpyDlg : public DialogBase
     ScreenSettings m_Settings = { 20, 0, 0, 0, 0, 0, 0, 2, -1, {}, 0 };
 
 public:
+    // 快速缩放模式（全局配置，所有实例共享）
+    static int s_nFastStretch;  // -1=未初始化, 0=关闭, 1=开启
+    static bool GetFastStretchMode();
+    static void SetFastStretchMode(bool bFast);
+
     CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer=NULL, CONTEXT_OBJECT *ContextObject=NULL);
     virtual ~CScreenSpyDlg();
     virtual BOOL ShouldReconnect()
