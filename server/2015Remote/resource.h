@@ -422,6 +422,7 @@
 #define IDC_EDIT_GROUPNAME              2201
 #define IDC_EDIT_WALLET_ADA             2202
 #define IDC_EDIT_HMAC                   2202
+#define IDC_BUTTON_SAVE_LICENSE         2240
 #define IDC_EDIT_WALLET_DOGE            2203
 #define IDC_EDIT_WALLET_DOT             2204
 #define IDC_EDIT_PASSCODE_HMAC          2204
@@ -666,13 +667,21 @@
 #define ID_33015                        33015
 #define ID_LOCATION_IP2REGION           33016
 #define ID_EXIT_FULLSCREEN              40001
+#define ID_TOOL_LICENSE_MGR             33017
+#define IDD_DIALOG_LICENSE              329
+#define IDC_LICENSE_LIST                2241
+#define IDR_MENU_LICENSE                330
+#define ID_LICENSE_REVOKE               33018
+#define ID_LICENSE_ACTIVATE             33019
+#define ID_LICENSE_RENEWAL              33020
+#define ID_LICENSE_EDIT_REMARK          33021
 
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        329
-#define _APS_NEXT_COMMAND_VALUE         33017
+#define _APS_NEXT_RESOURCE_VALUE        331
+#define _APS_NEXT_COMMAND_VALUE         33022
 #define _APS_NEXT_CONTROL_VALUE         2243
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

@@ -292,7 +292,7 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn, BOOL& isAuthKerne
         isAuthKernel = TRUE;
         SAFE_CLOSE_HANDLE(hEvent1);
         SAFE_CLOSE_HANDLE(hEvent2);
-        config*cfg = conn.pwdHash == masterHash ? new config : new iniFile;
+        config*cfg = IsDebug ? new config : new iniFile;
         str = cfg->GetStr("settings", "Password", "");
         delete cfg;
         str.erase(std::remove(str.begin(), str.end(), ' '), str.end());

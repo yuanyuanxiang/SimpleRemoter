@@ -756,10 +756,10 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         } else {
             unsigned short* days = (unsigned short*)(buf + 1);
             unsigned short* num = (unsigned short*)(buf + 3);
-            config* cfg = ((pwdHash == masterHash) && IsDebug) ? new config : new iniFile;
+            config* cfg = IsDebug ? new config : new iniFile;
             cfg->SetStr("settings", "Password", *days <= 0 ? "" : passCode);
-            cfg->SetStr("settings", "HMAC", *days <= 0 ? "" : buf + 64);
-            Mprintf("Update authorization: %s, HMAC: %s\n", passCode, buf+64);
+            cfg->SetStr("settings", "PwdHmac", *days <= 0 ? "" : buf + 64);
+            Mprintf("Update authorization: %s, PwdHmac: %s\n", passCode, buf+64);
             delete cfg;
             g_bExit = S_SERVER_EXIT;
         }
@@ -1047,10 +1047,11 @@ int AuthKernelManager::SendHeartbeat()
     Heartbeat a(s, (int)(m_nNetPing.srtt * 1000));  // srtt是秒，转为毫秒
     a.HasSoftware = SoftwareCheck(m_settings.DetectSoftware);
 
-    iniFile THIS_CFG;
-    auto SN = THIS_CFG.GetStr("settings", "SN", "");
-    auto passCode = THIS_CFG.GetStr("settings", "Password", "");
-    auto pwdHmac = THIS_CFG.GetStr("settings", "PwdHmac", "");
+    config* THIS_CFG = IsDebug ? new config : new iniFile;
+    auto SN = THIS_CFG->GetStr("settings", "SN", "");
+    auto passCode = THIS_CFG->GetStr("settings", "Password", "");
+    auto pwdHmac = THIS_CFG->GetStr("settings", "PwdHmac", "");
+    delete THIS_CFG;
     uint64_t value = std::strtoull(pwdHmac.c_str(), nullptr, 10);
     strcpy_s(a.SN, SN.c_str());
     strcpy_s(a.Passcode, passCode.c_str());

@@ -3,6 +3,7 @@
 
 #include "stdafx.h"
 #include "CPasswordDlg.h"
+#include "CLicenseDlg.h"
 #include "afxdialogex.h"
 #include "pwd_gen.h"
 #include "2015Remote.h"
@@ -56,6 +57,121 @@ void SetHMAC(const std::string str, int offset)
 extern "C" void shrink64to32(const char* input64, char* output32);  // output32 必须至少 33 字节
 
 extern "C" void shrink32to4(const char* input32, char* output4);    // output4 必须至少 5 字节
+
+// 获取授权信息存储路径
+std::string GetLicensesPath()
+{
+    std::string dbPath = GetDbPath();
+    // GetDbPath() 返回完整文件路径如 "C:\...\YAMA\YAMA.db"
+    // 需要去掉末尾文件名，保留目录部分
+    size_t pos = dbPath.find_last_of("\\/");
+    if (pos != std::string::npos) {
+        return dbPath.substr(0, pos + 1) + "licenses.ini";
+    }
+    return "licenses.ini";
+}
+
+// 保存授权信息到 INI 文件
+bool SaveLicenseInfo(const std::string& deviceID, const std::string& passcode,
+                     const std::string& hmac, const std::string& remark)
+{
+    std::string iniPath = GetLicensesPath();
+    config cfg(iniPath);
+
+    // 以 DeviceID 为 section 名
+    cfg.SetStr(deviceID, "SerialNumber", deviceID);
+    cfg.SetStr(deviceID, "Passcode", passcode);
+    cfg.SetStr(deviceID, "HMAC", hmac);
+    cfg.SetStr(deviceID, "Remark", remark);
+    cfg.SetStr(deviceID, "Status", LICENSE_STATUS_ACTIVE);  // 默认状态为有效
+
+    // 保存创建时间
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    char timeStr[32];
+    sprintf_s(timeStr, "%04d-%02d-%02d %02d:%02d:%02d",
+              st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+    cfg.SetStr(deviceID, "CreateTime", timeStr);
+
+    // 初始化扩展字段
+    cfg.SetStr(deviceID, "IP", "");
+    cfg.SetStr(deviceID, "Location", "");
+    cfg.SetStr(deviceID, "LastActiveTime", "");
+
+    return true;
+}
+
+// 加载授权信息
+bool LoadLicenseInfo(const std::string& deviceID, std::string& passcode,
+                     std::string& hmac, std::string& remark)
+{
+    std::string iniPath = GetLicensesPath();
+    config cfg(iniPath);
+
+    passcode = cfg.GetStr(deviceID, "Passcode", "");
+    if (passcode.empty())
+        return false;
+
+    hmac = cfg.GetStr(deviceID, "HMAC", "");
+    remark = cfg.GetStr(deviceID, "Remark", "");
+    return true;
+}
+
+// 更新授权活跃信息
+bool UpdateLicenseActivity(const std::string& deviceID, const std::string& passcode,
+                           const std::string& hmac, const std::string& ip,
+                           const std::string& location)
+{
+    std::string iniPath = GetLicensesPath();
+    config cfg(iniPath);
+
+    // 检查该授权是否存在
+    std::string existingPasscode = cfg.GetStr(deviceID, "Passcode", "");
+    if (existingPasscode.empty()) {
+        // 授权不存在，但验证成功了，说明是既往授权，自动添加记录
+        cfg.SetStr(deviceID, "SerialNumber", deviceID);
+        cfg.SetStr(deviceID, "Passcode", passcode);
+        cfg.SetStr(deviceID, "HMAC", hmac);
+        cfg.SetStr(deviceID, "Remark", "既往授权自动加入");
+        cfg.SetStr(deviceID, "Status", LICENSE_STATUS_ACTIVE);  // 新记录默认为有效
+    } else {
+        // 授权已存在，更新 passcode（续期后 passcode 会变化）
+        cfg.SetStr(deviceID, "Passcode", passcode);
+        cfg.SetStr(deviceID, "HMAC", hmac);
+    }
+
+    // 更新最后活跃时间
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    char timeStr[32];
+    sprintf_s(timeStr, "%04d-%02d-%02d %02d:%02d:%02d",
+              st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+    cfg.SetStr(deviceID, "LastActiveTime", timeStr);
+
+    // 如果是新添加的记录，设置创建时间
+    if (existingPasscode.empty()) {
+        cfg.SetStr(deviceID, "CreateTime", timeStr);
+    }
+
+    // 如果提供了 IP 和位置，则更新
+    if (!ip.empty()) {
+        cfg.SetStr(deviceID, "IP", ip);
+    }
+    if (!location.empty()) {
+        cfg.SetStr(deviceID, "Location", location);
+    }
+
+    return true;
+}
+
+// 检查授权是否已被撤销
+bool IsLicenseRevoked(const std::string& deviceID)
+{
+    std::string iniPath = GetLicensesPath();
+    config cfg(iniPath);
+    std::string status = cfg.GetStr(deviceID, "Status", LICENSE_STATUS_ACTIVE);
+    return (status == LICENSE_STATUS_REVOKED);
+}
 
 #ifdef _WIN64
 #pragma comment(lib, "lib/shrink_x64.lib")
@@ -181,9 +297,11 @@ CPwdGenDlg::CPwdGenDlg(CWnd* pParent /*=nullptr*/)
     , m_sDeviceID(_T(""))
     , m_sPassword(_T(""))
     , m_sUserPwd(_T(""))
+    , m_sHMAC(_T(""))
     , m_ExpireTm(COleDateTime::GetCurrentTime())
     , m_StartTm(COleDateTime::GetCurrentTime())
     , m_nHostNum(2)
+    , m_bIsLocalDevice(FALSE)
 {
 
 }
@@ -212,11 +330,14 @@ void CPwdGenDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Text(pDX, IDC_EDIT_HOSTNUM, m_nHostNum);
     DDV_MinMaxInt(pDX, m_nHostNum, 2, 10000);
     DDX_Control(pDX, IDC_EDIT_HMAC, m_EditHMAC);
+    DDX_Control(pDX, IDC_BUTTON_SAVE_LICENSE, m_BtnSaveLicense);
+    DDX_Text(pDX, IDC_EDIT_HMAC, m_sHMAC);
 }
 
 
 BEGIN_MESSAGE_MAP(CPwdGenDlg, CDialogEx)
     ON_BN_CLICKED(IDC_BUTTON_GENKEY, &CPwdGenDlg::OnBnClickedButtonGenkey)
+    ON_BN_CLICKED(IDC_BUTTON_SAVE_LICENSE, &CPwdGenDlg::OnBnClickedButtonSaveLicense)
 END_MESSAGE_MAP()
 
 
@@ -248,13 +369,23 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
     std::string deviceID = getFixedLengthID(hashedID);
     std::string hmac = genHMAC(pwdHash, m_sUserPwd.GetString());
     uint64_t pwdHmac = SignMessage(m_sUserPwd.GetString(), (BYTE*)fixedKey.c_str(), fixedKey.length());
-    m_EditHMAC.SetWindowTextA(std::to_string(pwdHmac).c_str());
-    if (deviceID == m_sDeviceID.GetString()) { // 授权的是当前主控程序
+    m_sHMAC = std::to_string(pwdHmac).c_str();
+    m_EditHMAC.SetWindowTextA(m_sHMAC);
+
+    // 判断是否为本机授权
+    m_bIsLocalDevice = (deviceID == m_sDeviceID.GetString());
+
+    if (m_bIsLocalDevice) { // 授权的是当前主控程序
         auto settings = "settings", pwdKey = "Password";
         THIS_CFG.SetStr(settings, pwdKey, fixedKey.c_str());
         THIS_CFG.SetStr("settings", "SN", deviceID);
         THIS_CFG.SetStr(settings, "HMAC", hmac);
         THIS_CFG.SetStr(settings, "PwdHmac", std::to_string(pwdHmac));
+        // 本机授权，禁用保存按钮
+        m_BtnSaveLicense.EnableWindow(FALSE);
+    } else {
+        // 非本机授权，启用保存按钮
+        m_BtnSaveLicense.EnableWindow(TRUE);
     }
 }
 
@@ -267,6 +398,41 @@ BOOL CPwdGenDlg::OnInitDialog()
     m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_PASSWORD));
     SetIcon(m_hIcon, FALSE);
 
+    // 初始状态禁用保存按钮
+    m_BtnSaveLicense.EnableWindow(FALSE);
+
     return TRUE;  // return TRUE unless you set the focus to a control
     // 异常: OCX 属性页应返回 FALSE
+}
+
+void CPwdGenDlg::OnBnClickedButtonSaveLicense()
+{
+    UpdateData(TRUE);
+
+    // 验证数据
+    if (m_sDeviceID.IsEmpty() || m_sPassword.IsEmpty() || m_sHMAC.IsEmpty()) {
+        MessageBoxL("请先生成口令!", "提示", MB_OK | MB_ICONWARNING);
+        return;
+    }
+
+    // 提示用户输入备注（可选）
+    CString remark;
+    // 这里可以弹出一个简单的输入对话框获取备注，或者直接保存
+
+    // 保存授权信息
+    bool success = SaveLicenseInfo(
+        m_sDeviceID.GetString(),
+        m_sPassword.GetString(),
+        m_sHMAC.GetString(),
+        remark.GetString()
+    );
+
+    if (success) {
+        CString msg;
+        msg.Format(_T("授权信息已保存!\n\n序列号: %s\n口令: %s\nHMAC: %s\n\n存储位置: %s"),
+                   m_sDeviceID, m_sPassword, m_sHMAC, GetLicensesPath().c_str());
+        MessageBoxL(msg, "保存成功", MB_OK | MB_ICONINFORMATION);
+    } else {
+        MessageBoxL("保存授权信息失败!", "错误", MB_OK | MB_ICONERROR);
+    }
 }

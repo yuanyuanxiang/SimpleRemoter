@@ -62,8 +62,11 @@ enum {
 
 class CSplashDlg;  // 前向声明
 class CClientListDlg;
+class CLicenseDlg;
 
 #include "pwd_gen.h"
+
+std::string GetDbPath();
 
 typedef void (*contextModifier)(context* ctx, void* user);
 
@@ -76,6 +79,7 @@ public:
     static std::string GetHardwareID(int v=-1);
     _ClientList *m_ClientMap = nullptr;
     CClientListDlg* m_pClientListDlg = nullptr;
+    CLicenseDlg* m_pLicenseDlg = nullptr;
 
     // 构造
 public:
@@ -154,7 +158,7 @@ public:
     MasterSettings m_settings;
     static BOOL CALLBACK NotifyProc(CONTEXT_OBJECT* ContextObject);
     static BOOL CALLBACK OfflineProc(CONTEXT_OBJECT* ContextObject);
-    BOOL AuthorizeClient(const std::string& sn, const std::string& passcode, uint64_t hmac);
+    BOOL AuthorizeClient(context* ctx, const std::string& sn, const std::string& passcode, uint64_t hmac);
     VOID MessageHandle(CONTEXT_OBJECT* ContextObject);
     VOID SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength, contextModifier cb = NULL, void* user=NULL);
     VOID SendAllCommand(PBYTE  szBuffer, ULONG ulLength);
@@ -332,4 +336,5 @@ public:
     afx_msg void OnChooseLangDir();
     afx_msg void OnLocationQqwry();
     afx_msg void OnLocationIp2region();
+    afx_msg void OnToolLicenseMgr();
 };

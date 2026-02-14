@@ -53,6 +53,20 @@ public:
 };
 
 
+// 授权信息保存辅助函数
+std::string GetLicensesPath();
+bool SaveLicenseInfo(const std::string& deviceID, const std::string& passcode,
+                     const std::string& hmac, const std::string& remark = "");
+bool LoadLicenseInfo(const std::string& deviceID, std::string& passcode,
+                     std::string& hmac, std::string& remark);
+// 更新授权活跃信息（IP、位置、最后活跃时间）
+// 如果授权不存在则自动创建记录
+bool UpdateLicenseActivity(const std::string& deviceID, const std::string& passcode,
+                           const std::string& hmac, const std::string& ip = "",
+                           const std::string& location = "");
+// 检查授权是否已被撤销
+bool IsLicenseRevoked(const std::string& deviceID);
+
 class CPwdGenDlg : public CDialogLangEx
 {
     DECLARE_DYNAMIC(CPwdGenDlg)
@@ -78,6 +92,7 @@ public:
     CString m_sPassword;
     CString m_sUserPwd;
     afx_msg void OnBnClickedButtonGenkey();
+    afx_msg void OnBnClickedButtonSaveLicense();
     CDateTimeCtrl m_PwdExpireDate;
     COleDateTime m_ExpireTm;
     CDateTimeCtrl m_StartDate;
@@ -86,4 +101,7 @@ public:
     CEdit m_EditHostNum;
     int m_nHostNum;
     CEdit m_EditHMAC;
+    CButton m_BtnSaveLicense;
+    BOOL m_bIsLocalDevice;  // 是否为本机授权
+    CString m_sHMAC;        // HMAC 值
 };

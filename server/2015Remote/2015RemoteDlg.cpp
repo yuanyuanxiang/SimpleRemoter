@@ -49,6 +49,7 @@
 #include "CDlgFileSend.h"
 #include "CClientListDlg.h"
 #include "CUpdateDlg.h"
+#include "CLicenseDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -584,6 +585,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_CHOOSE_LANG_DIR, &CMy2015RemoteDlg::OnChooseLangDir)
     ON_COMMAND(ID_LOCATION_QQWRY, &CMy2015RemoteDlg::OnLocationQqwry)
     ON_COMMAND(ID_LOCATION_IP2REGION, &CMy2015RemoteDlg::OnLocationIp2region)
+    ON_COMMAND(ID_TOOL_LICENSE_MGR, &CMy2015RemoteDlg::OnToolLicenseMgr)
 END_MESSAGE_MAP()
 
 
@@ -1221,6 +1223,13 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     UPDATE_SPLASH(40, "正在加载授权模块...");
     // 主控程序公网IP
     std::string ip = THIS_CFG.GetStr("settings", "master", "");
+    if (ip.empty()) {
+        ip = m_IPConverter ? m_IPConverter->getPublicIP() : "";
+        THIS_CFG.SetStr("settings", "master", ip);
+    }
+    if (ip.empty()) {
+        THIS_APP->MessageBoxL("请通过菜单设置公网地址!", "提示", MB_ICONINFORMATION);
+    }
     int port = THIS_CFG.Get1Int("settings", "ghost", ';', 6543);
     std::string master = ip.empty() ? "" : ip + ":" + std::to_string(port);
     const Validation* v = GetValidation();
@@ -1720,6 +1729,13 @@ void CMy2015RemoteDlg::Release()
         // 注意：如果你在对话框的 PostNcDestroy 里写了 delete this;
         // 那么此时不要再 delete m_pClientListDlg，只需将指针置 NULL 即可
         m_pClientListDlg = nullptr;
+    }
+    if (m_pLicenseDlg != nullptr) {
+        if (::IsWindow(m_pLicenseDlg->GetSafeHwnd())) {
+            m_pLicenseDlg->DestroyWindow();
+        }
+        delete m_pLicenseDlg;
+        m_pLicenseDlg = nullptr;
     }
     Sleep(500);
     while (m_hFRPThread)
@@ -2579,7 +2595,7 @@ bool IsDateInRange(const std::string& startDate, const std::string& endDate)
     return (today >= startDate && today <= endDate);
 }
 
-BOOL CMy2015RemoteDlg::AuthorizeClient(const std::string& sn, const std::string& passcode, uint64_t hmac)
+BOOL CMy2015RemoteDlg::AuthorizeClient(context* ctx, const std::string& sn, const std::string& passcode, uint64_t hmac)
 {
     if (sn.empty() || passcode.empty() || hmac == 0) {
         return FALSE;
@@ -2589,7 +2605,39 @@ BOOL CMy2015RemoteDlg::AuthorizeClient(const std::string& sn, const std::string&
     BOOL b = VerifyMessage(pwd, (BYTE*)passcode.c_str(), passcode.length(), hmac);
     if (!b) return FALSE;
     auto list = StringToVector(passcode, '-', 2);
-    return IsDateInRange(list[0], list[1]);
+    BOOL valid = IsDateInRange(list[0], list[1]);
+    std::string hmacStr = std::to_string(hmac);
+
+    // 授权过期，更新或创建记录并标记为过期
+    if (!valid) {
+        Mprintf("授权已过期: %s\n", sn.c_str());
+        if (ctx != nullptr) {
+            std::string ip = ctx->GetClientData(ONLINELIST_IP);
+            std::string location = m_IPConverter ? m_IPConverter->GetGeoLocation(ip) : "";
+            UpdateLicenseActivity(sn, passcode, hmacStr, ip, location);
+        } else {
+            UpdateLicenseActivity(sn, passcode, hmacStr);
+        }
+        SetLicenseStatus(sn, LICENSE_STATUS_EXPIRED);
+        return FALSE;
+    }
+
+    // 检查授权是否已被撤销
+    if (IsLicenseRevoked(sn)) {
+        Mprintf("授权已被撤销: %s\n", sn.c_str());
+        return FALSE;
+    }
+
+    // 授权成功时更新 license 活跃信息
+    if (ctx != nullptr) {
+        std::string ip = ctx->GetClientData(ONLINELIST_IP);
+        std::string location = m_IPConverter ? m_IPConverter->GetGeoLocation(ip) : "";
+        UpdateLicenseActivity(sn, passcode, hmacStr, ip, location);
+    } else {
+        UpdateLicenseActivity(sn, passcode, hmacStr);
+    }
+
+    return TRUE;
 }
 
 BOOL IsTrail(const std::string& passcode)
@@ -2630,7 +2678,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
                 valid = (hash256 == fixedKey);
             }
             if (valid) {
-                valid = AuthorizeClient(sn, passcode, hmac);
+                valid = AuthorizeClient(NULL, sn, passcode, hmac);
                 if (valid) {
                     Mprintf("%s 校验成功, HMAC 校验成功: %s\n", passcode.c_str(), sn.c_str());
                     std::string tip = passcode + " 校验成功: " + sn;
@@ -2736,9 +2784,10 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
                                std::string("-") + getFixedLengthID(finalKey);
         memcpy(devId, fixedKey.c_str(), fixedKey.length());
         devId[fixedKey.length()] = 0;
-        std::string hmac = genHMAC(hash, m_superPass);
+        uint64_t pwdHmac = SignMessage(m_superPass, (BYTE*)fixedKey.c_str(), fixedKey.length());
+        std::string hmac = std::to_string(pwdHmac).c_str();
         memcpy(resp + 64, hmac.c_str(), hmac.length());
-        resp[80] = 0;
+        resp[64+hmac.length()] = 0;
         ContextObject->Send2Client((LPBYTE)resp, sizeof(resp));
         Sleep(20);
         break;
@@ -3013,7 +3062,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
     // if(0)
     {
         BOOL isTrail = FALSE;
-        BOOL authorized = AuthorizeClient(hb.SN, hb.Passcode, hb.PwdHmac);
+        BOOL authorized = AuthorizeClient(host, hb.SN, hb.Passcode, hb.PwdHmac);
         if (authorized) {
             Mprintf("%s HMAC 校验成功: %llu\n", hb.Passcode, hb.PwdHmac);
             m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
@@ -3024,6 +3073,47 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
                 CharMsg* msg = new CharMsg(tip.c_str());
                 PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
             }
+        }
+
+        // 检查是否有预设续期（无论授权成功或失败都检查）
+        RenewalInfo renewal = GetPendingRenewal(hb.SN);
+        if (renewal.IsValid() && !m_superPass.empty()) {
+            // 获取当前 passcode 中的到期时间
+            std::string currentExpire = ParseExpireDateFromPasscode(hb.Passcode);
+
+            // 只有当前到期时间小于预设到期时间时才发送续期
+            if (currentExpire < renewal.ExpireDate) {
+                // 计算从今天到过期日期的天数（用今天00:00:00作为基准，避免时分秒导致少1天）
+                int year = atoi(renewal.ExpireDate.substr(0, 4).c_str());
+                int month = atoi(renewal.ExpireDate.substr(4, 2).c_str());
+                int day = atoi(renewal.ExpireDate.substr(6, 2).c_str());
+                CTime expireTime(year, month, day, 0, 0, 0);
+                CTime now = CTime::GetCurrentTime();
+                CTime today(now.GetYear(), now.GetMonth(), now.GetDay(), 0, 0, 0);
+                CTimeSpan span = expireTime - today;
+                int days = (int)span.GetDays();
+                if (days <= 0) days = 1; // 至少1天
+
+                // 有预设续期，自动下发新授权
+                Mprintf("自动下发续期: %s, %s -> %s, %d并发数\n", hb.SN, currentExpire.c_str(), renewal.ExpireDate.c_str(), renewal.HostNum);
+                BYTE bToken[32] = { CMD_AUTHORIZATION };
+                unsigned short usDays = (unsigned short)days;
+                unsigned short num = (unsigned short)renewal.HostNum;
+                uint32_t tm = clock();
+                memcpy(bToken + 1, &usDays, sizeof(usDays));
+                memcpy(bToken + 3, &num, sizeof(num));
+                memcpy(bToken + 8, &tm, sizeof(tm));
+                uint64_t signature = SignMessage(m_superPass, bToken, 12);
+                memcpy(bToken + 12, &signature, sizeof(signature));
+                ctx->Send2Client(bToken, sizeof(bToken));
+
+                // 提示续期已下发
+                std::string expireFmt = renewal.ExpireDate.substr(0, 4) + "-" + renewal.ExpireDate.substr(4, 2) + "-" + renewal.ExpireDate.substr(6, 2);
+                std::string tip = std::string(hb.SN) + " 已自动续期至 " + expireFmt;
+                CharMsg* msg = new CharMsg(tip.c_str());
+                PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+            }
+            // 不清除预设的到期时间，只有用户重新设置续期才会更新
         }
         HeartbeatACK ack = { hb.Time, (char)authorized, (char)isTrail };
         BYTE buf[sizeof(HeartbeatACK) + 1] = { CMD_HEARTBEAT_ACK};
@@ -3752,8 +3842,8 @@ void CMy2015RemoteDlg::OnOnlineAuthorize()
     }
 
     CInputDialog dlg(this);
-    dlg.Init(_TR("延长授权"), _TR("主控程序授权天数:"));
-    dlg.Init2(_TR("并发上线机器数量:"), std::to_string(100).c_str());
+    dlg.Init(_TR("延长授权"), _TR("授权天数:"));
+    dlg.Init2(_TR("并发连接数:"), std::to_string(100).c_str());
     if (dlg.DoModal() != IDOK || atoi(dlg.m_str) <= 0)
         return;
     BYTE	bToken[32] = { CMD_AUTHORIZATION };
@@ -5157,4 +5247,19 @@ void CMy2015RemoteDlg::OnLocationIp2region()
     SubMenu->CheckMenuItem(ID_LOCATION_QQWRY, MF_UNCHECKED);
     SubMenu->CheckMenuItem(ID_LOCATION_IP2REGION, MF_CHECKED);
     MessageBoxL("请确保“ip2region_v4.xdb”文件存在! 重启程序生效。", "提示", MB_ICONINFORMATION);
+}
+
+void CMy2015RemoteDlg::OnToolLicenseMgr()
+{
+    // 如果对话框已存在，刷新并显示
+    if (m_pLicenseDlg != nullptr && ::IsWindow(m_pLicenseDlg->GetSafeHwnd())) {
+        m_pLicenseDlg->ShowAndRefresh();
+        return;
+    }
+
+    // 创建非模态对话框
+    m_pLicenseDlg = new CLicenseDlg(this);
+    if (m_pLicenseDlg->Create(IDD_DIALOG_LICENSE, GetDesktopWindow())) {
+        m_pLicenseDlg->ShowWindow(SW_SHOW);
+    }
 }
