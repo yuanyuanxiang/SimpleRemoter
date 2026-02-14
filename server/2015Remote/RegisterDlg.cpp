@@ -227,6 +227,15 @@ struct REGMSG {
 void CRegisterDlg::AddPath(char* szBuffer)
 {
     if(szBuffer==NULL) return;
+
+    // 先删除该节点下的所有现有子项，避免重复添加
+    HTREEITEM hChild = m_Tree.GetChildItem(m_hSelectedItem);
+    while (hChild != NULL) {
+        HTREEITEM hNext = m_Tree.GetNextSiblingItem(hChild);
+        m_Tree.DeleteItem(hChild);
+        hChild = hNext;
+    }
+
     int msgsize=sizeof(REGMSG);
     REGMSG msg;
     memcpy((void*)&msg,szBuffer,msgsize);
