@@ -3,6 +3,7 @@
 #include "client/IOCPClient.h"
 #include <dlfcn.h>
 #include <thread>
+#include <mutex>
 #include <atomic>
 #include <vector>
 #include <cstring>
@@ -475,7 +476,7 @@ class ScreenHandler : public IOCPManager
 {
 public:
     ScreenHandler(IOCPClient* client)
-        : m_client(client), m_running(false), m_display(nullptr),
+        : m_client(client), m_running(false), m_destroyed(false), m_display(nullptr),
           m_inputDisplay(nullptr),
           m_width(0), m_height(0),
           m_pixmap(0), m_gc(nullptr), m_xtestWarned(false)
@@ -544,8 +545,17 @@ public:
 
     ~ScreenHandler()
     {
+        // Mark as destroyed to prevent Start() from creating new thread
+        m_destroyed = true;
         m_running = false;
-        if (m_captureThread.joinable()) m_captureThread.join();
+
+        // Lock to ensure Start() is not in the middle of creating thread
+        {
+            std::lock_guard<std::mutex> lock(m_threadMutex);
+            if (m_captureThread.joinable()) {
+                m_captureThread.join();
+            }
+        }
         if (m_inputDisplay && m_x11.pXCloseDisplay) {
             m_x11.pXCloseDisplay(m_inputDisplay);
             m_inputDisplay = nullptr;
@@ -570,8 +580,21 @@ public:
 
     void Start()
     {
+        // Prevent starting if destructor has begun
+        if (m_destroyed) return;
+
+        // Lock to prevent race with destructor
+        std::lock_guard<std::mutex> lock(m_threadMutex);
+
+        // Double-check after acquiring lock
+        if (m_destroyed) return;
+
+        // Prevent starting if thread is already running or joinable
+        if (m_captureThread.joinable()) return;
+
         bool expected = false;
         if (!m_running.compare_exchange_strong(expected, true)) return;
+
         m_captureThread = std::thread(&ScreenHandler::CaptureLoop, this);
     }
 
@@ -746,6 +769,8 @@ public:
 private:
     IOCPClient* m_client;
     std::atomic<bool> m_running;
+    std::atomic<bool> m_destroyed;  // Flag to prevent Start() after destruction begins
+    std::mutex m_threadMutex;       // Protects m_captureThread lifecycle
     std::thread m_captureThread;
     bool m_xtestWarned;
 
@@ -909,29 +934,36 @@ private:
         return outOffset;
     }
 
+
     // 截屏主循环
     void CaptureLoop()
     {
-        Mprintf(">>> ScreenHandler CaptureLoop started (%dx%d)\n", m_width, m_height);
+        try {
+            Mprintf(">>> ScreenHandler CaptureLoop started (%dx%d)\n", m_width, m_height);
 
-        // 发送第一帧
-        SendFirstScreen();
+            // 发送第一帧
+            SendFirstScreen();
 
-        const int fps = 10;
-        const int sleepMs = 1000 / fps;
+            const int fps = 10;
+            const int sleepMs = 1000 / fps;
 
-        while (m_running) {
-            clock_t start = clock();
+            while (m_running) {
+                clock_t start = clock();
 
-            SendDiffFrame();
+                SendDiffFrame();
 
-            int elapsed = (clock() - start) * 1000 / CLOCKS_PER_SEC;
-            int wait = sleepMs - elapsed;
-            if (wait > 0) {
-                usleep(wait * 1000);
+                int elapsed = (clock() - start) * 1000 / CLOCKS_PER_SEC;
+                int wait = sleepMs - elapsed;
+                if (wait > 0) {
+                    usleep(wait * 1000);
+                }
             }
-        }
 
-        Mprintf(">>> ScreenHandler CaptureLoop stopped\n");
+            Mprintf(">>> ScreenHandler CaptureLoop stopped\n");
+        } catch (const std::exception& e) {
+            Mprintf("*** CaptureLoop exception: %s ***\n", e.what());
+        } catch (...) {
+            Mprintf("*** CaptureLoop unknown exception ***\n");
+        }
     }
 };

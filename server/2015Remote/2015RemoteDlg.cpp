@@ -831,7 +831,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
         m_CList_Online.SetItemData(i, (DWORD_PTR)ContextObject);
     }
     std::string tip = flag ? " (" + v[RES_CLIENT_PUBIP] + ") " : "";
-    ShowMessage(_TR("操作成功"), strIP + tip.c_str() + " " + _L(_T("主机上线")) + "[" + loc + "]");
+    ShowMessage(_TR("操作成功"), strIP + tip.c_str() + " " + _L(_T("主机上线")) + "[" + loc + "][" + groupName.c_str() + "]");
 
     CharMsg *title =  new CharMsg(_TR("主机上线"));
     CharMsg *text = new CharMsg(strIP + CString(tip.c_str()) + _T(" ") + _L(_T("主机上线")) + _T(" [") + loc + _T("]"));
@@ -844,8 +844,8 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     ASSERT(signature.size() <= sizeof(copy.Signature));
     memcpy(copy.Signature, signature.data(), signature.size());
     LeaveCriticalSection(&m_cs);
-    Mprintf("主机[%s]上线: %s[%s]\n", v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(),
-            std::to_string(id).c_str(), loc);
+    Mprintf("主机[%s]上线: %s[%s][%s]\n", v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(),
+            std::to_string(id).c_str(), loc, groupName.c_str());
     SendMasterSettings(ContextObject, copy);
     if (m_needNotify && (GetTickCount() - g_StartTick > 30*1000))
         PostMessageA(WM_SHOWNOTIFY, WPARAM(title), LPARAM(text));
@@ -1646,6 +1646,8 @@ void CMy2015RemoteDlg::CheckHeartbeat()
             Mprintf("Client %s[%llu] heartbeat timeout!!! \n", host, ContextObject->GetClientID());
             PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg("主机掉线"),
                          (LPARAM)new CharMsg("主机长时间无心跳: " + host));
+            PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg("[主机下线] 主机长时间无心跳: " + host), NULL);
+            Mprintf("主机 %s[%llu]心跳超时\n", host, ContextObject->GetClientID());
             it = m_HostList.erase(it);
             ContextObject->CancelIO();
             for (int i = 0, n = m_CList_Online.GetItemCount(); i < n; i++) {
@@ -3927,6 +3929,7 @@ void CMy2015RemoteDlg::OnToolInputPassword()
             dlg.m_sPassword = THIS_CFG.GetStr("settings", "Password", "").c_str();
             dlg.m_sPasscodeHmac = THIS_CFG.GetStr("settings", "PwdHmac", "").c_str();
             if (IDOK == dlg.DoModal() && !dlg.m_sPassword.IsEmpty()) {
+                THIS_CFG.SetStr("settings", "SN", dlg.m_sDeviceID.GetString());
                 THIS_CFG.SetStr("settings", "Password", dlg.m_sPassword.GetString());
                 THIS_CFG.SetStr("settings", "PwdHmac", dlg.m_sPasscodeHmac.GetString());
 #ifdef _DEBUG

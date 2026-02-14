@@ -350,7 +350,11 @@ BOOL IOCPClient::ConnectServer(const char* szServerIP, unsigned short uPort)
         m_bIsRunning = m_hWorkThread ? TRUE : FALSE;
 #else
         pthread_t id = 0;
-        m_hWorkThread = (HANDLE)pthread_create(&id, nullptr, (void* (*)(void*))IOCPClient::WorkThreadProc, this);
+        int ret = pthread_create(&id, nullptr, (void* (*)(void*))IOCPClient::WorkThreadProc, this);
+        if (ret == 0) {
+            m_bWorkThread = S_RUN;
+            m_bIsRunning = TRUE;
+        }
 #endif
     }
 
