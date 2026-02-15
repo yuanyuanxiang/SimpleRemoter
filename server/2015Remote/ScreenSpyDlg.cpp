@@ -16,44 +16,7 @@
 
 // CScreenSpyDlg 对话框
 
-enum {
-    IDM_CONTROL = 0x1010,
-    IDM_FULLSCREEN,
-    IDM_SEND_CTRL_ALT_DEL,
-    IDM_TRACE_CURSOR,	// 跟踪显示远程鼠标
-    IDM_BLOCK_INPUT,	// 锁定远程计算机输入
-    IDM_SAVEDIB,		// 保存图片
-    IDM_GET_CLIPBOARD,	// 获取剪贴板
-    IDM_SET_CLIPBOARD,	// 设置剪贴板
-    IDM_ADAPTIVE_SIZE,
-    IDM_SAVEAVI,
-    IDM_SAVEAVI_H264,
-    IDM_SWITCHSCREEN,
-    IDM_MULTITHREAD_COMPRESS,
-    IDM_FPS_10,
-    IDM_FPS_15,
-    IDM_FPS_20,
-    IDM_FPS_25,
-    IDM_FPS_30,
-    IDM_FPS_UNLIMITED,
-    IDM_ORIGINAL_SIZE,
-    IDM_SCREEN_1080P,
-    IDM_REMOTE_CURSOR,
-    IDM_SCROLL_DETECT_OFF,      // 滚动检测：关闭（局域网）
-    IDM_SCROLL_DETECT_2,        // 滚动检测：跨网推荐
-    IDM_SCROLL_DETECT_4,        // 滚动检测：标准模式
-    IDM_SCROLL_DETECT_8,        // 滚动检测：省CPU模式
-    IDM_QUALITY_OFF,            // 关闭质量控制（使用原有算法）
-    IDM_ADAPTIVE_QUALITY,       // 自适应质量
-    IDM_QUALITY_ULTRA,          // 手动质量：Ultra
-    IDM_QUALITY_HIGH,           // 手动质量：High
-    IDM_QUALITY_GOOD,           // 手动质量：Good
-    IDM_QUALITY_MEDIUM,         // 手动质量：Medium
-    IDM_QUALITY_LOW,            // 手动质量：Low
-    IDM_QUALITY_MINIMAL,        // 手动质量：Minimal
-    IDM_ENABLE_SSE2,
-    IDM_FAST_STRETCH,       // 快速缩放模式（降低CPU占用）
-};
+// IDM_* enum 已移至 ScreenSpyDlg.h
 
 IMPLEMENT_DYNAMIC(CScreenSpyDlg, CDialog)
 
@@ -305,8 +268,12 @@ void CScreenSpyDlg::PrepareDrawing(const LPBITMAPINFO bmp)
 
     SelectObject(m_hFullMemDC, m_BitmapHandle);
 
-    SetScrollRange(SB_HORZ, 0, bmp->bmiHeader.biWidth);
-    SetScrollRange(SB_VERT, 0, bmp->bmiHeader.biHeight);
+    // 仅在滚动条已可见时更新范围（不会闪现，只是刷新范围值）
+    // 全屏或自适应模式下不调用，避免隐式添加 WS_HSCROLL/WS_VSCROLL 导致闪现
+    if (!m_Settings.FullScreen && !m_bAdaptiveSize) {
+        SetScrollRange(SB_HORZ, 0, bmp->bmiHeader.biWidth);
+        SetScrollRange(SB_VERT, 0, bmp->bmiHeader.biHeight);
+    }
 
     GetClientRect(&m_CRect);
     m_wZoom = ((double)bmp->bmiHeader.biWidth) / ((double)(m_CRect.Width()));
@@ -433,13 +400,21 @@ BOOL CScreenSpyDlg::OnInitDialog()
     SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
     ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);
 
-    // 设置合理的"正常"窗口大小（屏幕的 80%），否则还原时窗口极小
-    int cxScreen = GetSystemMetrics(SM_CXSCREEN);
-    int cyScreen = GetSystemMetrics(SM_CYSCREEN);
-    int normalWidth = cxScreen * 0.382;
-    int normalHeight = cyScreen * 0.382;
-    int normalX = (cxScreen - normalWidth) / 2;
-    int normalY = (cyScreen - normalHeight) / 2;
+    // 设置合理的"正常"窗口大小，显示在主程序所在的显示器上
+    RECT rcMon = { 0, 0, GetSystemMetrics(SM_CXSCREEN), GetSystemMetrics(SM_CYSCREEN) };
+    CWnd* pMain = AfxGetMainWnd();
+    if (pMain) {
+        HMONITOR hMon = MonitorFromWindow(pMain->GetSafeHwnd(), MONITOR_DEFAULTTONEAREST);
+        MONITORINFO mi = { sizeof(mi) };
+        if (GetMonitorInfo(hMon, &mi))
+            rcMon = mi.rcWork;
+    }
+    int monW = rcMon.right - rcMon.left;
+    int monH = rcMon.bottom - rcMon.top;
+    int normalWidth = (int)(monW * 0.382);
+    int normalHeight = (int)(monH * 0.382);
+    int normalX = rcMon.left + (monW - normalWidth) / 2;
+    int normalY = rcMon.top + (monH - normalHeight) / 2;
 
     // 使用 WINDOWPLACEMENT 确保 rcNormalPosition 被正确设置
     WINDOWPLACEMENT wp = { sizeof(WINDOWPLACEMENT) };
@@ -617,6 +592,7 @@ VOID CScreenSpyDlg::OnReceiveComplete()
 VOID CScreenSpyDlg::DrawFirstScreen(void)
 {
     m_bIsFirst = FALSE;
+    m_bQualitySwitch = false;
 
     //得到被控端发来的数据 ，将他拷贝到HBITMAP的缓冲区中，这样一个图像就出现了
 
@@ -893,7 +869,8 @@ void CScreenSpyDlg::OnPaint()
     CPaintDC dc(this); // device context for painting
 
     if (m_bIsFirst) {
-        DrawTipString(_TR("请等待......"));
+        if (!m_bQualitySwitch)
+            DrawTipString(_TR("请等待......"));
         return;
     }
 
@@ -938,6 +915,59 @@ void CScreenSpyDlg::OnPaint()
     }
     if (!m_bConnected && GetTickCount64() - m_nDisconnectTime>2000) {
         DrawTipString(_TR("正在重连......"), 2);
+    }
+    // 截图保存提示 (显示3秒，断线重连时不显示避免重叠)
+    if (m_bConnected && !m_strSaveNotice.empty() && GetTickCount64() - m_nSaveNoticeTime < 3000) {
+        RECT rcClient;
+        GetClientRect(&rcClient);
+        int cw = rcClient.right - rcClient.left;
+        int ch = rcClient.bottom - rcClient.top;
+
+        CString tipText;
+        tipText.FormatL("已保存: %s", m_strSaveNotice.c_str());
+
+        // 计算文字尺寸
+        HFONT hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+        HFONT hOldFont = (HFONT)SelectObject(m_hFullDC, hFont);
+        SIZE textSize;
+        GetTextExtentPoint32(m_hFullDC, tipText, tipText.GetLength(), &textSize);
+
+        int padding = 10;
+        int bannerW = textSize.cx + padding * 2;
+        int bannerH = textSize.cy + padding * 2;
+        int bannerX = (cw - bannerW) / 2;
+        int bannerY = ch - bannerH - 40;
+
+        // 半透明黑色背景
+        HDC hMemDC = CreateCompatibleDC(m_hFullDC);
+        HBITMAP hBmp = CreateCompatibleBitmap(m_hFullDC, bannerW, bannerH);
+        HBITMAP hOldBmp = (HBITMAP)SelectObject(hMemDC, hBmp);
+        HBRUSH hBrush = CreateSolidBrush(RGB(0, 0, 0));
+        RECT rcBanner = { 0, 0, bannerW, bannerH };
+        FillRect(hMemDC, &rcBanner, hBrush);
+        DeleteObject(hBrush);
+
+        BLENDFUNCTION blend = { 0 };
+        blend.BlendOp = AC_SRC_OVER;
+        blend.SourceConstantAlpha = 180;
+        AlphaBlend(m_hFullDC, bannerX, bannerY, bannerW, bannerH,
+                   hMemDC, 0, 0, bannerW, bannerH, blend);
+
+        SelectObject(hMemDC, hOldBmp);
+        DeleteObject(hBmp);
+        DeleteDC(hMemDC);
+
+        // 绘制白色文字
+        int oldBkMode = SetBkMode(m_hFullDC, TRANSPARENT);
+        COLORREF oldTextClr = SetTextColor(m_hFullDC, RGB(255, 255, 255));
+        RECT rcText = { bannerX + padding, bannerY + padding,
+                        bannerX + bannerW - padding, bannerY + bannerH - padding };
+        DrawText(m_hFullDC, tipText, -1, &rcText, DT_SINGLELINE | DT_CENTER | DT_VCENTER);
+        SetBkMode(m_hFullDC, oldBkMode);
+        SetTextColor(m_hFullDC, oldTextClr);
+        SelectObject(m_hFullDC, hOldFont);
+    } else if (!m_strSaveNotice.empty()) {
+        m_strSaveNotice.clear();
     }
 }
 
@@ -1217,6 +1247,10 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         m_bIsTraceCursor = !m_bIsTraceCursor; //这里在改变数据
         SysMenu->CheckMenuItem(IDM_TRACE_CURSOR, m_bIsTraceCursor ? MF_CHECKED : MF_UNCHECKED);//在菜单打钩不打钩
         m_bAdaptiveSize = !m_bIsTraceCursor;
+        if (!m_bAdaptiveSize && m_BitmapInfor_Full) {
+            SetScrollRange(SB_HORZ, 0, m_BitmapInfor_Full->bmiHeader.biWidth);
+            SetScrollRange(SB_VERT, 0, m_BitmapInfor_Full->bmiHeader.biHeight);
+        }
         ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);
         // 重绘消除或显示鼠标
         OnPaint();
@@ -1230,6 +1264,12 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         bToken[0] = COMMAND_SCREEN_BLOCK_INPUT;
         bToken[1] = !bIsChecked;
         m_ContextObject->Send2Client(bToken, sizeof(bToken));
+
+        // 同步工具栏按钮状态
+        if (m_pToolbar) {
+            m_pToolbar->m_bBlockInput = !bIsChecked;
+            m_pToolbar->UpdateButtonIcons();
+        }
         break;
     }
     case IDM_GET_CLIPBOARD: { //想要Client的剪贴板内容
@@ -1243,6 +1283,10 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
     }
     case IDM_ADAPTIVE_SIZE: {
         m_bAdaptiveSize = !m_bAdaptiveSize;
+        if (!m_bAdaptiveSize && m_BitmapInfor_Full) {
+            SetScrollRange(SB_HORZ, 0, m_BitmapInfor_Full->bmiHeader.biWidth);
+            SetScrollRange(SB_VERT, 0, m_BitmapInfor_Full->bmiHeader.biHeight);
+        }
         ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);
         SysMenu->CheckMenuItem(IDM_ADAPTIVE_SIZE, m_bAdaptiveSize ? MF_CHECKED : MF_UNCHECKED);
         break;
@@ -1448,6 +1492,8 @@ void CScreenSpyDlg::ApplyQualityLevel(int level, bool persist)
 
     // 2. 如果分辨率变化，发送 CMD_SCREEN_SIZE
     if (newMaxWidth != oldMaxWidth) {
+        // 自适应调整且分辨率变化时不显示"请等待"，手动切换时显示
+        if (!persist) m_bQualitySwitch = true;
         m_AdaptiveQuality.currentMaxWidth = newMaxWidth;
         m_AdaptiveQuality.lastResChangeTime = GetTickCount64();
 
@@ -1556,15 +1602,17 @@ VOID CScreenSpyDlg::SendCommand(const MYMSG* Msg)
     m_ContextObject->Send2Client(szData, length);
 }
 
-BOOL CScreenSpyDlg::SaveSnapshot(void)
+void CScreenSpyDlg::SaveSnapshot(void)
 {
     auto path = GetScreenShotPath(this, m_IPAddress, _TR("位图文件(*.bmp)|*.bmp|"), "bmp");
     if (path.empty())
-        return FALSE;
+        return;
 
-    WriteBitmap(m_BitmapInfor_Full, m_BitmapData_Full, path.c_str());
+    if (!WriteBitmap(m_BitmapInfor_Full, m_BitmapData_Full, path.c_str()))
+        return;
 
-    return true;
+    m_strSaveNotice = path;
+    m_nSaveNoticeTime = GetTickCount64();
 }
 
 
@@ -1714,12 +1762,8 @@ void CScreenSpyDlg::OnVScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 void CScreenSpyDlg::EnterFullScreen()
 {
     if (1) {
-        // 1. 获取鼠标位置
-        POINT pt;
-        GetCursorPos(&pt);
-
-        // 2. 获取鼠标所在显示器
-        HMONITOR hMonitor = MonitorFromPoint(pt, MONITOR_DEFAULTTONEAREST);
+        // 1. 获取对话框当前所在的显示器
+        HMONITOR hMonitor = MonitorFromWindow(m_hWnd, MONITOR_DEFAULTTONEAREST);
         MONITORINFO mi = { sizeof(mi) };
         if (!GetMonitorInfo(hMonitor, &mi))
             return;
@@ -1734,8 +1778,8 @@ void CScreenSpyDlg::EnterFullScreen()
         lStyle &= ~(WS_CAPTION | WS_THICKFRAME | WS_BORDER);
         SetWindowLong(m_hWnd, GWL_STYLE, lStyle);
 
-        // 5. 隐藏滚动条
-        ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);  // 隐藏水平和垂直滚动条
+        // 5. 全屏无条件隐藏滚动条
+        ShowScrollBar(SB_BOTH, FALSE);
 
         // 6. 重新调整窗口大小并更新
         SetWindowPos(&CWnd::wndTop, rcMonitor.left, rcMonitor.top, rcMonitor.right - rcMonitor.left,
@@ -1744,13 +1788,32 @@ void CScreenSpyDlg::EnterFullScreen()
         if (!m_pToolbar) {
             m_pToolbar = new CToolbarDlg(this);
             m_pToolbar->Create(IDD_TOOLBAR_DLG, this);
-            // OnInitDialog() 会根据 m_bLocked 和 m_bOnTop 设置正确的位置和可见性
-            // 如果未锁定，初始隐藏在屏幕外
+            // OnInitDialog() 会根据 m_bLocked 和 m_nPosition 设置正确的位置和可见性
+            // 如果未锁定，隐藏在屏幕边缘（尺寸为1像素，不跑到相邻屏幕）
             if (!m_pToolbar->m_bLocked) {
-                int cx = GetSystemMetrics(SM_CXSCREEN);
-                int cy = GetSystemMetrics(SM_CYSCREEN);
-                int y = m_pToolbar->m_bOnTop ? -40 : cy;  // 根据位置设置隐藏在上方或下方
-                m_pToolbar->SetWindowPos(&wndTopMost, 0, y, cx, 40, SWP_HIDEWINDOW);
+                int monWidth = rcMonitor.right - rcMonitor.left;
+                int monHeight = rcMonitor.bottom - rcMonitor.top;
+                int hw = 440; // 水平工具栏宽度
+                int vh = 440; // 垂直工具栏高度
+                int hx = rcMonitor.left + (monWidth - hw) / 2;
+                switch (m_pToolbar->m_nPosition) {
+                case 0:
+                    m_pToolbar->SetWindowPos(&wndTopMost, hx, rcMonitor.top, hw, 1, SWP_HIDEWINDOW);
+                    break;
+                case 1:
+                    m_pToolbar->SetWindowPos(&wndTopMost, hx, rcMonitor.bottom - 1, hw, 1, SWP_HIDEWINDOW);
+                    break;
+                case 2: {
+                    int vy = rcMonitor.top + (monHeight - vh) / 2;
+                    m_pToolbar->SetWindowPos(&wndTopMost, rcMonitor.left, vy, 1, vh, SWP_HIDEWINDOW);
+                    break;
+                }
+                case 3: {
+                    int vy = rcMonitor.top + (monHeight - vh) / 2;
+                    m_pToolbar->SetWindowPos(&wndTopMost, rcMonitor.right - 1, vy, 1, vh, SWP_HIDEWINDOW);
+                    break;
+                }
+                }
             }
         }
 
@@ -1781,8 +1844,12 @@ bool CScreenSpyDlg::LeaveFullScreen()
         SetWindowPlacement(&m_struOldWndpl);
         SetWindowPos(&CWnd::wndTop, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED);
 
-        // 3. 显示滚动条
-        ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);  // 显示水平和垂直滚动条
+        // 3. 显示滚动条（全屏期间可能发生了质量切换，需要补设范围）
+        if (!m_bAdaptiveSize && m_BitmapInfor_Full) {
+            SetScrollRange(SB_HORZ, 0, m_BitmapInfor_Full->bmiHeader.biWidth);
+            SetScrollRange(SB_VERT, 0, m_BitmapInfor_Full->bmiHeader.biHeight);
+        }
+        ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);
 
         // 4. 标记退出全屏
         m_Settings.FullScreen = false;

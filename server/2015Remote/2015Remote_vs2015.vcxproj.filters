@@ -67,6 +67,7 @@
     <ClCompile Include="CClientListDlg.cpp" />
     <ClCompile Include="CUpdateDlg.cpp" />
     <ClCompile Include="CListCtrlEx.cpp" />
+    <ClCompile Include="CIconButton.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
@@ -149,6 +150,7 @@
     <ClInclude Include="CUpdateDlg.h" />
     <ClInclude Include="CListCtrlEx.h" />
     <ClInclude Include="LangManager.h" />
+    <ClInclude Include="CIconButton.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />

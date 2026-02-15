@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include "Resource.h"
 #include "LangManager.h"
+#include "CIconButton.h"
 
 class CScreenSpyDlg;
 
@@ -20,20 +21,40 @@ public:
     int m_nHeight = 40;
     bool m_bVisible = false;
     bool m_bLocked = false;     // 是否锁定工具栏
-    bool m_bOnTop = true;       // 是否在屏幕上方 (默认上方)
+    int m_nPosition = 0;        // 工具栏位置 (0=上, 1=下, 2=左, 3=右)
     int m_nOpacityLevel = 0;    // 透明度级别 (0=100%, 1=75%, 2=50%)
+
+    // Icon buttons
+    CIconButton m_btnExit;
+    CIconButton m_btnControl;
+    CIconButton m_btnLock;
+    CIconButton m_btnPosition;
+    CIconButton m_btnOpacity;
+    CIconButton m_btnSwitchScreen;
+    CIconButton m_btnBlockInput;
+    CIconButton m_btnQuality;
+    CIconButton m_btnScreenshot;
+    CIconButton m_btnMinimize;
+    CIconButton m_btnClose;
+
+    bool m_bBlockInput = false;  // 远程输入锁定状态
+
+    CToolTipCtrl m_tooltip;
 
     void SlideIn();
     void SlideOut();
     void CheckMousePosition();
     void UpdatePosition();      // 更新工具栏位置
+    void LayoutButtons();       // 重新排列按钮布局
     void LoadSettings();        // 从注册表加载设置
     void SaveSettings();        // 保存设置到注册表
     void ApplyOpacity();        // 应用透明度
-    CString GetOpacityText();   // 获取透明度按钮文本
+    void UpdateButtonIcons();   // 更新状态相关按钮的图标和提示文本
+    RECT GetParentMonitorRect(); // 获取父窗口所在显示器的矩形区域
 
 protected:
     virtual void DoDataExchange(CDataExchange* pDX);
+    virtual BOOL PreTranslateMessage(MSG* pMsg);
     DECLARE_MESSAGE_MAP()
 
 public:
@@ -44,6 +65,9 @@ public:
     afx_msg void OnBnClickedLock();
     afx_msg void OnBnClickedPosition();
     afx_msg void OnBnClickedOpacity();
+    afx_msg void OnBnClickedSwitchScreen();
+    afx_msg void OnBnClickedBlockInput();
+    afx_msg void OnBnClickedQuality();
     afx_msg void OnBnClickedScreenshot();
     afx_msg BOOL OnEraseBkgnd(CDC* pDC);
     virtual BOOL OnInitDialog();

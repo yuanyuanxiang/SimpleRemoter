@@ -252,6 +252,7 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
     if (deviceID == m_sDeviceID.GetString()) { // 授权的是当前主控程序
         auto settings = "settings", pwdKey = "Password";
         THIS_CFG.SetStr(settings, pwdKey, fixedKey.c_str());
+        THIS_CFG.SetStr("settings", "SN", deviceID);
         THIS_CFG.SetStr(settings, "HMAC", hmac);
         THIS_CFG.SetStr(settings, "PwdHmac", std::to_string(pwdHmac));
     }

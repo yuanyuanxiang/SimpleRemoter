@@ -345,6 +345,7 @@
     <ClInclude Include="zlib.h" />
     <ClInclude Include="ServerServiceWrapper.h" />
     <ClInclude Include="ServerSessionMonitor.h" />
+    <ClInclude Include="CIconButton.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\client\Audio.cpp" />
@@ -447,6 +448,7 @@
     <ClCompile Include="VideoDlg.cpp" />
     <ClCompile Include="ServerServiceWrapper.cpp" />
     <ClCompile Include="ServerSessionMonitor.cpp" />
+    <ClCompile Include="CIconButton.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />

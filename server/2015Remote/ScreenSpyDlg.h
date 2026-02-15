@@ -39,6 +39,46 @@ extern "C"
 #pragma comment(lib, "Bcrypt.lib")
 #pragma comment(lib, "Strmiids.lib")
 
+// ScreenSpyDlg 系统菜单命令 ID
+enum {
+    IDM_CONTROL = 0x1010,
+    IDM_FULLSCREEN,
+    IDM_SEND_CTRL_ALT_DEL,
+    IDM_TRACE_CURSOR,       // 跟踪显示远程鼠标
+    IDM_BLOCK_INPUT,        // 锁定远程计算机输入
+    IDM_SAVEDIB,            // 保存图片
+    IDM_GET_CLIPBOARD,      // 获取剪贴板
+    IDM_SET_CLIPBOARD,      // 设置剪贴板
+    IDM_ADAPTIVE_SIZE,
+    IDM_SAVEAVI,
+    IDM_SAVEAVI_H264,
+    IDM_SWITCHSCREEN,
+    IDM_MULTITHREAD_COMPRESS,
+    IDM_FPS_10,
+    IDM_FPS_15,
+    IDM_FPS_20,
+    IDM_FPS_25,
+    IDM_FPS_30,
+    IDM_FPS_UNLIMITED,
+    IDM_ORIGINAL_SIZE,
+    IDM_SCREEN_1080P,
+    IDM_REMOTE_CURSOR,
+    IDM_SCROLL_DETECT_OFF,      // 滚动检测：关闭（局域网）
+    IDM_SCROLL_DETECT_2,        // 滚动检测：跨网推荐
+    IDM_SCROLL_DETECT_4,        // 滚动检测：标准模式
+    IDM_SCROLL_DETECT_8,        // 滚动检测：省CPU模式
+    IDM_QUALITY_OFF,            // 关闭质量控制（使用原有算法）
+    IDM_ADAPTIVE_QUALITY,       // 自适应质量
+    IDM_QUALITY_ULTRA,          // 手动质量：Ultra
+    IDM_QUALITY_HIGH,           // 手动质量：High
+    IDM_QUALITY_GOOD,           // 手动质量：Good
+    IDM_QUALITY_MEDIUM,         // 手动质量：Medium
+    IDM_QUALITY_LOW,            // 手动质量：Low
+    IDM_QUALITY_MINIMAL,        // 手动质量：Minimal
+    IDM_ENABLE_SSE2,
+    IDM_FAST_STRETCH,           // 快速缩放模式（降低CPU占用）
+};
+
 // CScreenSpyDlg 对话框
 
 class CScreenSpyDlg : public DialogBase
@@ -73,6 +113,7 @@ public:
     VOID DrawNextScreenDiff(bool keyFrame);
     VOID DrawScrollFrame(void);
     BOOL         m_bIsFirst;
+    bool         m_bQualitySwitch = false; // 质量切换中，不显示"请等待"
     ULONG m_ulHScrollPos;
     ULONG m_ulVScrollPos;
     // fillMode: 0=不填充, 1=全黑, 2=半透明
@@ -93,9 +134,11 @@ public:
     ULONG m_ulMsgCount;
     int m_FrameID;
     bool m_bHide = false;
+    std::string m_strSaveNotice;     // 截图保存路径提示
+    ULONGLONG m_nSaveNoticeTime = 0; // 截图提示开始时间
     BOOL m_bUsingFRP = FALSE;
 
-    BOOL SaveSnapshot(void);
+    void SaveSnapshot(void);
     // 对话框数据
     enum { IDD = IDD_DIALOG_SCREEN_SPY };
 

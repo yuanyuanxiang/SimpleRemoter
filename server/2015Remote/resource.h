@@ -446,6 +446,9 @@
 #define IDC_BTN_POSITION                2219
 #define IDC_BTN_OPACITY                 2220
 #define IDC_BTN_SCREENSHOT              2221
+#define IDC_BTN_SWITCH_SCREEN           2240
+#define IDC_BTN_BLOCK_INPUT             2241
+#define IDC_BTN_QUALITY                 2242
 #define IDC_CHECK1                      2222
 #define IDC_CHECK_FILESERVER            2222
 #define IDC_STATIC_DOWNLOAD             2223
@@ -670,7 +673,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        329
 #define _APS_NEXT_COMMAND_VALUE         33017
-#define _APS_NEXT_CONTROL_VALUE         2240
+#define _APS_NEXT_CONTROL_VALUE         2243
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif
