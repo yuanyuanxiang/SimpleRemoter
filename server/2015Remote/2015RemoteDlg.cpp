@@ -2468,9 +2468,17 @@ BOOL CALLBACK CMy2015RemoteDlg::OfflineProc(CONTEXT_OBJECT* ContextObject)
 
     SOCKET nSocket = ContextObject->sClientSocket;
 
-    g_2015RemoteDlg->PostMessage(WM_USEROFFLINEMSG, (WPARAM)ContextObject->hDlg, (LPARAM)nSocket);
+	CDialogBase* p = (CDialogBase*)ContextObject->hDlg;
+	if (ContextObject->hWnd && ::IsWindow(ContextObject->hWnd) && p && p->ShouldReconnect()) {
+		::PostMessageA(ContextObject->hWnd, WM_DISCONNECT, 0, 0);
+		ContextObject->hDlg = NULL;
+		ContextObject->hWnd = NULL;
+	}
+
+    g_2015RemoteDlg->PostMessage(WM_USEROFFLINEMSG, (WPARAM)ContextObject->hWnd, (LPARAM)nSocket);
 
     ContextObject->hDlg = NULL;
+    ContextObject->hWnd = NULL;
 
     return TRUE;
 }
@@ -2529,6 +2537,7 @@ void delay_cancel(CONTEXT_OBJECT* ctx, int sec)
     if (dlg && ::IsWindow(dlg->GetSafeHwnd()))
         dlg->PostMessageA(WM_CLOSE);
     ctx->hDlg = NULL;
+    ctx->hWnd = NULL;
     ctx->CancelIO();
 }
 
@@ -2658,6 +2667,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
             dlg->Create(IDD_DIALOG_FILESEND, GetDesktopWindow());
             dlg->ShowWindow(SW_HIDE);
             ContextObject->hDlg = dlg;
+            ContextObject->hWnd = dlg->GetSafeHwnd();
             std::string hash = GetPwdHash(), hmac = GetHMAC(100);
             std::thread(FileBatchTransferWorker, files, dir, ContextObject, SendData, FinishSend,
                         hash, hmac).detach();
@@ -2673,6 +2683,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
             dlg->Create(IDD_DIALOG_FILESEND, GetDesktopWindow());
             dlg->ShowWindow(SW_HIDE);
             ContextObject->hDlg = dlg;
+            ContextObject->hWnd = dlg->GetSafeHwnd();
         }
         DialogBase* dlg = (DialogBase*)ContextObject->hDlg;
         dlg->OnReceiveComplete();
@@ -2943,11 +2954,6 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
         CLock L(m_cs);
         m_HostList.erase(host);
     }
-    DialogBase* p = (DialogBase*)wParam;
-    if (p && ::IsWindow(p->GetSafeHwnd()) && p->ShouldReconnect()) {
-        ::PostMessageA(p->GetSafeHwnd(), WM_DISCONNECT, 0, 0);
-        return S_OK;
-    }
 
     CString port;
     port.FormatL("%d", lParam);
@@ -2973,8 +2979,9 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
     }
     LeaveCriticalSection(&m_cs);
 
-    if (p && ::IsWindow(p->GetSafeHwnd())) {
-        ::PostMessageA(p->GetSafeHwnd(), WM_CLOSE, 0, 0);
+    HWND p = (HWND)wParam;
+    if (p && ::IsWindow(p)) {
+        ::PostMessageA(p, WM_CLOSE, 0, 0);
     }
 
     return S_OK;

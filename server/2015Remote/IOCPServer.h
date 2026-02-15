@@ -144,6 +144,7 @@ public:
         m_ContextObject = pContext;
         m_iocpServer = pContext->GetServer();
         m_ContextObject->hDlg = this;
+        m_ContextObject->hWnd = GetSafeHwnd();
         return 0;
     }
     virtual ~CDialogBase() {}

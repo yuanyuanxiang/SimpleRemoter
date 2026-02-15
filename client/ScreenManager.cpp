@@ -125,9 +125,9 @@ bool CScreenManager::RestartScreen()
 
     // 1. 停止工作线程
     m_bIsWorking = FALSE;
-    DWORD s = WaitForSingleObject(m_hWorkThread, 3000);
+    DWORD s = WaitForSingleObject(m_hWorkThread, 1000);
     if (s == WAIT_TIMEOUT) {
-        TerminateThread(m_hWorkThread, -1);
+        TerminateThread(m_hWorkThread, 0x20260215);
     }
 
     // 2. 删除旧的截屏对象
@@ -351,6 +351,9 @@ BOOL IsRunningAsSystem()
 
 BOOL CScreenManager::OnReconnect()
 {
+    if (!m_bIsWorking) {
+        return FALSE;
+    }
     auto duration = GetTickCount64() - m_nReconnectTime;
     if (duration <= 3000)
         Sleep(3000 - duration);
@@ -388,8 +391,8 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
     clock_t last_check = clock();
     timeBeginPeriod(1);
     while (This->m_bIsWorking) {
-        WAIT_n(This->m_bIsWorking && !This->IsConnected(), 6, 200);
-        if (!This->IsConnected()) This->OnReconnect();
+        WAIT_n(This->m_bIsWorking && !This->IsConnected(), 6, 50);
+        if (!This->IsConnected() && This->m_bIsWorking) This->OnReconnect();
         if (!This->IsConnected()) continue;
         if (!This->m_SendFirst && This->IsConnected()) {
             This->m_SendFirst = TRUE;

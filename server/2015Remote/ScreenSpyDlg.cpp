@@ -492,6 +492,7 @@ BOOL CScreenSpyDlg::OnInitDialog()
 
 VOID CScreenSpyDlg::OnClose()
 {
+    m_bIsClosed = true;
     m_bIsCtrl = FALSE;
     CWnd* pMain = AfxGetMainWnd();
     if (pMain)
@@ -505,8 +506,8 @@ VOID CScreenSpyDlg::OnClose()
         m_aviFile = "";
         m_aviStream.Close();
     }
-    if (ShouldReconnect() && SayByeBye()) Sleep(500);
-    CancelIO();
+    bool needCancel = (ShouldReconnect() && SayByeBye());
+
     // 恢复鼠标状态
     SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)LoadCursor(NULL, IDC_ARROW));
     // 通知父窗口
@@ -521,9 +522,11 @@ VOID CScreenSpyDlg::OnClose()
     if (IsProcessing()) {
         m_bHide = true;
         ShowWindow(SW_HIDE);
+        if (needCancel) { BeginWaitCursor(); Sleep(1500); CancelIO(); EndWaitCursor(); }
         return;
     }
 
+    if (needCancel) { BeginWaitCursor(); Sleep(1500); CancelIO(); EndWaitCursor(); }
     DialogBase::OnClose();
 }
 

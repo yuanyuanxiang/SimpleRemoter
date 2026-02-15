@@ -124,6 +124,7 @@ public:
         }
 
         ContextObject->hDlg = Dlg;
+        ContextObject->hWnd = Dlg->GetSafeHwnd();
         if (id == IDD_DIALOG_SCREEN_SPY) {
             EnterCriticalSection(&m_cs);
             m_RemoteWnds[Dlg->GetSafeHwnd()] = (CDialogBase*)Dlg;

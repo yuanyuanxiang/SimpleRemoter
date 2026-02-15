@@ -276,7 +276,7 @@ BOOL CBuffer::CopyBuffer(PVOID pDst, ULONG nLen, ULONG ulPos)
 {
     EnterCriticalSection(&m_cs);
     ULONG effectiveDataLen = (m_Ptr - m_Base) - m_ulReadOffset;
-    if (m_Base == NULL || effectiveDataLen - ulPos < nLen) {
+    if (m_Base == NULL || effectiveDataLen - ulPos < nLen || pDst == NULL) {
         LeaveCriticalSection(&m_cs);
         return FALSE;
     }
