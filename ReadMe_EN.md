@@ -206,6 +206,25 @@ For cross-network, cross-border, or international remote control system deployme
 
 For earlier changes, see: [history](./history.md)
 
+**Release v1.2.6 (2026.2.16):**
+
+This release focuses on optimizing remote desktop toolbar experience, enhancing license management features, and fixing several stability issues.
+
+- Feature: Add status window to show remote connection info (RTT, FPS, resolution, etc.)
+- Feature: Implement license save and management logic & UI
+- Feature: Add menu to enable/disable StretchBltMode `HALFTONE` image scaling mode
+- Improve: Reduce network bandwidth while using H.264
+- Improve: Fullscreen toolbar rewrite with icon buttons instead of text buttons
+- Improve: Toolbar supports 4 positions (top/bottom/left/right) with multi-monitor awareness
+- Improve: Add switch screen, block input, quality toolbar buttons
+- Improve: Show on-screen notification banner when screenshot is saved
+- Improve: Reconnection happens when closing remote desktop
+- Improve: Adjust quality level definitions and add disable option
+- Fix: Registry tree duplicates child items on re-selection
+- Fix: Race condition causes Linux client crash
+- Fix: Incorrect remote control coordinates when screen is scaled
+- Fix: GDI brush leak in CShellDlg::OnCtlColor
+
 **Release v1.2.5 (2026.2.11):**
 
 This release focuses on optimizing cross-network remote desktop experience, adding Linux client support, and enhancing file management features.

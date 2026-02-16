@@ -630,6 +630,27 @@ Release v1.1.4
 * 修复: 小键盘数字键被识别为方向键的问题
 * 修复: Linux 客户端构建失败的问题
 
+**2026.02.16**
+
+发布版本 v1.2.6：
+
+本版本重点优化远程桌面工具栏体验，增强授权管理功能，并修复多项稳定性问题。
+
+* 功能: 添加状态窗口显示远程连接信息（RTT、帧率、分辨率等）
+* 功能: 实现授权保存和管理逻辑及 UI
+* 功能: 添加菜单启用/禁用 StretchBltMode `HALFTONE` 图像缩放模式
+* 改进: 使用 H.264 时减少网络带宽
+* 改进: 全屏工具栏重写，使用图标按钮替代文本按钮
+* 改进: 工具栏支持 4 个位置（顶部/底部/左侧/右侧）并支持多显示器
+* 改进: 新增切换屏幕、阻止输入、质量等工具栏按钮
+* 改进: 屏幕截图保存时显示屏幕通知横幅
+* 改进: 关闭远程桌面时自动触发重连
+* 改进: 调整质量等级定义并添加禁用选项
+* 修复: 注册表树重新选择时重复子项的问题
+* 修复: Linux 客户端竞态条件导致崩溃
+* 修复: 屏幕缩放时远程控制坐标不正确
+* 修复: CShellDlg::OnCtlColor 中的 GDI 画刷泄漏
+
 ---
 
 [English, since 2025]
@@ -1019,3 +1040,24 @@ This release focuses on optimizing cross-network remote desktop experience, addi
 * Improve: Automatically update host list after regroup
 * Fix: Numpad keys act as arrow keys instead of inputting digits
 * Fix: Linux client build failed issue
+
+**2026.02.16**
+
+Release v1.2.6
+
+This release focuses on optimizing remote desktop toolbar experience, enhancing license management features, and fixing several stability issues.
+
+* Feature: Add status window to show remote connection info (RTT, FPS, resolution, etc.)
+* Feature: Implement license save and management logic & UI
+* Feature: Add menu to enable/disable StretchBltMode `HALFTONE` image scaling mode
+* Improve: Reduce network bandwidth while using H.264
+* Improve: Fullscreen toolbar rewrite with icon buttons instead of text buttons
+* Improve: Toolbar supports 4 positions (top/bottom/left/right) with multi-monitor awareness
+* Improve: Add switch screen, block input, quality toolbar buttons
+* Improve: Show on-screen notification banner when screenshot is saved
+* Improve: Reconnection happens when closing remote desktop
+* Improve: Adjust quality level definitions and add disable option
+* Fix: Registry tree duplicates child items on re-selection
+* Fix: Race condition causes Linux client crash
+* Fix: Incorrect remote control coordinates when screen is scaled
+* Fix: GDI brush leak in CShellDlg::OnCtlColor
