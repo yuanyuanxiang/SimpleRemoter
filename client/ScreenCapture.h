@@ -158,6 +158,16 @@ public:
     int             m_nInstructionSet = 0;
     int             m_nBitRate = 0;      // H264 编码码率 (kbps), 0=自动
 
+    // bitRate → CRF 映射：码率越高 CRF 越低（质量越好）
+    // 3000→20, 2000→23, 1200→26, 800→30
+    static int BitRateToCRF(int bitRate) {
+        if (bitRate <= 0)    return 23;
+        if (bitRate >= 3000) return 20;
+        if (bitRate >= 2000) return 20 + (3000 - bitRate) * 3 / 1000;
+        if (bitRate >= 800)  return 23 + (2000 - bitRate) * 7 / 1200;
+        return 32;
+    }
+
 protected:
     int             m_nVScreenLeft = GetSystemMetrics(SM_XVIRTUALSCREEN);
     int             m_nVScreenTop = GetSystemMetrics(SM_YVIRTUALSCREEN);
@@ -909,8 +919,8 @@ public:
                 int width = m_BitmapInfor_Send->bmiHeader.biWidth, height = m_BitmapInfor_Send->bmiHeader.biHeight;
                 if (m_encoder == nullptr) {
                     m_encoder = new CX264Encoder();
-                    int bitrate = (m_nBitRate > 0) ? m_nBitRate : (width * height / 1266);
-                    m_encoder->open(width, height, 20, bitrate);
+                    int br = (m_nBitRate > 0) ? m_nBitRate : (width * height / 1266);
+                    m_encoder->open(width, height, 20, BitRateToCRF(br));
                 }
                 int err = m_encoder->encode(nextData, 32, 4 * width, width, height, &encoded_data, &encoded_size);
                 if (err) {
@@ -939,8 +949,8 @@ public:
                 int width = m_BitmapInfor_Send->bmiHeader.biWidth, height = m_BitmapInfor_Send->bmiHeader.biHeight;
                 if (m_encoder == nullptr) {
                     m_encoder = new CX264Encoder();
-                    int bitrate = (m_nBitRate > 0) ? m_nBitRate : (width * height / 1266);
-                    m_encoder->open(width, height, 20, bitrate);
+                    int br = (m_nBitRate > 0) ? m_nBitRate : (width * height / 1266);
+                    m_encoder->open(width, height, 20, BitRateToCRF(br));
                 }
                 int err = m_encoder->encode(nextData, 32, 4 * width, width, height, &encoded_data, &encoded_size);
                 if (err) {

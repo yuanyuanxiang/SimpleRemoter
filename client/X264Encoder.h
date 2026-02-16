@@ -13,7 +13,7 @@ private:
     x264_picture_t *m_pPicOut;
     x264_param_t    m_Param;
 public:
-    bool open(int width, int height, int fps,int bitrate);
+    bool open(int width, int height, int fps, int crf);
     bool open(x264_param_t * param);
 
     void close();

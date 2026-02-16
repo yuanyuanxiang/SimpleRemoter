@@ -24,7 +24,7 @@ CX264Encoder::~CX264Encoder()
     close();
 }
 
-bool CX264Encoder::open(int width, int height, int fps, int bitrate)
+bool CX264Encoder::open(int width, int height, int fps, int crf)
 {
     x264_param_t param = { 0 };
     x264_param_default_preset(&param, "ultrafast", "zerolatency");
@@ -36,16 +36,16 @@ bool CX264Encoder::open(int width, int height, int fps, int bitrate)
     param.i_log_level = X264_LOG_NONE;
     param.i_threads = 1;
     param.i_frame_total = 0;
-    param.i_keyint_max = 10;
+    param.i_keyint_max = fps * 15;          // 15秒一个IDR，场景突变由scenecut自动插入
     param.i_bframe = 0;					//不启用b帧
     param.b_open_gop = 0;
     param.i_fps_num = fps;
     param.i_csp = X264_CSP_I420;
 
-    if (bitrate) {
-        param.rc.i_rc_method = X264_RC_ABR;
-        param.rc.i_bitrate = bitrate;
-    }
+    // CRF: 静态画面自动降至极低码率，动态画面按质量需要分配
+    // 不设 VBV —— 避免 IDR/复杂帧后的质量振荡
+    param.rc.i_rc_method = X264_RC_CRF;
+    param.rc.f_rf_constant = (float)crf;
 
     //设置profile.
     if (x264_param_apply_profile(&param, x264_profile_names[0])) {
