@@ -214,7 +214,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>zlib\zlib_x64.lib</AdditionalDependencies>
+      <AdditionalDependencies>zlib\zlib_x64.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions> /SAFESEH:NO /ignore:4099 %(AdditionalOptions)</AdditionalOptions>
       <OutputFile>$(SolutionDir)Bin\$(TargetName)_x64$(TargetExt)</OutputFile>
       <AdditionalLibraryDirectories>$(SolutionDir)..\SimplePlugins\bin</AdditionalLibraryDirectories>
@@ -329,6 +329,7 @@
     <ClInclude Include="ServicesDlg.h" />
     <ClInclude Include="SettingDlg.h" />
     <ClInclude Include="ShellDlg.h" />
+    <ClInclude Include="TerminalDlg.h" />
     <ClInclude Include="SortListCtrl.h" />
     <ClInclude Include="SplashDlg.h" />
     <ClInclude Include="stdafx.h" />
@@ -347,6 +348,7 @@
     <ClInclude Include="ServerServiceWrapper.h" />
     <ClInclude Include="ServerSessionMonitor.h" />
     <ClInclude Include="CIconButton.h" />
+    <ClInclude Include="TerminalModuleLoader.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\client\Audio.cpp" />
@@ -431,6 +433,7 @@
     <ClCompile Include="ServicesDlg.cpp" />
     <ClCompile Include="SettingDlg.cpp" />
     <ClCompile Include="ShellDlg.cpp" />
+    <ClCompile Include="TerminalDlg.cpp" />
     <ClCompile Include="SortListCtrl.cpp" />
     <ClCompile Include="SplashDlg.cpp" />
     <ClCompile Include="stdafx.cpp">

@@ -215,6 +215,7 @@ enum {
     CMD_QUALITY_LEVEL = 78,         // 质量等级 (-1=自适应, 0-4=具体等级)
     CMD_INSTRUCTION_SET = 79,
     CMD_QUALITY_PROFILES = 80,      // 下发质量配置表 (1 + QUALITY_COUNT * sizeof(QualityProfile))
+    CMD_TERMINAL_RESIZE = 81,       // 终端尺寸调整: [cmd:1][cols:2][rows:2]
 
     TOKEN_SCROLL_FRAME = 99,        // 滚动优化帧
     // 服务端发出的标识
@@ -286,6 +287,8 @@ enum {
     CMD_SERVER_ADDR = 229,          // 主控地址
     TOKEN_ERROR = 230,              // 错误提示
     TOKEN_SHELL_DATA = 231,         // 终端结果
+    TOKEN_TERMINAL_START = 232,     // Linux PTY 终端开始 (WebView2 + xterm.js)
+    TOKEN_TERMINAL_CLOSE = 233,     // Linux PTY 终端关闭 (shell 退出)
     CMD_EXECUTE_DLL = 240,			// 执行代码
     TOKEN_CLIENT_MSG = 241,         // 客户端消息
     CMD_SET_GROUP = 242,            // 修改分组

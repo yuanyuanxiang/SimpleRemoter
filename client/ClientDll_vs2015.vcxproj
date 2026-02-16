@@ -182,6 +182,7 @@
     <ClCompile Include="clang_rt_compat.c" />
     <ClCompile Include="ClientDll.cpp" />
     <ClCompile Include="Common.cpp" />
+    <ClCompile Include="ConPTYManager.cpp" />
     <ClCompile Include="FileManager.cpp" />
     <ClCompile Include="IOCPClient.cpp" />
     <ClCompile Include="IOCPKCPClient.cpp" />
@@ -220,6 +221,7 @@
     <ClInclude Include="CaptureVideo.h" />
     <ClInclude Include="clip.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="ConPTYManager.h" />
     <ClInclude Include="CursorInfo.h" />
     <ClInclude Include="FileManager.h" />
     <ClInclude Include="IOCPClient.h" />

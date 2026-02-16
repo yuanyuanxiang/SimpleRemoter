@@ -6,6 +6,7 @@
 #include "TalkManager.h"
 #include "ShellManager.h"
 #include "SystemManager.h"
+#include "ConPTYManager.h"
 #include "AudioManager.h"
 #include "RegisterManager.h"
 #include "ServicesManager.h"
@@ -93,6 +94,10 @@ DWORD WINAPI LoopTalkManager(LPVOID lParam)
 
 DWORD WINAPI LoopShellManager(LPVOID lParam)
 {
+    // Use ConPTY for xterm.js terminal on Windows 10 1809+, fallback to legacy pipe
+    if (CConPTYManager::IsConPTYSupported()) {
+        return LoopManager<CConPTYManager, 0>(lParam);
+    }
     return LoopManager<CShellManager, 0>(lParam);
 }
 

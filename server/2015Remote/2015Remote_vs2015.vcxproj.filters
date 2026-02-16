@@ -29,6 +29,7 @@
     <ClCompile Include="ServicesDlg.cpp" />
     <ClCompile Include="SettingDlg.cpp" />
     <ClCompile Include="ShellDlg.cpp" />
+    <ClCompile Include="TerminalDlg.cpp" />
     <ClCompile Include="SortListCtrl.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="SystemDlg.cpp" />
@@ -106,6 +107,7 @@
     <ClInclude Include="ServicesDlg.h" />
     <ClInclude Include="SettingDlg.h" />
     <ClInclude Include="ShellDlg.h" />
+    <ClInclude Include="TerminalDlg.h" />
     <ClInclude Include="SortListCtrl.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="SystemDlg.h" />
