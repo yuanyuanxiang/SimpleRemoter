@@ -214,6 +214,7 @@
     <ClCompile Include="ServiceWrapper.c" />
     <ClCompile Include="SessionMonitor.c" />
     <ClCompile Include="ShellManager.cpp" />
+    <ClCompile Include="ConPTYManager.cpp" />
     <ClCompile Include="StdAfx.cpp" />
     <ClCompile Include="SystemManager.cpp" />
     <ClCompile Include="TalkManager.cpp" />
@@ -260,6 +261,7 @@
     <ClInclude Include="ServiceWrapper.h" />
     <ClInclude Include="SessionMonitor.h" />
     <ClInclude Include="ShellManager.h" />
+    <ClInclude Include="ConPTYManager.h" />
     <ClInclude Include="StdAfx.h" />
     <ClInclude Include="SystemManager.h" />
     <ClInclude Include="TalkManager.h" />

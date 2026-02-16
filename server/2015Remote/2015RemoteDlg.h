@@ -242,6 +242,7 @@ public:
     afx_msg LRESULT OnOpenFileManagerDialog(WPARAM wParam,LPARAM lParam);
     afx_msg LRESULT OnOpenTalkDialog(WPARAM wPrarm,LPARAM lParam);
     afx_msg LRESULT OnOpenShellDialog(WPARAM wParam,LPARAM lParam);
+    afx_msg LRESULT OnOpenTerminalDialog(WPARAM wParam, LPARAM lParam);
     afx_msg LRESULT OnOpenSystemDialog(WPARAM wParam,LPARAM lParam);
     afx_msg LRESULT OnOpenAudioDialog(WPARAM wParam,LPARAM lParam);
     afx_msg LRESULT OnOpenRegisterDialog(WPARAM wParam, LPARAM lParam);

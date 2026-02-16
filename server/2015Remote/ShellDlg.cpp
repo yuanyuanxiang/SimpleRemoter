@@ -108,7 +108,18 @@ VOID CShellDlg::OnReceiveComplete()
 #include <regex>
 std::string removeAnsiCodes(const std::string& input)
 {
-    std::regex ansi_regex("\x1B\\[[0-9;]*[mK]");
+    // Match all common ANSI escape sequences:
+    // CSI sequences: \x1B[...X where X is a letter
+    // OSC sequences: \x1B]...(\x07|\x1B\\)
+    // Simple escapes: \x1B[=>] or single char after \x1B
+    std::regex ansi_regex(
+        "\x1B\\[[0-9;?]*[A-Za-z]"      // CSI: \x1B[...m, \x1B[...H, \x1B[...J, etc.
+        "|\x1B\\][^\x07]*\x07"          // OSC: \x1B]...\x07
+        "|\x1B\\][^\x1B]*\x1B\\\\"      // OSC: \x1B]...\x1B\\
+        "|\x1B[=>]"                     // \x1B= or \x1B>
+        "|\x1B[78]"                     // Save/restore cursor
+        "|\x1B\\([AB0-2]"               // Character set selection
+    );
     return std::regex_replace(input, ansi_regex, "");
 }
 

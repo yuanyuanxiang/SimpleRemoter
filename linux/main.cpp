@@ -13,6 +13,7 @@
 #include <cerrno>
 #include <csignal>
 #include <sys/wait.h>
+#include <sys/ioctl.h>
 #include <pty.h>
 #include <iostream>
 #include <stdexcept>
@@ -458,6 +459,13 @@ public:
             Start();
             return;
         }
+        // 处理终端尺寸调整命令
+        if (size >= 5 && data[0] == CMD_TERMINAL_RESIZE) {
+            int cols = *(short*)(data + 1);
+            int rows = *(short*)(data + 3);
+            SetWindowSize(cols, rows);
+            return;
+        }
         std::string s((char*)data, size);
         Mprintf("%s", s.c_str());
         if (size > 0) {
@@ -471,6 +479,26 @@ public:
                 }
                 total += written;
             }
+        }
+    }
+
+    // 设置终端窗口尺寸
+    void SetWindowSize(int cols, int rows)
+    {
+        struct winsize ws;
+        ws.ws_col = cols;
+        ws.ws_row = rows;
+        ws.ws_xpixel = 0;
+        ws.ws_ypixel = 0;
+
+        if (ioctl(m_master_fd, TIOCSWINSZ, &ws) == -1) {
+            Mprintf("SetWindowSize: ioctl failed %d\n", errno);
+        } else {
+            // 发送 SIGWINCH 给子进程，通知其窗口大小已改变
+            if (m_child_pid > 0) {
+                kill(m_child_pid, SIGWINCH);
+            }
+            Mprintf("SetWindowSize: %dx%d\n", cols, rows);
         }
     }
 private:
@@ -496,15 +524,15 @@ private:
             close(m_master_fd);
             close(m_slave_fd);
 
-            // 关闭回显、禁用 ANSI 颜色、关闭 PS1
-            const char* shell_cmd =
-                "stty -echo -icanon; "  // 禁用回显和规范模式
-                "export TERM=dumb; "    // 设置终端类型为 dumb
-                "export LS_COLORS=''; " // 禁用颜色
-                "export PS1='>'; "      // 设置提示符
-                //"clear; "             // 清空终端
-                "exec /bin/bash --norc --noprofile -i";  // 启动 Bash
-            execl("/bin/bash", "/bin/bash", "-c", shell_cmd, nullptr);
+            // 设置完整终端支持（xterm.js 终端仿真）
+            setenv("TERM", "xterm-256color", 1);
+            setenv("COLORTERM", "truecolor", 1);
+            // 使用 C.UTF-8 是最通用的 UTF-8 locale，几乎所有 Linux 都支持
+            setenv("LANG", "C.UTF-8", 1);
+            setenv("LC_ALL", "C.UTF-8", 1);
+
+            // 启动交互式 Bash
+            execl("/bin/bash", "bash", "-i", nullptr);
             exit(1);
         }
     }
@@ -513,6 +541,20 @@ private:
     {
         char buffer[4096];
         while (m_running) {
+            // 检查子进程是否已退出
+            int status;
+            pid_t result = waitpid(m_child_pid, &status, WNOHANG);
+            if (result == m_child_pid) {
+                // Shell 已退出，发送关闭通知
+                Mprintf("readFromPTY: shell exited (status=%d)\n", WEXITSTATUS(status));
+                if (m_client) {
+                    BYTE closeToken = TOKEN_TERMINAL_CLOSE;
+                    m_client->Send2Server((char*)&closeToken, 1);
+                }
+                m_running = false;
+                break;
+            }
+
             ssize_t bytes_read = read(m_master_fd, buffer, sizeof(buffer) - 1);
             if (bytes_read > 0) {
                 if (m_client) {
@@ -520,9 +562,27 @@ private:
                     Mprintf("%s", buffer);
                     m_client->Send2Server(buffer, bytes_read);
                 }
+            } else if (bytes_read == 0) {
+                // EOF - PTY 已关闭
+                Mprintf("readFromPTY: EOF (shell closed)\n");
+                if (m_client) {
+                    BYTE closeToken = TOKEN_TERMINAL_CLOSE;
+                    m_client->Send2Server((char*)&closeToken, 1);
+                }
+                m_running = false;
+                break;
             } else if (bytes_read == -1) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) {
                     usleep(10000);
+                } else if (errno == EIO) {
+                    // EIO 通常表示 PTY slave 已关闭（shell 退出）
+                    Mprintf("readFromPTY: EIO (shell closed)\n");
+                    if (m_client) {
+                        BYTE closeToken = TOKEN_TERMINAL_CLOSE;
+                        m_client->Send2Server((char*)&closeToken, 1);
+                    }
+                    m_running = false;
+                    break;
                 } else {
                     Mprintf("readFromPTY: read error %d\n", errno);
                     break;
@@ -541,9 +601,9 @@ void* ShellworkingThread(void* param)
         if (!g_bExit && ClientObject->ConnectServer(g_SETTINGS.ServerIP(), g_SETTINGS.ServerPort())) {
             std::unique_ptr<PTYHandler> handler(new PTYHandler(ClientObject.get()));
             ClientObject->setManagerCallBack(handler.get(), IOCPManager::DataProcess, IOCPManager::ReconnectProcess);
-            BYTE bToken = TOKEN_SHELL_START;
+            BYTE bToken = TOKEN_TERMINAL_START;
             ClientObject->Send2Server((char*)&bToken, 1);
-            Mprintf(">>> ShellworkingThread [%p] Send: TOKEN_SHELL_START\n", clientAddr);
+            Mprintf(">>> ShellworkingThread [%p] Send: TOKEN_TERMINAL_START\n", clientAddr);
             while (ClientObject->IsRunning() && ClientObject->IsConnected() && S_CLIENT_NORMAL == g_bExit)
                 Sleep(1000);
         }
