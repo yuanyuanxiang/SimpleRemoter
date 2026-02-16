@@ -79,6 +79,47 @@ enum {
     IDM_FAST_STRETCH,           // 快速缩放模式（降低CPU占用）
 };
 
+// 状态信息窗口 - 全屏时显示帧率/速度/质量
+class CStatusInfoWnd : public CWnd
+{
+public:
+    CStatusInfoWnd() : m_nOpacityLevel(0), m_bVisible(false), m_bDragging(false) {}
+
+    BOOL Create(CWnd* pParent);
+    void UpdateInfo(double fps, double kbps, const CString& quality);
+    void Show();
+    void Hide();
+    void SetOpacityLevel(int level);
+    void UpdatePosition(const RECT& rcMonitor);
+    void LoadSettings();
+    void SaveSettings();
+
+    bool IsVisible() const { return m_bVisible; }
+    bool IsParentInControlMode();  // 检查父窗口是否处于控制模式
+
+protected:
+    afx_msg void OnPaint();
+    afx_msg BOOL OnEraseBkgnd(CDC* pDC);
+    afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+    afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
+    afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+    DECLARE_MESSAGE_MAP()
+
+private:
+    CString m_strInfo;
+    int m_nOpacityLevel;
+    bool m_bVisible;
+
+    // 拖动支持
+    bool m_bDragging;
+    CPoint m_ptDragStart;
+
+    // 位置保存
+    double m_dOffsetXRatio = 0.5;
+    int m_nOffsetY = 50;
+    bool m_bHasCustomPosition = false;
+};
+
 // CScreenSpyDlg 对话框
 
 class CScreenSpyDlg : public DialogBase
@@ -86,6 +127,9 @@ class CScreenSpyDlg : public DialogBase
     DECLARE_DYNAMIC(CScreenSpyDlg)
     CToolbarDlg* m_pToolbar = nullptr;
     CMy2015RemoteDlg* m_pParent = nullptr;
+
+public:
+    CStatusInfoWnd* m_pStatusInfoWnd = nullptr;
     // MaxFPS=20, ScrollDetectInterval=2, Reserved={}, Capabilities=0
     ScreenSettings m_Settings = { 20, 0, 0, 0, 0, 0, 0, 2, -1, {}, 0 };
 
@@ -209,6 +253,14 @@ public:
         BYTE cmd[4] = { CMD_FULL_SCREEN, m_Settings.FullScreen = FALSE };
         m_ContextObject->Send2Client(cmd, sizeof(cmd));
         LeaveFullScreen();
+    }
+    afx_msg void OnShowStatusInfo()
+    {
+        if (m_pStatusInfoWnd) m_pStatusInfoWnd->Show();
+    }
+    afx_msg void OnHideStatusInfo()
+    {
+        if (m_pStatusInfoWnd) m_pStatusInfoWnd->Hide();
     }
 
 protected:

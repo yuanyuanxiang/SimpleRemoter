@@ -438,3 +438,51 @@ void CIconButton::DrawIconClose(CDC* pDC, const CRect& rc)
     pDC->LineTo(rc.left + m, rc.bottom - m);
     pDC->SelectObject(pOld);
 }
+
+// Info: circle with "i" letter (status info visible)
+void CIconButton::DrawIconInfo(CDC* pDC, const CRect& rc)
+{
+    CPen pen;
+    CPen* pOld = SelectWhitePen(pDC, pen, 2);
+
+    int cx = rc.CenterPoint().x;
+    int cy = rc.CenterPoint().y;
+    int r = min(rc.Width(), rc.Height()) / 2 - 2;
+
+    // Circle
+    pDC->SelectStockObject(NULL_BRUSH);
+    pDC->Ellipse(cx - r, cy - r, cx + r, cy + r);
+
+    // "i" letter - dot and line
+    pDC->FillSolidRect(cx - 1, cy - r + 3, 2, 2, CLR_ICON);  // dot
+    pDC->MoveTo(cx, cy - 2);
+    pDC->LineTo(cx, cy + r - 3);  // vertical line
+
+    pDC->SelectObject(pOld);
+}
+
+// Info Hide: circle with "i" and diagonal line (status info hidden)
+void CIconButton::DrawIconInfoHide(CDC* pDC, const CRect& rc)
+{
+    CPen pen;
+    CPen* pOld = SelectWhitePen(pDC, pen, 2);
+
+    int cx = rc.CenterPoint().x;
+    int cy = rc.CenterPoint().y;
+    int r = min(rc.Width(), rc.Height()) / 2 - 2;
+
+    // Circle
+    pDC->SelectStockObject(NULL_BRUSH);
+    pDC->Ellipse(cx - r, cy - r, cx + r, cy + r);
+
+    // "i" letter - dot and line
+    pDC->FillSolidRect(cx - 1, cy - r + 3, 2, 2, CLR_ICON);  // dot
+    pDC->MoveTo(cx, cy - 2);
+    pDC->LineTo(cx, cy + r - 3);  // vertical line
+
+    // Diagonal strike-through
+    pDC->MoveTo(rc.left + 2, rc.bottom - 2);
+    pDC->LineTo(rc.right - 2, rc.top + 2);
+
+    pDC->SelectObject(pOld);
+}

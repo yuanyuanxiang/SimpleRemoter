@@ -676,13 +676,18 @@
 #define ID_LICENSE_RENEWAL              33020
 #define ID_LICENSE_EDIT_REMARK          33021
 
+// Status info window
+#define IDC_BTN_STATUS_INFO             2243
+#define ID_SHOW_STATUS_INFO             33022
+#define ID_HIDE_STATUS_INFO             33023
+
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        331
-#define _APS_NEXT_COMMAND_VALUE         33022
-#define _APS_NEXT_CONTROL_VALUE         2243
+#define _APS_NEXT_COMMAND_VALUE         33024
+#define _APS_NEXT_CONTROL_VALUE         2244
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

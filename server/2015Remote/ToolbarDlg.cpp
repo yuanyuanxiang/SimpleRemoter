@@ -31,6 +31,7 @@ BEGIN_MESSAGE_MAP(CToolbarDlg, CDialogEx)
     ON_BN_CLICKED(IDC_BTN_OPACITY, &CToolbarDlg::OnBnClickedOpacity)
     ON_BN_CLICKED(IDC_BTN_SWITCH_SCREEN, &CToolbarDlg::OnBnClickedSwitchScreen)
     ON_BN_CLICKED(IDC_BTN_BLOCK_INPUT, &CToolbarDlg::OnBnClickedBlockInput)
+    ON_BN_CLICKED(IDC_BTN_STATUS_INFO, &CToolbarDlg::OnBnClickedStatusInfo)
     ON_BN_CLICKED(IDC_BTN_QUALITY, &CToolbarDlg::OnBnClickedQuality)
     ON_BN_CLICKED(IDC_BTN_SCREENSHOT, &CToolbarDlg::OnBnClickedScreenshot)
     ON_WM_ERASEBKGND()
@@ -82,7 +83,7 @@ void CToolbarDlg::CheckMousePosition()
     int monWidth = monRight - monLeft;
     int monHeight = monBottom - monTop;
 
-    int btnSize = 32, btnSpacing = 8, btnCount = 11;
+    int btnSize = 32, btnSpacing = 8, btnCount = 12;
 
     if (m_nPosition <= 1) {
         // 水平模式 (上/下)
@@ -147,9 +148,9 @@ void CToolbarDlg::SlideIn()
     int monWidth = monRight - monLeft;
     int monHeight = monBottom - monTop;
 
-    int hw = 440; // 水平工具栏宽度 (与垂直高度一致)
+    int hw = 480; // 水平工具栏宽度 (与垂直高度一致)
     int vw = 40;
-    int vh = 440;
+    int vh = 480;
 
     // 从边缘展开（改变窗口大小），避免多显示器时跑到相邻屏幕
     switch (m_nPosition) {
@@ -206,18 +207,19 @@ void CToolbarDlg::SlideOut()
     int monWidth = monRight - monLeft;
     int monHeight = monBottom - monTop;
 
-    int hw = 440;
+    int hw = 480;
     int vw = 40;
-    int vh = 440;
+    int vh = 480;
 
     CWnd* btns[] = {
         &m_btnExit, &m_btnControl,
         &m_btnLock, &m_btnPosition,
         &m_btnOpacity, &m_btnSwitchScreen,
-        &m_btnBlockInput, &m_btnQuality,
-        &m_btnScreenshot, &m_btnMinimize, &m_btnClose,
+        &m_btnBlockInput, &m_btnStatusInfo,
+        &m_btnQuality, &m_btnScreenshot,
+        &m_btnMinimize, &m_btnClose,
     };
-    const int N = 11;
+    const int N = 12;
     CRect btnRects[N];
     for (int i = 0; i < N; i++) {
         btns[i]->GetWindowRect(&btnRects[i]);
@@ -315,6 +317,7 @@ BOOL CToolbarDlg::OnInitDialog()
     m_btnOpacity.SubclassDlgItem(IDC_BTN_OPACITY, this);
     m_btnSwitchScreen.SubclassDlgItem(IDC_BTN_SWITCH_SCREEN, this);
     m_btnBlockInput.SubclassDlgItem(IDC_BTN_BLOCK_INPUT, this);
+    m_btnStatusInfo.SubclassDlgItem(IDC_BTN_STATUS_INFO, this);
     m_btnQuality.SubclassDlgItem(IDC_BTN_QUALITY, this);
     m_btnScreenshot.SubclassDlgItem(IDC_BTN_SCREENSHOT, this);
     m_btnMinimize.SubclassDlgItem(IDC_BTN_MINIMIZE, this);
@@ -342,6 +345,7 @@ BOOL CToolbarDlg::OnInitDialog()
     m_tooltip.AddTool(&m_btnOpacity, _TR("透明度"));
     m_tooltip.AddTool(&m_btnSwitchScreen, _TR("切换屏幕"));
     m_tooltip.AddTool(&m_btnBlockInput, _TR("锁定远程输入"));
+    m_tooltip.AddTool(&m_btnStatusInfo, m_bShowStatusInfo ? _TR("隐藏状态信息") : _TR("显示状态信息"));
     m_tooltip.AddTool(&m_btnQuality, _TR("屏幕质量"));
     m_tooltip.AddTool(&m_btnScreenshot, _TR("截图"));
     m_tooltip.AddTool(&m_btnMinimize, _TR("最小化"));
@@ -360,9 +364,9 @@ BOOL CToolbarDlg::OnInitDialog()
         int monWidth = rcMonitor.right - rcMonitor.left;
         int monHeight = rcMonitor.bottom - rcMonitor.top;
 
-        int hw = 440;
+        int hw = 480;
         int vw = 40;
-        int vh = 440;
+        int vh = 480;
         int hx = rcMonitor.left + (monWidth - hw) / 2;
 
         switch (m_nPosition) {
@@ -459,13 +463,23 @@ void CToolbarDlg::UpdateButtonIcons()
         m_tooltip.UpdateTipText(_TR("锁定远程输入"), &m_btnBlockInput);
     }
     m_btnBlockInput.Invalidate(FALSE);
+
+    // Status info button
+    if (m_bShowStatusInfo) {
+        m_btnStatusInfo.SetIconDrawFunc(CIconButton::DrawIconInfo);
+        m_tooltip.UpdateTipText(_TR("隐藏状态信息"), &m_btnStatusInfo);
+    } else {
+        m_btnStatusInfo.SetIconDrawFunc(CIconButton::DrawIconInfoHide);
+        m_tooltip.UpdateTipText(_TR("显示状态信息"), &m_btnStatusInfo);
+    }
+    m_btnStatusInfo.Invalidate(FALSE);
 }
 
 void CToolbarDlg::LayoutButtons()
 {
     int btnSize = 32;
     int btnSpacing = 8;
-    int btnCount = 11;
+    int btnCount = 12;
 
     CWnd* btns[] = {
         &m_btnExit,
@@ -475,6 +489,7 @@ void CToolbarDlg::LayoutButtons()
         &m_btnOpacity,
         &m_btnSwitchScreen,
         &m_btnBlockInput,
+        &m_btnStatusInfo,
         &m_btnQuality,
         &m_btnScreenshot,
         &m_btnMinimize,
@@ -534,9 +549,9 @@ void CToolbarDlg::UpdatePosition()
     int monWidth = rcMonitor.right - rcMonitor.left;
     int monHeight = rcMonitor.bottom - rcMonitor.top;
 
-    int hw = 440;
+    int hw = 480;
     int vw = 40;
-    int vh = 440;
+    int vh = 480;
     int hx = rcMonitor.left + (monWidth - hw) / 2;
 
     switch (m_nPosition) {
@@ -566,6 +581,7 @@ void CToolbarDlg::LoadSettings()
     m_nPosition = (pos >= 0 && pos < 4) ? pos : 0;
     int opa = THIS_CFG.GetInt("toolbar", "OpacityLevel", 0);
     m_nOpacityLevel = (opa >= 0 && opa < 3) ? opa : 0;
+    m_bShowStatusInfo = THIS_CFG.GetInt("toolbar", "ShowStatusInfo", 1) != 0;
 }
 
 void CToolbarDlg::SaveSettings()
@@ -573,6 +589,7 @@ void CToolbarDlg::SaveSettings()
     THIS_CFG.SetInt("toolbar", "Locked", m_bLocked ? 1 : 0);
     THIS_CFG.SetInt("toolbar", "Position", m_nPosition);
     THIS_CFG.SetInt("toolbar", "OpacityLevel", m_nOpacityLevel);
+    THIS_CFG.SetInt("toolbar", "ShowStatusInfo", m_bShowStatusInfo ? 1 : 0);
 }
 
 void CToolbarDlg::ApplyOpacity()
@@ -599,6 +616,12 @@ void CToolbarDlg::OnBnClickedOpacity()
     ApplyOpacity();
     UpdateButtonIcons();
     SaveSettings();
+
+    // 同步状态信息窗口的透明度
+    CScreenSpyDlg* pParent = (CScreenSpyDlg*)GetParent();
+    if (pParent && pParent->m_pStatusInfoWnd) {
+        pParent->m_pStatusInfoWnd->SetOpacityLevel(m_nOpacityLevel);
+    }
 }
 
 void CToolbarDlg::OnBnClickedSwitchScreen()
@@ -609,6 +632,17 @@ void CToolbarDlg::OnBnClickedSwitchScreen()
 void CToolbarDlg::OnBnClickedBlockInput()
 {
     GetParent()->PostMessage(WM_SYSCOMMAND, IDM_BLOCK_INPUT, 0);
+}
+
+void CToolbarDlg::OnBnClickedStatusInfo()
+{
+    m_bShowStatusInfo = !m_bShowStatusInfo;
+    UpdateButtonIcons();
+    SaveSettings();
+
+    // 通知父窗口显示/隐藏状态窗口
+    GetParent()->PostMessage(WM_COMMAND,
+        m_bShowStatusInfo ? ID_SHOW_STATUS_INFO : ID_HIDE_STATUS_INFO, 0);
 }
 
 void CToolbarDlg::OnBnClickedQuality()

@@ -32,12 +32,14 @@ public:
     CIconButton m_btnOpacity;
     CIconButton m_btnSwitchScreen;
     CIconButton m_btnBlockInput;
+    CIconButton m_btnStatusInfo;
     CIconButton m_btnQuality;
     CIconButton m_btnScreenshot;
     CIconButton m_btnMinimize;
     CIconButton m_btnClose;
 
-    bool m_bBlockInput = false;  // 远程输入锁定状态
+    bool m_bBlockInput = false;   // 远程输入锁定状态
+    bool m_bShowStatusInfo = true; // 状态信息窗口显示状态
 
     CToolTipCtrl m_tooltip;
 
@@ -67,6 +69,7 @@ public:
     afx_msg void OnBnClickedOpacity();
     afx_msg void OnBnClickedSwitchScreen();
     afx_msg void OnBnClickedBlockInput();
+    afx_msg void OnBnClickedStatusInfo();
     afx_msg void OnBnClickedQuality();
     afx_msg void OnBnClickedScreenshot();
     afx_msg BOOL OnEraseBkgnd(CDC* pDC);

@@ -39,6 +39,8 @@ public:
     static void DrawIconQuality(CDC* pDC, const CRect& rc);
     static void DrawIconMinimize(CDC* pDC, const CRect& rc);
     static void DrawIconClose(CDC* pDC, const CRect& rc);
+    static void DrawIconInfo(CDC* pDC, const CRect& rc);
+    static void DrawIconInfoHide(CDC* pDC, const CRect& rc);
 
 protected:
     virtual void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);

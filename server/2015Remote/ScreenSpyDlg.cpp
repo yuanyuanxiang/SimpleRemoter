@@ -199,6 +199,7 @@ CScreenSpyDlg::~CScreenSpyDlg()
     av_frame_unref(&m_AVFrame);
 
     SAFE_DELETE(m_pToolbar);
+    SAFE_DELETE(m_pStatusInfoWnd);
 }
 
 void CScreenSpyDlg::DoDataExchange(CDataExchange* pDX)
@@ -206,6 +207,226 @@ void CScreenSpyDlg::DoDataExchange(CDataExchange* pDX)
     __super::DoDataExchange(pDX);
 }
 
+// ========== CStatusInfoWnd 实现 ==========
+
+BEGIN_MESSAGE_MAP(CStatusInfoWnd, CWnd)
+    ON_WM_PAINT()
+    ON_WM_ERASEBKGND()
+    ON_WM_LBUTTONDOWN()
+    ON_WM_LBUTTONUP()
+    ON_WM_MOUSEMOVE()
+END_MESSAGE_MAP()
+
+BOOL CStatusInfoWnd::Create(CWnd* pParent)
+{
+    DWORD dwStyle = WS_POPUP;
+    DWORD dwExStyle = WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW;
+
+    // 注册窗口类
+    static LPCTSTR szClassName = _T("StatusInfoWnd");
+    static bool bRegistered = false;
+    if (!bRegistered) {
+        WNDCLASS wc = { 0 };
+        wc.lpfnWndProc = ::DefWindowProc;
+        wc.hInstance = AfxGetInstanceHandle();
+        wc.lpszClassName = szClassName;
+        wc.hCursor = LoadCursor(NULL, IDC_ARROW);
+        AfxRegisterClass(&wc);
+        bRegistered = true;
+    }
+
+    if (!CreateEx(dwExStyle, szClassName, _T(""), dwStyle,
+        CRect(0, 0, 170, 24), pParent, 0))
+        return FALSE;
+
+    SetLayeredWindowAttributes(0, 220, LWA_ALPHA);
+    LoadSettings();
+    return TRUE;
+}
+
+void CStatusInfoWnd::UpdateInfo(double fps, double kbps, const CString& quality)
+{
+    if (kbps >= 1024)
+        m_strInfo.Format(_T("%.0f FPS | %.1f MB/s | %s"), fps, kbps / 1024, quality.GetString());
+    else
+        m_strInfo.Format(_T("%.0f FPS | %.0f KB/s | %s"), fps, kbps, quality.GetString());
+
+    if (m_bVisible)
+        Invalidate(FALSE);
+}
+
+void CStatusInfoWnd::Show()
+{
+    m_bVisible = true;
+    ShowWindow(SW_SHOWNOACTIVATE);
+}
+
+void CStatusInfoWnd::Hide()
+{
+    m_bVisible = false;
+    ShowWindow(SW_HIDE);
+}
+
+void CStatusInfoWnd::SetOpacityLevel(int level)
+{
+    m_nOpacityLevel = level;
+    BYTE opacity;
+    switch (level) {
+    case 1: opacity = 191; break;  // 75%
+    case 2: opacity = 128; break;  // 50%
+    default: opacity = 220; break; // 默认略透明
+    }
+    SetLayeredWindowAttributes(0, opacity, LWA_ALPHA);
+}
+
+void CStatusInfoWnd::UpdatePosition(const RECT& rcMonitor)
+{
+    int width = 170, height = 24;
+    int monWidth = rcMonitor.right - rcMonitor.left;
+
+    int x, y;
+    if (m_bHasCustomPosition) {
+        x = rcMonitor.left + (int)(monWidth * m_dOffsetXRatio) - width / 2;
+        y = rcMonitor.top + m_nOffsetY;
+        x = max((int)rcMonitor.left, min(x, (int)rcMonitor.right - width));
+        y = max((int)rcMonitor.top, min(y, (int)rcMonitor.bottom - height));
+    } else {
+        x = rcMonitor.left + (monWidth - width) / 2;
+        y = rcMonitor.top + 50;
+    }
+    SetWindowPos(&wndTopMost, x, y, width, height, SWP_NOACTIVATE);
+}
+
+void CStatusInfoWnd::LoadSettings()
+{
+    m_bHasCustomPosition = THIS_CFG.GetInt("statusinfo", "HasCustomPos", 0) != 0;
+    if (m_bHasCustomPosition) {
+        m_dOffsetXRatio = THIS_CFG.GetDouble("statusinfo", "OffsetXRatio", 0.5);
+        m_nOffsetY = THIS_CFG.GetInt("statusinfo", "OffsetY", 50);
+    }
+}
+
+void CStatusInfoWnd::SaveSettings()
+{
+    THIS_CFG.SetInt("statusinfo", "HasCustomPos", m_bHasCustomPosition ? 1 : 0);
+    THIS_CFG.SetDouble("statusinfo", "OffsetXRatio", m_dOffsetXRatio);
+    THIS_CFG.SetInt("statusinfo", "OffsetY", m_nOffsetY);
+}
+
+// 检查父窗口是否处于控制模式
+bool CStatusInfoWnd::IsParentInControlMode()
+{
+    CScreenSpyDlg* pParent = (CScreenSpyDlg*)GetParent();
+    return pParent && pParent->m_bIsCtrl;
+}
+
+void CStatusInfoWnd::OnLButtonDown(UINT nFlags, CPoint point)
+{
+    // 控制模式下不处理拖拽，让消息传递到父窗口
+    if (IsParentInControlMode()) {
+        // 转换为屏幕坐标后发送给父窗口
+        CPoint ptScreen = point;
+        ClientToScreen(&ptScreen);
+        CWnd* pParent = GetParent();
+        if (pParent) {
+            pParent->ScreenToClient(&ptScreen);
+            pParent->PostMessage(WM_LBUTTONDOWN, nFlags, MAKELPARAM(ptScreen.x, ptScreen.y));
+        }
+        return;
+    }
+
+    m_bDragging = true;
+    m_ptDragStart = point;
+    SetCapture();
+}
+
+void CStatusInfoWnd::OnLButtonUp(UINT nFlags, CPoint point)
+{
+    if (IsParentInControlMode()) {
+        CPoint ptScreen = point;
+        ClientToScreen(&ptScreen);
+        CWnd* pParent = GetParent();
+        if (pParent) {
+            pParent->ScreenToClient(&ptScreen);
+            pParent->PostMessage(WM_LBUTTONUP, nFlags, MAKELPARAM(ptScreen.x, ptScreen.y));
+        }
+        return;
+    }
+
+    if (m_bDragging) {
+        m_bDragging = false;
+        ReleaseCapture();
+
+        CWnd* pParent = GetParent();
+        if (pParent) {
+            HMONITOR hMon = MonitorFromWindow(pParent->GetSafeHwnd(), MONITOR_DEFAULTTONEAREST);
+            MONITORINFO mi = { sizeof(mi) };
+            if (GetMonitorInfo(hMon, &mi)) {
+                CRect rcWnd;
+                GetWindowRect(&rcWnd);
+
+                int monWidth = mi.rcMonitor.right - mi.rcMonitor.left;
+                int wndCenterX = rcWnd.left + rcWnd.Width() / 2;
+
+                m_dOffsetXRatio = (double)(wndCenterX - mi.rcMonitor.left) / monWidth;
+                m_nOffsetY = rcWnd.top - mi.rcMonitor.top;
+                m_bHasCustomPosition = true;
+                SaveSettings();
+            }
+        }
+    }
+}
+
+void CStatusInfoWnd::OnMouseMove(UINT nFlags, CPoint point)
+{
+    if (IsParentInControlMode()) {
+        CPoint ptScreen = point;
+        ClientToScreen(&ptScreen);
+        CWnd* pParent = GetParent();
+        if (pParent) {
+            pParent->ScreenToClient(&ptScreen);
+            pParent->PostMessage(WM_MOUSEMOVE, nFlags, MAKELPARAM(ptScreen.x, ptScreen.y));
+        }
+        return;
+    }
+
+    if (m_bDragging) {
+        CRect rcWnd;
+        GetWindowRect(&rcWnd);
+
+        int dx = point.x - m_ptDragStart.x;
+        int dy = point.y - m_ptDragStart.y;
+
+        SetWindowPos(&wndTopMost, rcWnd.left + dx, rcWnd.top + dy,
+            0, 0, SWP_NOSIZE | SWP_NOACTIVATE);
+    }
+}
+
+void CStatusInfoWnd::OnPaint()
+{
+    CPaintDC dc(this);
+    CRect rc;
+    GetClientRect(&rc);
+
+    // 背景
+    dc.FillSolidRect(rc, RGB(40, 40, 40));
+
+    // 文字
+    dc.SetBkMode(TRANSPARENT);
+    dc.SetTextColor(RGB(220, 220, 220));
+    CFont font;
+    font.CreatePointFont(90, _T("Segoe UI"));
+    CFont* pOldFont = dc.SelectObject(&font);
+    dc.DrawText(m_strInfo, rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    dc.SelectObject(pOldFont);
+}
+
+BOOL CStatusInfoWnd::OnEraseBkgnd(CDC* pDC)
+{
+    return TRUE;
+}
+
+// ========== CScreenSpyDlg 实现 ==========
 
 BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialog)
     ON_WM_CLOSE()
@@ -225,6 +446,8 @@ BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialog)
     ON_WM_ACTIVATE()
     ON_WM_TIMER()
     ON_COMMAND(ID_EXIT_FULLSCREEN, &CScreenSpyDlg::OnExitFullscreen)
+    ON_COMMAND(ID_SHOW_STATUS_INFO, &CScreenSpyDlg::OnShowStatusInfo)
+    ON_COMMAND(ID_HIDE_STATUS_INFO, &CScreenSpyDlg::OnHideStatusInfo)
     ON_MESSAGE(WM_DISCONNECT, &CScreenSpyDlg::OnDisconnect)
     ON_WM_DROPFILES()
 END_MESSAGE_MAP()
@@ -1341,6 +1564,13 @@ void CScreenSpyDlg::OnTimer(UINT_PTR nIDEvent)
         // 自适应质量评估
         EvaluateQuality();
         UpdateWindowTitle();
+
+        // 更新全屏状态信息窗口
+        if (m_pStatusInfoWnd && m_pStatusInfoWnd->IsVisible()) {
+            CString qualityName = m_Settings.QualityLevel == QUALITY_DISABLED ? _T("Off") :
+                CString(GetQualityName(m_AdaptiveQuality.currentLevel));
+            m_pStatusInfoWnd->UpdateInfo(m_dFrameRate, m_dTransferRate, qualityName);
+        }
     }
     __super::OnTimer(nIDEvent);
 }
@@ -1793,8 +2023,8 @@ void CScreenSpyDlg::EnterFullScreen()
             if (!m_pToolbar->m_bLocked) {
                 int monWidth = rcMonitor.right - rcMonitor.left;
                 int monHeight = rcMonitor.bottom - rcMonitor.top;
-                int hw = 440; // 水平工具栏宽度
-                int vh = 440; // 垂直工具栏高度
+                int hw = 480; // 水平工具栏宽度
+                int vh = 480; // 垂直工具栏高度
                 int hx = rcMonitor.left + (monWidth - hw) / 2;
                 switch (m_pToolbar->m_nPosition) {
                 case 0:
@@ -1817,6 +2047,20 @@ void CScreenSpyDlg::EnterFullScreen()
             }
         }
 
+        // 创建状态信息窗口
+        if (!m_pStatusInfoWnd) {
+            m_pStatusInfoWnd = new CStatusInfoWnd();
+            m_pStatusInfoWnd->Create(this);
+        }
+        m_pStatusInfoWnd->UpdatePosition(rcMonitor);
+        // 同步工具栏透明度
+        if (m_pToolbar) {
+            m_pStatusInfoWnd->SetOpacityLevel(m_pToolbar->m_nOpacityLevel);
+        }
+        if (m_pToolbar && m_pToolbar->m_bShowStatusInfo) {
+            m_pStatusInfoWnd->Show();
+        }
+
         // 7. 标记全屏模式
         m_Settings.FullScreen = true;
 
@@ -1833,6 +2077,11 @@ bool CScreenSpyDlg::LeaveFullScreen()
             m_pToolbar->DestroyWindow();
             delete m_pToolbar;
             m_pToolbar = nullptr;
+        }
+
+        // 隐藏状态信息窗口
+        if (m_pStatusInfoWnd) {
+            m_pStatusInfoWnd->Hide();
         }
 
         // 1. 恢复窗口样式

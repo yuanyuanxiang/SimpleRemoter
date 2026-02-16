@@ -179,6 +179,25 @@ public:
     {
         return ::WritePrivateProfileStringA(MainKey.c_str(), SubKey.c_str(), Data.c_str(), m_IniFilePath);
     }
+
+    virtual double GetDouble(const std::string& MainKey, const std::string& SubKey, double dDef = 0.0)
+    {
+        std::string val = GetStr(MainKey, SubKey);
+        if (val.empty())
+            return dDef;
+        try {
+            return std::stod(val);
+        } catch (...) {
+            return dDef;
+        }
+    }
+
+    virtual bool SetDouble(const std::string& MainKey, const std::string& SubKey, double Data)
+    {
+        char buf[64];
+        sprintf_s(buf, "%.6f", Data);
+        return SetStr(MainKey, SubKey, buf);
+    }
 };
 
 // 配置读取类: 注册表配置.
