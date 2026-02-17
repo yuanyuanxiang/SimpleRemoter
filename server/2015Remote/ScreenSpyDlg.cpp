@@ -1753,8 +1753,15 @@ BOOL CScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
     case WM_MBUTTONDOWN:
     case WM_MBUTTONUP:
     case WM_MOUSEMOVE:
-    case WM_MOUSEWHEEL: {
         SendScaledMouseMessage(pMsg, true);
+        break;
+    case WM_MOUSEWHEEL: {
+        // WM_MOUSEWHEEL 的 lParam 是屏幕坐标，需要转换为客户区坐标
+        POINT pt = { GET_X_LPARAM(pMsg->lParam), GET_Y_LPARAM(pMsg->lParam) };
+        ScreenToClient(&pt);
+        MSG wheelMsg = *pMsg;
+        wheelMsg.lParam = MAKELPARAM(pt.x, pt.y);
+        SendScaledMouseMessage(&wheelMsg, true);
     }
     break;
     case WM_KEYDOWN:

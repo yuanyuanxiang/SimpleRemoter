@@ -713,12 +713,20 @@ BOOL CHideScreenSpyDlg::PreTranslateMessage(MSG* pMsg)
     case WM_LBUTTONDBLCLK:
     case WM_RBUTTONDBLCLK:
     case WM_MBUTTONDBLCLK: // 双击
-    case WM_MOUSEMOVE:
-    case WM_MOUSEWHEEL: { // 鼠标移动
+    case WM_MOUSEMOVE: {
         // 此逻辑会丢弃所有 非左键拖拽 的鼠标移动消息（如纯移动或右键拖拽）
         if (pMsg->message == WM_MOUSEMOVE && GetKeyState(VK_LBUTTON) >= 0)
             break;
         SendScaledMouseMessage(pMsg, true);
+        return TRUE;
+    }
+    case WM_MOUSEWHEEL: {
+        // WM_MOUSEWHEEL 的 lParam 是屏幕坐标，需要转换为客户区坐标
+        POINT pt = { GET_X_LPARAM(pMsg->lParam), GET_Y_LPARAM(pMsg->lParam) };
+        ScreenToClient(&pt);
+        MSG wheelMsg = *pMsg;
+        wheelMsg.lParam = MAKELPARAM(pt.x, pt.y);
+        SendScaledMouseMessage(&wheelMsg, true);
         return TRUE;
     }
     case WM_CHAR: {
