@@ -10,6 +10,54 @@ SimpleRemoter 的 Linux 客户端，支持远程桌面、远程终端、文件�
 - **进程管理** - 查看和管理远程进程
 - **守护进程模式** - 支持后台运行 (`-d` 参数)
 
+## 功能实现对比 (Linux vs Windows)
+
+### 已实现
+
+| 功能模块 | Linux 实现 | Windows 对应 | 状态 |
+|---------|-----------|-------------|------|
+| 远程桌面 | `ScreenHandler.h` | `ScreenManager.cpp` | ✅ 完整 |
+| 进程管理 | `SystemManager.h` | `SystemManager.cpp` | ✅ 完整 |
+| 文件管理 | `FileManager.h` | `FileManager.cpp` | ✅ 完整 |
+| 远程终端 | `PTYHandler` (main.cpp) | `ConPTYManager.cpp` | ✅ 完整 |
+| 心跳/RTT | main.cpp | `KernelManager.cpp` | ✅ 完整 |
+| 用户活动检测 | `ActivityChecker` | `ActivityWindow` | ✅ 完整 |
+| 系统信息采集 | main.cpp | `LoginServer.cpp` | ✅ 完整 |
+| 守护进程 | daemonize() | Windows 服务 | ✅ 完整 |
+| 配置持久化 | `LinuxConfig` | INI 文件 | ✅ 完整 |
+
+### 未实现
+
+| 功能模块 | Windows 文件 | 命令 | 优先级 | 说明 |
+|---------|-------------|------|-------|------|
+| 剪贴板同步 | `ScreenManager.cpp` | `COMMAND_SCREEN_*_CLIPBOARD` | 高 | X11 剪贴板操作 |
+| 会话管理 | `KernelManager.cpp` | `COMMAND_SESSION` | 高 | 关机/重启/注销 |
+| 下载执行 | `KernelManager.cpp` | `COMMAND_DOWN_EXEC` | 高 | 下载并运行程序 |
+| 服务管理 | `ServicesManager.cpp` | `COMMAND_SERVICES` | 中 | systemd 服务列表 |
+| 键盘记录 | `KeyboardManager.cpp` | `COMMAND_KEYBOARD` | 中 | 需要 X11/evdev |
+| 开机自启 | `auto_start.h` | - | 中 | systemd user service |
+| 窗口列表 | `SystemManager.cpp` | `COMMAND_WSLIST` | 低 | X11 窗口枚举 |
+| 音频监听 | `AudioManager.cpp` | `COMMAND_AUDIO` | 低 | 需要 PulseAudio/ALSA |
+| 摄像头 | `VideoManager.cpp` | `COMMAND_WEBCAM` | 低 | 需要 V4L2 |
+| 语音对讲 | `TalkManager.cpp` | `COMMAND_TALK` | 低 | 双向音频传输 |
+| 清除日志 | `KernelManager.cpp` | `COMMAND_CLEAN_EVENT` | 低 | 清除 syslog |
+| 注册表管理 | `RegisterManager.cpp` | `COMMAND_REGEDIT` | - | Linux 不适用 |
+
+### 开发优先级说明
+
+**高优先级** - 日常管理常用功能
+- 剪贴板同步：跨平台复制粘贴
+- 会话管理：远程关机/重启
+- 下载执行：远程部署程序
+
+**中优先级** - 系统管理功能
+- 服务管理：查看/控制 systemd 服务
+- 键盘记录：输入监控
+- 开机自启：持久化运行
+
+**低优先级** - 硬件相关功能
+- 音频/摄像头/语音：需要额外硬件库支持
+
 ## 系统要求
 
 ### 显示服务器

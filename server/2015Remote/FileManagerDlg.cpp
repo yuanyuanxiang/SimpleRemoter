@@ -2271,7 +2271,7 @@ void CFileManagerDlg::CreateLocalRecvFile()
         (
             m_strReceiveLocalFile.GetBuffer(0),
             GENERIC_WRITE,
-            FILE_SHARE_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
             NULL,
             dwCreationDisposition,
             FILE_ATTRIBUTE_NORMAL,
@@ -2321,12 +2321,23 @@ void CFileManagerDlg::WriteLocalRecvFile()
         (
             m_strReceiveLocalFile.GetBuffer(0),
             GENERIC_WRITE,
-            FILE_SHARE_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
             NULL,
             OPEN_EXISTING,
             FILE_ATTRIBUTE_NORMAL,
             0
         );
+
+    // Check if file open succeeded
+    if (hFile == INVALID_HANDLE_VALUE) {
+        DWORD dwErr = GetLastError();
+        CString msg;
+        msg.Format(_T("%s 文件打开失败 (错误码: %d)"), m_strReceiveLocalFile, dwErr);
+        MessageBoxAPI_L(m_hWnd, msg, "警告", MB_OK|MB_ICONWARNING);
+        m_bIsStop = true;
+        SendStop();
+        return;
+    }
 
     SetFilePointer(hFile, dwOffsetLow, &dwOffsetHigh, FILE_BEGIN);
 
@@ -2346,7 +2357,10 @@ void CFileManagerDlg::WriteLocalRecvFile()
         }
     }
     if (i == MAX_WRITE_RETRY && nRet <= 0) {
-        MessageBoxAPI_L(m_hWnd, m_strReceiveLocalFile + " 文件写入失败!", "警告", MB_OK|MB_ICONWARNING);
+        DWORD dwErr = GetLastError();
+        CString msg;
+        msg.Format(_T("%s 文件写入失败 (错误码: %d)"), m_strReceiveLocalFile, dwErr);
+        MessageBoxAPI_L(m_hWnd, msg, "警告", MB_OK|MB_ICONWARNING);
         m_bIsStop = true;
     }
     SAFE_CLOSE_HANDLE(hFile);
@@ -2358,7 +2372,10 @@ void CFileManagerDlg::WriteLocalRecvFile()
     else {
         BYTE	bToken[9];
         bToken[0] = COMMAND_CONTINUE;
-        dwOffsetLow += dwBytesWrite;
+        // Fix: use 64-bit arithmetic to handle files > 4GB
+        __int64 newOffset = MAKEINT64(dwOffsetLow, dwOffsetHigh) + dwBytesWrite;
+        dwOffsetHigh = (DWORD)(newOffset >> 32);
+        dwOffsetLow = (DWORD)(newOffset & 0xFFFFFFFF);
         memcpy(bToken + 1, &dwOffsetHigh, sizeof(dwOffsetHigh));
         memcpy(bToken + 5, &dwOffsetLow, sizeof(dwOffsetLow));
         m_ContextObject->Send2Client(bToken, sizeof(bToken));
