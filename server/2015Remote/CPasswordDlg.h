@@ -61,9 +61,10 @@ bool LoadLicenseInfo(const std::string& deviceID, std::string& passcode,
                      std::string& hmac, std::string& remark);
 // 更新授权活跃信息（IP、位置、最后活跃时间）
 // 如果授权不存在则自动创建记录
+// machineName: 机器名，用于区分同一公网IP下的不同机器
 bool UpdateLicenseActivity(const std::string& deviceID, const std::string& passcode,
                            const std::string& hmac, const std::string& ip = "",
-                           const std::string& location = "");
+                           const std::string& location = "", const std::string& machineName = "");
 // 检查授权是否已被撤销
 bool IsLicenseRevoked(const std::string& deviceID);
 

@@ -39,10 +39,10 @@ private:
     int m_rows;
 
     // Static callbacks
-    static void CALLBACK OnTerminalInput(void* userData, const char* data, size_t len);
-    static void CALLBACK OnTerminalResize(void* userData, int cols, int rows);
-    static void CALLBACK OnTerminalClose(void* userData);
-    static void CALLBACK OnTerminalReady(void* userData, int cols, int rows);
+    static void OnTerminalInput(void* userData, const char* data, size_t len);
+    static void OnTerminalResize(void* userData, int cols, int rows);
+    static void OnTerminalClose(void* userData);
+    static void OnTerminalReady(void* userData, int cols, int rows);
 
     // Send resize command to Linux client
     void SendResizeCommand(int cols, int rows);

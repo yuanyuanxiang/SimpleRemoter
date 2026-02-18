@@ -122,6 +122,57 @@ inline bool IsTerminalModuleLoaded()
     return g_hTerminalModule != nullptr;
 }
 
+// Check if WebView2 Runtime is installed (cached)
+inline bool IsWebView2Available()
+{
+    static int cached = -1;  // -1 = not checked, 0 = no, 1 = yes
+    if (cached >= 0) return cached == 1;
+
+    bool available = false;
+
+    // Check registry for WebView2 installation
+    const char* regPaths[] = {
+        "SOFTWARE\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+        "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+        nullptr
+    };
+
+    for (int i = 0; regPaths[i]; i++) {
+        HKEY hKey = nullptr;
+        if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, regPaths[i], 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            char version[128] = {0};
+            DWORD size = sizeof(version);
+            if (RegQueryValueExA(hKey, "pv", nullptr, nullptr, (LPBYTE)version, &size) == ERROR_SUCCESS) {
+                if (version[0] != '\0' && strcmp(version, "0.0.0.0") != 0) {
+                    available = true;
+                }
+            }
+            RegCloseKey(hKey);
+            if (available) break;
+        }
+    }
+
+    // Also check per-user installation
+    if (!available) {
+        HKEY hKey = nullptr;
+        if (RegOpenKeyExA(HKEY_CURRENT_USER,
+            "SOFTWARE\\Microsoft\\EdgeUpdate\\Clients\\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}",
+            0, KEY_READ, &hKey) == ERROR_SUCCESS) {
+            char version[128] = {0};
+            DWORD size = sizeof(version);
+            if (RegQueryValueExA(hKey, "pv", nullptr, nullptr, (LPBYTE)version, &size) == ERROR_SUCCESS) {
+                if (version[0] != '\0' && strcmp(version, "0.0.0.0") != 0) {
+                    available = true;
+                }
+            }
+            RegCloseKey(hKey);
+        }
+    }
+
+    cached = available ? 1 : 0;
+    return available;
+}
+
 // Wrapper functions (for convenience)
 inline HTERMINAL CreateTerminal(HWND hParent, const TerminalCallbacks* callbacks, const char* title)
 {

@@ -93,6 +93,7 @@ public:
     afx_msg void OnLicenseActivate();
     afx_msg void OnLicenseRenewal();
     afx_msg void OnLicenseEditRemark();
+    afx_msg void OnLicenseViewIPs();
 };
 
 // 获取所有授权信息
@@ -114,3 +115,8 @@ int ParseHostNumFromPasscode(const std::string& passcode);
 
 // 设置授权备注
 bool SetLicenseRemark(const std::string& deviceID, const std::string& remark);
+
+// IP 列表辅助函数
+int GetIPCountFromList(const std::string& ipListStr);
+std::string GetFirstIPFromList(const std::string& ipListStr);
+std::string FormatIPDisplay(const std::string& ipListStr);  // 格式化显示: "[3] 192.168.1.1, ..."

@@ -2616,7 +2616,8 @@ BOOL CMy2015RemoteDlg::AuthorizeClient(context* ctx, const std::string& sn, cons
         if (ctx != nullptr) {
             std::string ip = ctx->GetClientData(ONLINELIST_IP);
             std::string location = m_IPConverter ? m_IPConverter->GetGeoLocation(ip) : "";
-            UpdateLicenseActivity(sn, passcode, hmacStr, ip, location);
+            std::string machineName = ctx->GetClientData(ONLINELIST_COMPUTER_NAME);
+            UpdateLicenseActivity(sn, passcode, hmacStr, ip, location, machineName);
         } else {
             UpdateLicenseActivity(sn, passcode, hmacStr);
         }
@@ -2634,7 +2635,8 @@ BOOL CMy2015RemoteDlg::AuthorizeClient(context* ctx, const std::string& sn, cons
     if (ctx != nullptr) {
         std::string ip = ctx->GetClientData(ONLINELIST_IP);
         std::string location = m_IPConverter ? m_IPConverter->GetGeoLocation(ip) : "";
-        UpdateLicenseActivity(sn, passcode, hmacStr, ip, location);
+        std::string machineName = ctx->GetClientData(ONLINELIST_COMPUTER_NAME);
+        UpdateLicenseActivity(sn, passcode, hmacStr, ip, location, machineName);
     } else {
         UpdateLicenseActivity(sn, passcode, hmacStr);
     }
@@ -2908,11 +2910,12 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
         break;
     }
     case TOKEN_TERMINAL_START: { // Linux PTY 终端 (WebView2 + xterm.js)
-        // 尝试加载 TerminalModule DLL，失败则退化到 ShellDlg
-        if (LoadTerminalModule()) {
+        // 检查 WebView2 和 DLL，都满足则使用现代终端，否则退化到经典终端
+        if (IsWebView2Available() && LoadTerminalModule()) {
             g_2015RemoteDlg->SendMessage(WM_OPENTERMINALDIALOG, 0, (LPARAM)ContextObject);
         } else {
-            g_2015RemoteDlg->PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg("To use Modern Terminal - TerminalModule.dll is required"), NULL);
+            g_2015RemoteDlg->PostMessageA(WM_SHOWMESSAGE, 
+                (WPARAM)new CharMsg("To use Modern Terminal - WebView2 and TerminalModule.dll are required"), NULL);
             g_2015RemoteDlg->SendMessage(WM_OPENSHELLDIALOG, 0, (LPARAM)ContextObject);
         }
         break;

@@ -45,7 +45,7 @@ BOOL CTerminalDlg::OnInitDialog()
     SetIcon(m_hIcon, FALSE);
 
     CString title;
-    title.Format("%s - Linux %s", m_IPAddress, _TRF("远程终端"));
+    title.Format("%s - Modern %s", m_IPAddress, _TRF("远程终端"));
     SetWindowText(title);
 
     // Set window size

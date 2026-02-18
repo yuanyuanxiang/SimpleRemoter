@@ -39,6 +39,7 @@ BEGIN_MESSAGE_MAP(CLicenseDlg, CDialogEx)
     ON_COMMAND(ID_LICENSE_ACTIVATE, &CLicenseDlg::OnLicenseActivate)
     ON_COMMAND(ID_LICENSE_RENEWAL, &CLicenseDlg::OnLicenseRenewal)
     ON_COMMAND(ID_LICENSE_EDIT_REMARK, &CLicenseDlg::OnLicenseEditRemark)
+    ON_COMMAND(ID_LICENSE_VIEW_IPS, &CLicenseDlg::OnLicenseViewIPs)
 END_MESSAGE_MAP()
 
 // 获取所有授权信息
@@ -195,7 +196,8 @@ void CLicenseDlg::RefreshList()
         m_ListLicense.SetItemText(idx, 4, lic.Remark.c_str());
         m_ListLicense.SetItemText(idx, 5, lic.Passcode.c_str());
         m_ListLicense.SetItemText(idx, 6, lic.HMAC.c_str());
-        m_ListLicense.SetItemText(idx, 7, lic.IP.c_str());
+        // IP 列：多 IP 时显示 "[数量] 首个IP, ..."
+        m_ListLicense.SetItemText(idx, 7, FormatIPDisplay(lic.IP).c_str());
         m_ListLicense.SetItemText(idx, 8, lic.Location.c_str());
         m_ListLicense.SetItemText(idx, 9, lic.LastActiveTime.c_str());
         m_ListLicense.SetItemText(idx, 10, lic.CreateTime.c_str());
@@ -293,6 +295,15 @@ void CLicenseDlg::OnNMRClickLicenseList(NMHDR* pNMHDR, LRESULT* pResult)
     const auto& lic = m_Licenses[nIndex];
     menu.AppendMenuL(MF_STRING, ID_LICENSE_RENEWAL, _T("预设续期(&N)..."));
     menu.AppendMenuL(MF_STRING, ID_LICENSE_EDIT_REMARK, _T("编辑备注(&E)..."));
+
+    // 只有当有 IP 记录时才显示查看 IP 历史选项
+    int ipCount = GetIPCountFromList(lic.IP);
+    if (ipCount > 0) {
+        CString strViewIPs;
+        strViewIPs.Format(_TR("查看 IP 历史 (%d)(&I)..."), ipCount);
+        menu.AppendMenuL(MF_STRING, ID_LICENSE_VIEW_IPS, strViewIPs);
+    }
+
     menu.AppendMenuL(MF_SEPARATOR, 0, _T(""));
     if (lic.Status == LICENSE_STATUS_ACTIVE) {
         menu.AppendMenuL(MF_STRING, ID_LICENSE_REVOKE, _T("撤销授权(&R)"));
@@ -551,4 +562,195 @@ void CLicenseDlg::OnLicenseEditRemark()
         m_Licenses[nIndex].Remark = newRemark;
         m_ListLicense.SetItemText(nItem, LIC_COL_REMARK, newRemark.c_str());
     }
+}
+
+void CLicenseDlg::OnLicenseViewIPs()
+{
+    int nItem = m_ListLicense.GetNextItem(-1, LVNI_SELECTED);
+    if (nItem < 0)
+        return;
+
+    size_t nIndex = (size_t)m_ListLicense.GetItemData(nItem);
+    if (nIndex >= m_Licenses.size())
+        return;
+
+    const auto& lic = m_Licenses[nIndex];
+    if (lic.IP.empty()) {
+        MessageBoxL("该授权暂无 IP 记录", "IP 历史", MB_ICONINFORMATION);
+        return;
+    }
+
+    // 解析 IP 列表并格式化显示
+    // 格式: "1.2.3.4(PC01)|0218, 1.2.3.4(PC02)|0215" -> 每行显示一个 IP(机器名)
+    std::string formattedList;
+    int count = 0;
+
+    size_t start = 0;
+    while (start < lic.IP.length()) {
+        size_t end = lic.IP.find(',', start);
+        if (end == std::string::npos) end = lic.IP.length();
+
+        std::string entry = lic.IP.substr(start, end - start);
+
+        // 去除前后空格
+        size_t first = entry.find_first_not_of(' ');
+        size_t last = entry.find_last_not_of(' ');
+        if (first != std::string::npos && last != std::string::npos) {
+            entry = entry.substr(first, last - first + 1);
+        }
+
+        // 解析 IP|时间戳
+        size_t pipePos = entry.find('|');
+        std::string ip, timestamp;
+        if (pipePos != std::string::npos) {
+            ip = entry.substr(0, pipePos);
+            timestamp = entry.substr(pipePos + 1);
+        } else {
+            ip = entry;
+        }
+
+        if (!ip.empty()) {
+            count++;
+
+            // 解析 IP 和机器名: "1.2.3.4(PC01)" -> ip="1.2.3.4", machine="PC01"
+            std::string pureIP = ip, machineName;
+            size_t parenPos = ip.find('(');
+            if (parenPos != std::string::npos) {
+                pureIP = ip.substr(0, parenPos);
+                size_t endParen = ip.find(')', parenPos);
+                if (endParen != std::string::npos) {
+                    machineName = ip.substr(parenPos + 1, endParen - parenPos - 1);
+                }
+            }
+
+            char line[256];
+            if (!timestamp.empty() && timestamp.length() == 4) {
+                // 格式化时间戳: 0218 -> 02-18
+                if (!machineName.empty()) {
+                    sprintf_s(line, _TR("%d. %s  [%s]  (最后活跃: %s-%s)\r\n"),
+                        count, pureIP.c_str(), machineName.c_str(),
+                        timestamp.substr(0, 2).c_str(),
+                        timestamp.substr(2, 2).c_str());
+                } else {
+                    sprintf_s(line, _TR("%d. %s  (最后活跃: %s-%s)\r\n"),
+                        count, pureIP.c_str(),
+                        timestamp.substr(0, 2).c_str(),
+                        timestamp.substr(2, 2).c_str());
+                }
+            } else {
+                if (!machineName.empty()) {
+                    sprintf_s(line, "%d. %s  [%s]\r\n", count, pureIP.c_str(), machineName.c_str());
+                } else {
+                    sprintf_s(line, "%d. %s\r\n", count, pureIP.c_str());
+                }
+            }
+            formattedList += line;
+        }
+
+        start = end + 1;
+    }
+
+    // 添加统计信息
+    char summary[128];
+    sprintf_s(summary, _TR("\r\n共 %d 条登录记录"), count);
+    formattedList += summary;
+
+    // 多机器警告
+    if (count > 1) {
+        formattedList += _TR("\r\n\r\n[!] 多个 IP/机器登录，请关注");
+    }
+
+    CString strTitle;
+    strTitle.Format(_TR("IP 历史 - %s"), lic.SerialNumber.c_str());
+    MessageBoxA(formattedList.c_str(), CT2A(strTitle), MB_ICONINFORMATION);
+}
+
+// 从 IP 列表字符串获取 IP 数量
+int GetIPCountFromList(const std::string& ipListStr)
+{
+    if (ipListStr.empty()) return 0;
+
+    int count = 1;
+    for (char c : ipListStr) {
+        if (c == ',') count++;
+    }
+    return count;
+}
+
+// 从 IP 列表字符串获取第一个 IP（不含时间戳）
+std::string GetFirstIPFromList(const std::string& ipListStr)
+{
+    if (ipListStr.empty()) return "";
+
+    // 找到第一个逗号或字符串末尾
+    size_t commaPos = ipListStr.find(',');
+    std::string firstEntry = (commaPos != std::string::npos)
+        ? ipListStr.substr(0, commaPos)
+        : ipListStr;
+
+    // 去除时间戳部分
+    size_t pipePos = firstEntry.find('|');
+    if (pipePos != std::string::npos) {
+        firstEntry = firstEntry.substr(0, pipePos);
+    }
+
+    // 去除前后空格
+    size_t first = firstEntry.find_first_not_of(' ');
+    size_t last = firstEntry.find_last_not_of(' ');
+    if (first != std::string::npos && last != std::string::npos) {
+        return firstEntry.substr(first, last - first + 1);
+    }
+    return firstEntry;
+}
+
+// 格式化 IP 显示: 多 IP 时显示 "[数量] IP1, IP2, IP3, ..."
+std::string FormatIPDisplay(const std::string& ipListStr)
+{
+    if (ipListStr.empty()) return "";
+
+    int count = GetIPCountFromList(ipListStr);
+    if (count <= 1) {
+        return GetFirstIPFromList(ipListStr);
+    }
+
+    // 解析前 3 个 IP（不含时间戳）
+    std::string ips[3];
+    int extracted = 0;
+    size_t start = 0;
+    while (start < ipListStr.length() && extracted < 3) {
+        size_t end = ipListStr.find(',', start);
+        if (end == std::string::npos) end = ipListStr.length();
+
+        std::string entry = ipListStr.substr(start, end - start);
+        // 去除前后空格
+        size_t first = entry.find_first_not_of(' ');
+        size_t last = entry.find_last_not_of(' ');
+        if (first != std::string::npos && last != std::string::npos) {
+            entry = entry.substr(first, last - first + 1);
+        }
+        // 去除时间戳
+        size_t pipePos = entry.find('|');
+        if (pipePos != std::string::npos) {
+            entry = entry.substr(0, pipePos);
+        }
+        if (!entry.empty()) {
+            ips[extracted++] = entry;
+        }
+        start = end + 1;
+    }
+
+    // 格式化: "[数量] IP1, IP2, IP3, ..."
+    char buf[256];
+    if (count <= 3) {
+        // 3 个或以下，全部显示
+        if (extracted == 2) {
+            sprintf_s(buf, "[%d] %s, %s", count, ips[0].c_str(), ips[1].c_str());
+        } else {
+            sprintf_s(buf, "[%d] %s, %s, %s", count, ips[0].c_str(), ips[1].c_str(), ips[2].c_str());
+        }
+    } else {
+        // 超过 3 个，显示前 3 个加 ...
+        sprintf_s(buf, "[%d] %s, %s, %s, ...", count, ips[0].c_str(), ips[1].c_str(), ips[2].c_str());
+    }
+    return buf;
 }
