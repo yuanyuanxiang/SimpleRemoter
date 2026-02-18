@@ -117,10 +117,133 @@ bool LoadLicenseInfo(const std::string& deviceID, std::string& passcode,
     return true;
 }
 
+// IP 列表管理常量
+#define MAX_IP_HISTORY 10  // 最多保留 10 个不同的 IP
+
+// 解析 IP 列表字符串为 vector<pair<IP, 时间戳>>
+// 格式: "192.168.1.1|0218, 10.0.0.1|0215"
+static std::vector<std::pair<std::string, std::string>> ParseIPList(const std::string& ipListStr)
+{
+    std::vector<std::pair<std::string, std::string>> result;
+    if (ipListStr.empty()) return result;
+
+    size_t start = 0;
+    while (start < ipListStr.length()) {
+        // 找到下一个逗号
+        size_t end = ipListStr.find(',', start);
+        if (end == std::string::npos) end = ipListStr.length();
+
+        // 提取单个 IP 条目
+        std::string entry = ipListStr.substr(start, end - start);
+
+        // 去除前后空格
+        size_t first = entry.find_first_not_of(' ');
+        size_t last = entry.find_last_not_of(' ');
+        if (first != std::string::npos && last != std::string::npos) {
+            entry = entry.substr(first, last - first + 1);
+        }
+
+        // 解析 IP|时间戳
+        size_t pipePos = entry.find('|');
+        if (pipePos != std::string::npos) {
+            std::string ip = entry.substr(0, pipePos);
+            std::string ts = entry.substr(pipePos + 1);
+            result.push_back({ ip, ts });
+        } else if (!entry.empty()) {
+            // 兼容旧格式（无时间戳）
+            result.push_back({ entry, "" });
+        }
+
+        start = end + 1;
+    }
+    return result;
+}
+
+// 将 IP 列表序列化为字符串
+static std::string SerializeIPList(const std::vector<std::pair<std::string, std::string>>& ipList)
+{
+    std::string result;
+    for (size_t i = 0; i < ipList.size(); ++i) {
+        if (i > 0) result += ", ";
+        result += ipList[i].first;
+        if (!ipList[i].second.empty()) {
+            result += "|";
+            result += ipList[i].second;
+        }
+    }
+    return result;
+}
+
+// 更新 IP 列表：添加新 IP 或更新已有 IP 的时间戳
+// 格式: IP(机器名)|时间戳，例如 "1.2.3.4(PC01)|0219"
+// 返回更新后的 IP 列表字符串
+static std::string UpdateIPList(const std::string& existingIPList, const std::string& newIP, const std::string& machineName = "")
+{
+    if (newIP.empty()) return existingIPList;
+
+    // 构造 IP 标识：如果有机器名则为 "IP(机器名)"，否则为 "IP"
+    std::string ipKey = newIP;
+    if (!machineName.empty()) {
+        // 机器名可能包含 "/"（如 "PC01/GroupName"），只取第一部分
+        std::string shortName = machineName;
+        size_t slashPos = machineName.find('/');
+        if (slashPos != std::string::npos) {
+            shortName = machineName.substr(0, slashPos);
+        }
+        ipKey = newIP + "(" + shortName + ")";
+    }
+
+    // 获取当前时间戳 (MMdd 格式)
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    char timestamp[8];
+    sprintf_s(timestamp, "%02d%02d", st.wMonth, st.wDay);
+
+    // 解析现有 IP 列表
+    auto ipList = ParseIPList(existingIPList);
+
+    // 提取纯 IP（去掉括号内的机器名）
+    auto extractIP = [](const std::string& s) -> std::string {
+        size_t pos = s.find('(');
+        return pos != std::string::npos ? s.substr(0, pos) : s;
+    };
+
+    // 查找是否已存在该 IP（只比较 IP 部分，兼容旧格式）
+    bool found = false;
+    for (auto& entry : ipList) {
+        if (extractIP(entry.first) == newIP) {
+            entry.first = ipKey;       // 更新为新格式（带机器名）
+            entry.second = timestamp;  // 更新时间戳
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        // 新 IP，添加到开头（最近的在前）
+        ipList.insert(ipList.begin(), { ipKey, timestamp });
+
+        // 限制数量
+        if (ipList.size() > MAX_IP_HISTORY) {
+            ipList.resize(MAX_IP_HISTORY);
+        }
+    }
+
+    return SerializeIPList(ipList);
+}
+
+// 获取 IP 列表中的 IP 数量
+static int GetIPCount(const std::string& ipListStr)
+{
+    if (ipListStr.empty()) return 0;
+    auto ipList = ParseIPList(ipListStr);
+    return (int)ipList.size();
+}
+
 // 更新授权活跃信息
 bool UpdateLicenseActivity(const std::string& deviceID, const std::string& passcode,
                            const std::string& hmac, const std::string& ip,
-                           const std::string& location)
+                           const std::string& location, const std::string& machineName)
 {
     std::string iniPath = GetLicensesPath();
     config cfg(iniPath);
@@ -153,9 +276,12 @@ bool UpdateLicenseActivity(const std::string& deviceID, const std::string& passc
         cfg.SetStr(deviceID, "CreateTime", timeStr);
     }
 
-    // 如果提供了 IP 和位置，则更新
+    // 更新 IP 列表（追加新 IP 或更新已有 IP 的时间戳）
+    // 格式: IP(机器名)|时间戳
     if (!ip.empty()) {
-        cfg.SetStr(deviceID, "IP", ip);
+        std::string existingIPList = cfg.GetStr(deviceID, "IP", "");
+        std::string newIPList = UpdateIPList(existingIPList, ip, machineName);
+        cfg.SetStr(deviceID, "IP", newIPList);
     }
     if (!location.empty()) {
         cfg.SetStr(deviceID, "Location", location);
