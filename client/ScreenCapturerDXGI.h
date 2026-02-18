@@ -81,6 +81,13 @@ public:
             }
             if (!dxgiOutput)break;
 
+            // 4.1 获取屏幕位置（多显示器支持）
+            DXGI_OUTPUT_DESC outputDesc;
+            if (SUCCEEDED(dxgiOutput->GetDesc(&outputDesc))) {
+                m_iScreenX = outputDesc.DesktopCoordinates.left;
+                m_iScreenY = outputDesc.DesktopCoordinates.top;
+            }
+
             // 5. 获取 DXGI 输出 1
             dxgiOutput->QueryInterface(__uuidof(IDXGIOutput1), (void**)&dxgiOutput1);
             if (!dxgiOutput1)break;
