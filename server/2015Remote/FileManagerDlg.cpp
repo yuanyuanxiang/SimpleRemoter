@@ -1885,7 +1885,7 @@ void CFileManagerDlg::OnLocalCompress()
     std::string target = m_Local_Path.GetString() + ToPekingDateTime(0) + ".zsta";
     zsta::Error err = zsta::CZstdArchive::Compress(paths, target);
     if (err != zsta::Error::Success) {
-        MessageBoxAPI_L(m_hWnd, "压缩失败: " + CString(zsta::CZstdArchive::GetErrorString(err)),
+        MessageBoxAPI_L(m_hWnd, _TR("压缩失败: ") + CString(zsta::CZstdArchive::GetErrorString(err)),
                         "错误", MB_OK | MB_ICONERROR);
     } else {
         FixedLocalFileList(".");
@@ -1928,7 +1928,7 @@ void CFileManagerDlg::OnLocalUnCompress()
             std::string destDir = GetExtractDir(path);
             zsta::Error err = zsta::CZstdArchive::Extract(path, destDir);
             if (err != zsta::Error::Success) {
-                MessageBoxAPI_L(m_hWnd, "解压失败: " + CString(zsta::CZstdArchive::GetErrorString(err)),
+                MessageBoxAPI_L(m_hWnd, _TR("解压失败: ") + CString(zsta::CZstdArchive::GetErrorString(err)),
                                 "错误", MB_OK | MB_ICONERROR);
             } else {
                 needRefresh = TRUE;
@@ -2281,7 +2281,7 @@ void CFileManagerDlg::CreateLocalRecvFile()
     if (hFile == INVALID_HANDLE_VALUE) {
         m_nOperatingFileLength = 0;
         m_nCounter = 0;
-        MessageBoxAPI_L(m_hWnd, m_strReceiveLocalFile + " 文件创建失败", "警告", MB_OK|MB_ICONWARNING);
+        MessageBoxAPI_L(m_hWnd, m_strReceiveLocalFile + _TR(" 文件创建失败"), "警告", MB_OK|MB_ICONWARNING);
         return;
     }
     SAFE_CLOSE_HANDLE(hFile);
@@ -2332,8 +2332,8 @@ void CFileManagerDlg::WriteLocalRecvFile()
     if (hFile == INVALID_HANDLE_VALUE) {
         DWORD dwErr = GetLastError();
         CString msg;
-        msg.Format(_T("%s 文件打开失败 (错误码: %d)"), m_strReceiveLocalFile, dwErr);
-        MessageBoxAPI_L(m_hWnd, msg, "警告", MB_OK|MB_ICONWARNING);
+        msg.FormatL("%s 文件打开失败 (错误码: %d)", m_strReceiveLocalFile, dwErr);
+        ::MessageBox(m_hWnd, msg, _TR("警告"), MB_OK|MB_ICONWARNING);
         m_bIsStop = true;
         SendStop();
         return;
@@ -2359,8 +2359,8 @@ void CFileManagerDlg::WriteLocalRecvFile()
     if (i == MAX_WRITE_RETRY && nRet <= 0) {
         DWORD dwErr = GetLastError();
         CString msg;
-        msg.Format(_T("%s 文件写入失败 (错误码: %d)"), m_strReceiveLocalFile, dwErr);
-        MessageBoxAPI_L(m_hWnd, msg, "警告", MB_OK|MB_ICONWARNING);
+        msg.FormatL("%s 文件写入失败 (错误码: %d)", m_strReceiveLocalFile, dwErr);
+        ::MessageBox(m_hWnd, msg, _TR("警告"), MB_OK|MB_ICONWARNING);
         m_bIsStop = true;
     }
     SAFE_CLOSE_HANDLE(hFile);

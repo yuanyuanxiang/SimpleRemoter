@@ -467,8 +467,9 @@ void  CHideScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         FCCHandler handler = nID == IDM_SAVEAVI_S ? ENCODER_MJPEG : ENCODER_H264;
         int code;
         if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full, rate, handler)) {
-            MessageBoxL(CString("Create Video(*.avi) Failed:\n") + m_aviFile + "\r\n错误代码: " +
-                        CBmpToAvi::GetErrMsg(code).c_str(), "提示", MB_ICONINFORMATION);
+            CString msg;
+            msg.FormatL("创建录像文件失败: %s\r\n错误代码: %s", m_aviFile.GetString(), CBmpToAvi::GetErrMsg(code).c_str());
+            MessageBox(msg, _TR("提示"), MB_ICONINFORMATION);
             m_aviFile = _T("");
         } else {
             ::SetTimer(m_hWnd, TIMER_ID, duration, NULL);

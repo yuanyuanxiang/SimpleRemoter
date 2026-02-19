@@ -27,13 +27,15 @@ void CVideoDlg::SaveAvi(void)
     }
 
     CString	strFileName = m_IPAddress + CTime::GetCurrentTime().FormatL("_%Y-%m-%d_%H-%M-%S.avi");
-    CFileDialog dlg(FALSE, "avi", strFileName, OFN_OVERWRITEPROMPT, "视频文件(*.avi)|*.avi|", this);
+    CFileDialog dlg(FALSE, "avi", strFileName, OFN_OVERWRITEPROMPT, _TR("视频文件(*.avi)|*.avi|"), this);
     if(dlg.DoModal () != IDOK)
         return;
     m_aviFile = dlg.GetPathName();
     int code;
     if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full)) {
-        MessageBoxL("创建录像文件失败:"+m_aviFile + "\r\n错误代码: " + CBmpToAvi::GetErrMsg(code).c_str(), "提示", MB_ICONINFORMATION);
+        CString msg;
+        msg.FormatL("创建录像文件失败: %s\r\n错误代码: %s", m_aviFile.GetString(), CBmpToAvi::GetErrMsg(code).c_str());
+        MessageBox(msg, _TR("提示"), MB_ICONINFORMATION);
         m_aviFile.Empty();
     } else {
         pSysMenu->CheckMenuItem(IDM_SAVEAVI, MF_CHECKED);

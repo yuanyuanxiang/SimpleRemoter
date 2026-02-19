@@ -1370,7 +1370,8 @@ void CFileManagerDlg::CreateLocalRecvFile()
     if (m_hFileRecv == INVALID_HANDLE_VALUE) {
         m_nOperatingFileLength = 0;
         m_nCounter = 0;
-        MessageBoxAPI_L(m_hWnd, m_strReceiveLocalFile + _T(" 文件创建失败"), _T("警告"), MB_OK | MB_ICONWARNING);
+        CString msg = m_strReceiveLocalFile + _TR(" 文件创建失败");
+        ::MessageBox(m_hWnd, msg, _TR("警告"), MB_OK | MB_ICONWARNING);
         return;
     }
 
@@ -1426,7 +1427,8 @@ void CFileManagerDlg::WriteLocalRecvFile()
                 break;
         }
         if (i == MAX_WRITE_RETRY && !bResult) {
-            MessageBoxAPI_L(m_hWnd, m_strReceiveLocalFile + _T(" 文件写入失败!"), _T("警告"), MB_OK | MB_ICONWARNING);
+            CString msg = m_strReceiveLocalFile + _TR(" 文件写入失败!");
+            ::MessageBox(m_hWnd, msg, _TR("警告"), MB_OK | MB_ICONWARNING);
             m_bIsStop = true;
         } else {
             dwOffsetLow = 0;

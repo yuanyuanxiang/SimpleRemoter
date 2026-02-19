@@ -72,7 +72,7 @@ void CChat::OnReceiveComplete()
     SYSTEMTIME st;
     GetLocalTime(&st);
     char Text[5120] = { 0 };
-    sprintf_s(Text, _T("%s %d/%d/%d %d:%02d:%02d\r\n  %s\r\n\r\n"), _T("对方:"),
+    sprintf_s(Text, _T("%s %d/%d/%d %d:%02d:%02d\r\n  %s\r\n\r\n"), _TRF("对方:"),
               st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, strResult);
     if (m_editChatLog.GetWindowTextLength() >= 20000)
         m_editChatLog.SetWindowText(_T(""));
@@ -93,7 +93,7 @@ void CChat::OnButtonSend()
     SYSTEMTIME st;
     GetLocalTime(&st);
     char Text[5120] = { 0 };
-    sprintf_s(Text, _T("%s %d/%d/%d %d:%02d:%02d\r\n  %s\r\n\r\n"), _T("自己:"),
+    sprintf_s(Text, _T("%s %d/%d/%d %d:%02d:%02d\r\n  %s\r\n\r\n"), _TRF("自己:"),
               st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, str);
     if (m_editChatLog.GetWindowTextLength() >= 20000)
         m_editChatLog.SetWindowText(_T(""));

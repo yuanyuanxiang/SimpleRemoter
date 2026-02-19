@@ -1639,7 +1639,7 @@ void CMachineDlg::ShowHostsList_menu()
         DWORD dwSize = 0, dwRead;
         LPBYTE lpBuffer = NULL;
         CFileDialog dlg(TRUE, _T("*.txt"), NULL, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY,
-                        _T("图片文件(*.txt;*.txt)|*.txt;*.txt| All Files (*.*) |*.*||"), NULL);
+                        _TR("图片文件(*.txt;*.txt)|*.txt;*.txt| All Files (*.*) |*.*||"), NULL);
         CString strTitle = _L(_T("选择文件"));
         dlg.m_ofn.lpstrTitle = strTitle;
 

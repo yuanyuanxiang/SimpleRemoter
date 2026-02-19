@@ -46,7 +46,7 @@ BOOL DecryptDlg::OnInitDialog()
 
     BYTE bToken = COMMAND_NEXT;
     m_ContextObject->Send2Client(&bToken, sizeof(BYTE));
-    m_EditDecrypedResult.SetWindowTextA(CString("<<< 提示: 请在菜单选择解密类型 >>>\r\n"));
+    m_EditDecrypedResult.SetWindowText(_TR("<<< 提示: 请在菜单选择解密类型 >>>") + CString("\r\n"));
     int m_nCurSel = m_EditDecrypedResult.GetWindowTextLengthA();
     m_EditDecrypedResult.SetSel((int)m_nCurSel, (int)m_nCurSel);
     m_EditDecrypedResult.PostMessage(EM_SETSEL, m_nCurSel, m_nCurSel);
