@@ -459,18 +459,18 @@ void CLicenseDlg::OnLicenseRenewal()
     // 格式化当前过期日期显示
     CString strCurrentExpire;
     if (currentExpireDate.length() == 8) {
-        strCurrentExpire.Format(_T("当前到期: %s-%s-%s"),
+        strCurrentExpire.FormatL("当前到期: %s-%s-%s",
             currentExpireDate.substr(0, 4).c_str(),
             currentExpireDate.substr(4, 2).c_str(),
             currentExpireDate.substr(6, 2).c_str());
     } else {
-        strCurrentExpire = _T("当前到期: 未知");
+        strCurrentExpire = _TR("当前到期: 未知");
     }
 
     // 使用输入对话框获取续期信息
     CInputDialog dlg(this);
     CString strTitle;
-    strTitle.Format(_T("预设续期 (%s)"), strCurrentExpire);
+    strTitle.FormatL("预设续期 (%s)", strCurrentExpire);
     dlg.Init(strTitle, _L("续期天数:"));
     dlg.Init2(_L("并发连接数:"), std::to_string(defaultHostNum).c_str());
 
@@ -515,9 +515,9 @@ void CLicenseDlg::OnLicenseRenewal()
         m_ListLicense.SetItemText(nItem, LIC_COL_EXPIRE, strPending);
 
         CString msg;
-        msg.Format(_T("已预设续期至: %s\n并发连接数: %d\n客户端上线时将自动下发新授权"),
+        msg.FormatL("已预设续期至: %s\n并发连接数: %d\n客户端上线时将自动下发新授权",
             strPending, hostNum);
-        MessageBoxL(msg, "预设成功", MB_ICONINFORMATION);
+        MessageBox(msg, _TR("预设成功"), MB_ICONINFORMATION);
     }
 }
 
@@ -627,12 +627,12 @@ void CLicenseDlg::OnLicenseViewIPs()
             if (!timestamp.empty() && timestamp.length() == 4) {
                 // 格式化时间戳: 0218 -> 02-18
                 if (!machineName.empty()) {
-                    sprintf_s(line, _TR("%d. %s  [%s]  (最后活跃: %s-%s)\r\n"),
+                    sprintf_s(line, (_L("%d. %s  [%s]  (最后活跃: %s-%s)") + "\r\n").GetString(),
                         count, pureIP.c_str(), machineName.c_str(),
                         timestamp.substr(0, 2).c_str(),
                         timestamp.substr(2, 2).c_str());
                 } else {
-                    sprintf_s(line, _TR("%d. %s  (最后活跃: %s-%s)\r\n"),
+                    sprintf_s(line, (_L("%d. %s  (最后活跃: %s-%s)") + "\r\n").GetString(),
                         count, pureIP.c_str(),
                         timestamp.substr(0, 2).c_str(),
                         timestamp.substr(2, 2).c_str());
@@ -652,12 +652,13 @@ void CLicenseDlg::OnLicenseViewIPs()
 
     // 添加统计信息
     char summary[128];
-    sprintf_s(summary, _TR("\r\n共 %d 条登录记录"), count);
+    sprintf_s(summary, (CString("\r\n") + _TR("共 %d 条登录记录")).GetString(), count);
     formattedList += summary;
 
     // 多机器警告
     if (count > 1) {
-        formattedList += _TR("\r\n\r\n[!] 多个 IP/机器登录，请关注");
+        formattedList += "\r\n\r\n";
+        formattedList += g_Lang.Get(std::string("[!] 多个 IP/机器登录，请关注"));
     }
 
     CString strTitle;

@@ -1128,7 +1128,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     do { \
         CSplashDlg* pSplash = THIS_APP->GetSplash(); \
         if (pSplash && pSplash->GetSafeHwnd()) { \
-            pSplash->UpdateProgressDirect(percent, _T(text)); \
+            pSplash->UpdateProgressDirect(percent, _TR(text)); \
         } \
     } while(0)
 
@@ -1655,9 +1655,9 @@ void CMy2015RemoteDlg::CheckHeartbeat()
             auto host = ContextObject->GetAdditionalData(RES_CLIENT_PUBIP);
             host = host.IsEmpty() ? std::to_string(ContextObject->GetClientID()).c_str() : host;
             Mprintf("Client %s[%llu] heartbeat timeout!!! \n", host, ContextObject->GetClientID());
-            PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg("主机掉线"),
-                         (LPARAM)new CharMsg("主机长时间无心跳: " + host));
-            PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg("[主机下线] 主机长时间无心跳: " + host), NULL);
+            PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg(_TR("主机掉线")),
+                         (LPARAM)new CharMsg(_TR("主机长时间无心跳: ") + host));
+            PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(_TR("[主机下线] 主机长时间无心跳: ") + host), NULL);
             Mprintf("主机 %s[%llu]心跳超时\n", host, ContextObject->GetClientID());
             it = m_HostList.erase(it);
             ContextObject->CancelIO();
@@ -2170,7 +2170,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
             THIS_CFG.SetStr(settings, "PwdHmac", "");
             if (pwd.IsEmpty() || hash256 != fixedKey || IDOK != dlg.DoModal()) {
                 if (!dlg.m_sPassword.IsEmpty())
-                    THIS_APP->MessageBox(_TR("口令错误, 无法继续操作!\r\n请通过工具菜单重新输入口令。"), _TR("提示"), MB_ICONWARNING);
+                    THIS_APP->MessageBox(_TR("口令错误, 无法继续操作!") + "\r\n" + _TR("请通过工具菜单重新输入口令。"), _TR("提示"), MB_ICONWARNING);
                 return false;
             }
         }
@@ -2685,7 +2685,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
                 valid = AuthorizeClient(NULL, sn, passcode, hmac);
                 if (valid) {
                     Mprintf("%s 校验成功, HMAC 校验成功: %s\n", passcode.c_str(), sn.c_str());
-                    std::string tip = passcode + " 校验成功: " + sn;
+                    std::string tip = passcode + g_Lang.Get(std::string(" 校验成功: ")) + sn;
                     CharMsg* msg = new CharMsg(tip.c_str());
                     PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
                 } else {
@@ -3124,7 +3124,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
 
                 // 提示续期已下发
                 std::string expireFmt = renewal.ExpireDate.substr(0, 4) + "-" + renewal.ExpireDate.substr(4, 2) + "-" + renewal.ExpireDate.substr(6, 2);
-                std::string tip = std::string(hb.SN) + " 已自动续期至 " + expireFmt;
+                std::string tip = std::string(hb.SN) + g_Lang.Get(std::string(" 已自动续期至 ")) + expireFmt;
                 CharMsg* msg = new CharMsg(tip.c_str());
                 PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
             }
@@ -3750,7 +3750,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
         CFile File;
         BOOL r = File.Open(name, CFile::typeBinary | CFile::modeCreate | CFile::modeWrite);
         if (!r) {
-            MessageBoxL("主控程序创建失败!\r\n" + name, "提示", MB_ICONWARNING);
+            MessageBoxL(_TR("主控程序创建失败!") + "\r\n" + name, "提示", MB_ICONWARNING);
             SAFE_DELETE_ARRAY(curEXE);
             return;
         }
@@ -3759,10 +3759,10 @@ void CMy2015RemoteDlg::OnToolGenMaster()
         if (!upx.empty()) {
 #ifndef _DEBUG // DEBUG 模式用UPX压缩的程序可能无法正常运行
             run_upx_async(GetSafeHwnd(), upx, name.GetString(), true);
-            MessageBoxL("正在UPX压缩，请关注信息提示。\r\n文件位于: " + name, "提示", MB_ICONINFORMATION);
+            MessageBoxL(_TR("正在UPX压缩，请关注信息提示。") + "\r\n" + _TR("文件位于: ") + name, "提示", MB_ICONINFORMATION);
 #endif
         } else
-            MessageBoxL("生成成功! 文件位于:\r\n" + name, "提示", MB_ICONINFORMATION);
+            MessageBoxL(_TR("生成成功! 文件位于:") + "\r\n" + name, "提示", MB_ICONINFORMATION);
     }
     SAFE_DELETE_ARRAY(curEXE);
 }
@@ -3937,7 +3937,7 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
         std::string expired = res[RES_EXPIRED_DATE];
         expired = expired.empty() ? "" : " Expired on " + expired;
         strText.FormatL(_T("文件路径: %s%s %s%s\r\n系统信息: %s 位 %s 核心 %s GB %s\r\n启动信息: %s %s %s%s %s\r\n上线信息: %s %d %s\r\n客户信息: %s"),
-                        res[RES_PROGRAM_BITS].IsEmpty() ? "" : res[RES_PROGRAM_BITS] + " 位 ", res[RES_FILE_PATH], res[RES_EXE_VERSION], processInfo,
+                        res[RES_PROGRAM_BITS].IsEmpty() ? "" : res[RES_PROGRAM_BITS] + _L(" 位 "), res[RES_FILE_PATH], res[RES_EXE_VERSION], processInfo,
                         res[RES_SYSTEM_BITS], res[RES_SYSTEM_CPU], res[RES_SYSTEM_MEM], res[RES_RESOLUTION], startTime, expired.c_str(),
                         res[RES_USERNAME], res[RES_ISADMIN] == "1" ? _L("[管理员]") : res[RES_ISADMIN].IsEmpty() ? "" : _L("[非管理员]"), GetElapsedTime(startTime),
                         ctx->GetProtocol().c_str(), ctx->GetServerPort(), typMap[type].c_str(), res[RES_CLIENT_ID]);
@@ -4038,7 +4038,7 @@ void CMy2015RemoteDlg::OnToolInputPassword()
         auto v = splitString(pwd.GetBuffer(), '-');
         CString info;
         info.FormatL("软件有效期限: %s — %s, 并发连接数量: %d.", v[0].c_str(), v[1].c_str(), atoi(v[2].c_str()));
-        if (IDYES == MessageBoxL(info + "\n如需修改授权信息，请联系管理员。是否现在修改授权？", "提示", MB_YESNO | MB_ICONINFORMATION)) {
+        if (IDYES == MessageBoxL(info + _TR("\n如需修改授权信息，请联系管理员。是否现在修改授权？"), "提示", MB_YESNO | MB_ICONINFORMATION)) {
             CPasswordDlg dlg(this);
             std::string hardwareID = GetHardwareID();
             std::string hashedID = hashSHA256(hardwareID);
@@ -4103,7 +4103,7 @@ void shellcode_process(ObfsBase *obfs, bool load = false, const char* suffix = "
         CFile File;
         BOOL r = File.Open(name, CFile::typeBinary | CFile::modeRead);
         if (!r) {
-            AfxMessageBoxL("文件打开失败! 请稍后再试。\r\n" + name, MB_ICONWARNING);
+            AfxMessageBoxL(_TR("文件打开失败! 请稍后再试。") + "\r\n" + name, MB_ICONWARNING);
             return;
         }
         int dwFileSize = File.GetLength();
@@ -4134,7 +4134,7 @@ void shellcode_process(ObfsBase *obfs, bool load = false, const char* suffix = "
             const uint32_t key = 0xDEADBEEF;
             obfs->ObfuscateBuffer(srcData, srcLen, key);
             if (obfs->WriteFile(CString(buffer) + suffix, srcData, srcLen, "Shellcode")) {
-                AfxMessageBoxL("Shellcode 生成成功! 请自行编写调用程序。\r\n" + CString(buffer) + suffix,
+                AfxMessageBoxL(_TR("Shellcode 生成成功! 请自行编写调用程序。") + "\r\n" + CString(buffer) + suffix,
                                MB_ICONINFORMATION);
             }
         }
@@ -4177,8 +4177,8 @@ void CMy2015RemoteDlg::OnObfsShellcodeBin()
 
 void CMy2015RemoteDlg::OnShellcodeLoadTest()
 {
-    if (MessageBoxL(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
-                            "请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。",
+    if (MessageBoxL(CString(_TR("是否测试 ")) + (sizeof(void*) == 8 ? _TR("64位") : _TR("32位")) +
+                            _TR(" Shellcode 二进制文件? 请选择受信任的 bin 文件。") + "\r\n" + _TR("测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。"),
                             "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
         ObfsBase obfs;
         shellcode_process(&obfs, true);
@@ -4188,8 +4188,8 @@ void CMy2015RemoteDlg::OnShellcodeLoadTest()
 
 void CMy2015RemoteDlg::OnShellcodeObfsLoadTest()
 {
-    if (MessageBoxL(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
-                            "请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。",
+    if (MessageBoxL(CString(_TR("是否测试 ")) + (sizeof(void*) == 8 ? _TR("64位") : _TR("32位")) +
+                            _TR(" Shellcode 二进制文件? 请选择受信任的 bin 文件。") + "\r\n" + _TR("测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。"),
                             "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
         Obfs obfs;
         shellcode_process(&obfs, true);
@@ -4206,8 +4206,8 @@ void CMy2015RemoteDlg::OnShellcodeAesBin()
 
 void CMy2015RemoteDlg::OnShellcodeTestAesBin()
 {
-    if (MessageBoxL(CString("是否测试 ") + (sizeof(void*) == 8 ? "64位" : "32位") + " Shellcode 二进制文件? "
-                            "请选择受信任的 bin 文件。\r\n测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。",
+    if (MessageBoxL(CString(_TR("是否测试 ")) + (sizeof(void*) == 8 ? _TR("64位") : _TR("32位")) +
+                            _TR(" Shellcode 二进制文件? 请选择受信任的 bin 文件。") + "\r\n" + _TR("测试未知来源的 Shellcode 可能导致程序崩溃，甚至存在 CC 风险。"),
                             "提示", MB_ICONQUESTION | MB_YESNO) == IDYES) {
         ObfsAes obfs;
         shellcode_process(&obfs, true);
@@ -4567,7 +4567,7 @@ void CMy2015RemoteDlg::OnExecuteUpload()
     CFile file;
 
     if (!file.Open(strFilePath, CFile::modeRead | CFile::typeBinary)) {
-        MessageBoxL("无法读取文件!\r\n" + strFilePath, "错误", MB_ICONERROR);
+        MessageBoxL(_TR("无法读取文件!") + "\r\n" + strFilePath, "错误", MB_ICONERROR);
         return;
     }
 
@@ -5191,7 +5191,7 @@ void CMy2015RemoteDlg::OnChangeLang()
     size_t count = g_Lang.GetLanguageCount();
     if (count == 1) {
         // 只有简体中文，提示用户
-        MessageBoxA(_T("未检测到其他语言文件，请将语言文件放入 lang 目录!"), "提示", MB_ICONINFORMATION);
+        MessageBoxL("未检测到其他语言文件，请将语言文件放入 lang 目录!", "提示", MB_ICONINFORMATION);
         return;
     }
 

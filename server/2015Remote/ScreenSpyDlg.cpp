@@ -1320,7 +1320,7 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         FCCHandler handler = nID == IDM_SAVEAVI ? ENCODER_MJPEG : ENCODER_H264;
         int code;
         if (code = m_aviStream.Open(m_aviFile, m_BitmapInfor_Full, rate, handler)) {
-            MessageBoxL(CString("Create Video(*.avi) Failed:\n") + m_aviFile + _TR("\r\n错误代码: ") +
+            MessageBoxL(CString("Create Video(*.avi) Failed:\n") + m_aviFile + "\r\n" + _TR("错误代码: ") +
                         CBmpToAvi::GetErrMsg(code).c_str(), "提示", MB_ICONINFORMATION);
             m_aviFile = _T("");
         } else {
