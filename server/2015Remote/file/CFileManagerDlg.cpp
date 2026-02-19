@@ -1234,6 +1234,18 @@ BOOL CFileManagerDlg::SendDeleteJob()
     return TRUE;
 }
 
+// 将远程文件路径转换为本地保存路径
+// strFilePath: 远程文件的完整路径 (客户端返回的，保持原始形式含环境变量)
+// strRemotePath: 远程目录路径 (可能含环境变量如 %USERPROFILE%\Desktop\)
+// strLocalPath: 本地目标目录路径
+// 返回: 本地文件保存路径
+static CString RemotePathToLocal(const CString& strFilePath, const CString& strRemotePath, const CString& strLocalPath)
+{
+    CString strResult = strFilePath;
+    strResult.Replace(strRemotePath, strLocalPath);
+    return strResult;
+}
+
 void CFileManagerDlg::CreateLocalRecvFile()
 {
     // 重置计数器
@@ -1251,10 +1263,8 @@ void CFileManagerDlg::CreateLocalRecvFile()
     // 当前正操作的文件名
     m_strOperatingFile = (TCHAR*)(m_ContextObject->m_DeCompressionBuffer.GetBuffer(9));
 
-    m_strReceiveLocalFile = m_strOperatingFile;
-
     // 得到要保存到的本地的文件路径
-    m_strReceiveLocalFile.Replace(m_Remote_Path, strLpath);
+    m_strReceiveLocalFile = RemotePathToLocal(m_strOperatingFile, m_Remote_Path, strLpath);
     m_strFileName = m_strReceiveLocalFile;
 
     // 创建多层目录
@@ -1320,7 +1330,7 @@ void CFileManagerDlg::CreateLocalRecvFile()
 
     //  1字节Token,四字节偏移高四位，四字节偏移低四位
     BYTE	bToken[9];
-    DWORD	dwCreationDisposition; // 文件打开方式
+    DWORD	dwCreationDisposition = CREATE_ALWAYS; // 文件打开方式
     memset(bToken, 0, sizeof(bToken));
     bToken[0] = COMMAND_CONTINUE;
 

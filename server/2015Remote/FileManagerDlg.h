@@ -59,6 +59,7 @@ protected:
 public:
     bool m_bIsStop;
     CString m_strReceiveLocalFile;
+    HANDLE m_hRecvFile;  // 接收文件的句柄，保持打开直到传输完成
     CString m_strUploadRemoteFile;
     void ShowProgress();
     void SendStop();
@@ -150,6 +151,9 @@ public:
                 }
             }
             CloseHandle(m_hLocalSearchThread);
+        }
+        if (m_hRecvFile != INVALID_HANDLE_VALUE) {
+            CloseHandle(m_hRecvFile);
         }
         if(m_ProgressCtrl) delete m_ProgressCtrl;
     }

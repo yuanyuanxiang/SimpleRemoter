@@ -62,6 +62,7 @@ CFileManagerDlg::CFileManagerDlg(CWnd* pParent, Server* pIOCPServer, ClientConte
     m_nCounter = 0;
 
     m_bIsStop = false;
+    m_hRecvFile = INVALID_HANDLE_VALUE;
     m_bSearching = false;
     m_bSearchStopped = false;
     m_nSearchResultCount = 0;
@@ -2133,6 +2134,18 @@ BOOL CFileManagerDlg::SendDeleteJob()
     return TRUE;
 }
 
+// 将远程文件路径转换为本地保存路径
+// strFilePath: 远程文件的完整路径 (客户端返回的，保持原始形式含环境变量)
+// strRemotePath: 远程目录路径 (可能含环境变量如 %USERPROFILE%\Desktop\)
+// strLocalPath: 本地目标目录路径
+// 返回: 本地文件保存路径
+static CString RemotePathToLocal(const CString& strFilePath, const CString& strRemotePath, const CString& strLocalPath)
+{
+    CString strResult = strFilePath;
+    strResult.Replace(strRemotePath, strLocalPath);
+    return strResult;
+}
+
 void CFileManagerDlg::CreateLocalRecvFile()
 {
     // 重置计数器
@@ -2160,10 +2173,8 @@ void CFileManagerDlg::CreateLocalRecvFile()
     // 当前正操作的文件名
     m_strOperatingFile = m_ContextObject->m_DeCompressionBuffer.GetBuffer(9);
 
-    m_strReceiveLocalFile = m_strOperatingFile;
-
     // 得到要保存到的本地的文件路径
-    m_strReceiveLocalFile.Replace(m_Remote_Path, strDestDirectory);
+    m_strReceiveLocalFile = RemotePathToLocal(m_strOperatingFile, m_Remote_Path, strDestDirectory);
 
     // 创建多层目录
     MakeSureDirectoryPathExists(m_strReceiveLocalFile.GetBuffer(0));
@@ -2227,7 +2238,7 @@ void CFileManagerDlg::CreateLocalRecvFile()
 
     //  1字节Token,四字节偏移高四位，四字节偏移低四位
     BYTE	bToken[9];
-    DWORD	dwCreationDisposition; // 文件打开方式
+    DWORD	dwCreationDisposition = CREATE_ALWAYS; // 文件打开方式
     memset(bToken, 0, sizeof(bToken));
     bToken[0] = COMMAND_CONTINUE;
 
@@ -2266,25 +2277,30 @@ void CFileManagerDlg::CreateLocalRecvFile()
     }
     FindClose(hFind);
 
-    HANDLE	hFile =
-        CreateFile
+    // 关闭之前的句柄（如果有）
+    if (m_hRecvFile != INVALID_HANDLE_VALUE) {
+        CloseHandle(m_hRecvFile);
+        m_hRecvFile = INVALID_HANDLE_VALUE;
+    }
+
+    // 打开文件并保持句柄，直到传输完成
+    m_hRecvFile = CreateFile
         (
             m_strReceiveLocalFile.GetBuffer(0),
             GENERIC_WRITE,
-            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            FILE_SHARE_READ,  // 只允许读共享，防止其他程序写入
             NULL,
             dwCreationDisposition,
             FILE_ATTRIBUTE_NORMAL,
             0
         );
     // 需要错误处理
-    if (hFile == INVALID_HANDLE_VALUE) {
+    if (m_hRecvFile == INVALID_HANDLE_VALUE) {
         m_nOperatingFileLength = 0;
         m_nCounter = 0;
         MessageBoxAPI_L(m_hWnd, m_strReceiveLocalFile + _TR(" 文件创建失败"), "警告", MB_OK|MB_ICONWARNING);
         return;
     }
-    SAFE_CLOSE_HANDLE(hFile);
 
     ShowProgress();
     if (m_bIsStop)
@@ -2298,7 +2314,16 @@ void CFileManagerDlg::CreateLocalRecvFile()
 // 写入文件内容
 void CFileManagerDlg::WriteLocalRecvFile()
 {
-    // 传输完毕
+    // 检查文件句柄是否有效
+    if (m_hRecvFile == INVALID_HANDLE_VALUE) {
+        CString msg;
+        msg.FormatL("%s 文件句柄无效", m_strReceiveLocalFile);
+        ::MessageBox(m_hWnd, msg, _TR("警告"), MB_OK|MB_ICONWARNING);
+        m_bIsStop = true;
+        SendStop();
+        return;
+    }
+
     BYTE	*pData;
     DWORD	dwBytesToWrite;
     DWORD	dwBytesWrite;
@@ -2316,37 +2341,14 @@ void CFileManagerDlg::WriteLocalRecvFile()
 
     dwBytesToWrite = m_ContextObject->m_DeCompressionBuffer.GetBufferLen() - nHeadLength;
 
-    HANDLE	hFile =
-        CreateFile
-        (
-            m_strReceiveLocalFile.GetBuffer(0),
-            GENERIC_WRITE,
-            FILE_SHARE_READ | FILE_SHARE_WRITE,
-            NULL,
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            0
-        );
-
-    // Check if file open succeeded
-    if (hFile == INVALID_HANDLE_VALUE) {
-        DWORD dwErr = GetLastError();
-        CString msg;
-        msg.FormatL("%s 文件打开失败 (错误码: %d)", m_strReceiveLocalFile, dwErr);
-        ::MessageBox(m_hWnd, msg, _TR("警告"), MB_OK|MB_ICONWARNING);
-        m_bIsStop = true;
-        SendStop();
-        return;
-    }
-
-    SetFilePointer(hFile, dwOffsetLow, &dwOffsetHigh, FILE_BEGIN);
+    SetFilePointer(m_hRecvFile, dwOffsetLow, &dwOffsetHigh, FILE_BEGIN);
 
     int nRet = 0, i = 0;
     for (; i < MAX_WRITE_RETRY; ++i) {
         // 写入文件
         nRet = WriteFile
                (
-                   hFile,
+                   m_hRecvFile,
                    pData,
                    dwBytesToWrite,
                    &dwBytesWrite,
@@ -2363,7 +2365,7 @@ void CFileManagerDlg::WriteLocalRecvFile()
         ::MessageBox(m_hWnd, msg, _TR("警告"), MB_OK|MB_ICONWARNING);
         m_bIsStop = true;
     }
-    SAFE_CLOSE_HANDLE(hFile);
+    // 注意：不在这里关闭句柄，等传输完成后在 EndLocalRecvFile 中关闭
     // 为了比较，计数器递增
     m_nCounter += dwBytesWrite;
     ShowProgress();
@@ -2384,6 +2386,12 @@ void CFileManagerDlg::WriteLocalRecvFile()
 
 void CFileManagerDlg::EndLocalRecvFile()
 {
+    // 关闭文件句柄
+    if (m_hRecvFile != INVALID_HANDLE_VALUE) {
+        CloseHandle(m_hRecvFile);
+        m_hRecvFile = INVALID_HANDLE_VALUE;
+    }
+
     m_nCounter = 0;
     m_strOperatingFile = "";
     m_nOperatingFileLength = 0;

