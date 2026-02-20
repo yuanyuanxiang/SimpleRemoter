@@ -216,6 +216,7 @@ enum {
     CMD_INSTRUCTION_SET = 79,
     CMD_QUALITY_PROFILES = 80,      // 下发质量配置表 (1 + QUALITY_COUNT * sizeof(QualityProfile))
     CMD_TERMINAL_RESIZE = 81,       // 终端尺寸调整: [cmd:1][cols:2][rows:2]
+    CMD_RESTORE_CONSOLE = 82,       // RDP会话归位（恢复控制台会话）
 
     TOKEN_SCROLL_FRAME = 99,        // 滚动优化帧
     // 服务端发出的标识

@@ -3,6 +3,7 @@
 #include "2015Remote.h"
 #include "2015RemoteDlg.h"
 #include <ScreenSpyDlg.h>
+#include <common/commands.h>
 
 IMPLEMENT_DYNAMIC(CToolbarDlg, CDialogEx)
 
@@ -33,6 +34,7 @@ BEGIN_MESSAGE_MAP(CToolbarDlg, CDialogEx)
     ON_BN_CLICKED(IDC_BTN_BLOCK_INPUT, &CToolbarDlg::OnBnClickedBlockInput)
     ON_BN_CLICKED(IDC_BTN_STATUS_INFO, &CToolbarDlg::OnBnClickedStatusInfo)
     ON_BN_CLICKED(IDC_BTN_QUALITY, &CToolbarDlg::OnBnClickedQuality)
+    ON_BN_CLICKED(IDC_BTN_RESTORE_CONSOLE, &CToolbarDlg::OnBnClickedRestoreConsole)
     ON_BN_CLICKED(IDC_BTN_SCREENSHOT, &CToolbarDlg::OnBnClickedScreenshot)
     ON_WM_ERASEBKGND()
 END_MESSAGE_MAP()
@@ -148,9 +150,9 @@ void CToolbarDlg::SlideIn()
     int monWidth = monRight - monLeft;
     int monHeight = monBottom - monTop;
 
-    int hw = 480; // 水平工具栏宽度 (与垂直高度一致)
+    int hw = 524; // 水平工具栏宽度 (与垂直高度一致)
     int vw = 40;
-    int vh = 480;
+    int vh = 524;
 
     // 从边缘展开（改变窗口大小），避免多显示器时跑到相邻屏幕
     switch (m_nPosition) {
@@ -207,9 +209,9 @@ void CToolbarDlg::SlideOut()
     int monWidth = monRight - monLeft;
     int monHeight = monBottom - monTop;
 
-    int hw = 480;
+    int hw = 524;
     int vw = 40;
-    int vh = 480;
+    int vh = 524;
 
     CWnd* btns[] = {
         &m_btnExit, &m_btnControl,
@@ -319,6 +321,7 @@ BOOL CToolbarDlg::OnInitDialog()
     m_btnBlockInput.SubclassDlgItem(IDC_BTN_BLOCK_INPUT, this);
     m_btnStatusInfo.SubclassDlgItem(IDC_BTN_STATUS_INFO, this);
     m_btnQuality.SubclassDlgItem(IDC_BTN_QUALITY, this);
+    m_btnRestoreConsole.SubclassDlgItem(IDC_BTN_RESTORE_CONSOLE, this);
     m_btnScreenshot.SubclassDlgItem(IDC_BTN_SCREENSHOT, this);
     m_btnMinimize.SubclassDlgItem(IDC_BTN_MINIMIZE, this);
     m_btnClose.SubclassDlgItem(IDC_BTN_CLOSE, this);
@@ -327,6 +330,7 @@ BOOL CToolbarDlg::OnInitDialog()
     m_btnExit.SetIconDrawFunc(CIconButton::DrawIconExitFullscreen);
     m_btnSwitchScreen.SetIconDrawFunc(CIconButton::DrawIconSwitchScreen);
     m_btnQuality.SetIconDrawFunc(CIconButton::DrawIconQuality);
+    m_btnRestoreConsole.SetIconDrawFunc(CIconButton::DrawIconRestoreConsole);
     m_btnScreenshot.SetIconDrawFunc(CIconButton::DrawIconScreenshot);
     m_btnMinimize.SetIconDrawFunc(CIconButton::DrawIconMinimize);
     m_btnClose.SetIconDrawFunc(CIconButton::DrawIconClose);
@@ -347,6 +351,7 @@ BOOL CToolbarDlg::OnInitDialog()
     m_tooltip.AddTool(&m_btnBlockInput, _TR("锁定远程输入"));
     m_tooltip.AddTool(&m_btnStatusInfo, m_bShowStatusInfo ? _TR("隐藏状态信息") : _TR("显示状态信息"));
     m_tooltip.AddTool(&m_btnQuality, _TR("屏幕质量"));
+    m_tooltip.AddTool(&m_btnRestoreConsole, _TR("RDP会话归位"));
     m_tooltip.AddTool(&m_btnScreenshot, _TR("截图"));
     m_tooltip.AddTool(&m_btnMinimize, _TR("最小化"));
     m_tooltip.AddTool(&m_btnClose, _TR("关闭"));
@@ -364,9 +369,9 @@ BOOL CToolbarDlg::OnInitDialog()
         int monWidth = rcMonitor.right - rcMonitor.left;
         int monHeight = rcMonitor.bottom - rcMonitor.top;
 
-        int hw = 480;
+        int hw = 524;
         int vw = 40;
-        int vh = 480;
+        int vh = 524;
         int hx = rcMonitor.left + (monWidth - hw) / 2;
 
         switch (m_nPosition) {
@@ -479,7 +484,7 @@ void CToolbarDlg::LayoutButtons()
 {
     int btnSize = 32;
     int btnSpacing = 8;
-    int btnCount = 12;
+    int btnCount = 13;
 
     CWnd* btns[] = {
         &m_btnExit,
@@ -491,6 +496,7 @@ void CToolbarDlg::LayoutButtons()
         &m_btnBlockInput,
         &m_btnStatusInfo,
         &m_btnQuality,
+        &m_btnRestoreConsole,
         &m_btnScreenshot,
         &m_btnMinimize,
         &m_btnClose,
@@ -549,9 +555,9 @@ void CToolbarDlg::UpdatePosition()
     int monWidth = rcMonitor.right - rcMonitor.left;
     int monHeight = rcMonitor.bottom - rcMonitor.top;
 
-    int hw = 480;
+    int hw = 524;
     int vw = 40;
-    int vh = 480;
+    int vh = 524;
     int hx = rcMonitor.left + (monWidth - hw) / 2;
 
     switch (m_nPosition) {
@@ -675,6 +681,18 @@ void CToolbarDlg::OnBnClickedQuality()
     UINT cmd = menu.TrackPopupMenu(TPM_RETURNCMD | TPM_NONOTIFY, rc.right, rc.top, this);
     if (cmd) {
         GetParent()->PostMessage(WM_SYSCOMMAND, cmd, 0);
+    }
+}
+
+void CToolbarDlg::OnBnClickedRestoreConsole()
+{
+    CScreenSpyDlg* pParent = (CScreenSpyDlg*)GetParent();
+    if (pParent) {
+        BeginWaitCursor();
+        BYTE bToken = CMD_RESTORE_CONSOLE;
+        pParent->m_ContextObject->Send2Client(&bToken, 1);
+        Sleep(1000);  // 等待会话切换完成
+        EndWaitCursor();
     }
 }
 

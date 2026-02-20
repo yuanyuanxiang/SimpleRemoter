@@ -34,6 +34,7 @@ public:
     CIconButton m_btnBlockInput;
     CIconButton m_btnStatusInfo;
     CIconButton m_btnQuality;
+    CIconButton m_btnRestoreConsole;
     CIconButton m_btnScreenshot;
     CIconButton m_btnMinimize;
     CIconButton m_btnClose;
@@ -71,6 +72,7 @@ public:
     afx_msg void OnBnClickedBlockInput();
     afx_msg void OnBnClickedStatusInfo();
     afx_msg void OnBnClickedQuality();
+    afx_msg void OnBnClickedRestoreConsole();
     afx_msg void OnBnClickedScreenshot();
     afx_msg BOOL OnEraseBkgnd(CDC* pDC);
     virtual BOOL OnInitDialog();

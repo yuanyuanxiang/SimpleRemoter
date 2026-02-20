@@ -77,6 +77,7 @@ enum {
     IDM_QUALITY_MINIMAL,        // 手动质量：Minimal
     IDM_ENABLE_SSE2,
     IDM_FAST_STRETCH,           // 快速缩放模式（降低CPU占用）
+    IDM_RESTORE_CONSOLE,        // RDP会话归位
 };
 
 // 状态信息窗口 - 全屏时显示帧率/速度/质量

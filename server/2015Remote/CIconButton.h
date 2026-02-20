@@ -37,6 +37,7 @@ public:
     static void DrawIconBlockInput(CDC* pDC, const CRect& rc);
     static void DrawIconUnblockInput(CDC* pDC, const CRect& rc);
     static void DrawIconQuality(CDC* pDC, const CRect& rc);
+    static void DrawIconRestoreConsole(CDC* pDC, const CRect& rc);
     static void DrawIconMinimize(CDC* pDC, const CRect& rc);
     static void DrawIconClose(CDC* pDC, const CRect& rc);
     static void DrawIconInfo(CDC* pDC, const CRect& rc);

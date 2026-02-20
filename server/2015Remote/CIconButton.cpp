@@ -419,6 +419,29 @@ void CIconButton::DrawIconQuality(CDC* pDC, const CRect& rc)
     pDC->SelectObject(pOld);
 }
 
+// Restore Console: Letter "R" (for RDP session restore)
+void CIconButton::DrawIconRestoreConsole(CDC* pDC, const CRect& rc)
+{
+    // 创建字体绘制 "R"
+    CFont font;
+    font.CreateFont(
+        rc.Height() + 2,  // height - 字体更大
+        0, 0, 0,          // width, escapement, orientation
+        FW_BOLD,          // weight - 更粗
+        FALSE, FALSE, FALSE,  // italic, underline, strikeout
+        DEFAULT_CHARSET,
+        OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY,
+        DEFAULT_PITCH | FF_SWISS,
+        _T("Arial Black")
+    );
+
+    CFont* pOldFont = pDC->SelectObject(&font);
+    pDC->SetTextColor(CLR_ICON);
+    pDC->SetBkMode(TRANSPARENT);
+    pDC->DrawText(_T("R"), -1, (LPRECT)&rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+    pDC->SelectObject(pOldFont);
+}
+
 // Minimize: horizontal dash
 void CIconButton::DrawIconMinimize(CDC* pDC, const CRect& rc)
 {

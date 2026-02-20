@@ -427,11 +427,11 @@
 #define IDC_EDIT_WALLET_DOT             2204
 #define IDC_EDIT_PASSCODE_HMAC          2204
 #define IDC_EDIT_WALLET_TRON            2205
-#define IDC_BTN_EXIT_FULLSCREEN         2205
+#define IDC_BTN_EXIT_FULLSCREEN         2300
 #define CONTROL_BTN_ID                  2206
 #define IDC_BUTTON3                     2207
-#define IDC_BTN_CLOSE                   2207
-#define IDC_BTN_MINIMIZE                2208
+#define IDC_BTN_CLOSE                   2301
+#define IDC_BTN_MINIMIZE                2302
 #define IDC_COMBO_PAYLOAD               2210
 #define IDC_STATIC_PAYLOAD              2211
 #define IDC_SLIDER_CLIENT_SIZE          2212
@@ -443,13 +443,14 @@
 #define IDC_STATIC_CURRENTPERCENT       2216
 #define IDC_EDIT_INSTALL_DIR            2216
 #define IDC_EDIT_INSTALL_NAME           2217
-#define IDC_BTN_LOCK                    2218
-#define IDC_BTN_POSITION                2219
-#define IDC_BTN_OPACITY                 2220
-#define IDC_BTN_SCREENSHOT              2221
-#define IDC_BTN_SWITCH_SCREEN           2240
-#define IDC_BTN_BLOCK_INPUT             2241
-#define IDC_BTN_QUALITY                 2242
+#define IDC_BTN_LOCK                    2303
+#define IDC_BTN_POSITION                2304
+#define IDC_BTN_OPACITY                 2305
+#define IDC_BTN_SCREENSHOT              2306
+#define IDC_BTN_SWITCH_SCREEN           2307
+#define IDC_BTN_BLOCK_INPUT             2308
+#define IDC_BTN_QUALITY                 2309
+#define IDC_BTN_RESTORE_CONSOLE         2310
 #define IDC_CHECK1                      2222
 #define IDC_CHECK_FILESERVER            2222
 #define IDC_STATIC_DOWNLOAD             2223
@@ -678,7 +679,7 @@
 #define ID_LICENSE_VIEW_IPS             33024
 
 // Status info window
-#define IDC_BTN_STATUS_INFO             2243
+#define IDC_BTN_STATUS_INFO             2311
 #define ID_SHOW_STATUS_INFO             33022
 #define ID_HIDE_STATUS_INFO             33023
 
@@ -691,7 +692,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        332
 #define _APS_NEXT_COMMAND_VALUE         33025
-#define _APS_NEXT_CONTROL_VALUE         2244
+#define _APS_NEXT_CONTROL_VALUE         2245
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

