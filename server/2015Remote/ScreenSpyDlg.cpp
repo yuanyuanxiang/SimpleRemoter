@@ -523,6 +523,10 @@ BOOL CScreenSpyDlg::OnInitDialog()
         SysMenu->AppendMenuL(MF_STRING, IDM_TRACE_CURSOR, "跟踪被控端鼠标(&T)");
         SysMenu->AppendMenuL(MF_STRING, IDM_BLOCK_INPUT, "锁定被控端鼠标和键盘(&L)");
         SysMenu->AppendMenuL(MF_STRING, IDM_RESTORE_CONSOLE, "RDP会话归位(&R)");
+        // 只在虚拟桌面模式下显示重置选项
+        if (m_Settings.ScreenType == USING_VIRTUAL) {
+            SysMenu->AppendMenuL(MF_STRING, IDM_RESET_VIRTUAL_DESKTOP, "重置虚拟桌面(&V)");
+        }
         SysMenu->AppendMenuSeparator(MF_SEPARATOR);
         SysMenu->AppendMenuL(MF_STRING, IDM_SAVEDIB, "保存快照(&S)");
         SysMenu->AppendMenuL(MF_STRING, IDM_SAVEAVI, _T("录像(MJPEG)"));
@@ -610,7 +614,7 @@ BOOL CScreenSpyDlg::OnInitDialog()
         SysMenu->CheckMenuItem(scrollMenuID, MF_CHECKED);
     }
 
-    m_bIsCtrl = THIS_CFG.GetInt("settings", "DXGI") == USING_VIRTUAL;
+    m_bIsCtrl = m_Settings.ScreenType == USING_VIRTUAL;
     m_bIsTraceCursor = FALSE;  //不是跟踪
     m_ClientCursorPos.x = 0;
     m_ClientCursorPos.y = 0;
@@ -1498,6 +1502,11 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
     }
     case IDM_RESTORE_CONSOLE: { // RDP会话归位
         BYTE bToken = CMD_RESTORE_CONSOLE;
+        m_ContextObject->Send2Client(&bToken, 1);
+        break;
+    }
+    case IDM_RESET_VIRTUAL_DESKTOP: { // 重置虚拟桌面
+        BYTE bToken = CMD_RESET_VIRTUAL_DESKTOP;
         m_ContextObject->Send2Client(&bToken, 1);
         break;
     }

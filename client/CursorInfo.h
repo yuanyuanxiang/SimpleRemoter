@@ -9,11 +9,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-enum {
-    USING_GDI = 0,
-    USING_DXGI = 1,
-    USING_VIRTUAL = 2,
-};
+// ScreenType enum (USING_GDI, USING_DXGI, USING_VIRTUAL) 已移至 common/commands.h
 
 #define ALGORITHM_GRAY 0
 #define ALGORITHM_DIFF 1

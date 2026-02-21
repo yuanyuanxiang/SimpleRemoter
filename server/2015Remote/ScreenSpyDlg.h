@@ -78,6 +78,7 @@ enum {
     IDM_ENABLE_SSE2,
     IDM_FAST_STRETCH,           // 快速缩放模式（降低CPU占用）
     IDM_RESTORE_CONSOLE,        // RDP会话归位
+    IDM_RESET_VIRTUAL_DESKTOP,  // 重置虚拟桌面
 };
 
 // 状态信息窗口 - 全屏时显示帧率/速度/质量

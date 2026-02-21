@@ -128,6 +128,12 @@ LPBYTE CScreenSpy::GetFirstScreenData(ULONG* ulFirstScreenLength)
 VOID CScreenSpy::ScanScreen(HDC hdcDest, HDC hdcSour, ULONG ulWidth, ULONG ulHeight)
 {
     if (m_bVirtualPaint) {
+        // 先用深色填充背景，避免窗口移动时留下残影
+        RECT rcFill = { 0, 0, (LONG)ulWidth, (LONG)ulHeight };
+        HBRUSH hBrush = CreateSolidBrush(RGB(30, 30, 30));  // 深灰色背景
+        FillRect(hdcDest, &rcFill, hBrush);
+        DeleteObject(hBrush);
+
         int n = 0;
         if (n = EnumWindowsTopToDown(NULL, EnumHwndsPrint, (LPARAM)&m_data.SetScreenDC(hdcDest))) {
             Mprintf("EnumWindowsTopToDown failed: %d!!! GetLastError: %d\n", n, GetLastError());

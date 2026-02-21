@@ -12,6 +12,8 @@
 #define COPY_ALL 1	// 拷贝全部屏幕，不分块拷贝（added by yuanyuanxiang 2019-1-7）
 #include "CursorInfo.h"
 #include "ScreenCapture.h"
+#include <dwmapi.h>
+#pragma comment(lib, "dwmapi.lib")
 
 
 class EnumHwndsPrintData
@@ -143,19 +145,60 @@ public:
         if (!GetWindowRect(hWnd, &rect))
             return FALSE;
 
+        // 检查是否为菜单窗口
+        char className[32] = {};
+        GetClassNameA(hWnd, className, sizeof(className));
+        BOOL isMenu = (strcmp(className, "#32768") == 0);
+
+        // 获取不含 DWM 阴影的真实窗口边界（Windows 10 窗口有透明阴影导致黑边）
+        // 菜单窗口不使用 DWM 裁剪
+        RECT frameRect = rect;
+        BOOL hasDwmFrame = FALSE;
+        if (!isMenu) {
+            hasDwmFrame = SUCCEEDED(DwmGetWindowAttribute(hWnd, DWMWA_EXTENDED_FRAME_BOUNDS,
+                &frameRect, sizeof(frameRect)));
+        }
+
         HDC hDcWindow = data->GetWindowDC();
         HBITMAP hOldBmp = (HBITMAP)SelectObject(hDcWindow, data->GetWindowBmp());
-        BOOL ret = FALSE;
-        if (PrintWindow(hWnd, hDcWindow, PW_RENDERFULLCONTENT) || SendMessageTimeout(hWnd, WM_PRINT,
-                (WPARAM)hDcWindow, PRF_CLIENT | PRF_NONCLIENT, SMTO_BLOCK, 50, NULL)) {
-            BitBlt(data->GetScreenDC(), rect.left - data->X(), rect.top - data->Y(),
-                   rect.right - rect.left, rect.bottom - rect.top, hDcWindow, 0, 0, SRCCOPY);
 
-            ret = TRUE;
+        // 对于某些现代应用（WinUI 3 等），需要先请求重绘
+        RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW);
+
+        BOOL captured = PrintWindow(hWnd, hDcWindow, PW_RENDERFULLCONTENT);
+        if (!captured) {
+            // PrintWindow 失败，尝试不带 PW_RENDERFULLCONTENT
+            captured = PrintWindow(hWnd, hDcWindow, 0);
         }
-        SelectObject(hDcWindow, hOldBmp);
+        if (!captured) {
+            // 仍然失败，尝试 WM_PRINT
+            captured = SendMessageTimeout(hWnd, WM_PRINT, (WPARAM)hDcWindow,
+                PRF_CLIENT | PRF_NONCLIENT, SMTO_BLOCK, 50, NULL) != 0;
+        }
+        if (!captured) {
+            char title[128] = {};
+            GetWindowTextA(hWnd, title, sizeof(title));
+            Mprintf("PrintWindow failed: %s [%s]\n", className, title);
+        }
 
-        return ret;
+        if (captured) {
+            if (hasDwmFrame) {
+                // 使用真实边界（不含阴影），从 PrintWindow 输出的正确偏移位置复制
+                int shadowLeft = frameRect.left - rect.left;
+                int shadowTop = frameRect.top - rect.top;
+                int realWidth = frameRect.right - frameRect.left;
+                int realHeight = frameRect.bottom - frameRect.top;
+                BitBlt(data->GetScreenDC(), frameRect.left - data->X(), frameRect.top - data->Y(),
+                       realWidth, realHeight, hDcWindow, shadowLeft, shadowTop, SRCCOPY);
+            } else {
+                // 菜单和其他窗口使用原始方式
+                BitBlt(data->GetScreenDC(), rect.left - data->X(), rect.top - data->Y(),
+                       rect.right - rect.left, rect.bottom - rect.top, hDcWindow, 0, 0, SRCCOPY);
+            }
+        }
+        // 即使捕获失败也返回 TRUE，避免阻止其他窗口的绘制
+        SelectObject(hDcWindow, hOldBmp);
+        return TRUE;
     }
 
     static int EnumWindowsTopToDown(HWND owner, WNDENUMPROC proc, LPARAM param)

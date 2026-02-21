@@ -75,6 +75,13 @@ typedef struct {
 #define _MAX_PATH 260
 #endif
 
+// 屏幕类型（用于 ScreenSettings.ScreenType）
+enum ScreenType {
+    USING_GDI = 0,      // GDI 截屏
+    USING_DXGI = 1,     // DXGI 截屏
+    USING_VIRTUAL = 2,  // 虚拟桌面
+};
+
 // 以下2个数字需全局唯一，否则在生成服务时会出问题
 
 #define FLAG_FINDEN "Hello, World!"
@@ -217,6 +224,7 @@ enum {
     CMD_QUALITY_PROFILES = 80,      // 下发质量配置表 (1 + QUALITY_COUNT * sizeof(QualityProfile))
     CMD_TERMINAL_RESIZE = 81,       // 终端尺寸调整: [cmd:1][cols:2][rows:2]
     CMD_RESTORE_CONSOLE = 82,       // RDP会话归位（恢复控制台会话）
+    CMD_RESET_VIRTUAL_DESKTOP = 83, // 重置虚拟桌面（关闭所有窗口重新启动）
 
     TOKEN_SCROLL_FRAME = 99,        // 滚动优化帧
     // 服务端发出的标识
@@ -1018,7 +1026,8 @@ typedef struct ScreenSettings {
     int         ScrollDetectInterval;       // 偏移 28, 滚动检测间隔（0=禁用, 1=每帧, 2=每2帧, ...）
     int         QualityLevel;               // 偏移 32, 质量等级 (-1=自适应, 0=Ultra, 1=High, ..., 4=Minimal)
     int         CpuSpeedup;                 // 偏移 36, 指令集加速(0: 无, 1: SSE2)
-    char        Reserved[56];               // 偏移 40, 保留字段（新能力参数从此处扩展）
+    int         ScreenType;                 // 偏移 40, 屏幕类型(0: GDI, 1: DXGI, 2: Virtual)
+    char        Reserved[52];               // 偏移 44, 保留字段（新能力参数从此处扩展）
     uint32_t    Capabilities;               // 偏移 96, 能力位标志（放最后）
 } ScreenSettings;                           // 总大小 100 字节
 
