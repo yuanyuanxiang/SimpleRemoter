@@ -120,3 +120,6 @@ bool SetLicenseRemark(const std::string& deviceID, const std::string& remark);
 int GetIPCountFromList(const std::string& ipListStr);
 std::string GetFirstIPFromList(const std::string& ipListStr);
 std::string FormatIPDisplay(const std::string& ipListStr);  // 格式化显示: "[3] 192.168.1.1, ..."
+
+// 检查 IP+机器名 是否在授权数据库中存在
+bool FindLicenseByIPAndMachine(const std::string& ip, const std::string& machineName, std::string* outSN = nullptr);

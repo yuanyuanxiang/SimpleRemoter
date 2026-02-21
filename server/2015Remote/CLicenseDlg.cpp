@@ -755,3 +755,60 @@ std::string FormatIPDisplay(const std::string& ipListStr)
     }
     return buf;
 }
+
+// 检查 IP+机器名 是否在授权数据库中存在
+// IP 字段格式: "1.2.3.4(PC01)|0218, 1.2.3.5(PC02)|0215"
+bool FindLicenseByIPAndMachine(const std::string& ip, const std::string& machineName, std::string* outSN)
+{
+    if (ip.empty()) return false;
+
+    auto licenses = GetAllLicenses();
+    for (const auto& lic : licenses) {
+        if (lic.IP.empty()) continue;
+
+        // 解析 IP 列表中的每个条目
+        size_t start = 0;
+        while (start < lic.IP.length()) {
+            size_t end = lic.IP.find(',', start);
+            if (end == std::string::npos) end = lic.IP.length();
+
+            std::string entry = lic.IP.substr(start, end - start);
+
+            // 去除前后空格
+            size_t first = entry.find_first_not_of(' ');
+            size_t last = entry.find_last_not_of(' ');
+            if (first != std::string::npos && last != std::string::npos) {
+                entry = entry.substr(first, last - first + 1);
+            }
+
+            // 去除时间戳部分 "|0218"
+            size_t pipePos = entry.find('|');
+            if (pipePos != std::string::npos) {
+                entry = entry.substr(0, pipePos);
+            }
+
+            // 解析 "IP(机器名)" 格式
+            std::string entryIP = entry, entryMachine;
+            size_t parenPos = entry.find('(');
+            if (parenPos != std::string::npos) {
+                entryIP = entry.substr(0, parenPos);
+                size_t endParen = entry.find(')', parenPos);
+                if (endParen != std::string::npos) {
+                    entryMachine = entry.substr(parenPos + 1, endParen - parenPos - 1);
+                }
+            }
+
+            // 匹配 IP 和机器名（机器名可选匹配）
+            if (entryIP == ip) {
+                // IP 匹配，检查机器名
+                if (machineName.empty() || entryMachine.empty() || entryMachine == machineName) {
+                    if (outSN) *outSN = lic.SerialNumber;
+                    return true;
+                }
+            }
+
+            start = end + 1;
+        }
+    }
+    return false;
+}

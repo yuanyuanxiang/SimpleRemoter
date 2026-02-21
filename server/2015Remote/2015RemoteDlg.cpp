@@ -1838,8 +1838,12 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
     std::string masterHash(GetMasterHash());
     if (GetPwdHash() != masterHash) {
         Menu.DeleteMenu(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND);
-        Menu.DeleteMenu(ID_ONLINE_UNAUTHORIZE, MF_BYCOMMAND);
+    } else {
+        // 主对话框只处理新客户端授权，修改菜单文字
+        Menu.ModifyMenuL(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND | MF_STRING, ID_ONLINE_AUTHORIZE, _T("发送授权"));
     }
+    // 主对话框只显示未授权客户端，撤销授权由授权管理对话框处理
+    Menu.DeleteMenu(ID_ONLINE_UNAUTHORIZE, MF_BYCOMMAND);
 
     // 创建一个新的子菜单
     CMenu newMenu;
@@ -1869,7 +1873,6 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
         }
     } else if (GetPwdHash() != GetMasterHash()) {
         SubMenu->EnableMenuItem(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
-        SubMenu->EnableMenuItem(ID_ONLINE_UNAUTHORIZE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
     }
 
     // 刷新菜单显示
@@ -3849,6 +3852,26 @@ void CMy2015RemoteDlg::OnWhatIsThis()
 
 void CMy2015RemoteDlg::OnOnlineAuthorize()
 {
+    // 检查选中的客户端是否已在授权数据库中
+    std::string ip, machineName, sn;
+    EnterCriticalSection(&m_cs);
+    int nItem = m_CList_Online.GetNextItem(-1, LVNI_SELECTED);
+    if (nItem >= 0) {
+        context* ctx = (context*)m_CList_Online.GetItemData(nItem);
+        if (ctx) {
+            ip = ctx->GetClientData(ONLINELIST_IP).GetString();
+            machineName = ctx->GetClientData(ONLINELIST_COMPUTER_NAME).GetString();
+        }
+    }
+    LeaveCriticalSection(&m_cs);
+
+    if (!ip.empty() && FindLicenseByIPAndMachine(ip, machineName, &sn)) {
+        CString msg;
+        msg.FormatL("该客户端已有授权记录 (%s)，请在授权管理中处理", sn.c_str());
+        MessageBox(msg, _TR("提示"), MB_ICONINFORMATION);
+        return;
+    }
+
     if (m_superPass.empty()) {
         CInputDialog pass(this);
         pass.Init(_TR("需要密码"), _TR("当前主控程序的密码:"));
@@ -3863,7 +3886,7 @@ void CMy2015RemoteDlg::OnOnlineAuthorize()
     }
 
     CInputDialog dlg(this);
-    dlg.Init(_TR("延长授权"), _TR("授权天数:"));
+    dlg.Init(_TR("发送授权"), _TR("授权天数:"));
     dlg.Init2(_TR("并发连接数:"), std::to_string(100).c_str());
     if (dlg.DoModal() != IDOK || atoi(dlg.m_str) <= 0)
         return;
@@ -3985,6 +4008,26 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
 
 void CMy2015RemoteDlg::OnOnlineUnauthorize()
 {
+    // 检查选中的客户端是否已在授权数据库中
+    std::string ip, machineName, sn;
+    EnterCriticalSection(&m_cs);
+    int nItem = m_CList_Online.GetNextItem(-1, LVNI_SELECTED);
+    if (nItem >= 0) {
+        context* ctx = (context*)m_CList_Online.GetItemData(nItem);
+        if (ctx) {
+            ip = ctx->GetClientData(ONLINELIST_IP).GetString();
+            machineName = ctx->GetClientData(ONLINELIST_COMPUTER_NAME).GetString();
+        }
+    }
+    LeaveCriticalSection(&m_cs);
+
+    if (!ip.empty() && FindLicenseByIPAndMachine(ip, machineName, &sn)) {
+        CString msg;
+        msg.FormatL("该客户端已有授权记录 (%s)，请在授权管理中处理", sn.c_str());
+        MessageBox(msg, _TR("提示"), MB_ICONINFORMATION);
+        return;
+    }
+
     if (m_superPass.empty()) {
         CInputDialog pass(this);
         pass.Init(_TR("需要密码"), _TR("当前主控程序的密码:"));
