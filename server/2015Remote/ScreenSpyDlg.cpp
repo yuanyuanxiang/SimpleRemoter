@@ -2067,6 +2067,13 @@ void CScreenSpyDlg::EnterFullScreen()
                 }
                 }
             }
+            // 同步系统菜单的锁定输入状态到工具栏
+            CMenu* pSysMenu = GetSystemMenu(FALSE);
+            if (pSysMenu) {
+                BOOL bBlockInput = pSysMenu->GetMenuState(IDM_BLOCK_INPUT, MF_BYCOMMAND) & MF_CHECKED;
+                m_pToolbar->m_bBlockInput = (bBlockInput != 0);
+                m_pToolbar->UpdateButtonIcons();
+            }
         }
 
         // 创建状态信息窗口
