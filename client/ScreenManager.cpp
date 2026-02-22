@@ -73,7 +73,8 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user):CMan
     extern ClientApp g_MyApp;
     m_conn = g_MyApp.g_Connection;
     CKernelManager* main = (CKernelManager*)ClientObject->GetMain();
-    InitFileUpload({}, main ? main->m_LoginMsg : "", main ? main->m_LoginSignature : "", 64, 50, Logf);
+    InitFileUpload({}, main ? main->m_LoginMsg : ClientObject->m_LoginMsg, 
+        main ? main->m_LoginSignature : ClientObject->m_LoginSignature, 64, 50, Logf);
 #endif
     m_isGDI = TRUE;
     m_virtual = FALSE;
@@ -708,6 +709,8 @@ void FinishSend(void* user)
 
 VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 {
+    if (!m_bIsWorking) return;
+
     switch(szBuffer[0]) {
     case COMMAND_BYE: {
         Mprintf("[CScreenManager] Received BYE: %s\n", ToPekingTimeAsString(0).c_str());

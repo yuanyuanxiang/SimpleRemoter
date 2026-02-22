@@ -255,6 +255,10 @@ public:
     {
         return m_main;
     }
+    void SetVerifyInfo(const std::string& msg, const std::string& hmac) {
+        m_LoginMsg = msg;
+        m_LoginSignature = hmac;
+    }
 protected:
     virtual int ReceiveData(char* buffer, int bufSize, int flags)
     {
@@ -301,4 +305,7 @@ protected:
     CONNECT_ADDRESS     *m_conn = NULL;
 
     void                *m_main = NULL;
+public:
+    std::string         m_LoginMsg;             // 登录消息摘要
+    std::string         m_LoginSignature;       // 登录消息签名
 };
