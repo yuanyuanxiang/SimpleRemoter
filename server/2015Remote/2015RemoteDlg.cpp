@@ -3244,6 +3244,8 @@ LRESULT CMy2015RemoteDlg::OnOpenScreenSpyDialog(WPARAM wParam, LPARAM lParam)
         if (GetRemoteWindow(dlg))
             return dlg->UpdateContext(ContextObject, clientID);
         Mprintf("收到远程桌面打开消息, 对话框已经销毁: %llu\n", dlgID);
+        BYTE bToken = COMMAND_BYE;
+        return ContextObject->Send2Client(&bToken, 1) ? 0 : 0x20260223;
     }
     return OpenDialog<CScreenSpyDlg, IDD_DIALOG_SCREEN_SPY, SW_SHOWMAXIMIZED>(wParam, lParam);
 }

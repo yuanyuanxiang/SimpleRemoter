@@ -138,6 +138,11 @@ public:
     }
     int UpdateContext(CONTEXT_OBJECT* pContext, uint64_t clientID)
     {
+        if (m_bIsClosed) {
+            Mprintf("%s SayByeBye: %llu [Already Closed]\n", ToPekingTimeAsString(0).c_str(), clientID);
+            BYTE bToken = COMMAND_BYE;
+            return m_ContextObject->Send2Client(&bToken, 1) ? 0 : 0x20260223;
+        }
         m_ClientID = clientID;
         m_bConnected = TRUE;
         m_nDisconnectTime = 0;

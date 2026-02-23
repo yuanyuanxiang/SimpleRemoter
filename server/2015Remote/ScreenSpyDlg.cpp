@@ -725,11 +725,11 @@ VOID CScreenSpyDlg::OnClose()
     if (IsProcessing()) {
         m_bHide = true;
         ShowWindow(SW_HIDE);
-        if (needCancel) { BeginWaitCursor(); Sleep(1500); CancelIO(); EndWaitCursor(); }
+        if (needCancel) { BeginWaitCursor(); Sleep(500); CancelIO(); EndWaitCursor(); }
         return;
     }
 
-    if (needCancel) { BeginWaitCursor(); Sleep(1500); CancelIO(); EndWaitCursor(); }
+    if (needCancel) { BeginWaitCursor(); Sleep(500); CancelIO(); EndWaitCursor(); }
     DialogBase::OnClose();
 }
 
