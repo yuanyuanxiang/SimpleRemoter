@@ -7,6 +7,7 @@
 #include "IOCPServer.h"
 #include <common/location.h>
 #include <map>
+#include <mutex>
 #include "file_server.h"
 #include "CListCtrlEx.h"
 #include "LangManager.h"
@@ -72,6 +73,29 @@ typedef void (*contextModifier)(context* ctx, void* user);
 
 bool IsDateGreaterOrEqual(const char* date1, const char* date2);
 
+// V2 文件传输协议分界日期（>= 此日期的客户端支持 V2）
+#define FILE_TRANSFER_V2_DATE "Feb 27 2026"
+
+// 前向声明
+class CMy2015RemoteDlg;
+extern CMy2015RemoteDlg* g_2015RemoteDlg;
+
+// 检查客户端是否支持 V2 文件传输协议
+// 返回 true 需同时满足：1) 全局开关开启 2) 客户端支持 V2
+// 注意：m_bEnableFileV2 是 CMy2015RemoteDlg 的成员变量
+bool SupportsFileTransferV2(context* ctx);
+
+// 服务端待续传的传输信息
+struct PendingTransferV2 {
+    uint64_t clientID;
+    std::vector<std::string> files;
+    DWORD startTime;
+};
+
+// 服务端待续传传输状态（transferID → 传输信息）
+extern std::map<uint64_t, PendingTransferV2> g_pendingTransfersV2;
+extern std::mutex g_pendingTransfersV2Mtx;
+
 // CMy2015RemoteDlg 对话框
 class CMy2015RemoteDlg : public CDialogLangEx
 {
@@ -80,6 +104,7 @@ public:
     _ClientList *m_ClientMap = nullptr;
     CClientListDlg* m_pClientListDlg = nullptr;
     CLicenseDlg* m_pLicenseDlg = nullptr;
+    BOOL m_bEnableFileV2 = FALSE;  // V2 文件传输开关
 
     // 构造
 public:
@@ -152,6 +177,10 @@ public:
     BOOL Activate(const std::string& nPort, int nMaxConnection, const std::string& method);
     void UpdateActiveWindow(CONTEXT_OBJECT* ctx);
     void SendMasterSettings(CONTEXT_OBJECT* ctx, const MasterSettings& m);
+    void SendFilesToClientV2(context* mainCtx, const std::vector<std::string>& files);
+    void SendFilesToClientV2Internal(context* mainCtx, const std::vector<std::string>& files,
+        uint64_t resumeTransferID, const std::map<uint32_t, uint64_t>& startOffsets);
+    void HandleFileResumeRequest(CONTEXT_OBJECT* ctx, const BYTE* data, size_t len);
     BOOL SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, bool is64Bit);
     Buffer* m_ServerDLL[PAYLOAD_MAXTYPE];
     Buffer* m_ServerBin[PAYLOAD_MAXTYPE];
@@ -328,6 +357,7 @@ public:
     afx_msg void OnParamLoginNotify();
     afx_msg void OnParamEnableLog();
     afx_msg void OnParamPrivacyWallpaper();
+    afx_msg void OnParamFileV2();
     void ProxyClientTcpPort(bool isStandard);
     afx_msg void OnProxyPort();
     afx_msg void OnHookWin();

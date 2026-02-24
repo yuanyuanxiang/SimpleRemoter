@@ -208,6 +208,9 @@ public:
     {
         return m_bIsClosed;
     }
+    uint64_t GetClientID() const {
+        return m_ClientID;
+    }
     BOOL SayByeBye()
     {
         if (!m_bConnected) return FALSE;

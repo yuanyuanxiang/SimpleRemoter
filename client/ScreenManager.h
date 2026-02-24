@@ -58,9 +58,11 @@ public:
     std::string m_hash;
     std::string m_hmac;
     CONNECT_ADDRESS *m_conn = nullptr;
+    uint64_t m_MyClientID = 0;  // V2: 本机客户端ID
     void SetConnection(CONNECT_ADDRESS* conn)
     {
         m_conn = conn;
+        if (conn) m_MyClientID = conn->clientID;
     }
     bool IsRunAsService() const
     {

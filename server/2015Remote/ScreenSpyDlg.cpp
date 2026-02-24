@@ -811,6 +811,95 @@ VOID CScreenSpyDlg::OnReceiveComplete()
         PrepareDrawing(m_BitmapInfor_Full);
         break;
     }
+    case COMMAND_FILE_QUERY_RESUME: {
+        // V2 续传查询 - 根据 dstClientID 决定路由
+        FileQueryResumeV2* query = (FileQueryResumeV2*)szBuffer;
+
+        if (query->dstClientID == 0) {
+            // 目标是主控端 - 本地处理
+            auto response = HandleResumeQuery((const char*)szBuffer, len);
+            if (!response.empty()) {
+                m_ContextObject->Send2Client((LPBYTE)response.data(), (int)response.size());
+                Mprintf("[ScreenSpy] 已响应续传查询: %zu 字节\n", response.size());
+            }
+        } else {
+            // C2C - 转发到目标客户端的主连接
+            context* dstCtx = m_pParent->FindHost(query->dstClientID);
+            if (dstCtx) {
+                dstCtx->Send2Client(szBuffer, len);
+                Mprintf("[ScreenSpy] 转发续传查询: -> %llu\n", query->dstClientID);
+            } else {
+                Mprintf("[ScreenSpy] 续传查询目标不在线: %llu\n", query->dstClientID);
+            }
+        }
+        break;
+    }
+    case COMMAND_C2C_TEXT: {
+        // C2C 文本剪贴板: [cmd:1][dstClientID:8][textLen:4][text:N]
+        if (len < 13) break;
+        uint64_t dstClientID;
+        uint32_t textLen;
+        memcpy(&dstClientID, szBuffer + 1, 8);
+        memcpy(&textLen, szBuffer + 9, 4);
+
+        Mprintf("[ScreenSpy] C2C 文本转发: -> %llu (%u 字节)\n", dstClientID, textLen);
+
+        // 转发到目标客户端的主连接
+        context* dstCtx = m_pParent->FindHost(dstClientID);
+        if (dstCtx) {
+            dstCtx->Send2Client(szBuffer, len);
+        } else {
+            Mprintf("[ScreenSpy] 文本目标不在线: %llu\n", dstClientID);
+        }
+        break;
+    }
+    case COMMAND_FILE_COMPLETE_V2: {
+        // V2 文件完成校验
+        if (len < sizeof(FileCompletePacketV2)) break;
+        FileCompletePacketV2* pkt = (FileCompletePacketV2*)szBuffer;
+
+        // 转发到目标客户端
+        context* dstCtx = m_pParent->FindHost(pkt->dstClientID);
+        if (dstCtx) {
+            dstCtx->Send2Client(szBuffer, len);
+            Mprintf("[ScreenSpy] 转发校验包: -> %llu, transferID=%llu\n",
+                pkt->dstClientID, pkt->transferID);
+        } else {
+            Mprintf("[ScreenSpy] 校验包目标不在线: %llu\n", pkt->dstClientID);
+        }
+        break;
+    }
+    case COMMAND_FILE_RESUME: {
+        // V2 断点续传控制 - 转发
+        // 注意：有两种格式的包共用此命令:
+        // - FileResumePacketV2 (49 bytes): 单文件续传请求/响应
+        // - FileResumeResponseV2 (23 bytes): 批量续传查询响应
+        // 需要根据包大小区分
+
+        if (len >= sizeof(FileResumePacketV2)) {
+            // 大包: FileResumePacketV2
+            FileResumePacketV2* pkt = (FileResumePacketV2*)szBuffer;
+            context* dstCtx = m_pParent->FindHost(pkt->dstClientID);
+            if (dstCtx) {
+                dstCtx->Send2Client(szBuffer, len);
+                Mprintf("[ScreenSpy] 转发续传包: -> %llu, transferID=%llu\n",
+                    pkt->dstClientID, pkt->transferID);
+            }
+        } else if (len >= sizeof(FileResumeResponseV2)) {
+            // 小包: FileResumeResponseV2 (批量响应)
+            // 注意：响应要发回给 srcClientID（原始发送方）
+            FileResumeResponseV2* resp = (FileResumeResponseV2*)szBuffer;
+            context* srcCtx = m_pParent->FindHost(resp->srcClientID);
+            if (srcCtx) {
+                srcCtx->Send2Client(szBuffer, len);
+                Mprintf("[ScreenSpy] 转发续传响应: -> srcClient=%llu, %u 个文件\n",
+                    resp->srcClientID, resp->fileCount);
+            } else {
+                Mprintf("[ScreenSpy] 续传响应目标不在线: %llu\n", resp->srcClientID);
+            }
+        }
+        break;
+    }
     default: {
         Mprintf("CScreenSpyDlg unknown command: %d!!!\n", int(cmd));
     }
@@ -2258,18 +2347,30 @@ void CScreenSpyDlg::OnDropFiles(HDROP hDropInfo)
         std::string GetPwdHash();
         std::string GetHMAC(int offset);
         auto files = PreprocessFilesSimple(list);
-        auto str = BuildMultiStringPath(files);
-        BYTE* szBuffer = new BYTE[1 + 80 + str.size()];
-        szBuffer[0] = { COMMAND_GET_FOLDER };
-        std::string masterId = GetPwdHash(), hmac = GetHMAC(100);
-        memcpy((char*)szBuffer + 1, masterId.c_str(), masterId.length());
-        memcpy((char*)szBuffer + 1 + masterId.length(), hmac.c_str(), hmac.length());
-        memcpy(szBuffer + 1 + 80, str.data(), str.size());
-        auto md5 = CalcMD5FromBytes((BYTE*)str.data(), str.size());
-        m_pParent->m_CmdList.PutCmd(md5);
-        m_ContextObject->Send2Client(szBuffer, 81 + str.size());
-        Mprintf("【Ctrl+V】 从本地拖拽文件到远程: %s \n", md5.c_str());
-        SAFE_DELETE_ARRAY(szBuffer);
+
+        // 检查客户端是否支持 V2
+        uint64_t clientID = GetClientID();
+        context* mainCtx = m_pParent->FindHost(clientID);
+
+        if (mainCtx && SupportsFileTransferV2(mainCtx)) {
+            // V2 传输
+            m_pParent->SendFilesToClientV2(mainCtx, files);
+            Mprintf("【拖拽】 [本地 -> 远程] V2 传输: %zu 个文件\n", files.size());
+        } else {
+            // V1 传输（兼容旧客户端）
+            auto str = BuildMultiStringPath(files);
+            BYTE* szBuffer = new BYTE[1 + 80 + str.size()];
+            szBuffer[0] = { COMMAND_GET_FOLDER };
+            std::string masterId = GetPwdHash(), hmac = GetHMAC(100);
+            memcpy((char*)szBuffer + 1, masterId.c_str(), masterId.length());
+            memcpy((char*)szBuffer + 1 + masterId.length(), hmac.c_str(), hmac.length());
+            memcpy(szBuffer + 1 + 80, str.data(), str.size());
+            auto md5 = CalcMD5FromBytes((BYTE*)str.data(), str.size());
+            m_pParent->m_CmdList.PutCmd(md5);
+            m_ContextObject->Send2Client(szBuffer, 81 + str.size());
+            Mprintf("【拖拽】 [本地 -> 远程] V1 传输: %s\n", md5.c_str());
+            SAFE_DELETE_ARRAY(szBuffer);
+        }
     }
 
     DragFinish(hDropInfo);

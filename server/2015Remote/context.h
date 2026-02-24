@@ -5,28 +5,29 @@
 #include <atlstr.h>
 
 enum {
-    ONLINELIST_IP = 0,          // IP����˳��
-    ONLINELIST_ADDR,            // ��ַ
-    ONLINELIST_LOCATION,        // ����λ��
-    ONLINELIST_COMPUTER_NAME,   // �������/��ע
-    ONLINELIST_OS,              // ����ϵͳ
+    ONLINELIST_IP = 0,          // IP的列顺序
+    ONLINELIST_ADDR,            // 地址
+    ONLINELIST_LOCATION,        // 地理位置
+    ONLINELIST_COMPUTER_NAME,   // 计算机名/备注
+    ONLINELIST_OS,              // 操作系统
     ONLINELIST_CPU,             // CPU
-    ONLINELIST_VIDEO,           // ����ͷ(����)
-    ONLINELIST_PING,            // PING(�Է�������)
-    ONLINELIST_VERSION,	        // �汾��Ϣ
-    ONLINELIST_INSTALLTIME,     // ��װʱ��
-    ONLINELIST_LOGINTIME,       // �����
-    ONLINELIST_CLIENTTYPE,		// �ͻ�������
-    ONLINELIST_PATH,			// �ļ�·��
+    ONLINELIST_VIDEO,           // 摄像头(有无)
+    ONLINELIST_PING,            // PING(对方的网速)
+    ONLINELIST_VERSION,	        // 版本信息
+    ONLINELIST_INSTALLTIME,     // 安装时间
+    ONLINELIST_LOGINTIME,       // 活动窗口
+    ONLINELIST_CLIENTTYPE,		// 客户端类型
+    ONLINELIST_PATH,			// 文件路径
     ONLINELIST_PUBIP,
     ONLINELIST_STARTTIME,
+    ONLINELIST_CAPABILITIES,    // 客户端能力位
     ONLINELIST_MAX,
 };
 
 class context
 {
 public:
-    // ���麯��
+    // 纯虚函数
     virtual VOID InitMember(SOCKET s, VOID* svr) = 0;
     virtual BOOL Send2Client(PBYTE szBuffer, ULONG ulOriginalLength) = 0;
     virtual CString GetClientData(int index)const = 0;
@@ -51,4 +52,11 @@ public:
         return TRUE;
     }
     virtual void SetGroupName(const std::string& group) {}
+
+    // 检查客户端是否支持 V2 文件传输
+    bool SupportsFileV2() const {
+        CString caps = GetClientData(ONLINELIST_CAPABILITIES);
+        if (caps.IsEmpty()) return false;
+        return (strtoul(caps.GetString(), nullptr, 16) & CLIENT_CAP_V2) != 0;
+    }
 };

@@ -150,6 +150,10 @@ public:
     RttEstimator m_nNetPing; // 网络状况
     std::string m_LoginMsg; // 登录消息摘要
     std::string m_LoginSignature; // 登录消息签名
+    // C2C 文件传输
+    std::string m_hash;
+    std::string m_hmac;
+    uint64_t m_MyClientID = 0;
     void SetLoginMsg(const std::string& msg)
     {
         m_LoginMsg = msg;
