@@ -164,6 +164,8 @@ public:
     VOID SendAllCommand(PBYTE  szBuffer, ULONG ulLength);
     // 显示用户上线信息
     CWnd* m_pFloatingTip = nullptr;
+    // 记录 clientID
+    std::set<uint64_t> m_DirtyClients;
     CListCtrlEx m_CList_Online;
     CListCtrl   m_CList_Message;
     std::set<context*> m_HostList;

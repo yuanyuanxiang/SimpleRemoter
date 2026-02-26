@@ -61,6 +61,7 @@
 #define TIMER_CLOSEWND 2
 #define TIMER_CLEAR_BALLOON 3
 #define TIMER_HEARTBEAT_CHECK 4
+#define TIMER_REFRESH_LIST 5
 #define TODO_NOTICE MessageBoxL("This feature has not been implemented!\nPlease contact: 962914132@qq.com", "提示", MB_ICONINFORMATION);
 #define TINY_DLL_NAME "TinyRun.dll"
 #define FRPC_DLL_NAME "Frpc.dll"
@@ -771,7 +772,7 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     CString path = v[RES_FILE_PATH].empty() ? "?" : v[RES_FILE_PATH].c_str();
     CString data[ONLINELIST_MAX] = { strIP, strAddr, "", strPCName, strOS, strCPU, strVideo, strPing,
                                      ver, install, startTime, v[RES_CLIENT_TYPE].empty() ? "?" : v[RES_CLIENT_TYPE].c_str(), path,
-                                     v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(),
+                                     v[RES_CLIENT_PUBIP].empty() ? strIP : v[RES_CLIENT_PUBIP].c_str(), startTime,
                                    };
     auto id = CONTEXT_OBJECT::CalculateID(data);
     auto id_str = std::to_string(id);
@@ -1349,6 +1350,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     SetTimer(TIMER_CHECK, max(1, tm) * 60 * 1000, NULL);
 #endif
     SetTimer(TIMER_HEARTBEAT_CHECK, 30 * 1000, NULL);
+    SetTimer(TIMER_REFRESH_LIST, 1000, NULL);
 
     UPDATE_SPLASH(85, "正在启动FRP代理...");
     m_hFRPThread = CreateThread(NULL, 0, StartFrpClient, this, NULL, NULL);
@@ -1640,6 +1642,25 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
     }
     if (nIDEvent == TIMER_HEARTBEAT_CHECK && m_settings.ReportInterval > 0) {
         CheckHeartbeat();
+    }
+    if (nIDEvent == TIMER_REFRESH_LIST) {
+        CLock L(m_cs);
+        if (!m_DirtyClients.empty()) {
+            m_CList_Online.SetRedraw(FALSE);
+            for (uint64_t id : m_DirtyClients) {
+                for (int i = 0, n = m_CList_Online.GetItemCount(); i < n; ++i) {
+                    context* ctx = (context*)m_CList_Online.GetItemData(i);
+                    if (id == ctx->GetClientID()) {
+                        m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, ctx->GetClientData(ONLINELIST_LOGINTIME));
+                        m_CList_Online.SetItemText(i, ONLINELIST_PING, ctx->GetClientData(ONLINELIST_PING));
+                        m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, ctx->GetClientData(ONLINELIST_VIDEO));
+                    }
+                }
+            }
+            m_CList_Online.SetRedraw(TRUE);
+            m_CList_Online.Invalidate(FALSE);
+            m_DirtyClients.clear();
+        }
     }
 
     __super::OnTimer(nIDEvent);
@@ -2951,6 +2972,9 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     }
     default: {
         Mprintf("Receive unknown command '%s' [%d]: Len=%d\n", ContextObject->PeerName.c_str(), cmd, len);
+        if (cmd == TOKEN_NEXTSCREEN) {
+            ContextObject->CancelIO(); // 远程桌面可能关闭了，收到后直接断开连接，避免占用网络带宽
+        }
     }
     }
     auto duration = clock() - tick;
@@ -3146,13 +3170,16 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
     for (int i = 0; i < n; ++i) {
         context* id = (context*)m_CList_Online.GetItemData(i);
         if (clientID == id->GetClientID()) {
-            m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, hb.ActiveWnd);
+            // m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, hb.ActiveWnd);
+            ctx->SetClientData(ONLINELIST_LOGINTIME, hb.ActiveWnd);
             if (hb.Ping > 0) {
-                m_CList_Online.SetItemText(i, ONLINELIST_PING, std::to_string(hb.Ping).c_str());
+                // m_CList_Online.SetItemText(i, ONLINELIST_PING, std::to_string(hb.Ping).c_str());
                 ctx->SetClientData(ONLINELIST_PING, std::to_string(hb.Ping).c_str());
             }
-            m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, hb.HasSoftware ? _TR("有") : _TR("无"));
+            // m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, hb.HasSoftware ? _TR("有") : _TR("无"));
+            ctx->SetClientData(ONLINELIST_VIDEO, hb.HasSoftware ? _TR("有") : _TR("无"));
             id->SetLastHeartbeat(time(0));
+            m_DirtyClients.insert(clientID);
             return;
         }
     }
@@ -3947,7 +3974,7 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
         // 获取数据
         context* ctx = (context*)m_CList_Online.GetItemData(pNMItem->iItem);
         CString res[RES_MAX];
-        CString startTime = ctx->GetClientData(ONLINELIST_LOGINTIME);
+        CString startTime = ctx->GetClientData(ONLINELIST_STARTTIME);
         ctx->GetAdditionalData(res);
         FlagType type = ctx->GetFlagType();
         static std::map<FlagType, std::string> typMap = {
