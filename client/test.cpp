@@ -227,7 +227,7 @@ int main(int argc, const char *argv[])
                            g_ConnectAddress.installName[0] ? g_ConnectAddress.installName : "ClientDemoService",
                            g_ConnectAddress.installDir[0] ? g_ConnectAddress.installDir : "Client Demo Service",
                            g_ConnectAddress.installDesc[0] ? g_ConnectAddress.installDesc : "Provide a demo service."), Log);
-    bool isService = g_ConnectAddress.iStartup == Startup_TestRunMsc;
+    bool isService = g_ConnectAddress.iStartup == Startup_TestRunMsc || IsSystemInSession0();
     // 注册启动项
     int r = RegisterStartup(
                 g_ConnectAddress.installDir[0] ? g_ConnectAddress.installDir : "Client Demo",

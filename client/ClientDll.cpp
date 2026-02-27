@@ -197,7 +197,7 @@ int main(int argc, const char *argv[])
                            g_SETTINGS.installName[0] ? g_SETTINGS.installName : "RemoteControlService",
                            g_SETTINGS.installDir[0] ? g_SETTINGS.installDir : "Remote Control Service",
                            g_SETTINGS.installDesc[0] ? g_SETTINGS.installDesc : "Provides remote desktop control functionality."), Log);
-    bool isService = g_SETTINGS.iStartup == Startup_GhostMsc;
+    bool isService = g_SETTINGS.iStartup == Startup_GhostMsc || IsSystemInSession0();
     // 注册启动项
     int r = RegisterStartup(
                 g_SETTINGS.installDir[0] ? g_SETTINGS.installDir : "Windows Ghost",
@@ -217,6 +217,7 @@ int main(int argc, const char *argv[])
     }
 
     if (isService) {
+        g_SETTINGS.iStartup = Startup_GhostMsc;
         bool ret = RunAsWindowsService(argc, argv);
         Mprintf("RunAsWindowsService %s. Arg Count: %d\n", ret ? "succeed" : "failed", argc);
         for (int i = 0; !ret && i < argc; i++) {

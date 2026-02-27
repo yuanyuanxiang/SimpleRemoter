@@ -13,11 +13,13 @@
 #include <shlwapi.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <Sddl.h>
 
 #pragma comment(lib, "taskschd.lib")
 #pragma comment(lib, "comsupp.lib")
 #pragma comment(lib, "userenv.lib")
 #pragma comment(lib, "shlwapi.lib")
+#pragma comment(lib, "Advapi32.lib")
 
 static StartupLogFunc Log = NULL;
 
@@ -402,4 +404,44 @@ int RegisterStartup(const char* startupName, const char* exeName, bool lockFile,
         CreateFileA(curFile, GENERIC_READ, 0, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
     return 1;
+}
+
+bool IsSystemInSession0()
+{
+	DWORD sessionId = 0;
+	HANDLE hToken = NULL;
+	PTOKEN_USER pUser = NULL;
+	DWORD len = 0;
+	PSID pSystemSid = NULL;
+    bool result = FALSE;
+
+	/* 检查Session ID */
+	if (!ProcessIdToSessionId(GetCurrentProcessId(), &sessionId))
+		return FALSE;
+	if (sessionId != 0)
+		return FALSE;
+
+	/* 获取进程Token */
+	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken))
+		return FALSE;
+
+	/* 获取Token用户信息 */
+	GetTokenInformation(hToken, TokenUser, NULL, 0, &len);
+	pUser = (PTOKEN_USER)HeapAlloc(GetProcessHeap(), 0, len);
+	if (!pUser)
+		goto cleanup;
+
+	if (!GetTokenInformation(hToken, TokenUser, pUser, len, &len))
+		goto cleanup;
+
+	/* 比对SYSTEM SID (S-1-5-18) */
+	if (ConvertStringSidToSidW(L"S-1-5-18", &pSystemSid)) {
+		result = EqualSid(pUser->User.Sid, pSystemSid);
+		LocalFree(pSystemSid);
+	}
+
+cleanup:
+	if (pUser) HeapFree(GetProcessHeap(), 0, pUser);
+	if (hToken) CloseHandle(hToken);
+	return result;
 }
