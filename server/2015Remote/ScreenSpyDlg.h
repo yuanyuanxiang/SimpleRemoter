@@ -221,8 +221,11 @@ public:
         int lastRTT = 0;                     // 上次RTT值
         ULONGLONG lastChangeTime = 0;        // 上次切换时间
         ULONGLONG lastResChangeTime = 0;     // 上次分辨率变化时间
+        ULONGLONG startTime = 0;             // 启动时间 (用于延迟启动自适应)
         int stableCount = 0;                 // 稳定计数 (用于防抖)
     } m_AdaptiveQuality;
+
+    volatile bool m_bResolutionChanging = false;  // 分辨率切换中，阻止解码
 
     int  GetClientRTT();                     // 获取客户端RTT(ms)
     void EvaluateQuality();                  // 评估并调整质量

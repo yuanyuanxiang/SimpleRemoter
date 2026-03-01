@@ -138,12 +138,13 @@ CScreenSpyDlg::CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer, CONTE
     m_ContextObject->InDeCompressedBuffer.CopyBuffer(&m_Settings, sizeof(ScreenSettings), 57);
 
     // 从客户端配置初始化自适应质量状态 (QualityLevel: -2=关闭, -1=自适应, 0-5=具体等级)
+    m_AdaptiveQuality.startTime = GetTickCount64();  // 记录启动时间
     if (m_Settings.QualityLevel == QUALITY_DISABLED) {
         m_AdaptiveQuality.enabled = false;
         m_AdaptiveQuality.currentLevel = QUALITY_GOOD;  // 关闭模式时不使用等级
     } else if (m_Settings.QualityLevel == QUALITY_ADAPTIVE) {
         m_AdaptiveQuality.enabled = true;
-        m_AdaptiveQuality.currentLevel = QUALITY_GOOD;  // 自适应默认从 High 开始
+        m_AdaptiveQuality.currentLevel = QUALITY_GOOD;  // 自适应默认从 Good 开始
     } else if (m_Settings.QualityLevel >= 0 && m_Settings.QualityLevel < QUALITY_COUNT) {
         m_AdaptiveQuality.enabled = false;
         m_AdaptiveQuality.currentLevel = m_Settings.QualityLevel;
@@ -809,6 +810,8 @@ VOID CScreenSpyDlg::OnReceiveComplete()
             m_ClientID = *((uint64_t*)(m_ContextObject->InDeCompressedBuffer.GetBuffer(1 + sizeof(BITMAPINFOHEADER))));
         }
         PrepareDrawing(m_BitmapInfor_Full);
+        // 分辨率切换完成，允许解码
+        m_bResolutionChanging = false;
         break;
     }
     case COMMAND_FILE_QUERY_RESUME: {
@@ -1141,6 +1144,24 @@ VOID CScreenSpyDlg::DrawScrollFrame()
 
 bool CScreenSpyDlg::Decode(LPBYTE Buffer, int size)
 {
+    // 分辨率切换中，跳过解码避免访问无效缓冲区
+    // 但加入超时保护：5秒内客户端未响应则恢复（防止卡死）
+    if (m_bResolutionChanging) {
+        if (GetTickCount64() - m_AdaptiveQuality.lastResChangeTime > 5000) {
+            m_bResolutionChanging = false;  // 超时恢复
+            // 刷新解码器状态，丢弃之前的参考帧，等待下一个 I 帧
+            if (m_pCodecContext) {
+                avcodec_flush_buffers(m_pCodecContext);
+            }
+            Mprintf("分辨率切换超时，刷新解码器并恢复\n");
+        } else {
+            return false;
+        }
+    }
+    if (!m_BitmapData_Full || !m_BitmapInfor_Full) {
+        return false;
+    }
+
     // 解码数据.
     av_init_packet(&m_AVPacket);
 
@@ -1755,6 +1776,10 @@ void CScreenSpyDlg::EvaluateQuality()
 {
     if (!m_AdaptiveQuality.enabled) return;
 
+    // 0. 启动延迟：1分钟内不进行自适应调整
+    ULONGLONG now = GetTickCount64();
+    if (now - m_AdaptiveQuality.startTime < 60000) return;
+
     // 1. 获取RTT
     int rtt = GetClientRTT();
     if (rtt <= 0) return;
@@ -1768,8 +1793,6 @@ void CScreenSpyDlg::EvaluateQuality()
         m_AdaptiveQuality.stableCount = 0;
         return;
     }
-
-    ULONGLONG now = GetTickCount64();
 
     // 3. 检查是否涉及分辨率变化
     int currentMaxWidth = GetQualityProfile(currentLevel).maxWidth;
@@ -1826,6 +1849,8 @@ void CScreenSpyDlg::ApplyQualityLevel(int level, bool persist)
 
     // 2. 如果分辨率变化，发送 CMD_SCREEN_SIZE
     if (newMaxWidth != oldMaxWidth) {
+        // 标记分辨率切换中，阻止 Decode 访问旧缓冲区
+        m_bResolutionChanging = true;
         // 自适应调整且分辨率变化时不显示"请等待"，手动切换时显示
         if (!persist) m_bQualitySwitch = true;
         m_AdaptiveQuality.currentMaxWidth = newMaxWidth;

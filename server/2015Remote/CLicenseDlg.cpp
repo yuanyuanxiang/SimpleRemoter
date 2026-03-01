@@ -181,15 +181,17 @@ void CLicenseDlg::RefreshList()
 
         // 显示到期时间
         CString strPending;
-        if (!lic.PendingExpireDate.empty()) {
+        std::string d = lic.PendingExpireDate;
+        if (d.empty()) {
+            // PendingExpireDate 为空，从 Passcode 中解析到期时间
+            d = ParseExpireDateFromPasscode(lic.Passcode);
+        }
+        if (d.length() == 8) {
             // 格式化显示：20270221 -> 2027-02-21
-            std::string d = lic.PendingExpireDate;
-            if (d.length() == 8) {
-                strPending.Format(_T("%s-%s-%s"), d.substr(0, 4).c_str(),
-                    d.substr(4, 2).c_str(), d.substr(6, 2).c_str());
-            } else {
-                strPending = d.c_str();
-            }
+            strPending.Format(_T("%s-%s-%s"), d.substr(0, 4).c_str(),
+                d.substr(4, 2).c_str(), d.substr(6, 2).c_str());
+        } else if (!d.empty()) {
+            strPending = d.c_str();
         }
         m_ListLicense.SetItemText(idx, 3, strPending);
 
