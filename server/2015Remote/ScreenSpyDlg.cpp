@@ -690,6 +690,10 @@ BOOL CScreenSpyDlg::OnInitDialog()
 
     SendNext();
 
+    // 通知主窗口：设置为活动的远程桌面会话（用于 Ctrl+V 文件接收）
+    if (pMain)
+        ::PostMessage(pMain->GetSafeHwnd(), WM_SESSION_ACTIVATED, (WPARAM)this, 0);
+
     return TRUE;
 }
 
@@ -1720,6 +1724,9 @@ void CScreenSpyDlg::UpdateWindowTitle()
         strTitle.FormatL("%s - 远程桌面控制 %d×%d | %u FPS | %.0f KB/s%s",
             m_IPAddress, width, height, fps, m_dTransferRate, qualityName.GetString());
     }
+    // 追加剪贴板操作提示
+    strTitle += (m_Settings.ScreenType == 2) ?
+        _TR(" [远程右键复制, 本地 Ctrl+V 粘贴]") : _TR(" [远程 Ctrl+C 复制, 本地 Ctrl+V 粘贴]");
     SetWindowText(strTitle);
 }
 

@@ -1164,6 +1164,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     THIS_CFG.SetStr("settings", "SN", getDeviceID(GetHardwareID()));
     THIS_CFG.SetStr("settings", "PwdHash", GetPwdHash());
     THIS_CFG.SetStr("settings", "MasterHash", GetMasterHash());
+    THIS_CFG.SetStr("settings", "Version", VERSION_STR);
 
     UPDATE_SPLASH(16, "正在启动下载服务...");
     m_FileServer = new FileDownloadServer(THIS_CFG.GetInt("settings", "FileSvrPort", 80));
@@ -2361,7 +2362,7 @@ VOID CMy2015RemoteDlg::SendAllCommand(PBYTE  szBuffer, ULONG ulLength)
 //真彩Bar
 VOID CMy2015RemoteDlg::OnAbout()
 {
-    MessageBoxL("Copyleft (c) FTU 2019—2026" + _L("\n编译日期: ") + __DATE__ +
+    MessageBoxL("Copyleft (c) FTU 2019—2026" + CString(" v") + VERSION_STR + _L("\n编译日期: ") + __DATE__ +
                 CString(sizeof(void*)==8 ? " (x64)" : " (x86)"), "关于", MB_ICONINFORMATION);
 }
 
@@ -2785,10 +2786,15 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     }
     case TOKEN_AUTH: {
         BOOL valid = FALSE;
+        std::string version;
         if (len > 20) {
             std::string sn(szBuffer + 1, szBuffer + 20); // length: 19
             std::string passcode(szBuffer + 20, szBuffer + 62); // length: 42
             uint64_t hmac = len > 64 ? *((uint64_t*)(szBuffer+62)) : 0;
+            version = len >= 80 ? std::string((char*)szBuffer + 70, (char*)szBuffer + 80) : "";
+            // 去除末尾的空字符
+            while (!version.empty() && version.back() == '\0')
+                version.pop_back();
             auto v = splitString(passcode, '-');
             if (v.size() == 6 || v.size() == 7) {
                 std::vector<std::string> subvector(v.end() - 4, v.end());
@@ -2801,8 +2807,8 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
             if (valid) {
                 valid = AuthorizeClient(NULL, sn, passcode, hmac);
                 if (valid) {
-                    Mprintf("%s 校验成功, HMAC 校验成功: %s\n", passcode.c_str(), sn.c_str());
-                    std::string tip = passcode + g_Lang.Get(std::string(" 校验成功: ")) + sn;
+                    Mprintf("%s 校验成功, HMAC 校验成功: %s (版本: %s)\n", passcode.c_str(), sn.c_str(), version.c_str());
+                    std::string tip = passcode + g_Lang.Get(std::string(" 校验成功: ")) + sn + (version.empty()?"":"["+version+"]");
                     CharMsg* msg = new CharMsg(tip.c_str());
                     PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
                 } else {
@@ -2814,9 +2820,15 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
         } else {
             Mprintf("授权数据长度不足: %u\n", len);
         }
-        char resp[100] = { valid };
-        const char* msg = valid ? "此程序已获授权，请遵守授权协议，感谢合作" : "未获授权或消息哈希校验失败";
-        memcpy(resp + 4, msg, strlen(msg));
+        char resp[150] = { valid };
+        std::string msgStr = valid ? _TR("此程序已获授权，请遵守授权协议，感谢合作") : _TR("未获授权或消息哈希校验失败，可能有使用限制");
+        // 版本比较：如果服务端版本更高或客户端未上报版本，追加升级提醒
+        if (valid && (version.empty() || version < VERSION_STR)) {
+            msgStr += _TR("。最新版本 v");
+            msgStr += VERSION_STR;
+            msgStr += _TR("，请自行下载或联系管理员");
+        }
+        memcpy(resp + 4, msgStr.c_str(), min(msgStr.length(), sizeof(resp) - 5));
         ContextObject->Send2Client((PBYTE)resp, sizeof(resp));
         break;
     }
@@ -5422,7 +5434,7 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
     if (nCode == HC_ACTION) {
         do {
             static CDialogBase* operateWnd = nullptr;
-			static time_t localCtrlCTime = 0;
+            static time_t localCtrlCTime = 0;  // 本地 Ctrl+C 时间，用于区分本地/远程复制
 			static std::vector<std::string> fileList;
             KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
             // 先判断是否需要处理的热键
@@ -5505,7 +5517,7 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                         remoteCtrlCTime = 0;  // 清除远程 Ctrl+C 时间
                         int r=0;
 						fileList = GetForegroundSelectedFiles(r);
-                        g_2015RemoteDlg->UpdateActiveRemoteSession(nullptr);
+                        // 不再清除活动会话，用 localCtrlCTime 判断即可
                     } else {
                         remoteCtrlCTime = time(nullptr);  // 记录远程 Ctrl+C 时间
                         localCtrlCTime = 0;  // 清除本地 Ctrl+C 时间
@@ -5635,7 +5647,8 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                         } else {
                             Mprintf("【Ctrl+V】 [C2C] 发送请求失败\n");
                         }
-                    } else if (g_2015RemoteDlg->GetActiveRemoteSession() && operateWnd) {
+                    } else if (g_2015RemoteDlg->GetActiveRemoteSession() && !dlg && (time(nullptr) - localCtrlCTime >= 10)) {
+                        // 远程 -> 本地：有活动会话，当前不在远程窗口，且10秒内没有本地Ctrl+C
                         auto screen = (CScreenSpyDlg*)(g_2015RemoteDlg->GetActiveRemoteSession());
                         if (!screen) {
                             Mprintf("【Ctrl+V】 [远程 -> 本地] 远程桌面窗口状态已经失效\n");
