@@ -1719,16 +1719,33 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
             m_CList_Online.Invalidate();
         }
 
-        // 处理心跳更新（不需要 SetRedraw，SetItemText 会局部重绘）
+        // 处理心跳更新（只更新变化的数据，避免不必要的重绘导致闪烁）
         if (!m_DirtyClients.empty()) {
             int n = m_CList_Online.GetItemCount();
             for (uint64_t id : m_DirtyClients) {
                 for (int i = 0; i < n; ++i) {
                     context* ctx = (context*)m_CList_Online.GetItemData(i);
                     if (id == ctx->GetClientID()) {
-                        m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, ctx->GetClientData(ONLINELIST_LOGINTIME));
-                        m_CList_Online.SetItemText(i, ONLINELIST_PING, ctx->GetClientData(ONLINELIST_PING));
-                        m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, ctx->GetClientData(ONLINELIST_VIDEO));
+                        // 只更新变化的列，减少重绘
+                        CString newVal, oldVal;
+
+                        newVal = ctx->GetClientData(ONLINELIST_LOGINTIME);
+                        oldVal = m_CList_Online.GetItemText(i, ONLINELIST_LOGINTIME);
+                        if (newVal != oldVal) {
+                            m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, newVal);
+                        }
+
+                        newVal = ctx->GetClientData(ONLINELIST_PING);
+                        oldVal = m_CList_Online.GetItemText(i, ONLINELIST_PING);
+                        if (newVal != oldVal) {
+                            m_CList_Online.SetItemText(i, ONLINELIST_PING, newVal);
+                        }
+
+                        newVal = ctx->GetClientData(ONLINELIST_VIDEO);
+                        oldVal = m_CList_Online.GetItemText(i, ONLINELIST_VIDEO);
+                        if (newVal != oldVal) {
+                            m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, newVal);
+                        }
                         break;
                     }
                 }
@@ -5932,15 +5949,19 @@ void CMy2015RemoteDlg::ProxyClientTcpPort(bool isStandard)
 
     CInputDialog dlg(this);
     dlg.Init(_TR("代理端口"), _TR("请输入客户端端口:"));
+    dlg.Init2(_TR("访问端口(默认同上):"), "");
     if (IDOK != dlg.DoModal() || atoi(dlg.m_str) <= 0 || atoi(dlg.m_str) >= 65536) {
         return;
     }
+    if (atoi(dlg.m_sSecondInput) <= 0 || atoi(dlg.m_sSecondInput) >= 65536) {
+		dlg.m_sSecondInput = dlg.m_str;
+	}
     uint64_t timestamp = time(nullptr);
     std::string key = isStandard ? pwd : GetAuthKey(pwd.c_str(), timestamp);
     int serverPort = THIS_CFG.GetInt("frp", "server_port", 7000);
-    int localPort = atoi(dlg.m_str);
+    int localPort = atoi(dlg.m_str), remotePort = atoi(dlg.m_sSecondInput);
     auto frpc = ReadFrpcDll(isStandard ? CALLTYPE_FRPC_STDCALL : CALLTYPE_FRPC_CALL);
-    FrpcParam param(key.c_str(), timestamp, ip.c_str(), serverPort, localPort, localPort);
+    FrpcParam param(key.c_str(), timestamp, ip.c_str(), serverPort, localPort, remotePort);
     EnterCriticalSection(&m_cs);
     POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
     BOOL sent = FALSE;
@@ -5968,7 +5989,7 @@ void CMy2015RemoteDlg::ProxyClientTcpPort(bool isStandard)
     LeaveCriticalSection(&m_cs);
     SAFE_DELETE(frpc);
     if (sent)
-        MessageBoxL(_L("请通过") + "[" + ip.c_str() + ":" + std::to_string(localPort).c_str() + "]" + _L("访问代理端口!"),
+        MessageBoxL(_L("请通过") + "[" + ip.c_str() + ":" + dlg.m_sSecondInput + "]" + _L("访问代理端口!"),
                     "提示", MB_ICONINFORMATION);
 }
 
