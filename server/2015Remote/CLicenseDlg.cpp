@@ -177,7 +177,6 @@ void CLicenseDlg::RefreshList()
         m_ListLicense.SetItemData(idx, indices[i]);  // 保存原始索引
 
         m_ListLicense.SetItemText(idx, 1, lic.SerialNumber.c_str());
-        m_ListLicense.SetItemText(idx, 2, lic.Status.c_str());
 
         // 显示到期时间
         CString strPending;
@@ -194,6 +193,21 @@ void CLicenseDlg::RefreshList()
             strPending = d.c_str();
         }
         m_ListLicense.SetItemText(idx, 3, strPending);
+
+        // 动态计算状态：如果存储的是 Active 但已过期，标记为 Expired 并持久化
+        std::string displayStatus = lic.Status;
+        if (lic.Status == LICENSE_STATUS_ACTIVE && d.length() == 8) {
+            CTime now = CTime::GetCurrentTime();
+            CString strToday;
+            strToday.Format(_T("%04d%02d%02d"), now.GetYear(), now.GetMonth(), now.GetDay());
+            if (d < std::string(CT2A(strToday))) {
+                displayStatus = LICENSE_STATUS_EXPIRED;
+                // 持久化到配置文件
+                SetLicenseStatus(lic.SerialNumber, LICENSE_STATUS_EXPIRED);
+                m_Licenses[indices[i]].Status = LICENSE_STATUS_EXPIRED;
+            }
+        }
+        m_ListLicense.SetItemText(idx, 2, displayStatus.c_str());
 
         m_ListLicense.SetItemText(idx, 4, lic.Remark.c_str());
         m_ListLicense.SetItemText(idx, 5, lic.Passcode.c_str());
@@ -508,6 +522,13 @@ void CLicenseDlg::OnLicenseRenewal()
         m_Licenses[nIndex].PendingExpireDate = newExpireDate;
         m_Licenses[nIndex].PendingHostNum = hostNum;
 
+        // 续期后自动激活（如果之前是 Expired）
+        if (lic.Status == LICENSE_STATUS_EXPIRED) {
+            SetLicenseStatus(lic.SerialNumber, LICENSE_STATUS_ACTIVE);
+            m_Licenses[nIndex].Status = LICENSE_STATUS_ACTIVE;
+            m_ListLicense.SetItemText(nItem, LIC_COL_STATUS, LICENSE_STATUS_ACTIVE);
+        }
+
         // 显示格式化的新过期日期
         CString strPending;
         strPending.Format(_T("%s-%s-%s"),
@@ -566,6 +587,55 @@ void CLicenseDlg::OnLicenseEditRemark()
     }
 }
 
+// 计算时间戳距今天数
+// 支持6位格式 yyMMdd 和旧4位格式 MMdd
+static int GetDaysFromTimestamp(const std::string& timestamp)
+{
+    if (timestamp.empty()) return -1;  // 无时间戳，返回-1表示无法判断
+
+    SYSTEMTIME now;
+    GetLocalTime(&now);
+
+    int year, month, day;
+    if (timestamp.length() == 6) {
+        // 新格式: yyMMdd (如 "260303" 表示 2026-03-03)
+        year = 2000 + atoi(timestamp.substr(0, 2).c_str());
+        month = atoi(timestamp.substr(2, 2).c_str());
+        day = atoi(timestamp.substr(4, 2).c_str());
+    } else if (timestamp.length() == 4) {
+        // 旧格式: MMdd，需要推断年份
+        month = atoi(timestamp.substr(0, 2).c_str());
+        day = atoi(timestamp.substr(2, 2).c_str());
+        // 假设是今年或去年（如果日期比今天晚则是去年）
+        year = now.wYear;
+        if (month > now.wMonth || (month == now.wMonth && day > now.wDay)) {
+            year--;  // 日期比今天晚，应该是去年
+        }
+    } else {
+        return -1;  // 无法解析
+    }
+
+    // 计算天数差
+    SYSTEMTIME st = { 0 };
+    st.wYear = (WORD)year;
+    st.wMonth = (WORD)month;
+    st.wDay = (WORD)day;
+
+    FILETIME ft1, ft2;
+    SystemTimeToFileTime(&st, &ft1);
+    SystemTimeToFileTime(&now, &ft2);
+
+    ULARGE_INTEGER u1, u2;
+    u1.LowPart = ft1.dwLowDateTime;
+    u1.HighPart = ft1.dwHighDateTime;
+    u2.LowPart = ft2.dwLowDateTime;
+    u2.HighPart = ft2.dwHighDateTime;
+
+    // 转换为天数 (100纳秒单位)
+    __int64 diff = (__int64)(u2.QuadPart - u1.QuadPart);
+    return (int)(diff / (10000000LL * 60 * 60 * 24));
+}
+
 void CLicenseDlg::OnLicenseViewIPs()
 {
     int nItem = m_ListLicense.GetNextItem(-1, LVNI_SELECTED);
@@ -576,16 +646,20 @@ void CLicenseDlg::OnLicenseViewIPs()
     if (nIndex >= m_Licenses.size())
         return;
 
-    const auto& lic = m_Licenses[nIndex];
+    auto& lic = m_Licenses[nIndex];  // 非 const，因为可能需要更新
     if (lic.IP.empty()) {
         MessageBoxL("该授权暂无 IP 记录", "IP 历史", MB_ICONINFORMATION);
         return;
     }
 
+    const int EXPIRY_DAYS = 180;  // 过期天数
+
     // 解析 IP 列表并格式化显示
-    // 格式: "1.2.3.4(PC01)|0218, 1.2.3.4(PC02)|0215" -> 每行显示一个 IP(机器名)
+    // 格式: "1.2.3.4(PC01)|260303, 1.2.3.4(PC02)|260215" -> 每行显示一个 IP(机器名)
     std::string formattedList;
+    std::string newIPList;  // 用于保存过滤后的 IP 列表
     int count = 0;
+    int removedCount = 0;
 
     size_t start = 0;
     while (start < lic.IP.length()) {
@@ -612,6 +686,19 @@ void CLicenseDlg::OnLicenseViewIPs()
         }
 
         if (!ip.empty()) {
+            // 检查是否过期
+            int daysAgo = GetDaysFromTimestamp(timestamp);
+            if (daysAgo >= 0 && daysAgo > EXPIRY_DAYS) {
+                // 记录已过期，跳过
+                removedCount++;
+                start = end + 1;
+                continue;
+            }
+
+            // 保留有效记录
+            if (!newIPList.empty()) newIPList += ", ";
+            newIPList += entry;
+
             count++;
 
             // 解析 IP 和机器名: "1.2.3.4(PC01)" -> ip="1.2.3.4", machine="PC01"
@@ -626,18 +713,26 @@ void CLicenseDlg::OnLicenseViewIPs()
             }
 
             char line[256];
-            if (!timestamp.empty() && timestamp.length() == 4) {
-                // 格式化时间戳: 0218 -> 02-18
+            if (!timestamp.empty() && (timestamp.length() == 6 || timestamp.length() == 4)) {
+                // 格式化时间戳
+                std::string monthStr, dayStr;
+                if (timestamp.length() == 6) {
+                    // 新格式: yyMMdd -> yy-MM-dd
+                    monthStr = timestamp.substr(2, 2);
+                    dayStr = timestamp.substr(4, 2);
+                } else {
+                    // 旧格式: MMdd -> MM-dd
+                    monthStr = timestamp.substr(0, 2);
+                    dayStr = timestamp.substr(2, 2);
+                }
                 if (!machineName.empty()) {
                     sprintf_s(line, (_L("%d. %s  [%s]  (最后活跃: %s-%s)") + "\r\n").GetString(),
                         count, pureIP.c_str(), machineName.c_str(),
-                        timestamp.substr(0, 2).c_str(),
-                        timestamp.substr(2, 2).c_str());
+                        monthStr.c_str(), dayStr.c_str());
                 } else {
                     sprintf_s(line, (_L("%d. %s  (最后活跃: %s-%s)") + "\r\n").GetString(),
                         count, pureIP.c_str(),
-                        timestamp.substr(0, 2).c_str(),
-                        timestamp.substr(2, 2).c_str());
+                        monthStr.c_str(), dayStr.c_str());
                 }
             } else {
                 if (!machineName.empty()) {
@@ -652,10 +747,37 @@ void CLicenseDlg::OnLicenseViewIPs()
         start = end + 1;
     }
 
+    // 如果有记录被删除，保存更新后的 IP 列表
+    if (removedCount > 0) {
+        std::string iniPath = GetLicensesPath();
+        config cfg(iniPath);
+        cfg.SetStr(lic.SerialNumber, "IP", newIPList);
+        lic.IP = newIPList;  // 更新内存中的数据
+
+        // 更新列表显示
+        CString strIPDisplay = FormatIPDisplay(newIPList).c_str();
+        m_ListLicense.SetItemText(nItem, LIC_COL_IP, strIPDisplay);
+    }
+
+    // 如果没有有效记录
+    if (count == 0) {
+        CString msg;
+        msg.Format(_TR("所有 IP 记录均已过期（超过 %d 天），已自动清理"), EXPIRY_DAYS);
+        MessageBoxA(msg, _TR("IP 历史"), MB_ICONINFORMATION);
+        return;
+    }
+
     // 添加统计信息
     char summary[128];
     sprintf_s(summary, (CString("\r\n") + _TR("共 %d 条登录记录")).GetString(), count);
     formattedList += summary;
+
+    // 显示清理信息
+    if (removedCount > 0) {
+        char cleanupInfo[128];
+        sprintf_s(cleanupInfo, (_L("\r\n（已清理 %d 条过期记录）")).GetString(), removedCount);
+        formattedList += cleanupInfo;
+    }
 
     // 多机器警告
     if (count > 1) {
@@ -759,7 +881,7 @@ std::string FormatIPDisplay(const std::string& ipListStr)
 }
 
 // 检查 IP+机器名 是否在授权数据库中存在
-// IP 字段格式: "1.2.3.4(PC01)|0218, 1.2.3.5(PC02)|0215"
+// IP 字段格式: "1.2.3.4(PC01)|260218, 1.2.3.5(PC02)|260215" (yyMMdd)
 bool FindLicenseByIPAndMachine(const std::string& ip, const std::string& machineName, std::string* outSN)
 {
     if (ip.empty()) return false;
@@ -783,7 +905,7 @@ bool FindLicenseByIPAndMachine(const std::string& ip, const std::string& machine
                 entry = entry.substr(first, last - first + 1);
             }
 
-            // 去除时间戳部分 "|0218"
+            // 去除时间戳部分 "|yyMMdd"
             size_t pipePos = entry.find('|');
             if (pipePos != std::string::npos) {
                 entry = entry.substr(0, pipePos);

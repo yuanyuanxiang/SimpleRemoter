@@ -35,6 +35,7 @@ CListCtrlEx::~CListCtrlEx()
 
 BEGIN_MESSAGE_MAP(CListCtrlEx, CListCtrl)
     ON_WM_CONTEXTMENU()
+    ON_WM_ERASEBKGND()
 END_MESSAGE_MAP()
 
 void CListCtrlEx::SetConfigKey(const CString& strKey)
@@ -268,3 +269,12 @@ void CListCtrlEx::SaveColumnVisibility()
     CT2A configKeyA(m_strConfigKey);
     THIS_CFG.SetStr("list", std::string(configKeyA), strHidden);
 }
+
+BOOL CListCtrlEx::OnEraseBkgnd(CDC* pDC)
+{
+    if (m_bSkipEraseBkgnd) {
+        return TRUE;  // 跳过背景擦除，减少闪烁
+    }
+    return CListCtrl::OnEraseBkgnd(pDC);
+}
+

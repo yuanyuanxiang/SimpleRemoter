@@ -170,7 +170,7 @@ public:
 
     virtual std::string GetStr(const std::string& MainKey, const std::string& SubKey, const std::string& def = "")
     {
-        char buf[_MAX_PATH] = { 0 };
+        char buf[4096] = { 0 };  // 增大缓冲区以支持较长的值（如 IP 列表）
         ::GetPrivateProfileStringA(MainKey.c_str(), SubKey.c_str(), def.c_str(), buf, sizeof(buf), m_IniFilePath);
         return std::string(buf);
     }

@@ -118,10 +118,10 @@ bool LoadLicenseInfo(const std::string& deviceID, std::string& passcode,
 }
 
 // IP 列表管理常量
-#define MAX_IP_HISTORY 10  // 最多保留 10 个不同的 IP
+#define MAX_IP_HISTORY 50  // 最多保留 50 个不同的 IP
 
 // 解析 IP 列表字符串为 vector<pair<IP, 时间戳>>
-// 格式: "192.168.1.1|0218, 10.0.0.1|0215"
+// 格式: "192.168.1.1|260218, 10.0.0.1|260215" (yyMMdd)
 static std::vector<std::pair<std::string, std::string>> ParseIPList(const std::string& ipListStr)
 {
     std::vector<std::pair<std::string, std::string>> result;
@@ -175,7 +175,7 @@ static std::string SerializeIPList(const std::vector<std::pair<std::string, std:
 }
 
 // 更新 IP 列表：添加新 IP 或更新已有 IP 的时间戳
-// 格式: IP(机器名)|时间戳，例如 "1.2.3.4(PC01)|0219"
+// 格式: IP(机器名)|时间戳，例如 "1.2.3.4(PC01)|260219" (yyMMdd 格式)
 // 返回更新后的 IP 列表字符串
 static std::string UpdateIPList(const std::string& existingIPList, const std::string& newIP, const std::string& machineName = "")
 {
@@ -193,11 +193,11 @@ static std::string UpdateIPList(const std::string& existingIPList, const std::st
         ipKey = newIP + "(" + shortName + ")";
     }
 
-    // 获取当前时间戳 (MMdd 格式)
+    // 获取当前时间戳 (yyMMdd 格式，6位)
     SYSTEMTIME st;
     GetLocalTime(&st);
     char timestamp[8];
-    sprintf_s(timestamp, "%02d%02d", st.wMonth, st.wDay);
+    sprintf_s(timestamp, "%02d%02d%02d", st.wYear % 100, st.wMonth, st.wDay);
 
     // 解析现有 IP 列表
     auto ipList = ParseIPList(existingIPList);
@@ -277,7 +277,7 @@ bool UpdateLicenseActivity(const std::string& deviceID, const std::string& passc
     }
 
     // 更新 IP 列表（追加新 IP 或更新已有 IP 的时间戳）
-    // 格式: IP(机器名)|时间戳
+    // 格式: IP(机器名)|yyMMdd
     if (!ip.empty()) {
         std::string existingIPList = cfg.GetStr(deviceID, "IP", "");
         std::string newIPList = UpdateIPList(existingIPList, ip, machineName);

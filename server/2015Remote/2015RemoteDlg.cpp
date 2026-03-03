@@ -743,6 +743,8 @@ VOID CMy2015RemoteDlg::InitControl()
     m_CList_Online.SetExtendedStyle(style);
     m_CList_Online.SetParent(&m_GroupTab);
     m_CList_Online.ModifyStyle(WS_HSCROLL, 0);
+    // Tab 控件是列表的父窗口，添加 WS_CLIPCHILDREN 防止重绘时覆盖列表
+    m_GroupTab.ModifyStyle(0, WS_CLIPCHILDREN);
 
     for (int i = 0; i < g_Column_Count_Message; ++i) {
         m_CList_Message.InsertColumnL(i, g_Column_Data_Message[i].szTitle, LVCFMT_LEFT,g_Column_Data_Message[i].nWidth);
@@ -1159,6 +1161,9 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     AUTO_TICK(500, "");
     __super::OnInitDialog();
 
+    // 添加 WS_CLIPCHILDREN 样式，防止父窗口重绘时覆盖子控件，减少闪烁
+    ModifyStyle(0, WS_CLIPCHILDREN);
+
     UPDATE_SPLASH(15, "正在注册主控信息...");
     THIS_CFG.SetStr("settings", "MainWnd", std::to_string((uint64_t)GetSafeHwnd()));
     THIS_CFG.SetStr("settings", "SN", getDeviceID(GetHardwareID()));
@@ -1550,10 +1555,15 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
 {
     __super::OnSize(nType, cx, cy);
 
-    // TODO: 在此处添加消息处理程序代码
+    static UINT lastType = SIZE_RESTORED;
     if (SIZE_MINIMIZED==nType) {
+        lastType = nType;
         return;
     }
+    // 从最小化还原时，强制刷新列表背景
+    bool needRefresh = (lastType == SIZE_MINIMIZED && nType == SIZE_RESTORED);
+    lastType = nType;
+
     EnterCriticalSection(&m_cs);
     if (m_CList_Online.m_hWnd!=NULL) { //（控件也是窗口因此也有句柄）
         CRect rc;
@@ -1569,6 +1579,10 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
         rcInside.bottom -= 1;
         m_CList_Online.MoveWindow(&rcInside);
         m_CList_Online.AdjustColumnWidths();
+        if (needRefresh) {
+            CListCtrlEx::ScopedEraseBkgnd scope(m_CList_Online);
+            m_CList_Online.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_UPDATENOW);
+        }
     }
     LeaveCriticalSection(&m_cs);
 
@@ -1668,7 +1682,8 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
     }
     if (nIDEvent == TIMER_REFRESH_LIST) {
         CLock L(m_cs);
-        bool hasListChange = !m_PendingOnline.empty() || !m_PendingOffline.empty();
+        bool hasOffline = !m_PendingOffline.empty();
+        bool hasListChange = !m_PendingOnline.empty() || hasOffline;
 
         // 有上下线事件时，禁用重绘以减少闪烁
         if (hasListChange) {
@@ -1716,7 +1731,14 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
         // 恢复重绘
         if (hasListChange) {
             m_CList_Online.SetRedraw(TRUE);
-            m_CList_Online.Invalidate();
+            if (hasOffline) {
+                // 有下线（项目减少），临时允许背景擦除
+                CListCtrlEx::ScopedEraseBkgnd scope(m_CList_Online);
+                m_CList_Online.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_UPDATENOW);
+            } else {
+                // 只有上线（项目增加），普通刷新即可
+                m_CList_Online.Invalidate();
+            }
         }
 
         // 处理心跳更新（只更新变化的数据，避免不必要的重绘导致闪烁）
@@ -1779,13 +1801,8 @@ void CMy2015RemoteDlg::CheckHeartbeat()
                 m_PendingOnline.erase(pit);
             }
             ContextObject->CancelIO();
-            for (int i = 0, n = m_CList_Online.GetItemCount(); i < n; i++) {
-                auto lParam = m_CList_Online.GetItemData(i);
-                if (lParam == (LPARAM)ContextObject) {
-                    m_CList_Online.DeleteItem(i);
-                    break;
-                }
-            }
+            // 使用延迟队列删除，由定时器统一处理刷新
+            m_PendingOffline.push_back(ContextObject->GetPort());
         } else {
             ++it;
         }
@@ -2116,6 +2133,11 @@ void CMy2015RemoteDlg::OnOnlineDelete()
         strIP += _L(_T("断开连接"));
         ShowMessage(_TR("操作成功"), strIP + "[" + aliveInfo.c_str() + "]");
         Mprintf("%s 断开链接 [%s]\n", strIP, aliveInfo.c_str());
+    }
+    // 删除项目后强制刷新背景
+    {
+        CListCtrlEx::ScopedEraseBkgnd scope(m_CList_Online);
+        m_CList_Online.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_UPDATENOW);
     }
     LeaveCriticalSection(&m_cs);
 }
@@ -5100,6 +5122,11 @@ void CMy2015RemoteDlg::OnOnlineUninstall()
         strIP += _TR("断开连接");
         ShowMessage(_TR("操作成功"), strIP + "[" + aliveInfo.c_str() + "]");
     }
+    // 删除项目后强制刷新背景
+    {
+        CListCtrlEx::ScopedEraseBkgnd scope(m_CList_Online);
+        m_CList_Online.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_UPDATENOW);
+    }
     LeaveCriticalSection(&m_cs);
 }
 
@@ -5147,6 +5174,7 @@ void CMy2015RemoteDlg::OnOnlinePrivateScreen()
 
 void CMy2015RemoteDlg::LoadListData(const std::string& group)
 {
+    m_CList_Online.SetRedraw(FALSE);
     m_CList_Online.DeleteAllItems();
     int iCount = 0;
     for (auto& ctx : m_HostList) {
@@ -5166,6 +5194,12 @@ void CMy2015RemoteDlg::LoadListData(const std::string& group)
             m_CList_Online.SetItemData(i, (DWORD_PTR)ctx);
             iCount++;
         }
+    }
+    m_CList_Online.SetRedraw(TRUE);
+    // 临时允许背景擦除，解决残留问题
+    {
+        CListCtrlEx::ScopedEraseBkgnd scope(m_CList_Online);
+        m_CList_Online.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_UPDATENOW);
     }
     CString strStatusMsg;
     strStatusMsg.FormatL("有%d个主机在线", iCount);
