@@ -19,6 +19,10 @@ BOOL CGridDialog::OnInitDialog()
     SetIcon(m_hIcon, FALSE);
 
     __super::OnInitDialog();
+
+    // 设置对话框标题（解决英语系统乱码问题）
+    SetWindowText(_TR("屏幕墙"));
+
     return TRUE;
 }
 

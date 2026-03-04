@@ -376,6 +376,11 @@ BOOL CPasswordDlg::OnInitDialog()
 {
     __super::OnInitDialog();
 
+    // 设置对话框标题和控件文本（解决英语系统乱码问题）
+    SetWindowText(_TR("口令"));
+    SetDlgItemText(IDOK, _TR("确定"));
+    SetDlgItemText(IDCANCEL, _TR("取消"));
+
     // TODO:  在此添加额外的初始化
     m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_PASSWORD));
     SetIcon(m_hIcon, FALSE);
@@ -519,6 +524,11 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
 BOOL CPwdGenDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+
+    // 设置对话框标题和控件文本（解决英语系统乱码问题）
+    SetWindowText(_TR("生成口令"));
+    SetDlgItemText(IDC_BUTTON_SAVE_LICENSE, _TR("保存授权"));
+    SetDlgItemText(IDCANCEL, _TR("取消"));
 
     // TODO:  在此添加额外的初始化
     m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_PASSWORD));

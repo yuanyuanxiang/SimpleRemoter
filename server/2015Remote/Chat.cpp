@@ -49,6 +49,13 @@ BOOL CChat::OnInitDialog()
     CString str;
     str.FormatL(_T("远程交谈 - %s"), m_ContextObject->PeerName.c_str()),
                 SetWindowText(str);
+
+    // 设置控件文本（解决英语系统乱码问题）
+    SetDlgItemText(IDC_BUTTON_SEND, _TR("发送消息"));
+    SetDlgItemText(IDC_BUTTON_END, _TR("结束交谈"));
+    SetDlgItemText(IDC_LOCK, _TR("锁定屏幕\n屏蔽功能键"));
+    SetDlgItemText(IDC_UNLOCK, _TR("解除锁定"));
+
     m_editTip.SetWindowTextL("提示: 对方聊天对话框在发送消息后才会弹出");
     m_editNewMsg.SetLimitText(4079);
     // TODO: Add extra initialization here

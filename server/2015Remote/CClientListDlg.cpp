@@ -161,6 +161,9 @@ BOOL CClientListDlg::OnInitDialog()
 {
     __super::OnInitDialog();
 
+    // 设置对话框标题（解决英语系统乱码问题）
+    SetWindowText(_TR("历史主机"));
+
     HICON hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_MACHINE));
     SetIcon(hIcon, FALSE);
 

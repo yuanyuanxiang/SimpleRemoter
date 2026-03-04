@@ -86,6 +86,17 @@ END_MESSAGE_MAP()
 BOOL CSettingDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+
+    // 设置对话框标题和控件文本（解决英语系统乱码问题）
+    SetWindowText(_TR("设置"));
+    SetDlgItemText(IDOK, _TR("确定"));
+    SetDlgItemText(IDCANCEL, _TR("取消"));
+    SetDlgItemText(IDC_BUTTON_SETTINGAPPLY, _TR("应用"));
+    SetDlgItemText(IDC_RADIO_FRP_OFF, _TR("否"));
+    SetDlgItemText(IDC_RADIO_FRP_ON, _TR("是"));
+    SetDlgItemText(IDC_RADIO_ALL_SCREEN, _TR("否"));
+    SetDlgItemText(IDC_RADIO_MAIN_SCREEN, _TR("是"));
+
     m_sPublicIP = THIS_CFG.GetStr("settings", "master", "").c_str();
     m_sPublicIP = m_sPublicIP.IsEmpty() ? g_2015RemoteDlg->m_IPConverter->getPublicIP().c_str() : m_sPublicIP;
     std::string nPort = THIS_CFG.GetStr("settings", "ghost", "6543");

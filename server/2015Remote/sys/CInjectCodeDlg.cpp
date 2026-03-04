@@ -41,6 +41,11 @@ END_MESSAGE_MAP()
 BOOL CInjectCodeDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+
+    // 设置对话框标题和控件文本（解决英语系统乱码问题）
+    SetWindowText(_TR("注入设置"));
+    SetDlgItemText(IDC_BUTTON_INJECT, _TR("注入"));
+
     int i = 0;
     m_combo_main.InsertStringL(i++, _T("CreateRemoteThread(落地反射注入)"));
     m_combo_main.InsertStringL(i++, _T("QueueUserAPC(落地反射注入)"));

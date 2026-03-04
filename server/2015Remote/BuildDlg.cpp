@@ -593,6 +593,12 @@ BOOL CBuildDlg::OnInitDialog()
 {
     __super::OnInitDialog();
 
+    // 设置对话框标题和控件文本（解决英语系统乱码问题）
+    SetWindowText(_TR("生成服务端"));
+    SetDlgItemText(IDOK, _TR("确定"));
+    SetDlgItemText(IDCANCEL, _TR("取消"));
+    SetDlgItemText(IDC_CHECK_FILESERVER, _TR("下载服务"));
+
     // TODO:  在此添加额外的初始化
     CEdit* pEdit = (CEdit*)GetDlgItem(IDC_EDIT_IP);
     pEdit->LimitText(99);

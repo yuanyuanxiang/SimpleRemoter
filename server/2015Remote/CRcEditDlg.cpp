@@ -52,7 +52,12 @@ BOOL CRcEditDlg::OnInitDialog()
 {
     __super::OnInitDialog();
 
-    // TODO:  在此添加额外的初始化
+    // 设置对话框标题和控件文本（解决英语系统乱码问题）
+    SetWindowText(_TR("PE 编辑"));
+    SetDlgItemText(IDC_BTN_SELECT_EXE, _TR("目标程序"));
+    SetDlgItemText(IDC_BTN_SELECT_ICO, _TR("图标文件"));
+    SetDlgItemText(IDOK, _TR("确定"));
+    SetDlgItemText(IDCANCEL, _TR("取消"));
 
     return TRUE;  // return TRUE unless you set the focus to a control
     // 异常: OCX 属性页应返回 FALSE

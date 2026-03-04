@@ -40,6 +40,10 @@ BOOL CTalkDlg::OnInitDialog()
 {
     __super::OnInitDialog();
 
+    // 设置对话框标题和控件文本（解决英语系统乱码问题）
+    SetWindowText(_TR("即时消息"));
+    SetDlgItemText(IDC_BUTTON_TALK, _TR("发送"));
+
     SetIcon(m_hIcon, FALSE);
     BYTE bToken = COMMAND_NEXT;
     m_ContextObject->Send2Client(&bToken, sizeof(BYTE));

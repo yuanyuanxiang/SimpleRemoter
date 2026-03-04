@@ -255,6 +255,9 @@ BOOL CLicenseDlg::OnInitDialog()
 {
     __super::OnInitDialog();
 
+    // 设置对话框标题（解决英语系统乱码问题）
+    SetWindowText(_TR("授权管理"));
+
     m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_PASSWORD));
     SetIcon(m_hIcon, FALSE);
     SetIcon(m_hIcon, TRUE);

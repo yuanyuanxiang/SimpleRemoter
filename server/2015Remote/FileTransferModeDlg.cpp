@@ -53,6 +53,16 @@ BOOL CFileTransferModeDlg::OnInitDialog()
 {
     __super::OnInitDialog();
 
+    // 设置对话框标题和控件文本（解决英语系统乱码问题）
+    SetWindowText(_TR("确认文件替换"));
+    SetDlgItemText(IDC_OVERWRITE, _TR("覆盖"));
+    SetDlgItemText(IDC_OVERWRITE_ALL, _TR("全部覆盖"));
+    SetDlgItemText(IDC_ADDITION, _TR("继传"));
+    SetDlgItemText(IDC_ADDITION_ALL, _TR("全部继传"));
+    SetDlgItemText(IDC_JUMP, _TR("跳过"));
+    SetDlgItemText(IDC_JUMP_ALL, _TR("全部跳过"));
+    SetDlgItemText(IDC_CANCEL, _TR("取消"));
+
     // TODO: Add extra initialization here
     CString	str;
     str.FormatL("此文件夹已包含一个名为“%s”的文件", m_strFileName);

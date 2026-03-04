@@ -147,6 +147,7 @@ public:
 
 protected:
     virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
+    virtual BOOL OnInitDialog();
 
     // 实现
 protected:
@@ -160,6 +161,17 @@ CAboutDlg::CAboutDlg() : CDialogLangEx(CAboutDlg::IDD)
 void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 {
     __super::DoDataExchange(pDX);
+}
+
+BOOL CAboutDlg::OnInitDialog()
+{
+    __super::OnInitDialog();
+
+    // 设置对话框标题和控件文本（解决英语系统乱码问题）
+    SetWindowText(_TR("关于YAMA"));
+    SetDlgItemText(IDOK, _TR("确定"));
+
+    return TRUE;
 }
 
 BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)

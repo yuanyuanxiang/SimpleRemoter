@@ -39,6 +39,11 @@ BOOL CUpdateDlg::OnInitDialog()
 {
     __super::OnInitDialog();
 
+    // 设置对话框标题和控件文本（解决英语系统乱码问题）
+    SetWindowText(_TR("升级程序"));
+    SetDlgItemText(IDOK, _TR("确定"));
+    SetDlgItemText(IDCANCEL, _TR("取消"));
+
     // TODO:  在此添加额外的初始化
     m_ComboUpdateSelect.InsertStringL(0, _T("TestRun"));
     m_ComboUpdateSelect.InsertStringL(1, _T("Ghost"));
