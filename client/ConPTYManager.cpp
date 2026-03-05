@@ -68,15 +68,16 @@ CConPTYManager::CConPTYManager(IOCPClient* ClientObject, int n, void* user)
     HttpMask mask(DEFAULT_HOST, m_ClientObject->GetClientIPHeader());
     m_ClientObject->Send2Server((char*)&bToken, 1, &mask);
 
-    WaitForDialogOpen();
-
-    // Start read thread
+    // Start read thread immediately, it will wait for server ready internally
     m_hReadThread = __CreateThread(NULL, 0, ReadThread, (LPVOID)this, 0, NULL);
 }
 
 CConPTYManager::~CConPTYManager()
 {
     m_bRunning = FALSE;
+
+    // Wake up read thread if it's waiting for server ready
+    NotifyDialogIsOpen();
 
     // Close pipes first to unblock ReadThread
     if (m_hPipeIn) {
@@ -254,6 +255,25 @@ DWORD WINAPI CConPTYManager::ReadThread(LPVOID lParam)
 {
     CConPTYManager* pThis = (CConPTYManager*)lParam;
     char buffer[4096];
+
+    // Wait for server terminal ready (WebView2 initialization may take time)
+    // Check m_bRunning every 500ms to allow quick exit
+    while (pThis->m_bRunning) {
+        DWORD result = WaitForSingleObject(pThis->m_hEventDlgOpen, 500);
+        if (result == WAIT_OBJECT_0) {
+            break;  // Server is ready
+        }
+        // WAIT_TIMEOUT: continue loop and check m_bRunning
+    }
+
+    if (!pThis->m_bRunning) {
+        Mprintf("[ConPTY] Read thread exiting before server ready\n");
+        SAFE_CLOSE_HANDLE(pThis->m_hReadThread);
+        pThis->m_hReadThread = nullptr;
+        return 0;
+    }
+
+    Mprintf("[ConPTY] Server ready, starting to read\n");
 
     while (pThis->m_bRunning) {
         // Check if process has exited
