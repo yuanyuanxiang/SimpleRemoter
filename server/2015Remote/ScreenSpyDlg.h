@@ -199,6 +199,8 @@ public:
     POINT				m_lastMousePoint;// 上次鼠标位置
     BOOL				m_bAdaptiveSize = TRUE;
     HCURSOR				m_hRemoteCursor = NULL;
+    HCURSOR             m_hCustomCursor = NULL;      // 缓存的自定义光标
+    DWORD               m_dwCustomCursorHash = 0;    // 当前自定义光标哈希
     CRect				m_CRect;
     double				m_wZoom=1, m_hZoom=1;
     bool				m_bMouseTracking = false;

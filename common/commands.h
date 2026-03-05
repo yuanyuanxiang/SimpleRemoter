@@ -241,6 +241,8 @@ enum {
     COMMAND_FILE_COMPLETE_V2 = 91,  // V2 文件完成校验: [cmd][transferID][fileIndex][fileSize][sha256]
     COMMAND_C2C_PREPARE_RESP = 92,  // C2C 准备响应（返回目标目录给发送方）
 
+    CMD_CURSOR_IMAGE = 93,          // 自定义光标图像: [cmd:1][hash:4][hotX:2][hotY:2][w:1][h:1][BGRA:w*h*4]
+
     TOKEN_SCROLL_FRAME = 99,        // 滚动优化帧
     // 服务端发出的标识
     TOKEN_AUTH = 100,				// 要求验证

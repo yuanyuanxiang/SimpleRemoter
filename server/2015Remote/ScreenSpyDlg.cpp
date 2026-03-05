@@ -199,6 +199,12 @@ CScreenSpyDlg::~CScreenSpyDlg()
     // AVFrame需要清除
     av_frame_unref(&m_AVFrame);
 
+    // 清理自定义光标
+    if (m_hCustomCursor) {
+        DestroyCursor(m_hCustomCursor);
+        m_hCustomCursor = NULL;
+    }
+
     SAFE_DELETE(m_pToolbar);
     SAFE_DELETE(m_pStatusInfoWnd);
 }
@@ -907,6 +913,106 @@ VOID CScreenSpyDlg::OnReceiveComplete()
         }
         break;
     }
+    case CMD_CURSOR_IMAGE: {
+        // 自定义光标图像: [cmd:1][hash:4][hotX:2][hotY:2][w:1][h:1][BGRA:w*h*4]
+        if (len < 11) break;
+        DWORD hash = *(DWORD*)(szBuffer + 1);
+        if (hash == m_dwCustomCursorHash && m_hCustomCursor) break;  // 相同光标且已创建，忽略
+
+        WORD hotX = *(WORD*)(szBuffer + 5);
+        WORD hotY = *(WORD*)(szBuffer + 7);
+        BYTE width = szBuffer[9];
+        BYTE height = szBuffer[10];
+
+        // 检查尺寸有效性
+        if (width == 0 || height == 0 || width > 64 || height > 64) break;
+
+        LPBYTE bgraData = szBuffer + 11;
+        DWORD dataSize = width * height * 4;
+
+        if (len < 11 + dataSize) break;  // 数据不完整
+
+        // 创建位图
+        HDC hScreenDC = ::GetDC(NULL);
+        if (!hScreenDC) break;
+
+        HDC hMemDC = ::CreateCompatibleDC(hScreenDC);
+        if (!hMemDC) {
+            ::ReleaseDC(NULL, hScreenDC);
+            break;
+        }
+
+        BITMAPINFO bmi = { 0 };
+        bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+        bmi.bmiHeader.biWidth = width;
+        bmi.bmiHeader.biHeight = -height;  // 负数表示从上到下
+        bmi.bmiHeader.biPlanes = 1;
+        bmi.bmiHeader.biBitCount = 32;
+        bmi.bmiHeader.biCompression = BI_RGB;
+
+        void* pColorBits = NULL;
+        HBITMAP hColorBmp = CreateDIBSection(hScreenDC, &bmi, DIB_RGB_COLORS, &pColorBits, NULL, 0);
+        if (!hColorBmp || !pColorBits) {
+            ::DeleteDC(hMemDC);
+            ::ReleaseDC(NULL, hScreenDC);
+            break;
+        }
+        memcpy(pColorBits, bgraData, dataSize);
+
+        // 创建掩码位图（1bpp，行宽度 WORD 对齐）
+        int maskStride = ((width + 15) / 16) * 2;  // 每行字节数，16位对齐
+        int maskSize = maskStride * height;
+        BYTE* maskBits = new BYTE[maskSize];
+        memset(maskBits, 0, maskSize);
+
+        // 根据 Alpha 通道生成掩码（内存操作，比 SetPixel 快 100 倍）
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                BYTE alpha = bgraData[(y * width + x) * 4 + 3];
+                if (alpha < 128) {
+                    // 透明像素：掩码位=1
+                    maskBits[y * maskStride + x / 8] |= (0x80 >> (x % 8));
+                }
+            }
+        }
+
+        HBITMAP hMaskBmp = ::CreateBitmap(width, height, 1, 1, maskBits);
+        delete[] maskBits;
+
+        if (!hMaskBmp) {
+            ::DeleteObject(hColorBmp);
+            ::DeleteDC(hMemDC);
+            ::ReleaseDC(NULL, hScreenDC);
+            break;
+        }
+
+        // 创建光标
+        ICONINFO iconInfo = { 0 };
+        iconInfo.fIcon = FALSE;
+        iconInfo.xHotspot = hotX;
+        iconInfo.yHotspot = hotY;
+        iconInfo.hbmMask = hMaskBmp;
+        iconInfo.hbmColor = hColorBmp;
+
+        HCURSOR hNewCursor = CreateIconIndirect(&iconInfo);
+
+        // 清理位图（CreateIconIndirect 会复制）
+        ::DeleteObject(hColorBmp);
+        ::DeleteObject(hMaskBmp);
+        ::DeleteDC(hMemDC);
+        ::ReleaseDC(NULL, hScreenDC);
+
+        // 只有成功创建才更新
+        if (hNewCursor) {
+            if (m_hCustomCursor) {
+                DestroyCursor(m_hCustomCursor);
+            }
+            m_hCustomCursor = hNewCursor;
+            m_dwCustomCursorHash = hash;
+            Mprintf("[ScreenSpy] 自定义光标已创建: %dx%d, hash=%08X\n", width, height, hash);
+        }
+        break;
+    }
     default: {
         Mprintf("CScreenSpyDlg unknown command: %d!!!\n", int(cmd));
     }
@@ -962,7 +1068,15 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(bool keyFrame)
     if (bOldCursorIndex != m_bCursorIndex) {
         bChange = TRUE;
         if (m_bIsCtrl && !m_bIsTraceCursor) {//替换指定窗口所属类的WNDCLASSEX结构
-            HCURSOR cursor = m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex);
+            HCURSOR cursor;
+            if (m_bCursorIndex == 254) {  // -2: 使用自定义光标
+                cursor = m_hCustomCursor ? m_hCustomCursor : LoadCursor(NULL, IDC_ARROW);
+            } else if (m_bCursorIndex == 255) {  // -1: 不支持，回退到箭头
+                cursor = LoadCursor(NULL, IDC_ARROW);
+            } else {
+                cursor = m_CursorInfo.getCursorHandle(m_bCursorIndex);
+                if (!cursor) cursor = LoadCursor(NULL, IDC_ARROW);
+            }
 #ifdef _WIN64
             SetClassLongPtrA(m_hWnd, GCLP_HCURSOR, (ULONG_PTR)cursor);
 #else
@@ -1245,12 +1359,23 @@ void CScreenSpyDlg::OnPaint()
             int drawX = m_bAdaptiveSize ? (int)(m_ClientCursorPos.x / m_wZoom) : (m_ClientCursorPos.x - m_ulHScrollPos);
             int drawY = m_bAdaptiveSize ? (int)(m_ClientCursorPos.y / m_hZoom) : (m_ClientCursorPos.y - m_ulVScrollPos);
 
-            // 2. 强制绘制
+            // 2. 获取光标句柄（支持自定义光标）
+            HCURSOR hCursor;
+            if (m_bCursorIndex == 254) {  // -2: 使用自定义光标
+                hCursor = m_hCustomCursor ? m_hCustomCursor : LoadCursor(NULL, IDC_ARROW);
+            } else if (m_bCursorIndex == 255) {  // -1: 不支持，回退到箭头
+                hCursor = LoadCursor(NULL, IDC_ARROW);
+            } else {
+                hCursor = m_CursorInfo.getCursorHandle(m_bCursorIndex);
+                if (!hCursor) hCursor = LoadCursor(NULL, IDC_ARROW);
+            }
+
+            // 3. 强制绘制
             DrawIconEx(
                 m_hFullDC,
                 drawX,
                 drawY,
-                m_CursorInfo.getCursorHandle(m_bCursorIndex == (BYTE)-1 ? 1 : m_bCursorIndex),
+                hCursor,
                 0, 0, 0, NULL, DI_NORMAL | DI_COMPAT
             );
         }

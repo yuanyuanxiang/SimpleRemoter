@@ -634,6 +634,12 @@ DWORD WINAPI CScreenManager::WorkThreadProc(LPVOID lParam)
                 }
             }
             last = clock();
+            // 发送待发送的自定义光标图像（在帧数据之前）
+            BYTE* cursorData = nullptr;
+            ULONG cursorSize = 0;
+            if (This->m_ScreenSpyObject->GetPendingCursorImage(&cursorData, &cursorSize)) {
+                This->m_ClientObject->Send2Server((char*)cursorData, cursorSize);
+            }
             This->SendNextScreen(szBuffer, ulNextSendLength);
         }
     }

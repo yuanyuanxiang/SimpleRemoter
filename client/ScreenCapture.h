@@ -158,6 +158,13 @@ public:
     int             m_nInstructionSet = 0;
     int             m_nBitRate = 0;      // H264 编码码率 (kbps), 0=自动
 
+    // 自定义光标相关
+    DWORD           m_dwLastCursorHash = 0;      // 上次发送的光标哈希
+    DWORD           m_dwLastCursorSendTime = 0;  // 上次发送光标的时间
+    bool            m_bPendingCursorImage = false; // 是否有待发送的光标图像
+    BYTE            m_CursorImageBuffer[MAX_CURSOR_SIZE * MAX_CURSOR_SIZE * 4 + 16]; // 光标图像缓冲
+    ULONG           m_ulCursorImageSize = 0;     // 光标图像数据大小
+
     // bitRate → CRF 映射：码率越高 CRF 越低（质量越好）
     // 3000→20, 2000→23, 1200→26, 800→30
     static int BitRateToCRF(int bitRate) {
@@ -638,9 +645,9 @@ public:
         CursorPos.y /= m_hZoom;
         memcpy(data + 1, &CursorPos, sizeof(POINT));
 
-        // 写入当前光标类型
+        // 写入当前光标类型（支持自定义光标）
         static CCursorInfo m_CursorInfor;
-        BYTE bCursorIndex = m_CursorInfor.getCurrentCursorIndex();
+        BYTE bCursorIndex = CheckAndUpdateCursor(m_CursorInfor);
         data[1 + sizeof(POINT)] = bCursorIndex;
 
         ULONG headerOffset = 1 + sizeof(POINT) + sizeof(BYTE);  // 11字节
@@ -850,9 +857,9 @@ public:
         CursorPos.y /= m_hZoom;
         memcpy(data + sizeof(BYTE), (LPBYTE)&CursorPos, sizeof(POINT));
 
-        // 写入当前光标类型
+        // 写入当前光标类型（支持自定义光标）
         static CCursorInfo m_CursorInfor;
-        BYTE	bCursorIndex = m_CursorInfor.getCurrentCursorIndex();
+        BYTE	bCursorIndex = CheckAndUpdateCursor(m_CursorInfor);
         memcpy(data + sizeof(BYTE) + sizeof(POINT), &bCursorIndex, sizeof(BYTE));
         ULONG offset = sizeof(BYTE) + sizeof(POINT) + sizeof(BYTE);
 
@@ -1028,6 +1035,67 @@ public:
     virtual HWND GetTargetWindow() const
     {
         return nullptr;
+    }
+
+    // 自定义光标支持：检查并构建光标图像数据
+    // 返回值：CURSOR_INDEX_CUSTOM(-2) 表示使用自定义光标，0-15 表示标准光标，255(-1) 表示不支持
+    BYTE CheckAndUpdateCursor(CCursorInfo& cursorInfo)
+    {
+        BYTE cursorIndex = cursorInfo.getCurrentCursorIndex();
+
+        if (cursorIndex != (BYTE)-1) {
+            // 标准光标，直接返回
+            return cursorIndex;
+        }
+
+        // 非标准光标 - 先检查节流，避免每帧都做 GDI 操作
+        DWORD now = GetTickCount();
+        if ((now - m_dwLastCursorSendTime) < CURSOR_THROTTLE_MS) {
+            // 节流期内，如果已有缓存的光标就直接使用
+            if (m_dwLastCursorHash != 0) {
+                return CURSOR_INDEX_CUSTOM;
+            }
+        }
+
+        // 获取位图信息（GDI 操作，受节流保护）
+        CursorBitmapInfo info;
+        if (!cursorInfo.getCurrentCursorBitmap(&info)) {
+            return CURSOR_INDEX_UNSUPPORTED;  // 获取失败，回退到不支持
+        }
+
+        // 检查哈希是否变化
+        if (info.hash != m_dwLastCursorHash) {
+            // 构建 CMD_CURSOR_IMAGE 数据包
+            // 格式: [CMD:1][hash:4][hotX:2][hotY:2][w:1][h:1][BGRA:w*h*4]
+            BYTE* buf = m_CursorImageBuffer;
+            buf[0] = CMD_CURSOR_IMAGE;
+            *(DWORD*)(buf + 1) = info.hash;
+            *(WORD*)(buf + 5) = info.hotspotX;
+            *(WORD*)(buf + 7) = info.hotspotY;
+            buf[9] = info.width;
+            buf[10] = info.height;
+            memcpy(buf + 11, info.bgraData, info.dataSize);
+
+            m_ulCursorImageSize = 11 + info.dataSize;
+            m_bPendingCursorImage = true;
+            m_dwLastCursorHash = info.hash;
+        }
+        m_dwLastCursorSendTime = now;
+
+        return CURSOR_INDEX_CUSTOM;  // 使用自定义光标
+    }
+
+    // 获取待发送的光标图像数据
+    // 返回 true 表示有待发送的数据，data 和 size 被填充
+    bool GetPendingCursorImage(BYTE** data, ULONG* size)
+    {
+        if (!m_bPendingCursorImage) {
+            return false;
+        }
+        *data = m_CursorImageBuffer;
+        *size = m_ulCursorImageSize;
+        m_bPendingCursorImage = false;
+        return true;
     }
 
 public: // 纯虚接口
