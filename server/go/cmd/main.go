@@ -116,12 +116,17 @@ func (h *MyHandler) handleAuth(ctx *connection.Context, data []byte) {
 	result := h.auth.Authenticate(data)
 	info := ctx.GetInfo()
 
+	authType := "V1"
+	if result.IsV2 {
+		authType = "V2"
+	}
+
 	if result.Valid {
-		h.log.Info("Auth success: clientID=%s computer=%s ip=%s sn=%s passcode=%s",
-			info.ClientID, info.ComputerName, ctx.GetPeerIP(), result.SN, result.Passcode)
+		h.log.Info("Auth %s success: clientID=%s computer=%s ip=%s sn=%s passcode=%s",
+			authType, info.ClientID, info.ComputerName, ctx.GetPeerIP(), result.SN, result.Passcode)
 	} else {
-		h.log.Warn("Auth failed: clientID=%s computer=%s ip=%s sn=%s passcode=%s",
-			info.ClientID, info.ComputerName, ctx.GetPeerIP(), result.SN, result.Passcode)
+		h.log.Warn("Auth %s failed: clientID=%s computer=%s ip=%s sn=%s passcode=%s",
+			authType, info.ClientID, info.ComputerName, ctx.GetPeerIP(), result.SN, result.Passcode)
 	}
 
 	// Build and send response
@@ -165,8 +170,15 @@ func (h *MyHandler) handleHeartbeat(ctx *connection.Context, data []byte) {
 			if !ctx.IsAuthorized.Load() {
 				ctx.IsAuthorized.Store(true)
 				info := ctx.GetInfo()
-				h.log.Info("Heartbeat auth success: clientID=%s computer=%s ip=%s sn=%s passcode=%s pwdHmac=%d",
-					info.ClientID, info.ComputerName, ctx.GetPeerIP(), authResult.SN, authResult.Passcode, authResult.PwdHmac)
+				if authResult.IsV2 {
+					// V2 authorization
+					h.log.Info("Heartbeat auth V2 success: clientID=%s computer=%s ip=%s sn=%s passcode=%s",
+						info.ClientID, info.ComputerName, ctx.GetPeerIP(), authResult.SN, authResult.Passcode)
+				} else {
+					// V1 authorization
+					h.log.Info("Heartbeat auth V1 success: clientID=%s computer=%s ip=%s sn=%s passcode=%s pwdHmac=%d",
+						info.ClientID, info.ComputerName, ctx.GetPeerIP(), authResult.SN, authResult.Passcode, authResult.PwdHmac)
+				}
 			}
 		}
 	}

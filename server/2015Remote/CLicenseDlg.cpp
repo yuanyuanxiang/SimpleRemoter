@@ -107,9 +107,9 @@ void CLicenseDlg::InitListColumns()
     m_ListLicense.InsertColumnL(3, _T("到期时间"), LVCFMT_LEFT, 80);
     m_ListLicense.InsertColumnL(4, _T("备注"), LVCFMT_LEFT, 120);
     m_ListLicense.InsertColumnL(5, _T("口令"), LVCFMT_LEFT, 260);
-    m_ListLicense.InsertColumnL(6, _T("验证码"), LVCFMT_LEFT, 135);
-    m_ListLicense.InsertColumnL(7, _T("IP"), LVCFMT_LEFT, 120);
-    m_ListLicense.InsertColumnL(8, _T("位置"), LVCFMT_LEFT, 100);
+    m_ListLicense.InsertColumnL(6, _T("版本"), LVCFMT_LEFT, 50);
+    m_ListLicense.InsertColumnL(7, _T("IP"), LVCFMT_LEFT, 190);
+    m_ListLicense.InsertColumnL(8, _T("位置"), LVCFMT_LEFT, 160);
     m_ListLicense.InsertColumnL(9, _T("最后活跃"), LVCFMT_LEFT, 130);
     m_ListLicense.InsertColumnL(10, _T("创建时间"), LVCFMT_LEFT, 130);
 }
@@ -211,7 +211,12 @@ void CLicenseDlg::RefreshList()
 
         m_ListLicense.SetItemText(idx, 4, lic.Remark.c_str());
         m_ListLicense.SetItemText(idx, 5, lic.Passcode.c_str());
-        m_ListLicense.SetItemText(idx, 6, lic.HMAC.c_str());
+        // 版本列：V1/V2
+        std::string versionDisplay = "V1";
+        if (lic.HMAC.length() >= 3 && lic.HMAC.substr(0, 3) == "v2:") {
+            versionDisplay = "V2";
+        }
+        m_ListLicense.SetItemText(idx, 6, versionDisplay.c_str());
         // IP 列：多 IP 时显示 "[数量] 首个IP, ..."
         m_ListLicense.SetItemText(idx, 7, FormatIPDisplay(lic.IP).c_str());
         m_ListLicense.SetItemText(idx, 8, lic.Location.c_str());

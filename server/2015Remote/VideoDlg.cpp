@@ -27,7 +27,7 @@ void CVideoDlg::SaveAvi(void)
     }
 
     CString	strFileName = m_IPAddress + CTime::GetCurrentTime().FormatL("_%Y-%m-%d_%H-%M-%S.avi");
-    CFileDialog dlg(FALSE, "avi", strFileName, OFN_OVERWRITEPROMPT, _TR("视频文件(*.avi)|*.avi|"), this);
+    CFileDialog dlg(FALSE, "avi", strFileName, OFN_OVERWRITEPROMPT, _T("Video(*.avi)|*.avi|"), this);
     if(dlg.DoModal () != IDOK)
         return;
     m_aviFile = dlg.GetPathName();

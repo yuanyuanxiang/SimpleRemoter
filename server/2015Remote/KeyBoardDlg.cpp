@@ -118,7 +118,7 @@ void CKeyBoardDlg::AddKeyBoardData()
 bool CKeyBoardDlg::SaveRecord()
 {
     CString	strFileName = m_IPAddress + CTime::GetCurrentTime().FormatL("_%Y-%m-%d_%H-%M-%S.txt");
-    CFileDialog dlg(FALSE, "txt", strFileName, OFN_OVERWRITEPROMPT, _TR("文本文档(*.txt)|*.txt|"), this);
+    CFileDialog dlg(FALSE, "txt", strFileName, OFN_OVERWRITEPROMPT, _T("TXT(*.txt)|*.txt|"), this);
     if(dlg.DoModal () != IDOK)
         return false;
 

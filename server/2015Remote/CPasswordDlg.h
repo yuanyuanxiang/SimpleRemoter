@@ -105,4 +105,16 @@ public:
     CButton m_BtnSaveLicense;
     BOOL m_bIsLocalDevice;  // 是否为本机授权
     CString m_sHMAC;        // HMAC 值
+
+    // V2 授权相关
+    CComboBox m_ComboVersion;   // 版本选择下拉框
+    CEdit m_EditPrivateKey;     // 私钥文件路径
+    CButton m_BtnBrowseKey;     // 浏览私钥文件按钮
+    CButton m_BtnGenKeyPair;    // 生成密钥对按钮
+    int m_nVersion;             // 0=V1(HMAC), 1=V2(ECDSA)
+    CString m_sPrivateKeyPath;  // 私钥文件路径
+
+    afx_msg void OnCbnSelchangeComboVersion();  // 版本切换事件
+    afx_msg void OnBnClickedButtonBrowseKey();  // 浏览私钥文件事件
+    afx_msg void OnBnClickedButtonGenKeypair(); // 生成密钥对事件
 };

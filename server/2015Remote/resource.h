@@ -674,6 +674,11 @@
 #define ID_TOOL_LICENSE_MGR             33017
 #define IDD_DIALOG_LICENSE              329
 #define IDC_LICENSE_LIST                2241
+#define IDC_COMBO_VERSION               2245
+#define IDC_EDIT_PRIVATEKEY             2246
+#define IDC_BUTTON_BROWSE_KEY           2247
+#define IDC_STATIC_PWD_LABEL            2248
+#define IDC_BUTTON_GEN_KEYPAIR          2249
 #define IDR_MENU_LICENSE                330
 #define ID_LICENSE_REVOKE               33018
 #define ID_LICENSE_ACTIVATE             33019
@@ -695,13 +700,16 @@
 // File Transfer V2
 #define ID_PARAM_FILE_V2                33026
 
+// V2 Authorization Private Key
+#define ID_TOOL_V2_PRIVATEKEY           33027
+
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        332
-#define _APS_NEXT_COMMAND_VALUE         33027
-#define _APS_NEXT_CONTROL_VALUE         2245
+#define _APS_NEXT_COMMAND_VALUE         33028
+#define _APS_NEXT_CONTROL_VALUE         2249
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

@@ -920,8 +920,9 @@ typedef struct Heartbeat {
     int HasSoftware;
     char SN[20];
     char Passcode[44];
-    uint64_t PwdHmac;
-    char Reserved[424];
+    uint64_t PwdHmac;           // V1 HMAC (8 bytes), 如果为0则检查 PwdHmacV2
+    char PwdHmacV2[96];         // V2 HMAC 字符串 "v2:BASE64..." (如果 PwdHmac == 0)
+    char Reserved[328];         // 424 - 96 = 328
 
     Heartbeat()
     {
@@ -929,10 +930,10 @@ typedef struct Heartbeat {
     }
     Heartbeat(const std::string& s, int ping = 0)
     {
+        memset(this, 0, sizeof(Heartbeat));
         Time = GetUnixMs();
         strcpy_s(ActiveWnd, s.c_str());
         Ping = ping;
-        memset(Reserved, 0, sizeof(Reserved));
     }
     int Size() const
     {

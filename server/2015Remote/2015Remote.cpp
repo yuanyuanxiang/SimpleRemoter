@@ -449,6 +449,16 @@ BOOL CMy2015RemoteApp::InitInstance()
     Mprintf("[InitInstance] 主控程序启动运行。\n");
     SetUnhandledExceptionFilter(&whenbuged);
 
+    // 设置 AppUserModelID，避免 Windows 10/11 通知不能显示标题
+    // 动态加载以兼容 XP/Vista
+    typedef HRESULT(WINAPI* PFN_SetAppUserModelID)(PCWSTR);
+    HMODULE hShell32 = GetModuleHandleA("shell32.dll");
+    if (hShell32) {
+        PFN_SetAppUserModelID pfn = (PFN_SetAppUserModelID)GetProcAddress(hShell32, 
+            "SetCurrentProcessExplicitAppUserModelID");
+        if (pfn) pfn(L"YAMA");
+    }
+
     // 创建并显示启动画面
     CSplashDlg* pSplash = new CSplashDlg();
     pSplash->Create(NULL);

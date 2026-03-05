@@ -492,6 +492,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_WM_PAINT()
     ON_WM_QUERYDRAGICON()
     ON_WM_SIZE()
+    ON_WM_EXITSIZEMOVE()
     ON_WM_TIMER()
     ON_WM_CLOSE()
     ON_NOTIFY(NM_RCLICK, IDC_ONLINE, &CMy2015RemoteDlg::OnNMRClickOnline)
@@ -617,6 +618,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_LOCATION_QQWRY, &CMy2015RemoteDlg::OnLocationQqwry)
     ON_COMMAND(ID_LOCATION_IP2REGION, &CMy2015RemoteDlg::OnLocationIp2region)
     ON_COMMAND(ID_TOOL_LICENSE_MGR, &CMy2015RemoteDlg::OnToolLicenseMgr)
+    ON_COMMAND(ID_TOOL_V2_PRIVATEKEY, &CMy2015RemoteDlg::OnToolV2PrivateKey)
 END_MESSAGE_MAP()
 
 
@@ -1369,6 +1371,13 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     SubMenu = SubMenu->GetSubMenu(5);
     SubMenu->CheckMenuItem(ID_LOCATION_QQWRY, locType == QQWry ? MF_CHECKED : MF_UNCHECKED);
     SubMenu->CheckMenuItem(ID_LOCATION_IP2REGION, locType == Ip2Region ? MF_CHECKED : MF_UNCHECKED);
+
+    // V2 私钥状态检查
+    SubMenu = m_MainMenu.GetSubMenu(1);  // 工具菜单
+    std::string v2Key = THIS_CFG.GetStr("settings", "V2PrivateKey", "");
+    bool v2KeyValid = !v2Key.empty() && GetFileAttributesA(v2Key.c_str()) != INVALID_FILE_ATTRIBUTES;
+    SubMenu->CheckMenuItem(ID_TOOL_V2_PRIVATEKEY, v2KeyValid ? MF_CHECKED : MF_UNCHECKED);
+
     std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, std::string(_TR("摄像头"))}, {SOFTWARE_TELEGRAM,  std::string(_TR("电报")) }};
     std::string str = myMap[n];
     LVCOLUMN lvColumn;
@@ -1433,6 +1442,17 @@ DWORD WINAPI CMy2015RemoteDlg::StartFrpClient(LPVOID param)
     }
     if (!This->m_HasLocDB) {
         CharMsg* msg = new CharMsg(_TR("请将IP数据库文件放于当前程序目录"));
+        This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+    }
+
+    // 检查 V2 私钥配置
+    std::string v2KeyPath = THIS_CFG.GetStr("settings", "V2PrivateKey", "");
+    if (v2KeyPath.empty()) {
+        CharMsg* msg = new CharMsg(_TR("V2私钥未配置，请通过\"工具→V2私钥设置\"菜单选择私钥文件"));
+        This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+    } else if (GetFileAttributesA(v2KeyPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
+        std::string tip = std::string(_TR("V2私钥文件不存在: ")) + v2KeyPath;
+        CharMsg* msg = new CharMsg(tip.c_str());
         This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
     }
 
@@ -1572,8 +1592,8 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
         lastType = nType;
         return;
     }
-    // 从最小化还原时，强制刷新列表背景
-    bool needRefresh = (lastType == SIZE_MINIMIZED && nType == SIZE_RESTORED);
+    // 窗口大小类型变化时刷新列表（最小化还原、正常<->最大化切换）
+    bool needRefresh = (lastType != nType);
     lastType = nType;
 
     EnterCriticalSection(&m_cs);
@@ -1593,7 +1613,8 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
         m_CList_Online.AdjustColumnWidths();
         if (needRefresh) {
             CListCtrlEx::ScopedEraseBkgnd scope(m_CList_Online);
-            m_CList_Online.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_UPDATENOW);
+            m_GroupTab.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN);
+            m_CList_Online.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW);
         }
     }
     LeaveCriticalSection(&m_cs);
@@ -1605,6 +1626,9 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
         rc.right  = cx-1;    //列表的右坐标
         rc.bottom = cy-20;   //列表的下坐标
         m_CList_Message.MoveWindow(rc);
+        if (needRefresh) {
+            m_CList_Message.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW);
+        }
         auto total = cx - 24;
         for(int i=0; i<g_Column_Count_Message; ++i) {        //遍历每一个列
             double Temp=g_Column_Data_Message[i].nWidth;     //得到当前列的宽度
@@ -1631,6 +1655,20 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
         rc.right=cx;
         rc.bottom=80;
         m_ToolBar.MoveWindow(rc);             //设置工具条大小位置
+    }
+}
+
+void CMy2015RemoteDlg::OnExitSizeMove()
+{
+    __super::OnExitSizeMove();
+
+    // 拖拽调整大小结束后刷新列表，避免残影
+    if (m_CList_Online.m_hWnd != NULL) {
+        CListCtrlEx::ScopedEraseBkgnd scope(m_CList_Online);
+        m_CList_Online.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW);
+    }
+    if (m_CList_Message.m_hWnd != NULL) {
+        m_CList_Message.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW);
     }
 }
 
@@ -2813,6 +2851,89 @@ BOOL CMy2015RemoteDlg::AuthorizeClient(context* ctx, const std::string& sn, cons
     return TRUE;
 }
 
+// V2 License Public Key
+// Generated: 2026-03-05 00:48:25
+const BYTE g_LicensePublicKey[64] = {
+    0xa9, 0x5d, 0x1d, 0x44, 0x35, 0x86, 0x85, 0xdd,
+    0xbe, 0x27, 0x26, 0x6d, 0xe7, 0x33, 0x27, 0xf8,
+    0xbe, 0x2d, 0x87, 0xdd, 0xc1, 0x47, 0x18, 0xbf,
+    0xc6, 0x32, 0xfd, 0xce, 0xec, 0x25, 0x1b, 0xf5,
+    0x9b, 0x8a, 0x26, 0xa9, 0x85, 0x42, 0x72, 0x9f,
+    0x68, 0x79, 0x9b, 0x83, 0x5e, 0x2b, 0xd6, 0x59,
+    0x86, 0x64, 0x85, 0xe1, 0xf3, 0xa3, 0x18, 0x95,
+    0x5d, 0xd6, 0x3f, 0x2f, 0x55, 0x0b, 0x76, 0xbd
+};
+
+
+BOOL CMy2015RemoteDlg::AuthorizeClientV2(context* ctx, const std::string& sn, const std::string& passcode, const std::string& hmacV2)
+{
+    if (sn.empty() || passcode.empty() || hmacV2.empty()) {
+        return FALSE;
+    }
+
+    // 检查 V2 前缀
+    if (hmacV2.substr(0, 3) != "v2:") {
+        Mprintf("V2 HMAC 格式错误: %s\n", hmacV2.c_str());
+        return FALSE;
+    }
+
+    // 检查公钥是否已配置（全零表示未配置）
+    bool keyConfigured = false;
+    for (int i = 0; i < 64; i++) {
+        if (g_LicensePublicKey[i] != 0) {
+            keyConfigured = true;
+            break;
+        }
+    }
+    if (!keyConfigured) {
+        Mprintf("V2 公钥未配置，无法验证 V2 授权\n");
+        return FALSE;
+    }
+
+    // 使用 V2 验证
+    BOOL b = verifyPasswordV2(sn, passcode, hmacV2, g_LicensePublicKey);
+    if (!b) {
+        Mprintf("V2 签名验证失败: %s\n", sn.c_str());
+        return FALSE;
+    }
+
+    auto list = StringToVector(passcode, '-', 2);
+    BOOL valid = IsDateInRange(list[0], list[1]);
+
+    // 授权过期
+    if (!valid) {
+        Mprintf("V2 授权已过期: %s\n", sn.c_str());
+        if (ctx != nullptr) {
+            std::string ip = ctx->GetClientData(ONLINELIST_IP);
+            std::string location = m_IPConverter ? m_IPConverter->GetGeoLocation(ip) : "";
+            std::string machineName = ctx->GetClientData(ONLINELIST_COMPUTER_NAME);
+            UpdateLicenseActivity(sn, passcode, hmacV2, ip, location, machineName);
+        } else {
+            UpdateLicenseActivity(sn, passcode, hmacV2);
+        }
+        SetLicenseStatus(sn, LICENSE_STATUS_EXPIRED);
+        return FALSE;
+    }
+
+    // 检查授权是否已被撤销
+    if (IsLicenseRevoked(sn)) {
+        Mprintf("V2 授权已被撤销: %s\n", sn.c_str());
+        return FALSE;
+    }
+
+    // 授权成功时更新 license 活跃信息
+    if (ctx != nullptr) {
+        std::string ip = ctx->GetClientData(ONLINELIST_IP);
+        std::string location = m_IPConverter ? m_IPConverter->GetGeoLocation(ip) : "";
+        std::string machineName = ctx->GetClientData(ONLINELIST_COMPUTER_NAME);
+        UpdateLicenseActivity(sn, passcode, hmacV2, ip, location, machineName);
+    } else {
+        UpdateLicenseActivity(sn, passcode, hmacV2);
+    }
+
+    return TRUE;
+}
+
 BOOL IsTrail(const std::string& passcode)
 {
     return passcode == "20260201-20280201-0020-be94-120d-20f9-919a";
@@ -2846,27 +2967,52 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
             // 去除末尾的空字符
             while (!version.empty() && version.back() == '\0')
                 version.pop_back();
-            auto v = splitString(passcode, '-');
-            if (v.size() == 6 || v.size() == 7) {
-                std::vector<std::string> subvector(v.end() - 4, v.end());
-                std::string password = v[0] + " - " + v[1] + ": " + GetPwdHash() + (v.size() == 6 ? "" : ": " + v[2]);
-                std::string finalKey = deriveKey(password, sn);
-                std::string hash256 = joinString(subvector, '-');
-                std::string fixedKey = getFixedLengthID(finalKey);
-                valid = (hash256 == fixedKey);
+
+            // 检查是否为 V2 授权（hmac == 0 且有 V2 HMAC 字符串）
+            std::string hmacV2;
+            if (hmac == 0 && len > 80) {
+                // V2 HMAC 字符串在 offset 80 处（null-terminated）
+                hmacV2 = std::string((char*)szBuffer + 80);
+                // 去除末尾空字符
+                while (!hmacV2.empty() && hmacV2.back() == '\0')
+                    hmacV2.pop_back();
             }
-            if (valid) {
-                valid = AuthorizeClient(NULL, sn, passcode, hmac);
+
+            if (!hmacV2.empty() && hmacV2.substr(0, 3) == "v2:") {
+                // V2 授权验证
+                valid = AuthorizeClientV2(NULL, sn, passcode, hmacV2);
                 if (valid) {
-                    Mprintf("%s 校验成功, HMAC 校验成功: %s (版本: %s)\n", passcode.c_str(), sn.c_str(), version.c_str());
-                    std::string tip = passcode + g_Lang.Get(std::string(" 校验成功: ")) + sn + (version.empty()?"":"["+version+"]");
+                    Mprintf("%s V2 校验成功: %s (版本: %s)\n", passcode.c_str(), sn.c_str(), version.c_str());
+                    std::string tip = passcode + g_Lang.Get(std::string(" V2 校验成功: ")) + sn + (version.empty()?"":"["+version+"]");
                     CharMsg* msg = new CharMsg(tip.c_str());
                     PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
                 } else {
-                    Mprintf("%s 校验成功, HMAC 校验失败: %s\n", passcode.c_str(), sn.c_str());
+                    Mprintf("%s V2 校验失败: %s\n", passcode.c_str(), sn.c_str());
                 }
             } else {
-                Mprintf("%s 校验失败: %s\n", passcode.c_str(), sn.c_str());
+                // V1 授权验证
+                auto v = splitString(passcode, '-');
+                if (v.size() == 6 || v.size() == 7) {
+                    std::vector<std::string> subvector(v.end() - 4, v.end());
+                    std::string password = v[0] + " - " + v[1] + ": " + GetPwdHash() + (v.size() == 6 ? "" : ": " + v[2]);
+                    std::string finalKey = deriveKey(password, sn);
+                    std::string hash256 = joinString(subvector, '-');
+                    std::string fixedKey = getFixedLengthID(finalKey);
+                    valid = (hash256 == fixedKey);
+                }
+                if (valid) {
+                    valid = AuthorizeClient(NULL, sn, passcode, hmac);
+                    if (valid) {
+                        Mprintf("%s 校验成功, HMAC 校验成功: %s (版本: %s)\n", passcode.c_str(), sn.c_str(), version.c_str());
+                        std::string tip = passcode + g_Lang.Get(std::string(" 校验成功: ")) + sn + (version.empty()?"":"["+version+"]");
+                        CharMsg* msg = new CharMsg(tip.c_str());
+                        PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+                    } else {
+                        Mprintf("%s 校验成功, HMAC 校验失败: %s\n", passcode.c_str(), sn.c_str());
+                    }
+                } else {
+                    Mprintf("%s 校验失败: %s\n", passcode.c_str(), sn.c_str());
+                }
             }
         } else {
             Mprintf("授权数据长度不足: %u\n", len);
@@ -3220,7 +3366,8 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     case CMD_AUTHORIZATION: { // 获取授权【L】
         int n = ContextObject->InDeCompressedBuffer.GetBufferLength();
         if (n < 100) break;
-        char resp[100] = { 0 }, *devId = resp + 5, *pwdHash = resp + 32;
+        // 扩大到 200 字节以容纳 V2 签名（约 92 字节）
+        char resp[200] = { 0 }, *devId = resp + 5, *pwdHash = resp + 32;
         ContextObject->InDeCompressedBuffer.CopyBuffer(resp, min(n, sizeof(resp)), 0);
         unsigned short* days = (unsigned short*)(resp + 1);
         unsigned short* num = (unsigned short*)(resp + 3);
@@ -3245,13 +3392,44 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
         // 密码形式：20250209 - 20350209: SHA256: HostNum
         std::string hash = std::string(pwdHash, pwdHash+64);
         std::string password = getDateStr(0) + " - " + getDateStr(*days) + ": " + hash + ": " + hostNum;
-        std::string finalKey = deriveKey(password, std::string(devId, devId+19));
+        std::string deviceID(devId, devId+19);
+        std::string finalKey = deriveKey(password, deviceID);
         std::string fixedKey = getDateStr(0) + std::string("-") + getDateStr(*days) + "-" + hostNum +
                                std::string("-") + getFixedLengthID(finalKey);
         memcpy(devId, fixedKey.c_str(), fixedKey.length());
         devId[fixedKey.length()] = 0;
-        uint64_t pwdHmac = SignMessage(m_superPass, (BYTE*)fixedKey.c_str(), fixedKey.length());
-        std::string hmac = std::to_string(pwdHmac).c_str();
+
+        // 检查该设备原授权是 V1 还是 V2
+        std::string origPasscode, origHmac, origRemark;
+        bool isV2 = false;
+        if (LoadLicenseInfo(deviceID, origPasscode, origHmac, origRemark)) {
+            isV2 = (origHmac.length() >= 3 && origHmac.substr(0, 3) == "v2:");
+        }
+
+        std::string hmac;
+        if (isV2) {
+            // V2 续期：使用 ECDSA 签名
+            std::string privateKeyPath = THIS_CFG.GetStr("settings", "V2PrivateKey", "");
+            if (!privateKeyPath.empty()) {
+                hmac = signPasswordV2(deviceID, fixedKey, privateKeyPath.c_str());
+                if (hmac.empty()) {
+                    Mprintf("V2 续期签名失败: %s\n", deviceID.c_str());
+                    // 降级到 V1
+                    uint64_t pwdHmac = SignMessage(m_superPass, (BYTE*)fixedKey.c_str(), (int)fixedKey.length());
+                    hmac = std::to_string(pwdHmac);
+                }
+            } else {
+                Mprintf("V2 私钥未配置，无法续期 V2 授权: %s\n", deviceID.c_str());
+                // 降级到 V1
+                uint64_t pwdHmac = SignMessage(m_superPass, (BYTE*)fixedKey.c_str(), (int)fixedKey.length());
+                hmac = std::to_string(pwdHmac);
+            }
+        } else {
+            // V1 续期：使用 HMAC
+            uint64_t pwdHmac = SignMessage(m_superPass, (BYTE*)fixedKey.c_str(), (int)fixedKey.length());
+            hmac = std::to_string(pwdHmac);
+        }
+
         memcpy(resp + 64, hmac.c_str(), hmac.length());
         resp[64+hmac.length()] = 0;
         ContextObject->Send2Client((LPBYTE)resp, sizeof(resp));
@@ -3536,16 +3714,41 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
     // if(0)
     {
         BOOL isTrail = FALSE;
-        BOOL authorized = AuthorizeClient(host, hb.SN, hb.Passcode, hb.PwdHmac);
-        if (authorized) {
-            Mprintf("%s HMAC 校验成功: %llu\n", hb.Passcode, hb.PwdHmac);
-            m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
-            isTrail = IsTrail(hb.Passcode);
-            if (!isTrail) {
-                std::string tip = std::string(hb.Passcode) + std::string(_L("授权成功"));
-                tip += ": " + std::to_string(hb.PwdHmac) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
-                CharMsg* msg = new CharMsg(tip.c_str());
-                PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+        BOOL authorized = FALSE;
+
+        // 检查是否为 V2 授权
+        std::string hmacV2(hb.PwdHmacV2);
+        // 去除末尾空字符
+        while (!hmacV2.empty() && hmacV2.back() == '\0')
+            hmacV2.pop_back();
+
+        if (hb.PwdHmac == 0 && !hmacV2.empty() && hmacV2.substr(0, 3) == "v2:") {
+            // V2 授权验证
+            authorized = AuthorizeClientV2(host, hb.SN, hb.Passcode, hmacV2);
+            if (authorized) {
+                Mprintf("%s V2 签名校验成功: %s [%s]\n", hb.Passcode, hb.SN, ctx->GetClientData(ONLINELIST_IP));
+                m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
+                isTrail = IsTrail(hb.Passcode);
+                if (!isTrail) {
+                    std::string tip = std::string(hb.Passcode) + std::string(_L(" V2 授权成功"));
+                    tip += ": " + std::string(hb.SN) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
+                    CharMsg* msg = new CharMsg(tip.c_str());
+                    PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+                }
+            }
+        } else {
+            // V1 授权验证
+            authorized = AuthorizeClient(host, hb.SN, hb.Passcode, hb.PwdHmac);
+            if (authorized) {
+                Mprintf("%s HMAC 校验成功: %s [%s]\n", hb.Passcode, hb.SN, ctx->GetClientData(ONLINELIST_IP));
+                m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
+                isTrail = IsTrail(hb.Passcode);
+                if (!isTrail) {
+                    std::string tip = std::string(hb.Passcode) + std::string(_L("授权成功"));
+                    tip += ": " + std::string(hb.SN) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
+                    CharMsg* msg = new CharMsg(tip.c_str());
+                    PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+                }
             }
         }
 
@@ -4567,12 +4770,14 @@ void CMy2015RemoteDlg::OnOnlineAuthorize()
     }
     LeaveCriticalSection(&m_cs);
 
+#ifndef _DEBUG
     if (!ip.empty() && FindLicenseByIPAndMachine(ip, machineName, &sn)) {
         CString msg;
         msg.FormatL("该客户端已有授权记录 (%s)，请在授权管理中处理", sn.c_str());
         MessageBox(msg, _TR("提示"), MB_ICONINFORMATION);
         return;
     }
+#endif
 
     if (m_superPass.empty()) {
         CInputDialog pass(this);
@@ -4723,12 +4928,14 @@ void CMy2015RemoteDlg::OnOnlineUnauthorize()
     }
     LeaveCriticalSection(&m_cs);
 
+#ifndef _DEBUG
     if (!ip.empty() && FindLicenseByIPAndMachine(ip, machineName, &sn)) {
         CString msg;
         msg.FormatL("该客户端已有授权记录 (%s)，请在授权管理中处理", sn.c_str());
         MessageBox(msg, _TR("提示"), MB_ICONINFORMATION);
         return;
     }
+#endif
 
     if (m_superPass.empty()) {
         CInputDialog pass(this);
@@ -5343,7 +5550,7 @@ void CMy2015RemoteDlg::OnExecuteDownload()
 void CMy2015RemoteDlg::OnExecuteUpload()
 {
     CFileDialog dlg(TRUE, NULL, NULL, OFN_HIDEREADONLY | OFN_FILEMUSTEXIST,
-                    _TR("可执行文件 (*.exe)|*.exe||"), this);
+                    _T("EXE Files (*.exe)|*.exe||"), this);
 
     if (dlg.DoModal() != IDOK)
         return;
@@ -6203,5 +6410,38 @@ void CMy2015RemoteDlg::OnToolLicenseMgr()
     m_pLicenseDlg = new CLicenseDlg(this);
     if (m_pLicenseDlg->Create(IDD_DIALOG_LICENSE, GetDesktopWindow())) {
         m_pLicenseDlg->ShowWindow(SW_SHOW);
+    }
+}
+
+void CMy2015RemoteDlg::OnToolV2PrivateKey()
+{
+    CFileDialog dlg(TRUE, _T("key"), nullptr,
+                    OFN_FILEMUSTEXIST | OFN_HIDEREADONLY,
+                    _T("Key Files (*.key;*.pem)|*.key;*.pem|All Files (*.*)|*.*||"),
+                    this);
+    dlg.m_ofn.lpstrTitle = _T("Select V2 Private Key");
+
+    // 如果已有配置，设置初始目录
+    std::string existingPath = THIS_CFG.GetStr("settings", "V2PrivateKey", "");
+    CString initialDir;
+    if (!existingPath.empty()) {
+        initialDir = existingPath.c_str();
+        int pos = initialDir.ReverseFind('\\');
+        if (pos > 0) initialDir = initialDir.Left(pos);
+        dlg.m_ofn.lpstrInitialDir = initialDir;
+    }
+
+    if (dlg.DoModal() == IDOK) {
+        CString path = dlg.GetPathName();
+        THIS_CFG.SetStr("settings", "V2PrivateKey", path.GetString());
+
+        // 显示消息
+        std::string msg = "V2 Private Key: " + std::string(path.GetString());
+        CharMsg* cm = new CharMsg(msg.c_str());
+        PostMessageA(WM_SHOWMESSAGE, (WPARAM)cm, NULL);
+
+        // 更新菜单勾选状态
+        CMenu* SubMenu = m_MainMenu.GetSubMenu(1);
+        SubMenu->CheckMenuItem(ID_TOOL_V2_PRIVATEKEY, MF_CHECKED);
     }
 }
