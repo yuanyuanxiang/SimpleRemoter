@@ -190,6 +190,7 @@ public:
     static BOOL CALLBACK NotifyProc(CONTEXT_OBJECT* ContextObject);
     static BOOL CALLBACK OfflineProc(CONTEXT_OBJECT* ContextObject);
     BOOL AuthorizeClient(context* ctx, const std::string& sn, const std::string& passcode, uint64_t hmac);
+    BOOL AuthorizeClientV2(context* ctx, const std::string& sn, const std::string& passcode, const std::string& hmacV2);
     VOID MessageHandle(CONTEXT_OBJECT* ContextObject);
     VOID SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength, contextModifier cb = NULL, void* user=NULL);
     VOID SendAllCommand(PBYTE  szBuffer, ULONG ulLength);
@@ -251,6 +252,7 @@ public:
     afx_msg void OnClose();
     void Release();
     afx_msg void OnSize(UINT nType, int cx, int cy);
+    afx_msg void OnExitSizeMove();
     afx_msg void OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult);
     afx_msg void OnOnlineMessage();
     afx_msg void OnOnlineDelete();
@@ -377,4 +379,5 @@ public:
     afx_msg void OnLocationQqwry();
     afx_msg void OnLocationIp2region();
     afx_msg void OnToolLicenseMgr();
+    afx_msg void OnToolV2PrivateKey();
 };

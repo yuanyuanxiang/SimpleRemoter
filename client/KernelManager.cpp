@@ -763,7 +763,8 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
 #endif
         SAFE_CLOSE_HANDLE(hMutex);
 
-        char buf[100] = {}, *passCode = buf + 5;
+        // 扩大到 200 字节以容纳 V2 签名（约 92 字节）
+        char buf[200] = {}, *passCode = buf + 5;
         memcpy(buf, szBuffer, min(sizeof(buf), ulLength));
         std::string masterHash(skCrypt(MASTER_HASH));
         const char* pwdHash = m_conn->pwdHash[0] ? m_conn->pwdHash : masterHash.c_str();
@@ -1368,10 +1369,19 @@ int AuthKernelManager::SendHeartbeat()
     auto passCode = THIS_CFG->GetStr("settings", "Password", "");
     auto pwdHmac = THIS_CFG->GetStr("settings", "PwdHmac", "");
     delete THIS_CFG;
-    uint64_t value = std::strtoull(pwdHmac.c_str(), nullptr, 10);
     strcpy_s(a.SN, SN.c_str());
     strcpy_s(a.Passcode, passCode.c_str());
-    memcpy(&a.PwdHmac, &value, 8);
+
+    // 检查是否为 V2 授权 (以 "v2:" 开头)
+    if (pwdHmac.length() >= 3 && pwdHmac.substr(0, 3) == "v2:") {
+        // V2: PwdHmac = 0, 签名字符串放在 PwdHmacV2 字段
+        a.PwdHmac = 0;
+        strcpy_s(a.PwdHmacV2, pwdHmac.c_str());
+    } else {
+        // V1: PwdHmac 为数字
+        uint64_t value = std::strtoull(pwdHmac.c_str(), nullptr, 10);
+        memcpy(&a.PwdHmac, &value, 8);
+    }
 
     BYTE buf[sizeof(Heartbeat) + 1];
     buf[0] = TOKEN_HEARTBEAT;

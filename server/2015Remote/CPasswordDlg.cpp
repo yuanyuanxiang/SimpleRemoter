@@ -433,6 +433,8 @@ CPwdGenDlg::CPwdGenDlg(CWnd* pParent /*=nullptr*/)
     , m_StartTm(COleDateTime::GetCurrentTime())
     , m_nHostNum(2)
     , m_bIsLocalDevice(FALSE)
+    , m_nVersion(0)
+    , m_sPrivateKeyPath(_T(""))
 {
 
 }
@@ -463,59 +465,113 @@ void CPwdGenDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_EDIT_HMAC, m_EditHMAC);
     DDX_Control(pDX, IDC_BUTTON_SAVE_LICENSE, m_BtnSaveLicense);
     DDX_Text(pDX, IDC_EDIT_HMAC, m_sHMAC);
+    DDX_Control(pDX, IDC_COMBO_VERSION, m_ComboVersion);
+    DDX_Control(pDX, IDC_EDIT_PRIVATEKEY, m_EditPrivateKey);
+    DDX_Control(pDX, IDC_BUTTON_BROWSE_KEY, m_BtnBrowseKey);
+    DDX_Control(pDX, IDC_BUTTON_GEN_KEYPAIR, m_BtnGenKeyPair);
+    DDX_CBIndex(pDX, IDC_COMBO_VERSION, m_nVersion);
+    DDX_Text(pDX, IDC_EDIT_PRIVATEKEY, m_sPrivateKeyPath);
 }
 
 
 BEGIN_MESSAGE_MAP(CPwdGenDlg, CDialogEx)
     ON_BN_CLICKED(IDC_BUTTON_GENKEY, &CPwdGenDlg::OnBnClickedButtonGenkey)
     ON_BN_CLICKED(IDC_BUTTON_SAVE_LICENSE, &CPwdGenDlg::OnBnClickedButtonSaveLicense)
+    ON_CBN_SELCHANGE(IDC_COMBO_VERSION, &CPwdGenDlg::OnCbnSelchangeComboVersion)
+    ON_BN_CLICKED(IDC_BUTTON_BROWSE_KEY, &CPwdGenDlg::OnBnClickedButtonBrowseKey)
+    ON_BN_CLICKED(IDC_BUTTON_GEN_KEYPAIR, &CPwdGenDlg::OnBnClickedButtonGenKeypair)
 END_MESSAGE_MAP()
 
 
 void CPwdGenDlg::OnBnClickedButtonGenkey()
 {
-    // TODO: 在此添加控件通知处理程序代码
     UpdateData(TRUE);
-    if (m_sUserPwd.IsEmpty())return;
-    std::string pwdHash = hashSHA256(m_sUserPwd.GetString());
-    if (pwdHash != GetPwdHash()) {
-        Mprintf("hashSHA256 [%s]: %s\n", m_sUserPwd, pwdHash.c_str());
-        MessageBoxL("您输入的密码不正确，无法生成口令!", "提示", MB_OK | MB_ICONWARNING);
-        m_sUserPwd.Empty();
-        return;
-    }
+
     CString strBeginDate = m_StartTm.FormatL("%Y%m%d");
     CString strEndDate = m_ExpireTm.FormatL("%Y%m%d");
     CString hostNum;
     hostNum.FormatL("%04d", m_nHostNum);
-    // 密码形式：20250209 - 20350209: SHA256: HostNum
-    std::string password = std::string(strBeginDate.GetString()) + " - " + strEndDate.GetBuffer() + ": " + GetPwdHash() + ": " + hostNum.GetBuffer();
-    std::string finalKey = deriveKey(password, m_sDeviceID.GetString());
-    std::string fixedKey = strBeginDate.GetString() + std::string("-") + strEndDate.GetBuffer() + std::string("-") + hostNum.GetString() + "-" +
-                           getFixedLengthID(finalKey);
-    m_sPassword = fixedKey.c_str();
-    m_EditPassword.SetWindowTextA(fixedKey.c_str());
-    std::string hardwareID = CMy2015RemoteDlg::GetHardwareID();
-    std::string hashedID = hashSHA256(hardwareID);
-    std::string deviceID = getFixedLengthID(hashedID);
-    std::string hmac = genHMAC(pwdHash, m_sUserPwd.GetString());
-    uint64_t pwdHmac = SignMessage(m_sUserPwd.GetString(), (BYTE*)fixedKey.c_str(), fixedKey.length());
-    m_sHMAC = std::to_string(pwdHmac).c_str();
-    m_EditHMAC.SetWindowTextA(m_sHMAC);
 
-    // 判断是否为本机授权
-    m_bIsLocalDevice = (deviceID == m_sDeviceID.GetString());
+    if (m_nVersion == 0) {
+        // V1 (HMAC) 模式
+        if (m_sUserPwd.IsEmpty()) return;
+        std::string pwdHash = hashSHA256(m_sUserPwd.GetString());
+        if (pwdHash != GetPwdHash()) {
+            Mprintf("hashSHA256 [%s]: %s\n", m_sUserPwd, pwdHash.c_str());
+            MessageBoxL("您输入的密码不正确，无法生成口令!", "提示", MB_OK | MB_ICONWARNING);
+            m_sUserPwd.Empty();
+            return;
+        }
+        // 密码形式：20250209 - 20350209: SHA256: HostNum
+        std::string password = std::string(strBeginDate.GetString()) + " - " + strEndDate.GetBuffer() + ": " + GetPwdHash() + ": " + hostNum.GetBuffer();
+        std::string finalKey = deriveKey(password, m_sDeviceID.GetString());
+        std::string fixedKey = strBeginDate.GetString() + std::string("-") + strEndDate.GetBuffer() + std::string("-") + hostNum.GetString() + "-" +
+                               getFixedLengthID(finalKey);
+        m_sPassword = fixedKey.c_str();
+        m_EditPassword.SetWindowTextA(fixedKey.c_str());
+        std::string hardwareID = CMy2015RemoteDlg::GetHardwareID();
+        std::string hashedID = hashSHA256(hardwareID);
+        std::string deviceID = getFixedLengthID(hashedID);
+        std::string hmac = genHMAC(pwdHash, m_sUserPwd.GetString());
+        uint64_t pwdHmac = SignMessage(m_sUserPwd.GetString(), (BYTE*)fixedKey.c_str(), fixedKey.length());
+        m_sHMAC = std::to_string(pwdHmac).c_str();
+        m_EditHMAC.SetWindowTextA(m_sHMAC);
 
-    if (m_bIsLocalDevice) { // 授权的是当前主控程序
-        auto settings = "settings", pwdKey = "Password";
-        THIS_CFG.SetStr(settings, pwdKey, fixedKey.c_str());
-        THIS_CFG.SetStr("settings", "SN", deviceID);
-        THIS_CFG.SetStr(settings, "HMAC", hmac);
-        THIS_CFG.SetStr(settings, "PwdHmac", std::to_string(pwdHmac));
-        // 本机授权，禁用保存按钮
-        m_BtnSaveLicense.EnableWindow(FALSE);
+        // 判断是否为本机授权
+        m_bIsLocalDevice = (deviceID == m_sDeviceID.GetString());
+
+        if (m_bIsLocalDevice) { // 授权的是当前主控程序
+            auto settings = "settings", pwdKey = "Password";
+            THIS_CFG.SetStr(settings, pwdKey, fixedKey.c_str());
+            THIS_CFG.SetStr("settings", "SN", deviceID);
+            THIS_CFG.SetStr(settings, "HMAC", hmac);
+            THIS_CFG.SetStr(settings, "PwdHmac", std::to_string(pwdHmac));
+            // 本机授权，禁用保存按钮
+            m_BtnSaveLicense.EnableWindow(FALSE);
+        } else {
+            // 非本机授权，启用保存按钮
+            m_BtnSaveLicense.EnableWindow(TRUE);
+        }
     } else {
-        // 非本机授权，启用保存按钮
+        // V2 (ECDSA) 模式
+        if (m_sPrivateKeyPath.IsEmpty()) {
+            MessageBoxL("请选择私钥文件!", "提示", MB_OK | MB_ICONWARNING);
+            return;
+        }
+
+        // 检查私钥文件是否存在
+        if (GetFileAttributes(m_sPrivateKeyPath) == INVALID_FILE_ATTRIBUTES) {
+            MessageBoxL("私钥文件不存在!", "错误", MB_OK | MB_ICONERROR);
+            return;
+        }
+
+        // V2 口令格式与 V1 相同，但不需要密码验证
+        // 使用 deviceId + dates 作为种子生成 key
+        std::string seed = m_sDeviceID.GetString() + std::string(strBeginDate.GetString()) +
+                           strEndDate.GetString() + hostNum.GetString();
+        std::string seedHash = hashSHA256(seed);
+        std::string fixedKey = strBeginDate.GetString() + std::string("-") + strEndDate.GetBuffer() +
+                               std::string("-") + hostNum.GetString() + "-" + getFixedLengthID(seedHash);
+
+        // 使用私钥签名
+        std::string hmacV2 = signPasswordV2(m_sDeviceID.GetString(), fixedKey, m_sPrivateKeyPath.GetString());
+        if (hmacV2.empty()) {
+            MessageBoxL("生成 V2 签名失败!\n请检查私钥文件是否有效。", "错误", MB_OK | MB_ICONERROR);
+            return;
+        }
+
+        m_sPassword = fixedKey.c_str();
+        m_EditPassword.SetWindowTextA(fixedKey.c_str());
+
+        // HMAC 字段存储 V2 签名
+        m_sHMAC = hmacV2.c_str();
+        m_EditHMAC.SetWindowTextA(hmacV2.c_str());
+
+        // 保存 V2 私钥路径到配置（供续期使用）
+        THIS_CFG.SetStr("settings", "V2PrivateKey", m_sPrivateKeyPath.GetString());
+
+        // V2 暂不支持本机授权自动保存
+        m_bIsLocalDevice = FALSE;
         m_BtnSaveLicense.EnableWindow(TRUE);
     }
 }
@@ -529,16 +585,151 @@ BOOL CPwdGenDlg::OnInitDialog()
     SetWindowText(_TR("生成口令"));
     SetDlgItemText(IDC_BUTTON_SAVE_LICENSE, _TR("保存授权"));
     SetDlgItemText(IDCANCEL, _TR("取消"));
+    SetDlgItemText(IDC_STATIC_PWD_LABEL, _TR("密  码:"));
 
     // TODO:  在此添加额外的初始化
     m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_PASSWORD));
     SetIcon(m_hIcon, FALSE);
 
+    // 初始化版本下拉框
+    m_ComboVersion.InsertString(0, _T("V1 (HMAC)"));
+    m_ComboVersion.InsertString(1, _T("V2 (ECDSA)"));
+    m_ComboVersion.SetCurSel(0);
+    m_nVersion = 0;
+
+    // 初始状态：V1 模式，隐藏私钥控件
+    m_EditPrivateKey.ShowWindow(SW_HIDE);
+    m_BtnBrowseKey.ShowWindow(SW_HIDE);
+    m_BtnGenKeyPair.ShowWindow(SW_HIDE);
+    m_EditUserPwd.ShowWindow(SW_SHOW);
+
     // 初始状态禁用保存按钮
     m_BtnSaveLicense.EnableWindow(FALSE);
 
+    // 加载已配置的 V2 私钥路径
+    std::string v2Key = THIS_CFG.GetStr("settings", "V2PrivateKey", "");
+    if (!v2Key.empty()) {
+        m_sPrivateKeyPath = v2Key.c_str();
+        m_EditPrivateKey.SetWindowText(m_sPrivateKeyPath);
+    }
+
     return TRUE;  // return TRUE unless you set the focus to a control
     // 异常: OCX 属性页应返回 FALSE
+}
+
+void CPwdGenDlg::OnCbnSelchangeComboVersion()
+{
+    m_nVersion = m_ComboVersion.GetCurSel();
+
+    // 获取"密码"标签控件
+    CWnd* pLabel = GetDlgItem(IDC_STATIC_PWD_LABEL);
+
+    if (m_nVersion == 0) {
+        // V1 (HMAC) 模式：显示密码输入框，隐藏私钥相关控件
+        m_EditUserPwd.ShowWindow(SW_SHOW);
+        m_EditPrivateKey.ShowWindow(SW_HIDE);
+        m_BtnBrowseKey.ShowWindow(SW_HIDE);
+        m_BtnGenKeyPair.ShowWindow(SW_HIDE);
+        if (pLabel) pLabel->SetWindowText(_TR("密  码:"));
+    } else {
+        // V2 (ECDSA) 模式：隐藏密码输入框，显示私钥相关控件
+        m_EditUserPwd.ShowWindow(SW_HIDE);
+        m_EditPrivateKey.ShowWindow(SW_SHOW);
+        m_BtnBrowseKey.ShowWindow(SW_SHOW);
+        m_BtnGenKeyPair.ShowWindow(SW_SHOW);
+        if (pLabel) pLabel->SetWindowText(_TR("私  钥:"));
+
+        // 如果已有有效私钥，禁用浏览和生成按钮，私钥路径只读
+        std::string v2Key = THIS_CFG.GetStr("settings", "V2PrivateKey", "");
+        bool hasValidKey = !v2Key.empty() && GetFileAttributes(v2Key.c_str()) != INVALID_FILE_ATTRIBUTES;
+        m_BtnBrowseKey.EnableWindow(!hasValidKey);
+        m_BtnGenKeyPair.EnableWindow(!hasValidKey);
+        m_EditPrivateKey.SetReadOnly(hasValidKey);
+    }
+}
+
+void CPwdGenDlg::OnBnClickedButtonBrowseKey()
+{
+    CFileDialog dlg(TRUE, _T("key"), nullptr,
+                    OFN_FILEMUSTEXIST | OFN_HIDEREADONLY,
+                    _T("Key Files (*.key;*.pem)|*.key;*.pem|All Files (*.*)|*.*||"),
+                    this);
+    dlg.m_ofn.lpstrTitle = _T("Select Private Key");
+
+    if (dlg.DoModal() == IDOK) {
+        m_sPrivateKeyPath = dlg.GetPathName();
+        m_EditPrivateKey.SetWindowText(m_sPrivateKeyPath);
+    }
+}
+
+void CPwdGenDlg::OnBnClickedButtonGenKeypair()
+{
+    // 选择私钥保存位置
+    CFileDialog dlg(FALSE, _T("key"), _T("private_key.key"),
+                    OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY,
+                    _T("Key Files (*.key)|*.key|All Files (*.*)|*.*||"),
+                    this);
+    dlg.m_ofn.lpstrTitle = _T("Save Private Key");
+
+    if (dlg.DoModal() != IDOK) {
+        return;
+    }
+
+    CString privateKeyPath = dlg.GetPathName();
+
+    // 生成密钥对
+    BYTE publicKey[V2_PUBKEY_SIZE];
+    if (!GenerateKeyPairV2(privateKeyPath.GetString(), publicKey)) {
+        MessageBoxL("生成密钥对失败!", "错误", MB_OK | MB_ICONERROR);
+        return;
+    }
+
+    // 更新私钥路径（仅更新界面，不保存到配置，需通过菜单设置）
+    m_sPrivateKeyPath = privateKeyPath;
+    m_EditPrivateKey.SetWindowText(m_sPrivateKeyPath);
+
+    // 格式化公钥为 C 代码
+    std::string pubKeyCode = formatPublicKeyAsCode(publicKey);
+
+    // 生成公钥文件路径（与私钥同目录，扩展名改为 .pub.h）
+    CString publicKeyPath = privateKeyPath;
+    int dotPos = publicKeyPath.ReverseFind('.');
+    if (dotPos > 0) {
+        publicKeyPath = publicKeyPath.Left(dotPos) + _T(".pub.h");
+    } else {
+        publicKeyPath += _T(".pub.h");
+    }
+
+    // 保存公钥到文件
+    FILE* fp = nullptr;
+    if (fopen_s(&fp, publicKeyPath.GetString(), "w") == 0 && fp) {
+        fprintf(fp, "// V2 License Public Key\n");
+        fprintf(fp, "// Generated: %s\n\n", CTime::GetCurrentTime().Format("%Y-%m-%d %H:%M:%S").GetString());
+        fprintf(fp, "%s\n", pubKeyCode.c_str());
+        fclose(fp);
+    }
+
+    // 复制公钥到剪贴板
+    if (OpenClipboard()) {
+        EmptyClipboard();
+        size_t len = pubKeyCode.length() + 1;
+        HGLOBAL hMem = GlobalAlloc(GMEM_MOVEABLE, len);
+        if (hMem) {
+            char* pMem = (char*)GlobalLock(hMem);
+            if (pMem) {
+                memcpy(pMem, pubKeyCode.c_str(), len);
+                GlobalUnlock(hMem);
+                SetClipboardData(CF_TEXT, hMem);
+            }
+        }
+        CloseClipboard();
+    }
+
+    // 简短提示
+    CString msg;
+    msg.Format(_T("密钥对生成成功!\n\n私钥: %s\n公钥: %s\n\n公钥代码已复制到剪贴板"),
+               privateKeyPath.GetString(), publicKeyPath.GetString());
+    MessageBox(msg, _TR("成功"), MB_OK | MB_ICONINFORMATION);
 }
 
 void CPwdGenDlg::OnBnClickedButtonSaveLicense()

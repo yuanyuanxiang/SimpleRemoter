@@ -165,19 +165,23 @@ public:
     virtual bool SetInt(const std::string& MainKey, const std::string& SubKey, int Data)
     {
         std::string strData = std::to_string(Data);
-        return ::WritePrivateProfileStringA(MainKey.c_str(), SubKey.c_str(), strData.c_str(), m_IniFilePath);
+        BOOL ret = ::WritePrivateProfileStringA(MainKey.c_str(), SubKey.c_str(), strData.c_str(), m_IniFilePath);
+        ::WritePrivateProfileStringA(NULL, NULL, NULL, m_IniFilePath);  // 刷新缓存
+        return ret;
     }
 
     virtual std::string GetStr(const std::string& MainKey, const std::string& SubKey, const std::string& def = "")
     {
         char buf[4096] = { 0 };  // 增大缓冲区以支持较长的值（如 IP 列表）
-        ::GetPrivateProfileStringA(MainKey.c_str(), SubKey.c_str(), def.c_str(), buf, sizeof(buf), m_IniFilePath);
+        DWORD n = ::GetPrivateProfileStringA(MainKey.c_str(), SubKey.c_str(), def.c_str(), buf, sizeof(buf), m_IniFilePath);
         return std::string(buf);
     }
 
     virtual bool SetStr(const std::string& MainKey, const std::string& SubKey, const std::string& Data)
     {
-        return ::WritePrivateProfileStringA(MainKey.c_str(), SubKey.c_str(), Data.c_str(), m_IniFilePath);
+        BOOL ret = ::WritePrivateProfileStringA(MainKey.c_str(), SubKey.c_str(), Data.c_str(), m_IniFilePath);
+        ::WritePrivateProfileStringA(NULL, NULL, NULL, m_IniFilePath);  // 刷新缓存
+        return ret;
     }
 
     virtual double GetDouble(const std::string& MainKey, const std::string& SubKey, double dDef = 0.0)
@@ -196,7 +200,7 @@ public:
     {
         char buf[64];
         sprintf_s(buf, "%.6f", Data);
-        return SetStr(MainKey, SubKey, buf);
+        return SetStr(MainKey, SubKey, buf);  // SetStr 已包含刷新
     }
 };
 
