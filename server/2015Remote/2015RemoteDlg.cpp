@@ -107,6 +107,9 @@ CMy2015RemoteDlg*  g_2015RemoteDlg = NULL;
 std::map<uint64_t, PendingTransferV2> g_pendingTransfersV2;
 std::mutex g_pendingTransfersV2Mtx;
 
+// V2 授权公钥（前向声明，定义在 AuthorizeClientV2 之前）
+extern const BYTE g_LicensePublicKey[64];
+
 // 检查客户端是否支持 V2 文件传输协议
 bool SupportsFileTransferV2(context* ctx) {
     if (!g_2015RemoteDlg || !g_2015RemoteDlg->m_bEnableFileV2) return false;
@@ -2353,18 +2356,38 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
             THIS_APP->MessageBox(_TR("格式错误，请重新申请口令!"), _TR("提示"), MB_ICONINFORMATION);
             return false;
         }
-        std::vector<std::string> subvector(v.end() - 4, v.end());
-        std::string password = v[0] + " - " + v[1] + ": " + GetPwdHash() + (v.size()==6?"":": "+v[2]);
-        std::string finalKey = deriveKey(password, deviceID);
-        std::string hash256 = joinString(subvector, '-');
-        std::string fixedKey = getFixedLengthID(finalKey);
-        if (hash256 != fixedKey) {
-            THIS_CFG.SetStr(settings, pwdKey, "");
-            THIS_CFG.SetStr(settings, "PwdHmac", "");
-            if (pwd.IsEmpty() || hash256 != fixedKey || IDOK != dlg.DoModal()) {
-                if (!dlg.m_sPassword.IsEmpty())
-                    THIS_APP->MessageBox(_TR("口令错误, 无法继续操作!") + "\r\n" + _TR("请通过工具菜单重新输入口令。"), _TR("提示"), MB_ICONWARNING);
-                return false;
+
+        // 检查是否为 V2 授权
+        std::string pwdHmac = THIS_CFG.GetStr(settings, "PwdHmac", "");
+        bool isV2 = pwdHmac.length() > 3 && pwdHmac.substr(0, 3) == "v2:";
+
+        if (isV2) {
+            // V2 授权验证：使用 ECDSA 签名
+            std::string passcode = dlg.m_sPassword.GetString();
+            if (!verifyPasswordV2(deviceID, passcode, pwdHmac, g_LicensePublicKey)) {
+                THIS_CFG.SetStr(settings, pwdKey, "");
+                THIS_CFG.SetStr(settings, "PwdHmac", "");
+                if (pwd.IsEmpty() || IDOK != dlg.DoModal()) {
+                    if (!dlg.m_sPassword.IsEmpty())
+                        THIS_APP->MessageBox(_TR("口令错误, 无法继续操作!") + "\r\n" + _TR("请通过工具菜单重新输入口令。"), _TR("提示"), MB_ICONWARNING);
+                    return false;
+                }
+            }
+        } else {
+            // V1 授权验证：使用密钥派生比对
+            std::vector<std::string> subvector(v.end() - 4, v.end());
+            std::string password = v[0] + " - " + v[1] + ": " + GetPwdHash() + (v.size()==6?"":": "+v[2]);
+            std::string finalKey = deriveKey(password, deviceID);
+            std::string hash256 = joinString(subvector, '-');
+            std::string fixedKey = getFixedLengthID(finalKey);
+            if (hash256 != fixedKey) {
+                THIS_CFG.SetStr(settings, pwdKey, "");
+                THIS_CFG.SetStr(settings, "PwdHmac", "");
+                if (pwd.IsEmpty() || hash256 != fixedKey || IDOK != dlg.DoModal()) {
+                    if (!dlg.m_sPassword.IsEmpty())
+                        THIS_APP->MessageBox(_TR("口令错误, 无法继续操作!") + "\r\n" + _TR("请通过工具菜单重新输入口令。"), _TR("提示"), MB_ICONWARNING);
+                    return false;
+                }
             }
         }
         // 判断是否过期

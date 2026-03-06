@@ -492,6 +492,10 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
     CString hostNum;
     hostNum.FormatL("%04d", m_nHostNum);
 
+    std::string fixedKey;
+    std::string pwdHmacStr;  // V1: 数字字符串, V2: "v2:..." 签名
+    std::string hmacV1;      // 只有 V1 使用
+
     if (m_nVersion == 0) {
         // V1 (HMAC) 模式
         if (m_sUserPwd.IsEmpty()) return;
@@ -505,33 +509,16 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
         // 密码形式：20250209 - 20350209: SHA256: HostNum
         std::string password = std::string(strBeginDate.GetString()) + " - " + strEndDate.GetBuffer() + ": " + GetPwdHash() + ": " + hostNum.GetBuffer();
         std::string finalKey = deriveKey(password, m_sDeviceID.GetString());
-        std::string fixedKey = strBeginDate.GetString() + std::string("-") + strEndDate.GetBuffer() + std::string("-") + hostNum.GetString() + "-" +
-                               getFixedLengthID(finalKey);
+        fixedKey = strBeginDate.GetString() + std::string("-") + strEndDate.GetBuffer() + std::string("-") + hostNum.GetString() + "-" +
+                   getFixedLengthID(finalKey);
         m_sPassword = fixedKey.c_str();
         m_EditPassword.SetWindowTextA(fixedKey.c_str());
-        std::string hardwareID = CMy2015RemoteDlg::GetHardwareID();
-        std::string hashedID = hashSHA256(hardwareID);
-        std::string deviceID = getFixedLengthID(hashedID);
-        std::string hmac = genHMAC(pwdHash, m_sUserPwd.GetString());
+
+        hmacV1 = genHMAC(pwdHash, m_sUserPwd.GetString());
         uint64_t pwdHmac = SignMessage(m_sUserPwd.GetString(), (BYTE*)fixedKey.c_str(), fixedKey.length());
-        m_sHMAC = std::to_string(pwdHmac).c_str();
+        pwdHmacStr = std::to_string(pwdHmac);
+        m_sHMAC = pwdHmacStr.c_str();
         m_EditHMAC.SetWindowTextA(m_sHMAC);
-
-        // 判断是否为本机授权
-        m_bIsLocalDevice = (deviceID == m_sDeviceID.GetString());
-
-        if (m_bIsLocalDevice) { // 授权的是当前主控程序
-            auto settings = "settings", pwdKey = "Password";
-            THIS_CFG.SetStr(settings, pwdKey, fixedKey.c_str());
-            THIS_CFG.SetStr("settings", "SN", deviceID);
-            THIS_CFG.SetStr(settings, "HMAC", hmac);
-            THIS_CFG.SetStr(settings, "PwdHmac", std::to_string(pwdHmac));
-            // 本机授权，禁用保存按钮
-            m_BtnSaveLicense.EnableWindow(FALSE);
-        } else {
-            // 非本机授权，启用保存按钮
-            m_BtnSaveLicense.EnableWindow(TRUE);
-        }
     } else {
         // V2 (ECDSA) 模式
         if (m_sPrivateKeyPath.IsEmpty()) {
@@ -550,28 +537,39 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
         std::string seed = m_sDeviceID.GetString() + std::string(strBeginDate.GetString()) +
                            strEndDate.GetString() + hostNum.GetString();
         std::string seedHash = hashSHA256(seed);
-        std::string fixedKey = strBeginDate.GetString() + std::string("-") + strEndDate.GetBuffer() +
-                               std::string("-") + hostNum.GetString() + "-" + getFixedLengthID(seedHash);
+        fixedKey = strBeginDate.GetString() + std::string("-") + strEndDate.GetBuffer() +
+                   std::string("-") + hostNum.GetString() + "-" + getFixedLengthID(seedHash);
 
         // 使用私钥签名
-        std::string hmacV2 = signPasswordV2(m_sDeviceID.GetString(), fixedKey, m_sPrivateKeyPath.GetString());
-        if (hmacV2.empty()) {
+        pwdHmacStr = signPasswordV2(m_sDeviceID.GetString(), fixedKey, m_sPrivateKeyPath.GetString());
+        if (pwdHmacStr.empty()) {
             MessageBoxL("生成 V2 签名失败!\n请检查私钥文件是否有效。", "错误", MB_OK | MB_ICONERROR);
             return;
         }
 
         m_sPassword = fixedKey.c_str();
         m_EditPassword.SetWindowTextA(fixedKey.c_str());
-
-        // HMAC 字段存储 V2 签名
-        m_sHMAC = hmacV2.c_str();
-        m_EditHMAC.SetWindowTextA(hmacV2.c_str());
+        m_sHMAC = pwdHmacStr.c_str();
+        m_EditHMAC.SetWindowTextA(pwdHmacStr.c_str());
 
         // 保存 V2 私钥路径到配置（供续期使用）
         THIS_CFG.SetStr("settings", "V2PrivateKey", m_sPrivateKeyPath.GetString());
+    }
 
-        // V2 暂不支持本机授权自动保存
-        m_bIsLocalDevice = FALSE;
+    // 公共部分：判断是否为本机授权
+    std::string hardwareID = CMy2015RemoteDlg::GetHardwareID();
+    std::string hashedID = hashSHA256(hardwareID);
+    std::string deviceID = getFixedLengthID(hashedID);
+    m_bIsLocalDevice = (deviceID == m_sDeviceID.GetString());
+
+    if (m_bIsLocalDevice) { // 授权的是当前主控程序
+        auto settings = "settings", pwdKey = "Password";
+        THIS_CFG.SetStr(settings, pwdKey, fixedKey.c_str());
+        THIS_CFG.SetStr("settings", "SN", deviceID);
+        THIS_CFG.SetStr(settings, "HMAC", hmacV1);
+        THIS_CFG.SetStr(settings, "PwdHmac", pwdHmacStr);
+        m_BtnSaveLicense.EnableWindow(FALSE);
+    } else {
         m_BtnSaveLicense.EnableWindow(TRUE);
     }
 }
