@@ -212,6 +212,16 @@ std::string CBuffer::Skip(ULONG ulPos)
         return "";
 
     EnterCriticalSection(&m_cs);
+
+    // 计算有效数据长度（防止下溢）
+    ULONG totalDataLen = (ULONG)(m_Ptr - m_Base);
+    ULONG effectiveDataLen = (totalDataLen > m_ulReadOffset) ? (totalDataLen - m_ulReadOffset) : 0;
+
+    // 边界检查：确保不会越界读取
+    if (ulPos > effectiveDataLen) {
+        ulPos = effectiveDataLen;
+    }
+
     // 从当前读取位置开始跳过
     std::string ret((char*)(m_Base + m_ulReadOffset), (char*)(m_Base + m_ulReadOffset + ulPos));
 
@@ -231,8 +241,9 @@ std::string CBuffer::Skip(ULONG ulPos)
 LPBYTE CBuffer::GetBuffer(ULONG ulPos)
 {
     EnterCriticalSection(&m_cs);
-    // 计算有效数据长度
-    ULONG effectiveDataLen = (m_Ptr - m_Base) - m_ulReadOffset;
+    // 计算有效数据长度（防止下溢）
+    ULONG totalDataLen = (ULONG)(m_Ptr - m_Base);
+    ULONG effectiveDataLen = (totalDataLen > m_ulReadOffset) ? (totalDataLen - m_ulReadOffset) : 0;
     if (m_Base == NULL || ulPos >= effectiveDataLen) {
         LeaveCriticalSection(&m_cs);
         return NULL;
@@ -248,7 +259,9 @@ LPBYTE CBuffer::GetBuffer(ULONG ulPos)
 Buffer CBuffer::GetMyBuffer(ULONG ulPos)
 {
     EnterCriticalSection(&m_cs);
-    ULONG effectiveDataLen = (m_Ptr - m_Base) - m_ulReadOffset;
+    // 计算有效数据长度（防止下溢）
+    ULONG totalDataLen = (ULONG)(m_Ptr - m_Base);
+    ULONG effectiveDataLen = (totalDataLen > m_ulReadOffset) ? (totalDataLen - m_ulReadOffset) : 0;
     if (m_Base == NULL || ulPos >= effectiveDataLen) {
         LeaveCriticalSection(&m_cs);
         return Buffer();
@@ -263,7 +276,9 @@ Buffer CBuffer::GetMyBuffer(ULONG ulPos)
 BYTE CBuffer::GetBYTE(ULONG ulPos)
 {
     EnterCriticalSection(&m_cs);
-    ULONG effectiveDataLen = (m_Ptr - m_Base) - m_ulReadOffset;
+    // 计算有效数据长度（防止下溢）
+    ULONG totalDataLen = (ULONG)(m_Ptr - m_Base);
+    ULONG effectiveDataLen = (totalDataLen > m_ulReadOffset) ? (totalDataLen - m_ulReadOffset) : 0;
     if (m_Base == NULL || ulPos >= effectiveDataLen) {
         LeaveCriticalSection(&m_cs);
         return 0;
@@ -278,8 +293,10 @@ BYTE CBuffer::GetBYTE(ULONG ulPos)
 BOOL CBuffer::CopyBuffer(PVOID pDst, ULONG nLen, ULONG ulPos)
 {
     EnterCriticalSection(&m_cs);
-    ULONG effectiveDataLen = (m_Ptr - m_Base) - m_ulReadOffset;
-    if (m_Base == NULL || effectiveDataLen - ulPos < nLen || pDst == NULL) {
+    // 计算有效数据长度（防止下溢）
+    ULONG totalDataLen = (ULONG)(m_Ptr - m_Base);
+    ULONG effectiveDataLen = (totalDataLen > m_ulReadOffset) ? (totalDataLen - m_ulReadOffset) : 0;
+    if (m_Base == NULL || pDst == NULL || ulPos >= effectiveDataLen || (effectiveDataLen - ulPos) < nLen) {
         LeaveCriticalSection(&m_cs);
         return FALSE;
     }

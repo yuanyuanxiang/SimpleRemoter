@@ -32,19 +32,20 @@ CBuffer::~CBuffer(void)
 
 ULONG CBuffer::ReadBuffer(PBYTE Buffer, ULONG ulLength)
 {
-    if (ulLength > m_ulMaxLength) {
-        return 0;
-    }
-    ULONG len = m_Ptr - m_Base;
-    if (ulLength > len) {
-        ulLength = len;
+    ULONG dataLen = (ULONG)(m_Ptr - m_Base);
+    if (ulLength > dataLen) {
+        ulLength = dataLen;
     }
 
     if (ulLength) {
-        CopyMemory(Buffer,m_Base,ulLength);
+        CopyMemory(Buffer, m_Base, ulLength);
 
-        MoveMemory(m_Base,m_Base+ulLength, m_ulMaxLength - ulLength);
-        m_Ptr -= ulLength;
+        // 只移动有效数据，而非整个缓冲区
+        ULONG remaining = dataLen - ulLength;
+        if (remaining > 0) {
+            MoveMemory(m_Base, m_Base + ulLength, remaining);
+        }
+        m_Ptr = m_Base + remaining;
     }
 
     DeAllocateBuffer(m_Ptr - m_Base);
@@ -139,8 +140,20 @@ void CBuffer::Skip(ULONG ulPos)
 {
     if (ulPos == 0)
         return;
-    MoveMemory(m_Base, m_Base + ulPos, m_ulMaxLength - ulPos);
-    m_Ptr -= ulPos;
+
+    // 边界检查：确保不会越界
+    ULONG dataLen = (ULONG)(m_Ptr - m_Base);
+    if (ulPos > dataLen) {
+        ulPos = dataLen;
+    }
+
+    if (ulPos > 0) {
+        ULONG remaining = dataLen - ulPos;
+        if (remaining > 0) {
+            MoveMemory(m_Base, m_Base + ulPos, remaining);
+        }
+        m_Ptr = m_Base + remaining;
+    }
 }
 
 
