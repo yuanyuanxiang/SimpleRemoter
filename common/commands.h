@@ -638,6 +638,8 @@ enum ClientCompressType {
     CLIENT_COMPRESS_SC_AES_OLD = 4,
 };
 
+inline std::vector<std::string> StringToVector(const std::string& str, char ch, int reserved = 1);
+
 #pragma pack(push, 4)
 // 所连接的主控程序信息
 typedef struct CONNECT_ADDRESS {
@@ -714,6 +716,23 @@ public:
             Decrypt();
         }
         return szServerIP;
+    }
+    // 从分号分隔的多 IP 中随机选择一个
+    std::string GetRandomServerIP()
+    {
+        const char* ip = ServerIP();
+        if (ip == nullptr || strlen(ip) == 0) return "";
+        auto list = StringToVector(ip, ';');
+        if (list.empty()) return "";
+        return list[rand() % list.size()];
+    }
+    // 获取第一个 IP
+    std::string GetFirstServerIP()
+    {
+        const char* ip = ServerIP();
+        if (ip == nullptr || strlen(ip) == 0) return "";
+        auto list = StringToVector(ip, ';');
+        return list.empty() ? "" : list[0];
     }
     int ServerPort()
     {
@@ -805,7 +824,7 @@ struct PluginParam {
 };
 
 // 将字符串按指定字符分隔为向量
-inline std::vector<std::string> StringToVector(const std::string& str, char ch, int reserved = 1)
+inline std::vector<std::string> StringToVector(const std::string& str, char ch, int reserved)
 {
     // 使用字符串流来分隔字符串
     std::istringstream stream(str);

@@ -346,6 +346,7 @@ void CSystemDlg::OnPlistKill()
     while(Pos) {
         int	nItem = ListCtrl->GetNextSelectedItem(Pos);
         auto data = (ItemData*)ListCtrl->GetItemData(nItem);
+        if (!data) continue;
         DWORD dwProcessID = data->ID;
         memcpy(szBuffer + dwOffset, &dwProcessID, sizeof(DWORD));  //sdkfj101112
         dwOffset += sizeof(DWORD);
@@ -418,10 +419,10 @@ void CSystemDlg::OnWlistClose()
 
     int	nItem = pListCtrl->GetSelectionMark();
     if (nItem>=0) {
-
+        auto data = (ItemData*)pListCtrl->GetItemData(nItem);
+        if (!data) return;
         ZeroMemory(lpMsgBuf,20);
         lpMsgBuf[0]=CMD_WINDOW_CLOSE;           //注意这个就是我们的数据头
-        auto data = (ItemData*)pListCtrl->GetItemData(nItem);
         DWORD hwnd = data->ID; //得到窗口的句柄一同发送  4   djfkdfj  dkfjf  4
         memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));   //1 4
         m_ContextObject->Send2Client(lpMsgBuf, sizeof(lpMsgBuf));
@@ -437,9 +438,10 @@ void CSystemDlg::OnWlistHide()
 
     int	nItem = pListCtrl->GetSelectionMark();
     if (nItem>=0) {
+        auto data = (ItemData*)pListCtrl->GetItemData(nItem);
+        if (!data) return;
         ZeroMemory(lpMsgBuf,20);
         lpMsgBuf[0]=CMD_WINDOW_TEST;             //窗口处理数据头
-        auto data = (ItemData*)pListCtrl->GetItemData(nItem);
         DWORD hwnd = data->ID;  //得到窗口的句柄一同发送
         pListCtrl->SetItemText(nItem,2,"hidden");      //注意这时将列表中的显示状态为"隐藏"
         //这样在删除列表条目时就不删除该项了 如果删除该项窗口句柄会丢失 就永远也不能显示了
@@ -459,9 +461,10 @@ void CSystemDlg::OnWlistRecover()
 
     int	nItem = pListCtrl->GetSelectionMark();
     if (nItem>=0) {
+        auto data = (ItemData*)pListCtrl->GetItemData(nItem);
+        if (!data) return;
         ZeroMemory(lpMsgBuf,20);
         lpMsgBuf[0]= CMD_WINDOW_TEST;
-        auto data = (ItemData*)pListCtrl->GetItemData(nItem);
         DWORD hwnd = data->ID;
         pListCtrl->SetItemText(nItem,2,"normal");
         memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
@@ -480,9 +483,10 @@ void CSystemDlg::OnWlistMax()
 
     int	nItem = pListCtrl->GetSelectionMark();
     if (nItem>=0) {
+        auto data = (ItemData*)pListCtrl->GetItemData(nItem);
+        if (!data) return;
         ZeroMemory(lpMsgBuf,20);
         lpMsgBuf[0]= CMD_WINDOW_TEST;
-        auto data = (ItemData*)pListCtrl->GetItemData(nItem);
         DWORD hwnd = data->ID;
         pListCtrl->SetItemText(nItem,2,"maximized");
         memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
@@ -501,9 +505,10 @@ void CSystemDlg::OnWlistMin()
 
     int	nItem = pListCtrl->GetSelectionMark();
     if (nItem>=0) {
+        auto data = (ItemData*)pListCtrl->GetItemData(nItem);
+        if (!data) return;
         ZeroMemory(lpMsgBuf,20);
         lpMsgBuf[0]= CMD_WINDOW_TEST;
-        auto data = (ItemData*)pListCtrl->GetItemData(nItem);
         DWORD hwnd = data->ID;
         pListCtrl->SetItemText(nItem,2,"minimized");
         memcpy(lpMsgBuf+1,&hwnd,sizeof(DWORD));
@@ -549,6 +554,7 @@ void CSystemDlg::OnPlistInject()
     if (Pos) {
         int	nItem = ListCtrl->GetNextSelectedItem(Pos);
         auto data = (ItemData*)ListCtrl->GetItemData(nItem);
+        if (!data) return;
         dwProcessID = data->ID;
         dwOffset += sizeof(DWORD);
     }
@@ -578,6 +584,7 @@ void CSystemDlg::OnPlistAntiBlackScreen()
     if (Pos) {
         int	nItem = ListCtrl->GetNextSelectedItem(Pos);
         auto data = (ItemData*)ListCtrl->GetItemData(nItem);
+        if (!data) return;
         dwProcessID = data->ID;
         arch = data->Arch;
         dwOffset += sizeof(DWORD);

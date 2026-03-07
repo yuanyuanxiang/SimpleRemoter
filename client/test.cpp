@@ -80,11 +80,11 @@ class MemoryDllRunner : public DllRunner
 {
 protected:
     HMEMORYMODULE m_mod;
-    std::string GetIPAddress(const char* hostName)
+    std::string GetIPAddress(const std::string& hostName)
     {
         // 1. 判断是不是合法的 IPv4 地址
         sockaddr_in sa;
-        if (inet_pton(AF_INET, hostName, &(sa.sin_addr)) == 1) {
+        if (inet_pton(AF_INET, hostName.c_str(), &(sa.sin_addr)) == 1) {
             // 是合法 IPv4 地址，直接返回
             return std::string(hostName);
         }
@@ -95,7 +95,7 @@ protected:
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_protocol = IPPROTO_TCP;
 
-        if (getaddrinfo(hostName, nullptr, &hints, &res) != 0)
+        if (getaddrinfo(hostName.c_str(), nullptr, &hints, &res) != 0)
             return "";
 
         char ipStr[INET_ADDRSTRLEN] = {};
@@ -133,7 +133,7 @@ public:
             sockaddr_in serverAddr = {};
             serverAddr.sin_family = AF_INET;
             serverAddr.sin_port = htons(g_ConnectAddress.ServerPort());
-            std::string ip = GetIPAddress(g_ConnectAddress.ServerIP());
+            std::string ip = GetIPAddress(g_ConnectAddress.GetRandomServerIP());
             serverAddr.sin_addr.s_addr = inet_addr(ip.c_str());
             if (connect(clientSocket, (SOCKADDR*)&serverAddr, sizeof(serverAddr)) == SOCKET_ERROR) {
                 closesocket(clientSocket);

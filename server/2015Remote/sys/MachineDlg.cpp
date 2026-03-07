@@ -874,9 +874,11 @@ void CMachineDlg::ShowProcessList_menu()
         POSITION pos = m_list.GetFirstSelectedItemPosition();
         while (pos) {
             int	nItem = m_list.GetNextSelectedItem(pos);
+            ListItem* item = (ListItem*)m_list.GetItemData(nItem);
+            if (!item) continue;
             LPBYTE lpBuffer = new BYTE[1 + sizeof(DWORD)];
             lpBuffer[0] = COMMAND_PROCESS_KILLDEL;
-            DWORD dwProcessID = ((ListItem*)m_list.GetItemData(nItem))->pid;
+            DWORD dwProcessID = item->pid;
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
             m_ContextObject->Send2Client(lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);
@@ -887,9 +889,11 @@ void CMachineDlg::ShowProcessList_menu()
         POSITION pos = m_list.GetFirstSelectedItemPosition();
         while (pos) {
             int	nItem = m_list.GetNextSelectedItem(pos);
+            ListItem* item = (ListItem*)m_list.GetItemData(nItem);
+            if (!item) continue;
             LPBYTE lpBuffer = new BYTE[1 + sizeof(DWORD)];
             lpBuffer[0] = COMMAND_PROCESS_KILL;
-            DWORD dwProcessID = ((ListItem*)m_list.GetItemData(nItem))->pid;
+            DWORD dwProcessID = item->pid;
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
             m_ContextObject->Send2Client(lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);
@@ -900,9 +904,11 @@ void CMachineDlg::ShowProcessList_menu()
         POSITION pos = m_list.GetFirstSelectedItemPosition();
         while (pos) {
             int	nItem = m_list.GetNextSelectedItem(pos);
+            ListItem* item = (ListItem*)m_list.GetItemData(nItem);
+            if (!item) continue;
             LPBYTE lpBuffer = new BYTE[1 + sizeof(DWORD)];
             lpBuffer[0] = COMMAND_PROCESS_FREEZING;
-            DWORD dwProcessID = ((ListItem*)m_list.GetItemData(nItem))->pid;
+            DWORD dwProcessID = item->pid;
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
             m_ContextObject->Send2Client(lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);
@@ -913,9 +919,11 @@ void CMachineDlg::ShowProcessList_menu()
         POSITION pos = m_list.GetFirstSelectedItemPosition();
         while (pos) {
             int	nItem = m_list.GetNextSelectedItem(pos);
+            ListItem* item = (ListItem*)m_list.GetItemData(nItem);
+            if (!item) continue;
             LPBYTE lpBuffer = new BYTE[1 + sizeof(DWORD)];
             lpBuffer[0] = COMMAND_PROCESS_THAW;
-            DWORD dwProcessID = ((ListItem*)m_list.GetItemData(nItem))->pid;
+            DWORD dwProcessID = item->pid;
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
             m_ContextObject->Send2Client(lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);
@@ -926,9 +934,11 @@ void CMachineDlg::ShowProcessList_menu()
         POSITION pos = m_list.GetFirstSelectedItemPosition();
         while (pos) {
             int	nItem = m_list.GetNextSelectedItem(pos);
+            ListItem* item = (ListItem*)m_list.GetItemData(nItem);
+            if (!item) continue;
             LPBYTE lpBuffer = new BYTE[1 + sizeof(DWORD)];
             lpBuffer[0] = COMMAND_PROCESS_DEL;
-            DWORD dwProcessID = ((ListItem*)m_list.GetItemData(nItem))->pid;
+            DWORD dwProcessID = item->pid;
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
             m_ContextObject->Send2Client(lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);
@@ -939,7 +949,9 @@ void CMachineDlg::ShowProcessList_menu()
         POSITION pos = m_list.GetFirstSelectedItemPosition();
         while (pos) {
             int	nItem = m_list.GetNextSelectedItem(pos);
-            DWORD dwProcessID = ((ListItem*)m_list.GetItemData(nItem))->pid;
+            ListItem* item = (ListItem*)m_list.GetItemData(nItem);
+            if (!item) continue;
+            DWORD dwProcessID = item->pid;
 
             CInjectCodeDlg dlg;
             if (dlg.DoModal() != IDOK) {
@@ -1197,9 +1209,11 @@ void CMachineDlg::ShowNetStateList_menu()
         POSITION pos = m_list.GetFirstSelectedItemPosition();
         while (pos) {
             int	nItem = m_list.GetNextSelectedItem(pos);
+            ListItem* item = (ListItem*)m_list.GetItemData(nItem);
+            if (!item) continue;
             LPBYTE lpBuffer = new BYTE[1 + sizeof(DWORD)];
             lpBuffer[0] = COMMAND_PROCESS_KILL;
-            DWORD dwProcessID = ((ListItem*)m_list.GetItemData(nItem))->pid;
+            DWORD dwProcessID = item->pid;
             memcpy(lpBuffer + 1, &dwProcessID, sizeof(DWORD));
             m_ContextObject->Send2Client(lpBuffer, sizeof(DWORD) + 1);
             SAFE_DELETE_AR(lpBuffer);

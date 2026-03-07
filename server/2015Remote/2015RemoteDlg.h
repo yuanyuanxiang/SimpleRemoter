@@ -8,9 +8,12 @@
 #include <common/location.h>
 #include <map>
 #include <mutex>
+#include <vector>
+#include <string>
 #include "file_server.h"
 #include "CListCtrlEx.h"
 #include "LangManager.h"
+#include "client/MemoryModule.h"
 
 //////////////////////////////////////////////////////////////////////////
 // 以下为特殊需求使用
@@ -242,10 +245,20 @@ public:
         STATUS_STOP = 1,
         STATUS_EXIT = 2,
     };
-    HANDLE m_hFRPThread = NULL;
-    int m_frpStatus = STATUS_UNKNOWN;
+    // FRP 多实例支持
+    struct FrpInstance {
+        HANDLE hThread = NULL;
+        int status = STATUS_UNKNOWN;
+        std::string serverAddr;
+    };
+    std::vector<FrpInstance> m_frpInstances;
+    HMEMORYMODULE m_hFrpDll = NULL;
+    typedef int (*FrpRunFunc)(char*, int*);
+    FrpRunFunc m_frpRun = nullptr;
     static DWORD WINAPI StartFrpClient(LPVOID param);
     void ApplyFrpSettings();
+    void InitFrpClients();
+    void StopAllFrpClients();
     bool CheckValid(int trail = 14);
     BOOL ShouldRemoteControl();
     afx_msg void OnTimer(UINT_PTR nIDEvent);
