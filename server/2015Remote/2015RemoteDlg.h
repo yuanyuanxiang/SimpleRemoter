@@ -182,9 +182,9 @@ public:
     BOOL Activate(const std::string& nPort, int nMaxConnection, const std::string& method);
     void UpdateActiveWindow(CONTEXT_OBJECT* ctx);
     void SendMasterSettings(CONTEXT_OBJECT* ctx, const MasterSettings& m);
-    void SendFilesToClientV2(context* mainCtx, const std::vector<std::string>& files);
+    void SendFilesToClientV2(context* mainCtx, const std::vector<std::string>& files, const std::string& targetDir = "");
     void SendFilesToClientV2Internal(context* mainCtx, const std::vector<std::string>& files,
-        uint64_t resumeTransferID, const std::map<uint32_t, uint64_t>& startOffsets);
+        uint64_t resumeTransferID, const std::map<uint32_t, uint64_t>& startOffsets, const std::string& targetDir = "");
     void HandleFileResumeRequest(CONTEXT_OBJECT* ctx, const BYTE* data, size_t len);
     BOOL SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, bool is64Bit);
     Buffer* m_ServerDLL[PAYLOAD_MAXTYPE];

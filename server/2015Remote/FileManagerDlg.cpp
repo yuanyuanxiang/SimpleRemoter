@@ -7,6 +7,7 @@
 #include "FileTransferModeDlg.h"
 #include "InputDlg.h"
 #include "ZstdArchive.h"
+#include "2015RemoteDlg.h"
 #include <Shlobj.h>
 
 #ifdef _DEBUG
@@ -158,6 +159,8 @@ BEGIN_MESSAGE_MAP(CFileManagerDlg, CDialog)
     //}}AFX_MSG_MAP
     ON_COMMAND(ID_FILEMANGER_COMPRESS, &CFileManagerDlg::OnFilemangerCompress)
     ON_COMMAND(ID_FILEMANGER_UNCOMPRESS, &CFileManagerDlg::OnFilemangerUncompress)
+    ON_COMMAND(IDM_TRANSFER_S, &CFileManagerDlg::OnTransferV2ToRemote)
+    ON_COMMAND(IDM_TRANSFER_R, &CFileManagerDlg::OnTransferV2ToLocal)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
@@ -2933,6 +2936,14 @@ void CFileManagerDlg::OnRclickListLocal(NMHDR* pNMHDR, LRESULT* pResult)
     } else
         pM->EnableMenuItem(IDM_LOCAL_OPEN, MF_BYCOMMAND | MF_GRAYED);
 
+    // V2传输: 本地列表只能上传到远程，不能从远程下载
+    // 需要选中文件且远程目录已打开（不是驱动器列表）
+    if (pListCtrl->GetSelectedCount() > 0 && !m_Remote_Path.IsEmpty()) {
+        pM->EnableMenuItem(IDM_TRANSFER_S, MF_BYCOMMAND | MF_ENABLED);
+    } else {
+        pM->EnableMenuItem(IDM_TRANSFER_S, MF_BYCOMMAND | MF_GRAYED);
+    }
+    pM->EnableMenuItem(IDM_TRANSFER_R, MF_BYCOMMAND | MF_GRAYED);  // 本地列表不能从远程下载
 
     pM->EnableMenuItem(IDM_REFRESH, MF_BYCOMMAND | MF_ENABLED);
     pM->TrackPopupMenu(TPM_LEFTALIGN, p.x, p.y, this);
@@ -2942,7 +2953,7 @@ void CFileManagerDlg::OnRclickListLocal(NMHDR* pNMHDR, LRESULT* pResult)
 void CFileManagerDlg::OnRclickListRemote(NMHDR* pNMHDR, LRESULT* pResult)
 {
     // TODO: Add your control notification handler code here
-    int	nRemoteOpenMenuIndex = 5;
+    int	nRemoteOpenMenuIndex = 7;  // 由于添加了2个V2菜单项，位置需要调整
     CListCtrl	*pListCtrl = &m_list_remote;
     CMenu	popup;
     popup.LoadMenu(IDR_FILEMANAGER);
@@ -2968,6 +2979,15 @@ void CFileManagerDlg::OnRclickListRemote(NMHDR* pNMHDR, LRESULT* pResult)
             pM->EnableMenuItem(nRemoteOpenMenuIndex, MF_BYPOSITION | MF_ENABLED);
     } else
         pM->EnableMenuItem(nRemoteOpenMenuIndex, MF_BYPOSITION | MF_GRAYED);
+
+    // V2传输: 远程列表只能从远程下载，不能上传到远程
+    // 需要选中文件且本地目录已打开（不是驱动器列表）
+    if (pListCtrl->GetSelectedCount() > 0 && !m_Local_Path.IsEmpty()) {
+        pM->EnableMenuItem(IDM_TRANSFER_R, MF_BYCOMMAND | MF_ENABLED);
+    } else {
+        pM->EnableMenuItem(IDM_TRANSFER_R, MF_BYCOMMAND | MF_GRAYED);
+    }
+    pM->EnableMenuItem(IDM_TRANSFER_S, MF_BYCOMMAND | MF_GRAYED);  // 远程列表不能上传到远程
 
     pM->EnableMenuItem(IDM_REFRESH, MF_BYCOMMAND | MF_ENABLED);
     pM->TrackPopupMenu(TPM_LEFTALIGN, p.x, p.y, this);
@@ -3067,4 +3087,133 @@ bool CFileManagerDlg::MakeSureDirectoryPathExists(LPCTSTR pszDirPath)
 
     free(pszDirCopy);
     return TRUE;
+}
+
+// V2传输: 本地文件上传到远程
+void CFileManagerDlg::OnTransferV2ToRemote()
+{
+    // 收集本地选中的文件列表
+    std::vector<std::string> files;
+    POSITION pos = m_list_local.GetFirstSelectedItemPosition();
+    while (pos) {
+        int nItem = m_list_local.GetNextSelectedItem(pos);
+        CString itemText = m_list_local.GetItemText(nItem, 0);
+
+        // 跳过".."
+        if (itemText == "..")
+            continue;
+
+        CString file = m_Local_Path + itemText;
+
+        // 如果是目录，递归收集文件
+        if (m_list_local.GetItemData(nItem)) {
+            file += '\\';
+            CollectFilesRecursive(file.GetString(), files);
+        } else {
+            files.push_back(file.GetString());
+        }
+    }
+
+    if (files.empty()) {
+        MessageBoxAPI_L(m_hWnd, "没有选中任何文件", "提示", MB_OK | MB_ICONINFORMATION);
+        return;
+    }
+
+    // 通知客户端目标目录（使用远程当前目录）
+    // 由 SendFilesToClientV2 内部的 COMMAND_C2C_PREPARE 处理
+
+    // 调用V2传输 - 需要通过IP找到主连接（m_ContextObject是子连接）
+    if (g_2015RemoteDlg && m_ContextObject) {
+        // 通过子连接的IP地址找到主连接
+        std::string peerIP = m_ContextObject->GetPeerName();
+        context* mainCtx = g_2015RemoteDlg->FindHostByIP(peerIP);
+        if (mainCtx) {
+            // 使用远程当前目录作为目标目录
+            std::string remoteDir = m_Remote_Path.GetString();
+            g_2015RemoteDlg->SendFilesToClientV2(mainCtx, files, remoteDir);
+            ShowMessage(_TRF("V2传输已启动，共 %d 个文件 -> %s"), (int)files.size(), remoteDir.c_str());
+        } else {
+            ShowMessage(_TRF("找不到主连接: %s"), peerIP.c_str());
+        }
+    }
+}
+
+// V2传输: 远程文件下载到本地
+void CFileManagerDlg::OnTransferV2ToLocal()
+{
+    // 收集远程选中的文件列表
+    std::vector<std::string> remotePaths;
+    POSITION pos = m_list_remote.GetFirstSelectedItemPosition();
+    while (pos) {
+        int nItem = m_list_remote.GetNextSelectedItem(pos);
+        CString itemText = m_list_remote.GetItemText(nItem, 0);
+
+        // 跳过".."
+        if (itemText == "..")
+            continue;
+
+        CString file = m_Remote_Path + itemText;
+
+        // 如果是目录，添加结尾的反斜杠
+        if (m_list_remote.GetItemData(nItem)) {
+            file += '\\';
+        }
+        remotePaths.push_back(file.GetString());
+    }
+
+    if (remotePaths.empty()) {
+        MessageBoxAPI_L(m_hWnd, "没有选中任何文件", "提示", MB_OK | MB_ICONINFORMATION);
+        return;
+    }
+
+    // 构建命令包: [cmd:1][targetDir\0][file1\0][file2\0]...[fileN\0][\0]
+    std::vector<char> packet;
+    packet.push_back(CMD_DOWN_FILES_V2);
+
+    // 目标目录（本地当前目录）
+    std::string targetDir = m_Local_Path.GetString();
+    packet.insert(packet.end(), targetDir.begin(), targetDir.end());
+    packet.push_back('\0');
+
+    // 文件列表
+    for (const auto& path : remotePaths) {
+        packet.insert(packet.end(), path.begin(), path.end());
+        packet.push_back('\0');
+    }
+    packet.push_back('\0');  // 双null结束
+
+    // 发送命令
+    m_ContextObject->Send2Client((BYTE*)packet.data(), (DWORD)packet.size());
+    ShowMessage(_TRF("V2下载请求已发送，共 %d 个项目"), (int)remotePaths.size());
+}
+
+// 递归收集目录中的所有文件（包括目录本身）
+void CFileManagerDlg::CollectFilesRecursive(const std::string& dirPath, std::vector<std::string>& files)
+{
+    // 先添加目录本身（去掉末尾的反斜杠）
+    std::string dirEntry = dirPath;
+    if (!dirEntry.empty() && (dirEntry.back() == '\\' || dirEntry.back() == '/')) {
+        dirEntry.pop_back();
+    }
+    files.push_back(dirEntry);
+
+    WIN32_FIND_DATAA wfd;
+    std::string searchPath = dirPath + "*.*";
+
+    HANDLE hFind = FindFirstFileA(searchPath.c_str(), &wfd);
+    if (hFind == INVALID_HANDLE_VALUE)
+        return;
+
+    do {
+        if (wfd.cFileName[0] != '.') {
+            std::string fullPath = dirPath + wfd.cFileName;
+            if (wfd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+                CollectFilesRecursive(fullPath + "\\", files);
+            } else {
+                files.push_back(fullPath);
+            }
+        }
+    } while (FindNextFileA(hFind, &wfd));
+
+    FindClose(hFind);
 }

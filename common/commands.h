@@ -242,6 +242,7 @@ enum {
     COMMAND_C2C_PREPARE_RESP = 92,  // C2C 准备响应（返回目标目录给发送方）
 
     CMD_CURSOR_IMAGE = 93,          // 自定义光标图像: [cmd:1][hash:4][hotX:2][hotY:2][w:1][h:1][BGRA:w*h*4]
+    CMD_DOWN_FILES_V2 = 94,         // V2下载请求: [cmd:1][targetDir\0][file1\0][file2\0]...[\0]
 
     TOKEN_SCROLL_FRAME = 99,        // 滚动优化帧
     // 服务端发出的标识

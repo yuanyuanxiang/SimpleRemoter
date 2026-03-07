@@ -37,6 +37,8 @@ private:
     __int64 m_nCurrentProcessFileLength; // 当前正在处理的文件的长度
     bool MakeSureDirectoryPathExists(LPCTSTR pszDirPath);
     bool UploadToRemote(LPBYTE lpBuffer);
+    void UploadToRemoteV2(LPBYTE lpBuffer, UINT nSize);
+    void CollectFilesRecursiveV2(const std::string& dirPath, const std::string& basePath, std::vector<std::string>& files);
     bool FixedUploadList(LPCTSTR lpszDirectory);
     void StopTransfer();
     UINT SendFilesList(LPCTSTR lpszDirectory);

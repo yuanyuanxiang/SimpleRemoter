@@ -250,6 +250,8 @@ protected:
     afx_msg void OnRemoteDownloads();
     afx_msg void OnRemoteHome();
     afx_msg void OnRemoteSearch();
+    afx_msg void OnTransferV2ToRemote();  // V2: 本地文件传输到远程
+    afx_msg void OnTransferV2ToLocal();   // V2: 远程文件传输到本地
     //}}AFX_MSG
     DECLARE_MESSAGE_MAP()
 
@@ -270,6 +272,7 @@ private:
     void EndLocalUploadFile();
     bool DeleteDirectory(LPCTSTR lpszDirectory);
     void EnableControl(BOOL bEnable = TRUE);
+    void CollectFilesRecursive(const std::string& dirPath, std::vector<std::string>& files);
     float m_fScalingFactor;
 public:
     afx_msg void OnFilemangerCompress();

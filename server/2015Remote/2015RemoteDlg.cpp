@@ -1946,7 +1946,8 @@ void CMy2015RemoteDlg::CheckHeartbeat()
             auto host = ContextObject->GetAdditionalData(RES_CLIENT_PUBIP);
             host = host.IsEmpty() ? std::to_string(ContextObject->GetClientID()).c_str() : host;
             Mprintf("Client %s[%llu] heartbeat timeout!!! \n", host, ContextObject->GetClientID());
-            PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg(_TR("主机掉线")),
+            if (m_needNotify)
+                PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg(_TR("主机掉线")),
                          (LPARAM)new CharMsg(_TR("主机长时间无心跳: ") + host));
             PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(_TR("[主机下线] 主机长时间无心跳: ") + host), NULL);
             Mprintf("主机 %s[%llu]心跳超时\n", host, ContextObject->GetClientID());
@@ -4034,7 +4035,7 @@ static bool SendFileChunkToClientV2(void* user, FileChunkPacketV2* chunk, unsign
     return sent != FALSE;
 }
 
-void CMy2015RemoteDlg::SendFilesToClientV2(context* mainCtx, const std::vector<std::string>& files)
+void CMy2015RemoteDlg::SendFilesToClientV2(context* mainCtx, const std::vector<std::string>& files, const std::string& targetDir)
 {
     if (!mainCtx || files.empty()) return;
 
@@ -4055,15 +4056,15 @@ void CMy2015RemoteDlg::SendFilesToClientV2(context* mainCtx, const std::vector<s
 
     if (existingTransferID) {
         // 复用已有的 transferID，无需等待客户端响应偏移（客户端会通过 COMMAND_FILE_QUERY_RESUME 回复）
-        SendFilesToClientV2Internal(mainCtx, files, existingTransferID, {});
+        SendFilesToClientV2Internal(mainCtx, files, existingTransferID, {}, targetDir);
     } else {
-        SendFilesToClientV2Internal(mainCtx, files, 0, {});
+        SendFilesToClientV2Internal(mainCtx, files, 0, {}, targetDir);
     }
 }
 
 // 内部实现，支持断点续传
 void CMy2015RemoteDlg::SendFilesToClientV2Internal(context* mainCtx, const std::vector<std::string>& files,
-    uint64_t resumeTransferID, const std::map<uint32_t, uint64_t>& startOffsets)
+    uint64_t resumeTransferID, const std::map<uint32_t, uint64_t>& startOffsets, const std::string& targetDir)
 {
     if (!mainCtx || files.empty()) return;
 
@@ -4091,8 +4092,8 @@ void CMy2015RemoteDlg::SendFilesToClientV2Internal(context* mainCtx, const std::
         Mprintf("【V2传输】 保存传输状态, transferID=%llu, files=%zu\n", transferID, files.size());
     }
 
-    // 先通知客户端准备接收（捕获当前目录）- 续传时不需要
-    if (!resumeTransferID) {
+    // 先通知客户端准备接收（捕获当前目录）- 续传时或已指定目标目录时不需要
+    if (!resumeTransferID && targetDir.empty()) {
         C2CPreparePacket prepare = {};
         prepare.cmd = COMMAND_C2C_PREPARE;
         prepare.transferID = transferID;
@@ -4123,11 +4124,11 @@ void CMy2015RemoteDlg::SendFilesToClientV2Internal(context* mainCtx, const std::
     }
 
     // 在新线程中发送文件
-    std::thread([this, clientID, files, transferID, dlg, startOffsets, resumeTransferID]() {
+    std::thread([this, clientID, files, transferID, dlg, startOffsets, resumeTransferID, targetDir]() {
         // 等待客户端准备/响应
         if (resumeTransferID) {
             Sleep(500);  // 等待续传响应
-        } else {
+        } else if (targetDir.empty()) {
             Sleep(200);  // 等待 COMMAND_C2C_PREPARE 处理完成
         }
 
@@ -4162,7 +4163,7 @@ void CMy2015RemoteDlg::SendFilesToClientV2Internal(context* mainCtx, const std::
 
         // 使用包含对话框的回调数据（用clientID而不是指针）
         SendV2CallbackData cbData = { clientID, dlg };
-        int result = FileBatchTransferWorkerV2(files, "", &cbData, SendFileChunkToClientV2, nullptr, hash, hmac, opts);
+        int result = FileBatchTransferWorkerV2(files, targetDir, &cbData, SendFileChunkToClientV2, nullptr, hash, hmac, opts);
 
         // 检查最终结果：传输函数返回0且客户端仍在线才算成功
         bool success = (result == 0) && (FindHost(clientID) != nullptr);

