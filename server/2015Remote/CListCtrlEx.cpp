@@ -43,6 +43,19 @@ void CListCtrlEx::SetConfigKey(const CString& strKey)
     m_strConfigKey = strKey;
 }
 
+void CListCtrlEx::PreSubclassWindow()
+{
+    CListCtrl::PreSubclassWindow();
+
+    // 虚拟列表模式必须在窗口创建后立即设置
+    if (m_bVirtualMode) {
+        // 使用 SetWindowLong 直接添加样式（ModifyStyle 对某些样式不起作用）
+        LONG_PTR style = ::GetWindowLongPtr(m_hWnd, GWL_STYLE);
+        style |= LVS_OWNERDATA;
+        ::SetWindowLongPtr(m_hWnd, GWL_STYLE, style);
+    }
+}
+
 int CListCtrlEx::AddColumn(int nCol, LPCTSTR lpszColumnHeading, int nWidth, int nFormat, BOOL bCanHide)
 {
     // 添加到列表控件
@@ -273,7 +286,25 @@ void CListCtrlEx::SaveColumnVisibility()
 BOOL CListCtrlEx::OnEraseBkgnd(CDC* pDC)
 {
     if (m_bSkipEraseBkgnd) {
-        return TRUE;  // 跳过背景擦除，减少闪烁
+        // 只擦除列表底部空白区域，避免残影
+        int nItemCount = GetItemCount();
+        if (nItemCount > 0) {
+            CRect rcItem;
+            // 获取最后一项的矩形
+            if (GetItemRect(nItemCount - 1, &rcItem, LVIR_BOUNDS)) {
+                CRect rcClient;
+                GetClientRect(&rcClient);
+                // 如果最后一项下方有空白区域，擦除它
+                if (rcItem.bottom < rcClient.bottom) {
+                    CRect rcEmpty(rcClient.left, rcItem.bottom, rcClient.right, rcClient.bottom);
+                    pDC->FillSolidRect(&rcEmpty, GetBkColor());
+                }
+            }
+        } else {
+            // 没有项目时，擦除整个背景
+            return CListCtrl::OnEraseBkgnd(pDC);
+        }
+        return TRUE;
     }
     return CListCtrl::OnEraseBkgnd(pDC);
 }

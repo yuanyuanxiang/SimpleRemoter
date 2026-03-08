@@ -6,6 +6,7 @@
 #include "ScreenSpyDlg.h"
 #include "afxdialogex.h"
 #include <imm.h>
+#pragma comment(lib, "imm32.lib")
 #include <WinUser.h>
 #include "CGridDialog.h"
 #include "2015RemoteDlg.h"
@@ -121,7 +122,7 @@ CScreenSpyDlg::CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer, CONTE
         }
     }
     m_FrameID = 0;
-    ImmDisableIME(0);// 禁用输入法
+    // 不在构造函数中禁用 IME，改为在 OnInitDialog 中仅禁用此窗口的 IME
 
     CHAR szFullPath[MAX_PATH];
     GetSystemDirectory(szFullPath, MAX_PATH);
@@ -514,6 +515,14 @@ BOOL CScreenSpyDlg::OnInitDialog()
 {
     __super::OnInitDialog();
     SetIcon(m_hIcon,FALSE);
+
+    // 获取默认 IME 上下文（ImmAssociateContext 返回之前关联的上下文）
+    // 先禁用再恢复，以获取原始上下文句柄
+    m_hOldIMC = ImmAssociateContext(m_hWnd, NULL);
+    if (m_hOldIMC) {
+        ImmAssociateContext(m_hWnd, m_hOldIMC);  // 立即恢复
+    }
+
     DragAcceptFiles(TRUE);
     ChangeWindowMessageFilter(WM_DROPFILES, MSGFLT_ADD);
     ChangeWindowMessageFilter(0x0049, MSGFLT_ADD);
@@ -622,6 +631,10 @@ BOOL CScreenSpyDlg::OnInitDialog()
     }
 
     m_bIsCtrl = m_Settings.ScreenType == USING_VIRTUAL;
+    // 根据初始控制状态设置 IME
+    if (m_bIsCtrl) {
+        ImmAssociateContext(m_hWnd, NULL);  // 控制模式：禁用 IME
+    }
     m_bIsTraceCursor = FALSE;  //不是跟踪
     m_ClientCursorPos.x = 0;
     m_ClientCursorPos.y = 0;
@@ -1529,6 +1542,8 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         m_bIsCtrl = !m_bIsCtrl;
         SysMenu->CheckMenuItem(IDM_CONTROL, m_bIsCtrl ? MF_CHECKED : MF_UNCHECKED);
         SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
+        // 控制模式：禁用本地 IME；查看模式：启用本地 IME
+        ImmAssociateContext(m_hWnd, m_bIsCtrl ? NULL : m_hOldIMC);
         break;
     }
     case IDM_FULLSCREEN: { // 全屏
@@ -2489,6 +2504,8 @@ void CScreenSpyDlg::UpdateCtrlStatus(BOOL ctrl)
 {
     m_bIsCtrl = ctrl;
     SetClassLongPtr(m_hWnd, GCLP_HCURSOR, m_bIsCtrl ? (LONG_PTR)m_hRemoteCursor : (LONG_PTR)LoadCursor(NULL, IDC_NO));
+    // 控制模式：禁用本地 IME；查看模式：启用本地 IME
+    ImmAssociateContext(m_hWnd, m_bIsCtrl ? NULL : m_hOldIMC);
 }
 
 void CScreenSpyDlg::OnDropFiles(HDROP hDropInfo)

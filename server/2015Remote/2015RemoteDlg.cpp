@@ -493,6 +493,7 @@ CMy2015RemoteDlg::~CMy2015RemoteDlg()
 void CMy2015RemoteDlg::DoDataExchange(CDataExchange* pDX)
 {
     __super::DoDataExchange(pDX);
+    m_CList_Online.SetVirtualMode(TRUE);  // 必须在 DDX_Control 前设置
     DDX_Control(pDX, IDC_ONLINE, m_CList_Online);
     DDX_Control(pDX, IDC_MESSAGE, m_CList_Message);
     DDX_Control(pDX, IDC_GROUP_TAB, m_GroupTab);
@@ -507,6 +508,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_WM_TIMER()
     ON_WM_CLOSE()
     ON_NOTIFY(NM_RCLICK, IDC_ONLINE, &CMy2015RemoteDlg::OnNMRClickOnline)
+    ON_NOTIFY(LVN_GETDISPINFO, IDC_ONLINE, &CMy2015RemoteDlg::OnGetDispInfo)
     ON_NOTIFY(HDN_ITEMCLICK, 0, &CMy2015RemoteDlg::OnHdnItemclickList)
     ON_COMMAND(ID_ONLINE_MESSAGE, &CMy2015RemoteDlg::OnOnlineMessage)
     ON_COMMAND(ID_ONLINE_DELETE, &CMy2015RemoteDlg::OnOnlineDelete)
@@ -758,13 +760,14 @@ VOID CMy2015RemoteDlg::InitControl()
     rect.bottom+=20;
     MoveWindow(rect);
     auto style = LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER | LVS_EX_HEADERDRAGDROP | LVS_EX_LABELTIP;
+    // SetVirtualMode 已在 DoDataExchange 中设置
     m_CList_Online.SetConfigKey(_T("OnlineList"));
     for (int i = 0; i<g_Column_Count_Online; ++i) {
         m_CList_Online.AddColumn(i, _L(g_Column_Data_Online[i].szTitle), g_Column_Data_Online[i].nWidth, LVCFMT_CENTER);
         g_Column_Online_Width+=g_Column_Data_Online[i].nWidth;
     }
     m_CList_Online.InitColumns();
-    m_CList_Online.ModifyStyle(0, LVS_SHOWSELALWAYS);
+    m_CList_Online.ModifyStyle(0, LVS_SHOWSELALWAYS);  // LVS_OWNERDATA 由 SetVirtualMode 设置
     m_CList_Online.SetExtendedStyle(style);
     m_CList_Online.SetParent(&m_GroupTab);
     m_CList_Online.ModifyStyle(WS_HSCROLL, 0);
@@ -860,25 +863,33 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
         m_GroupList.insert(groupName);
     }
 
-    for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
-        auto ctx = *i;
-        if (ctx == ContextObject) {
-            LeaveCriticalSection(&m_cs);
-            Mprintf("上线消息 - 主机已经存在 [1]: same context. IP= %s\n", data[ONLINELIST_IP]);
-            return;
-        }
-        if (ctx->GetClientID() == id && !ctx->GetClientData(ONLINELIST_IP).IsEmpty()) {
-            Mprintf("上线消息 - 主机已经存在 [2]: %llu. IP= %s. Path= %s\n", id, data[ONLINELIST_IP], path);
+    // 使用索引快速检查是否已存在
+    auto indexIt = m_ClientIndex.find(id);
+    if (indexIt != m_ClientIndex.end()) {
+        size_t idx = indexIt->second;
+        if (idx < m_HostList.size()) {
+            context* ctx = m_HostList[idx];
+            if (ctx == ContextObject) {
+                LeaveCriticalSection(&m_cs);
+                Mprintf("上线消息 - 主机已经存在 [1]: same context. IP= %s\n", data[ONLINELIST_IP]);
+                return;
+            }
+            if (!ctx->GetClientData(ONLINELIST_IP).IsEmpty()) {
+                Mprintf("上线消息 - 主机已经存在 [2]: %llu. IP= %s. Path= %s\n", id, data[ONLINELIST_IP], path);
 #ifndef _DEBUG
-            LeaveCriticalSection(&m_cs);
-			return; // We may do the multiple client login test in debug mode, so skip this check in debug build
+                LeaveCriticalSection(&m_cs);
+                return;
 #endif
+            }
         }
     }
 
     if (modify)
         m_ClientMap->SaveToFile(GetDbPath());
-    m_HostList.insert(ContextObject);
+
+    // 添加到列表并更新索引
+    m_ClientIndex[id] = m_HostList.size();
+    m_HostList.push_back(ContextObject);
     // 加入待处理队列，由定时器批量更新 UI（减少闪烁）
     if (groupName == m_selectedGroup || (groupName.empty() && m_selectedGroup == "default")) {
         m_PendingOnline.push_back(ContextObject);
@@ -954,7 +965,7 @@ VOID CMy2015RemoteDlg::ShowMessage(CString strType, CString strMsg)
 {
     AUTO_TICK(200, "");
     CTime Timer = CTime::GetCurrentTime();
-    CString strTime= Timer.FormatL("%H:%M:%S");
+    CString strTime = Timer.Format("%Y-%m-%d %H:%M:%S");
 
     m_CList_Message.InsertItem(0, strType);    //向控件中设置数据
     m_CList_Message.SetItemText(0,1,strTime);
@@ -964,9 +975,11 @@ VOID CMy2015RemoteDlg::ShowMessage(CString strType, CString strMsg)
 
     EnterCriticalSection(&m_cs);
     int m_iCount = m_CList_Online.GetItemCount();
+	int totalCount = m_HostList.size();
     LeaveCriticalSection(&m_cs);
 
     strStatusMsg.FormatL("有%d个主机在线",m_iCount);
+    strStatusMsg += CString("[Total: ") + std::to_string(totalCount).c_str() + "]";
     if (m_StatusBar.GetSafeHwnd())
         m_StatusBar.SetPaneText(0,strStatusMsg);   //在状态条上显示文字
 }
@@ -1845,88 +1858,56 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
             m_CList_Online.SetRedraw(FALSE);
         }
 
-        // 处理下线事件（先删除，避免索引变化影响）
+        // 处理下线事件 - 虚拟列表不需要 DeleteItem，m_HostList 已在 OnUserOfflineMsg 中更新
         if (!m_PendingOffline.empty()) {
-            for (int port : m_PendingOffline) {
-                CString portStr;
-                portStr.FormatL("%d", port);
-                int n = m_CList_Online.GetItemCount();
-                for (int i = 0; i < n; ++i) {
-                    CString cur = m_CList_Online.GetItemText(i, ONLINELIST_ADDR);
-                    if (cur == portStr) {
-                        m_CList_Online.DeleteItem(i);
-                        // m_HostList 已在 OnUserOfflineMsg 中移除，此处无需重复
-                        break;
-                    }
-                }
-            }
             m_PendingOffline.clear();
         }
 
-        // 处理上线事件
+        // 处理上线事件 - 虚拟列表只需更新计数
         if (!m_PendingOnline.empty()) {
-            for (context* ctx : m_PendingOnline) {
-                // 检查是否仍在 m_HostList 中（可能已被移除）
-                if (m_HostList.find(ctx) == m_HostList.end()) {
-                    continue;
-                }
-                int i = m_CList_Online.InsertItem(m_CList_Online.GetItemCount(), ctx->GetClientData(ONLINELIST_IP));
-                for (int n = ONLINELIST_ADDR; n <= ONLINELIST_CLIENTTYPE; n++) {
-                    auto data = ctx->GetClientData(n);
-                    auto note = m_ClientMap->GetClientMapData(ctx->GetClientID(), MAP_NOTE);
-                    n == ONLINELIST_COMPUTER_NAME ?
-                    m_CList_Online.SetItemText(i, n, !note.IsEmpty() ? note : data) :
-                    m_CList_Online.SetItemText(i, n, data.IsEmpty() ? "?" : data);
-                }
-                m_CList_Online.SetItemData(i, (DWORD_PTR)ctx);
-            }
             m_PendingOnline.clear();
         }
 
-        // 恢复重绘
+        // 虚拟列表：重建过滤索引并更新项目计数
+        if (hasListChange) {
+            RebuildFilteredIndices();
+            m_CList_Online.SetItemCountExV((int)m_FilteredIndices.size(), LVSICF_NOINVALIDATEALL | LVSICF_NOSCROLL);
+        }
+
+        // 恢复重绘 - 虚拟列表只需刷新可见区域的变化行
         if (hasListChange) {
             m_CList_Online.SetRedraw(TRUE);
-            if (hasOffline) {
-                // 有下线（项目减少），临时允许背景擦除
-                CListCtrlEx::ScopedEraseBkgnd scope(m_CList_Online);
-                m_CList_Online.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_UPDATENOW);
-            } else {
-                // 只有上线（项目增加），普通刷新即可
-                m_CList_Online.Invalidate();
+            // 只需刷新可见范围内的行
+            int topIdx = m_CList_Online.GetTopIndex();
+            int visibleCount = m_CList_Online.GetCountPerPage();
+            int totalCount = (int)m_FilteredIndices.size();
+            int bottomIdx = min(topIdx + visibleCount, totalCount - 1);
+            if (bottomIdx >= topIdx) {
+                m_CList_Online.RedrawItems(topIdx, bottomIdx);
             }
         }
 
-        // 处理心跳更新（只更新变化的数据，避免不必要的重绘导致闪烁）
+        // 处理心跳更新 - 虚拟列表批量刷新（仅刷新变化行，无闪烁）
         if (!m_DirtyClients.empty()) {
-            int n = m_CList_Online.GetItemCount();
+            int minIdx = INT_MAX, maxIdx = -1;
             for (uint64_t id : m_DirtyClients) {
-                for (int i = 0; i < n; ++i) {
-                    context* ctx = (context*)m_CList_Online.GetItemData(i);
-                    if (!ctx) continue;
-                    if (id == ctx->GetClientID()) {
-                        // 只更新变化的列，减少重绘
-                        CString newVal, oldVal;
-
-                        newVal = ctx->GetClientData(ONLINELIST_LOGINTIME);
-                        oldVal = m_CList_Online.GetItemText(i, ONLINELIST_LOGINTIME);
-                        if (newVal != oldVal) {
-                            m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, newVal);
+                auto it = m_ClientIndex.find(id);
+                if (it != m_ClientIndex.end()) {
+                    size_t hostIdx = it->second;
+                    // 在过滤索引中查找显示位置
+                    for (size_t fi = 0; fi < m_FilteredIndices.size(); ++fi) {
+                        if (m_FilteredIndices[fi] == hostIdx) {
+                            int idx = (int)fi;
+                            if (idx < minIdx) minIdx = idx;
+                            if (idx > maxIdx) maxIdx = idx;
+                            break;
                         }
-
-                        newVal = ctx->GetClientData(ONLINELIST_PING);
-                        oldVal = m_CList_Online.GetItemText(i, ONLINELIST_PING);
-                        if (newVal != oldVal) {
-                            m_CList_Online.SetItemText(i, ONLINELIST_PING, newVal);
-                        }
-
-                        newVal = ctx->GetClientData(ONLINELIST_VIDEO);
-                        oldVal = m_CList_Online.GetItemText(i, ONLINELIST_VIDEO);
-                        if (newVal != oldVal) {
-                            m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, newVal);
-                        }
-                        break;
                     }
                 }
+            }
+            // 一次性刷新整个范围
+            if (maxIdx >= 0) {
+                m_CList_Online.RedrawItems(minIdx, maxIdx);
             }
             m_DirtyClients.clear();
         }
@@ -1940,29 +1921,37 @@ void CMy2015RemoteDlg::CheckHeartbeat()
     CLock lock(m_cs);
     auto now = time(0);
     int HEARTBEAT_TIMEOUT = max(30, m_settings.ReportInterval * 3);
-    for (auto it = m_HostList.begin(); it != m_HostList.end(); ) {
-        context* ContextObject = *it;
+
+    // 收集需要删除的 context（避免遍历时修改 vector）
+    std::vector<context*> toRemove;
+    for (context* ContextObject : m_HostList) {
         if (now - ContextObject->GetLastHeartbeat() > HEARTBEAT_TIMEOUT) {
-            auto host = ContextObject->GetAdditionalData(RES_CLIENT_PUBIP);
-            host = host.IsEmpty() ? std::to_string(ContextObject->GetClientID()).c_str() : host;
-            Mprintf("Client %s[%llu] heartbeat timeout!!! \n", host, ContextObject->GetClientID());
-            if (m_needNotify)
-                PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg(_TR("主机掉线")),
-                         (LPARAM)new CharMsg(_TR("主机长时间无心跳: ") + host));
-            PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(_TR("[主机下线] 主机长时间无心跳: ") + host), NULL);
-            Mprintf("主机 %s[%llu]心跳超时\n", host, ContextObject->GetClientID());
-            it = m_HostList.erase(it);
-            // 从待上线队列中移除（防止定时器访问已释放的 context）
-            auto pit = std::find(m_PendingOnline.begin(), m_PendingOnline.end(), ContextObject);
-            if (pit != m_PendingOnline.end()) {
-                m_PendingOnline.erase(pit);
-            }
-            ContextObject->CancelIO();
-            // 使用延迟队列删除，由定时器统一处理刷新
-            m_PendingOffline.push_back(ContextObject->GetPort());
-        } else {
-            ++it;
+            toRemove.push_back(ContextObject);
         }
+    }
+
+    // 批量删除
+    for (context* ContextObject : toRemove) {
+        auto host = ContextObject->GetAdditionalData(RES_CLIENT_PUBIP);
+        host = host.IsEmpty() ? std::to_string(ContextObject->GetClientID()).c_str() : host;
+        Mprintf("Client %s[%llu] heartbeat timeout!!! \n", host, ContextObject->GetClientID());
+        if (m_needNotify)
+            PostMessageA(WM_SHOWNOTIFY, (WPARAM)new CharMsg(_TR("主机掉线")),
+                     (LPARAM)new CharMsg(_TR("主机长时间无心跳: ") + host));
+        PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(_TR("[主机下线] 主机长时间无心跳: ") + host), NULL);
+        Mprintf("主机 %s[%llu]心跳超时\n", host, ContextObject->GetClientID());
+
+        int port = ContextObject->GetPort();
+        RemoveFromHostList(ContextObject);
+
+        // 从待上线队列中移除（防止定时器访问已释放的 context）
+        auto pit = std::find(m_PendingOnline.begin(), m_PendingOnline.end(), ContextObject);
+        if (pit != m_PendingOnline.end()) {
+            m_PendingOnline.erase(pit);
+        }
+        ContextObject->CancelIO();
+        // 使用延迟队列删除，由定时器统一处理刷新
+        m_PendingOffline.push_back(port);
     }
 }
 
@@ -2074,11 +2063,31 @@ void CMy2015RemoteDlg::SortByColumn(int nColumn)
         m_bSortAscending = true;
     }
 
-    // 创建排序信息
-    std::pair<int, bool> sortInfo(m_nSortColumn, m_bSortAscending);
+    // 虚拟列表：对数据源进行排序
     EnterCriticalSection(&m_cs);
-    m_CList_Online.SortItems(CompareFunction, reinterpret_cast<LPARAM>(&sortInfo));
+    int col = m_nSortColumn;
+    bool asc = m_bSortAscending;
+    std::sort(m_HostList.begin(), m_HostList.end(),
+        [col, asc](context* a, context* b) {
+            CString s1 = a ? a->GetClientData(col) : "";
+            CString s2 = b ? b->GetClientData(col) : "";
+            int result = s1.Compare(s2);
+            return asc ? (result < 0) : (result > 0);
+        });
+
+    // 重建索引映射
+    m_ClientIndex.clear();
+    for (size_t i = 0; i < m_HostList.size(); ++i) {
+        if (m_HostList[i]) {
+            m_ClientIndex[m_HostList[i]->GetClientID()] = i;
+        }
+    }
+    // 重建过滤索引
+    RebuildFilteredIndices();
     LeaveCriticalSection(&m_cs);
+
+    // 刷新列表
+    m_CList_Online.Invalidate();
 }
 
 void CMy2015RemoteDlg::OnHdnItemclickList(NMHDR* pNMHDR, LRESULT* pResult)
@@ -2089,6 +2098,54 @@ void CMy2015RemoteDlg::OnHdnItemclickList(NMHDR* pNMHDR, LRESULT* pResult)
     *pResult = 0;
 }
 
+// 虚拟列表数据回调 - 当列表需要显示某行某列的数据时调用
+void CMy2015RemoteDlg::OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult)
+{
+    NMLVDISPINFO* pDispInfo = reinterpret_cast<NMLVDISPINFO*>(pNMHDR);
+    LVITEM* pItem = &pDispInfo->item;
+    int iItem = pItem->iItem;
+
+    // 加锁保护 m_FilteredIndices 和 m_HostList 访问
+    CLock lock(m_cs);
+
+    // 边界检查（使用过滤后的索引）
+    if (iItem < 0 || iItem >= (int)m_FilteredIndices.size()) {
+        *pResult = 0;
+        return;
+    }
+
+    // 通过过滤索引获取实际的 context
+    size_t realIdx = m_FilteredIndices[iItem];
+    if (realIdx >= m_HostList.size()) {
+        *pResult = 0;
+        return;
+    }
+
+    context* ctx = m_HostList[realIdx];
+    if (!ctx) {
+        *pResult = 0;
+        return;
+    }
+
+    // 提供文本数据
+    if (pItem->mask & LVIF_TEXT) {
+        CString text;
+        int nCol = pItem->iSubItem;
+
+        // 备注列特殊处理
+        if (nCol == ONLINELIST_COMPUTER_NAME) {
+            CString note = m_ClientMap->GetClientMapData(ctx->GetClientID(), MAP_NOTE);
+            text = !note.IsEmpty() ? note : ctx->GetClientData(nCol);
+        } else {
+            text = ctx->GetClientData(nCol);
+            if (text.IsEmpty()) text = "?";
+        }
+
+        lstrcpyn(pItem->pszText, text, pItem->cchTextMax);
+    }
+
+    *pResult = 0;
+}
 
 void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
 {
@@ -2187,7 +2244,7 @@ void CMy2015RemoteDlg::OnOnlineUpdate()
     POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
     if (Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-        ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+        ContextObject = GetContextByListIndex(iItem);
     }
     LeaveCriticalSection(&m_cs);
     if (n != 1 || !ContextObject) {
@@ -2272,25 +2329,33 @@ void CMy2015RemoteDlg::OnOnlineDelete()
     SendSelectedCommand(&bToken, sizeof(BYTE));   //Context     PreSending   PostSending
 
     EnterCriticalSection(&m_cs);
-    int iCount = m_CList_Online.GetSelectedCount();
-    for (int i=0; i<iCount; ++i) {
-        POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
-        int iItem = m_CList_Online.GetNextSelectedItem(Pos);
-        CString strIP = m_CList_Online.GetItemText(iItem,ONLINELIST_IP);
-        context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+    // 收集选中的索引（从大到小排序，避免删除时索引变化问题）
+    std::vector<int> selectedItems;
+    POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+    while (Pos) {
+        selectedItems.push_back(m_CList_Online.GetNextSelectedItem(Pos));
+    }
+    std::sort(selectedItems.rbegin(), selectedItems.rend());
+
+    for (int iItem : selectedItems) {
+        context* ctx = GetContextByListIndex(iItem);
         if (!ctx) continue;
-        m_CList_Online.DeleteItem(iItem);
-        m_HostList.erase(ctx);
+
+        CString strIP = ctx->GetClientData(ONLINELIST_IP);
         auto tm = ctx->GetAliveTime();
         std::string aliveInfo = tm >= 86400 ? floatToString(tm / 86400.f) + " d" :
                                 tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
                                 tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
+        RemoveFromHostList(ctx);
         ctx->Destroy();
         strIP += _L(_T("断开连接"));
         ShowMessage(_TR("操作成功"), strIP + "[" + aliveInfo.c_str() + "]");
         Mprintf("%s 断开链接 [%s]\n", strIP, aliveInfo.c_str());
     }
-    // 删除项目后强制刷新背景
+
+    // 虚拟列表：重建过滤索引并更新项目计数
+    RebuildFilteredIndices();
+    m_CList_Online.SetItemCountExV((int)m_FilteredIndices.size(), LVSICF_NOINVALIDATEALL | LVSICF_NOSCROLL);
     {
         CListCtrlEx::ScopedEraseBkgnd scope(m_CList_Online);
         m_CList_Online.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_UPDATENOW);
@@ -2327,9 +2392,11 @@ BOOL CMy2015RemoteDlg::ShouldRemoteControl()
     CString activeWnd, userName;
     if (Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-        ContextObject = (context*)m_CList_Online.GetItemData(iItem);
-        activeWnd = m_CList_Online.GetItemText(iItem, ONLINELIST_LOGINTIME);
-        userName = ContextObject->GetAdditionalData(RES_USERNAME);
+        ContextObject = GetContextByListIndex(iItem);
+        if (ContextObject) {
+            activeWnd = ContextObject->GetClientData(ONLINELIST_LOGINTIME);
+            userName = ContextObject->GetAdditionalData(RES_USERNAME);
+        }
     }
     LeaveCriticalSection(&m_cs);
     if (count == 1 && userName != "SYSTEM" && activeWnd.Find("Locked") == 0) {
@@ -2539,7 +2606,7 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength, cont
     POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
     while(Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-        context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+        context* ContextObject = GetContextByListIndex(iItem);
         if (!ContextObject) continue;
         if (!ContextObject->IsLogin() && szBuffer[0] != COMMAND_BYE)
             continue;
@@ -2559,8 +2626,7 @@ VOID CMy2015RemoteDlg::SendSelectedCommand(PBYTE  szBuffer, ULONG ulLength, cont
 VOID CMy2015RemoteDlg::SendAllCommand(PBYTE  szBuffer, ULONG ulLength)
 {
     EnterCriticalSection(&m_cs);
-    for (int i=0; i<m_CList_Online.GetItemCount(); ++i) {
-        context* ContextObject = (context*)m_CList_Online.GetItemData(i);
+    for (context* ContextObject : m_HostList) {
         if (!ContextObject) continue;
         if (!ContextObject->IsLogin() && szBuffer[0] != COMMAND_BYE)
             continue;
@@ -3788,6 +3854,43 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
 }
 
 
+// 根据列表显示索引获取 context（考虑分组过滤）
+context* CMy2015RemoteDlg::GetContextByListIndex(int iItem)
+{
+    if (iItem < 0 || iItem >= (int)m_FilteredIndices.size()) {
+        return nullptr;
+    }
+    size_t realIdx = m_FilteredIndices[iItem];
+    if (realIdx >= m_HostList.size()) {
+        return nullptr;
+    }
+    return m_HostList[realIdx];
+}
+
+// 从 m_HostList 中移除 context 并更新索引映射
+void CMy2015RemoteDlg::RemoveFromHostList(context* ctx)
+{
+    if (!ctx) return;
+    uint64_t clientID = ctx->GetClientID();
+    auto indexIt = m_ClientIndex.find(clientID);
+    if (indexIt == m_ClientIndex.end()) return;
+
+    size_t idx = indexIt->second;
+    if (idx >= m_HostList.size()) return;
+
+    // 从 vector 中移除
+    m_HostList.erase(m_HostList.begin() + idx);
+    m_ClientIndex.erase(indexIt);
+
+    // 更新后续元素的索引
+    for (size_t i = idx; i < m_HostList.size(); ++i) {
+        context* c = m_HostList[i];
+        if (c) {
+            m_ClientIndex[c->GetClientID()] = i;
+        }
+    }
+}
+
 LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 {
     auto host = FindHost((int)lParam);
@@ -3795,7 +3898,7 @@ LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
     // 加入待处理队列，由定时器批量更新 UI（减少闪烁）
     EnterCriticalSection(&m_cs);
     if (host) {
-        m_HostList.erase(host);
+        RemoveFromHostList(host);
         // 从待上线队列中移除（防止访问已释放的 context）
         auto it = std::find(m_PendingOnline.begin(), m_PendingOnline.end(), host);
         if (it != m_PendingOnline.end()) {
@@ -3934,22 +4037,34 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
     }
 
     CLock L(m_cs);
-    int n = m_CList_Online.GetItemCount();
-    for (int i = 0; i < n; ++i) {
-        context* id = (context*)m_CList_Online.GetItemData(i);
-        if (!id) continue;
-        if (clientID == id->GetClientID()) {
-            // m_CList_Online.SetItemText(i, ONLINELIST_LOGINTIME, hb.ActiveWnd);
-            ctx->SetClientData(ONLINELIST_LOGINTIME, hb.ActiveWnd);
-            if (hb.Ping > 0) {
-                // m_CList_Online.SetItemText(i, ONLINELIST_PING, std::to_string(hb.Ping).c_str());
-                ctx->SetClientData(ONLINELIST_PING, std::to_string(hb.Ping).c_str());
+    // 使用索引快速查找
+    auto indexIt = m_ClientIndex.find(clientID);
+    if (indexIt != m_ClientIndex.end() && indexIt->second < m_HostList.size()) {
+        context* id = m_HostList[indexIt->second];
+        if (id) {
+            bool changed = false;
+            // 只在数据变化时标记 dirty
+            CString oldActiveWnd = ctx->GetClientData(ONLINELIST_LOGINTIME);
+            if (oldActiveWnd != hb.ActiveWnd) {
+                ctx->SetClientData(ONLINELIST_LOGINTIME, hb.ActiveWnd);
+                changed = true;
             }
-            // m_CList_Online.SetItemText(i, ONLINELIST_VIDEO, hb.HasSoftware ? _TR("有") : _TR("无"));
-            ctx->SetClientData(ONLINELIST_VIDEO, hb.HasSoftware ? _TR("有") : _TR("无"));
+            if (hb.Ping > 0) {
+                CString newPing = std::to_string(hb.Ping).c_str();
+                if (ctx->GetClientData(ONLINELIST_PING) != newPing) {
+                    ctx->SetClientData(ONLINELIST_PING, newPing);
+                    changed = true;
+                }
+            }
+            CString newVideo = hb.HasSoftware ? _TR("有") : _TR("无");
+            if (ctx->GetClientData(ONLINELIST_VIDEO) != newVideo) {
+                ctx->SetClientData(ONLINELIST_VIDEO, newVideo);
+                changed = true;
+            }
             id->SetLastHeartbeat(time(0));
-            m_DirtyClients.insert(clientID);
-            return;
+            if (changed) {
+                m_DirtyClients.insert(clientID);
+            }
         }
     }
 }
@@ -4482,7 +4597,7 @@ void CMy2015RemoteDlg::OnMainProxy()
     POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
     while (Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-        context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+        context* ContextObject = GetContextByListIndex(iItem);
         if (!ContextObject) continue;
         BYTE cmd[] = { COMMAND_PROXY };
         ContextObject->Send2Client( cmd, sizeof(cmd));
@@ -4508,10 +4623,11 @@ void CMy2015RemoteDlg::OnOnlineHostnote()
     POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
     while (Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-        context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+        context* ContextObject = GetContextByListIndex(iItem);
         if (!ContextObject) continue;
         m_ClientMap->SetClientMapData(ContextObject->GetClientID(), MAP_NOTE, dlg.m_str);
-        m_CList_Online.SetItemText(iItem, ONLINELIST_COMPUTER_NAME, dlg.m_str);
+        // 虚拟列表：刷新该行以显示新备注
+        m_CList_Online.RedrawItems(iItem, iItem);
         modified = TRUE;
     }
     LeaveCriticalSection(&m_cs);
@@ -4846,7 +4962,7 @@ void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID)
     while (Pos && menuIndex < m_DllList.size()) {
         Buffer* buf = m_DllList[menuIndex]->Data;
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-        context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+        context* ContextObject = GetContextByListIndex(iItem);
         if (!ContextObject) continue;
         ContextObject->Send2Client( buf->Buf(), 1 + sizeof(DllExecuteInfo) );
     }
@@ -4899,12 +5015,10 @@ void CMy2015RemoteDlg::OnOnlineAuthorize()
     std::string ip, machineName, sn;
     EnterCriticalSection(&m_cs);
     int nItem = m_CList_Online.GetNextItem(-1, LVNI_SELECTED);
-    if (nItem >= 0) {
-        context* ctx = (context*)m_CList_Online.GetItemData(nItem);
-        if (ctx) {
-            ip = ctx->GetClientData(ONLINELIST_IP).GetString();
-            machineName = ctx->GetClientData(ONLINELIST_COMPUTER_NAME).GetString();
-        }
+    context* ctx = GetContextByListIndex(nItem);
+    if (ctx) {
+        ip = ctx->GetClientData(ONLINELIST_IP).GetString();
+        machineName = ctx->GetClientData(ONLINELIST_COMPUTER_NAME).GetString();
     }
     LeaveCriticalSection(&m_cs);
 
@@ -4984,11 +5098,12 @@ CString GetElapsedTime(LPCTSTR szBaseTime)
 void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
 {
     LPNMITEMACTIVATE pNMItem = (LPNMITEMACTIVATE)pNMHDR;
+    int iItem = pNMItem->iItem;
 
-    if (pNMItem->iItem >= 0) {
+    CLock lock(m_cs);
+    context* ctx = GetContextByListIndex(iItem);
+    if (ctx) {
         // 获取数据
-        context* ctx = (context*)m_CList_Online.GetItemData(pNMItem->iItem);
-        if (!ctx) return;
         CString res[RES_MAX];
         CString startTime = ctx->GetClientData(ONLINELIST_STARTTIME);
         ctx->GetAdditionalData(res);
@@ -5058,12 +5173,10 @@ void CMy2015RemoteDlg::OnOnlineUnauthorize()
     std::string ip, machineName, sn;
     EnterCriticalSection(&m_cs);
     int nItem = m_CList_Online.GetNextItem(-1, LVNI_SELECTED);
-    if (nItem >= 0) {
-        context* ctx = (context*)m_CList_Online.GetItemData(nItem);
-        if (ctx) {
-            ip = ctx->GetClientData(ONLINELIST_IP).GetString();
-            machineName = ctx->GetClientData(ONLINELIST_COMPUTER_NAME).GetString();
-        }
+    context* ctx = GetContextByListIndex(nItem);
+    if (ctx) {
+        ip = ctx->GetClientData(ONLINELIST_IP).GetString();
+        machineName = ctx->GetClientData(ONLINELIST_COMPUTER_NAME).GetString();
     }
     LeaveCriticalSection(&m_cs);
 
@@ -5382,7 +5495,7 @@ void CMy2015RemoteDlg::OnOnlineAddWatch()
     POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
     while (Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-        context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+        context* ctx = GetContextByListIndex(iItem);
         if (!ctx) continue;
         int r = m_ClientMap->GetClientMapInteger(ctx->GetClientID(), MAP_LEVEL);
         m_ClientMap->SetClientMapInteger(ctx->GetClientID(), MAP_LEVEL, ++r >= 4 ? 0 : r);
@@ -5405,7 +5518,13 @@ void CMy2015RemoteDlg::OnNMCustomdrawOnline(NMHDR* pNMHDR, LRESULT* pResult)
     case CDDS_ITEMPREPAINT: {
         int nRow = static_cast<int>(pLVCD->nmcd.dwItemSpec);
         EnterCriticalSection(&m_cs);
-        context* ctx = (context*)m_CList_Online.GetItemData(nRow);
+        context* ctx = nullptr;
+        if (nRow >= 0 && nRow < (int)m_FilteredIndices.size()) {
+            size_t realIdx = m_FilteredIndices[nRow];
+            if (realIdx < m_HostList.size()) {
+                ctx = m_HostList[realIdx];
+            }
+        }
         LeaveCriticalSection(&m_cs);
         if (!ctx) return;
         int r = m_ClientMap->GetClientMapInteger(ctx->GetClientID(), MAP_LEVEL);
@@ -5425,7 +5544,7 @@ void CMy2015RemoteDlg::OnOnlineRunAsAdmin()
         POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
         while (Pos) {
             int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-            context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+            context* ContextObject = GetContextByListIndex(iItem);
             if (!ContextObject) continue;
             BYTE token = CMD_RUNASADMIN;
             ContextObject->Send2Client(&token, sizeof(token));
@@ -5467,24 +5586,32 @@ void CMy2015RemoteDlg::OnOnlineUninstall()
     SendSelectedCommand(&bToken, sizeof(BYTE));
 
     EnterCriticalSection(&m_cs);
-    int iCount = m_CList_Online.GetSelectedCount();
-    for (int i = 0; i < iCount; ++i) {
-        POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
-        int iItem = m_CList_Online.GetNextSelectedItem(Pos);
-        CString strIP = m_CList_Online.GetItemText(iItem, ONLINELIST_IP);
-        context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+    // 收集选中的索引（从大到小排序，避免删除时索引变化问题）
+    std::vector<int> selectedItems;
+    POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+    while (Pos) {
+        selectedItems.push_back(m_CList_Online.GetNextSelectedItem(Pos));
+    }
+    std::sort(selectedItems.rbegin(), selectedItems.rend());
+
+    for (int iItem : selectedItems) {
+        context* ctx = GetContextByListIndex(iItem);
         if (!ctx) continue;
-        m_CList_Online.DeleteItem(iItem);
-        m_HostList.erase(ctx);
+
+        CString strIP = ctx->GetClientData(ONLINELIST_IP);
         auto tm = ctx->GetAliveTime();
         std::string aliveInfo = tm >= 86400 ? floatToString(tm / 86400.f) + " d" :
                                 tm >= 3600 ? floatToString(tm / 3600.f) + " h" :
                                 tm >= 60 ? floatToString(tm / 60.f) + " m" : floatToString(tm) + " s";
+        RemoveFromHostList(ctx);
         ctx->Destroy();
         strIP += _TR("断开连接");
         ShowMessage(_TR("操作成功"), strIP + "[" + aliveInfo.c_str() + "]");
     }
-    // 删除项目后强制刷新背景
+
+    // 虚拟列表：重建过滤索引并更新项目计数
+    RebuildFilteredIndices();
+    m_CList_Online.SetItemCountExV((int)m_FilteredIndices.size(), LVSICF_NOINVALIDATEALL | LVSICF_NOSCROLL);
     {
         CListCtrlEx::ScopedEraseBkgnd scope(m_CList_Online);
         m_CList_Online.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_UPDATENOW);
@@ -5534,29 +5661,31 @@ void CMy2015RemoteDlg::OnOnlinePrivateScreen()
     SendSelectedCommand(buffer.data(), (ULONG)buffer.size());
 }
 
+void CMy2015RemoteDlg::RebuildFilteredIndices()
+{
+    m_FilteredIndices.clear();
+    for (size_t i = 0; i < m_HostList.size(); ++i) {
+        context* ctx = m_HostList[i];
+        if (!ctx) continue;
+        std::string groupName = ctx->GetGroupName();
+        // 匹配当前分组：空分组视为 "default"
+        if (groupName == m_selectedGroup ||
+            (groupName.empty() && m_selectedGroup == "default")) {
+            m_FilteredIndices.push_back(i);
+        }
+    }
+}
+
 void CMy2015RemoteDlg::LoadListData(const std::string& group)
 {
     m_CList_Online.SetRedraw(FALSE);
-    m_CList_Online.DeleteAllItems();
-    int iCount = 0;
-    for (auto& ctx : m_HostList) {
-        auto g = ctx->GetGroupName();
-        if ((group == _T("default") && g.empty()) || g == group) {
-            CString strIP=ctx->GetClientData(ONLINELIST_IP);
-            auto pubIP = ctx->GetAdditionalData(RES_CLIENT_PUBIP);
-            bool flag = strIP == "127.0.0.1" && !pubIP.IsEmpty();
-            int i = m_CList_Online.InsertItem(m_CList_Online.GetItemCount(), flag ? pubIP : strIP);
-            for (int n = ONLINELIST_ADDR; n <= ONLINELIST_CLIENTTYPE; n++) {
-                auto data = ctx->GetClientData(n);
-                auto note = m_ClientMap->GetClientMapData(ctx->GetClientID(), MAP_NOTE);
-                n == ONLINELIST_COMPUTER_NAME ?
-                m_CList_Online.SetItemText(i, n, !note.IsEmpty() ? note : data) :
-                              m_CList_Online.SetItemText(i, n, data.IsEmpty() ? "?" : data);
-            }
-            m_CList_Online.SetItemData(i, (DWORD_PTR)ctx);
-            iCount++;
-        }
-    }
+
+    // 重建过滤索引
+    RebuildFilteredIndices();
+
+    // 虚拟列表：设置过滤后的项目计数
+    m_CList_Online.SetItemCountExV((int)m_FilteredIndices.size(), LVSICF_NOINVALIDATEALL | LVSICF_NOSCROLL);
+
     m_CList_Online.SetRedraw(TRUE);
     // 临时允许背景擦除，解决残留问题
     {
@@ -5564,7 +5693,8 @@ void CMy2015RemoteDlg::LoadListData(const std::string& group)
         m_CList_Online.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_UPDATENOW);
     }
     CString strStatusMsg;
-    strStatusMsg.FormatL("有%d个主机在线", iCount);
+    strStatusMsg.FormatL("有%d个主机在线", (int)m_FilteredIndices.size());
+    strStatusMsg += CString("[Total: ") + std::to_string(m_HostList.size()).c_str() + "]";
     m_StatusBar.SetPaneText(0, strStatusMsg);
 }
 
@@ -5638,7 +5768,7 @@ void CMy2015RemoteDlg::MachineManage(MachineCommand type)
         POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
         while (Pos) {
             int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-            context* ContextObject = (context*)m_CList_Online.GetItemData(iItem);
+            context* ContextObject = GetContextByListIndex(iItem);
             if (!ContextObject) continue;
             BYTE token[32] = { TOKEN_MACHINE_MANAGE, type };
             ContextObject->Send2Client(token, sizeof(token));
@@ -5851,72 +5981,67 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
             static time_t localCtrlCTime = 0;  // 本地 Ctrl+C 时间，用于区分本地/远程复制
 			static std::vector<std::string> fileList;
             KBDLLHOOKSTRUCT* pKey = (KBDLLHOOKSTRUCT*)lParam;
-            // 先判断是否需要处理的热键
-            bool bNeedCheck = false;
-            if (wParam == WM_SYSKEYDOWN || wParam == WM_SYSKEYUP) {
-                // 所有系统键都需要检查
-                bNeedCheck = true;
-            }
-            // Win 键 (开始菜单、Win+D/E/R/L 等)
-            else if (pKey->vkCode == VK_LWIN || pKey->vkCode == VK_RWIN) {
-                bNeedCheck = true;
-            }
-            // Alt+Tab (切换窗口)
-            else if (pKey->vkCode == VK_TAB && (pKey->flags & LLKHF_ALTDOWN)) {
-                bNeedCheck = true;
-            }
-            // Alt+Esc (循环切换窗口)
-            else if (pKey->vkCode == VK_ESCAPE && (pKey->flags & LLKHF_ALTDOWN)) {
-                bNeedCheck = true;
-            }
-            // Ctrl+Shift+Esc (任务管理器)
-            else if (pKey->vkCode == VK_ESCAPE &&
-                     (GetAsyncKeyState(VK_CONTROL) & 0x8000) &&
-                     (GetAsyncKeyState(VK_SHIFT) & 0x8000)) {
-                bNeedCheck = true;
-            }
-            // Ctrl+Esc (开始菜单)
-            else if (pKey->vkCode == VK_ESCAPE && (GetAsyncKeyState(VK_CONTROL) & 0x8000)) {
-                bNeedCheck = true;
-            }
-            // F12 (调试器热键)
-            else if (pKey->vkCode == VK_F12 || pKey->vkCode == VK_F10) {
-                bNeedCheck = true;
-            }
-            // Print Screen (截图)
-            else if (pKey->vkCode == VK_SNAPSHOT) {
-                bNeedCheck = true;
-            }
-            // Win+Tab (任务视图)
-            else if (pKey->vkCode == VK_TAB &&
-                     (GetAsyncKeyState(VK_LWIN) & 0x8000 || GetAsyncKeyState(VK_RWIN) & 0x8000)) {
-                bNeedCheck = true;
-            }
-            if (bNeedCheck && g_2015RemoteDlg->m_bHookWIN) {
+
+            // 系统热键转发：只在远程桌面窗口处于控制模式时才处理
+            if (g_2015RemoteDlg->m_bHookWIN) {
                 HWND hFore = ::GetForegroundWindow();
                 auto screen = (CScreenSpyDlg*)g_2015RemoteDlg->GetRemoteWindow(hFore);
                 if (screen && screen->m_bIsCtrl) {
-                    MSG msg = { 0 };
-                    msg.hwnd = hFore;
-                    msg.message = (UINT)wParam;
-                    msg.wParam = pKey->vkCode;
-                    msg.lParam = (pKey->scanCode << 16) | 1;
-
-                    if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
-                        msg.lParam |= (1 << 31) | (1 << 30);
+                    // 判断是否是需要转发的系统热键
+                    bool bNeedForward = false;
+                    if (wParam == WM_SYSKEYDOWN || wParam == WM_SYSKEYUP) {
+                        bNeedForward = true;
                     }
-
-                    // 扩展键标志 (bit 24)
-                    if (pKey->flags & LLKHF_EXTENDED) {
-                        msg.lParam |= (1 << 24);
+                    else if (pKey->vkCode == VK_LWIN || pKey->vkCode == VK_RWIN) {
+                        bNeedForward = true;
                     }
+                    else if (pKey->vkCode == VK_TAB && (pKey->flags & LLKHF_ALTDOWN)) {
+                        bNeedForward = true;
+                    }
+                    else if (pKey->vkCode == VK_ESCAPE && (pKey->flags & LLKHF_ALTDOWN)) {
+                        bNeedForward = true;
+                    }
+                    else if (pKey->vkCode == VK_ESCAPE &&
+                             (GetAsyncKeyState(VK_CONTROL) & 0x8000) &&
+                             (GetAsyncKeyState(VK_SHIFT) & 0x8000)) {
+                        bNeedForward = true;
+                    }
+                    else if (pKey->vkCode == VK_ESCAPE && (GetAsyncKeyState(VK_CONTROL) & 0x8000)) {
+                        bNeedForward = true;
+                    }
+                    else if (pKey->vkCode == VK_F12 || pKey->vkCode == VK_F10) {
+                        bNeedForward = true;
+                    }
+                    else if (pKey->vkCode == VK_SNAPSHOT) {
+                        bNeedForward = true;
+                    }
+                    else if (pKey->vkCode == VK_TAB &&
+                             (GetAsyncKeyState(VK_LWIN) & 0x8000 || GetAsyncKeyState(VK_RWIN) & 0x8000)) {
+                        bNeedForward = true;
+                    }
+                    if (bNeedForward) {
+                        MSG msg = { 0 };
+                        msg.hwnd = hFore;
+                        msg.message = (UINT)wParam;
+                        msg.wParam = pKey->vkCode;
+                        msg.lParam = (pKey->scanCode << 16) | 1;
 
-                    msg.time = pKey->time;
-                    msg.pt.x = 0;
-                    msg.pt.y = 0;
-                    screen->SendScaledMouseMessage(&msg, false);
-                    // 返回 1 阻止本地系统处理
-                    return 1;
+                        if (wParam == WM_KEYUP || wParam == WM_SYSKEYUP) {
+                            msg.lParam |= (1 << 31) | (1 << 30);
+                        }
+
+                        // 扩展键标志 (bit 24)
+                        if (pKey->flags & LLKHF_EXTENDED) {
+                            msg.lParam |= (1 << 24);
+                        }
+
+                        msg.time = pKey->time;
+                        msg.pt.x = 0;
+                        msg.pt.y = 0;
+                        screen->SendScaledMouseMessage(&msg, false);
+                        // 返回 1 阻止本地系统处理
+                        return 1;
+                    }
                 }
             }
             // 只在按下时处理
@@ -6196,7 +6321,7 @@ void CMy2015RemoteDlg::OnOnlineInjNotepad()
     POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
     while (Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-        context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+        context* ctx = GetContextByListIndex(iItem);
         if (!ctx) continue;
         if (!ctx->IsLogin())
             continue;
@@ -6366,7 +6491,7 @@ void CMy2015RemoteDlg::ProxyClientTcpPort(bool isStandard)
     const char* validDate = isStandard ? "Jan 29 2026" : "Dec 22 2025";
     while (Pos) {
         int	iItem = m_CList_Online.GetNextSelectedItem(Pos);
-        context* ctx = (context*)m_CList_Online.GetItemData(iItem);
+        context* ctx = GetContextByListIndex(iItem);
         if (!ctx) continue;
         if (!ctx->IsLogin())
             continue;

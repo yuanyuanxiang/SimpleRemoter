@@ -7,6 +7,7 @@
 #include "IOCPServer.h"
 #include <common/location.h>
 #include <map>
+#include <unordered_map>
 #include <mutex>
 #include <vector>
 #include <string>
@@ -206,14 +207,19 @@ public:
     std::vector<int> m_PendingOffline;  // 存储端口号
     CListCtrlEx m_CList_Online;
     CListCtrl   m_CList_Message;
-    std::set<context*> m_HostList;
+    std::vector<context*> m_HostList;              // 虚拟列表数据源（全部客户端）
+    std::unordered_map<uint64_t, size_t> m_ClientIndex;  // clientID -> m_HostList 索引映射
+    std::vector<size_t> m_FilteredIndices;         // 当前分组过滤后的索引列表
     std::set<std::string> m_GroupList;
     std::string m_selectedGroup;
+    void RebuildFilteredIndices();                 // 重建过滤索引
+    context* GetContextByListIndex(int iItem);     // 根据列表索引获取 context（考虑分组过滤）
     void LoadListData(const std::string& group);
     void DeletePopupWindow(BOOL bForce = FALSE);
     void CheckHeartbeat();
     context* FindHost(int port);
     context* FindHost(uint64_t id);
+    void RemoveFromHostList(context* ctx);  // 从 m_HostList 中移除并更新索引
 
     CStatusBar m_StatusBar;          //状态条
     CTrueColorToolBar m_ToolBar;
@@ -267,6 +273,7 @@ public:
     afx_msg void OnSize(UINT nType, int cx, int cy);
     afx_msg void OnExitSizeMove();
     afx_msg void OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult);
+    afx_msg void OnGetDispInfo(NMHDR* pNMHDR, LRESULT* pResult);  // 虚拟列表数据回调
     afx_msg void OnOnlineMessage();
     afx_msg void OnOnlineDelete();
     afx_msg void OnOnlineUpdate();
