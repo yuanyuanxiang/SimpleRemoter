@@ -481,15 +481,16 @@ BOOL ParseReceivedData(CONTEXT_OBJECT * ContextObject, DWORD dwTrans, pfnNotifyP
                             ret = DeCompressedBuffer[0] == TOKEN_LOGIN ? 999 : 1;
                     } else {
                         zlibFailed = true;
-                        ContextObject->CompressMethod = COMPRESS_UNKNOWN;
+                        // 注意：不设置 COMPRESS_UNKNOWN，后续包仍尝试用 ZSTD
                     }
                 } else {
                     zlibFailed = true;
                 }
                 // CompressedBuffer 和 DeCompressedBuffer 都由 CONTEXT_OBJECT 管理，不在此处释放
                 if (zlibFailed) {
-                    Mprintf("[ERROR] ZLIB uncompress failed \n");
-                    throw "Bad Buffer";
+                    Mprintf("[ERROR] uncompress failed: cmd=0x%02X, compressed=%u, original=%u\n",
+                            (unsigned char)CompressedBuffer[0], ulCompressedLength, ulOriginalLength);
+                    throw "Bad Buffer";  // 抛出异常，在 catch 中清理缓冲区
                 }
             } else {
                 break;

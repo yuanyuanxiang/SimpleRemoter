@@ -8,6 +8,8 @@
 #include <imm.h>
 #pragma comment(lib, "imm32.lib")
 #include <WinUser.h>
+#include <mmsystem.h>
+#pragma comment(lib, "winmm.lib")
 #include "CGridDialog.h"
 #include "2015RemoteDlg.h"
 #include <file_upload.h>
@@ -205,6 +207,9 @@ CScreenSpyDlg::~CScreenSpyDlg()
         DestroyCursor(m_hCustomCursor);
         m_hCustomCursor = NULL;
     }
+
+    // 清理音频播放
+    StopAudioPlayback();
 
     SAFE_DELETE(m_pToolbar);
     SAFE_DELETE(m_pStatusInfoWnd);
@@ -457,6 +462,7 @@ BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialog)
     ON_COMMAND(ID_SHOW_STATUS_INFO, &CScreenSpyDlg::OnShowStatusInfo)
     ON_COMMAND(ID_HIDE_STATUS_INFO, &CScreenSpyDlg::OnHideStatusInfo)
     ON_MESSAGE(WM_DISCONNECT, &CScreenSpyDlg::OnDisconnect)
+    ON_MESSAGE(MM_WOM_DONE, &CScreenSpyDlg::OnWaveOutDone)
     ON_WM_DROPFILES()
 END_MESSAGE_MAP()
 
@@ -599,6 +605,10 @@ BOOL CScreenSpyDlg::OnInitDialog()
             qualityMenu.AppendMenuL(MF_STRING, IDM_QUALITY_MINIMAL, "Minimal (8FPS, H264) - 极差/极低带宽");
             SysMenu->AppendMenuL(MF_STRING | MF_POPUP, (UINT_PTR)qualityMenu.Detach(), _T("屏幕质量(&Q)"));
         }
+        // 音频菜单项
+        SysMenu->AppendMenuL(MF_STRING, IDM_AUDIO_TOGGLE, "系统音频(&U)");
+        SysMenu->CheckMenuItem(IDM_AUDIO_TOGGLE, m_Settings.AudioEnabled ? MF_CHECKED : MF_UNCHECKED);
+
         // 初始化勾选状态
         UpdateQualityMenuCheck(SysMenu);
 
@@ -1023,6 +1033,13 @@ VOID CScreenSpyDlg::OnReceiveComplete()
             m_hCustomCursor = hNewCursor;
             m_dwCustomCursorHash = hash;
             Mprintf("[ScreenSpy] 自定义光标已创建: %dx%d, hash=%08X\n", width, height, hash);
+        }
+        break;
+    }
+    case TOKEN_SCREEN_AUDIO: {
+        // 音频数据: [token:1][hasFormat:1][AudioFormat?][data...]
+        if (len > 2) {
+            OnAudioData(szBuffer + 1, len - 1);
         }
         break;
     }
@@ -1781,6 +1798,15 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         }
         ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);
         SysMenu->CheckMenuItem(IDM_ADAPTIVE_SIZE, m_bAdaptiveSize ? MF_CHECKED : MF_UNCHECKED);
+        break;
+    }
+    case IDM_AUDIO_TOGGLE: {
+        m_Settings.AudioEnabled = !m_Settings.AudioEnabled;
+        SendAudioCtrl(m_Settings.AudioEnabled ? CYCLEAUDIO_ENABLE : CYCLEAUDIO_DISABLE, 1);
+        SysMenu->CheckMenuItem(IDM_AUDIO_TOGGLE, m_Settings.AudioEnabled ? MF_CHECKED : MF_UNCHECKED);
+        if (!m_Settings.AudioEnabled) {
+            StopAudioPlayback();
+        }
         break;
     }
     }
@@ -2550,4 +2576,221 @@ void CScreenSpyDlg::OnDropFiles(HDROP hDropInfo)
     DragFinish(hDropInfo);
 
     CDialogBase::OnDropFiles(hDropInfo);
+}
+
+// ========== 音频播放实现 ==========
+
+void CScreenSpyDlg::SendAudioCtrl(BYTE enable, BYTE persist)
+{
+    AudioCtrlCmd cmd;
+    cmd.cmd = CMD_AUDIO_CTRL;
+    cmd.enable = enable;
+    cmd.persist = persist;
+    m_ContextObject->Send2Client((LPBYTE)&cmd, sizeof(cmd));
+    Mprintf("[ScreenSpy] 发送音频控制: enable=%d, persist=%d\n", enable, persist);
+}
+
+BOOL CScreenSpyDlg::InitAudioPlayback(const AudioFormat* fmt)
+{
+    if (m_bAudioPlaying) return TRUE;
+
+    // 设置波形格式
+    memset(&m_AudioFormat, 0, sizeof(m_AudioFormat));
+    m_AudioFormat.wFormatTag = WAVE_FORMAT_PCM;
+    m_AudioFormat.nChannels = fmt->channels;
+    m_AudioFormat.nSamplesPerSec = fmt->sampleRate;
+    m_AudioFormat.wBitsPerSample = fmt->bitsPerSample;
+    m_AudioFormat.nBlockAlign = fmt->blockAlign;
+    m_AudioFormat.nAvgBytesPerSec = fmt->sampleRate * fmt->blockAlign;
+    m_AudioFormat.cbSize = 0;
+
+    // 打开波形输出设备 (使用 CALLBACK_WINDOW 接收播放完成通知)
+    MMRESULT result = waveOutOpen(&m_hWaveOut, WAVE_MAPPER, &m_AudioFormat,
+                                   (DWORD_PTR)m_hWnd, 0, CALLBACK_WINDOW);
+    if (result != MMSYSERR_NOERROR) {
+        Mprintf("[ScreenSpy] waveOutOpen 失败: %d\n", result);
+        return FALSE;
+    }
+
+    // 分配 waveOut 缓冲区
+    for (int i = 0; i < AUDIO_BUFFER_COUNT; i++) {
+        m_pAudioBuf[i] = new BYTE[AUDIO_BUF_SIZE];
+        memset(&m_WaveHdr[i], 0, sizeof(WAVEHDR));
+        m_WaveHdr[i].lpData = (LPSTR)m_pAudioBuf[i];
+        m_WaveHdr[i].dwBufferLength = AUDIO_BUF_SIZE;
+        waveOutPrepareHeader(m_hWaveOut, &m_WaveHdr[i], sizeof(WAVEHDR));
+    }
+
+    // 分配环形缓冲区
+    m_pRingBuf = new BYTE[RING_BUF_SIZE];
+    m_nRingHead = m_nRingTail = m_nRingDataLen = 0;
+    m_nPrebufferCount = 0;
+
+    m_nAudioBufIndex = 0;
+    m_bAudioPlaying = TRUE;
+    Mprintf("[ScreenSpy] 音频播放已初始化: %d Hz, %d ch, %d bit\n",
+            fmt->sampleRate, fmt->channels, fmt->bitsPerSample);
+    return TRUE;
+}
+
+void CScreenSpyDlg::StopAudioPlayback()
+{
+    if (!m_bAudioPlaying) return;
+
+    m_bAudioPlaying = FALSE;
+
+    if (m_hWaveOut) {
+        waveOutReset(m_hWaveOut);
+        for (int i = 0; i < AUDIO_BUFFER_COUNT; i++) {
+            if (m_pAudioBuf[i]) {
+                waveOutUnprepareHeader(m_hWaveOut, &m_WaveHdr[i], sizeof(WAVEHDR));
+                delete[] m_pAudioBuf[i];
+                m_pAudioBuf[i] = nullptr;
+            }
+        }
+        waveOutClose(m_hWaveOut);
+        m_hWaveOut = NULL;
+    }
+
+    // 清理环形缓冲区
+    if (m_pRingBuf) {
+        delete[] m_pRingBuf;
+        m_pRingBuf = nullptr;
+    }
+    m_nRingHead = m_nRingTail = m_nRingDataLen = 0;
+    m_nPrebufferCount = 0;
+
+    Mprintf("[ScreenSpy] 音频播放已停止\n");
+}
+
+void CScreenSpyDlg::OnAudioData(BYTE* pData, UINT32 len)
+{
+    if (len < 1) return;
+
+    // 包计数（仅用于调试，可移除）
+    // static int s_audioPacketCount = 0;
+    // if (++s_audioPacketCount <= 5 || s_audioPacketCount % 500 == 0) {
+    //     Mprintf("[Audio] 收到音频包 #%d, len=%u\n", s_audioPacketCount, len);
+    // }
+
+    BYTE hasFormat = pData[0];
+    UINT32 offset = 1;
+
+    // 如果带有格式信息，初始化播放
+    if (hasFormat && len >= 1 + sizeof(AudioFormat)) {
+        AudioFormat* fmt = (AudioFormat*)(pData + 1);
+        if (!m_bAudioPlaying) {
+            InitAudioPlayback(fmt);
+        }
+        offset = 1 + sizeof(AudioFormat);
+
+        // 检测到音频数据，更新菜单状态
+        if (!m_Settings.AudioEnabled) {
+            m_Settings.AudioEnabled = TRUE;
+            CMenu* SysMenu = GetSystemMenu(FALSE);
+            if (SysMenu) {
+                SysMenu->CheckMenuItem(IDM_AUDIO_TOGGLE, MF_CHECKED);
+            }
+        }
+    }
+
+    if (!m_bAudioPlaying || !m_hWaveOut || !m_pRingBuf) return;
+
+    // 写入环形缓冲区
+    UINT32 audioLen = len - offset;
+    if (audioLen == 0) return;
+
+    // 帧对齐：确保数据量是 blockAlign 的整数倍（通常是4字节：stereo 16-bit）
+    DWORD blockAlign = m_AudioFormat.nBlockAlign;
+    if (blockAlign == 0) blockAlign = 4;  // 默认 stereo 16-bit
+    audioLen = (audioLen / blockAlign) * blockAlign;  // 截断到帧边界
+    if (audioLen == 0) return;
+
+    // 检查环形缓冲区是否有足够空间
+    DWORD freeSpace = RING_BUF_SIZE - m_nRingDataLen;
+    if (audioLen > freeSpace) {
+        // 缓冲区满了，丢弃新数据（避免打断正在播放的音频）
+        // 只写入能放下的部分
+        audioLen = (freeSpace / blockAlign) * blockAlign;
+        if (audioLen == 0) return;
+    }
+
+    // 写入数据（可能需要分两次写入，处理环绕）
+    BYTE* pAudioData = pData + offset;
+    DWORD firstPart = min(audioLen, RING_BUF_SIZE - m_nRingHead);
+    memcpy(m_pRingBuf + m_nRingHead, pAudioData, firstPart);
+    if (audioLen > firstPart) {
+        memcpy(m_pRingBuf, pAudioData + firstPart, audioLen - firstPart);
+    }
+    m_nRingHead = (m_nRingHead + audioLen) % RING_BUF_SIZE;
+    m_nRingDataLen += audioLen;
+
+    // 预缓冲：等待积累足够数据再开始播放
+    if (m_nPrebufferCount < PREBUFFER_TARGET) {
+        m_nPrebufferCount++;
+        if (m_nPrebufferCount < PREBUFFER_TARGET) {
+            return;  // 还没积累够，等待
+        }
+        Mprintf("[Audio] 预缓冲完成，开始播放 (缓冲: %u bytes)\n", m_nRingDataLen);
+    }
+
+    // 填充可用的 waveOut 缓冲区
+    FeedAudioBuffers();
+}
+
+void CScreenSpyDlg::FeedAudioBuffers()
+{
+    if (!m_bAudioPlaying || !m_hWaveOut || !m_pRingBuf) return;
+
+    // 帧对齐参数
+    DWORD blockAlign = m_AudioFormat.nBlockAlign;
+    if (blockAlign == 0) blockAlign = 4;  // 默认 stereo 16-bit
+
+    // 尽可能填满所有空闲的 waveOut 缓冲区
+    for (int i = 0; i < AUDIO_BUFFER_COUNT; i++) {
+        int bufIdx = (m_nAudioBufIndex + i) % AUDIO_BUFFER_COUNT;
+        WAVEHDR* pHdr = &m_WaveHdr[bufIdx];
+
+        // 如果缓冲区正在使用，跳过
+        if (pHdr->dwFlags & WHDR_INQUEUE) continue;
+
+        // 检查环形缓冲区是否有足够数据（至少一帧）
+        if (m_nRingDataLen < blockAlign) break;
+
+        // 计算要读取的数据量（对齐到帧边界）
+        DWORD readLen = min(m_nRingDataLen, (DWORD)AUDIO_BUF_SIZE);
+        readLen = (readLen / blockAlign) * blockAlign;  // 截断到帧边界
+        if (readLen == 0) break;
+
+        // 从环形缓冲区读取（可能需要分两次读取，处理环绕）
+        DWORD firstPart = min(readLen, RING_BUF_SIZE - m_nRingTail);
+        memcpy(m_pAudioBuf[bufIdx], m_pRingBuf + m_nRingTail, firstPart);
+        if (readLen > firstPart) {
+            memcpy(m_pAudioBuf[bufIdx] + firstPart, m_pRingBuf, readLen - firstPart);
+        }
+        m_nRingTail = (m_nRingTail + readLen) % RING_BUF_SIZE;
+        m_nRingDataLen -= readLen;
+
+        // 播放
+        pHdr->dwBufferLength = readLen;
+        MMRESULT mr = waveOutWrite(m_hWaveOut, pHdr, sizeof(WAVEHDR));
+        if (mr != MMSYSERR_NOERROR) {
+            Mprintf("[Audio] waveOutWrite 失败: %d\n", mr);
+        }
+    }
+
+    // 更新下一个缓冲区索引（找到第一个空闲的）
+    for (int i = 0; i < AUDIO_BUFFER_COUNT; i++) {
+        if (!(m_WaveHdr[m_nAudioBufIndex].dwFlags & WHDR_INQUEUE)) break;
+        m_nAudioBufIndex = (m_nAudioBufIndex + 1) % AUDIO_BUFFER_COUNT;
+    }
+}
+
+LRESULT CScreenSpyDlg::OnWaveOutDone(WPARAM wParam, LPARAM lParam)
+{
+    // waveOut 缓冲区播放完成，尝试填充更多数据
+    if (m_bAudioPlaying && m_nRingDataLen > 0) {
+        FeedAudioBuffers();
+    }
+    return 0;
 }

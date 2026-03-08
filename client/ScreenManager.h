@@ -13,6 +13,12 @@
 #include "ScreenSpy.h"
 #include "ScreenCapture.h"
 
+// WASAPI 前向声明 (COM 接口)
+struct IMMDevice;
+struct IAudioClient;
+struct IAudioCaptureClient;
+// WAVEFORMATEX 使用 void* 避免包含头文件
+
 bool LaunchApplication(TCHAR* pszApplicationFilePath, TCHAR* pszDesktopName);
 
 bool IsWindows8orHigher();
@@ -96,6 +102,23 @@ public:
     POINT				m_rclickPoint;     // 右键点击坐标
     HWND				m_rclickWnd;	   // 右键窗口
     int                 m_nSwitchWindowIndex = 0;  // 切换窗口索引
+
+    // ========== 系统音频捕获 (WASAPI Loopback) ==========
+    volatile BOOL       m_bAudioThreadRunning = FALSE;// 音频线程运行标志（独立于视频线程）
+    volatile BOOL       m_bAudioInitialized = FALSE;  // WASAPI 是否已初始化
+    HANDLE              m_hAudioThread = NULL;        // 音频线程句柄
+    HANDLE              m_hAudioEvent = NULL;         // 控制线程挂起/唤醒
+
+    // WASAPI 相关
+    IMMDevice*              m_pAudioDevice = nullptr;
+    IAudioClient*           m_pAudioClient = nullptr;
+    IAudioCaptureClient*    m_pCaptureClient = nullptr;
+    void*                   m_pWaveFormat = nullptr;  // 实际类型: WAVEFORMATEX*
+
+    BOOL InitWASAPILoopback();                        // 初始化 WASAPI Loopback
+    void UninitWASAPI();                              // 释放 WASAPI 资源
+    static DWORD WINAPI AudioThreadProc(LPVOID lpParam);  // 音频捕获线程
+    void HandleAudioCtrl(BYTE enable, BYTE persist);  // 处理音频控制命令
 };
 
 #endif // !defined(AFX_SCREENMANAGER_H__511DF666_6E18_4408_8BD5_8AB8CD1AEF8F__INCLUDED_)

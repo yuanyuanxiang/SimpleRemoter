@@ -26,6 +26,33 @@
 #include <vector>
 #include <algorithm>
 
+// WASAPI 音频捕获
+#include <mmdeviceapi.h>
+#include <audioclient.h>
+#include <functiondiscoverykeys_devpkey.h>
+
+// KSDATAFORMAT_SUBTYPE_IEEE_FLOAT GUID (避免依赖 ksmedia.h)
+static const GUID KSDATAFORMAT_SUBTYPE_IEEE_FLOAT_LOCAL =
+    { 0x00000003, 0x0000, 0x0010, { 0x80, 0x00, 0x00, 0xaa, 0x00, 0x38, 0x9b, 0x71 } };
+
+// 检查 WAVEFORMATEXTENSIBLE 是否为浮点格式
+static BOOL IsFloatFormat(const WAVEFORMATEX* pWaveFmt)
+{
+    if (!pWaveFmt) return FALSE;
+
+    if (pWaveFmt->wFormatTag == WAVE_FORMAT_IEEE_FLOAT) {
+        return TRUE;
+    }
+
+    if (pWaveFmt->wFormatTag == WAVE_FORMAT_EXTENSIBLE &&
+        pWaveFmt->cbSize >= sizeof(WAVEFORMATEXTENSIBLE) - sizeof(WAVEFORMATEX)) {
+        const WAVEFORMATEXTENSIBLE* pWaveFmtEx = (const WAVEFORMATEXTENSIBLE*)pWaveFmt;
+        return IsEqualGUID(pWaveFmtEx->SubFormat, KSDATAFORMAT_SUBTYPE_IEEE_FLOAT_LOCAL);
+    }
+
+    return FALSE;
+}
+
 #pragma comment(lib, "Shlwapi.lib")
 #pragma comment(lib, "wtsapi32.lib")
 
@@ -109,8 +136,14 @@ CScreenManager::CScreenManager(IOCPClient* ClientObject, int n, void* user, BOOL
     m_ScreenSettings.ScrollDetectInterval = cfg.GetInt("settings", "ScrollDetectInterval", 2);  // 默认每2帧
     m_ScreenSettings.QualityLevel = cfg.GetInt("settings", "QualityLevel", QUALITY_ADAPTIVE);  // 默认自适应
     m_ScreenSettings.CpuSpeedup = cfg.GetInt("settings", "CpuSpeedup", 0);
+    m_ScreenSettings.AudioEnabled = cfg.GetInt("settings", "AudioEnabled", 0);  // 默认禁用音频
 
     LoadQualityProfiles();  // 加载质量配置
+
+    // 初始化音频事件和线程（根据配置决定初始状态）
+    m_bAudioThreadRunning = TRUE;
+    m_hAudioEvent = CreateEvent(NULL, FALSE, m_ScreenSettings.AudioEnabled, NULL);
+    m_hAudioThread = __CreateThread(NULL, 0, AudioThreadProc, this, 0, NULL);
 
     m_hWorkThread = __CreateThread(NULL,0, WorkThreadProc,this,0,NULL);
 }
@@ -671,6 +704,20 @@ CScreenManager::~CScreenManager()
     Mprintf("ScreenManager 析构函数\n");
     UninitFileUpload();
     m_bIsWorking = FALSE;
+    m_bAudioThreadRunning = FALSE;  // 停止音频线程
+
+    // 停止音频线程
+    if (m_hAudioEvent) {
+        SetEvent(m_hAudioEvent);  // 唤醒线程使其退出
+    }
+    if (m_hAudioThread) {
+        WaitForSingleObject(m_hAudioThread, 2000);
+        SAFE_CLOSE_HANDLE(m_hAudioThread);
+    }
+    if (m_hAudioEvent) {
+        SAFE_CLOSE_HANDLE(m_hAudioEvent);
+    }
+    UninitWASAPI();
 
     WaitForSingleObject(m_hWorkThread, INFINITE);
     if (m_hWorkThread!=NULL) {
@@ -957,6 +1004,15 @@ VOID CScreenManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
     case CMD_SWITCH_WINDOW: {
         // 切换窗口（类似 Alt+Tab）
         SwitchToNextWindow();
+        break;
+    }
+    case CMD_AUDIO_CTRL: {
+        // 音频控制命令
+        if (ulLength >= 3) {
+            BYTE enable = szBuffer[1];
+            BYTE persist = szBuffer[2];
+            HandleAudioCtrl(enable, persist);
+        }
         break;
     }
     case COMMAND_NEXT: {
@@ -2170,4 +2226,306 @@ void CScreenManager::SaveQualityProfiles()
         cfg.SetInt(section, "algorithm", cur.algorithm);
         cfg.SetInt(section, "bitRate", cur.bitRate);
     }
+}
+
+// ========== WASAPI 系统音频捕获实现 ==========
+
+BOOL CScreenManager::InitWASAPILoopback()
+{
+    if (m_bAudioInitialized) return TRUE;
+
+    HRESULT hr;
+    IMMDeviceEnumerator* pEnumerator = nullptr;
+
+    // 注意：COM 应该由调用线程初始化（音频线程在启动时已初始化）
+
+    // 创建设备枚举器
+    hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL,
+                          __uuidof(IMMDeviceEnumerator), (void**)&pEnumerator);
+    if (FAILED(hr)) {
+        Mprintf("创建 MMDeviceEnumerator 失败: 0x%08X\n", hr);
+        return FALSE;
+    }
+
+    // 获取默认音频输出设备（用于 loopback）
+    hr = pEnumerator->GetDefaultAudioEndpoint(eRender, eConsole, &m_pAudioDevice);
+    pEnumerator->Release();
+    if (FAILED(hr)) {
+        Mprintf("获取默认音频设备失败: 0x%08X\n", hr);
+        return FALSE;
+    }
+
+    // 激活音频客户端
+    hr = m_pAudioDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&m_pAudioClient);
+    if (FAILED(hr)) {
+        Mprintf("激活 IAudioClient 失败: 0x%08X\n", hr);
+        UninitWASAPI();
+        return FALSE;
+    }
+
+    // 获取设备混音格式
+    WAVEFORMATEX* pWaveFormat = nullptr;
+    hr = m_pAudioClient->GetMixFormat(&pWaveFormat);
+    if (FAILED(hr)) {
+        Mprintf("获取混音格式失败: 0x%08X\n", hr);
+        UninitWASAPI();
+        return FALSE;
+    }
+    m_pWaveFormat = pWaveFormat;
+
+    // 检测格式类型
+    const char* formatType = "Unknown";
+    if (pWaveFormat->wFormatTag == WAVE_FORMAT_PCM) {
+        formatType = "PCM";
+    } else if (pWaveFormat->wFormatTag == WAVE_FORMAT_IEEE_FLOAT) {
+        formatType = "IEEE Float";
+    } else if (pWaveFormat->wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
+        formatType = IsFloatFormat(pWaveFormat) ? "Extensible (Float)" : "Extensible (PCM)";
+    }
+    Mprintf("音频格式: %d Hz, %d 声道, %d 位, 类型=%s\n",
+            pWaveFormat->nSamplesPerSec, pWaveFormat->nChannels,
+            pWaveFormat->wBitsPerSample, formatType);
+
+    // 初始化音频客户端（Loopback 模式）
+    // 缓冲区大小 100ms
+    REFERENCE_TIME hnsRequestedDuration = 1000000;  // 100ms in 100-nanosecond units
+    hr = m_pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED,
+                                     AUDCLNT_STREAMFLAGS_LOOPBACK,
+                                     hnsRequestedDuration, 0,
+                                     pWaveFormat, NULL);
+    if (FAILED(hr)) {
+        Mprintf("IAudioClient::Initialize 失败: 0x%08X\n", hr);
+        UninitWASAPI();
+        return FALSE;
+    }
+
+    // 获取捕获客户端
+    hr = m_pAudioClient->GetService(__uuidof(IAudioCaptureClient), (void**)&m_pCaptureClient);
+    if (FAILED(hr)) {
+        Mprintf("获取 IAudioCaptureClient 失败: 0x%08X\n", hr);
+        UninitWASAPI();
+        return FALSE;
+    }
+
+    // 启动捕获
+    hr = m_pAudioClient->Start();
+    if (FAILED(hr)) {
+        Mprintf("启动音频捕获失败: 0x%08X\n", hr);
+        UninitWASAPI();
+        return FALSE;
+    }
+
+    m_bAudioInitialized = TRUE;
+    Mprintf("WASAPI Loopback 初始化成功\n");
+    return TRUE;
+}
+
+void CScreenManager::UninitWASAPI()
+{
+    if (m_pAudioClient) {
+        m_pAudioClient->Stop();
+    }
+    if (m_pCaptureClient) {
+        m_pCaptureClient->Release();
+        m_pCaptureClient = nullptr;
+    }
+    if (m_pAudioClient) {
+        m_pAudioClient->Release();
+        m_pAudioClient = nullptr;
+    }
+    if (m_pWaveFormat) {
+        CoTaskMemFree(m_pWaveFormat);
+        m_pWaveFormat = nullptr;
+    }
+    if (m_pAudioDevice) {
+        m_pAudioDevice->Release();
+        m_pAudioDevice = nullptr;
+    }
+    m_bAudioInitialized = FALSE;
+}
+
+void CScreenManager::HandleAudioCtrl(BYTE enable, BYTE persist)
+{
+    m_ScreenSettings.AudioEnabled = enable;
+
+    // 持久化到客户端配置
+    if (persist) {
+        iniFile cfg(CLIENT_PATH);
+        cfg.SetInt("settings", "AudioEnabled", enable);
+    }
+
+    if (enable) {
+        // 启用音频：唤醒线程（WASAPI 由音频线程自己初始化）
+        if (m_hAudioEvent) {
+            SetEvent(m_hAudioEvent);
+        }
+        Mprintf("音频传输已启用\n");
+    } else {
+        // 禁用音频：线程会自动挂起等待事件
+        Mprintf("音频传输已禁用\n");
+    }
+}
+
+// 将 Float32 样本转换为 Int16 样本
+static inline short FloatToInt16(float sample)
+{
+    // 限制范围 [-1.0, 1.0]
+    if (sample > 1.0f) sample = 1.0f;
+    if (sample < -1.0f) sample = -1.0f;
+    return (short)(sample * 32767.0f);
+}
+
+DWORD WINAPI CScreenManager::AudioThreadProc(LPVOID lpParam)
+{
+    CScreenManager* pThis = (CScreenManager*)lpParam;
+
+    // 线程内初始化 COM
+    HRESULT hrCom = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+
+    // 发送缓冲区：[TOKEN][hasFormat][AudioFormat?][data...]
+    const UINT32 MAX_BUFFER = 64 * 1024;
+    BYTE* pSendBuffer = new BYTE[MAX_BUFFER];
+    short* pPcmBuffer = new short[MAX_BUFFER / 2];  // PCM 转换缓冲区
+    BOOL firstFrame = TRUE;
+
+    Mprintf("音频线程启动\n");
+
+    while (pThis->m_bAudioThreadRunning) {
+        // 如果音频未启用，挂起等待
+        if (!pThis->m_ScreenSettings.AudioEnabled) {
+            firstFrame = TRUE;  // 下次启用时重新发送格式
+            WaitForSingleObject(pThis->m_hAudioEvent, INFINITE);
+            if (!pThis->m_bAudioThreadRunning) break;
+            continue;
+        }
+
+        // 如果 WASAPI 未初始化，尝试初始化（在音频线程中初始化确保 COM 正确）
+        if (!pThis->m_bAudioInitialized || !pThis->m_pCaptureClient) {
+            if (!pThis->InitWASAPILoopback()) {
+                // 初始化失败，等待后重试
+                WaitForSingleObject(pThis->m_hAudioEvent, 1000);
+                continue;
+            }
+        }
+
+        UINT32 packetLength = 0;
+        HRESULT hr = pThis->m_pCaptureClient->GetNextPacketSize(&packetLength);
+        if (FAILED(hr)) {
+            // WASAPI 调用失败，可能是设备状态变化（如切换显示器），重新初始化
+            Mprintf("GetNextPacketSize 失败: 0x%08X，重新初始化 WASAPI\n", hr);
+            pThis->UninitWASAPI();
+            Sleep(100);
+            continue;
+        }
+
+        while (packetLength > 0 && pThis->m_bAudioThreadRunning && pThis->m_ScreenSettings.AudioEnabled) {
+            BYTE* pData = nullptr;
+            UINT32 numFramesAvailable = 0;
+            DWORD flags = 0;
+
+            hr = pThis->m_pCaptureClient->GetBuffer(&pData, &numFramesAvailable, &flags, NULL, NULL);
+            if (FAILED(hr)) {
+                Mprintf("GetBuffer 失败: 0x%08X，重新初始化 WASAPI\n", hr);
+                pThis->UninitWASAPI();
+                break;
+            }
+
+            WAVEFORMATEX* pWaveFmt = (WAVEFORMATEX*)pThis->m_pWaveFormat;
+            if (numFramesAvailable > 0 && pWaveFmt) {
+                UINT32 numChannels = pWaveFmt->nChannels;
+                UINT32 numSamples = numFramesAvailable * numChannels;
+
+                // 判断源格式（使用精确的 SubFormat GUID 检测）
+                BOOL isFloat = IsFloatFormat(pWaveFmt);
+
+                // 检查是否支持的格式
+                if (!isFloat && pWaveFmt->wBitsPerSample != 16) {
+                    // 不支持的格式，跳过
+                    pThis->m_pCaptureClient->ReleaseBuffer(numFramesAvailable);
+                    hr = pThis->m_pCaptureClient->GetNextPacketSize(&packetLength);
+                    if (FAILED(hr)) {
+                        Mprintf("GetNextPacketSize 失败 (内部): 0x%08X，重新初始化 WASAPI\n", hr);
+                        pThis->UninitWASAPI();
+                        break;
+                    }
+                    continue;
+                }
+
+                // 构造发送数据包
+                UINT32 offset = 0;
+                pSendBuffer[offset++] = TOKEN_SCREEN_AUDIO;
+
+                // 首帧带格式信息（始终发送 16-bit PCM 格式）
+                if (firstFrame) {
+                    pSendBuffer[offset++] = 1;  // hasFormat = true
+                    AudioFormat fmt;
+                    fmt.channels = (WORD)numChannels;
+                    fmt.sampleRate = pWaveFmt->nSamplesPerSec;
+                    fmt.bitsPerSample = 16;  // 统一转换为 16-bit
+                    fmt.blockAlign = (WORD)(numChannels * 2);  // 16-bit = 2 bytes per sample
+                    memcpy(pSendBuffer + offset, &fmt, sizeof(AudioFormat));
+                    offset += sizeof(AudioFormat);
+                    firstFrame = FALSE;
+                    Mprintf("发送音频格式: %d Hz, %d ch, 16 bit (源: %d bit %s)\n",
+                            fmt.sampleRate, fmt.channels, pWaveFmt->wBitsPerSample,
+                            isFloat ? "Float" : "PCM");
+                } else {
+                    pSendBuffer[offset++] = 0;  // hasFormat = false
+                }
+
+                // 转换并发送数据（静音帧发送静音数据，保持播放连续性）
+                BYTE* pAudioData = nullptr;
+                UINT32 audioDataSize = 0;
+
+                if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
+                    // 静音帧：发送零数据
+                    audioDataSize = numSamples * sizeof(short);
+                    if (audioDataSize <= MAX_BUFFER / 2) {
+                        memset(pPcmBuffer, 0, audioDataSize);
+                        pAudioData = (BYTE*)pPcmBuffer;
+                    }
+                } else if (isFloat) {
+                    // Float32 -> Int16 转换
+                    float* pFloatData = (float*)pData;
+                    for (UINT32 i = 0; i < numSamples && i < MAX_BUFFER / 2; i++) {
+                        pPcmBuffer[i] = FloatToInt16(pFloatData[i]);
+                    }
+                    pAudioData = (BYTE*)pPcmBuffer;
+                    audioDataSize = numSamples * sizeof(short);
+                } else {
+                    // 已经是 16-bit PCM
+                    pAudioData = pData;
+                    audioDataSize = numFramesAvailable * pWaveFmt->nBlockAlign;
+                }
+
+                // 发送数据
+                if (pAudioData && offset + audioDataSize <= MAX_BUFFER) {
+                    memcpy(pSendBuffer + offset, pAudioData, audioDataSize);
+                    pThis->m_ClientObject->Send2Server((char*)pSendBuffer, offset + audioDataSize);
+                }
+            }
+
+            pThis->m_pCaptureClient->ReleaseBuffer(numFramesAvailable);
+
+            hr = pThis->m_pCaptureClient->GetNextPacketSize(&packetLength);
+            if (FAILED(hr)) {
+                Mprintf("GetNextPacketSize 失败 (循环末): 0x%08X，重新初始化 WASAPI\n", hr);
+                pThis->UninitWASAPI();
+                break;
+            }
+        }
+
+        Sleep(10);  // ~100Hz 采集
+    }
+
+    delete[] pSendBuffer;
+    delete[] pPcmBuffer;
+
+    // 反初始化 COM
+    if (SUCCEEDED(hrCom)) {
+        CoUninitialize();
+    }
+
+    Mprintf("音频线程退出\n");
+    return 0;
 }

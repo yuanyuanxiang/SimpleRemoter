@@ -80,6 +80,7 @@ enum {
     IDM_FAST_STRETCH,           // 快速缩放模式（降低CPU占用）
     IDM_RESTORE_CONSOLE,        // RDP会话归位
     IDM_RESET_VIRTUAL_DESKTOP,  // 重置虚拟桌面
+    IDM_AUDIO_TOGGLE,           // 音频开关
 };
 
 // 状态信息窗口 - 全屏时显示帧率/速度/质量
@@ -134,7 +135,10 @@ class CScreenSpyDlg : public DialogBase
 public:
     CStatusInfoWnd* m_pStatusInfoWnd = nullptr;
     // MaxFPS=20, ScrollDetectInterval=2, Reserved={}, Capabilities=0
-    ScreenSettings m_Settings = { 20, 0, 0, 0, 0, 0, 0, 2, -1, {}, 0 };
+    // MaxFPS=20, CompressThread=0, ScreenStrategy=0, ScreenWidth=0, ScreenHeight=0,
+    // FullScreen=0, RemoteCursor=0, ScrollDetectInterval=2, QualityLevel=-1,
+    // CpuSpeedup=0, ScreenType=0, AudioEnabled=0, Reserved={}, Capabilities=0
+    ScreenSettings m_Settings = { 20, 0, 0, 0, 0, 0, 0, 2, -1, 0, 0, 0, {}, 0 };
 
 public:
     // 快速缩放模式（全局配置，所有实例共享）
@@ -231,6 +235,32 @@ public:
 
     volatile bool m_bResolutionChanging = false;  // 分辨率切换中，阻止解码
 
+    // ========== 音频播放 ==========
+    // m_Settings.AudioEnabled 表示是否启用音频（与客户端同步）
+    BOOL        m_bAudioPlaying = FALSE;     // 音频是否正在播放
+    HWAVEOUT    m_hWaveOut = NULL;           // 波形输出设备句柄
+    WAVEFORMATEX m_AudioFormat = {};         // 音频格式
+    static const int AUDIO_BUFFER_COUNT = 8; // 缓冲区数量（增加到8个）
+    WAVEHDR     m_WaveHdr[AUDIO_BUFFER_COUNT] = {};  // 波形头
+    LPBYTE      m_pAudioBuf[AUDIO_BUFFER_COUNT] = {};// 音频缓冲区
+    int         m_nAudioBufIndex = 0;        // 当前缓冲区索引
+    static const DWORD AUDIO_BUF_SIZE = 8192;  // 8KB 每个缓冲区（更小更频繁）
+
+    // 环形缓冲区（吸收网络抖动）
+    static const DWORD RING_BUF_SIZE = 65536;  // 64KB 环形缓冲区
+    BYTE*       m_pRingBuf = nullptr;        // 环形缓冲区
+    DWORD       m_nRingHead = 0;             // 写入位置
+    DWORD       m_nRingTail = 0;             // 读取位置
+    DWORD       m_nRingDataLen = 0;          // 缓冲数据量
+    int         m_nPrebufferCount = 0;       // 预缓冲计数
+    static const int PREBUFFER_TARGET = 5;   // 预缓冲目标（积累5个包再开始播放，约50ms）
+
+    void OnAudioData(BYTE* pData, UINT32 len);   // 处理音频数据
+    BOOL InitAudioPlayback(const AudioFormat* fmt);  // 初始化音频播放
+    void StopAudioPlayback();                    // 停止音频播放
+    void SendAudioCtrl(BYTE enable, BYTE persist); // 发送音频控制命令
+    void FeedAudioBuffers();                     // 填充音频缓冲区
+
     int  GetClientRTT();                     // 获取客户端RTT(ms)
     void EvaluateQuality();                  // 评估并调整质量
     void ApplyQualityLevel(int level, bool persist = false); // 应用质量等级
@@ -257,6 +287,7 @@ public:
     afx_msg void OnSize(UINT nType, int cx, int cy);
     afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
     afx_msg LRESULT OnDisconnect(WPARAM wParam, LPARAM lParam);
+    afx_msg LRESULT OnWaveOutDone(WPARAM wParam, LPARAM lParam);
     afx_msg void OnExitFullscreen()
     {
         BYTE cmd[4] = { CMD_FULL_SCREEN, m_Settings.FullScreen = FALSE };

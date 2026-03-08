@@ -530,6 +530,9 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength, P
 {
     AUTO_TICK(100, std::to_string(ulOriginalLength));
     assert (ulOriginalLength > 0);
+
+    // 整个发送过程需要加锁，防止多线程（视频+音频）数据交错
+    std::lock_guard<std::mutex> lock(m_Locker);
     {
         int cmd = BYTE(szBuffer[0]);
         //乘以1.001是以最坏的也就是数据压缩后占用的内存空间和原先一样 +12
@@ -544,11 +547,7 @@ BOOL IOCPClient::OnServerSending(const char* szBuffer, ULONG ulOriginalLength, P
 #endif
         BYTE			buf[1024];
         LPBYTE			CompressedBuffer = ulCompressedLength>1024 ? new BYTE[ulCompressedLength] : buf;
-        int	iRet = 0;
-        {
-            std::lock_guard<std::mutex> lock(m_Locker);
-            iRet = compress(CompressedBuffer, &ulCompressedLength, (PBYTE)szBuffer, ulOriginalLength);
-        }
+        int	iRet = compress(CompressedBuffer, &ulCompressedLength, (PBYTE)szBuffer, ulOriginalLength);
         if (Z_FAILED(iRet)) {
             Mprintf("[ERROR] compress failed: srcLen %d, dstLen %d \n", ulOriginalLength, ulCompressedLength);
             if (CompressedBuffer != buf)  delete [] CompressedBuffer;

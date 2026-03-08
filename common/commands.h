@@ -244,6 +244,9 @@ enum {
     CMD_CURSOR_IMAGE = 93,          // 自定义光标图像: [cmd:1][hash:4][hotX:2][hotY:2][w:1][h:1][BGRA:w*h*4]
     CMD_DOWN_FILES_V2 = 94,         // V2下载请求: [cmd:1][targetDir\0][file1\0][file2\0]...[\0]
 
+    CMD_AUDIO_CTRL = 95,            // 音频控制: [cmd:1][enable:1][persist:1]
+    TOKEN_SCREEN_AUDIO = 96,        // 音频数据: [token:1][hasFormat:1][AudioFormat?][data]
+
     TOKEN_SCROLL_FRAME = 99,        // 滚动优化帧
     // 服务端发出的标识
     TOKEN_AUTH = 100,				// 要求验证
@@ -1066,9 +1069,31 @@ typedef struct ScreenSettings {
     int         QualityLevel;               // 偏移 32, 质量等级 (-1=自适应, 0=Ultra, 1=High, ..., 4=Minimal)
     int         CpuSpeedup;                 // 偏移 36, 指令集加速(0: 无, 1: SSE2)
     int         ScreenType;                 // 偏移 40, 屏幕类型(0: GDI, 1: DXGI, 2: Virtual)
-    char        Reserved[52];               // 偏移 44, 保留字段（新能力参数从此处扩展）
+    int         AudioEnabled;               // 偏移 44, 音频传输(0: 禁用, 1: 启用)
+    char        Reserved[48];               // 偏移 48, 保留字段（新能力参数从此处扩展）
     uint32_t    Capabilities;               // 偏移 96, 能力位标志（放最后）
 } ScreenSettings;                           // 总大小 100 字节
+
+// 音频控制常量
+#define CYCLEAUDIO_DISABLE    0             // 停止音频
+#define CYCLEAUDIO_ENABLE     1             // 启动音频
+
+// 音频控制命令结构 (服务端 → 客户端)
+#pragma pack(push, 1)
+struct AudioCtrlCmd {
+    BYTE  cmd;      // CMD_AUDIO_CTRL
+    BYTE  enable;   // 0=关闭, 1=开启
+    BYTE  persist;  // 1=保存到客户端配置
+};
+
+// 音频格式信息 (首次启用时随数据发送)
+struct AudioFormat {
+    WORD  channels;       // 声道数: 1=单声道, 2=立体声
+    DWORD sampleRate;     // 采样率: 44100 或 48000
+    WORD  bitsPerSample;  // 位深度: 16
+    WORD  blockAlign;     // 块对齐: channels * bitsPerSample / 8
+};
+#pragma pack(pop)
 
 #pragma pack(push, 1)
 // 100字节: 运行类型 + 大小 + 调用方式 + DLL名称
