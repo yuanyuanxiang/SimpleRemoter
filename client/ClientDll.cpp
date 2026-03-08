@@ -40,7 +40,8 @@ BOOL IsProcessExit()
 BOOL IsSharedRunning(void* thisApp)
 {
     ClientApp* This = (ClientApp*)thisApp;
-    return (S_CLIENT_NORMAL == g_MyApp.g_bExit) && (S_CLIENT_NORMAL == This->g_bExit);
+    // 只在进程退出时停止分享连接，原服务端的状态变化不应影响分享连接
+    return !IsProcessExit() && (S_CLIENT_NORMAL == This->g_bExit);
 }
 
 BOOL IsClientAppRunning(void* thisApp)
