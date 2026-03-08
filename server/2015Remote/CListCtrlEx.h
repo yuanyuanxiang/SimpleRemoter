@@ -69,11 +69,23 @@ public:
     // 设置列可见性
     void SetColumnVisible(int nCol, BOOL bVisible);
 
+    // 设置虚拟列表模式（必须在窗口创建前调用，或在 DoDataExchange 中调用）
+    void SetVirtualMode(BOOL bVirtual = TRUE) { m_bVirtualMode = bVirtual; }
+    BOOL IsVirtualMode() const { return m_bVirtualMode; }
+
+    // 虚拟列表专用：设置项目数量（绕过 MFC 的 ASSERT）
+    BOOL SetItemCountExV(int iCount, DWORD dwFlags = LVSICF_NOINVALIDATEALL) {
+        ASSERT(m_bVirtualMode);  // 仅虚拟列表模式可用
+        return (BOOL)::SendMessage(m_hWnd, LVM_SETITEMCOUNT, (WPARAM)iCount, (LPARAM)dwFlags);
+    }
+
 protected:
+    virtual void PreSubclassWindow() override;
     std::vector<ColumnInfoEx> m_Columns;    // 列信息
     CString m_strConfigKey;                  // 配置键名
     CHeaderCtrlEx m_HeaderCtrl;              // 子类化的 Header 控件
     BOOL m_bSkipEraseBkgnd = TRUE;           // 是否跳过背景擦除
+    BOOL m_bVirtualMode = FALSE;             // 是否虚拟列表模式
 
     void ShowColumnContextMenu(CPoint pt);
     void ToggleColumnVisibility(int nColumn);

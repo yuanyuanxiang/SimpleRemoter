@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include <imm.h>
 #include "IOCPServer.h"
 #include "..\..\client\CursorInfo.h"
 #include "VideoDlg.h"
@@ -179,6 +180,7 @@ public:
     BOOL  m_bSend;
     ULONG m_ulMsgCount;
     int m_FrameID;
+    HIMC m_hOldIMC = NULL;  // 保存原始 IME 上下文，控制模式切换时使用
     bool m_bHide = false;
     std::string m_strSaveNotice;     // 截图保存路径提示
     ULONGLONG m_nSaveNoticeTime = 0; // 截图提示开始时间
