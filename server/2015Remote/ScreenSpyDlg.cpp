@@ -2590,11 +2590,18 @@ void CScreenSpyDlg::SendAudioCtrl(BYTE enable, BYTE persist)
     Mprintf("[ScreenSpy] 发送音频控制: enable=%d, persist=%d\n", enable, persist);
 }
 
+#if USING_OPUS
+#include "../../compress/opus/opus_wrapper.h"
+#endif
+
 BOOL CScreenSpyDlg::InitAudioPlayback(const AudioFormat* fmt)
 {
     if (m_bAudioPlaying) return TRUE;
 
-    // 设置波形格式
+    // 保存压缩类型
+    m_nAudioCompression = fmt->compression;
+
+    // 设置波形格式 (waveOut 始终使用 PCM)
     memset(&m_AudioFormat, 0, sizeof(m_AudioFormat));
     m_AudioFormat.wFormatTag = WAVE_FORMAT_PCM;
     m_AudioFormat.nChannels = fmt->channels;
@@ -2626,10 +2633,25 @@ BOOL CScreenSpyDlg::InitAudioPlayback(const AudioFormat* fmt)
     m_nRingHead = m_nRingTail = m_nRingDataLen = 0;
     m_nPrebufferCount = 0;
 
+#if USING_OPUS
+    // 初始化 Opus 解码器
+    if (m_nAudioCompression == AUDIO_COMPRESS_OPUS) {
+        COpusDecoder* pDecoder = new COpusDecoder();
+        if (pDecoder->Init(fmt->sampleRate, fmt->channels)) {
+            m_pOpusDecoder = pDecoder;
+            m_pOpusDecodeBuffer = new short[960 * 2 * 2];  // 最大 960 samples * 2 channels * 2 (安全余量)
+            Mprintf("[ScreenSpy] Opus 解码器初始化成功\n");
+        } else {
+            delete pDecoder;
+            Mprintf("[ScreenSpy] Opus 解码器初始化失败\n");
+        }
+    }
+#endif
+
     m_nAudioBufIndex = 0;
     m_bAudioPlaying = TRUE;
-    Mprintf("[ScreenSpy] 音频播放已初始化: %d Hz, %d ch, %d bit\n",
-            fmt->sampleRate, fmt->channels, fmt->bitsPerSample);
+    Mprintf("[ScreenSpy] 音频播放已初始化: %d Hz, %d ch, %d bit, 压缩=%d\n",
+            fmt->sampleRate, fmt->channels, fmt->bitsPerSample, fmt->compression);
     return TRUE;
 }
 
@@ -2659,6 +2681,19 @@ void CScreenSpyDlg::StopAudioPlayback()
     }
     m_nRingHead = m_nRingTail = m_nRingDataLen = 0;
     m_nPrebufferCount = 0;
+
+#if USING_OPUS
+    // 清理 Opus 解码器
+    if (m_pOpusDecoder) {
+        delete (COpusDecoder*)m_pOpusDecoder;
+        m_pOpusDecoder = nullptr;
+    }
+    if (m_pOpusDecodeBuffer) {
+        delete[] m_pOpusDecodeBuffer;
+        m_pOpusDecodeBuffer = nullptr;
+    }
+#endif
+    m_nAudioCompression = 0;
 
     Mprintf("[ScreenSpy] 音频播放已停止\n");
 }
@@ -2696,27 +2731,42 @@ void CScreenSpyDlg::OnAudioData(BYTE* pData, UINT32 len)
 
     if (!m_bAudioPlaying || !m_hWaveOut || !m_pRingBuf) return;
 
-    // 写入环形缓冲区
+    // 获取音频数据
+    BYTE* pAudioData = pData + offset;
     UINT32 audioLen = len - offset;
     if (audioLen == 0) return;
 
-    // 帧对齐：确保数据量是 blockAlign 的整数倍（通常是4字节：stereo 16-bit）
+    // 帧对齐参数
     DWORD blockAlign = m_AudioFormat.nBlockAlign;
     if (blockAlign == 0) blockAlign = 4;  // 默认 stereo 16-bit
-    audioLen = (audioLen / blockAlign) * blockAlign;  // 截断到帧边界
+
+#if USING_OPUS
+    // Opus 解码
+    if (m_nAudioCompression == AUDIO_COMPRESS_OPUS && m_pOpusDecoder && m_pOpusDecodeBuffer) {
+        COpusDecoder* pDecoder = (COpusDecoder*)m_pOpusDecoder;
+        int decodedSamples = pDecoder->Decode(pAudioData, audioLen, m_pOpusDecodeBuffer, 960 * 2);
+        if (decodedSamples > 0) {
+            pAudioData = (BYTE*)m_pOpusDecodeBuffer;
+            audioLen = decodedSamples * m_AudioFormat.nChannels * sizeof(short);
+        } else {
+            return;  // 解码失败，丢弃此包
+        }
+    }
+#endif
+
+    // 帧对齐：确保数据量是 blockAlign 的整数倍
+    audioLen = (audioLen / blockAlign) * blockAlign;
     if (audioLen == 0) return;
 
     // 检查环形缓冲区是否有足够空间
     DWORD freeSpace = RING_BUF_SIZE - m_nRingDataLen;
     if (audioLen > freeSpace) {
         // 缓冲区满了，丢弃新数据（避免打断正在播放的音频）
-        // 只写入能放下的部分
         audioLen = (freeSpace / blockAlign) * blockAlign;
         if (audioLen == 0) return;
     }
 
     // 写入数据（可能需要分两次写入，处理环绕）
-    BYTE* pAudioData = pData + offset;
     DWORD firstPart = min(audioLen, RING_BUF_SIZE - m_nRingHead);
     memcpy(m_pRingBuf + m_nRingHead, pAudioData, firstPart);
     if (audioLen > firstPart) {

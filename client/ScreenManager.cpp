@@ -2375,6 +2375,10 @@ static inline short FloatToInt16(float sample)
     return (short)(sample * 32767.0f);
 }
 
+#if USING_OPUS
+#include "compress/opus/opus_wrapper.h"
+#endif
+
 DWORD WINAPI CScreenManager::AudioThreadProc(LPVOID lpParam)
 {
     CScreenManager* pThis = (CScreenManager*)lpParam;
@@ -2388,7 +2392,18 @@ DWORD WINAPI CScreenManager::AudioThreadProc(LPVOID lpParam)
     short* pPcmBuffer = new short[MAX_BUFFER / 2];  // PCM 转换缓冲区
     BOOL firstFrame = TRUE;
 
+#if USING_OPUS
+    // Opus 编码器和累积缓冲区
+    COpusEncoder opusEncoder;
+    BOOL opusInitialized = FALSE;
+    const int OPUS_FRAME_SIZE = 960;  // 20ms @ 48kHz
+    short* pOpusAccumBuffer = new short[OPUS_FRAME_SIZE * 2];  // 立体声
+    int nAccumSamples = 0;  // 已累积的样本数（每声道）
+    BYTE* pOpusOutBuffer = new BYTE[4000];  // Opus 输出缓冲区
+    Mprintf("音频线程启动 (Opus 压缩启用)\n");
+#else
     Mprintf("音频线程启动\n");
+#endif
 
     while (pThis->m_bAudioThreadRunning) {
         // 如果音频未启用，挂起等待
@@ -2451,58 +2466,118 @@ DWORD WINAPI CScreenManager::AudioThreadProc(LPVOID lpParam)
                     continue;
                 }
 
-                // 构造发送数据包
-                UINT32 offset = 0;
-                pSendBuffer[offset++] = TOKEN_SCREEN_AUDIO;
-
-                // 首帧带格式信息（始终发送 16-bit PCM 格式）
-                if (firstFrame) {
-                    pSendBuffer[offset++] = 1;  // hasFormat = true
-                    AudioFormat fmt;
-                    fmt.channels = (WORD)numChannels;
-                    fmt.sampleRate = pWaveFmt->nSamplesPerSec;
-                    fmt.bitsPerSample = 16;  // 统一转换为 16-bit
-                    fmt.blockAlign = (WORD)(numChannels * 2);  // 16-bit = 2 bytes per sample
-                    memcpy(pSendBuffer + offset, &fmt, sizeof(AudioFormat));
-                    offset += sizeof(AudioFormat);
-                    firstFrame = FALSE;
-                    Mprintf("发送音频格式: %d Hz, %d ch, 16 bit (源: %d bit %s)\n",
-                            fmt.sampleRate, fmt.channels, pWaveFmt->wBitsPerSample,
-                            isFloat ? "Float" : "PCM");
-                } else {
-                    pSendBuffer[offset++] = 0;  // hasFormat = false
-                }
-
-                // 转换并发送数据（静音帧发送静音数据，保持播放连续性）
-                BYTE* pAudioData = nullptr;
-                UINT32 audioDataSize = 0;
+                // 转换 PCM 数据
+                short* pConvertedPcm = pPcmBuffer;
+                UINT32 convertedSamples = numSamples;
 
                 if (flags & AUDCLNT_BUFFERFLAGS_SILENT) {
-                    // 静音帧：发送零数据
-                    audioDataSize = numSamples * sizeof(short);
-                    if (audioDataSize <= MAX_BUFFER / 2) {
-                        memset(pPcmBuffer, 0, audioDataSize);
-                        pAudioData = (BYTE*)pPcmBuffer;
-                    }
+                    // 静音帧：填充零
+                    memset(pPcmBuffer, 0, numSamples * sizeof(short));
                 } else if (isFloat) {
                     // Float32 -> Int16 转换
                     float* pFloatData = (float*)pData;
                     for (UINT32 i = 0; i < numSamples && i < MAX_BUFFER / 2; i++) {
                         pPcmBuffer[i] = FloatToInt16(pFloatData[i]);
                     }
-                    pAudioData = (BYTE*)pPcmBuffer;
-                    audioDataSize = numSamples * sizeof(short);
                 } else {
-                    // 已经是 16-bit PCM
-                    pAudioData = pData;
-                    audioDataSize = numFramesAvailable * pWaveFmt->nBlockAlign;
+                    // 已经是 16-bit PCM，直接使用
+                    pConvertedPcm = (short*)pData;
                 }
 
-                // 发送数据
-                if (pAudioData && offset + audioDataSize <= MAX_BUFFER) {
-                    memcpy(pSendBuffer + offset, pAudioData, audioDataSize);
+#if USING_OPUS
+                // ===== Opus 编码模式 =====
+                // 初始化 Opus 编码器
+                if (!opusInitialized && pWaveFmt->nSamplesPerSec == 48000) {
+                    if (opusEncoder.Init(48000, numChannels, 64000)) {
+                        opusInitialized = TRUE;
+                        Mprintf("Opus 编码器初始化成功: 48000 Hz, %d ch, 64 kbps\n", numChannels);
+                    }
+                }
+
+                if (opusInitialized) {
+                    // 累积样本到 Opus 帧缓冲区
+                    int frameSamples = numFramesAvailable;  // 每声道样本数
+                    int srcOffset = 0;
+
+                    while (srcOffset < (int)numFramesAvailable) {
+                        // 计算可以复制的样本数
+                        int toCopy = min((int)numFramesAvailable - srcOffset, OPUS_FRAME_SIZE - nAccumSamples);
+
+                        // 复制到累积缓冲区
+                        memcpy(pOpusAccumBuffer + nAccumSamples * numChannels,
+                               pConvertedPcm + srcOffset * numChannels,
+                               toCopy * numChannels * sizeof(short));
+                        nAccumSamples += toCopy;
+                        srcOffset += toCopy;
+
+                        // 累积满一帧，编码并发送
+                        if (nAccumSamples >= OPUS_FRAME_SIZE) {
+                            int encodedLen = opusEncoder.Encode(pOpusAccumBuffer, OPUS_FRAME_SIZE,
+                                                                 pOpusOutBuffer, 4000);
+                            if (encodedLen > 0) {
+                                // 构造发送数据包
+                                UINT32 offset = 0;
+                                pSendBuffer[offset++] = TOKEN_SCREEN_AUDIO;
+
+                                if (firstFrame) {
+                                    pSendBuffer[offset++] = 1;  // hasFormat = true
+                                    AudioFormat fmt;
+                                    fmt.channels = (WORD)numChannels;
+                                    fmt.sampleRate = pWaveFmt->nSamplesPerSec;
+                                    fmt.bitsPerSample = 16;
+                                    fmt.blockAlign = (WORD)(numChannels * 2);
+                                    fmt.compression = AUDIO_COMPRESS_OPUS;
+                                    fmt.reserved = 0;
+                                    memcpy(pSendBuffer + offset, &fmt, sizeof(AudioFormat));
+                                    offset += sizeof(AudioFormat);
+                                    firstFrame = FALSE;
+                                    Mprintf("发送音频格式: %d Hz, %d ch, Opus 压缩\n",
+                                            fmt.sampleRate, fmt.channels);
+                                } else {
+                                    pSendBuffer[offset++] = 0;  // hasFormat = false
+                                }
+
+                                // 发送压缩数据
+                                memcpy(pSendBuffer + offset, pOpusOutBuffer, encodedLen);
+                                pThis->m_ClientObject->Send2Server((char*)pSendBuffer, offset + encodedLen);
+                            }
+                            nAccumSamples = 0;
+                        }
+                    }
+                }
+#else
+                // ===== PCM 无压缩模式 =====
+                // 构造发送数据包
+                UINT32 offset = 0;
+                pSendBuffer[offset++] = TOKEN_SCREEN_AUDIO;
+
+                // 首帧带格式信息
+                if (firstFrame) {
+                    pSendBuffer[offset++] = 1;  // hasFormat = true
+                    AudioFormat fmt;
+                    fmt.channels = (WORD)numChannels;
+                    fmt.sampleRate = pWaveFmt->nSamplesPerSec;
+                    fmt.bitsPerSample = 16;
+                    fmt.blockAlign = (WORD)(numChannels * 2);
+                    fmt.compression = AUDIO_COMPRESS_NONE;
+                    fmt.reserved = 0;
+                    memcpy(pSendBuffer + offset, &fmt, sizeof(AudioFormat));
+                    offset += sizeof(AudioFormat);
+                    firstFrame = FALSE;
+                    Mprintf("发送音频格式: %d Hz, %d ch, 16 bit PCM (源: %d bit %s)\n",
+                            fmt.sampleRate, fmt.channels, pWaveFmt->wBitsPerSample,
+                            isFloat ? "Float" : "PCM");
+                } else {
+                    pSendBuffer[offset++] = 0;  // hasFormat = false
+                }
+
+                // 发送 PCM 数据
+                UINT32 audioDataSize = convertedSamples * sizeof(short);
+                if (offset + audioDataSize <= MAX_BUFFER) {
+                    memcpy(pSendBuffer + offset, pConvertedPcm, audioDataSize);
                     pThis->m_ClientObject->Send2Server((char*)pSendBuffer, offset + audioDataSize);
                 }
+#endif
             }
 
             pThis->m_pCaptureClient->ReleaseBuffer(numFramesAvailable);
@@ -2520,6 +2595,12 @@ DWORD WINAPI CScreenManager::AudioThreadProc(LPVOID lpParam)
 
     delete[] pSendBuffer;
     delete[] pPcmBuffer;
+
+#if USING_OPUS
+    delete[] pOpusAccumBuffer;
+    delete[] pOpusOutBuffer;
+    opusEncoder.Destroy();
+#endif
 
     // 反初始化 COM
     if (SUCCEEDED(hrCom)) {

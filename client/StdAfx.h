@@ -16,6 +16,10 @@
 
 #endif
 
+// 是否使用 Opus 音频压缩 (需要 opus 库)
+// 设为 1 启用 Opus 压缩，设为 0 使用 PCM 无压缩
+#define USING_OPUS 1
+
 #if _MSC_VER > 1000
 #pragma once
 #endif // _MSC_VER > 1000

@@ -199,7 +199,7 @@ std::string ReleaseEXE(int resID, const char* name)
 typedef struct SCInfoOld {
     unsigned char aes_key[16];
     unsigned char aes_iv[16];
-    unsigned char data[4 * 1024 * 1024];
+    unsigned char data[8 * 1024 * 1024];
     int len;
 } SCInfoOld;
 
@@ -549,7 +549,7 @@ void CBuildDlg::OnBnClickedOk()
                             struct AES_ctx ctx;
                             AES_init_ctx_iv(&ctx, sc->aes_key, sc->aes_iv);
                             AES_CBC_encrypt_buffer(&ctx, srcData, srcLen);
-                            if (srcLen <= 4 * 1024 * 1024) {
+                            if (srcLen <= 8 * 1024 * 1024) {
                                 memcpy(sc->data, srcData, srcLen);
                                 sc->len = srcLen;
                             }

@@ -255,6 +255,12 @@ public:
     int         m_nPrebufferCount = 0;       // 预缓冲计数
     static const int PREBUFFER_TARGET = 5;   // 预缓冲目标（积累5个包再开始播放，约50ms）
 
+    BYTE        m_nAudioCompression = 0;     // 音频压缩类型 (AudioCompression)
+#if USING_OPUS
+    void*       m_pOpusDecoder = nullptr;    // Opus 解码器
+    short*      m_pOpusDecodeBuffer = nullptr; // Opus 解码输出缓冲区
+#endif
+
     void OnAudioData(BYTE* pData, UINT32 len);   // 处理音频数据
     BOOL InitAudioPlayback(const AudioFormat* fmt);  // 初始化音频播放
     void StopAudioPlayback();                    // 停止音频播放

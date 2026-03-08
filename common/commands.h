@@ -1086,12 +1086,20 @@ struct AudioCtrlCmd {
     BYTE  persist;  // 1=保存到客户端配置
 };
 
+// 音频压缩类型
+enum AudioCompression {
+    AUDIO_COMPRESS_NONE = 0,  // 无压缩 (PCM)
+    AUDIO_COMPRESS_OPUS = 1,  // Opus 压缩
+};
+
 // 音频格式信息 (首次启用时随数据发送)
 struct AudioFormat {
     WORD  channels;       // 声道数: 1=单声道, 2=立体声
     DWORD sampleRate;     // 采样率: 44100 或 48000
     WORD  bitsPerSample;  // 位深度: 16
     WORD  blockAlign;     // 块对齐: channels * bitsPerSample / 8
+    BYTE  compression;    // 压缩类型: AudioCompression
+    BYTE  reserved;       // 保留字节 (对齐)
 };
 #pragma pack(pop)
 
