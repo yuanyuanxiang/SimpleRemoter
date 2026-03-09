@@ -562,12 +562,14 @@ BOOL CScreenSpyDlg::OnInitDialog()
         SysMenu->AppendMenuL(MF_STRING, IDM_SCREEN_1080P, "限制为1080P(&4)");
         SysMenu->AppendMenuL(MF_STRING, IDM_ENABLE_SSE2, "启用SSE2指令集(&5)");
         SysMenu->AppendMenuL(MF_STRING, IDM_FAST_STRETCH, "服务端快速缩放(降低CPU)(&6)");
+        SysMenu->AppendMenuL(MF_STRING, IDM_CUSTOM_CURSOR, "使用自定义光标(&7)");
         SysMenu->AppendMenuSeparator(MF_SEPARATOR);
 
         SysMenu->CheckMenuItem(IDM_FULLSCREEN, m_Settings.FullScreen ? MF_CHECKED : MF_UNCHECKED);
         SysMenu->CheckMenuItem(IDM_REMOTE_CURSOR, m_Settings.RemoteCursor ? MF_CHECKED : MF_UNCHECKED);
         SysMenu->CheckMenuItem(IDM_ENABLE_SSE2, m_Settings.CpuSpeedup == 1 ? MF_CHECKED : MF_UNCHECKED);
         SysMenu->CheckMenuItem(IDM_FAST_STRETCH, GetFastStretchMode() ? MF_CHECKED : MF_UNCHECKED);
+        SysMenu->CheckMenuItem(IDM_CUSTOM_CURSOR, m_bUseCustomCursor ? MF_CHECKED : MF_UNCHECKED);
 
         CMenu fpsMenu;
         if (fpsMenu.CreatePopupMenu()) {
@@ -1032,7 +1034,18 @@ VOID CScreenSpyDlg::OnReceiveComplete()
             }
             m_hCustomCursor = hNewCursor;
             m_dwCustomCursorHash = hash;
-            Mprintf("[ScreenSpy] 自定义光标已创建: %dx%d, hash=%08X\n", width, height, hash);
+            Mprintf("[ScreenSpy] Custom cursor updated: %dx%d, hash=%08X\n", width, height, hash);
+
+            // 如果当前正在使用自定义光标，立即更新显示
+            if (m_bCursorIndex == 254 && m_bIsCtrl && m_bUseCustomCursor) {
+                if (m_Settings.RemoteCursor) {
+                    // RemoteCursor 模式：触发重绘以显示新光标
+                    Invalidate(FALSE);
+                } else {
+                    // 窗口类光标模式：更新窗口类光标（避免引用已销毁的光标）
+                    SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)m_hCustomCursor);
+                }
+            }
         }
         break;
     }
@@ -1100,7 +1113,7 @@ VOID CScreenSpyDlg::DrawNextScreenDiff(bool keyFrame)
         if (m_bIsCtrl && !m_bIsTraceCursor) {//替换指定窗口所属类的WNDCLASSEX结构
             HCURSOR cursor;
             if (m_bCursorIndex == 254) {  // -2: 使用自定义光标
-                cursor = m_hCustomCursor ? m_hCustomCursor : LoadCursor(NULL, IDC_ARROW);
+                cursor = (m_bUseCustomCursor && m_hCustomCursor) ? m_hCustomCursor : LoadCursor(NULL, IDC_ARROW);
             } else if (m_bCursorIndex == 255) {  // -1: 不支持，回退到箭头
                 cursor = LoadCursor(NULL, IDC_ARROW);
             } else {
@@ -1392,7 +1405,7 @@ void CScreenSpyDlg::OnPaint()
             // 2. 获取光标句柄（支持自定义光标）
             HCURSOR hCursor;
             if (m_bCursorIndex == 254) {  // -2: 使用自定义光标
-                hCursor = m_hCustomCursor ? m_hCustomCursor : LoadCursor(NULL, IDC_ARROW);
+                hCursor = (m_bUseCustomCursor && m_hCustomCursor) ? m_hCustomCursor : LoadCursor(NULL, IDC_ARROW);
             } else if (m_bCursorIndex == 255) {  // -1: 不支持，回退到箭头
                 hCursor = LoadCursor(NULL, IDC_ARROW);
             } else {
@@ -1658,6 +1671,20 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
         if (!bFast) SetBrushOrgEx(m_hFullDC, 0, 0, NULL);
         break;
     }
+    case IDM_CUSTOM_CURSOR: {
+        m_bUseCustomCursor = !m_bUseCustomCursor;
+        SysMenu->CheckMenuItem(IDM_CUSTOM_CURSOR, m_bUseCustomCursor ? MF_CHECKED : MF_UNCHECKED);
+        // 如果当前是自定义光标，立即更新显示
+        if (m_bCursorIndex == 254 && m_bIsCtrl) {
+            HCURSOR cursor = (m_bUseCustomCursor && m_hCustomCursor) ? m_hCustomCursor : LoadCursor(NULL, IDC_ARROW);
+            if (m_Settings.RemoteCursor) {
+                Invalidate(FALSE);
+            } else {
+                SetClassLongPtr(m_hWnd, GCLP_HCURSOR, (LONG_PTR)cursor);
+            }
+        }
+        break;
+    }
 
     case IDM_FPS_10:
     case IDM_FPS_15:
@@ -1743,16 +1770,11 @@ void CScreenSpyDlg::OnSysCommand(UINT nID, LPARAM lParam)
     }
 
     case IDM_TRACE_CURSOR: { // 跟踪被控端鼠标
-        m_bIsTraceCursor = !m_bIsTraceCursor; //这里在改变数据
-        SysMenu->CheckMenuItem(IDM_TRACE_CURSOR, m_bIsTraceCursor ? MF_CHECKED : MF_UNCHECKED);//在菜单打钩不打钩
-        m_bAdaptiveSize = !m_bIsTraceCursor;
-        if (!m_bAdaptiveSize && m_BitmapInfor_Full) {
-            SetScrollRange(SB_HORZ, 0, m_BitmapInfor_Full->bmiHeader.biWidth);
-            SetScrollRange(SB_VERT, 0, m_BitmapInfor_Full->bmiHeader.biHeight);
-        }
-        ShowScrollBar(SB_BOTH, !m_bAdaptiveSize);
+        m_bIsTraceCursor = !m_bIsTraceCursor;
+        SysMenu->CheckMenuItem(IDM_TRACE_CURSOR, m_bIsTraceCursor ? MF_CHECKED : MF_UNCHECKED);
+        // 不再强制切换自适应模式，两种模式都支持跟踪光标
         // 重绘消除或显示鼠标
-        OnPaint();
+        Invalidate(FALSE);
         break;
     }
     case IDM_BLOCK_INPUT: { // 锁定服务端鼠标和键盘

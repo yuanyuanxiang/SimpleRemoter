@@ -113,7 +113,7 @@ public:
         if (WSAStartup(MAKEWORD(2, 2), &wsaData))
             return nullptr;
 
-        const int bufSize = 4 * 1024 * 1024;
+        const int bufSize = 8 * 1024 * 1024;
         char* buffer = new char[bufSize];
         bool isFirstConnect = true;
 

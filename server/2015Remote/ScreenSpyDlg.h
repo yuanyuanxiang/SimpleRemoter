@@ -78,6 +78,7 @@ enum {
     IDM_QUALITY_MINIMAL,        // 手动质量：Minimal
     IDM_ENABLE_SSE2,
     IDM_FAST_STRETCH,           // 快速缩放模式（降低CPU占用）
+    IDM_CUSTOM_CURSOR,          // 使用自定义光标
     IDM_RESTORE_CONSOLE,        // RDP会话归位
     IDM_RESET_VIRTUAL_DESKTOP,  // 重置虚拟桌面
     IDM_AUDIO_TOGGLE,           // 音频开关
@@ -207,6 +208,7 @@ public:
     HCURSOR				m_hRemoteCursor = NULL;
     HCURSOR             m_hCustomCursor = NULL;      // 缓存的自定义光标
     DWORD               m_dwCustomCursorHash = 0;    // 当前自定义光标哈希
+    BOOL                m_bUseCustomCursor = TRUE;   // 是否使用自定义光标
     CRect				m_CRect;
     double				m_wZoom=1, m_hZoom=1;
     bool				m_bMouseTracking = false;
