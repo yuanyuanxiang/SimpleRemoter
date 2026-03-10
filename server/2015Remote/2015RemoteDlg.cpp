@@ -169,6 +169,9 @@ void CAboutDlg::DoDataExchange(CDataExchange* pDX)
 BOOL CAboutDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+    // 多语言翻译 - Static控件
+    SetDlgItemText(IDC_STATIC_ABOUTBOX_YamaV12_2340, _TR("Yama，V") + VERSION_STR);
+    SetDlgItemText(IDC_STATIC_ABOUTBOX_Copyleft__2341, _TR("Copyleft (C) 2019—2026"));
 
     // 设置对话框标题和控件文本（解决英语系统乱码问题）
     SetWindowText(_TR("关于YAMA"));
@@ -4948,8 +4951,8 @@ void CMy2015RemoteDlg::OnHelpFeedback()
 void CMy2015RemoteDlg::OnDynamicSubMenu(UINT nID)
 {
     if (m_DllList.size() == 0) {
-        MessageBoxL("请将64位的DLL放于主控程序的 'Plugins' 目录，再来点击此项菜单。"
-                    "\n执行未经测试的代码可能造成程序崩溃。", "提示", MB_ICONINFORMATION);
+        MessageBoxL(_L("请将64位的DLL放于主控程序的 'Plugins' 目录，再来点击此项菜单。")+
+                    _L("\n执行未经测试的代码可能造成程序崩溃。"), "提示", MB_ICONINFORMATION);
         char path[_MAX_PATH];
         GetModuleFileNameA(NULL, path, _MAX_PATH);
         GET_FILEPATH(path, "Plugins");
@@ -6232,8 +6235,8 @@ LRESULT CMy2015RemoteDlg::OnSessionActivatedMsg(WPARAM wParam, LPARAM lParam)
 
 void CMy2015RemoteDlg::OnToolReloadPlugins()
 {
-    if (IDYES!=MessageBoxL("请将64位的DLL放于主控程序的 'Plugins' 目录，是否继续?"
-                           "\n执行未经测试的代码可能造成程序崩溃。", "提示", MB_ICONINFORMATION | MB_YESNO))
+    if (IDYES!=MessageBoxL(_L("请将64位的DLL放于主控程序的 'Plugins' 目录，是否继续?")+
+                           _L("\n执行未经测试的代码可能造成程序崩溃。"), "提示", MB_ICONINFORMATION | MB_YESNO))
         return;
     char path[_MAX_PATH];
     GetModuleFileNameA(NULL, path, _MAX_PATH);
@@ -6532,7 +6535,7 @@ void CMy2015RemoteDlg::OnProxyPortStd()
 void CMy2015RemoteDlg::OnHookWin()
 {
     m_bHookWIN = !m_bHookWIN;
-    MessageBoxL(_L("远程控制时，") + (m_bHookWIN ? "" : "不") + _L("转发系统热键到远程桌面。"),
+    MessageBoxL(_L("远程控制时，") + (m_bHookWIN ? "" : _L("不")) + _L("转发系统热键到远程桌面。"),
                 "提示", MB_ICONINFORMATION);
     THIS_CFG.SetInt("settings", "HookWIN", m_bHookWIN);
     CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
@@ -6573,8 +6576,8 @@ void CMy2015RemoteDlg::OnHistoryClients()
 
 void CMy2015RemoteDlg::OnBackupData()
 {
-    MessageBoxL("如果更换主控IP，必须将主机迁移到新的主控IP名下。注意，更换主控程序的机器可能导致授权失效!"
-                "请将数据库文件拷贝到目标机器，否则将丢失全部备注信息。", "提示", MB_ICONINFORMATION);
+    MessageBoxL(_L("如果更换主控IP，必须将主机迁移到新的主控IP名下。注意，更换主控程序的机器可能导致授权失效!")+
+                _L("请将数据库文件拷贝到目标机器，否则将丢失全部备注信息。"), "提示", MB_ICONINFORMATION);
     std::filesystem::path path = GetDbPath();
     std::filesystem::path dir = path.parent_path();
     ShellExecuteW(NULL, L"open", dir.c_str(), NULL, NULL, SW_SHOWNORMAL);
@@ -6630,8 +6633,8 @@ void CMy2015RemoteDlg::OnChooseLangDir()
 
 void CMy2015RemoteDlg::OnImportData()
 {
-    if (IDOK!=MessageBoxL("导入主控程序的历史主机记录。此操作会覆盖本机的历史记录，请仅在迁移主控程序时进行操作。"
-                          "数据库文件仅用于恢复主机备注信息。是否继续?", "提示",IDOK)) return;
+    if (IDOK!=MessageBoxL(_L("导入主控程序的历史主机记录。此操作会覆盖本机的历史记录，请仅在迁移主控程序时进行操作。")+
+                          _L("数据库文件仅用于恢复主机备注信息。是否继续?"), "提示",IDOK)) return;
     CFileDialog fileDlg(TRUE, NULL, "YAMA.db", OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
                         _T("YAMA DB (*.db)|*.db|All Files (*.*)|*.*||"), AfxGetMainWnd());
     int ret = 0;

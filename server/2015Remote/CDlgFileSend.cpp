@@ -167,8 +167,8 @@ LRESULT CDlgFileSend::OnUpdateFileProgress(WPARAM wParam, LPARAM lParam)
     m_bIsSending ?
     status.FormatL("发送文件(%d/%d): %.2f%%", 1 + pInfo->fileIndex, pInfo->totalFiles, percent):
           status.FormatL("接收文件(%d/%d): %.2f%%", 1 + pInfo->fileIndex, pInfo->totalFiles, percent);
-    SetDlgItemTextA(IDC_STATIC_CURRENTINDEX, status);
-    SetDlgItemTextA(IDC_STATIC_CURRENT_FILE, *pFile);
+    SetDlgItemText(IDC_STATIC_CURRENTINDEX, status);
+    SetDlgItemText(IDC_STATIC_CURRENT_FILE, *pFile);
     m_Progress.SetPos((int)percent);
 
     // 只在第一次显示时置顶，后续更新不抢焦点
@@ -187,8 +187,8 @@ LRESULT CDlgFileSend::OnFinishFileSend(WPARAM wParam, LPARAM lParam)
 {
     BOOL success = (BOOL)lParam;
     m_bIsSending ?
-    SetDlgItemTextA(IDC_STATIC_CURRENTINDEX, success ? "文件发送完成" : "文件发送失败"):
-    SetDlgItemTextA(IDC_STATIC_CURRENTINDEX, success ? "文件接收完成" : "文件接收失败");
+    SetDlgItemText(IDC_STATIC_CURRENTINDEX, success ? _TR("文件发送完成") : _TR("文件发送失败")):
+    SetDlgItemText(IDC_STATIC_CURRENTINDEX, success ? _TR("文件接收完成") : _TR("文件接收失败"));
     if (success)
         m_Progress.SetPos(100);
 
@@ -204,9 +204,12 @@ BOOL CDlgFileSend::OnInitDialog()
 {
     DialogBase::OnInitDialog();
 
+    // 多语言翻译 - Static控件
+    SetDlgItemText(IDC_STATIC_CURRENTINDEX, _TR("发送文件(999/999):"));
+
     SetIcon(m_hIcon, FALSE);
 
-    SetWindowTextA(m_bIsSending ? "发送文件" : "接收文件");
+    SetWindowText(m_bIsSending ? _TR("发送文件") : _TR("接收文件"));
     CMenu* pSysMenu = GetSystemMenu(FALSE);
     if (pSysMenu != nullptr) {
         pSysMenu->EnableMenuItem(SC_CLOSE, MF_BYCOMMAND | MF_GRAYED);

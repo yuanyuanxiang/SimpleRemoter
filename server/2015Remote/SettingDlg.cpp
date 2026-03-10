@@ -86,6 +86,26 @@ END_MESSAGE_MAP()
 BOOL CSettingDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+    // 多语言翻译 - Static控件
+    SetDlgItemText(IDC_STATIC_SET_LISTEN_PORT, _TR("监听端口:"));
+    SetDlgItemText(IDC_STATIC_SET_MAX_CONN, _TR("最大连接数:"));
+    SetDlgItemText(IDC_STATIC_SET_TIP1, _TR("操作提示: 1.监听端口支持填写多个，用英文分号分隔；程序同时监听TCP和UDP，且支持基于UDP的KCP；"));
+    SetDlgItemText(IDC_STATIC_SET_TIP2, _TR("操作提示: 2.如果被控端跨网、地区或国家，务必设置公网IP；勾选FRP反向代理并设置服务端口和 token。"));
+    SetDlgItemText(IDC_STATIC_SET_SCREEN_CAP, _TR("屏幕截图方法:"));
+    SetDlgItemText(IDC_STATIC_SET_IMG_COMP, _TR("图像压缩方法:"));
+    SetDlgItemText(IDC_STATIC_SET_REPORT_INT, _TR("上报间隔:"));
+    SetDlgItemText(IDC_STATIC_SET_SW_DETECT, _TR("软件检测:"));
+    SetDlgItemText(IDC_STATIC_SET_PUBLIC_IP, _TR("公网地址:"));
+    SetDlgItemText(IDC_STATIC_SET_MULTI_MON, _TR("多显示器支持:"));
+    SetDlgItemText(IDC_STATIC_SET_UDP_PARAM, _TR("UDP协议参数:"));
+    SetDlgItemText(IDC_STATIC_SET_FRP_PROXY, _TR("FRP 代理:"));
+    SetDlgItemText(IDC_STATIC_SET_FRP_PORT, _TR("服务端口:"));
+    SetDlgItemText(IDC_STATIC_SET_TOKEN, _TR("token:"));
+    SetDlgItemText(IDC_STATIC_SET_VIDEO_WALL, _TR("多屏上墙:"));
+    SetDlgItemText(IDC_STATIC_SET_DL_PORT, _TR("下载端口:"));
+    SetDlgItemText(IDC_GROUP_SET_GENERAL, _TR("常规设置"));
+    SetDlgItemText(IDC_GROUP_SET_DESKTOP, _TR("桌面管理"));
+    SetDlgItemText(IDC_GROUP_SET_PARAMS, _TR("参数设置"));
 
     // 设置对话框标题和控件文本（解决英语系统乱码问题）
     SetWindowText(_TR("设置"));

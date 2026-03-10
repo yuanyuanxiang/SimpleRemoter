@@ -58,11 +58,15 @@ void CInputDialog::Init2(LPCTSTR name, LPCTSTR defaultValue)
 BOOL CInputDialog::OnInitDialog()
 {
     __super::OnInitDialog();
+    // 多语言翻译 - Static控件
+    SetDlgItemText(IDC_STATIC_SECOND, _TR("另一个输入框:"));
+    SetDlgItemText(IDC_STATIC_TIPINFO, _TR("提示信息"));
+    SetDlgItemText(IDC_STATIC_INPUT_PROMPT, _TR("请输入目录:"));
 
     SetIcon(m_hIcon, FALSE);
 
     SetWindowText(m_sCaption);
-    GetDlgItem(IDC_STATIC)->SetWindowText(m_sPrompt);
+    SetDlgItemText(IDC_STATIC_INPUT_PROMPT, m_sPrompt);
     GetDlgItem(IDC_EDIT_FOLDERNAME)->SetWindowText(m_str);
 
     m_Static2thInput.SetWindowTextA(m_sItemName);

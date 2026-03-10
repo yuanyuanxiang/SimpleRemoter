@@ -48,6 +48,8 @@ END_MESSAGE_MAP()
 BOOL CAudioDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+    // 多语言翻译 - Static控件
+    SetDlgItemText(IDC_STATIC_AUDIO_LISTENING, _TR("正在监听远程声音..."));
 
     SetIcon(m_hIcon,FALSE);
 

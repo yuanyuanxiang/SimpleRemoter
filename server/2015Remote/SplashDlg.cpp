@@ -2,6 +2,7 @@
 #include "SplashDlg.h"
 #include "resource.h"
 #include "2015Remote.h"
+#include "LangManager.h"
 
 BEGIN_MESSAGE_MAP(CSplashDlg, CWnd)
     ON_WM_PAINT()
@@ -12,7 +13,7 @@ END_MESSAGE_MAP()
 
 CSplashDlg::CSplashDlg()
     : m_nProgress(0)
-    , m_strStatus(_T("正在初始化..."))
+    , m_strStatus(_TR("正在初始化..."))
     , m_hIcon(NULL)
 {
 }

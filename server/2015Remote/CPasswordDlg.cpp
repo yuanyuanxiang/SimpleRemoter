@@ -375,6 +375,11 @@ END_MESSAGE_MAP()
 BOOL CPasswordDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+    // 多语言翻译 - Static控件
+    SetDlgItemText(IDC_STATIC_PASSWORD_SERIAL, _TR("序 列 号:"));
+    SetDlgItemText(IDC_STATIC_PASSWORD_TOKEN, _TR("授权口令:"));
+    SetDlgItemText(IDC_STATIC_PASSWORD_METHOD, _TR("授权方式:"));
+    SetDlgItemText(IDC_STATIC_PASSWORD_VERIFY, _TR("验 证 码:"));
 
     // 设置对话框标题和控件文本（解决英语系统乱码问题）
     SetWindowText(_TR("口令"));
@@ -584,6 +589,12 @@ BOOL CPwdGenDlg::OnInitDialog()
     SetDlgItemText(IDC_BUTTON_SAVE_LICENSE, _TR("保存授权"));
     SetDlgItemText(IDCANCEL, _TR("取消"));
     SetDlgItemText(IDC_STATIC_PWD_LABEL, _TR("密  码:"));
+    SetDlgItemText(IDC_STATIC_KEYGEN_VERSION, _TR("版  本:"));
+    SetDlgItemText(IDC_STATIC_KEYGEN_SERIAL, _TR("序列号:"));
+    SetDlgItemText(IDC_STATIC_KEYGEN_EXPIRE, _TR("有效期:"));
+    SetDlgItemText(IDC_STATIC_KEYGEN_CONN, _TR("连接数:"));
+    SetDlgItemText(IDC_STATIC_KEYGEN_TOKEN, _TR("口  令:"));
+    SetDlgItemText(IDC_STATIC_KEYGEN_HMAC_2373, _TR("HMAC:"));
 
     // TODO:  在此添加额外的初始化
     m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_PASSWORD));

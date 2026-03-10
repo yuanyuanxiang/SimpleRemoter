@@ -703,13 +703,146 @@
 // V2 Authorization Private Key
 #define ID_TOOL_V2_PRIVATEKEY           33027
 
+// ==============================================
+// Static控件ID定义 (用于多语言翻译)
+// ==============================================
+
+// IDD_DIALOG_SET (设置对话框)
+#define IDC_STATIC_SET_LISTEN_PORT      2250
+#define IDC_STATIC_SET_MAX_CONN         2251
+#define IDC_STATIC_SET_TIP1             2252
+#define IDC_STATIC_SET_TIP2             2253
+#define IDC_STATIC_SET_SCREEN_CAP       2254
+#define IDC_STATIC_SET_IMG_COMP         2255
+#define IDC_STATIC_SET_REPORT_INT       2256
+#define IDC_STATIC_SET_SW_DETECT        2257
+#define IDC_STATIC_SET_PUBLIC_IP        2258
+#define IDC_STATIC_SET_MULTI_MON        2259
+#define IDC_STATIC_SET_UDP_PARAM        2260
+#define IDC_STATIC_SET_FRP_PROXY        2261
+#define IDC_STATIC_SET_FRP_PORT         2262
+#define IDC_STATIC_SET_TOKEN            2263
+#define IDC_STATIC_SET_VIDEO_WALL       2264
+#define IDC_STATIC_SET_DL_PORT          2265
+#define IDC_GROUP_SET_GENERAL           2266
+#define IDC_GROUP_SET_DESKTOP           2267
+#define IDC_GROUP_SET_PARAMS            2268
+
+// Auto-generated Static Control IDs
+
+// IDD_ABOUTBOX
+#define IDC_STATIC_ABOUTBOX_YamaV12_2340                   2340  // Yama，V1.2.7
+#define IDC_STATIC_ABOUTBOX_Copyleft__2341                 2341  // Copyleft (C) 2019—2026
+
+// IDD_DIALOG_FILE_MANAGER
+#define IDC_STATIC_FILE_MANAGER_LOCAL_PATH                  2342  // 本地路径:
+#define IDC_STATIC_FILE_MANAGER_REMOTE_PATH                  2343  // 远程路径:
+
+// IDD_FILE
+#define IDC_STATIC_FILE_L2_2344                            2344  // (empty)
+
+// IDD_DIALOG_NEWFOLDER
+#define IDC_STATIC_NEWFOLDER_INPUT                     2345  // 输入数据:
+
+// IDD_DIALOG_FILE_COMPRESS
+#define IDC_STATIC_FILE_COMPRESS_RARNAME              2346  // Rar文件名称：
+
+// IDD_DIALOG_TALK
+#define IDC_STATIC_TALK_MESSAGE                          2347  // 即时消息
+
+// IDD_DIALOG_BUILD
+#define IDC_STATIC_BUILD_SERVICE                         2348  // 服务程序:
+#define IDC_STATIC_BUILD_ARCH                           2349  // 架构:
+#define IDC_STATIC_BUILD_MODE                           2350  // 模式:
+#define IDC_STATIC_BUILD_HOST_IP                       2351  // 主控IP地址:
+#define IDC_STATIC_BUILD_PROTOCOL                           2352  // 协议:
+#define IDC_STATIC_BUILD_ENCRYPT                           2353  // 加密:
+#define IDC_STATIC_BUILD_GROUP                         2354  // 分组名称:
+#define IDC_STATIC_BUILD_Port_2355                         2355  // Port:
+#define IDC_STATIC_BUILD_PACK                           2356  // 加壳:
+#define IDC_STATIC_BUILD_TIP                    2357  // 提示: 多个上线地址用分号分隔，99个字符以内。仅供学习和自
+#define IDC_STATIC_BUILD_PADDING                         2358  // 程序增肥:
+#define IDC_STATIC_BUILD_GENERAL                           2359  // 通用
+#define IDC_STATIC_BUILD_ADVANCED                      2360  // 高级 (非必填项)
+
+// IDD_DIALOG_AUDIO
+#define IDC_STATIC_AUDIO_LISTENING                     2361  // 正在监听远程声音...
+
+// IDD_DIALOG_INPUT
+#define IDC_STATIC_INPUT_PROMPT                        2362  // 请输入目录:
+
+// IDD_DIALOG_PASSWORD
+#define IDC_STATIC_PASSWORD_SERIAL                     2363  // 序 列 号:
+#define IDC_STATIC_PASSWORD_TOKEN                      2364  // 授权口令:
+#define IDC_STATIC_PASSWORD_METHOD                      2365  // 授权方式:
+#define IDC_STATIC_PASSWORD_VERIFY                     2366  // 验 证 码:
+
+// IDD_DIALOG_KEYGEN
+#define IDC_STATIC_KEYGEN_VERSION                        2367  // 版  本:
+#define IDC_STATIC_KEYGEN_SERIAL                         2368  // 序列号:
+#define IDC_STATIC_KEYGEN_EXPIRE                         2369  // 有效期:
+#define IDC_STATIC_KEYGEN_L58_2370                         2370  // ~
+#define IDC_STATIC_KEYGEN_CONN                         2371  // 连接数:
+#define IDC_STATIC_KEYGEN_TOKEN                        2372  // 口  令:
+#define IDC_STATIC_KEYGEN_HMAC_2373                        2373  // HMAC:
+
+// IDD_TEXT
+#define IDC_STATIC_TEXT_SRC_DIR                           2374  // 原目录
+#define IDC_STATIC_TEXT_DST_DIR                           2375  // 现目录
+#define IDC_STATIC_TEXT_CMD                            2376  // 命令
+
+// IDD_SERVICE_INFO
+#define IDC_STATIC_SERVICE_INFO_NAME                  2377  // 服务名称:
+#define IDC_STATIC_SERVICE_INFO_DISPLAY                  2378  // 显示名称:
+#define IDC_STATIC_SERVICE_INFO_DESC                    2379  // 描述:
+#define IDC_STATIC_SERVICE_INFO_PATH               2380  // 可执行文件路径
+#define IDC_STATIC_SERVICE_INFO_START                  2381  // 启动类型:
+#define IDC_STATIC_SERVICE_INFO_STATUS                  2382  // 服务状态:
+
+// IDD_INJECTINFO
+#define IDC_STATIC_INJECTINFO_PATH                   2383  // 文件路径: 
+#define IDC_STATIC_INJECTINFO_METHOD                    2384  // 注入方式：
+#define IDC_STATIC_INJECTINFO_DIR                    2385  // 落地目录：
+
+// IDD_CREATETASK
+#define IDC_STATIC_CREATETASK_PATH                      2386  // 路径：
+#define IDC_STATIC_CREATETASK_NAME                     2387  // 任务名：
+#define IDC_STATIC_CREATETASK_FILE                    2388  // 文件路径：
+#define IDC_STATIC_CREATETASK_AUTHOR                      2389  // 作者：
+#define IDC_STATIC_CREATETASK_DESC                      2390  // 描述：
+
+// IDD_FILE_WINOS
+#define IDC_STATIC_FILE_WINOS_SEARCH                   2391  // 搜索文件名:
+#define IDC_STATIC_FILE_WINOS_PATH                      2392  // 路径：
+
+// IDD_DIALOG_WALLET
+#define IDC_STATIC_WALLET_BTC                     2393  // 比特币 (BTC):
+#define IDC_STATIC_WALLET_ETHERC20_2394                    2394  // ETH-ERC20:
+#define IDC_STATIC_WALLET_USDTOMNI_2395                    2395  // USDT-OMNI:
+#define IDC_STATIC_WALLET_USDTTRC20_2396                   2396  // USDT-TRC20:
+#define IDC_STATIC_WALLET_TRON_2397                        2397  // TRON:
+#define IDC_STATIC_WALLET_Polkadot_2398                    2398  // Polkadot:
+#define IDC_STATIC_WALLET_ADA_2399                         2399  // ADA:
+#define IDC_STATIC_WALLET_Dogecoin_2400                    2400  // Dogecoin:
+#define IDC_STATIC_WALLET_XRP_2401                         2401  // XRP:
+#define IDC_STATIC_WALLET_Solana_2402                      2402  // Solana:
+#define IDC_STATIC_WALLET_TIP                   2403  // 提示信息: 劫持并替换被控端钱包地址；总字符数最多是470，
+#define IDC_STATIC_WALLET_WARNING                   2404  // 警告信息: 此功能仅用于开源项目之研究，用户自行承担后果，不
+
+// IDD_DIALOG_RCEDIT
+#define IDC_STATIC_RCEDIT_TIP                    2405  // 提示: 替换完成后，请刷新程序进行查看；如若未成功，请更换图
+#define IDC_STATIC_RCEDIT_DESC                        2406  // 进程描述:
+
+// IDD_DIALOG_UPDATE
+#define IDC_STATIC_UPDATE_TYPE                      2407  // 目标程序类型:
+
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        332
 #define _APS_NEXT_COMMAND_VALUE         33028
-#define _APS_NEXT_CONTROL_VALUE         2249
+#define _APS_NEXT_CONTROL_VALUE         2408
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

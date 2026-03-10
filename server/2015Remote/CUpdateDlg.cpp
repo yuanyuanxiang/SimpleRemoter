@@ -38,6 +38,8 @@ END_MESSAGE_MAP()
 BOOL CUpdateDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+    // 多语言翻译 - Static控件
+    SetDlgItemText(IDC_STATIC_UPDATE_TYPE, _TR("目标程序类型:"));
 
     // 设置对话框标题和控件文本（解决英语系统乱码问题）
     SetWindowText(_TR("升级程序"));

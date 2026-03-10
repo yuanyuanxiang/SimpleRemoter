@@ -3,8 +3,23 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <locale.h>
 #include <afxwin.h>
 #include "common/IniParser.h"
+
+// 设置线程区域为简体中文
+// 这样 MBCS 程序在非中文系统上创建对话框时，也能正确解码 RC 资源中的 GBK 中文
+// 必须在任何对话框创建之前调用！
+inline void SetChineseThreadLocale()
+{
+    // 设置线程区域为简体中文 (LCID = 2052 = 0x0804)
+    // LANG_CHINESE (0x04) + SUBLANG_CHINESE_SIMPLIFIED (0x02) = 0x0804
+    LCID lcidChinese = MAKELCID(MAKELANGID(LANG_CHINESE, SUBLANG_CHINESE_SIMPLIFIED), SORT_DEFAULT);
+    SetThreadLocale(lcidChinese);
+
+    // 同时设置 C 运行时库的区域（用于 mbstowcs 等函数）
+    setlocale(LC_ALL, ".936");  // GBK 代码页
+}
 
 // 语言管理类 - 支持多语言切换
 class CLangManager
@@ -379,6 +394,30 @@ inline void TranslateDialog(CWnd* pWnd)
     }
 }
 
+// 使用 Unicode API 获取菜单字符串，然后转换为 GBK 用于翻译查找
+inline CString GetMenuStringAsGBK(HMENU hMenu, UINT uIDItem, UINT flags)
+{
+    // 获取菜单字符串长度
+    int len = ::GetMenuStringW(hMenu, uIDItem, NULL, 0, flags);
+    if (len <= 0) return CString();
+
+    CStringW wstr;
+    ::GetMenuStringW(hMenu, uIDItem, wstr.GetBufferSetLength(len + 1), len + 1, flags);
+    wstr.ReleaseBuffer();
+
+    if (wstr.IsEmpty()) return CString();
+
+    // 将 Unicode 转换为 GBK (代码页 936)
+    int mbLen = WideCharToMultiByte(936, 0, wstr, -1, NULL, 0, NULL, NULL);
+    if (mbLen <= 0) return CString();
+
+    CString result;
+    WideCharToMultiByte(936, 0, wstr, -1, result.GetBufferSetLength(mbLen), mbLen, NULL, NULL);
+    result.ReleaseBuffer();
+
+    return result;
+}
+
 // 翻译菜单
 inline void TranslateMenu(CMenu* pMenu)
 {
@@ -388,8 +427,8 @@ inline void TranslateMenu(CMenu* pMenu)
 
     UINT count = pMenu->GetMenuItemCount();
     for (UINT i = 0; i < count; i++) {
-        CString text;
-        pMenu->GetMenuString(i, text, MF_BYPOSITION);
+        // 使用 Unicode API 获取菜单文本，转换为 GBK 用于查找
+        CString text = GetMenuStringAsGBK(pMenu->GetSafeHmenu(), i, MF_BYPOSITION);
         if (!text.IsEmpty()) {
             CString newText = g_Lang.Get(text);
             if (newText != text) {
@@ -454,17 +493,31 @@ inline void TranslateListHeader(CListCtrl* pList)
 
     int count = pHeader->GetItemCount();
     for (int i = 0; i < count; i++) {
-        HDITEM hdi;
-        TCHAR text[256] = { 0 };
-        hdi.mask = HDI_TEXT;
-        hdi.pszText = text;
-        hdi.cchTextMax = 256;
+        // 使用 Unicode API 获取表头文本
+        HDITEMW hdiW;
+        WCHAR wtext[256] = { 0 };
+        hdiW.mask = HDI_TEXT;
+        hdiW.pszText = wtext;
+        hdiW.cchTextMax = 256;
 
-        if (pHeader->GetItem(i, &hdi)) {
-            CString newText = g_Lang.Get(CString(text));
-            if (newText != text) {
-                hdi.pszText = (LPTSTR)(LPCTSTR)newText;
-                pHeader->SetItem(i, &hdi);
+        if (::SendMessageW(pHeader->GetSafeHwnd(), HDM_GETITEMW, i, (LPARAM)&hdiW)) {
+            // 将 Unicode 转换为 GBK 用于翻译查找
+            CString text;
+            int mbLen = WideCharToMultiByte(936, 0, wtext, -1, NULL, 0, NULL, NULL);
+            if (mbLen > 0) {
+                WideCharToMultiByte(936, 0, wtext, -1, text.GetBufferSetLength(mbLen), mbLen, NULL, NULL);
+                text.ReleaseBuffer();
+            }
+
+            if (!text.IsEmpty()) {
+                CString newText = g_Lang.Get(text);
+                if (newText != text) {
+                    // 设置翻译后的文本
+                    HDITEM hdi;
+                    hdi.mask = HDI_TEXT;
+                    hdi.pszText = (LPTSTR)(LPCTSTR)newText;
+                    pHeader->SetItem(i, &hdi);
+                }
             }
         }
     }

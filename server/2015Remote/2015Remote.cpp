@@ -459,20 +459,11 @@ BOOL CMy2015RemoteApp::InitInstance()
         if (pfn) pfn(L"YAMA");
     }
 
-    // 创建并显示启动画面
-    CSplashDlg* pSplash = new CSplashDlg();
-    pSplash->Create(NULL);
-    pSplash->UpdateProgressDirect(5, _T("正在初始化系统图标..."));
+    // 设置线程区域为中文，确保 MBCS 程序在非中文系统上也能正确显示对话框中的中文
+    // 必须在创建任何对话框之前调用
+    SetChineseThreadLocale();
 
-    SHFILEINFO	sfi = {};
-    HIMAGELIST hImageList = (HIMAGELIST)SHGetFileInfo((LPCTSTR)_T(""), 0, &sfi, sizeof(SHFILEINFO), SHGFI_LARGEICON | SHGFI_SYSICONINDEX);
-    m_pImageList_Large.Attach(hImageList);
-    hImageList = (HIMAGELIST)SHGetFileInfo((LPCTSTR)_T(""), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SMALLICON | SHGFI_SYSICONINDEX);
-    m_pImageList_Small.Attach(hImageList);
-
-    pSplash->UpdateProgressDirect(10, _T("正在初始化公共控件..."));
-
-    pSplash->UpdateProgressDirect(12, "正在加载语言包...");
+    // 加载语言包（必须在显示任何文本之前）
     auto lang = THIS_CFG.GetStr("settings", "Language", "en_US");
     auto langDir = THIS_CFG.GetStr("settings", "LangDir", "./lang");
     langDir = langDir.empty() ? "./lang" : langDir;
@@ -481,6 +472,20 @@ BOOL CMy2015RemoteApp::InitInstance()
         g_Lang.Load(lang.c_str());
         Mprintf("语言包目录已经指定[%s], 语言数量: %d\n", langDir.c_str(), g_Lang.GetLanguageCount());
     }
+
+    // 创建并显示启动画面
+    CSplashDlg* pSplash = new CSplashDlg();
+    pSplash->Create(NULL);
+    pSplash->UpdateProgressDirect(5, _TR("正在初始化系统图标..."));
+
+    SHFILEINFO	sfi = {};
+    HIMAGELIST hImageList = (HIMAGELIST)SHGetFileInfo((LPCTSTR)_T(""), 0, &sfi, sizeof(SHFILEINFO), SHGFI_LARGEICON | SHGFI_SYSICONINDEX);
+    m_pImageList_Large.Attach(hImageList);
+    hImageList = (HIMAGELIST)SHGetFileInfo((LPCTSTR)_T(""), 0, &sfi, sizeof(SHFILEINFO), SHGFI_SMALLICON | SHGFI_SYSICONINDEX);
+    m_pImageList_Small.Attach(hImageList);
+
+    pSplash->UpdateProgressDirect(10, _TR("正在初始化公共控件..."));
+
 
     // 如果一个运行在 Windows XP 上的应用程序清单指定要
     // 使用 ComCtl32.dll 版本 6 或更高版本来启用可视化方式，

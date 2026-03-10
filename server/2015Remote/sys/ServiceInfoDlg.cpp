@@ -38,6 +38,13 @@ END_MESSAGE_MAP()
 BOOL CServiceInfoDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+    // 多语言翻译 - Static控件
+    SetDlgItemText(IDC_STATIC_SERVICE_INFO_NAME, _TR("服务名称:"));
+    SetDlgItemText(IDC_STATIC_SERVICE_INFO_DISPLAY, _TR("显示名称:"));
+    SetDlgItemText(IDC_STATIC_SERVICE_INFO_DESC, _TR("描述:"));
+    SetDlgItemText(IDC_STATIC_SERVICE_INFO_PATH, _TR("可执行文件路径"));
+    SetDlgItemText(IDC_STATIC_SERVICE_INFO_START, _TR("启动类型:"));
+    SetDlgItemText(IDC_STATIC_SERVICE_INFO_STATUS, _TR("服务状态:"));
 
     SetIcon(m_hIcon, TRUE);			// Set big icon
     SetIcon(m_hIcon, FALSE);		// Set small icon

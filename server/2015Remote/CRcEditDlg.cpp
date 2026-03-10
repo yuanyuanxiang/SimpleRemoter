@@ -51,6 +51,9 @@ END_MESSAGE_MAP()
 BOOL CRcEditDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+    // 多语言翻译 - Static控件
+    SetDlgItemText(IDC_STATIC_RCEDIT_TIP, _TR("提示: 替换完成后，请刷新程序进行查看；如若未成功，请更换图标重试。"));
+    SetDlgItemText(IDC_STATIC_RCEDIT_DESC, _TR("进程描述:"));
 
     // 设置对话框标题和控件文本（解决英语系统乱码问题）
     SetWindowText(_TR("PE 编辑"));

@@ -41,6 +41,10 @@ END_MESSAGE_MAP()
 BOOL CInjectCodeDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+    // 多语言翻译 - Static控件
+    SetDlgItemText(IDC_STATIC_INJECTINFO_PATH, _TR("文件路径: "));
+    SetDlgItemText(IDC_STATIC_INJECTINFO_METHOD, _TR("注入方式："));
+    SetDlgItemText(IDC_STATIC_INJECTINFO_DIR, _TR("落地目录："));
 
     // 设置对话框标题和控件文本（解决英语系统乱码问题）
     SetWindowText(_TR("注入设置"));

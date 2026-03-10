@@ -39,6 +39,8 @@ END_MESSAGE_MAP()
 BOOL CTalkDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+    // 多语言翻译 - Static控件
+    SetDlgItemText(IDC_STATIC_TALK_MESSAGE, _TR("即时消息"));
 
     // 设置对话框标题和控件文本（解决英语系统乱码问题）
     SetWindowText(_TR("即时消息"));

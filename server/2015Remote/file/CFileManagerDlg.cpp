@@ -153,6 +153,9 @@ BOOL CFileManagerDlg::MyShell_GetImageLists()
 BOOL CFileManagerDlg::OnInitDialog()
 {
     __super::OnInitDialog();
+    // 多语言翻译 - Static控件
+    SetDlgItemText(IDC_STATIC_FILE_WINOS_SEARCH, _TR("搜索文件名:"));
+    SetDlgItemText(IDC_STATIC_FILE_WINOS_PATH, _TR("路径："));
 
     RECT	rect;
     GetClientRect(&rect);
