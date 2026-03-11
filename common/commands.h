@@ -39,6 +39,7 @@
 #define Sleep(n) ((n) >= 1000 ? sleep((n) / 1000) : usleep((n) * 1000))
 
 typedef int64_t __int64;
+typedef uint16_t WORD;
 typedef uint32_t DWORD;
 typedef int BOOL, SOCKET;
 typedef unsigned int ULONG;

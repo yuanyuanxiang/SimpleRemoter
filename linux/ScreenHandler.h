@@ -1,6 +1,7 @@
 #pragma once
 #include "common/commands.h"
 #include "client/IOCPClient.h"
+#include "LinuxConfig.h"
 #include <dlfcn.h>
 #include <thread>
 #include <mutex>
@@ -101,6 +102,57 @@ struct XGCValues_LNX {
 // X11 GC 常量
 #define GCSubwindowMode (1L<<15)
 #define IncludeInferiors 1
+
+// ============== 屏幕算法常量 ==============
+#define ALGORITHM_GRAY    0
+#define ALGORITHM_DIFF    1
+#define ALGORITHM_H264    2
+#define ALGORITHM_RGB565  3
+
+// 算法支持表（编译时常量，日后支持 H264 时改为 true）
+static const bool g_SupportedAlgo[] = {
+    true,   // ALGORITHM_GRAY   = 0
+    true,   // ALGORITHM_DIFF   = 1
+    false,  // ALGORITHM_H264   = 2
+    true,   // ALGORITHM_RGB565 = 3
+};
+
+// 不支持的算法降级为 RGB565
+inline uint8_t GetEffectiveAlgorithm(uint8_t algo) {
+    if (algo > 3 || !g_SupportedAlgo[algo]) {
+        return ALGORITHM_RGB565;
+    }
+    return algo;
+}
+
+// ============== 颜色转换函数 ==============
+
+// BGRA → 灰度 (Y = 0.299R + 0.587G + 0.114B)
+// 使用整数近似: Y = (306*R + 601*G + 117*B) >> 10
+inline void ConvertBGRAtoGray(const uint8_t* src, uint8_t* dst, uint32_t pixelCount)
+{
+    for (uint32_t i = 0; i < pixelCount; i++) {
+        uint8_t b = src[i * 4 + 0];
+        uint8_t g = src[i * 4 + 1];
+        uint8_t r = src[i * 4 + 2];
+        dst[i] = (uint8_t)((306 * r + 601 * g + 117 * b) >> 10);
+    }
+}
+
+// BGRA → RGB565 (R:5位, G:6位, B:5位)
+// 格式: RRRRRGGG GGGBBBBB
+inline void ConvertBGRAtoRGB565(const uint8_t* src, uint16_t* dst, uint32_t pixelCount)
+{
+    for (uint32_t i = 0; i < pixelCount; i++) {
+        uint8_t b = src[i * 4 + 0];
+        uint8_t g = src[i * 4 + 1];
+        uint8_t r = src[i * 4 + 2];
+        uint16_t r5 = (r >> 3) & 0x1F;
+        uint16_t g6 = (g >> 2) & 0x3F;
+        uint16_t b5 = (b >> 3) & 0x1F;
+        dst[i] = (r5 << 11) | (g6 << 5) | b5;
+    }
+}
 
 // ============== Windows 消息常量（用于解析服务端控制命令）==============
 #define WM_MOUSEMOVE      0x0200
@@ -479,11 +531,15 @@ public:
         : m_client(client), m_running(false), m_destroyed(false), m_display(nullptr),
           m_inputDisplay(nullptr),
           m_width(0), m_height(0),
-          m_pixmap(0), m_gc(nullptr), m_xtestWarned(false)
+          m_pixmap(0), m_gc(nullptr), m_xtestWarned(false),
+          m_bAlgorithm(ALGORITHM_DIFF), m_maxFPS(10), m_qualityLevel(QUALITY_ADAPTIVE)
     {
         if (!client) {
             throw std::invalid_argument("IOCPClient pointer cannot be null");
         }
+
+        // 加载保存的质量等级配置
+        LoadQualitySettings();
 
         // 动态加载 X11
         if (!m_x11.Load()) {
@@ -609,9 +665,11 @@ public:
         memcpy(&buf[1 + sizeof(BITMAPINFOHEADER_LNX)], &zero, sizeof(uint64_t));
         memcpy(&buf[1 + sizeof(BITMAPINFOHEADER_LNX) + sizeof(uint64_t)], &zero, sizeof(uint64_t));
         ScreenSettings settings = {};
-        settings.MaxFPS = 10;
+        settings.MaxFPS = m_maxFPS.load();
+        settings.QualityLevel = m_qualityLevel;  // 上报保存的质量等级
         memcpy(&buf[1 + sizeof(BITMAPINFOHEADER_LNX) + 2 * sizeof(uint64_t)], &settings, sizeof(ScreenSettings));
         m_client->Send2Server((char*)buf.data(), ulLength);
+        Mprintf(">>> SendBitmapInfo: QualityLevel=%d\n", m_qualityLevel);
     }
 
     virtual VOID OnReceive(PBYTE data, ULONG size)
@@ -629,6 +687,65 @@ public:
                 HandleInputEvent((MSG64_LNX*)(data + 1));
             }
             break;
+
+        case CMD_QUALITY_LEVEL:
+            // 质量等级调整: [cmd:1][level:1][persist:1]
+            if (size >= 2) {
+                int8_t level = (int8_t)data[1];
+                int persist = (size >= 3) ? data[2] : 0;
+                ApplyQualityLevel(level, persist);
+            }
+            break;
+        }
+    }
+
+    // 加载保存的质量设置
+    void LoadQualitySettings()
+    {
+        m_qualityLevel = (int8_t)m_config.GetInt("QualityLevel", QUALITY_ADAPTIVE);
+        Mprintf(">>> LoadQualitySettings: level=%d\n", m_qualityLevel);
+
+        // 如果有保存的具体等级，立即应用
+        if (m_qualityLevel >= 0 && m_qualityLevel < QUALITY_COUNT) {
+            const QualityProfile& profile = GetQualityProfile(m_qualityLevel);
+            m_maxFPS.store(profile.maxFPS);
+            m_bAlgorithm.store(GetEffectiveAlgorithm(profile.algorithm));
+        }
+    }
+
+    // 应用质量等级配置
+    void ApplyQualityLevel(int8_t level, int persist = 0)
+    {
+        m_qualityLevel = level;
+
+        // 保存到配置文件
+        if (persist) {
+            m_config.SetInt("QualityLevel", level);
+            Mprintf(">>> Quality saved: level=%d\n", level);
+        }
+
+        if (level == QUALITY_DISABLED) {
+            // 关闭模式：保持当前设置
+            Mprintf(">>> Quality: Disabled (keep current)\n");
+            return;
+        }
+
+        if (level >= 0 && level < QUALITY_COUNT) {
+            // 具体等级：从配置表获取并应用
+            const QualityProfile& profile = GetQualityProfile(level);
+
+            // 应用帧率
+            m_maxFPS.store(profile.maxFPS);
+
+            // 应用算法（带降级处理）
+            uint8_t algo = GetEffectiveAlgorithm(profile.algorithm);
+            m_bAlgorithm.store(algo);
+
+            Mprintf(">>> Quality: Level=%d, FPS=%d, Algo=%d->%d\n",
+                    level, profile.maxFPS, profile.algorithm, algo);
+        } else {
+            // 自适应模式 (level=-1)：由服务端动态调整，不做处理
+            Mprintf(">>> Quality: Adaptive mode\n");
         }
     }
 
@@ -790,6 +907,12 @@ private:
     std::vector<uint8_t> m_currFrame;
     std::vector<uint8_t> m_diffBuffer;
 
+    // 自适应质量控制
+    std::atomic<uint8_t> m_bAlgorithm;  // 当前算法 (ALGORITHM_DIFF/RGB565/GRAY)
+    std::atomic<int> m_maxFPS;          // 最大帧率
+    int8_t m_qualityLevel;              // 当前质量等级 (-1=自适应, 0-5=具体等级)
+    LinuxConfig m_config;                // 配置持久化 (~/.config/ghost/config.conf)
+
     // X11 截屏，输出 BGRA 格式（自底向上，与 BMP 一致）
     // 使用 XCopyArea 将 root window 拷贝到离屏 Pixmap，再对 Pixmap 调用 XGetImage
     // 这样可以避免合成窗口管理器（Mutter 等）导致的 BadMatch 错误
@@ -848,7 +971,7 @@ private:
     }
 
     // 计算差异并发送 TOKEN_NEXTSCREEN
-    // 差异格式: 每个变化区域 = offset(4字节) + pixelCount(4字节) + BGRA 像素数据
+    // 差异格式: 每个变化区域 = offset(4字节) + length(4字节) + pixel data
     void SendDiffFrame()
     {
         if (!CaptureScreen(m_currFrame)) return;
@@ -857,8 +980,8 @@ private:
         out[0] = TOKEN_NEXTSCREEN;
         uint8_t* data = out + 1;
 
-        // 写入算法类型
-        uint8_t algo = 1; // ALGORITHM_DIFF (服务端定义为 1)
+        // 写入算法类型（使用当前生效的算法）
+        uint8_t algo = m_bAlgorithm.load();
         memcpy(data, &algo, sizeof(uint8_t));
 
         // 写入光标位置 (Linux 端简单置 0)
@@ -873,7 +996,7 @@ private:
         uint32_t headerSize = 1 + 2 * sizeof(int32_t) + 1; // algo + cursor + cursorType
         uint8_t* diffData = data + headerSize;
         uint32_t diffLen = CompareBitmap(m_currFrame.data(), m_prevFrame.data(),
-                                         diffData, m_bmpHeader.biSizeImage);
+                                         diffData, m_bmpHeader.biSizeImage, algo);
 
         uint32_t totalLen = 1 + headerSize + diffLen;
         m_client->Send2Server((char*)out, totalLen);
@@ -882,15 +1005,22 @@ private:
         std::swap(m_prevFrame, m_currFrame);
     }
 
-    // 简化版差异比较算法
-    // 输出格式: [byteOffset(4) + byteCount(4) + pixel data] ...
-    // 注意：offset 和 count 都是字节数，与服务端 memcpy(dst + offset, data, count) 对应
+    // 差异比较算法（支持 DIFF/RGB565/GRAY）
+    // 输出格式: [byteOffset(4) + length(4) + pixel data] ...
+    // DIFF: length = 字节数, data = BGRA 原始数据
+    // RGB565: length = 像素数, data = RGB565 格式
+    // GRAY: length = 像素数, data = 灰度值
     uint32_t CompareBitmap(const uint8_t* curr, const uint8_t* prev,
-                           uint8_t* outBuf, uint32_t totalBytes)
+                           uint8_t* outBuf, uint32_t totalBytes, uint8_t algo)
     {
         const uint32_t bytesPerPixel = 4;
         const uint32_t totalPixels = totalBytes / bytesPerPixel;
         const uint32_t gapThreshold = 8; // 8 像素间隙容忍
+
+        // 根据算法确定长度字段的除数
+        // GRAY/RGB565: 长度字段存像素数 (ratio=4)
+        // DIFF: 长度字段存字节数 (ratio=1)
+        const uint32_t ratio = (algo == ALGORITHM_GRAY || algo == ALGORITHM_RGB565) ? 4 : 1;
 
         uint32_t outOffset = 0;
         uint32_t i = 0;
@@ -918,22 +1048,45 @@ private:
             }
 
             uint32_t end = lastDiff + 1;
-            uint32_t count = end - start;
-            uint32_t byteOffset = start * bytesPerPixel; // 字节偏移
-            uint32_t byteCount = count * bytesPerPixel;  // 字节数
+            uint32_t count = end - start;            // 像素数
+            uint32_t byteOffset = start * bytesPerPixel;
+            uint32_t byteCount = count * bytesPerPixel;
 
-            // 写入 byteOffset + byteCount + pixel data
+            // 写入 byteOffset
             memcpy(outBuf + outOffset, &byteOffset, sizeof(uint32_t));
             outOffset += sizeof(uint32_t);
-            memcpy(outBuf + outOffset, &byteCount, sizeof(uint32_t));
+
+            // 写入 length（根据算法不同）
+            uint32_t lengthField = byteCount / ratio;
+            memcpy(outBuf + outOffset, &lengthField, sizeof(uint32_t));
             outOffset += sizeof(uint32_t);
-            memcpy(outBuf + outOffset, curr + byteOffset, byteCount);
-            outOffset += byteCount;
+
+            // 写入像素数据（根据算法转换）
+            const uint8_t* srcData = curr + byteOffset;
+            if (algo == ALGORITHM_RGB565) {
+                ConvertBGRAtoRGB565(srcData, (uint16_t*)(outBuf + outOffset), count);
+                outOffset += count * 2;  // RGB565: 2 字节/像素
+            } else if (algo == ALGORITHM_GRAY) {
+                ConvertBGRAtoGray(srcData, outBuf + outOffset, count);
+                outOffset += count;      // GRAY: 1 字节/像素
+            } else {
+                // DIFF: 原样复制 BGRA
+                memcpy(outBuf + outOffset, srcData, byteCount);
+                outOffset += byteCount;  // DIFF: 4 字节/像素
+            }
         }
 
         return outOffset;
     }
 
+
+    // 获取单调时钟毫秒数（墙钟时间，不受系统时间调整影响）
+    static uint64_t GetTickMs()
+    {
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts);
+        return (uint64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+    }
 
     // 截屏主循环
     void CaptureLoop()
@@ -944,15 +1097,17 @@ private:
             // 发送第一帧
             SendFirstScreen();
 
-            const int fps = 10;
-            const int sleepMs = 1000 / fps;
-
             while (m_running) {
-                clock_t start = clock();
+                uint64_t start = GetTickMs();
 
                 SendDiffFrame();
 
-                int elapsed = (clock() - start) * 1000 / CLOCKS_PER_SEC;
+                // 动态计算帧间隔（根据当前 maxFPS）
+                int fps = m_maxFPS.load();
+                if (fps <= 0) fps = 10;  // 防止除零
+                int sleepMs = 1000 / fps;
+
+                int elapsed = (int)(GetTickMs() - start);
                 int wait = sleepMs - elapsed;
                 if (wait > 0) {
                     usleep(wait * 1000);
