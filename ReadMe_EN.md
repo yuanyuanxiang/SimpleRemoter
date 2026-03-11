@@ -416,6 +416,18 @@ make
 
 ## Changelog
 
+### v1.2.8 (2026.3.11)
+
+**Email Notification & Remote Audio**
+
+- Host online email notification (SMTP config, keyword matching, right-click quick add)
+- Remote audio playback (WASAPI Loopback) + Opus compression (24:1)
+- Multiple FRPS servers simultaneous connection support
+- Custom cursor display and tracking
+- V2 authorization protocol (ECDSA signature)
+- Fixed garbled text on non-Chinese Windows systems
+- Linux client screen compression algorithm optimization
+
 ### v1.2.7 (2026.2.28)
 
 **V2 File Transfer Protocol**

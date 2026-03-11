@@ -25,7 +25,7 @@
 // 是否使用同步事件处理消息
 #define USING_EVENT 1
 
-#define VERSION_STR "1.2.7"
+#define VERSION_STR "1.2.8"
 
 typedef struct DllInfo {
     std::string Name;
