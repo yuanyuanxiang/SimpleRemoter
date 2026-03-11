@@ -357,7 +357,7 @@ int RegisterStartup(const char* startupName, const char* exeName, bool lockFile,
     char username[256];
     DWORD size = sizeof(username);
     if (GetUserNameA(username, &size)) {
-        Mprintf("RegisterStartup is running with user: %s\n", username);
+        Mprintf("RegisterStartup is running with user: %s. Dir: %s, Name: %s\n", username, startupName, exeName);
     }
     const char *folder = GetInstallDirectory(startupName);
     if (!folder) {

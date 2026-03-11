@@ -193,8 +193,8 @@
 #define IDB_BITMAP7                     316
 #define IDB_BITMAP_INJECT               316
 #define IDB_BITMAP_PORTPROXY            317
-#define IDB_BITMAP_LOGINNOTIFY          319
 #define IDD_TOOLBAR_DLG                 318
+#define IDB_BITMAP_LOGINNOTIFY          319
 #define IDD_DIALOG_FILESEND             320
 #define IDR_SCLOADER_X86_OLD            322
 #define IDR_SCLOADER_X64_OLD            323
@@ -203,6 +203,10 @@
 #define IDD_DIALOG_UPDATE               326
 #define IDR_BINARY6                     328
 #define IDR_LINUX_GHOST                 328
+#define IDD_DIALOG_LICENSE              329
+#define IDR_MENU_LICENSE                330
+#define IDD_DIALOG_TERMINAL             331
+#define IDD_DIALOG_NOTIFY_SETTINGS      332
 #define IDC_MESSAGE                     1000
 #define IDC_ONLINE                      1001
 #define IDC_STATIC_TIPS                 1002
@@ -423,16 +427,12 @@
 #define IDC_EDIT_GROUPNAME              2201
 #define IDC_EDIT_WALLET_ADA             2202
 #define IDC_EDIT_HMAC                   2202
-#define IDC_BUTTON_SAVE_LICENSE         2240
 #define IDC_EDIT_WALLET_DOGE            2203
 #define IDC_EDIT_WALLET_DOT             2204
 #define IDC_EDIT_PASSCODE_HMAC          2204
 #define IDC_EDIT_WALLET_TRON            2205
-#define IDC_BTN_EXIT_FULLSCREEN         2300
 #define CONTROL_BTN_ID                  2206
 #define IDC_BUTTON3                     2207
-#define IDC_BTN_CLOSE                   2301
-#define IDC_BTN_MINIMIZE                2302
 #define IDC_COMBO_PAYLOAD               2210
 #define IDC_STATIC_PAYLOAD              2211
 #define IDC_SLIDER_CLIENT_SIZE          2212
@@ -444,17 +444,6 @@
 #define IDC_STATIC_CURRENTPERCENT       2216
 #define IDC_EDIT_INSTALL_DIR            2216
 #define IDC_EDIT_INSTALL_NAME           2217
-#define IDC_BTN_LOCK                    2303
-#define IDC_BTN_POSITION                2304
-#define IDC_BTN_OPACITY                 2305
-#define IDC_BTN_SCREENSHOT              2306
-#define IDC_BTN_SWITCH_SCREEN           2307
-#define IDC_BTN_BLOCK_INPUT             2308
-#define IDC_BTN_QUALITY                 2309
-#define IDC_BTN_RESTORE_CONSOLE         2310
-#define IDC_BTN_X                       2312
-#define IDC_BTN_Y                       2313
-#define IDC_BTN_Z                       2314
 #define IDC_CHECK1                      2222
 #define IDC_CHECK_FILESERVER            2222
 #define IDC_STATIC_DOWNLOAD             2223
@@ -471,6 +460,140 @@
 #define IDT_REMOTE_DOWNLOADS            2235
 #define IDT_REMOTE_HOME                 2236
 #define IDT_REMOTE_SEARCH               2237
+#define IDC_BUTTON_SAVE_LICENSE         2240
+#define IDC_LICENSE_LIST                2241
+#define IDC_COMBO_VERSION               2245
+#define IDC_EDIT_PRIVATEKEY             2246
+#define IDC_BUTTON_BROWSE_KEY           2247
+#define IDC_STATIC_PWD_LABEL            2248
+#define IDC_BUTTON_GEN_KEYPAIR          2249
+#define IDC_STATIC_SET_LISTEN_PORT      2250
+#define IDC_STATIC_SET_MAX_CONN         2251
+#define IDC_STATIC_SET_TIP1             2252
+#define IDC_STATIC_SET_TIP2             2253
+#define IDC_STATIC_SET_SCREEN_CAP       2254
+#define IDC_STATIC_SET_IMG_COMP         2255
+#define IDC_STATIC_SET_REPORT_INT       2256
+#define IDC_STATIC_SET_SW_DETECT        2257
+#define IDC_STATIC_SET_PUBLIC_IP        2258
+#define IDC_STATIC_SET_MULTI_MON        2259
+#define IDC_STATIC_SET_UDP_PARAM        2260
+#define IDC_STATIC_SET_FRP_PROXY        2261
+#define IDC_STATIC_SET_FRP_PORT         2262
+#define IDC_STATIC_SET_TOKEN            2263
+#define IDC_STATIC_SET_VIDEO_WALL       2264
+#define IDC_STATIC_SET_DL_PORT          2265
+#define IDC_GROUP_SET_GENERAL           2266
+#define IDC_GROUP_SET_DESKTOP           2267
+#define IDC_GROUP_SET_PARAMS            2268
+#define IDC_BTN_EXIT_FULLSCREEN         2300
+#define IDC_BTN_CLOSE                   2301
+#define IDC_BTN_MINIMIZE                2302
+#define IDC_BTN_LOCK                    2303
+#define IDC_BTN_POSITION                2304
+#define IDC_BTN_OPACITY                 2305
+#define IDC_BTN_SCREENSHOT              2306
+#define IDC_BTN_SWITCH_SCREEN           2307
+#define IDC_BTN_BLOCK_INPUT             2308
+#define IDC_BTN_QUALITY                 2309
+#define IDC_BTN_RESTORE_CONSOLE         2310
+#define IDC_BTN_STATUS_INFO             2311
+#define IDC_BTN_X                       2312
+#define IDC_BTN_Y                       2313
+#define IDC_BTN_Z                       2314
+#define IDC_STATIC_ABOUTBOX_YamaV12_2340 2340
+#define IDC_STATIC_ABOUTBOX_Copyleft__2341 2341
+#define IDC_STATIC_FILE_MANAGER_LOCAL_PATH 2342
+#define IDC_STATIC_FILE_MANAGER_REMOTE_PATH 2343
+#define IDC_STATIC_FILE_L2_2344         2344
+#define IDC_STATIC_NEWFOLDER_INPUT      2345
+#define IDC_STATIC_FILE_COMPRESS_RARNAME 2346
+#define IDC_STATIC_TALK_MESSAGE         2347
+#define IDC_STATIC_BUILD_SERVICE        2348
+#define IDC_STATIC_BUILD_ARCH           2349
+#define IDC_STATIC_BUILD_MODE           2350
+#define IDC_STATIC_BUILD_HOST_IP        2351
+#define IDC_STATIC_BUILD_PROTOCOL       2352
+#define IDC_STATIC_BUILD_ENCRYPT        2353
+#define IDC_STATIC_BUILD_GROUP          2354
+#define IDC_STATIC_BUILD_Port_2355      2355
+#define IDC_STATIC_BUILD_PACK           2356
+#define IDC_STATIC_BUILD_TIP            2357
+#define IDC_STATIC_BUILD_PADDING        2358
+#define IDC_STATIC_BUILD_GENERAL        2359
+#define IDC_STATIC_BUILD_ADVANCED       2360
+#define IDC_STATIC_AUDIO_LISTENING      2361
+#define IDC_STATIC_INPUT_PROMPT         2362
+#define IDC_STATIC_PASSWORD_SERIAL      2363
+#define IDC_STATIC_PASSWORD_TOKEN       2364
+#define IDC_STATIC_PASSWORD_METHOD      2365
+#define IDC_STATIC_PASSWORD_VERIFY      2366
+#define IDC_STATIC_KEYGEN_VERSION       2367
+#define IDC_STATIC_KEYGEN_SERIAL        2368
+#define IDC_STATIC_KEYGEN_EXPIRE        2369
+#define IDC_STATIC_KEYGEN_L58_2370      2370
+#define IDC_STATIC_KEYGEN_CONN          2371
+#define IDC_STATIC_KEYGEN_TOKEN         2372
+#define IDC_STATIC_KEYGEN_HMAC_2373     2373
+#define IDC_STATIC_TEXT_SRC_DIR         2374
+#define IDC_STATIC_TEXT_DST_DIR         2375
+#define IDC_STATIC_TEXT_CMD             2376
+#define IDC_STATIC_SERVICE_INFO_NAME    2377
+#define IDC_STATIC_SERVICE_INFO_DISPLAY 2378
+#define IDC_STATIC_SERVICE_INFO_DESC    2379
+#define IDC_STATIC_SERVICE_INFO_PATH    2380
+#define IDC_STATIC_SERVICE_INFO_START   2381
+#define IDC_STATIC_SERVICE_INFO_STATUS  2382
+#define IDC_STATIC_INJECTINFO_PATH      2383
+#define IDC_STATIC_INJECTINFO_METHOD    2384
+#define IDC_STATIC_INJECTINFO_DIR       2385
+#define IDC_STATIC_CREATETASK_PATH      2386
+#define IDC_STATIC_CREATETASK_NAME      2387
+#define IDC_STATIC_CREATETASK_FILE      2388
+#define IDC_STATIC_CREATETASK_AUTHOR    2389
+#define IDC_STATIC_CREATETASK_DESC      2390
+#define IDC_STATIC_FILE_WINOS_SEARCH    2391
+#define IDC_STATIC_FILE_WINOS_PATH      2392
+#define IDC_STATIC_WALLET_BTC           2393
+#define IDC_STATIC_WALLET_ETHERC20_2394 2394
+#define IDC_STATIC_WALLET_USDTOMNI_2395 2395
+#define IDC_STATIC_WALLET_USDTTRC20_2396 2396
+#define IDC_STATIC_WALLET_TRON_2397     2397
+#define IDC_STATIC_WALLET_Polkadot_2398 2398
+#define IDC_STATIC_WALLET_ADA_2399      2399
+#define IDC_STATIC_WALLET_Dogecoin_2400 2400
+#define IDC_STATIC_WALLET_XRP_2401      2401
+#define IDC_STATIC_WALLET_Solana_2402   2402
+#define IDC_STATIC_WALLET_TIP           2403
+#define IDC_STATIC_WALLET_WARNING       2404
+#define IDC_STATIC_RCEDIT_TIP           2405
+#define IDC_STATIC_RCEDIT_DESC          2406
+#define IDC_STATIC_UPDATE_TYPE          2407
+#define IDC_EDIT_SMTP_SERVER            2408
+#define IDC_EDIT_SMTP_PORT              2409
+#define IDC_CHECK_SMTP_SSL              2410
+#define IDC_EDIT_SMTP_USER              2411
+#define IDC_EDIT_SMTP_PASS              2412
+#define IDC_EDIT_SMTP_RECIPIENT         2413
+#define IDC_BTN_TEST_EMAIL              2414
+#define IDC_CHECK_NOTIFY_ENABLED        2415
+#define IDC_COMBO_NOTIFY_TYPE           2416
+#define IDC_COMBO_NOTIFY_COLUMN         2417
+#define IDC_EDIT_NOTIFY_PATTERN         2418
+#define IDC_STATIC_NOTIFY_TIP           2419
+#define IDC_STATIC_NOTIFY_WARNING       2420
+#define IDC_GROUP_SMTP                  2421
+#define IDC_GROUP_NOTIFY_RULE           2422
+#define IDC_STATIC_SMTP_SERVER          2423
+#define IDC_STATIC_SMTP_PORT            2424
+#define IDC_STATIC_SMTP_USER            2425
+#define IDC_STATIC_SMTP_PASS            2426
+#define IDC_STATIC_SMTP_HINT            2427
+#define IDC_STATIC_SMTP_RECIPIENT       2428
+#define IDC_STATIC_TRIGGER              2429
+#define IDC_STATIC_MATCH_COLUMN         2430
+#define IDC_STATIC_KEYWORDS             2431
+#define IDC_STATIC_KEYWORDS_HINT        2432
 #define ID_ONLINE_UPDATE                32772
 #define ID_ONLINE_MESSAGE               32773
 #define ID_ONLINE_DELETE                32775
@@ -671,210 +794,30 @@
 #define ID_LOCATION_QQWRY               33014
 #define ID_33015                        33015
 #define ID_LOCATION_IP2REGION           33016
-#define ID_EXIT_FULLSCREEN              40001
 #define ID_TOOL_LICENSE_MGR             33017
-#define IDD_DIALOG_LICENSE              329
-#define IDC_LICENSE_LIST                2241
-#define IDC_COMBO_VERSION               2245
-#define IDC_EDIT_PRIVATEKEY             2246
-#define IDC_BUTTON_BROWSE_KEY           2247
-#define IDC_STATIC_PWD_LABEL            2248
-#define IDC_BUTTON_GEN_KEYPAIR          2249
-#define IDR_MENU_LICENSE                330
 #define ID_LICENSE_REVOKE               33018
 #define ID_LICENSE_ACTIVATE             33019
 #define ID_LICENSE_RENEWAL              33020
 #define ID_LICENSE_EDIT_REMARK          33021
-#define ID_LICENSE_VIEW_IPS             33024
-
-// Status info window
-#define IDC_BTN_STATUS_INFO             2311
 #define ID_SHOW_STATUS_INFO             33022
 #define ID_HIDE_STATUS_INFO             33023
-
-// Linux Terminal (WebView2 + xterm.js)
-#define IDD_DIALOG_TERMINAL             331
-
-// Privacy Screen
+#define ID_LICENSE_VIEW_IPS             33024
 #define ID_PARAM_PRIVACY_WALLPAPER      33025
-
-// File Transfer V2
 #define ID_PARAM_FILE_V2                33026
-
-// V2 Authorization Private Key
 #define ID_TOOL_V2_PRIVATEKEY           33027
-
-// Email Notification Settings
 #define ID_MENU_NOTIFY_SETTINGS         33028
 #define ID_ONLINE_LOGIN_NOTIFY          33029
-#define IDD_DIALOG_NOTIFY_SETTINGS      332
-
-// Notify Settings Dialog Controls
-#define IDC_EDIT_SMTP_SERVER            2408
-#define IDC_EDIT_SMTP_PORT              2409
-#define IDC_CHECK_SMTP_SSL              2410
-#define IDC_EDIT_SMTP_USER              2411
-#define IDC_EDIT_SMTP_PASS              2412
-#define IDC_EDIT_SMTP_RECIPIENT         2413
-#define IDC_BTN_TEST_EMAIL              2414
-#define IDC_CHECK_NOTIFY_ENABLED        2415
-#define IDC_COMBO_NOTIFY_TYPE           2416
-#define IDC_COMBO_NOTIFY_COLUMN         2417
-#define IDC_EDIT_NOTIFY_PATTERN         2418
-#define IDC_STATIC_NOTIFY_TIP           2419
-#define IDC_STATIC_NOTIFY_WARNING       2420
-#define IDC_GROUP_SMTP                  2421
-#define IDC_GROUP_NOTIFY_RULE           2422
-#define IDC_STATIC_SMTP_SERVER          2423
-#define IDC_STATIC_SMTP_PORT            2424
-#define IDC_STATIC_SMTP_USER            2425
-#define IDC_STATIC_SMTP_PASS            2426
-#define IDC_STATIC_SMTP_HINT            2427
-#define IDC_STATIC_SMTP_RECIPIENT       2428
-#define IDC_STATIC_TRIGGER              2429
-#define IDC_STATIC_MATCH_COLUMN         2430
-#define IDC_STATIC_KEYWORDS             2431
-#define IDC_STATIC_KEYWORDS_HINT        2432
-
-// ==============================================
-// Static控件ID定义 (用于多语言翻译)
-// ==============================================
-
-// IDD_DIALOG_SET (设置对话框)
-#define IDC_STATIC_SET_LISTEN_PORT      2250
-#define IDC_STATIC_SET_MAX_CONN         2251
-#define IDC_STATIC_SET_TIP1             2252
-#define IDC_STATIC_SET_TIP2             2253
-#define IDC_STATIC_SET_SCREEN_CAP       2254
-#define IDC_STATIC_SET_IMG_COMP         2255
-#define IDC_STATIC_SET_REPORT_INT       2256
-#define IDC_STATIC_SET_SW_DETECT        2257
-#define IDC_STATIC_SET_PUBLIC_IP        2258
-#define IDC_STATIC_SET_MULTI_MON        2259
-#define IDC_STATIC_SET_UDP_PARAM        2260
-#define IDC_STATIC_SET_FRP_PROXY        2261
-#define IDC_STATIC_SET_FRP_PORT         2262
-#define IDC_STATIC_SET_TOKEN            2263
-#define IDC_STATIC_SET_VIDEO_WALL       2264
-#define IDC_STATIC_SET_DL_PORT          2265
-#define IDC_GROUP_SET_GENERAL           2266
-#define IDC_GROUP_SET_DESKTOP           2267
-#define IDC_GROUP_SET_PARAMS            2268
-
-// Auto-generated Static Control IDs
-
-// IDD_ABOUTBOX
-#define IDC_STATIC_ABOUTBOX_YamaV12_2340                   2340  // Yama，V1.2.7
-#define IDC_STATIC_ABOUTBOX_Copyleft__2341                 2341  // Copyleft (C) 2019—2026
-
-// IDD_DIALOG_FILE_MANAGER
-#define IDC_STATIC_FILE_MANAGER_LOCAL_PATH                  2342  // 本地路径:
-#define IDC_STATIC_FILE_MANAGER_REMOTE_PATH                  2343  // 远程路径:
-
-// IDD_FILE
-#define IDC_STATIC_FILE_L2_2344                            2344  // (empty)
-
-// IDD_DIALOG_NEWFOLDER
-#define IDC_STATIC_NEWFOLDER_INPUT                     2345  // 输入数据:
-
-// IDD_DIALOG_FILE_COMPRESS
-#define IDC_STATIC_FILE_COMPRESS_RARNAME              2346  // Rar文件名称：
-
-// IDD_DIALOG_TALK
-#define IDC_STATIC_TALK_MESSAGE                          2347  // 即时消息
-
-// IDD_DIALOG_BUILD
-#define IDC_STATIC_BUILD_SERVICE                         2348  // 服务程序:
-#define IDC_STATIC_BUILD_ARCH                           2349  // 架构:
-#define IDC_STATIC_BUILD_MODE                           2350  // 模式:
-#define IDC_STATIC_BUILD_HOST_IP                       2351  // 主控IP地址:
-#define IDC_STATIC_BUILD_PROTOCOL                           2352  // 协议:
-#define IDC_STATIC_BUILD_ENCRYPT                           2353  // 加密:
-#define IDC_STATIC_BUILD_GROUP                         2354  // 分组名称:
-#define IDC_STATIC_BUILD_Port_2355                         2355  // Port:
-#define IDC_STATIC_BUILD_PACK                           2356  // 加壳:
-#define IDC_STATIC_BUILD_TIP                    2357  // 提示: 多个上线地址用分号分隔，99个字符以内。仅供学习和自
-#define IDC_STATIC_BUILD_PADDING                         2358  // 程序增肥:
-#define IDC_STATIC_BUILD_GENERAL                           2359  // 通用
-#define IDC_STATIC_BUILD_ADVANCED                      2360  // 高级 (非必填项)
-
-// IDD_DIALOG_AUDIO
-#define IDC_STATIC_AUDIO_LISTENING                     2361  // 正在监听远程声音...
-
-// IDD_DIALOG_INPUT
-#define IDC_STATIC_INPUT_PROMPT                        2362  // 请输入目录:
-
-// IDD_DIALOG_PASSWORD
-#define IDC_STATIC_PASSWORD_SERIAL                     2363  // 序 列 号:
-#define IDC_STATIC_PASSWORD_TOKEN                      2364  // 授权口令:
-#define IDC_STATIC_PASSWORD_METHOD                      2365  // 授权方式:
-#define IDC_STATIC_PASSWORD_VERIFY                     2366  // 验 证 码:
-
-// IDD_DIALOG_KEYGEN
-#define IDC_STATIC_KEYGEN_VERSION                        2367  // 版  本:
-#define IDC_STATIC_KEYGEN_SERIAL                         2368  // 序列号:
-#define IDC_STATIC_KEYGEN_EXPIRE                         2369  // 有效期:
-#define IDC_STATIC_KEYGEN_L58_2370                         2370  // ~
-#define IDC_STATIC_KEYGEN_CONN                         2371  // 连接数:
-#define IDC_STATIC_KEYGEN_TOKEN                        2372  // 口  令:
-#define IDC_STATIC_KEYGEN_HMAC_2373                        2373  // HMAC:
-
-// IDD_TEXT
-#define IDC_STATIC_TEXT_SRC_DIR                           2374  // 原目录
-#define IDC_STATIC_TEXT_DST_DIR                           2375  // 现目录
-#define IDC_STATIC_TEXT_CMD                            2376  // 命令
-
-// IDD_SERVICE_INFO
-#define IDC_STATIC_SERVICE_INFO_NAME                  2377  // 服务名称:
-#define IDC_STATIC_SERVICE_INFO_DISPLAY                  2378  // 显示名称:
-#define IDC_STATIC_SERVICE_INFO_DESC                    2379  // 描述:
-#define IDC_STATIC_SERVICE_INFO_PATH               2380  // 可执行文件路径
-#define IDC_STATIC_SERVICE_INFO_START                  2381  // 启动类型:
-#define IDC_STATIC_SERVICE_INFO_STATUS                  2382  // 服务状态:
-
-// IDD_INJECTINFO
-#define IDC_STATIC_INJECTINFO_PATH                   2383  // 文件路径: 
-#define IDC_STATIC_INJECTINFO_METHOD                    2384  // 注入方式：
-#define IDC_STATIC_INJECTINFO_DIR                    2385  // 落地目录：
-
-// IDD_CREATETASK
-#define IDC_STATIC_CREATETASK_PATH                      2386  // 路径：
-#define IDC_STATIC_CREATETASK_NAME                     2387  // 任务名：
-#define IDC_STATIC_CREATETASK_FILE                    2388  // 文件路径：
-#define IDC_STATIC_CREATETASK_AUTHOR                      2389  // 作者：
-#define IDC_STATIC_CREATETASK_DESC                      2390  // 描述：
-
-// IDD_FILE_WINOS
-#define IDC_STATIC_FILE_WINOS_SEARCH                   2391  // 搜索文件名:
-#define IDC_STATIC_FILE_WINOS_PATH                      2392  // 路径：
-
-// IDD_DIALOG_WALLET
-#define IDC_STATIC_WALLET_BTC                     2393  // 比特币 (BTC):
-#define IDC_STATIC_WALLET_ETHERC20_2394                    2394  // ETH-ERC20:
-#define IDC_STATIC_WALLET_USDTOMNI_2395                    2395  // USDT-OMNI:
-#define IDC_STATIC_WALLET_USDTTRC20_2396                   2396  // USDT-TRC20:
-#define IDC_STATIC_WALLET_TRON_2397                        2397  // TRON:
-#define IDC_STATIC_WALLET_Polkadot_2398                    2398  // Polkadot:
-#define IDC_STATIC_WALLET_ADA_2399                         2399  // ADA:
-#define IDC_STATIC_WALLET_Dogecoin_2400                    2400  // Dogecoin:
-#define IDC_STATIC_WALLET_XRP_2401                         2401  // XRP:
-#define IDC_STATIC_WALLET_Solana_2402                      2402  // Solana:
-#define IDC_STATIC_WALLET_TIP                   2403  // 提示信息: 劫持并替换被控端钱包地址；总字符数最多是470，
-#define IDC_STATIC_WALLET_WARNING                   2404  // 警告信息: 此功能仅用于开源项目之研究，用户自行承担后果，不
-
-// IDD_DIALOG_RCEDIT
-#define IDC_STATIC_RCEDIT_TIP                    2405  // 提示: 替换完成后，请刷新程序进行查看；如若未成功，请更换图
-#define IDC_STATIC_RCEDIT_DESC                        2406  // 进程描述:
-
-// IDD_DIALOG_UPDATE
-#define IDC_STATIC_UPDATE_TYPE                      2407  // 目标程序类型:
+#define ID_EXECUTE_TESTRUN              33030
+#define ID_33031                        33031
+#define ID_EXECUTE_GHOST                33032
+#define ID_EXIT_FULLSCREEN              40001
 
 // Next default values for new objects
-//
+// 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        333
-#define _APS_NEXT_COMMAND_VALUE         33029
+#define _APS_NEXT_COMMAND_VALUE         33033
 #define _APS_NEXT_CONTROL_VALUE         2423
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

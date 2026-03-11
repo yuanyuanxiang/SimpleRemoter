@@ -45,6 +45,8 @@ BOOL CServiceInfoDlg::OnInitDialog()
     SetDlgItemText(IDC_STATIC_SERVICE_INFO_PATH, _TR("可执行文件路径"));
     SetDlgItemText(IDC_STATIC_SERVICE_INFO_START, _TR("启动类型:"));
     SetDlgItemText(IDC_STATIC_SERVICE_INFO_STATUS, _TR("服务状态:"));
+    SetDlgItemText(IDOK, _TR("确定"));
+    SetDlgItemText(IDCANCEL, _TR("取消"));
 
     SetIcon(m_hIcon, TRUE);			// Set big icon
     SetIcon(m_hIcon, FALSE);		// Set small icon

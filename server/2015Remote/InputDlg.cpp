@@ -62,6 +62,8 @@ BOOL CInputDialog::OnInitDialog()
     SetDlgItemText(IDC_STATIC_SECOND, _TR("另一个输入框:"));
     SetDlgItemText(IDC_STATIC_TIPINFO, _TR("提示信息"));
     SetDlgItemText(IDC_STATIC_INPUT_PROMPT, _TR("请输入目录:"));
+    SetDlgItemText(IDOK, _TR("确定"));
+    SetDlgItemText(IDCANCEL, _TR("取消"));
 
     SetIcon(m_hIcon, FALSE);
 
