@@ -1373,7 +1373,9 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
         int nMaxConnection = THIS_CFG.GetInt("settings", "MaxConnection");
         m_nMaxConnection = nMaxConnection <= 0 ? 10000 : nMaxConnection;
     }
-    const std::string method = THIS_CFG.GetStr("settings", "UDPOption", "0");
+	std::map<std::string, std::string> udpMap = { {"UDP", "0"}, {"KCP", "1"}};
+    std::string method = THIS_CFG.GetStr("settings", "UDPOption", "UDP");
+    method = udpMap.find(method) == udpMap.end() ? "0" : udpMap[method];
     int m = atoi(THIS_CFG.GetStr("settings", "ReportInterval", "5").c_str());
     int n = THIS_CFG.GetInt("settings", "SoftwareDetect");
     int usingFRP = master.empty() ? 0 : THIS_CFG.GetInt("frp", "UseFrp");

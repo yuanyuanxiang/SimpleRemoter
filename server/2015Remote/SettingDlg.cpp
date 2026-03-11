@@ -21,7 +21,7 @@ CSettingDlg::CSettingDlg(CMy2015RemoteDlg* pParent)
     , m_nReportInterval(5)
     , m_sSoftwareDetect(_T("摄像头"))
     , m_sPublicIP(_T(""))
-    , m_sUdpOption(_T(""))
+    , m_sUdpOption(_T("UDP"))
     , m_nFrpPort(7000)
     , m_sFrpToken(_T(""))
     , m_nFileServerPort(0)
@@ -120,7 +120,9 @@ BOOL CSettingDlg::OnInitDialog()
     m_sPublicIP = THIS_CFG.GetStr("settings", "master", "").c_str();
     m_sPublicIP = m_sPublicIP.IsEmpty() ? g_2015RemoteDlg->m_IPConverter->getPublicIP().c_str() : m_sPublicIP;
     std::string nPort = THIS_CFG.GetStr("settings", "ghost", "6543");
-    m_sUdpOption = THIS_CFG.GetStr("settings", "UDPOption", "0").c_str();
+    std::map<std::string, std::string> udpMap = { {"UDP", "UDP"}, {"KCP", "KCP"} };
+    std::string method = THIS_CFG.GetStr("settings", "UDPOption", "UDP").c_str();
+    m_sUdpOption = udpMap.find(method) == udpMap.end() ? "UDP" : udpMap[method].c_str();
 
     int DXGI = THIS_CFG.GetInt("settings", "DXGI");
 
@@ -178,6 +180,8 @@ BOOL CSettingDlg::OnInitDialog()
     BOOL frp = THIS_CFG.GetInt("frp", "UseFrp");
     ((CButton*)GetDlgItem(IDC_RADIO_FRP_OFF))->SetCheck(!frp);
     ((CButton*)GetDlgItem(IDC_RADIO_FRP_ON))->SetCheck(frp);
+    GetDlgItem(IDC_EDIT_FRP_PORT)->EnableWindow(frp);
+    GetDlgItem(IDC_EDIT_FRP_TOKEN)->EnableWindow(frp);
 #ifndef _WIN64
     GetDlgItem(IDC_RADIO_FRP_OFF)->EnableWindow(FALSE);
     GetDlgItem(IDC_RADIO_FRP_ON)->EnableWindow(FALSE);
@@ -291,6 +295,8 @@ void CSettingDlg::OnBnClickedRadioFrpOff()
 {
     BOOL b = ((CButton*)GetDlgItem(IDC_RADIO_FRP_OFF))->GetCheck();
     ((CButton*)GetDlgItem(IDC_RADIO_FRP_ON))->SetCheck(!b);
+	GetDlgItem(IDC_EDIT_FRP_PORT)->EnableWindow(!b);
+    GetDlgItem(IDC_EDIT_FRP_TOKEN)->EnableWindow(!b);
 }
 
 
@@ -298,4 +304,6 @@ void CSettingDlg::OnBnClickedRadioFrpOn()
 {
     BOOL b = ((CButton*)GetDlgItem(IDC_RADIO_FRP_ON))->GetCheck();
     ((CButton*)GetDlgItem(IDC_RADIO_FRP_OFF))->SetCheck(!b);
+    GetDlgItem(IDC_EDIT_FRP_PORT)->EnableWindow(b);
+    GetDlgItem(IDC_EDIT_FRP_TOKEN)->EnableWindow(b);
 }
