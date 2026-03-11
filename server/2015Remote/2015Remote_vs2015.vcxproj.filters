@@ -70,6 +70,8 @@
     <ClCompile Include="CListCtrlEx.cpp" />
     <ClCompile Include="CIconButton.cpp" />
     <ClCompile Include="CLicenseDlg.cpp" />
+    <ClCompile Include="NotifyManager.cpp" />
+    <ClCompile Include="NotifySettingsDlg.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\client\Audio.h" />
@@ -155,6 +157,9 @@
     <ClInclude Include="LangManager.h" />
     <ClInclude Include="CIconButton.h" />
     <ClInclude Include="CLicenseDlg.h" />
+    <ClInclude Include="NotifyConfig.h" />
+    <ClInclude Include="NotifyManager.h" />
+    <ClInclude Include="NotifySettingsDlg.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />

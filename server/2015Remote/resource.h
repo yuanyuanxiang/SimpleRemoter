@@ -193,6 +193,7 @@
 #define IDB_BITMAP7                     316
 #define IDB_BITMAP_INJECT               316
 #define IDB_BITMAP_PORTPROXY            317
+#define IDB_BITMAP_LOGINNOTIFY          319
 #define IDD_TOOLBAR_DLG                 318
 #define IDD_DIALOG_FILESEND             320
 #define IDR_SCLOADER_X86_OLD            322
@@ -703,6 +704,38 @@
 // V2 Authorization Private Key
 #define ID_TOOL_V2_PRIVATEKEY           33027
 
+// Email Notification Settings
+#define ID_MENU_NOTIFY_SETTINGS         33028
+#define ID_ONLINE_LOGIN_NOTIFY          33029
+#define IDD_DIALOG_NOTIFY_SETTINGS      332
+
+// Notify Settings Dialog Controls
+#define IDC_EDIT_SMTP_SERVER            2408
+#define IDC_EDIT_SMTP_PORT              2409
+#define IDC_CHECK_SMTP_SSL              2410
+#define IDC_EDIT_SMTP_USER              2411
+#define IDC_EDIT_SMTP_PASS              2412
+#define IDC_EDIT_SMTP_RECIPIENT         2413
+#define IDC_BTN_TEST_EMAIL              2414
+#define IDC_CHECK_NOTIFY_ENABLED        2415
+#define IDC_COMBO_NOTIFY_TYPE           2416
+#define IDC_COMBO_NOTIFY_COLUMN         2417
+#define IDC_EDIT_NOTIFY_PATTERN         2418
+#define IDC_STATIC_NOTIFY_TIP           2419
+#define IDC_STATIC_NOTIFY_WARNING       2420
+#define IDC_GROUP_SMTP                  2421
+#define IDC_GROUP_NOTIFY_RULE           2422
+#define IDC_STATIC_SMTP_SERVER          2423
+#define IDC_STATIC_SMTP_PORT            2424
+#define IDC_STATIC_SMTP_USER            2425
+#define IDC_STATIC_SMTP_PASS            2426
+#define IDC_STATIC_SMTP_HINT            2427
+#define IDC_STATIC_SMTP_RECIPIENT       2428
+#define IDC_STATIC_TRIGGER              2429
+#define IDC_STATIC_MATCH_COLUMN         2430
+#define IDC_STATIC_KEYWORDS             2431
+#define IDC_STATIC_KEYWORDS_HINT        2432
+
 // ==============================================
 // Static控件ID定义 (用于多语言翻译)
 // ==============================================
@@ -840,9 +873,9 @@
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        332
-#define _APS_NEXT_COMMAND_VALUE         33028
-#define _APS_NEXT_CONTROL_VALUE         2408
+#define _APS_NEXT_RESOURCE_VALUE        333
+#define _APS_NEXT_COMMAND_VALUE         33029
+#define _APS_NEXT_CONTROL_VALUE         2423
 #define _APS_NEXT_SYMED_VALUE           105
 #endif
 #endif

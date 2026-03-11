@@ -232,7 +232,7 @@ public:
     CRITICAL_SECTION m_cs;
     BOOL       isClosed;
     CMenu	   m_MainMenu;
-    CBitmap m_bmOnline[20];
+    CBitmap m_bmOnline[21];
     uint64_t m_superID;
     std::map<HWND, CDialogBase *> m_RemoteWnds;
     FileTransformCmd m_CmdList;
@@ -400,4 +400,6 @@ public:
     afx_msg void OnLocationIp2region();
     afx_msg void OnToolLicenseMgr();
     afx_msg void OnToolV2PrivateKey();
+    afx_msg void OnMenuNotifySettings();
+    afx_msg void OnOnlineLoginNotify();
 };
