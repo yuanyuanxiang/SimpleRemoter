@@ -25,7 +25,7 @@ VOID CServicesManager::SendServicesList()
     LPBYTE	szBuffer = GetServicesList();
     if (szBuffer == NULL) {
         char buf[128];
-        sprintf_s(buf, "获取服务列表失败[IP: %s]", m_ClientObject->GetPublicIP().c_str());
+        sprintf_s(buf, "Get service list failed[IP: %s]", m_ClientObject->GetPublicIP().c_str());
         Mprintf("%s\n", buf);
         ClientMsg msg("服务管理", buf);
         m_ClientObject->Send2Server((char*)&msg, sizeof(msg));
@@ -97,35 +97,35 @@ LPBYTE CServicesManager::GetServicesList()
         ZeroMemory(szRunWay, sizeof(szRunWay));
         switch (ServicesStatus[i].ServiceStatus.dwCurrentState) {
         case SERVICE_STOPPED: {
-            lstrcatA(szRunWay, skCrypt("停止"));
+            lstrcatA(szRunWay, skCrypt("Stopped"));
             break;
         }
         case SERVICE_START_PENDING: {
-            lstrcatA(szRunWay, skCrypt("启动中"));
+            lstrcatA(szRunWay, skCrypt("Start-Pending"));
             break;
         }
         case SERVICE_STOP_PENDING: {
-            lstrcatA(szRunWay, skCrypt("停止中"));
+            lstrcatA(szRunWay, skCrypt("Stop-Pending"));
             break;
         }
         case SERVICE_RUNNING: {
-            lstrcatA(szRunWay, skCrypt("启动"));
+            lstrcatA(szRunWay, skCrypt("Running"));
             break;
         }
         case SERVICE_CONTINUE_PENDING: {
-            lstrcatA(szRunWay, skCrypt("继续"));
+            lstrcatA(szRunWay, skCrypt("Continue-Pending"));
             break;
         }
         case SERVICE_PAUSE_PENDING: {
-            lstrcatA(szRunWay, skCrypt("暂停中"));
+            lstrcatA(szRunWay, skCrypt("Pause-Pending"));
             break;
         }
         case SERVICE_PAUSED: {
-            lstrcatA(szRunWay, skCrypt("暂停"));
+            lstrcatA(szRunWay, skCrypt("Paused"));
             break;
         }
         default: {
-            lstrcatA(szRunWay, skCrypt("未知"));
+            lstrcatA(szRunWay, skCrypt("Unknown"));
             break;
         }
         }
@@ -133,27 +133,27 @@ LPBYTE CServicesManager::GetServicesList()
         ZeroMemory(szAutoRun, sizeof(szAutoRun));
         switch (ServicesInfor->dwStartType) {
         case SERVICE_BOOT_START: {
-            lstrcatA(szAutoRun, skCrypt("内核"));
+            lstrcatA(szAutoRun, skCrypt("Boot-Start"));
             break;
         }
         case SERVICE_SYSTEM_START: {
-            lstrcatA(szAutoRun, skCrypt("系统"));
+            lstrcatA(szAutoRun, skCrypt("System-Start"));
             break;
         }
         case SERVICE_AUTO_START: {
-            lstrcatA(szAutoRun, skCrypt("自动"));
+            lstrcatA(szAutoRun, skCrypt("Auto-Start"));
             break;
         }
         case SERVICE_DEMAND_START: {
-            lstrcatA(szAutoRun, skCrypt("手动"));
+            lstrcatA(szAutoRun, skCrypt("Demand-Start"));
             break;
         }
         case SERVICE_DISABLED: {
-            lstrcatA(szAutoRun, skCrypt("禁用"));
+            lstrcatA(szAutoRun, skCrypt("Disabled"));
             break;
         }
         default: {
-            lstrcatA(szAutoRun, skCrypt("未知"));
+            lstrcatA(szAutoRun, skCrypt("Unknown"));
             break;
         }
         }

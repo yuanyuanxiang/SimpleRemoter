@@ -160,7 +160,7 @@ public:
         switch (m_ContextObject->InDeCompressedBuffer.GetBYTE(0)) {
         case TOKEN_CLIENT_MSG: {
             ClientMsg* msg = (ClientMsg*)m_ContextObject->InDeCompressedBuffer.GetBuffer(0);
-            PostMessageA(WM_SHOWERRORMSG, (WPARAM)new CString(msg->text), (LPARAM)new CString(msg->title));
+            PostMessageA(WM_SHOWERRORMSG, (WPARAM)new CString(_L(msg->text)), (LPARAM)new CString(_L(msg->title)));
             return TRUE;
         }
         }

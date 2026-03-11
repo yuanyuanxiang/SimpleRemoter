@@ -200,8 +200,8 @@ BOOL CFileManagerDlg::OnInitDialog()
 {
     __super::OnInitDialog();
     // 多语言翻译 - Static控件
-    SetDlgItemText(IDC_STATIC_FILE_MANAGER_LOCAL_PATH, _TR("本地路径:"));
-    SetDlgItemText(IDC_STATIC_FILE_MANAGER_REMOTE_PATH, _TR("远程路径:"));
+    SetDlgItemText(IDC_STATIC_LOCAL, _TR("本地"));
+    SetDlgItemText(IDC_STATIC_REMOTE, _TR("远程"));
 
     // TODO: Add extra initialization here
 

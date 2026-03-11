@@ -993,7 +993,7 @@ LRESULT CMy2015RemoteDlg::OnShowErrMessage(WPARAM wParam, LPARAM lParam)
     CString* title = (CString*)lParam;
 
     CTime Timer = CTime::GetCurrentTime();
-    CString strTime = Timer.FormatL("%H:%M:%S");
+    CString strTime = Timer.FormatL("%Y-%m-%d %H:%M:%S");
 
     m_CList_Message.InsertItem(0, title ? *title : _TR("操作错误"));
     m_CList_Message.SetItemText(0, 1, strTime);
@@ -3156,7 +3156,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     switch (cmd) {
     case TOKEN_CLIENT_MSG: {
         ClientMsg *msg =(ClientMsg*)ContextObject->InDeCompressedBuffer.GetBuffer(0);
-        PostMessageA(WM_SHOWERRORMSG, (WPARAM)new CString(msg->text), (LPARAM)new CString(msg->title));
+        PostMessageA(WM_SHOWERRORMSG, (WPARAM)new CString(_L(msg->text)), (LPARAM)new CString(_L(msg->title)));
         break;
     }
     case TOKEN_AUTH: {
