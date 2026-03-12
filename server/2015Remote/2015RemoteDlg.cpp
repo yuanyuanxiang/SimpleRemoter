@@ -4174,17 +4174,23 @@ struct SendV2CallbackData {
 static bool SendFileChunkToClientV2(void* user, FileChunkPacketV2* chunk, unsigned char* data, int size)
 {
     SendV2CallbackData* cbData = (SendV2CallbackData*)user;
-    if (!cbData) return false;
+    if (!cbData) {
+        Mprintf("【V2传输】 回调数据为空\n");
+        return false;
+    }
 
     // 通过ID查找客户端，检查是否仍然在线
     context* ctx = g_2015RemoteDlg->FindHost(cbData->clientID);
     if (!ctx) {
-        Mprintf("【V2传输】 客户端已断开，停止传输\n");
+        Mprintf("【V2传输】 客户端已断开 (clientID=%llu)，停止传输\n", cbData->clientID);
         return false;
     }
 
     // 发送数据
     BOOL sent = ctx->Send2Client(data, size);
+    if (!sent) {
+        Mprintf("【V2传输】 Send2Client 失败: size=%d, clientID=%llu\n", size, cbData->clientID);
+    }
 
     // FILE_COMPLETE_V2 包结构不同，跳过进度更新
     if (data[0] == COMMAND_FILE_COMPLETE_V2) {
@@ -4296,16 +4302,17 @@ void CMy2015RemoteDlg::SendFilesToClientV2Internal(context* mainCtx, const std::
         if (resumeTransferID) {
             Sleep(500);  // 等待续传响应
         } else if (targetDir.empty()) {
-            Sleep(200);  // 等待 COMMAND_C2C_PREPARE 处理完成
+            Sleep(500);  // 等待 COMMAND_C2C_PREPARE 处理完成（增加到500ms以支持Linux客户端）
         }
 
         // 检查客户端是否还在线
         context* ctx = FindHost(clientID);
         if (!ctx) {
-            Mprintf("【V2传输】 客户端已断开，取消传输\n");
+            Mprintf("【V2传输】 客户端已断开 (clientID=%llu)，取消传输\n", clientID);
             if (dlg) dlg->FinishFileSend(FALSE);
             return;
         }
+        Mprintf("【V2传输】 开始传输, clientID=%llu, files=%zu\n", clientID, files.size());
 
         // 获取续传偏移（从全局状态）
         std::map<uint32_t, uint64_t> offsets = startOffsets;

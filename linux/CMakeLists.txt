@@ -42,3 +42,6 @@ target_link_libraries(ghost PRIVATE "${CMAKE_SOURCE_DIR}/lib/libzstd.a")
 
 # 链接 dl 库（dlopen/dlsym 用于运行时加载 X11）
 target_link_libraries(ghost PRIVATE dl)
+
+# 链接 pthread 库（std::thread 需要）
+target_link_libraries(ghost PRIVATE pthread)

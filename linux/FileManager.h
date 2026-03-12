@@ -11,6 +11,10 @@
 #include <fstream>
 #include <sstream>
 #include <cerrno>
+#include "FileTransferV2.h"
+
+// 外部声明 clientID（在 main.cpp 中定义）
+extern uint64_t g_myClientID;
 
 // ============== Linux File Manager ==============
 // Implements file transfer between Windows server and Linux client
@@ -59,6 +63,11 @@ public:
         case COMMAND_DOWN_FILES:
             // Server wants to download files FROM Linux (upload from Linux perspective)
             UploadToRemote((char*)szBuffer + 1);
+            break;
+
+        case CMD_DOWN_FILES_V2:
+            // V2 上传文件到服务端
+            FileTransferV2::HandleDownFilesV2(szBuffer, ulLength, m_client, g_myClientID);
             break;
 
         case COMMAND_CONTINUE:

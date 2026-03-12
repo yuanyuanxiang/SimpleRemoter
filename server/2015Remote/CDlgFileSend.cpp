@@ -176,7 +176,16 @@ LRESULT CDlgFileSend::OnUpdateFileProgress(WPARAM wParam, LPARAM lParam)
         ShowWindow(SW_SHOW);
         SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
     }
-    if (percent>=100.) SetTimer(1, 3000, NULL);
+
+    // 只有最后一个文件完成时才设置自动关闭定时器
+    // 避免多文件传输时第一个文件完成后就关闭对话框
+    bool isLastFile = (pInfo->fileIndex + 1 >= pInfo->totalFiles);
+    if (percent >= 100. && isLastFile) {
+        SetTimer(1, 3000, NULL);
+    } else {
+        // 传输新文件时取消之前的定时器
+        KillTimer(1);
+    }
 
     delete pInfo;
     delete pFile;

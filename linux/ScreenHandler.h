@@ -2,13 +2,19 @@
 #include "common/commands.h"
 #include "client/IOCPClient.h"
 #include "LinuxConfig.h"
+#include "ClipboardHandler.h"
+#include "FileTransferV2.h"
 #include <dlfcn.h>
+#include <sys/stat.h>
 #include <thread>
 #include <mutex>
 #include <atomic>
 #include <vector>
 #include <cstring>
 #include <stdexcept>
+
+// 客户端 ID（定义在 main.cpp）
+extern uint64_t g_myClientID;
 
 // Linux 端 BITMAPINFOHEADER 定义，与 Windows 完全一致
 #pragma pack(push, 1)
@@ -661,15 +667,17 @@ public:
         std::vector<uint8_t> buf(ulLength, 0);
         buf[0] = TOKEN_BITMAPINFO;
         memcpy(&buf[1], &m_bmpHeader, sizeof(BITMAPINFOHEADER_LNX));
+        // 第一个 uint64_t 是 clientID，用于服务端识别客户端
+        uint64_t clientID = g_myClientID;
         uint64_t zero = 0;
-        memcpy(&buf[1 + sizeof(BITMAPINFOHEADER_LNX)], &zero, sizeof(uint64_t));
+        memcpy(&buf[1 + sizeof(BITMAPINFOHEADER_LNX)], &clientID, sizeof(uint64_t));
         memcpy(&buf[1 + sizeof(BITMAPINFOHEADER_LNX) + sizeof(uint64_t)], &zero, sizeof(uint64_t));
         ScreenSettings settings = {};
         settings.MaxFPS = m_maxFPS.load();
         settings.QualityLevel = m_qualityLevel;  // 上报保存的质量等级
         memcpy(&buf[1 + sizeof(BITMAPINFOHEADER_LNX) + 2 * sizeof(uint64_t)], &settings, sizeof(ScreenSettings));
         m_client->Send2Server((char*)buf.data(), ulLength);
-        Mprintf(">>> SendBitmapInfo: QualityLevel=%d\n", m_qualityLevel);
+        Mprintf(">>> SendBitmapInfo: clientID=%llu, QualityLevel=%d\n", clientID, m_qualityLevel);
     }
 
     virtual VOID OnReceive(PBYTE data, ULONG size)
@@ -694,6 +702,134 @@ public:
                 int8_t level = (int8_t)data[1];
                 int persist = (size >= 3) ? data[2] : 0;
                 ApplyQualityLevel(level, persist);
+            }
+            break;
+
+        case COMMAND_SCREEN_SET_CLIPBOARD:
+            // 服务端设置剪贴板: [cmd:1][text:N]
+            if (size > 1) {
+                if (!ClipboardHandler::IsAvailable()) {
+                    Mprintf("*** Clipboard unavailable (install xclip/xsel, need DISPLAY)\n");
+                } else if (ClipboardHandler::SetTextRaw((const char*)(data + 1), size - 1)) {
+                    Mprintf(">>> Clipboard SET: %zu bytes\n", size - 1);
+                } else {
+                    Mprintf("*** Clipboard SET failed\n");
+                }
+            }
+            break;
+
+        case COMMAND_SCREEN_GET_CLIPBOARD:
+            // 服务端请求剪贴板: [cmd:1][hash:64][hmac:16]
+            // 返回: [TOKEN_CLIPBOARD_TEXT:1][text:N] 或 [COMMAND_GET_FOLDER:1][files]
+            {
+                if (!ClipboardHandler::IsAvailable()) {
+                    Mprintf("*** Clipboard unavailable (install xclip/xsel, need DISPLAY)\n");
+                    uint8_t empty = TOKEN_CLIPBOARD_TEXT;
+                    m_client->Send2Server((char*)&empty, 1);
+                    break;
+                }
+
+                // 优先检查剪贴板中的文件
+                auto files = ClipboardHandler::GetFiles();
+                if (!files.empty()) {
+                    // 返回 COMMAND_GET_FOLDER + 文件列表（多字符串格式：file1\0file2\0\0）
+                    std::vector<uint8_t> buf;
+                    buf.push_back(COMMAND_GET_FOLDER);
+                    for (const auto& f : files) {
+                        // 文件路径需要转换为 GBK 编码（服务端预期）
+                        std::string gbkPath = FileTransferV2::utf8ToGbk(f);
+                        buf.insert(buf.end(), gbkPath.begin(), gbkPath.end());
+                        buf.push_back(0);  // 每个路径后的 null 终止符
+                    }
+                    buf.push_back(0);  // 结束标记
+                    m_client->Send2Server((char*)buf.data(), buf.size());
+                    Mprintf(">>> Clipboard GET: %zu files\n", files.size());
+                    break;
+                }
+
+                // 没有文件，返回文本
+                std::string text = ClipboardHandler::GetText();
+                if (!text.empty()) {
+                    std::vector<uint8_t> buf(1 + text.size());
+                    buf[0] = TOKEN_CLIPBOARD_TEXT;
+                    memcpy(&buf[1], text.data(), text.size());
+                    m_client->Send2Server((char*)buf.data(), buf.size());
+                    Mprintf(">>> Clipboard GET: %zu bytes text\n", text.size());
+                } else {
+                    // 返回空剪贴板
+                    uint8_t empty = TOKEN_CLIPBOARD_TEXT;
+                    m_client->Send2Server((char*)&empty, 1);
+                    Mprintf(">>> Clipboard GET: empty\n");
+                }
+            }
+            break;
+
+        case COMMAND_GET_FILE:
+            // 服务端请求下载文件: [cmd:1][targetDir\0][file1\0file2\0...\0]
+            // 使用 V2 协议上传文件
+            {
+                if (size < 3) break;
+
+                // 解析目标目录（GBK 编码）
+                const char* ptr = (const char*)(data + 1);
+                const char* end = (const char*)(data + size);
+                std::string targetDirGbk = ptr;
+                std::string targetDir = FileTransferV2::gbkToUtf8(targetDirGbk);
+                ptr += targetDirGbk.length() + 1;
+
+                // 解析文件列表
+                std::vector<std::string> files;
+                while (ptr < end && *ptr != '\0') {
+                    std::string fileGbk = ptr;
+                    files.push_back(FileTransferV2::gbkToUtf8(fileGbk));
+                    ptr += fileGbk.length() + 1;
+                }
+
+                // 如果没有文件列表，从剪贴板获取
+                if (files.empty()) {
+                    files = ClipboardHandler::GetFiles();
+                }
+
+                if (!files.empty() && !targetDir.empty()) {
+                    Mprintf(">>> COMMAND_GET_FILE: %zu files -> %s\n", files.size(), targetDir.c_str());
+
+                    // 使用 V2 协议发送文件
+                    extern uint64_t g_myClientID;
+                    std::thread([this, files, targetDir]() {
+                        // 收集所有文件（展开目录）
+                        std::vector<std::string> allFiles;
+                        std::vector<std::string> rootCandidates;
+
+                        for (const auto& path : files) {
+                            struct stat st;
+                            if (stat(path.c_str(), &st) != 0) continue;
+
+                            if (S_ISDIR(st.st_mode)) {
+                                std::string dirPath = path;
+                                if (dirPath.back() != '/') dirPath += '/';
+                                size_t pos = dirPath.rfind('/', dirPath.length() - 2);
+                                std::string parentPath = (pos != std::string::npos) ? dirPath.substr(0, pos + 1) : dirPath;
+                                rootCandidates.push_back(parentPath);
+                                FileTransferV2::CollectFiles(dirPath, allFiles);
+                            } else {
+                                rootCandidates.push_back(path);
+                                allFiles.push_back(path);
+                            }
+                        }
+
+                        if (allFiles.empty()) {
+                            Mprintf("*** No files to send\n");
+                            return;
+                        }
+
+                        std::string commonRoot = FileTransferV2::GetCommonRoot(rootCandidates);
+                        Mprintf(">>> Sending %zu files, root=%s\n", allFiles.size(), commonRoot.c_str());
+
+                        FileTransferV2::SendFilesV2(allFiles, targetDir, commonRoot, m_client, g_myClientID);
+                    }).detach();
+                } else {
+                    Mprintf("*** COMMAND_GET_FILE: no files or empty target\n");
+                }
             }
             break;
         }

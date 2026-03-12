@@ -1,5 +1,6 @@
 ﻿#pragma once
 #include <imm.h>
+#include <map>
 #include "IOCPServer.h"
 #include "..\..\client\CursorInfo.h"
 #include "VideoDlg.h"
@@ -39,6 +40,10 @@ extern "C"
 #pragma comment(lib, "Mfuuid.lib")
 #pragma comment(lib, "Bcrypt.lib")
 #pragma comment(lib, "Strmiids.lib")
+
+// 文件接收消息（用于将工作线程的文件数据转发到主线程处理）
+#define WM_RECVFILEV2_CHUNK    (WM_USER + 0x200)
+#define WM_RECVFILEV2_COMPLETE (WM_USER + 0x201)
 
 // ScreenSpyDlg 系统菜单命令 ID
 enum {
@@ -191,6 +196,10 @@ public:
     ULONGLONG m_nSaveNoticeTime = 0; // 截图提示开始时间
     BOOL m_bUsingFRP = FALSE;
 
+    // 文件接收进度对话框（用于 Linux Ctrl+C -> 服务端 Ctrl+V）
+    // 按 transferID 管理多个并发传输
+    std::map<uint64_t, class CDlgFileSend*> m_FileRecvDlgs;
+
     void SaveSnapshot(void);
     // 对话框数据
     enum { IDD = IDD_DIALOG_SCREEN_SPY };
@@ -296,6 +305,8 @@ public:
     afx_msg void OnActivate(UINT nState, CWnd* pWndOther, BOOL bMinimized);
     afx_msg LRESULT OnDisconnect(WPARAM wParam, LPARAM lParam);
     afx_msg LRESULT OnWaveOutDone(WPARAM wParam, LPARAM lParam);
+    afx_msg LRESULT OnRecvFileV2Chunk(WPARAM wParam, LPARAM lParam);
+    afx_msg LRESULT OnRecvFileV2Complete(WPARAM wParam, LPARAM lParam);
     afx_msg void OnExitFullscreen()
     {
         BYTE cmd[4] = { CMD_FULL_SCREEN, m_Settings.FullScreen = FALSE };
