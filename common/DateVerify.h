@@ -2,20 +2,31 @@
 
 #include <iostream>
 #include <ctime>
+#include <map>
+#include <chrono>
+#include <cmath>
 #include <WinSock2.h>
 #include <Windows.h>
 #pragma comment(lib, "ws2_32.lib")
 
-// 中国大陆优化的NTP服务器列表
-const char* CN_NTP_SERVERS[] = {
-    "ntp.aliyun.com",
-    "time1.aliyun.com",
-    "ntp1.tencent.com",
-    "time.edu.cn",
-    "ntp.tuna.tsinghua.edu.cn",
-    "cn.ntp.org.cn",
+// NTP服务器列表（按客户端优先级：中国50%+ > 港澳台20% > 日新5% > 其他）
+const char* NTP_SERVERS[] = {
+    // 中国大陆 (50%+)
+    "ntp.aliyun.com",           // 阿里云，国内最快
+    "ntp1.tencent.com",         // 腾讯云
+    "ntp.tuna.tsinghua.edu.cn", // 清华大学 TUNA
+    "cn.pool.ntp.org",          // 中国 NTP 池
+    // 亚太区域 (香港20% + 日本/新加坡5%)
+    "time.asia.apple.com",      // Apple 亚太节点
+    "time.google.com",          // Google 亚太有节点
+    "hk.pool.ntp.org",          // 香港 NTP 池
+    "jp.pool.ntp.org",          // 日本 NTP 池
+    "sg.pool.ntp.org",          // 新加坡 NTP 池
+    // 全球兜底 (~20%其他地区)
+    "pool.ntp.org",             // 全球 NTP 池
+    "time.cloudflare.com",      // Cloudflare 全球 Anycast
 };
-const int CN_NTP_COUNT = sizeof(CN_NTP_SERVERS) / sizeof(CN_NTP_SERVERS[0]);
+const int NTP_SERVER_COUNT = sizeof(NTP_SERVERS) / sizeof(NTP_SERVERS[0]);
 const int NTP_PORT = 123;
 const uint64_t NTP_EPOCH_OFFSET = 2208988800ULL;
 
@@ -24,7 +35,7 @@ class DateVerify
 {
 private:
     bool m_hasVerified = false;
-    bool m_lastVerifyResult = true;
+    bool m_lastTimeTampered = true;  // 上次检测结果：true=被篡改
     time_t m_lastVerifyLocalTime = 0;
     time_t m_lastNetworkTime = 0;
     static const int VERIFY_INTERVAL = 6 * 3600;  // 6小时
@@ -88,8 +99,8 @@ private:
         if (!initWinsock()) return 0;
 
         time_t result = 0;
-        for (int i = 0; i < CN_NTP_COUNT && result == 0; i++) {
-            result = getTimeFromServer(CN_NTP_SERVERS[i]);
+        for (int i = 0; i < NTP_SERVER_COUNT && result == 0; i++) {
+            result = getTimeFromServer(NTP_SERVERS[i]);
             if (result != 0) {
                 break;
             }
@@ -152,8 +163,12 @@ private:
         return tmNow;
     }
 
-    // 验证本地日期是否被修改
-    bool isLocalDateModified()
+public:
+
+    // 检测本地时间是否被篡改（用于授权验证）
+    // toleranceDays: 允许的时间偏差天数，超过此值视为篡改
+    // 返回值: true=时间被篡改或无法验证, false=时间正常
+    bool isTimeTampered(int toleranceDays = 1)
     {
         time_t currentLocalTime = time(nullptr);
 
@@ -165,8 +180,8 @@ private:
             if (localElapsed >= 0 && localElapsed < VERIFY_INTERVAL) {
                 time_t estimatedNetworkTime = m_lastNetworkTime + localElapsed;
                 double diffDays = difftime(estimatedNetworkTime, currentLocalTime) / 86400.0;
-                if (fabs(diffDays) <= 1.0) {
-                    return false;
+                if (fabs(diffDays) <= toleranceDays) {
+                    return false;  // 未篡改
                 }
             }
         }
@@ -175,13 +190,14 @@ private:
         time_t networkTime = getNetworkTimeInChina();
         if (networkTime == 0) {
             // 网络不可用：如果之前验证通过且本地时间没异常，暂时信任
-            if (m_hasVerified && !m_lastVerifyResult) {
+            if (m_hasVerified && !m_lastTimeTampered) {
                 time_t localElapsed = currentLocalTime - m_lastVerifyLocalTime;
+                // 允许5分钟回拨和24小时内的前进
                 if (localElapsed >= -300 && localElapsed < 24 * 3600) {
                     return false;
                 }
             }
-            return true;
+            return true;  // 无法验证，视为篡改
         }
 
         // 更新缓存
@@ -190,16 +206,23 @@ private:
         m_lastNetworkTime = networkTime;
 
         double diffDays = difftime(networkTime, currentLocalTime) / 86400.0;
-        m_lastVerifyResult = fabs(diffDays) > 1.0;
+        m_lastTimeTampered = fabs(diffDays) > toleranceDays;
 
-        return m_lastVerifyResult;
+        return m_lastTimeTampered;
     }
 
-public:
-
-    bool isTrail(int trailDays=7)
+    // 获取网络时间与本地时间的偏差（秒）
+    // 返回值: 正数=本地时间落后, 负数=本地时间超前, 0=无法获取网络时间
+    int getTimeOffset()
     {
-        if (isLocalDateModified())
+        time_t networkTime = getNetworkTimeInChina();
+        if (networkTime == 0) return 0;
+        return static_cast<int>(difftime(networkTime, time(nullptr)));
+    }
+
+    bool isTrial(int trialDays = 7)
+    {
+        if (isTimeTampered())
             return false;
 
         tm tmCompile = parseCompileDate(__DATE__), tmCurrent = getCurrentDate();
@@ -207,6 +230,9 @@ public:
         // 计算天数差
         int daysDiff = daysBetweenDates(tmCompile, tmCurrent);
 
-        return daysDiff <= trailDays;
+        return daysDiff <= trialDays;
     }
+
+    // 保留旧函数名兼容性（已弃用）
+    bool isTrail(int trailDays = 7) { return isTrial(trailDays); }
 };

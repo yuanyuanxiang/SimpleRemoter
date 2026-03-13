@@ -603,8 +603,8 @@ protected:
     // 语言代码到显示名称的映射
     static CString GetLanguageDisplayName(const CString& langCode)
     {
-        if (langCode == _T("zh_CN")) return _T("简体中文");
-        if (langCode == _T("zh_TW")) return _T("繁體中文");
+        if (langCode == _T("zh_CN")) return _T("Simplified Chinese");
+        if (langCode == _T("zh_TW")) return _T("Traditional Chinese");
         if (langCode == _T("en_US")) return _T("English");
         return langCode;
     }

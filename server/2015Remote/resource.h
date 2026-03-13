@@ -810,6 +810,8 @@
 #define ID_EXECUTE_TESTRUN              33030
 #define ID_33031                        33031
 #define ID_EXECUTE_GHOST                33032
+#define ID_33033                        33033
+#define ID_MASTER_TRAIL                 33034
 #define ID_EXIT_FULLSCREEN              40001
 
 // Next default values for new objects
@@ -817,7 +819,7 @@
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        333
-#define _APS_NEXT_COMMAND_VALUE         33033
+#define _APS_NEXT_COMMAND_VALUE         33035
 #define _APS_NEXT_CONTROL_VALUE         2423
 #define _APS_NEXT_SYMED_VALUE           105
 #endif

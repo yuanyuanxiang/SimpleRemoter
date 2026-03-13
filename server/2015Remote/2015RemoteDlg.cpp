@@ -27,7 +27,7 @@
 #include "pwd_gen.h"
 #include "common/location.h"
 #include <proxy/ProxyMapDlg.h>
-#include "DateVerify.h"
+#include "common/DateVerify.h"
 #include <fstream>
 #include "common/skCrypter.h"
 #include "common/commands.h"
@@ -671,6 +671,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_MENU_NOTIFY_SETTINGS, &CMy2015RemoteDlg::OnMenuNotifySettings)
         ON_COMMAND(ID_EXECUTE_TESTRUN, &CMy2015RemoteDlg::OnExecuteTestrun)
         ON_COMMAND(ID_EXECUTE_GHOST, &CMy2015RemoteDlg::OnExecuteGhost)
+        ON_COMMAND(ID_MASTER_TRAIL, &CMy2015RemoteDlg::OnMasterTrail)
         END_MESSAGE_MAP()
 
 
@@ -2729,7 +2730,7 @@ VOID CMy2015RemoteDlg::SendAllCommand(PBYTE  szBuffer, ULONG ulLength)
 //真彩Bar
 VOID CMy2015RemoteDlg::OnAbout()
 {
-    MessageBoxL("Copyleft (c) FTU 2019—2026" + CString(" v") + VERSION_STR + _L("\n编译日期: ") + __DATE__ +
+    MessageBoxL("Copyleft (c) FTU 2019-2026" + CString(" v") + VERSION_STR + _L("\n编译日期: ") + __DATE__ +
                 CString(sizeof(void*)==8 ? " (x64)" : " (x86)"), "关于", MB_ICONINFORMATION);
 }
 
@@ -6966,4 +6967,30 @@ void CMy2015RemoteDlg::OnOnlineLoginNotify()
         msg += _TR("注意: SMTP 未配置，请先在通知设置中配置邮箱");
     }
     MessageBoxL(msg, _TR("上线提醒"), MB_ICONINFORMATION);
+}
+
+void CMy2015RemoteDlg::OnMasterTrail()
+{
+    std::string pwd = THIS_CFG.GetStr("settings", "Password");
+    BOOL noPwd = pwd.empty();
+    if (!noPwd) {
+		MessageBoxL("已有授权密码。请勿将本程序用于任何非法、违规的用途，否则后果自负！",
+            "声明", MB_ICONINFORMATION);
+        return;
+    }
+    if (IDYES != MessageBoxL("本软件仅限于合法、正当、合规的用途。\r\n您是否同意？",
+        "声明", MB_ICONQUESTION | MB_YESNO))
+        return;
+    std::string master = THIS_CFG.GetStr("settings", "master");
+    int bindType = THIS_CFG.GetInt("settings", "BindType");
+    if (master != "127.0.0.1" || bindType != 1) {
+        THIS_CFG.SetStr("settings", "master", "127.0.0.1");
+        THIS_CFG.SetStr("settings", "BindType", "1");
+    }
+
+    THIS_CFG.SetStr("settings", "Password", "20260201-20280201-0020-be94-120d-20f9-919a");
+    THIS_CFG.SetStr("settings", "PwdHmac", "6015188620429852704");
+    THIS_CFG.SetStr("settings", "SN", getDeviceID("127.0.0.1"));
+    MessageBoxL("设置成功，仅限本地使用！试用版本会与授权服务联网验证！\n如需离线使用，需要正式授权。",
+        "警告", MB_ICONINFORMATION);
 }

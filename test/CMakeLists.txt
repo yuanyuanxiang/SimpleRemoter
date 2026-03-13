@@ -310,6 +310,25 @@ if(UNIX)
     target_link_libraries(quality_adaptive_test Threads::Threads)
 endif()
 
+# ============================================
+# 时间验证测试 (授权模块)
+# ============================================
+add_executable(date_verify_test
+    unit/auth/DateVerifyTest.cpp
+)
+
+target_link_libraries(date_verify_test
+    GTest::gtest_main
+)
+
+if(WIN32)
+    target_compile_definitions(date_verify_test PRIVATE _WIN32)
+endif()
+
+if(UNIX)
+    target_link_libraries(date_verify_test Threads::Threads)
+endif()
+
 # 注册测试
 include(GoogleTest)
 gtest_discover_tests(client_buffer_test)
@@ -326,6 +345,7 @@ gtest_discover_tests(diff_algorithm_test)
 gtest_discover_tests(rgb565_test)
 gtest_discover_tests(scroll_detector_test)
 gtest_discover_tests(quality_adaptive_test)
+gtest_discover_tests(date_verify_test)
 
 # 自定义目标：运行所有测试
 add_custom_target(run_tests
@@ -334,4 +354,5 @@ add_custom_target(run_tests
             file_transfer_test chunk_manager_test sha256_verify_test resume_state_test
             header_test packet_fragment_test http_mask_test
             diff_algorithm_test rgb565_test scroll_detector_test quality_adaptive_test
+            date_verify_test
 )

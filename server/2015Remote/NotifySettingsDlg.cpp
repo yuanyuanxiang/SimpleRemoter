@@ -60,6 +60,7 @@ BOOL NotifySettingsDlg::OnInitDialog()
     SetDlgItemText(IDC_STATIC_NOTIFY_TIP, _TR(_T("提示: 同一主机 60 分钟内仅通知一次")));
     SetDlgItemText(IDOK, _TR("确定"));
     SetDlgItemText(IDCANCEL, _TR("取消"));
+    SetWindowText(_TR("通知设置"));
 
     // Check PowerShell availability
     m_powerShellAvailable = GetNotifyManager().IsPowerShellAvailable();

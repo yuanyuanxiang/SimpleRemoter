@@ -7,7 +7,7 @@
 
 #include "Buffer.h"
 #define XXH_INLINE_ALL
-#include "xxhash.h"
+#include "common/xxhash.h"
 #include <WS2tcpip.h>
 #include <common/ikcp.h>
 

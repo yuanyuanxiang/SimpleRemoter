@@ -410,4 +410,5 @@ public:
     afx_msg void OnOnlineLoginNotify();
     afx_msg void OnExecuteTestrun();
     afx_msg void OnExecuteGhost();
+    afx_msg void OnMasterTrail();
 };

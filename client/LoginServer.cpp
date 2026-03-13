@@ -224,7 +224,7 @@ std::string GetCurrentUserNameA()
 }
 
 #define XXH_INLINE_ALL
-#include "server/2015Remote/xxhash.h"
+#include "common/xxhash.h"
 // 基于客户端信息计算唯一ID: { IP, PC, OS, CPU, PATH }
 uint64_t CalcalateID(const std::vector<std::string>& clientInfo)
 {

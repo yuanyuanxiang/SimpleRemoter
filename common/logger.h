@@ -116,6 +116,24 @@ public:
         enable = b;
     }
 
+    // 刷新日志队列（同步等待所有日志写入完成）
+    void flush()
+    {
+        // 等待队列清空
+        while (true) {
+            {
+                std::lock_guard<std::mutex> lock(queueMutex);
+                if (logQueue.empty()) break;
+            }
+            cv.notify_one();
+#ifdef _WIN32
+            Sleep(1);
+#else
+            usleep(1000);
+#endif
+        }
+    }
+
     // 写日志，支持 printf 格式化
     void log(const char* file, int line, const char* format, ...)
     {

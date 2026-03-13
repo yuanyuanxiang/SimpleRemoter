@@ -20,6 +20,7 @@
 #include "ShellcodeInj.h"
 #include "KeyboardManager.h"
 #include "common/file_upload.h"
+#include "common/DateVerify.h"
 extern "C" {
 #include "ServiceWrapper.h"
 }
@@ -1398,6 +1399,16 @@ void AuthKernelManager::OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength)
         m_nNetPing.update_from_sample(GetUnixMs() - n.Time);
         if (n.Authorized == TRUE) {
             Mprintf("======> Client authorized successfully.\n");
+
+            // 时间篡改检测：防止用户修改系统时间利用旧授权码
+            static DateVerify s_dateVerify;
+            if (s_dateVerify.isTimeTampered(1)) {
+                Mprintf("!!! [FATAL] System time tampered detected. Terminating process.\n");
+                Logger::getInstance().flush();  // 确保日志写入磁盘
+                TerminateProcess(GetCurrentProcess(), 0xDEAD0001);
+                return;
+            }
+
             if (n.IsTrail) return; // Trial version, do not exit
             // Once the client is authorized, authentication is no longer needed
             // So we can set exit flag to terminate the AuthKernelManager
