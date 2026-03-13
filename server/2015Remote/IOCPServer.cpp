@@ -127,6 +127,134 @@ std::string GetRemoteIP(SOCKET sock)
     return buf;
 }
 
+// IP 连接限流配置
+#define IP_BAN_WINDOW_SECONDS    60     // 统计窗口：60秒
+#define IP_BAN_MAX_CONNECTIONS   15     // 窗口内最大连接数
+#define IP_BAN_DURATION_SECONDS  3600   // 封禁时长：1小时
+
+// 检查 IP 是否被封禁
+bool IOCPServer::IsIPBanned(const std::string& ip)
+{
+    // 本地地址始终白名单（无需加锁）
+    if (ip == "127.0.0.1" || ip == "::1") {
+        return false;
+    }
+
+    CLock lock(m_BanLock);
+
+    // 检查白名单
+    if (m_WhitelistIPs.find(ip) != m_WhitelistIPs.end()) {
+        return false;
+    }
+
+    auto it = m_BannedIPs.find(ip);
+    if (it != m_BannedIPs.end()) {
+        time_t now = time(nullptr);
+        if (now < it->second) {
+            // 仍在封禁期内
+            return true;
+        }
+        // 封禁已过期，移除
+        m_BannedIPs.erase(it);
+    }
+    return false;
+}
+
+// 记录连接并检测异常
+void IOCPServer::RecordConnection(const std::string& ip)
+{
+    // 本地地址始终白名单（无需加锁）
+    if (ip == "127.0.0.1" || ip == "::1") {
+        return;
+    }
+
+    bool shouldBan = false;
+    {
+        CLock lock(m_BanLock);
+
+        // 检查白名单
+        if (m_WhitelistIPs.find(ip) != m_WhitelistIPs.end()) {
+            return;
+        }
+
+        time_t now = time(nullptr);
+
+        auto it = m_ConnectionCount.find(ip);
+        if (it == m_ConnectionCount.end()) {
+            // 新 IP，开始计数
+            m_ConnectionCount[ip] = { 1, now };
+        } else {
+            // 检查是否在同一个统计窗口内
+            if (now - it->second.windowStart < IP_BAN_WINDOW_SECONDS) {
+                it->second.count++;
+                // 检查是否超过阈值
+                if (it->second.count > IP_BAN_MAX_CONNECTIONS) {
+                    shouldBan = true;
+                }
+            } else {
+                // 新窗口，重置计数
+                it->second.count = 1;
+                it->second.windowStart = now;
+            }
+        }
+    }
+    if (shouldBan) {
+        BanIP(ip, IP_BAN_DURATION_SECONDS);
+    }
+}
+
+// 封禁 IP
+void IOCPServer::BanIP(const std::string& ip, int seconds)
+{
+    {
+        CLock lock(m_BanLock);
+        time_t expiry = time(nullptr) + seconds;
+        m_BannedIPs[ip] = expiry;
+        // 清除连接计数
+        m_ConnectionCount.erase(ip);
+    }
+    Mprintf("IP banned: %s (duration: %d seconds, reason: too many connections)\n",
+            ip.c_str(), seconds);
+}
+
+// 从配置文件加载 IP 白名单
+void IOCPServer::LoadIPWhitelist()
+{
+    CLock lock(m_BanLock);
+    m_WhitelistIPs.clear();
+
+    // 配置格式: IPWhitelist=192.168.1.1;10.0.0.1;172.16.0.100
+    std::string whitelist = THIS_CFG.GetStr("settings", "IPWhitelist", "");
+    if (whitelist.empty()) {
+        return;
+    }
+
+    // 按分号分割
+    size_t start = 0;
+    size_t end = 0;
+    while ((end = whitelist.find(';', start)) != std::string::npos) {
+        std::string ip = whitelist.substr(start, end - start);
+        // 去除空格
+        while (!ip.empty() && ip.front() == ' ') ip.erase(0, 1);
+        while (!ip.empty() && ip.back() == ' ') ip.pop_back();
+        if (!ip.empty()) {
+            m_WhitelistIPs.insert(ip);
+        }
+        start = end + 1;
+    }
+    // 最后一个 IP（分号后面的部分）
+    std::string ip = whitelist.substr(start);
+    while (!ip.empty() && ip.front() == ' ') ip.erase(0, 1);
+    while (!ip.empty() && ip.back() == ' ') ip.pop_back();
+    if (!ip.empty()) {
+        m_WhitelistIPs.insert(ip);
+    }
+
+    if (!m_WhitelistIPs.empty()) {
+        Mprintf("IP whitelist loaded: %zu IPs\n", m_WhitelistIPs.size());
+    }
+}
+
 IOCPServer::IOCPServer(HWND hWnd)
 {
     m_hMainWnd = hWnd;
@@ -143,6 +271,8 @@ IOCPServer::IOCPServer(HWND hWnd)
     m_ulMaxConnections = 10000;
 
     InitializeCriticalSection(&m_cs);
+    InitializeCriticalSection(&m_BanLock);
+    LoadIPWhitelist();
 
     m_ulWorkThreadCount = 0;
 
@@ -210,6 +340,7 @@ IOCPServer::~IOCPServer(void)
     }
 
     DeleteCriticalSection(&m_cs);
+    DeleteCriticalSection(&m_BanLock);
     m_ulWorkThreadCount = 0;
 
     m_ulThreadPoolMin  = 0;
@@ -782,8 +913,17 @@ void IOCPServer::OnAccept()
     std::string realIP;
     if (ParseProxyProtocolV2(sClientSocket, realIP)) {
         ContextObject->PeerName = realIP;
-        Mprintf("Proxy Protocol: real IP = %s\n", realIP.c_str());
     }
+
+    // IP 封禁检查
+    std::string clientIP = ContextObject->PeerName.empty() ?
+                           inet_ntoa(ClientAddr.sin_addr) : ContextObject->PeerName;
+    if (IsIPBanned(clientIP)) {
+        delete ContextObject;
+        closesocket(sClientSocket);
+        return;
+    }
+    RecordConnection(clientIP);
 
     ContextObject->wsaInBuf.buf = (char*)ContextObject->szBuffer;
     ContextObject->wsaInBuf.len = sizeof(ContextObject->szBuffer);

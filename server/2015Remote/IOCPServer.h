@@ -6,6 +6,9 @@
 #include "Server.h"
 #include <Mstcpip.h>
 #include "LangManager.h"
+#include <map>
+#include <set>
+#include <string>
 
 #define	NC_CLIENT_CONNECT		0x0001
 #define	NC_RECEIVE				0x0004
@@ -57,6 +60,21 @@ protected:
     ContextObjectList	m_ContextConnectionList;
     ContextObjectList	m_ContextFreePoolList;
     HWND                m_hMainWnd = nullptr;
+
+    // IP 连接限流和封禁
+    struct ConnectionInfo {
+        int count;          // 连接次数
+        time_t windowStart; // 统计窗口起始时间
+    };
+    std::map<std::string, ConnectionInfo> m_ConnectionCount;  // IP -> 连接统计
+    std::map<std::string, time_t> m_BannedIPs;                // IP -> 封禁到期时间
+    std::set<std::string> m_WhitelistIPs;                     // IP 白名单
+    CRITICAL_SECTION m_BanLock;
+
+    bool IsIPBanned(const std::string& ip);
+    void RecordConnection(const std::string& ip);
+    void BanIP(const std::string& ip, int seconds);
+    void LoadIPWhitelist();
 
 private:
     static DWORD WINAPI ListenThreadProc(LPVOID lParam);
