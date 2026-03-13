@@ -70,6 +70,7 @@ enum {
 class CSplashDlg;  // 前向声明
 class CClientListDlg;
 class CLicenseDlg;
+class CSearchBarDlg;
 
 #include "pwd_gen.h"
 
@@ -110,6 +111,7 @@ public:
     _ClientList *m_ClientMap = nullptr;
     CClientListDlg* m_pClientListDlg = nullptr;
     CLicenseDlg* m_pLicenseDlg = nullptr;
+    CSearchBarDlg* m_pSearchBar = nullptr;  // 搜索工具栏
     BOOL m_bEnableFileV2 = FALSE;  // V2 文件传输开关
 
     // 构造
@@ -284,6 +286,7 @@ public:
     afx_msg void OnOnlineDelete();
     afx_msg void OnOnlineUpdate();
     afx_msg void OnAbout();
+    afx_msg void OnToolbarSearch();
     afx_msg void OnIconNotify(WPARAM wParam,LPARAM lParam);
     afx_msg void OnNotifyShow();
     afx_msg void OnNotifyExit();

@@ -62,6 +62,7 @@
     <ClCompile Include="ServerSessionMonitor.cpp" />
     <ClCompile Include="SplashDlg.cpp" />
     <ClCompile Include="ToolbarDlg.cpp" />
+    <ClCompile Include="SearchBarDlg.cpp" />
     <ClCompile Include="CDlgFileSend.cpp" />
     <ClCompile Include="..\..\common\file_upload.cpp" />
     <ClCompile Include="..\..\client\reg_startup.c" />
@@ -147,6 +148,7 @@
     <ClInclude Include="ServerSessionMonitor.h" />
     <ClInclude Include="SplashDlg.h" />
     <ClInclude Include="ToolbarDlg.h" />
+    <ClInclude Include="SearchBarDlg.h" />
     <ClInclude Include="CDlgFileSend.h" />
     <ClInclude Include="..\..\client\reg_startup.h" />
     <ClInclude Include="HostInfo.h" />

@@ -207,6 +207,7 @@
 #define IDR_MENU_LICENSE                330
 #define IDD_DIALOG_TERMINAL             331
 #define IDD_DIALOG_NOTIFY_SETTINGS      332
+#define IDD_SEARCH_BAR                  335
 #define IDC_MESSAGE                     1000
 #define IDC_ONLINE                      1001
 #define IDC_STATIC_TIPS                 1002
@@ -594,6 +595,11 @@
 #define IDC_STATIC_MATCH_COLUMN         2430
 #define IDC_STATIC_KEYWORDS             2431
 #define IDC_STATIC_KEYWORDS_HINT        2432
+#define IDC_SEARCH_EDIT                 2440
+#define IDC_SEARCH_PREV                 2441
+#define IDC_SEARCH_NEXT                 2442
+#define IDC_SEARCH_CLOSE                2443
+#define IDC_SEARCH_COUNT                2444
 #define ID_ONLINE_UPDATE                32772
 #define ID_ONLINE_MESSAGE               32773
 #define ID_ONLINE_DELETE                32775
@@ -609,6 +615,7 @@
 #define IDM_ONLINE_SET                  32785
 #define IDM_ONLINE_BUILD                32786
 #define IDM_ONLINE_ABOUT                32787
+#define ID_TOOLBAR_SEARCH               32788
 #define IDM_NOTIFY_SHOW                 32790
 #define ID_NOTIFY_EXIT                  32791
 #define ID_MAIN_SET                     32794

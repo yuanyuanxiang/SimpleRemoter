@@ -328,6 +328,7 @@
     <ClInclude Include="RegisterDlg.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="ScreenSpyDlg.h" />
+    <ClInclude Include="SearchBarDlg.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="ServicesDlg.h" />
     <ClInclude Include="SettingDlg.h" />
@@ -435,6 +436,7 @@
     </ClCompile>
     <ClCompile Include="RegisterDlg.cpp" />
     <ClCompile Include="ScreenSpyDlg.cpp" />
+    <ClCompile Include="SearchBarDlg.cpp" />
     <ClCompile Include="ServicesDlg.cpp" />
     <ClCompile Include="SettingDlg.cpp" />
     <ClCompile Include="ShellDlg.cpp" />
