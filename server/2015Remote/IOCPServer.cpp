@@ -5,6 +5,101 @@
 #include <iostream>
 #include <ws2tcpip.h>
 
+// Proxy Protocol v2 签名 (12 字节)
+static const unsigned char PROXY_PROTOCOL_V2_SIGNATURE[12] = {
+    0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A
+};
+
+// 解析 Proxy Protocol v2 头，返回真实客户端 IP
+// 成功返回 true 并设置 realIP，失败返回 false
+// 如果不是 Proxy Protocol，返回 false 且不消费任何数据
+static bool ParseProxyProtocolV2(SOCKET sock, std::string& realIP)
+{
+    // 先 peek 前 16 字节（12 签名 + 4 头部）
+    unsigned char header[16];
+    int n = recv(sock, (char*)header, 16, MSG_PEEK);
+
+    if (n < 12) {
+        // 数据不足，检查已有数据是否匹配签名前缀
+        if (n > 0 && memcmp(header, PROXY_PROTOCOL_V2_SIGNATURE, n) != 0) {
+            return false;  // 不匹配，不是 Proxy Protocol
+        }
+        // 数据太少无法判断，当作普通连接
+        return false;
+    }
+
+    // 检查签名
+    if (memcmp(header, PROXY_PROTOCOL_V2_SIGNATURE, 12) != 0) {
+        return false;  // 签名不匹配，不是 Proxy Protocol
+    }
+
+    if (n < 16) {
+        // 有签名但头部不完整，等待更多数据（理论上不会发生）
+        return false;
+    }
+
+    // 解析版本和命令 (byte 12)
+    // 高 4 位是版本 (应该是 0x2)，低 4 位是命令 (0x0=LOCAL, 0x1=PROXY)
+    unsigned char verCmd = header[12];
+    unsigned char version = (verCmd >> 4) & 0x0F;
+    unsigned char command = verCmd & 0x0F;
+
+    if (version != 2) {
+        // 不是 v2，可能是 v1 或无效
+        return false;
+    }
+
+    // 解析地址族和协议 (byte 13)
+    // 高 4 位是地址族 (0x1=AF_INET, 0x2=AF_INET6)
+    // 低 4 位是协议 (0x1=STREAM, 0x2=DGRAM)
+    unsigned char famProto = header[13];
+    unsigned char addrFamily = (famProto >> 4) & 0x0F;
+
+    // 解析地址长度 (bytes 14-15, big-endian)
+    unsigned short addrLen = (header[14] << 8) | header[15];
+
+    // 计算完整头部长度 (IPv4: 16+12=28, IPv6: 16+36=52)
+    int totalHeaderLen = 16 + addrLen;
+    if (totalHeaderLen > 108) {  // 安全上限：16 + 最大 TLV 长度
+        return false;
+    }
+
+    // 读取完整头部（真正消费数据），使用固定数组避免动态分配
+    unsigned char fullHeader[108];
+    int received = 0;
+    while (received < totalHeaderLen) {
+        int r = recv(sock, (char*)fullHeader + received, totalHeaderLen - received, 0);
+        if (r <= 0) {
+            return false;  // 接收失败
+        }
+        received += r;
+    }
+
+    // 如果是 LOCAL 命令，使用 socket 的对端地址
+    if (command == 0x00) {
+        return false;  // 让调用者使用 getpeername
+    }
+
+    // 解析地址
+    if (addrFamily == 0x01 && addrLen >= 12) {
+        // IPv4: src_addr(4) + dst_addr(4) + src_port(2) + dst_port(2)
+        unsigned char* addr = fullHeader + 16;
+        char ipStr[INET_ADDRSTRLEN];
+        snprintf(ipStr, sizeof(ipStr), "%u.%u.%u.%u", addr[0], addr[1], addr[2], addr[3]);
+        realIP = ipStr;
+        return true;
+    } else if (addrFamily == 0x02 && addrLen >= 36) {
+        // IPv6: src_addr(16) + dst_addr(16) + src_port(2) + dst_port(2)
+        unsigned char* addr = fullHeader + 16;
+        char ipStr[INET6_ADDRSTRLEN];
+        inet_ntop(AF_INET6, addr, ipStr, sizeof(ipStr));
+        realIP = ipStr;
+        return true;
+    }
+
+    return false;  // 未知地址族
+}
+
 // 根据 socket 获取客户端IP地址.
 std::string GetPeerName(SOCKET sock)
 {
@@ -681,6 +776,14 @@ void IOCPServer::OnAccept()
     }
 
     ContextObject->sClientSocket = sClientSocket;
+
+    // 尝试解析 Proxy Protocol v2 头，获取真实客户端 IP
+    // 如果解析成功，更新 PeerName；否则保持 getpeername 的结果
+    std::string realIP;
+    if (ParseProxyProtocolV2(sClientSocket, realIP)) {
+        ContextObject->PeerName = realIP;
+        Mprintf("Proxy Protocol: real IP = %s\n", realIP.c_str());
+    }
 
     ContextObject->wsaInBuf.buf = (char*)ContextObject->szBuffer;
     ContextObject->wsaInBuf.len = sizeof(ContextObject->szBuffer);

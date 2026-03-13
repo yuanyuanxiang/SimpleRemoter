@@ -694,6 +694,11 @@ public:
     }
     std::string RemoteAddr() const
     {
+        // 优先返回 PeerName（可能是 Proxy Protocol 解析的真实 IP）
+        // 如果 PeerName 为空，则回退到 getpeername
+        if (!PeerName.empty()) {
+            return PeerName;
+        }
         sockaddr_in  ClientAddr = {};
         int ulClientAddrLen = sizeof(sockaddr_in);
         int s = getpeername(sClientSocket, (SOCKADDR*)&ClientAddr, &ulClientAddrLen);

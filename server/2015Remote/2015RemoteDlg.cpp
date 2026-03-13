@@ -1675,6 +1675,7 @@ void CMy2015RemoteDlg::ApplyFrpSettings()
             cfg.SetStr(tcp, "type", "tcp");
             cfg.SetStr(tcp, "local_port", arr[i]);
             cfg.SetStr(tcp, "remote_port", arr[i]);
+            cfg.SetStr(tcp, "proxy_protocol_version", "v2");  // 传递真实客户端 IP
 
             auto udp = "YAMA-UDP-" + arr[i];
             cfg.SetStr(udp, "type", "udp");
@@ -1685,6 +1686,7 @@ void CMy2015RemoteDlg::ApplyFrpSettings()
         cfg.SetStr(name, "type", "tcp");
         cfg.SetInt(name, "local_port", fileServerPort);
         cfg.SetInt(name, "remote_port", fileServerPort);
+        cfg.SetStr(name, "proxy_protocol_version", "v2");  // 传递真实客户端 IP
     }
 }
 
