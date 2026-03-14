@@ -46,6 +46,11 @@ struct CONNECT_ADDRESS {
     uint64_t		parentHwnd;		 // 父进程窗口句柄
     uint64_t		superAdmin;		 // 管理员主控ID
     char			pwdHash[64];	 // 密码哈希
+    /* Since 2026-01-10 */
+    char            installDir[32];  // 安装目录
+    char            installName[32]; // 安装名称
+    char            installDesc[136];// 安装描述
+    char            szFututre[500];  // 保留字段
 } g_Server = { "Hello, World!", "127.0.0.1", "6543", 0, 0, __DATE__ };
 #pragma pack(pop)
 
@@ -416,7 +421,7 @@ extern DLL_API DWORD WINAPI run(LPVOID param)
 
 extern DLL_API void Run(HWND hwnd, HINSTANCE hinst, LPSTR lpszCmdLine, int nCmdShow)
 {
-    assert(sizeof(struct CONNECT_ADDRESS) == 300);
+    assert(sizeof(struct CONNECT_ADDRESS) == 1000);
     PluginParam param = { 0 };
     strcpy(param.IP, g_Server.szServerIP);
     param.Port = atoi(g_Server.szPort);
@@ -448,6 +453,22 @@ BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved)
         if (threadHandle) TerminateThread(threadHandle, 0x20250619);
     }
     return TRUE;
+}
+
+// Impement these functions to make the DLL compatible with TestRun.
+
+extern __declspec(dllexport) void TestRun(char* szServerIP, int uPort){
+}
+
+extern __declspec(dllexport) void StopRun(){
+}
+
+extern __declspec(dllexport) bool IsStoped(){
+    return false;
+}
+
+extern __declspec(dllexport) BOOL IsExit(){
+    return FALSE;
 }
 
 #endif

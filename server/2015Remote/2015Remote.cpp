@@ -18,6 +18,7 @@
 #include <intrin.h>  // for __cpuid, __cpuidex
 #include "IOCPUDPServer.h"
 #include "ServerServiceWrapper.h"
+#include "common/SafeString.h"
 #pragma comment(lib, "Dbghelp.lib")
 
 // Check if CPU supports AVX2 instruction set
@@ -399,6 +400,9 @@ BOOL CMy2015RemoteApp::ProcessZstaCmd()
 
 BOOL CMy2015RemoteApp::InitInstance()
 {
+    // 安装安全字符串 handler，避免 _s 函数参数无效时崩溃且无 dump
+    InstallSafeStringHandler();
+
     // Check if CPU supports AVX2 instruction set
     if (!IsAVX2Supported()) {
         ::MessageBoxA(NULL,

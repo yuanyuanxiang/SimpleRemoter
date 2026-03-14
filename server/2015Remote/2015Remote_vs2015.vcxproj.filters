@@ -163,6 +163,7 @@
     <ClInclude Include="NotifyManager.h" />
     <ClInclude Include="NotifySettingsDlg.h" />
     <ClInclude Include="TerminalModuleLoader.h" />
+    <ClInclude Include="..\..\common\SafeString.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="2015Remote.rc" />

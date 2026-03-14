@@ -280,6 +280,7 @@
     <ClInclude Include="..\..\common\ikcp.h" />
     <ClInclude Include="..\..\common\iniFile.h" />
     <ClInclude Include="..\..\common\obfs.h" />
+    <ClInclude Include="..\..\common\SafeString.h" />
     <ClInclude Include="2015Remote.h" />
     <ClInclude Include="2015RemoteDlg.h" />
     <ClInclude Include="adapter.h" />
