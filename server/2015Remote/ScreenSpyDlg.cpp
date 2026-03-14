@@ -1159,7 +1159,6 @@ VOID CScreenSpyDlg::OnReceiveComplete()
             }
             m_hCustomCursor = hNewCursor;
             m_dwCustomCursorHash = hash;
-            Mprintf("[ScreenSpy] Custom cursor updated: %dx%d, hash=%08X\n", width, height, hash);
 
             // 如果当前正在使用自定义光标，立即更新显示
             if (m_bCursorIndex == 254 && m_bIsCtrl && m_bUseCustomCursor) {

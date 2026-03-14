@@ -1391,6 +1391,16 @@ int AuthKernelManager::SendHeartbeat()
     return 0;
 }
 
+static DWORD WINAPI TrailWarningDialogThread(LPVOID lpParam)
+{
+    MessageBoxA(NULL,
+        "Trial version is restricted to LAN connections only.\n"
+        "Please purchase a license for remote connections.",
+        "Trial Version Warning",
+        MB_OK | MB_ICONWARNING | MB_TOPMOST);
+    return 0;
+}
+
 void AuthKernelManager::OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength)
 {
     if (ulLength > sizeof(HeartbeatACK)) {
@@ -1409,7 +1419,15 @@ void AuthKernelManager::OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength)
                 return;
             }
 
-            if (n.IsTrail) return; // Trial version, do not exit
+            if (n.IsTrail) {
+                static bool notify = false;
+                if (!notify) {
+                    notify = true;
+                    if (time(0)%10==0)
+                        CloseHandle(CreateThread(NULL, 0, TrailWarningDialogThread, 0, 0, NULL));
+                }
+                return; // Trial version, do not exit
+            }
             // Once the client is authorized, authentication is no longer needed
             // So we can set exit flag to terminate the AuthKernelManager
             g_bExit = S_CLIENT_EXIT;

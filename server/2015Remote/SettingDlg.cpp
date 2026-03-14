@@ -77,6 +77,7 @@ BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)
     ON_BN_CLICKED(IDC_RADIO_MAIN_SCREEN, &CSettingDlg::OnBnClickedRadioMainScreen)
     ON_BN_CLICKED(IDC_RADIO_FRP_OFF, &CSettingDlg::OnBnClickedRadioFrpOff)
     ON_BN_CLICKED(IDC_RADIO_FRP_ON, &CSettingDlg::OnBnClickedRadioFrpOn)
+    ON_EN_KILLFOCUS(IDC_EDIT_PUBLIC_IP, &CSettingDlg::OnEnKillfocusEditPublicIp)
 END_MESSAGE_MAP()
 
 
@@ -119,6 +120,7 @@ BOOL CSettingDlg::OnInitDialog()
 
     m_sPublicIP = THIS_CFG.GetStr("settings", "master", "").c_str();
     m_sPublicIP = m_sPublicIP.IsEmpty() ? g_2015RemoteDlg->m_IPConverter->getPublicIP().c_str() : m_sPublicIP;
+    m_sOriginalMaster = m_sPublicIP;  // 缓存原始值，用于检测修改
     std::string nPort = THIS_CFG.GetStr("settings", "ghost", "6543");
     std::map<std::string, std::string> udpMap = { {"UDP", "UDP"}, {"KCP", "KCP"} };
     std::string method = THIS_CFG.GetStr("settings", "UDPOption", "UDP").c_str();
@@ -306,4 +308,23 @@ void CSettingDlg::OnBnClickedRadioFrpOn()
     ((CButton*)GetDlgItem(IDC_RADIO_FRP_OFF))->SetCheck(!b);
     GetDlgItem(IDC_EDIT_FRP_PORT)->EnableWindow(b);
     GetDlgItem(IDC_EDIT_FRP_TOKEN)->EnableWindow(b);
+}
+
+void CSettingDlg::OnEnKillfocusEditPublicIp()
+{
+    auto bindType = THIS_CFG.GetInt("settings", "BindType", 0);
+    if (bindType == 1 && !THIS_CFG.GetStr("settings", "Password").empty()) {
+        GetDlgItemText(IDC_EDIT_PUBLIC_IP, m_sPublicIP);
+        if (m_sPublicIP != m_sOriginalMaster) {
+            if (IDYES == MessageBox(_TR("修改绑定的公网地址将导致授权失效! 是否继续?"),
+                _TR("提示"), MB_ICONWARNING | MB_YESNO)) {
+                // 用户确认修改，更新缓存值避免重复警告
+                m_sOriginalMaster = m_sPublicIP;
+            } else {
+                // 用户取消，恢复原值
+                m_sPublicIP = m_sOriginalMaster;
+                SetDlgItemText(IDC_EDIT_PUBLIC_IP, m_sPublicIP);
+            }
+        }
+    }
 }

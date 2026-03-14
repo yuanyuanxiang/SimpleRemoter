@@ -21,6 +21,7 @@
 #include "VideoDlg.h"
 #include <vector>
 #include <map>
+#include <mutex>
 #include "KeyBoardDlg.h"
 #include "InputDlg.h"
 #include "CPasswordDlg.h"
@@ -128,6 +129,45 @@ bool SupportsFileTransferV2(context* ctx) {
     if (ctx->SupportsFileV2()) return true;
     CString version = ctx->GetClientData(ONLINELIST_VERSION);
     return IsDateGreaterOrEqual(version, FILE_TRANSFER_V2_DATE);
+}
+
+// 授权日志频率控制：首次必须记录，状态变化必须记录，相同状态每小时记录一次
+static bool ShouldLogAuth(const std::string& sn, bool success) {
+    struct AuthLogState {
+        bool lastStatus;
+        time_t lastLogTime;
+    };
+    static std::map<std::string, AuthLogState> s_cache;
+    static CRITICAL_SECTION s_lock;
+    static std::once_flag s_initFlag;
+    std::call_once(s_initFlag, []() {
+        InitializeCriticalSection(&s_lock);
+    });
+
+    EnterCriticalSection(&s_lock);
+    time_t now = time(nullptr);
+    bool shouldLog = false;
+
+    auto it = s_cache.find(sn);
+    if (it == s_cache.end()) {
+        // 首次 - 必须记录
+        s_cache[sn] = {success, now};
+        shouldLog = true;
+    } else {
+        AuthLogState& state = it->second;
+        if (state.lastStatus != success) {
+            // 状态变化 - 必须记录
+            state.lastStatus = success;
+            state.lastLogTime = now;
+            shouldLog = true;
+        } else if (now - state.lastLogTime >= 3600) {
+            // 相同状态，超过1小时 - 记录
+            state.lastLogTime = now;
+            shouldLog = true;
+        }
+    }
+    LeaveCriticalSection(&s_lock);
+    return shouldLog;
 }
 
 static UINT Indicators[] = {
@@ -539,6 +579,11 @@ bool CMy2015RemoteDlg::IsDllRequestLimited(const std::string& ip)
         if (times.size() >= DLL_RATE_LIMIT_COUNT) {
             Mprintf("'%s' DLL request rate limited (%d requests in last hour)\n",
                     ip.c_str(), (int)times.size());
+
+            // 发送到主窗口信息列表
+            char tip[256];
+            sprintf_s(tip, _TRF("IP %s DLL 请求被限流 (已请求 %d 次/小时)"), ip.c_str(), (int)times.size());
+            PostMessageA(WM_SHOWERRORMSG, (LPARAM)new CString(tip), (WPARAM)new CString(_TR("DLL 限流")));
             return true;
         }
     }
@@ -1927,6 +1972,7 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
             THIS_APP->UpdateMaxConnection(count);
         }
         if (!m_superPass.empty()) {
+#ifndef _DEBUG
             Mprintf(">>> Timer is killed <<<\n");
             KillTimer(nIDEvent);
             std::string masterHash = GetMasterHash();
@@ -1935,6 +1981,7 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
             if (GetPwdHash() == masterHash)
                 THIS_CFG.SetStr("settings", "HMAC", genHMAC(masterHash, m_superPass));
             return;
+#endif
         }
         PostMessageA(WM_PASSWORDCHECK);
     }
@@ -2817,6 +2864,7 @@ void CMy2015RemoteDlg::OnMainSet()
     BOOL use = THIS_CFG.GetInt("frp", "UseFrp");
     int port = THIS_CFG.GetInt("frp", "server_port", 7000);
     auto token = THIS_CFG.GetStr("frp", "token");
+	auto master = THIS_CFG.GetStr("settings", "master");
     auto ret = Dlg.DoModal();   //模态 阻塞
     if (ret != IDOK) return;
 
@@ -2827,7 +2875,7 @@ void CMy2015RemoteDlg::OnMainSet()
     ApplyFrpSettings();
     if (use_new != use) {
         MessageBoxL("修改FRP代理开关，需要重启当前应用程序方可生效。", "提示", MB_ICONINFORMATION);
-    } else if (port != port_new || token != token_new || master_new != THIS_CFG.GetStr("settings", "master")) {
+    } else if (port != port_new || token != token_new || master_new != master) {
         // 重启所有 FRP 连接
         for (size_t i = 0; i < m_frpInstances.size(); ++i) {
             m_frpInstances[i].status = STATUS_STOP;
@@ -3154,6 +3202,17 @@ BOOL CMy2015RemoteDlg::AuthorizeClient(context* ctx, const std::string& sn, cons
     if (sn.empty() || passcode.empty() || hmac == 0) {
         return FALSE;
     }
+    auto v = splitString(passcode, '-');
+    if (v.size() == 6 || v.size() == 7) {
+        std::vector<std::string> subvector(v.end() - 4, v.end());
+        std::string password = v[0] + " - " + v[1] + ": " + GetPwdHash() + (v.size() == 6 ? "" : ": " + v[2]);
+        std::string finalKey = deriveKey(password, sn);
+        std::string hash256 = joinString(subvector, '-');
+        std::string fixedKey = getFixedLengthID(finalKey);
+        if (hash256 != fixedKey)
+            return FALSE;
+    }
+
     static const char* superAdmin = getenv("YAMA_PWD");
     std::string pwd = superAdmin ? superAdmin : m_superPass;
     BOOL b = VerifyMessage(pwd, (BYTE*)passcode.c_str(), passcode.length(), hmac);
@@ -3326,37 +3385,32 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
             if (!hmacV2.empty() && hmacV2.substr(0, 3) == "v2:") {
                 // V2 授权验证
                 valid = AuthorizeClientV2(NULL, sn, passcode, hmacV2);
-                if (valid) {
-                    Mprintf("%s V2 校验成功: %s (版本: %s)\n", passcode.c_str(), sn.c_str(), version.c_str());
-                    std::string tip = passcode + g_Lang.Get(std::string(" V2 校验成功: ")) + sn + (version.empty()?"":"["+version+"]");
-                    CharMsg* msg = new CharMsg(tip.c_str());
-                    PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
-                } else {
-                    Mprintf("%s V2 校验失败: %s\n", passcode.c_str(), sn.c_str());
+                if (ShouldLogAuth(sn, valid)) {
+                    std::string ip = ContextObject->GetPeerName();
+                    if (valid) {
+                        Mprintf("%s V2 校验成功: %s [%s]\n", passcode.c_str(), sn.c_str(), ip.c_str());
+                        std::string tip = passcode + std::string(_L(" V2 校验成功: ")) + sn + "[" + ip + "]";
+                        PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
+                    } else {
+                        Mprintf("%s V2 校验失败: %s [%s]\n", passcode.c_str(), sn.c_str(), ip.c_str());
+                        std::string tip = passcode + std::string(_L(" V2 校验失败: ")) + sn + "[" + ip + "]";
+                        PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
+                    }
                 }
             } else {
                 // V1 授权验证
-                auto v = splitString(passcode, '-');
-                if (v.size() == 6 || v.size() == 7) {
-                    std::vector<std::string> subvector(v.end() - 4, v.end());
-                    std::string password = v[0] + " - " + v[1] + ": " + GetPwdHash() + (v.size() == 6 ? "" : ": " + v[2]);
-                    std::string finalKey = deriveKey(password, sn);
-                    std::string hash256 = joinString(subvector, '-');
-                    std::string fixedKey = getFixedLengthID(finalKey);
-                    valid = (hash256 == fixedKey);
-                }
-                if (valid) {
-                    valid = AuthorizeClient(NULL, sn, passcode, hmac);
+                valid = AuthorizeClient(NULL, sn, passcode, hmac);
+                if (ShouldLogAuth(sn, valid)) {
+                    std::string ip = ContextObject->GetPeerName();
                     if (valid) {
-                        Mprintf("%s 校验成功, HMAC 校验成功: %s (版本: %s)\n", passcode.c_str(), sn.c_str(), version.c_str());
-                        std::string tip = passcode + g_Lang.Get(std::string(" 校验成功: ")) + sn + (version.empty()?"":"["+version+"]");
-                        CharMsg* msg = new CharMsg(tip.c_str());
-                        PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+                        Mprintf("%s V1 校验成功: %s [%s]\n", passcode.c_str(), sn.c_str(), ip.c_str());
+                        std::string tip = passcode + std::string(_L(" V1 校验成功: ")) + sn + "[" + ip + "]";
+                        PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
                     } else {
-                        Mprintf("%s 校验成功, HMAC 校验失败: %s\n", passcode.c_str(), sn.c_str());
+                        Mprintf("%s V1 校验失败: %s [%s]\n", passcode.c_str(), sn.c_str(), ip.c_str());
+                        std::string tip = passcode + std::string(_L(" V1 校验失败: ")) + sn + "[" + ip + "]";
+                        PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
                     }
-                } else {
-                    Mprintf("%s 校验失败: %s\n", passcode.c_str(), sn.c_str());
                 }
             }
         } else {
@@ -4121,28 +4175,38 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
             // V2 授权验证
             authorized = AuthorizeClientV2(host, hb.SN, hb.Passcode, hmacV2);
             if (authorized) {
-                Mprintf("%s V2 签名校验成功: %s [%s]\n", hb.Passcode, hb.SN, ctx->GetClientData(ONLINELIST_IP));
                 m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
                 isTrail = IsTrail(hb.Passcode);
-                if (!isTrail) {
-                    std::string tip = std::string(hb.Passcode) + std::string(_L(" V2 授权成功"));
-                    tip += ": " + std::string(hb.SN) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
-                    CharMsg* msg = new CharMsg(tip.c_str());
-                    PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+            }
+            if (ShouldLogAuth(hb.SN, authorized)) {
+                std::string ip = ctx->GetClientData(ONLINELIST_IP);
+                if (authorized) {
+                    Mprintf("%s V2 授权成功: %s [%s]\n", hb.Passcode, hb.SN, ip.c_str());
+                    std::string tip = std::string(hb.Passcode) + std::string(_L(" V2 授权成功: ")) + hb.SN + "[" + ip + "]";
+                    PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
+                } else {
+                    Mprintf("%s V2 授权失败: %s [%s]\n", hb.Passcode, hb.SN, ip.c_str());
+                    std::string tip = std::string(hb.Passcode) + std::string(_L(" V2 授权失败: ")) + hb.SN + "[" + ip + "]";
+                    PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
                 }
             }
         } else {
             // V1 授权验证
             authorized = AuthorizeClient(host, hb.SN, hb.Passcode, hb.PwdHmac);
             if (authorized) {
-                Mprintf("%s HMAC 校验成功: %s [%s]\n", hb.Passcode, hb.SN, ctx->GetClientData(ONLINELIST_IP));
                 m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
                 isTrail = IsTrail(hb.Passcode);
-                if (!isTrail) {
-                    std::string tip = std::string(hb.Passcode) + std::string(_L("授权成功"));
-                    tip += ": " + std::string(hb.SN) + "[" + std::string(ctx->GetClientData(ONLINELIST_IP)) + "]";
-                    CharMsg* msg = new CharMsg(tip.c_str());
-                    PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+            }
+            if (ShouldLogAuth(hb.SN, authorized)) {
+                std::string ip = ctx->GetClientData(ONLINELIST_IP);
+                if (authorized) {
+                    Mprintf("%s V1 授权成功: %s [%s]\n", hb.Passcode, hb.SN, ip.c_str());
+                    std::string tip = std::string(hb.Passcode) + std::string(_L(" V1 授权成功: ")) + hb.SN + "[" + ip + "]";
+                    PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
+                } else {
+                    Mprintf("%s V1 授权失败: %s [%s]\n", hb.Passcode, hb.SN, ip.c_str());
+                    std::string tip = std::string(hb.Passcode) + std::string(_L(" V1 授权失败: ")) + hb.SN + "[" + ip + "]";
+                    PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
                 }
             }
         }

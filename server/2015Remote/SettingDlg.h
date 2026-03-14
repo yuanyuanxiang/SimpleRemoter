@@ -53,4 +53,6 @@ public:
     CComboBox m_ComboVideoWall;
     CEdit m_EditFileServerPort;
     int m_nFileServerPort;
+    afx_msg void OnEnKillfocusEditPublicIp();
+    CString m_sOriginalMaster;  // 缓存原始公网地址，用于检测修改
 };

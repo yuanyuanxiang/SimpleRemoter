@@ -206,6 +206,14 @@ void IOCPServer::BanIP(const std::string& ip, int seconds)
     }
     Mprintf("IP banned: %s (duration: %d seconds, reason: too many connections)\n",
             ip.c_str(), seconds);
+
+    // 发送到主窗口信息列表
+    if (m_hMainWnd) {
+        char tip[256];
+        sprintf_s(tip, _TRF("IP %s 已封禁 %d 秒 (连接过于频繁)"), ip.c_str(), seconds);
+        PostMessageA(m_hMainWnd, WM_SHOWERRORMSG, (WPARAM)new CString(_TR("IP 封禁")),
+                     (LPARAM)new CString(tip));
+    }
 }
 
 // 从配置文件加载 IP 白名单
