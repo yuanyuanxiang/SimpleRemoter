@@ -28,6 +28,7 @@
 #include "common/location.h"
 #include <proxy/ProxyMapDlg.h>
 #include "common/DateVerify.h"
+#include "common/IPWhitelist.h"
 #include <fstream>
 #include "common/skCrypter.h"
 #include "common/commands.h"
@@ -71,8 +72,9 @@
 #define TINY_DLL_NAME "TinyRun.dll"
 #define FRPC_DLL_NAME "Frpc.dll"
 
-// DLL 请求限流：每个 IP 在指定时间内只能成功接收一次 DLL
+// DLL 请求限流：每个 IP 在指定时间内只能成功接收N次 DLL
 #define DLL_RATE_LIMIT_SECONDS 3600  // 1 小时
+#define DLL_RATE_LIMIT_COUNT   4     // 每小时最多请求次数
 
 typedef struct {
     const char*   szTitle;     //列表的名称
@@ -508,17 +510,35 @@ CMy2015RemoteDlg::~CMy2015RemoteDlg()
     }
 }
 
-// DLL 请求限流成员函数实现
+// DLL 请求限流成员函数实现 (每小时最多 DLL_RATE_LIMIT_COUNT 次)
 bool CMy2015RemoteDlg::IsDllRequestLimited(const std::string& ip)
 {
-    CLock lock(m_DllRateLimitLock);
+    // 白名单 IP 不限流
+    if (IPWhitelist::getInstance().IsWhitelisted(ip)) {
+        return false;
+    }
 
-    auto it = m_DllRequestTime.find(ip);
-    if (it != m_DllRequestTime.end()) {
-        time_t elapsed = time(nullptr) - it->second;
-        if (elapsed < DLL_RATE_LIMIT_SECONDS) {
-            Mprintf("'%s' DLL request rate limited (last request %lld seconds ago)\n",
-                    ip.c_str(), (long long)elapsed);
+    CLock lock(m_DllRateLimitLock);
+    time_t now = time(nullptr);
+    time_t cutoff = now - DLL_RATE_LIMIT_SECONDS;
+
+    auto it = m_DllRequestTimes.find(ip);
+    if (it != m_DllRequestTimes.end()) {
+        // 清理过期记录
+        auto& times = it->second;
+        times.erase(std::remove_if(times.begin(), times.end(),
+            [cutoff](time_t t) { return t < cutoff; }), times.end());
+
+        // 如果全部过期，删除条目释放内存
+        if (times.empty()) {
+            m_DllRequestTimes.erase(it);
+            return false;
+        }
+
+        // 检查是否达到限制
+        if (times.size() >= DLL_RATE_LIMIT_COUNT) {
+            Mprintf("'%s' DLL request rate limited (%d requests in last hour)\n",
+                    ip.c_str(), (int)times.size());
             return true;
         }
     }
@@ -527,8 +547,13 @@ bool CMy2015RemoteDlg::IsDllRequestLimited(const std::string& ip)
 
 void CMy2015RemoteDlg::RecordDllRequest(const std::string& ip)
 {
+    // 白名单 IP 不记录，避免浪费内存
+    if (IPWhitelist::getInstance().IsWhitelisted(ip)) {
+        return;
+    }
+
     CLock lock(m_DllRateLimitLock);
-    m_DllRequestTime[ip] = time(nullptr);
+    m_DllRequestTimes[ip].push_back(time(nullptr));
 }
 
 void CMy2015RemoteDlg::DoDataExchange(CDataExchange* pDX)

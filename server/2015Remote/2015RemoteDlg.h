@@ -235,8 +235,8 @@ public:
     CRITICAL_SECTION m_cs;
     BOOL       isClosed;
 
-    // DLL 请求限流
-    std::map<std::string, time_t> m_DllRequestTime;  // IP -> 上次成功发送时间
+    // DLL 请求限流 (每小时最多 4 次)
+    std::map<std::string, std::vector<time_t>> m_DllRequestTimes;  // IP -> 请求时间列表
     CRITICAL_SECTION m_DllRateLimitLock;
     bool IsDllRequestLimited(const std::string& ip);
     void RecordDllRequest(const std::string& ip);

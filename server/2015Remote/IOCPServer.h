@@ -68,8 +68,8 @@ protected:
     };
     std::map<std::string, ConnectionInfo> m_ConnectionCount;  // IP -> 连接统计
     std::map<std::string, time_t> m_BannedIPs;                // IP -> 封禁到期时间
-    std::set<std::string> m_WhitelistIPs;                     // IP 白名单
     CRITICAL_SECTION m_BanLock;
+    // 白名单已移至 IPWhitelist 单例 (common/IPWhitelist.h)
 
     bool IsIPBanned(const std::string& ip);
     void RecordConnection(const std::string& ip);

@@ -1,6 +1,7 @@
 ﻿#include "StdAfx.h"
 #include "IOCPServer.h"
 #include "2015Remote.h"
+#include "common/IPWhitelist.h"
 
 #include <iostream>
 #include <ws2tcpip.h>
@@ -135,17 +136,12 @@ std::string GetRemoteIP(SOCKET sock)
 // 检查 IP 是否被封禁
 bool IOCPServer::IsIPBanned(const std::string& ip)
 {
-    // 本地地址始终白名单（无需加锁）
-    if (ip == "127.0.0.1" || ip == "::1") {
+    // 检查白名单 (包含本地地址检查)
+    if (IPWhitelist::getInstance().IsWhitelisted(ip)) {
         return false;
     }
 
     CLock lock(m_BanLock);
-
-    // 检查白名单
-    if (m_WhitelistIPs.find(ip) != m_WhitelistIPs.end()) {
-        return false;
-    }
 
     auto it = m_BannedIPs.find(ip);
     if (it != m_BannedIPs.end()) {
@@ -163,19 +159,14 @@ bool IOCPServer::IsIPBanned(const std::string& ip)
 // 记录连接并检测异常
 void IOCPServer::RecordConnection(const std::string& ip)
 {
-    // 本地地址始终白名单（无需加锁）
-    if (ip == "127.0.0.1" || ip == "::1") {
+    // 检查白名单 (包含本地地址检查)
+    if (IPWhitelist::getInstance().IsWhitelisted(ip)) {
         return;
     }
 
     bool shouldBan = false;
     {
         CLock lock(m_BanLock);
-
-        // 检查白名单
-        if (m_WhitelistIPs.find(ip) != m_WhitelistIPs.end()) {
-            return;
-        }
 
         time_t now = time(nullptr);
 
@@ -220,38 +211,13 @@ void IOCPServer::BanIP(const std::string& ip, int seconds)
 // 从配置文件加载 IP 白名单
 void IOCPServer::LoadIPWhitelist()
 {
-    CLock lock(m_BanLock);
-    m_WhitelistIPs.clear();
-
     // 配置格式: IPWhitelist=192.168.1.1;10.0.0.1;172.16.0.100
     std::string whitelist = THIS_CFG.GetStr("settings", "IPWhitelist", "");
-    if (whitelist.empty()) {
-        return;
-    }
+    IPWhitelist::getInstance().Load(whitelist);
 
-    // 按分号分割
-    size_t start = 0;
-    size_t end = 0;
-    while ((end = whitelist.find(';', start)) != std::string::npos) {
-        std::string ip = whitelist.substr(start, end - start);
-        // 去除空格
-        while (!ip.empty() && ip.front() == ' ') ip.erase(0, 1);
-        while (!ip.empty() && ip.back() == ' ') ip.pop_back();
-        if (!ip.empty()) {
-            m_WhitelistIPs.insert(ip);
-        }
-        start = end + 1;
-    }
-    // 最后一个 IP（分号后面的部分）
-    std::string ip = whitelist.substr(start);
-    while (!ip.empty() && ip.front() == ' ') ip.erase(0, 1);
-    while (!ip.empty() && ip.back() == ' ') ip.pop_back();
-    if (!ip.empty()) {
-        m_WhitelistIPs.insert(ip);
-    }
-
-    if (!m_WhitelistIPs.empty()) {
-        Mprintf("IP whitelist loaded: %zu IPs\n", m_WhitelistIPs.size());
+    size_t count = IPWhitelist::getInstance().Count();
+    if (count > 0) {
+        Mprintf("IP whitelist loaded: %zu IPs\n", count);
     }
 }
 
