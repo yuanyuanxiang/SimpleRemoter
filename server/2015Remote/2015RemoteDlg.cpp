@@ -4145,6 +4145,28 @@ LRESULT CMy2015RemoteDlg::UpdateUserEvent(WPARAM wParam, LPARAM lParam)
     return S_OK;
 }
 
+// 验证 passcode 格式前缀：YYYYMMDD-YYYYMMDD
+// 例如：20260306-20270307-6666-be20-0a88-a4bc-7375
+static bool IsValidPasscodeFormat(const char* passcode)
+{
+    if (!passcode || strlen(passcode) < 17) return false;  // 至少 "YYYYMMDD-YYYYMMDD"
+
+    // 检查第一段：8位数字 (开始日期)
+    for (int i = 0; i < 8; i++) {
+        if (!isdigit((unsigned char)passcode[i])) return false;
+    }
+
+    // 检查分隔符
+    if (passcode[8] != '-') return false;
+
+    // 检查第二段：8位数字 (结束日期)
+    for (int i = 9; i < 17; i++) {
+        if (!isdigit((unsigned char)passcode[i])) return false;
+    }
+
+    return true;
+}
+
 void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
 {
     auto clientID = ctx->GetClientID();
@@ -4190,7 +4212,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
                     PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
                 }
             }
-        } else if (hb.Passcode[0]) {
+        } else if (hb.Passcode[0] && IsValidPasscodeFormat(hb.Passcode)) {
             // V1 授权验证
             authorized = AuthorizeClient(host, hb.SN, hb.Passcode, hb.PwdHmac);
             if (authorized) {
