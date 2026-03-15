@@ -383,7 +383,7 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
     IOCPClient* This = (IOCPClient*)lParam;
     char* szBuffer = new char[MAX_RECV_BUFFER];
     fd_set fd;
-    struct timeval tm = { 2, 0 };
+    struct timeval tm;
     CBuffer m_CompressedBuffer;
 
     while (This->IsRunning()) { // 没有退出，就一直陷在这个循环中
@@ -393,6 +393,9 @@ DWORD WINAPI IOCPClient::WorkThreadProc(LPVOID lParam)
         }
         FD_ZERO(&fd);
         FD_SET(This->m_sClientSocket, &fd);
+        // Linux select() 会修改 timeval，必须每次重置
+        tm.tv_sec = 2;
+        tm.tv_usec = 0;
 #ifdef _WIN32
         int iRet = select(NULL, &fd, NULL, NULL, &tm);
 #else
