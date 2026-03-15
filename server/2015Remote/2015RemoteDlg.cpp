@@ -2074,7 +2074,7 @@ void CMy2015RemoteDlg::CheckHeartbeat()
 {
     CLock lock(m_cs);
     auto now = time(0);
-    int HEARTBEAT_TIMEOUT = max(30, m_settings.ReportInterval * 3);
+    int HEARTBEAT_TIMEOUT = max(60, m_settings.ReportInterval * 3);
 
     // 收集需要删除的 context（避免遍历时修改 vector）
     std::vector<context*> toRemove;
@@ -3397,7 +3397,7 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
                         PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
                     }
                 }
-            } else {
+            } else if (!passcode.empty()){
                 // V1 授权验证
                 valid = AuthorizeClient(NULL, sn, passcode, hmac);
                 if (ShouldLogAuth(sn, valid)) {
@@ -4190,7 +4190,7 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
                     PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
                 }
             }
-        } else {
+        } else if (hb.Passcode[0]) {
             // V1 授权验证
             authorized = AuthorizeClient(host, hb.SN, hb.Passcode, hb.PwdHmac);
             if (authorized) {
