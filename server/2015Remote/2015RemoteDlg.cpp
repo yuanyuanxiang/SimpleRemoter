@@ -1345,7 +1345,8 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     THIS_CFG.SetStr("settings", "Version", VERSION_STR);
 
     UPDATE_SPLASH(16, "正在启动下载服务...");
-    m_FileServer = new FileDownloadServer(THIS_CFG.GetInt("settings", "FileSvrPort", 80));
+	auto fileSvrPort = THIS_CFG.GetInt("settings", "FileSvrPort", 80);
+    m_FileServer = new FileDownloadServer(fileSvrPort);
     if (!m_FileServer->Start()) {
         THIS_APP->MessageBox(_TR("下载服务启动失败，可能是端口被占用了。"), _TR("提示"), MB_ICONINFORMATION);
     }
@@ -1437,6 +1438,9 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
         THIS_APP->MessageBoxL("请通过菜单设置公网地址!", "提示", MB_ICONINFORMATION);
     }
     int port = THIS_CFG.Get1Int("settings", "ghost", ';', 6543);
+    if (fileSvrPort == port) {
+        THIS_APP->MessageBoxL("监听端口和文件下载服务端口冲突!", "提示", MB_ICONINFORMATION);
+    }
     std::string master = ip.empty() ? "" : ip + ":" + std::to_string(port);
     const Validation* v = GetValidation();
     if (!(strlen(v->Admin) && v->Port > 0)) {
@@ -1647,8 +1651,8 @@ void CMy2015RemoteDlg::InitFrpClients()
     std::string ip = THIS_CFG.GetStr("settings", "master", "");
     std::string firstIP = GetFirstMasterIP(ip);
     CString tip = !ip.empty() && firstIP != m_IPConverter->getPublicIP() ?
-                  CString(ip.c_str()) + _L(" 必须是\"公网IP\"或反向代理服务器IP") :
-                  _L("请设置\"公网IP\"，或使用反向代理服务器的IP");
+        CString(ip.c_str()) + _L(" 必须是\"公网IP\"或反向代理服务器IP") :
+        _L("请设置\"公网IP\"，或使用反向代理服务器的IP");
     tip += usingFRP ? _TR("[使用FRP]") : _TR("[未使用FRP]");
     CharMsg* msg = new CharMsg(tip);
     PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
@@ -1664,15 +1668,18 @@ void CMy2015RemoteDlg::InitFrpClients()
         PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
     }
 
-    // 检查 V2 私钥配置
-    std::string v2KeyPath = THIS_CFG.GetStr("settings", "V2PrivateKey", "");
-    if (v2KeyPath.empty()) {
-        CharMsg* msg = new CharMsg(_TR("V2私钥未配置，请通过\"工具→V2私钥设置\"菜单选择私钥文件"));
-        PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
-    } else if (GetFileAttributesA(v2KeyPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
-        std::string tip = std::string(_TR("V2私钥文件不存在: ")) + v2KeyPath;
-        CharMsg* msg = new CharMsg(tip.c_str());
-        PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+    if (!m_superPass.empty()) {
+        // 检查 V2 私钥配置
+        std::string v2KeyPath = THIS_CFG.GetStr("settings", "V2PrivateKey", "");
+        if (v2KeyPath.empty()) {
+            CharMsg* msg = new CharMsg(_TR("V2私钥未配置，请通过\"工具→V2私钥设置\"菜单选择私钥文件"));
+            PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+        }
+        else if (GetFileAttributesA(v2KeyPath.c_str()) == INVALID_FILE_ATTRIBUTES) {
+            std::string tip = std::string(_TR("V2私钥文件不存在: ")) + v2KeyPath;
+            CharMsg* msg = new CharMsg(tip.c_str());
+            PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+        }
     }
 
 #ifndef _WIN64
@@ -1798,7 +1805,7 @@ void CMy2015RemoteDlg::ApplyFrpSettings()
             cfg.SetStr(udp, "local_port", arr[i]);
             cfg.SetStr(udp, "remote_port", arr[i]);
         }
-        std::string name = "YAMA-FileServer";
+        std::string name = "YAMA-FS-" + std::to_string(fileServerPort);
         cfg.SetStr(name, "type", "tcp");
         cfg.SetInt(name, "local_port", fileServerPort);
         cfg.SetInt(name, "remote_port", fileServerPort);
@@ -2039,6 +2046,12 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
             if (bottomIdx >= topIdx) {
                 m_CList_Online.RedrawItems(topIdx, bottomIdx);
             }
+
+            // 更新状态栏主机数量
+            CString strStatusMsg;
+            strStatusMsg.FormatL("有%d个主机在线", (int)m_FilteredIndices.size());
+            strStatusMsg += CString("[Total: ") + std::to_string(m_HostList.size()).c_str() + "]";
+            m_StatusBar.SetPaneText(0, strStatusMsg);
         }
 
         // 处理心跳更新 - 虚拟列表批量刷新（仅刷新变化行，无闪烁）

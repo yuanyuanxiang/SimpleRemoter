@@ -1415,6 +1415,7 @@ void AuthKernelManager::OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength)
             if (s_dateVerify.isTimeTampered(1)) {
                 Mprintf("!!! [FATAL] System time tampered detected. Terminating process.\n");
                 Logger::getInstance().flush();  // 确保日志写入磁盘
+				Sleep(2000); // 等待日志写入完成
                 TerminateProcess(GetCurrentProcess(), 0xDEAD0001);
                 return;
             }

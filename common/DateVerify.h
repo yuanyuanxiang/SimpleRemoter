@@ -197,7 +197,7 @@ public:
                     return false;
                 }
             }
-            return true;  // 无法验证，视为篡改
+            return false;  // 无法验证，视为篡改
         }
 
         // 更新缓存
