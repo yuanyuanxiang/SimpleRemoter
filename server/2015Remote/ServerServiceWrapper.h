@@ -8,9 +8,16 @@ extern "C" {
 #endif
 
 // 服务配置：服务端使用不同的服务名
+// Debug版本使用不同的服务名，便于调试
+#ifdef _DEBUG
+#define SERVER_SERVICE_NAME        "YamaControlService_Debug"
+#define SERVER_SERVICE_DISPLAY     "Yama Control Service (Debug)"
+#define SERVER_SERVICE_DESC        "Provides remote desktop control server functionality."
+#else
 #define SERVER_SERVICE_NAME        "YamaControlService"
 #define SERVER_SERVICE_DISPLAY     "Yama Control Service"
 #define SERVER_SERVICE_DESC        "Provides remote desktop control server functionality."
+#endif
 
 /*
 # 停止服务

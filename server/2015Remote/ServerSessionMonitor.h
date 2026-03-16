@@ -28,6 +28,7 @@ typedef struct ServerAgentProcessArray {
 typedef struct ServerSessionMonitor {
     HANDLE monitorThread;
     BOOL running;
+    BOOL runAsUser;  // TRUE: 以用户身份运行代理, FALSE: 以SYSTEM身份运行代理
     CRITICAL_SECTION csProcessList;
     ServerAgentProcessArray agentProcesses;
 } ServerSessionMonitor;

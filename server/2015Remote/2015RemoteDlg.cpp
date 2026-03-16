@@ -731,6 +731,7 @@ BEGIN_MESSAGE_MAP(CMy2015RemoteDlg, CDialogEx)
     ON_COMMAND(ID_PARAM_ENABLE_LOG, &CMy2015RemoteDlg::OnParamEnableLog)
     ON_COMMAND(ID_PARAM_PRIVACY_WALLPAPER, &CMy2015RemoteDlg::OnParamPrivacyWallpaper)
     ON_COMMAND(ID_PARAM_FILE_V2, &CMy2015RemoteDlg::OnParamFileV2)
+    ON_COMMAND(ID_PARAM_RUN_AS_USER, &CMy2015RemoteDlg::OnParamRunAsUser)
     ON_COMMAND(ID_PROXY_PORT, &CMy2015RemoteDlg::OnProxyPort)
     ON_COMMAND(ID_HOOK_WIN, &CMy2015RemoteDlg::OnHookWin)
     ON_COMMAND(ID_RUNAS_SERVICE, &CMy2015RemoteDlg::OnRunasService)
@@ -1530,16 +1531,32 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     m_settings.EnableKBLogger = THIS_CFG.GetInt("settings", "KeyboardLog", 0);
     m_settings.EnableLog = THIS_CFG.GetInt("settings", "EnableLog", 0);
     m_bEnableFileV2 = THIS_CFG.GetInt("settings", "EnableFileV2", 0) != 0;
+    m_runNormal = THIS_CFG.GetInt("settings", "RunNormal", 0);
+
     CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
     SubMenu->CheckMenuItem(ID_PARAM_KBLOGGER, m_settings.EnableKBLogger ? MF_CHECKED : MF_UNCHECKED);
     m_needNotify = THIS_CFG.GetInt("settings", "LoginNotify", 0);
     SubMenu->CheckMenuItem(ID_PARAM_LOGIN_NOTIFY, m_needNotify ? MF_CHECKED : MF_UNCHECKED);
     SubMenu->CheckMenuItem(ID_PARAM_ENABLE_LOG, m_settings.EnableLog ? MF_CHECKED : MF_UNCHECKED);
     SubMenu->CheckMenuItem(ID_PARAM_FILE_V2, m_bEnableFileV2 ? MF_CHECKED : MF_UNCHECKED);
+
+    // 互斥逻辑：三种模式 (RunNormal: 0=服务+SYSTEM, 1=普通模式, 2=服务+User)
+    if (m_runNormal == 0) {
+        // 服务+SYSTEM模式：勾选"守护主控程序"
+        SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, MF_CHECKED);
+        SubMenu->CheckMenuItem(ID_PARAM_RUN_AS_USER, MF_UNCHECKED);
+    } else if (m_runNormal == 1) {
+        // 普通模式：两个都不勾选
+        SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, MF_UNCHECKED);
+        SubMenu->CheckMenuItem(ID_PARAM_RUN_AS_USER, MF_UNCHECKED);
+    } else if (m_runNormal == 2) {
+        // 服务+User模式：勾选"降权运行"
+        SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, MF_UNCHECKED);
+        SubMenu->CheckMenuItem(ID_PARAM_RUN_AS_USER, MF_CHECKED);
+    }
+
     m_bHookWIN = THIS_CFG.GetInt("settings", "HookWIN", 0);
     SubMenu->CheckMenuItem(ID_HOOK_WIN, m_bHookWIN ? MF_CHECKED : MF_UNCHECKED);
-    m_runNormal = THIS_CFG.GetInt("settings", "RunNormal", 0);
-    SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, !m_runNormal ? MF_CHECKED : MF_UNCHECKED);
 
     SubMenu = m_MainMenu.GetSubMenu(3);
     SubMenu = SubMenu->GetSubMenu(5);
@@ -6701,6 +6718,29 @@ void CMy2015RemoteDlg::OnParamFileV2()
     Mprintf("文件传输V2: %s\n", m_bEnableFileV2 ? "启用" : "禁用");
 }
 
+void CMy2015RemoteDlg::OnParamRunAsUser()
+{
+    CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
+
+    if (m_runNormal == 2) {
+        // 切换到服务+SYSTEM模式
+        m_runNormal = 0;
+        THIS_CFG.SetInt("settings", "RunNormal", m_runNormal);
+        SubMenu->CheckMenuItem(ID_PARAM_RUN_AS_USER, MF_UNCHECKED);
+        SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, MF_CHECKED);
+        MessageBoxL("已切换为SYSTEM权限模式，请重启程序生效。", "提示", MB_ICONINFORMATION);
+    } else {
+        // 切换到服务+User模式
+        m_runNormal = 2;
+        THIS_CFG.SetInt("settings", "RunNormal", m_runNormal);
+        SubMenu->CheckMenuItem(ID_PARAM_RUN_AS_USER, MF_CHECKED);
+        SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, MF_UNCHECKED);
+        MessageBoxL(_L("已切换为用户权限模式，请重启程序生效。\n\n")+
+                    _L("以用户身份运行代理可解决输入法(IME)和剪切板文件列表等问题，但可能影响某些需要高权限的功能。"),
+                    "提示", MB_ICONINFORMATION);
+    }
+    BOOL r = m_runNormal == 1 ? ServerService_Uninstall() : ServerService_Install();
+}
 
 bool IsDateGreaterOrEqual(const char* date1, const char* date2)
 {
@@ -6849,14 +6889,26 @@ void CMy2015RemoteDlg::OnHookWin()
 
 void CMy2015RemoteDlg::OnRunasService()
 {
-    m_runNormal = !m_runNormal;
-    MessageBoxL(m_runNormal ? _L("以传统方式启动主控程序，没有守护进程。") :
-                _L("以“服务+代理”形式启动主控程序，会开机自启及被守护。"),
-                "提示", MB_ICONINFORMATION);
-    THIS_CFG.SetInt("settings", "RunNormal", m_runNormal);
     CMenu* SubMenu = m_MainMenu.GetSubMenu(2);
-    SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, !m_runNormal ? MF_CHECKED : MF_UNCHECKED);
-    BOOL r = m_runNormal ? ServerService_Uninstall() : ServerService_Install();
+
+    if (m_runNormal == 0) {
+        // 切换到普通模式
+        m_runNormal = 1;
+        THIS_CFG.SetInt("settings", "RunNormal", m_runNormal);
+        SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, MF_UNCHECKED);
+        SubMenu->CheckMenuItem(ID_PARAM_RUN_AS_USER, MF_UNCHECKED);
+        MessageBoxL(_L("以传统方式启动主控程序，没有守护进程。"), "提示", MB_ICONINFORMATION);
+    } else {
+        // 切换到服务+SYSTEM模式
+        m_runNormal = 0;
+        THIS_CFG.SetInt("settings", "RunNormal", m_runNormal);
+        SubMenu->CheckMenuItem(ID_RUNAS_SERVICE, MF_CHECKED);
+        SubMenu->CheckMenuItem(ID_PARAM_RUN_AS_USER, MF_UNCHECKED);
+        MessageBoxL(_L("以“服务+代理”形式启动主控程序，会开机自启及被守护。") +
+                    _L("\n代理程序将以SYSTEM权限运行。请重启程序生效。"),
+                    "提示", MB_ICONINFORMATION);
+    }
+    BOOL r = m_runNormal == 1 ? ServerService_Uninstall() : ServerService_Install();
 }
 
 void CMy2015RemoteDlg::OnHistoryClients()

@@ -261,11 +261,14 @@ static BOOL HandleServiceCommandLine()
         return TRUE;
     }
 
-    // -agent: 由服务启动的GUI代理模式
-    // 此模式下正常运行GUI，但使用不同的互斥量名称避免冲突
+    // -agent 或 -agent-asuser: 由服务启动的GUI代理模式
+    // 必须先检查更长的参数 -agent-asuser，避免被 -agent 误匹配
+    if (cmdLine.Find(_T("-agent-asuser")) != -1) {
+        Mprintf("[HandleServiceCommandLine] Run service agent as USER: '%s'\n", cmdLine.GetString());
+        return FALSE;
+    }
     if (cmdLine.Find(_T("-agent")) != -1) {
-        // 继续正常启动GUI，但标记为代理模式
-        Mprintf("[HandleServiceCommandLine] Run service agent: '%s'\n", cmdLine.GetString());
+        Mprintf("[HandleServiceCommandLine] Run service agent as SYSTEM: '%s'\n", cmdLine.GetString());
         return FALSE;
     }
 
@@ -334,6 +337,16 @@ BOOL IsRunningAsAdmin()
 
 BOOL LaunchAsAdmin(const char* szFilePath, const char* verb)
 {
+    CString cmdLine = AfxGetApp()->m_lpCmdLine, arg;
+    cmdLine.Trim(); // 去掉前后空格
+
+    if (cmdLine.CompareNoCase(_T("-agent-asuser")) == 0) {
+		arg = "-agent-asuser";
+    }
+    else if (cmdLine.CompareNoCase(_T("-agent")) == 0) {
+		arg = "-agent";
+    }
+
     SHELLEXECUTEINFOA shExecInfo;
     ZeroMemory(&shExecInfo, sizeof(SHELLEXECUTEINFOA));
     shExecInfo.cbSize = sizeof(SHELLEXECUTEINFOA);
@@ -342,6 +355,7 @@ BOOL LaunchAsAdmin(const char* szFilePath, const char* verb)
     shExecInfo.lpVerb = verb;
     shExecInfo.lpFile = szFilePath;
     shExecInfo.nShow = SW_NORMAL;
+	shExecInfo.lpParameters = arg.IsEmpty() ? NULL : (LPCSTR)arg;
 
     return ShellExecuteExA(&shExecInfo);
 }
@@ -400,6 +414,9 @@ BOOL CMy2015RemoteApp::ProcessZstaCmd()
 
 BOOL CMy2015RemoteApp::InitInstance()
 {
+	CString cmdLine = ::GetCommandLine();
+    Mprintf("启动运行: %s\n", cmdLine);
+
     // 安装安全字符串 handler，避免 _s 函数参数无效时崩溃且无 dump
     InstallSafeStringHandler();
 
@@ -416,20 +433,16 @@ BOOL CMy2015RemoteApp::InitInstance()
         return FALSE;
     }
 
-#if _DEBUG
-    BOOL runNormal = TRUE;
-#else
     BOOL runNormal = THIS_CFG.GetInt("settings", "RunNormal", 0);
-#endif
     char curFile[MAX_PATH] = { 0 };
     GetModuleFileNameA(NULL, curFile, MAX_PATH);
-    if (!runNormal && !IsRunningAsAdmin() && LaunchAsAdmin(curFile, "runas")) {
+    if (runNormal != 1 && !IsRunningAsAdmin() && LaunchAsAdmin(curFile, "runas")) {
         Mprintf("[InitInstance] 程序没有管理员权限，用户选择以管理员身份重新运行。\n");
         return FALSE;
     }
 
     // 首先处理服务命令行参数
-    if (!runNormal && HandleServiceCommandLine()) {
+    if (runNormal != 1 && HandleServiceCommandLine()) {
         Mprintf("[InitInstance] 服务命令已处理，退出。\n");
         return FALSE;  // 服务命令已处理，退出
     }

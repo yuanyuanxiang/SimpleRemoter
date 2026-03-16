@@ -84,6 +84,7 @@ void ServerSessionMonitor_Init(ServerSessionMonitor* self)
 {
     self->monitorThread = NULL;
     self->running = FALSE;
+    self->runAsUser = FALSE;  // 默认以SYSTEM身份运行
     InitializeCriticalSection(&self->csProcessList);
     AgentArray_Init(&self->agentProcesses);
 }
@@ -380,7 +381,8 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
 {
     char buf[512];
 
-    sprintf_s(buf, sizeof(buf), "Attempting to launch GUI in session %d", (int)sessionId);
+    sprintf_s(buf, sizeof(buf), "Attempting to launch GUI in session %d (runAsUser=%d)",
+              (int)sessionId, (int)self->runAsUser);
     Mprintf(buf);
 
     STARTUPINFO si;
@@ -391,34 +393,61 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
     si.cb = sizeof(STARTUPINFO);
     si.lpDesktop = (LPSTR)"winsta0\\default";  // 关键：指定桌面
 
-    // 获取当前服务进程的 SYSTEM 令牌
     HANDLE hToken = NULL;
-    if (!OpenProcessToken(GetCurrentProcess(), TOKEN_DUPLICATE | TOKEN_QUERY, &hToken)) {
-        sprintf_s(buf, sizeof(buf), "OpenProcessToken failed: %d", (int)GetLastError());
-        Mprintf(buf);
-        return FALSE;
-    }
-
-    // 复制为可用于创建进程的主令牌
     HANDLE hDupToken = NULL;
-    if (!DuplicateTokenEx(hToken, MAXIMUM_ALLOWED, NULL,
-                          SecurityImpersonation, TokenPrimary, &hDupToken)) {
-        sprintf_s(buf, sizeof(buf), "DuplicateTokenEx failed: %d", (int)GetLastError());
-        Mprintf(buf);
-        SAFE_CLOSE_HANDLE(hToken);
-        return FALSE;
-    }
 
-    // 修改令牌的会话 ID 为目标用户会话
-    if (!SetTokenInformation(hDupToken, TokenSessionId, &sessionId, sizeof(sessionId))) {
-        sprintf_s(buf, sizeof(buf), "SetTokenInformation failed: %d", (int)GetLastError());
-        Mprintf(buf);
-        SAFE_CLOSE_HANDLE(hDupToken);
-        SAFE_CLOSE_HANDLE(hToken);
-        return FALSE;
-    }
+    if (self->runAsUser) {
+        // 模式1：以用户身份运行（解决IME、剪切板等问题）
+        Mprintf("Mode: Run as User");
 
-    Mprintf("Token duplicated");
+        // 直接获取用户令牌
+        if (!WTSQueryUserToken(sessionId, &hToken)) {
+            sprintf_s(buf, sizeof(buf), "WTSQueryUserToken failed: %d", (int)GetLastError());
+            Mprintf(buf);
+            return FALSE;
+        }
+
+        // 复制为主令牌
+        if (!DuplicateTokenEx(hToken, MAXIMUM_ALLOWED, NULL,
+                              SecurityImpersonation, TokenPrimary, &hDupToken)) {
+            sprintf_s(buf, sizeof(buf), "DuplicateTokenEx failed: %d", (int)GetLastError());
+            Mprintf(buf);
+            SAFE_CLOSE_HANDLE(hToken);
+            return FALSE;
+        }
+
+        Mprintf("User token obtained and duplicated");
+    } else {
+        // 模式2：以SYSTEM身份运行（现有逻辑）
+        Mprintf("Mode: Run as SYSTEM");
+
+        // 获取当前服务进程的 SYSTEM 令牌
+        if (!OpenProcessToken(GetCurrentProcess(), TOKEN_DUPLICATE | TOKEN_QUERY, &hToken)) {
+            sprintf_s(buf, sizeof(buf), "OpenProcessToken failed: %d", (int)GetLastError());
+            Mprintf(buf);
+            return FALSE;
+        }
+
+        // 复制为可用于创建进程的主令牌
+        if (!DuplicateTokenEx(hToken, MAXIMUM_ALLOWED, NULL,
+                              SecurityImpersonation, TokenPrimary, &hDupToken)) {
+            sprintf_s(buf, sizeof(buf), "DuplicateTokenEx failed: %d", (int)GetLastError());
+            Mprintf(buf);
+            SAFE_CLOSE_HANDLE(hToken);
+            return FALSE;
+        }
+
+        // 修改令牌的会话 ID 为目标用户会话
+        if (!SetTokenInformation(hDupToken, TokenSessionId, &sessionId, sizeof(sessionId))) {
+            sprintf_s(buf, sizeof(buf), "SetTokenInformation failed: %d", (int)GetLastError());
+            Mprintf(buf);
+            SAFE_CLOSE_HANDLE(hDupToken);
+            SAFE_CLOSE_HANDLE(hToken);
+            return FALSE;
+        }
+
+        Mprintf("SYSTEM token duplicated");
+    }
 
     // 获取当前程序路径（就是自己）
     char exePath[MAX_PATH];
@@ -442,9 +471,13 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
         return FALSE;
     }
 
-    // 构建命令行：同一个 exe， 但添加 -agent 参数
-    char cmdLine[MAX_PATH + 20];
-    sprintf_s(cmdLine, sizeof(cmdLine), "\"%s\" -agent", exePath);
+    // 构建命令行：同一个 exe， 但添加 -agent 或 -agent-asuser 参数
+    char cmdLine[MAX_PATH + 32];
+    if (self->runAsUser) {
+        sprintf_s(cmdLine, sizeof(cmdLine), "\"%s\" -agent-asuser", exePath);
+    } else {
+        sprintf_s(cmdLine, sizeof(cmdLine), "\"%s\" -agent", exePath);
+    }
 
     sprintf_s(buf, sizeof(buf), "Command line: %s", cmdLine);
     Mprintf(buf);

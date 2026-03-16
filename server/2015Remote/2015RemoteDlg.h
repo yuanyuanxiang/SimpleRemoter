@@ -395,6 +395,7 @@ public:
     afx_msg void OnParamEnableLog();
     afx_msg void OnParamPrivacyWallpaper();
     afx_msg void OnParamFileV2();
+    afx_msg void OnParamRunAsUser();
     void ProxyClientTcpPort(bool isStandard);
     afx_msg void OnProxyPort();
     afx_msg void OnHookWin();

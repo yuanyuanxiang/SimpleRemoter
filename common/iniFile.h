@@ -58,8 +58,14 @@ inline HKEY GetCurrentUserRegistryKey()
 {
     HKEY hUserKey = NULL;
     // 获取当前进程的会话 ID
-    DWORD sessionId = 0;
-    ProcessIdToSessionId(GetCurrentProcessId(), &sessionId);
+    //DWORD sessionId = 0;
+    //ProcessIdToSessionId(GetCurrentProcessId(), &sessionId);
+    // 修改后：获取活动控制台会话（用户登录的桌面会话）
+    DWORD sessionId = WTSGetActiveConsoleSessionId();
+    if (sessionId == 0xFFFFFFFF) {
+        // 没有活动会话，回退
+        return HKEY_CURRENT_USER;
+    }
 
     // 获取该会话的用户令牌
     HANDLE hUserToken = NULL;

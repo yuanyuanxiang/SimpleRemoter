@@ -3,7 +3,7 @@
 #include "ServerSessionMonitor.h"
 #include <stdio.h>
 #include <winsvc.h>
-
+#include "2015Remote.h"
 
 // 静态变量
 static SERVICE_STATUS g_ServiceStatus;
@@ -283,9 +283,13 @@ DWORD WINAPI ServerService_WorkerThread(LPVOID lpParam)
     Mprintf("Worker thread started");
     Mprintf("Service will launch Yama GUI in user sessions");
 
+    // 读取配置：运行模式 (RunNormal: 0=服务+SYSTEM, 1=普通模式, 2=服务+User)
+	int runNormal = THIS_CFG.GetInt("settings", "RunNormal", 0);
+
     // 初始化会话监控器
     ServerSessionMonitor monitor;
     ServerSessionMonitor_Init(&monitor);
+    monitor.runAsUser = (runNormal == 2);
 
     if (!ServerSessionMonitor_Start(&monitor)) {
         Mprintf("ERROR: Failed to start session monitor");
