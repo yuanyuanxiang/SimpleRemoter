@@ -156,7 +156,15 @@ BOOL ParseWindowAttrs(const char* szData, WindowAttrs* attrs)
 
 void CSystemDlg::ShowWindowsList(void)
 {
+    // GetMyBuffer(1) 深拷贝数据，跳过 TOKEN 字节
     Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(1);
+    DWORD dwDataLength = tmp.GetBufferLength();  // 使用副本的长度
+    if (dwDataLength == 0) {
+        // 缓冲区为空，无数据可显示
+        DeleteAllItems();
+        return;
+    }
+
     char *szBuffer = tmp.c_str();
     DWORD	dwOffset = 0;
     char	*szTitle = NULL;
@@ -165,7 +173,7 @@ void CSystemDlg::ShowWindowsList(void)
     DeleteAllItems();
     CString	str;
     int i ;
-    for ( i = 0; dwOffset <m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; ++i) {
+    for ( i = 0; dwOffset < dwDataLength; ++i) {
         LPDWORD	lpPID = LPDWORD(szBuffer + dwOffset);   //窗口句柄
         szTitle = (char *)szBuffer + dwOffset + sizeof(DWORD);   //窗口标题
         WindowAttrs attrs = {};
@@ -191,7 +199,15 @@ void CSystemDlg::ShowWindowsList(void)
 
 void CSystemDlg::ShowProcessList(void)
 {
+    // GetMyBuffer(1) 深拷贝数据，跳过 TOKEN 字节
     Buffer tmp = m_ContextObject->InDeCompressedBuffer.GetMyBuffer(1);
+    DWORD dwDataLength = tmp.GetBufferLength();  // 使用副本的长度
+    if (dwDataLength == 0) {
+        // 缓冲区为空，无数据可显示
+        DeleteAllItems();
+        return;
+    }
+
     char	*szBuffer = tmp.c_str(); //xiaoxi[][][][][]
     const char	*szExeFile;
     const char	*szProcessFullPath;
@@ -200,7 +216,7 @@ void CSystemDlg::ShowProcessList(void)
     DeleteAllItems();
     //遍历发送来的每一个字符别忘了他的数据结构啊 Id+进程名+0+完整名+0
     int i;
-    for (i = 0; dwOffset < m_ContextObject->InDeCompressedBuffer.GetBufferLength() - 1; ++i) {
+    for (i = 0; dwOffset < dwDataLength; ++i) {
         LPDWORD	PID = LPDWORD(szBuffer + dwOffset);        //这里得到进程ID
         szExeFile = szBuffer + dwOffset + sizeof(DWORD);      //进程名就是ID之后的啦
         auto arr = StringToVector(szExeFile, ':', 2);
@@ -366,7 +382,8 @@ VOID CSystemDlg::OnPlistRefresh()
     if (m_ControlList.IsWindowVisible()) {
         DeleteAllItems();
         GetProcessList();
-        ShowProcessList();
+        // 不要在这里调用 ShowProcessList()
+        // 数据是异步返回的，由 OnReceiveComplete() 处理
     }
 }
 
