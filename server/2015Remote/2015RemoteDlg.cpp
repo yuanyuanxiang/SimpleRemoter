@@ -6494,8 +6494,9 @@ LRESULT CALLBACK CMy2015RemoteDlg::LowLevelKeyboardProc(int nCode, WPARAM wParam
                         } else {
                             Mprintf("【Ctrl+V】 [C2C] 发送请求失败\n");
                         }
-                    } else if (g_2015RemoteDlg->GetActiveRemoteSession() && !dlg && (time(nullptr) - localCtrlCTime >= 10)) {
-                        // 远程 -> 本地：有活动会话，当前不在远程窗口，且10秒内没有本地Ctrl+C
+                    } else if (g_2015RemoteDlg->GetActiveRemoteSession() && !dlg && remoteCtrlCTime > 0 &&
+                        (time(nullptr) - remoteCtrlCTime < 60) && remoteCtrlCTime > localCtrlCTime) {
+                        // 远程 -> 本地：有活动会话，当前不在远程窗口，60秒内在远程按过Ctrl+C，且比本地Ctrl+C更晚
                         auto screen = (CScreenSpyDlg*)(g_2015RemoteDlg->GetActiveRemoteSession());
                         if (!screen) {
                             Mprintf("【Ctrl+V】 [远程 -> 本地] 远程桌面窗口状态已经失效\n");
