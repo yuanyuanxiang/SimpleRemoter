@@ -58,6 +58,7 @@
 #include "CLicenseDlg.h"
 #include "NotifyManager.h"
 #include "NotifySettingsDlg.h"
+#include "common/key.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -117,9 +118,6 @@ CMy2015RemoteDlg*  g_2015RemoteDlg = NULL;
 // 服务端待续传传输状态
 std::map<uint64_t, PendingTransferV2> g_pendingTransfersV2;
 std::mutex g_pendingTransfersV2Mtx;
-
-// V2 授权公钥（前向声明，定义在 AuthorizeClientV2 之前）
-extern const BYTE g_LicensePublicKey[64];
 
 // 检查客户端是否支持 V2 文件传输协议
 bool SupportsFileTransferV2(context* ctx) {
@@ -3284,20 +3282,6 @@ BOOL CMy2015RemoteDlg::AuthorizeClient(context* ctx, const std::string& sn, cons
 
     return TRUE;
 }
-
-// V2 License Public Key
-// Generated: 2026-03-05 00:48:25
-const BYTE g_LicensePublicKey[64] = {
-    0xa9, 0x5d, 0x1d, 0x44, 0x35, 0x86, 0x85, 0xdd,
-    0xbe, 0x27, 0x26, 0x6d, 0xe7, 0x33, 0x27, 0xf8,
-    0xbe, 0x2d, 0x87, 0xdd, 0xc1, 0x47, 0x18, 0xbf,
-    0xc6, 0x32, 0xfd, 0xce, 0xec, 0x25, 0x1b, 0xf5,
-    0x9b, 0x8a, 0x26, 0xa9, 0x85, 0x42, 0x72, 0x9f,
-    0x68, 0x79, 0x9b, 0x83, 0x5e, 0x2b, 0xd6, 0x59,
-    0x86, 0x64, 0x85, 0xe1, 0xf3, 0xa3, 0x18, 0x95,
-    0x5d, 0xd6, 0x3f, 0x2f, 0x55, 0x0b, 0x76, 0xbd
-};
-
 
 BOOL CMy2015RemoteDlg::AuthorizeClientV2(context* ctx, const std::string& sn, const std::string& passcode, const std::string& hmacV2)
 {
