@@ -58,12 +58,32 @@ inline HKEY GetCurrentUserRegistryKey()
 {
     HKEY hUserKey = NULL;
     // 获取当前进程的会话 ID
-    //DWORD sessionId = 0;
-    //ProcessIdToSessionId(GetCurrentProcessId(), &sessionId);
-    // 修改后：获取活动控制台会话（用户登录的桌面会话）
-    DWORD sessionId = WTSGetActiveConsoleSessionId();
-    if (sessionId == 0xFFFFFFFF) {
-        // 没有活动会话，回退
+    DWORD sessionId = 0;
+    ProcessIdToSessionId(GetCurrentProcessId(), &sessionId);
+
+    // 如果在 Session 0（服务进程），需要找用户会话
+    if (sessionId == 0) {
+        // 优先控制台会话（本地登录）
+        sessionId = WTSGetActiveConsoleSessionId();
+
+        // 没有控制台会话，枚举找远程会话（mstsc 登录）
+        if (sessionId == 0xFFFFFFFF) {
+            WTS_SESSION_INFOA* pSessions = NULL;
+            DWORD count = 0;
+            if (WTSEnumerateSessionsA(WTS_CURRENT_SERVER_HANDLE, 0, 1, &pSessions, &count)) {
+                for (DWORD i = 0; i < count; i++) {
+                    if (pSessions[i].State == WTSActive && pSessions[i].SessionId != 0) {
+                        sessionId = pSessions[i].SessionId;
+                        break;
+                    }
+                }
+                WTSFreeMemory(pSessions);
+            }
+        }
+    }
+
+    // 如果仍然没有有效会话，回退
+    if (sessionId == 0 || sessionId == 0xFFFFFFFF) {
         return HKEY_CURRENT_USER;
     }
 
