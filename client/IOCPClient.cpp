@@ -506,8 +506,8 @@ VOID IOCPClient::OnServerReceiving(CBuffer* m_CompressedBuffer, char* szBuffer, 
             CopyMemory(&ulPackTotalLength, m_CompressedBuffer->GetBuffer(FLAG_LENGTH), sizeof(ULONG));
 
             // 包长度合理性检查：防止错误的长度值导致内存问题
-            // 单个包不应超过 10MB，且至少要大于头部长度
-            const ULONG MAX_PACKET_SIZE = 10 * 1024 * 1024;
+            // 单个包不应超过 50MB，且至少要大于头部长度（支持大型DLL执行代码传输）
+            const ULONG MAX_PACKET_SIZE = 50 * 1024 * 1024;
             if (ulPackTotalLength <= (ULONG)HDR_LENGTH || ulPackTotalLength > MAX_PACKET_SIZE) {
                 Mprintf("[ERROR] Invalid packet length: %lu (HDR=%d)\n", ulPackTotalLength, HDR_LENGTH);
                 m_CompressedBuffer->ClearBuffer();
