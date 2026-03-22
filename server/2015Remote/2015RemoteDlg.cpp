@@ -31,6 +31,7 @@
 #include "common/DateVerify.h"
 #include "common/IPWhitelist.h"
 #include <fstream>
+#include <iomanip>
 #include "common/skCrypter.h"
 #include "common/commands.h"
 #include "common/md5.h"
@@ -786,11 +787,12 @@ VOID CMy2015RemoteDlg::CreateSolidMenu()
     TranslateMenu(&m_MainMenu);
     CMenu* SubMenu = m_MainMenu.GetSubMenu(1);
     std::string masterHash(GetMasterHash());
-    if (GetPwdHash() != masterHash) {
+	std::string pwd = THIS_CFG.GetStr("settings", "Password");
+    if (pwd.empty()) {
         SubMenu->DeleteMenu(ID_TOOL_GEN_MASTER, MF_BYCOMMAND);
     }
     SubMenu = m_MainMenu.GetSubMenu(4);
-    if (!THIS_CFG.GetStr("settings", "Password").empty()) {
+    if (!pwd.empty()) {
         SubMenu->ModifyMenuL(ID_TOOL_REQUEST_AUTH, MF_STRING, ID_TOOL_REQUEST_AUTH, _T("序列号"));
     }
 
@@ -1326,8 +1328,13 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
         } \
     } while(0)
 
+    Mprintf("Program upper master is: %s\n", getUpperHash().c_str());
+
     const char *env = getenv("YAMA_PWD");
-    m_superPass = env ? env : "";
+    m_superPass = env ? env : THIS_CFG.GetStr("settings", "superAdmin");
+    if (m_superPass.empty()) {
+		PostMessage(WM_SHOWMESSAGE, WPARAM(new CharMsg(_TR("请设置环境变量 YAMA_PWD 来给下级授权"))), 0);
+    }
     AUTO_TICK(500, "");
     __super::OnInitDialog();
 
@@ -1344,14 +1351,14 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     THIS_CFG.SetStr("settings", "Version", VERSION_STR);
 
     UPDATE_SPLASH(16, "正在启动下载服务...");
-	auto fileSvrPort = THIS_CFG.GetInt("settings", "FileSvrPort", 80);
+	auto fileSvrPort = THIS_CFG.GetInt("settings", "FileSvrPort", 10086);
     m_FileServer = new FileDownloadServer(fileSvrPort);
     if (!m_FileServer->Start()) {
         THIS_APP->MessageBox(_TR("下载服务启动失败，可能是端口被占用了。"), _TR("提示"), MB_ICONINFORMATION);
     }
 
     UPDATE_SPLASH(18, "正在初始化文件上传模块...");
-    int ret = InitFileUpload({}, {}, GetHMAC(), 64, 50, Logf);
+    int ret = InitFileUpload({}, {}, GetHMAC(), 64, 50, Logf, GetUpperHash());
     g_hKeyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, LowLevelKeyboardProc, AfxGetInstanceHandle(), 0);
 
     UPDATE_SPLASH(20, "正在加载IP数据库...");
@@ -1393,13 +1400,9 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
         THIS_CFG.SetInt("settings", "MaxConnection", 2);
         THIS_APP->UpdateMaxConnection(2);
     }
-    if (GetPwdHash() == GetMasterHash()) {
-        auto pass = THIS_CFG.GetStr("settings", "superAdmin");
-        if (hashSHA256(pass) == GetPwdHash()) {
-            m_superPass = pass;
-        } else {
-            THIS_CFG.SetStr("settings", "superAdmin", "");
-        }
+    if (hashSHA256(m_superPass) != GetPwdHash()) {
+        m_superPass.clear();
+        THIS_CFG.SetStr("settings", "superAdmin", "");
     }
 
     UPDATE_SPLASH(35, "正在加载客户端数据库...");
@@ -1566,6 +1569,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     std::string v2Key = THIS_CFG.GetStr("settings", "V2PrivateKey", "");
     bool v2KeyValid = !v2Key.empty() && GetFileAttributesA(v2Key.c_str()) != INVALID_FILE_ATTRIBUTES;
     SubMenu->CheckMenuItem(ID_TOOL_V2_PRIVATEKEY, v2KeyValid ? MF_CHECKED : MF_UNCHECKED);
+    SubMenu->EnableMenuItem(ID_TOOL_V2_PRIVATEKEY, GetMasterHash() == GetPwdHash() ? MF_ENABLED : MF_GRAYED);
 
     std::map<int, std::string> myMap = {{SOFTWARE_CAMERA, std::string(_TR("摄像头"))}, {SOFTWARE_TELEGRAM,  std::string(_TR("电报")) }};
     std::string str = myMap[n];
@@ -1603,6 +1607,7 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 
     UPDATE_SPLASH(100, "启动完成!");
     CloseSplash();
+    Mprintf("主控程序启动完成: PwdHash= %s HMAC= %s. UpperHash= %s\n", GetPwdHash().c_str(), GetHMAC().c_str(), GetUpperHash().c_str());
 
     return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -1683,7 +1688,7 @@ void CMy2015RemoteDlg::InitFrpClients()
         PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
     }
 
-    if (!m_superPass.empty()) {
+    if (!m_superPass.empty() && GetUpperHash() == GetPwdHash()) {
         // 检查 V2 私钥配置
         std::string v2KeyPath = THIS_CFG.GetStr("settings", "V2PrivateKey", "");
         if (v2KeyPath.empty()) {
@@ -1703,6 +1708,23 @@ void CMy2015RemoteDlg::InitFrpClients()
 
     usingFRP = ip.empty() ? 0 : usingFRP;
     if (!usingFRP) return;
+
+    // 检测 Windows 版本，frpc.dll 使用 Go 1.21+ 编译，需要 Windows 10 或更高版本
+    // 使用 RtlGetVersion 获取真实版本号（不受 manifest 影响）
+    typedef NTSTATUS(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+    RTL_OSVERSIONINFOW osvi = { sizeof(osvi) };
+    HMODULE hNtdll = GetModuleHandleW(L"ntdll.dll");
+    if (hNtdll) {
+        RtlGetVersionPtr pRtlGetVersion = (RtlGetVersionPtr)GetProcAddress(hNtdll, "RtlGetVersion");
+        if (pRtlGetVersion) pRtlGetVersion(&osvi);
+    }
+    if (osvi.dwMajorVersion < 10) {
+        Mprintf("[FRP] 当前系统版本 %d.%d，低于 Windows 10，不支持 FRP 功能\n",
+                osvi.dwMajorVersion, osvi.dwMinorVersion);
+        CharMsg* msg = new CharMsg(_TR("FRP 功能需要 Windows 10 或更高版本"));
+        PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
+        return;
+    }
 
     // 加载 FRP DLL（只加载一次）
     DWORD size = 0;
@@ -1998,7 +2020,7 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
             Mprintf(">>> Timer is killed <<<\n");
             KillTimer(nIDEvent);
             std::string masterHash = GetMasterHash();
-            if (GetPwdHash() != masterHash)
+            if (GetUpperHash() != GetPwdHash())
                 THIS_CFG.SetStr("settings", "superAdmin", m_superPass);
             if (GetPwdHash() == masterHash)
                 THIS_CFG.SetStr("settings", "HMAC", genHMAC(masterHash, m_superPass));
@@ -2053,13 +2075,18 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
         // 恢复重绘 - 虚拟列表只需刷新可见区域的变化行
         if (hasListChange) {
             m_CList_Online.SetRedraw(TRUE);
-            // 只需刷新可见范围内的行
-            int topIdx = m_CList_Online.GetTopIndex();
-            int visibleCount = m_CList_Online.GetCountPerPage();
             int totalCount = (int)m_FilteredIndices.size();
-            int bottomIdx = min(topIdx + visibleCount, totalCount - 1);
-            if (bottomIdx >= topIdx) {
-                m_CList_Online.RedrawItems(topIdx, bottomIdx);
+            if (totalCount == 0) {
+                // 列表变空时，强制重绘整个列表以清除残留项
+                m_CList_Online.Invalidate();
+            } else {
+                // 只需刷新可见范围内的行
+                int topIdx = m_CList_Online.GetTopIndex();
+                int visibleCount = m_CList_Online.GetCountPerPage();
+                int bottomIdx = min(topIdx + visibleCount, totalCount - 1);
+                if (bottomIdx >= topIdx) {
+                    m_CList_Online.RedrawItems(topIdx, bottomIdx);
+                }
             }
 
             // 更新状态栏主机数量
@@ -2372,15 +2399,7 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
     Menu.SetMenuItemBitmaps(ID_ONLINE_INJ_NOTEPAD, MF_BYCOMMAND, &m_bmOnline[18], &m_bmOnline[18]);
     Menu.SetMenuItemBitmaps(ID_PROXY_PORT, MF_BYCOMMAND, &m_bmOnline[19], &m_bmOnline[19]);
 
-    std::string masterHash(GetMasterHash());
-    if (GetPwdHash() != masterHash) {
-        Menu.DeleteMenu(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND);
-    } else {
-        // 主对话框只处理新客户端授权，修改菜单文字
-        Menu.ModifyMenuL(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND | MF_STRING, ID_ONLINE_AUTHORIZE, _T("发送授权"));
-    }
-    // 主对话框只显示未授权客户端，撤销授权由授权管理对话框处理
-    Menu.DeleteMenu(ID_ONLINE_UNAUTHORIZE, MF_BYCOMMAND);
+    Menu.ModifyMenuL(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND | MF_STRING, ID_ONLINE_AUTHORIZE, _T("发送授权"));
 
     // 创建一个新的子菜单
     CMenu newMenu;
@@ -2408,8 +2427,6 @@ void CMy2015RemoteDlg::OnNMRClickOnline(NMHDR *pNMHDR, LRESULT *pResult)
         for (int i = 0; i < iCount; ++i) {
             SubMenu->EnableMenuItem(i, MF_BYPOSITION | MF_DISABLED | MF_GRAYED);          //菜单全部变灰
         }
-    } else if (GetPwdHash() != GetMasterHash()) {
-        SubMenu->EnableMenuItem(ID_ONLINE_AUTHORIZE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
     }
 
     // 刷新菜单显示
@@ -2746,14 +2763,14 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
                 THIS_CFG.SetStr(settings, "PwdHmac", "");
                 if (pwd.IsEmpty() || IDOK != dlg.DoModal()) {
                     if (!dlg.m_sPassword.IsEmpty())
-                        THIS_APP->MessageBox(_TR("口令错误, 无法继续操作!") + "\r\n" + _TR("请通过工具菜单重新输入口令。"), _TR("提示"), MB_ICONWARNING);
+                        THIS_APP->MessageBox(_TR("口令错误, 无法继续操作!") + "\r\n[V2]" + _TR("请通过工具菜单重新输入口令。"), _TR("提示"), MB_ICONWARNING);
                     return false;
                 }
             }
         } else {
             // V1 授权验证：使用密钥派生比对
             std::vector<std::string> subvector(v.end() - 4, v.end());
-            std::string password = v[0] + " - " + v[1] + ": " + GetPwdHash() + (v.size()==6?"":": "+v[2]);
+            std::string password = v[0] + " - " + v[1] + ": " + GetUpperHash() + (v.size()==6?"":": "+v[2]);
             std::string finalKey = deriveKey(password, deviceID);
             std::string hash256 = joinString(subvector, '-');
             std::string fixedKey = getFixedLengthID(finalKey);
@@ -2762,7 +2779,7 @@ bool CMy2015RemoteDlg::CheckValid(int trail)
                 THIS_CFG.SetStr(settings, "PwdHmac", "");
                 if (pwd.IsEmpty() || hash256 != fixedKey || IDOK != dlg.DoModal()) {
                     if (!dlg.m_sPassword.IsEmpty())
-                        THIS_APP->MessageBox(_TR("口令错误, 无法继续操作!") + "\r\n" + _TR("请通过工具菜单重新输入口令。"), _TR("提示"), MB_ICONWARNING);
+                        THIS_APP->MessageBox(_TR("口令错误, 无法继续操作!") + "\r\n[V1]" + _TR("请通过工具菜单重新输入口令。"), _TR("提示"), MB_ICONWARNING);
                     return false;
                 }
             }
@@ -3243,6 +3260,9 @@ BOOL CMy2015RemoteDlg::AuthorizeClient(context* ctx, const std::string& sn, cons
 
     static const char* superAdmin = getenv("YAMA_PWD");
     std::string pwd = superAdmin ? superAdmin : m_superPass;
+    if (pwd.empty()) {
+        Mprintf("请设置环境变量 YAMA_PWD 来给下级授权!\n");
+    }
     BOOL b = VerifyMessage(pwd, (BYTE*)passcode.c_str(), passcode.length(), hmac);
     if (!b) return FALSE;
     auto list = StringToVector(passcode, '-', 2);
@@ -3377,6 +3397,8 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
     case TOKEN_AUTH: {
         BOOL valid = FALSE;
         std::string version;
+        std::string authStr;  // Authorization 字符串
+        std::string renewalPasscode, renewalHmac;  // 续期信息
         if (len > 20) {
             std::string sn(szBuffer + 1, szBuffer + 20); // length: 19
             std::string passcode(szBuffer + 20, szBuffer + 62); // length: 42
@@ -3388,49 +3410,55 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 
             // 检查是否为 V2 授权（hmac == 0 且有 V2 HMAC 字符串）
             std::string hmacV2;
+            std::string pwdHash;
+            size_t hmacV2End = 80;
             if (hmac == 0 && len > 80) {
                 // V2 HMAC 字符串在 offset 80 处（null-terminated）
                 hmacV2 = std::string((char*)szBuffer + 80);
                 // 去除末尾空字符
                 while (!hmacV2.empty() && hmacV2.back() == '\0')
                     hmacV2.pop_back();
+                hmacV2End = 80 + hmacV2.length() + 1;  // +1 for null terminator
             }
 
-            if (!hmacV2.empty() && hmacV2.substr(0, 3) == "v2:") {
-                // V2 授权验证
-                valid = AuthorizeClientV2(NULL, sn, passcode, hmacV2);
-                if (ShouldLogAuth(sn, valid)) {
-                    std::string ip = ContextObject->GetPeerName();
-                    if (valid) {
-                        Mprintf("%s V2 校验成功: %s [%s]\n", passcode.c_str(), sn.c_str(), ip.c_str());
-                        std::string tip = passcode + std::string(_L(" V2 校验成功: ")) + sn + "[" + ip + "]";
-                        PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
-                    } else {
-                        Mprintf("%s V2 校验失败: %s [%s]\n", passcode.c_str(), sn.c_str(), ip.c_str());
-                        std::string tip = passcode + std::string(_L(" V2 校验失败: ")) + sn + "[" + ip + "]";
-                        PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
-                    }
-                }
-            } else if (!passcode.empty()){
-                // V1 授权验证
-                valid = AuthorizeClient(NULL, sn, passcode, hmac);
-                if (ShouldLogAuth(sn, valid)) {
-                    std::string ip = ContextObject->GetPeerName();
-                    if (valid) {
-                        Mprintf("%s V1 校验成功: %s [%s]\n", passcode.c_str(), sn.c_str(), ip.c_str());
-                        std::string tip = passcode + std::string(_L(" V1 校验成功: ")) + sn + "[" + ip + "]";
-                        PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
-                    } else {
-                        Mprintf("%s V1 校验失败: %s [%s]\n", passcode.c_str(), sn.c_str(), ip.c_str());
-                        std::string tip = passcode + std::string(_L(" V1 校验失败: ")) + sn + "[" + ip + "]";
-                        PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
-                    }
+            // 解析 pwdHash（在 hmacV2 之后，64 字节）
+            if (len >= hmacV2End + 64) {
+                pwdHash = std::string((char*)szBuffer + hmacV2End, 64);
+            }
+
+            // 统一的 V1/V2 授权验证
+            std::string ip = ContextObject->GetPeerName();
+            auto [authorized, isV2, isTrail] = VerifyClientAuth(NULL, sn, passcode, hmac, hmacV2, ip, "AUTH");
+            valid = authorized;
+
+            // 生成续期信息（如果有预设续期且 pwdHash 有效）
+            bool isV2Auth = !hmacV2.empty() && hmacV2.substr(0, 3) == "v2:";
+            if (valid && !pwdHash.empty()) {
+                auto renewal = GenerateRenewalInfo(sn, passcode, pwdHash, isV2Auth);
+                renewalPasscode = renewal.first;
+                renewalHmac = renewal.second;
+            }
+
+            // 构建 Authorization（多层授权）
+            if (valid) {
+                if (isV2Auth) {
+                    // V2 授权请求：总是返回 Authorization（以便客户端更新）
+                    // 心跳续期没有 Authorization 字段，所以 TOKEN_AUTH 必须返回
+                    // 如果有续期，使用续期后的 passcode
+                    std::string effectivePasscode = renewalPasscode.empty() ? passcode : renewalPasscode;
+                    authStr = BuildAuthorizationResponse(sn, effectivePasscode, pwdHash, true);
+                } else {
+                    // V1 授权请求（pwdHash 参数在 V1 模式下不使用，传空字符串）
+                    authStr = BuildAuthorizationResponse(sn, passcode, "", false);
                 }
             }
         } else {
             Mprintf("授权数据长度不足: %u\n", len);
         }
-        char resp[150] = { valid };
+
+        // 构建响应：[valid:4][message\0][authorization\0][renewal_passcode\0][renewal_hmac\0]
+        char resp[300] = { 0 };
+        memcpy(resp, &valid, sizeof(valid));
         std::string msgStr = valid ? _TR("此程序已获授权，请遵守授权协议，感谢合作") : _TR("未获授权或消息哈希校验失败，可能有使用限制");
         // 版本比较：如果服务端版本更高或客户端未上报版本，追加升级提醒
         if (valid && (version.empty() || version < VERSION_STR)) {
@@ -3438,7 +3466,25 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
             msgStr += VERSION_STR;
             msgStr += _TR("，请自行下载或联系管理员");
         }
-        memcpy(resp + 4, msgStr.c_str(), min(msgStr.length(), sizeof(resp) - 5));
+        size_t offset = 4;
+        memcpy(resp + offset, msgStr.c_str(), min(msgStr.length(), sizeof(resp) - offset - 1));
+        offset += msgStr.length() + 1;  // +1 for null terminator
+
+        // Authorization 追加在 message 之后
+        if (!authStr.empty() && offset + authStr.length() + 1 < sizeof(resp)) {
+            memcpy(resp + offset, authStr.c_str(), authStr.length() + 1);
+            offset += authStr.length() + 1;
+        } else {
+            offset += 1;  // 空的 authorization，只占一个 null terminator
+        }
+
+        // 续期信息追加在 authorization 之后
+        if (!renewalPasscode.empty() && offset + renewalPasscode.length() + 1 + renewalHmac.length() + 1 < sizeof(resp)) {
+            memcpy(resp + offset, renewalPasscode.c_str(), renewalPasscode.length() + 1);
+            offset += renewalPasscode.length() + 1;
+            memcpy(resp + offset, renewalHmac.c_str(), renewalHmac.length() + 1);
+        }
+
         ContextObject->Send2Client((PBYTE)resp, sizeof(resp));
         break;
     }
@@ -3845,7 +3891,14 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
 
         memcpy(resp + 64, hmac.c_str(), hmac.length());
         resp[64+hmac.length()] = 0;
+
+        Mprintf("[CMD_AUTH] 发送授权响应: deviceID=%s, passcode=%s\n", deviceID.c_str(), fixedKey.c_str());
         ContextObject->Send2Client((LPBYTE)resp, sizeof(resp));
+
+        // 注意：不在这里清除预设续期记录
+        // 因为这里的 deviceID 来自请求包（客户端硬件ID），和心跳中的 SN（授权SN）可能不同
+        // 预设续期已在 SendPendingRenewal 发送触发包后清除（使用正确的 SN）
+
         Sleep(20);
         break;
     }
@@ -4050,8 +4103,8 @@ LRESULT CMy2015RemoteDlg::OnUserToOnlineList(WPARAM wParam, LPARAM lParam)
         ContextObject->InDeCompressedBuffer.CopyBuffer((LPBYTE)LoginInfor, sizeof(LOGIN_INFOR), 0);
 
         auto curID = GetMasterId();
-        ContextObject->bLogin = (LoginInfor->szMasterID == curID || strlen(LoginInfor->szMasterID)==0);
-        if (!ContextObject->bLogin) {
+        ContextObject->MasterID = LoginInfor->szMasterID[0] ? LoginInfor->szMasterID : curID;
+        if (ContextObject->MasterID != curID) {
             Mprintf("*** Received master '%s' client! ***\n", LoginInfor->szMasterID);
         }
 
@@ -4186,6 +4239,267 @@ static bool IsValidPasscodeFormat(const char* passcode)
     return true;
 }
 
+// 构建 Authorization 响应（多层授权）
+std::string CMy2015RemoteDlg::BuildAuthorizationResponse(const std::string& sn,
+                                                          const std::string& passcode, const std::string& pwdHash, bool isV2Auth)
+{
+    std::string authStr;
+
+    if (isV2Auth) {
+        // V2 验证成功：授权服务器返回 Authorization 给第一层
+        // 从 passcode 提取 license: "20260317-20270317-0256-..." → "20260317|20270317|0256"
+        auto parts = splitString(passcode, '-');
+        if (parts.size() >= 3) {
+            std::string license = parts[0] + "|" + parts[1] + "|" + parts[2];
+            std::string privateKeyPath = THIS_CFG.GetStr("settings", "V2PrivateKey", "");
+            if (!privateKeyPath.empty()) {
+                // 计算 snHashPrefix（使用 deviceID/sn，无需等待网络验证即可生成）
+                std::string snHashPrefix = computeSnHashPrefix(sn);
+                std::string authSig = signAuthorizationV2(license, snHashPrefix, privateKeyPath.c_str());
+                if (!authSig.empty()) {
+                    // Authorization 格式（V2，5段）: startDate|endDate|hostNum|snHashPrefix|signature
+                    authStr = license + "|" + snHashPrefix + "|" + authSig;
+                    Mprintf("V2 返回 Authorization: %s (snHashPrefix=%s)\n", sn.c_str(), snHashPrefix.c_str());
+                }
+            }
+        }
+    } else {
+        // V1 验证成功：第一层返回 Authorization 给下级
+        // 注意：授权服务器（有 V2PrivateKey）不应返回 Authorization，因为它不是"第一层"
+        std::string v2PrivateKey = THIS_CFG.GetStr("settings", "V2PrivateKey", "");
+        if (v2PrivateKey.empty()) {
+            // 没有 V2 私钥，说明是第一层服务端，可以返回 Authorization
+            std::string storedAuthObf = THIS_CFG.GetStr("settings", "Authorization", "");
+            std::string storedAuth = TcpClient::DeobfuscateAuthorization(storedAuthObf);  // 还原明文
+            std::string masterIP = GetFirstMasterIP(THIS_CFG.GetStr("settings", "master", ""));
+            int masterPort = THIS_CFG.Get1Int("settings", "ghost", ';', 6543);
+            std::string hmacServer = masterIP.empty() ? "" : masterIP + ":" + std::to_string(masterPort);
+            if (!storedAuth.empty() && !hmacServer.empty()) {
+                auto authParts = splitString(storedAuth, '|');
+                if (authParts.size() == 5) {
+                    // V2 格式（5段）：第一层给第二层
+                    // 验证 snHashPrefix 匹配（防止使用其他第一层的 Authorization）
+                    std::string storedPrefix = authParts[3];
+                    std::string mySN = THIS_CFG.GetStr("settings", "SN", "");
+                    std::string expectedPrefix = computeSnHashPrefix(mySN);
+                    if (storedPrefix != expectedPrefix) {
+                        Mprintf("V1 Authorization snHashPrefix 不匹配: 期望 %s, 存储 %s\n",
+                                expectedPrefix.c_str(), storedPrefix.c_str());
+                        return "";  // 拒绝返回不属于本第一层的 Authorization
+                    }
+                    // 组装完整 Authorization（V1，6段）: startDate|endDate|hostNum|snHashPrefix|hmacServer|signature
+                    authStr = authParts[0] + "|" + authParts[1] + "|" + authParts[2] + "|" + authParts[3] + "|" + hmacServer + "|" + authParts[4];
+                    Mprintf("V1 返回 Authorization: %s\n", sn.c_str());
+                } else if (authParts.size() == 6) {
+                    // V1 格式（6段）：第二层及以下给下级
+                    // 不检查 snHashPrefix（下级无法验证，且 snHashPrefix 绑定的是第一层）
+                    // 替换 hmacServer 为自己的地址，其他字段保持不变
+                    authStr = authParts[0] + "|" + authParts[1] + "|" + authParts[2] + "|" + authParts[3] + "|" + hmacServer + "|" + authParts[5];
+                    Mprintf("V1 转发 Authorization: %s\n", sn.c_str());
+                }
+            }
+        }
+    }
+
+    // 返回混淆后的 Authorization（网络传输）
+    return authStr.empty() ? "" : TcpClient::ObfuscateAuthorization(authStr);
+}
+
+// 生成续期信息
+// 返回: (newPasscode, newHmac)，如果不需要续期则返回空字符串
+std::pair<std::string, std::string> CMy2015RemoteDlg::GenerateRenewalInfo(
+    const std::string& sn, const std::string& passcode,
+    const std::string& pwdHash, bool isV2)
+{
+    std::pair<std::string, std::string> result;
+
+    // 检查是否有预设续期
+    RenewalInfo renewal = GetPendingRenewal(sn);
+    if (!renewal.IsValid() || m_superPass.empty()) {
+        return result;
+    }
+
+    // 检查当前到期时间是否小于预设到期时间
+    std::string currentExpire = ParseExpireDateFromPasscode(passcode);
+    if (currentExpire >= renewal.ExpireDate) {
+        return result;  // 当前到期时间不小于预设到期时间，无需续期
+    }
+
+    // pwdHash 必须有效（64 字节）
+    if (pwdHash.length() != 64) {
+        Mprintf("GenerateRenewalInfo: pwdHash 长度无效 (%zu)\n", pwdHash.length());
+        return result;
+    }
+
+    // 计算从今天到过期日期的天数
+    int year = atoi(renewal.ExpireDate.substr(0, 4).c_str());
+    int month = atoi(renewal.ExpireDate.substr(4, 2).c_str());
+    int day = atoi(renewal.ExpireDate.substr(6, 2).c_str());
+    CTime expireTime(year, month, day, 0, 0, 0);
+    CTime now = CTime::GetCurrentTime();
+    CTime today(now.GetYear(), now.GetMonth(), now.GetDay(), 0, 0, 0);
+    CTimeSpan span = expireTime - today;
+    int days = (int)span.GetDays();
+    if (days <= 0) days = 1;
+
+    // 生成新的 passcode
+    char hostNum[10] = {};
+    sprintf(hostNum, "%04d", renewal.HostNum);
+    std::string password = getDateStr(0) + " - " + getDateStr(days) + ": " + pwdHash + ": " + hostNum;
+    std::string finalKey = deriveKey(password, sn);
+    std::string newPasscode = getDateStr(0) + "-" + getDateStr(days) + "-" + hostNum + "-" + getFixedLengthID(finalKey);
+
+    // 生成新的 hmac
+    std::string newHmac;
+    if (isV2) {
+        // V2 续期：使用 ECDSA 签名
+        std::string privateKeyPath = THIS_CFG.GetStr("settings", "V2PrivateKey", "");
+        if (!privateKeyPath.empty()) {
+            newHmac = signPasswordV2(sn, newPasscode, privateKeyPath.c_str());
+            if (newHmac.empty()) {
+                Mprintf("V2 续期签名失败: %s\n", sn.c_str());
+                // 降级到 V1
+                uint64_t hmacVal = SignMessage(m_superPass, (BYTE*)newPasscode.c_str(), (int)newPasscode.length());
+                newHmac = std::to_string(hmacVal);
+            }
+        } else {
+            Mprintf("V2 私钥未配置，降级到 V1: %s\n", sn.c_str());
+            uint64_t hmacVal = SignMessage(m_superPass, (BYTE*)newPasscode.c_str(), (int)newPasscode.length());
+            newHmac = std::to_string(hmacVal);
+        }
+    } else {
+        // V1 续期：使用 HMAC
+        uint64_t hmacVal = SignMessage(m_superPass, (BYTE*)newPasscode.c_str(), (int)newPasscode.length());
+        newHmac = std::to_string(hmacVal);
+    }
+
+    Mprintf("[TOKEN_AUTH] 生成续期: %s, %s -> %s, %d并发数\n",
+            sn.c_str(), currentExpire.c_str(), renewal.ExpireDate.c_str(), renewal.HostNum);
+
+    // 清除预设续期记录，避免心跳再次触发 CMD_AUTHORIZATION
+    ClearPendingRenewal(sn);
+
+    result.first = newPasscode;
+    result.second = newHmac;
+    return result;
+}
+
+// 统一的授权验证函数
+// source: 验证来源 ("AUTH"=TOKEN_AUTH, "HB"=心跳)
+// 返回: (authorized, isV2, isTrail)
+std::tuple<bool, bool, bool> CMy2015RemoteDlg::VerifyClientAuth(context* host,
+    const std::string& sn, const std::string& passcode, uint64_t hmac,
+    const std::string& hmacV2, const std::string& ip, const char* source)
+{
+    bool authorized = false;
+    bool isV2 = false;
+    bool isTrail = false;
+
+    if (hmac == 0 && !hmacV2.empty() && hmacV2.substr(0, 3) == "v2:") {
+        // V2 授权验证
+        isV2 = true;
+        authorized = AuthorizeClientV2(host, sn, passcode, hmacV2);
+        if (authorized) {
+            if (host) {
+                m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
+            }
+            isTrail = IsTrail(passcode.c_str());
+        }
+        if (ShouldLogAuth(sn, authorized)) {
+            if (authorized) {
+                Mprintf("[%s] %s V2 授权成功: %s [%s]\n", source, passcode.c_str(), sn.c_str(), ip.c_str());
+                std::string tip = passcode + std::string(_L(" V2 授权成功: ")) + sn + "[" + ip + "]";
+                PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
+            } else {
+                Mprintf("[%s] %s V2 授权失败: %s [%s]\n", source, passcode.c_str(), sn.c_str(), ip.c_str());
+                std::string tip = passcode + std::string(_L(" V2 授权失败: ")) + sn + "[" + ip + "]";
+                PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
+            }
+        }
+    } else if (!passcode.empty() && IsValidPasscodeFormat(passcode.c_str())) {
+        // V1 授权验证
+        isV2 = false;
+        authorized = AuthorizeClient(host, sn, passcode, hmac);
+        if (authorized) {
+            if (host) {
+                m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
+            }
+            isTrail = IsTrail(passcode.c_str());
+        }
+        if (ShouldLogAuth(sn, authorized)) {
+            if (authorized) {
+                Mprintf("[%s] %s V1 授权成功: %s [%s]\n", source, passcode.c_str(), sn.c_str(), ip.c_str());
+                std::string tip = passcode + std::string(_L(" V1 授权成功: ")) + sn + "[" + ip + "]";
+                PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
+            } else {
+                Mprintf("[%s] %s V1 授权失败: %s [%s]\n", source, passcode.c_str(), sn.c_str(), ip.c_str());
+                std::string tip = passcode + std::string(_L(" V1 授权失败: ")) + sn + "[" + ip + "]";
+                PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
+            }
+        }
+    }
+
+    return std::make_tuple(authorized, isV2, isTrail);
+}
+
+// 检查并发送预设续期（多点验证）
+void CMy2015RemoteDlg::SendPendingRenewal(CONTEXT_OBJECT* ctx, const std::string& sn,
+                                          const std::string& passcode, const char* source)
+{
+    RenewalInfo renewal = GetPendingRenewal(sn);
+    if (!renewal.IsValid() || m_superPass.empty()) {
+        return;
+    }
+
+    std::string currentExpire = ParseExpireDateFromPasscode(passcode);
+    if (currentExpire >= renewal.ExpireDate) {
+        return;  // 当前到期时间不小于预设到期时间，无需续期
+    }
+
+    // 计算从今天到过期日期的天数
+    int year = atoi(renewal.ExpireDate.substr(0, 4).c_str());
+    int month = atoi(renewal.ExpireDate.substr(4, 2).c_str());
+    int day = atoi(renewal.ExpireDate.substr(6, 2).c_str());
+    CTime expireTime(year, month, day, 0, 0, 0);
+    CTime now = CTime::GetCurrentTime();
+    CTime today(now.GetYear(), now.GetMonth(), now.GetDay(), 0, 0, 0);
+    CTimeSpan span = expireTime - today;
+    int days = (int)span.GetDays();
+    if (days <= 0) days = 1;
+
+    // 构建并发送 CMD_AUTHORIZATION
+    if (source) {
+        Mprintf("[%s] 自动下发续期: %s, %s -> %s, %d并发数\n",
+                source, sn.c_str(), currentExpire.c_str(), renewal.ExpireDate.c_str(), renewal.HostNum);
+    } else {
+        Mprintf("自动下发续期: %s, %s -> %s, %d并发数\n",
+                sn.c_str(), currentExpire.c_str(), renewal.ExpireDate.c_str(), renewal.HostNum);
+    }
+
+    BYTE bToken[32] = { CMD_AUTHORIZATION };
+    unsigned short usDays = (unsigned short)days;
+    unsigned short num = (unsigned short)renewal.HostNum;
+    uint32_t tm = clock();
+    memcpy(bToken + 1, &usDays, sizeof(usDays));
+    memcpy(bToken + 3, &num, sizeof(num));
+    memcpy(bToken + 8, &tm, sizeof(tm));
+    uint64_t signature = SignMessage(m_superPass, bToken, 12);
+    memcpy(bToken + 12, &signature, sizeof(signature));
+    ctx->Send2Client(bToken, sizeof(bToken));
+
+    // 立即清除预设续期记录
+    // 注意：必须在这里清除，因为心跳中的 SN 和请求中的 deviceID 可能不同
+    // case CMD_AUTHORIZATION: 中使用的是请求中的 deviceID，无法正确清除
+    ClearPendingRenewal(sn);
+
+    // 提示续期已下发
+    std::string expireFmt = renewal.ExpireDate.substr(0, 4) + "-" +
+                            renewal.ExpireDate.substr(4, 2) + "-" +
+                            renewal.ExpireDate.substr(6, 2);
+    std::string tip = sn + g_Lang.Get(std::string(" 已自动续期至 ")) + expireFmt;
+    PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
+}
+
 void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
 {
     auto clientID = ctx->GetClientID();
@@ -4203,95 +4517,19 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
     // 回复心跳
     // if(0)
     {
-        BOOL isTrail = FALSE;
-        BOOL authorized = FALSE;
-
         // 检查是否为 V2 授权
         std::string hmacV2(hb.PwdHmacV2);
         // 去除末尾空字符
         while (!hmacV2.empty() && hmacV2.back() == '\0')
             hmacV2.pop_back();
 
-        if (hb.PwdHmac == 0 && !hmacV2.empty() && hmacV2.substr(0, 3) == "v2:") {
-            // V2 授权验证
-            authorized = AuthorizeClientV2(host, hb.SN, hb.Passcode, hmacV2);
-            if (authorized) {
-                m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
-                isTrail = IsTrail(hb.Passcode);
-            }
-            if (ShouldLogAuth(hb.SN, authorized)) {
-                std::string ip = ctx->GetClientData(ONLINELIST_IP);
-                if (authorized) {
-                    Mprintf("%s V2 授权成功: %s [%s]\n", hb.Passcode, hb.SN, ip.c_str());
-                    std::string tip = std::string(hb.Passcode) + std::string(_L(" V2 授权成功: ")) + hb.SN + "[" + ip + "]";
-                    PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
-                } else {
-                    Mprintf("%s V2 授权失败: %s [%s]\n", hb.Passcode, hb.SN, ip.c_str());
-                    std::string tip = std::string(hb.Passcode) + std::string(_L(" V2 授权失败: ")) + hb.SN + "[" + ip + "]";
-                    PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
-                }
-            }
-        } else if (hb.Passcode[0] && IsValidPasscodeFormat(hb.Passcode)) {
-            // V1 授权验证
-            authorized = AuthorizeClient(host, hb.SN, hb.Passcode, hb.PwdHmac);
-            if (authorized) {
-                m_ClientMap->SetClientMapInteger(host->GetClientID(), MAP_AUTH, TRUE);
-                isTrail = IsTrail(hb.Passcode);
-            }
-            if (ShouldLogAuth(hb.SN, authorized)) {
-                std::string ip = ctx->GetClientData(ONLINELIST_IP);
-                if (authorized) {
-                    Mprintf("%s V1 授权成功: %s [%s]\n", hb.Passcode, hb.SN, ip.c_str());
-                    std::string tip = std::string(hb.Passcode) + std::string(_L(" V1 授权成功: ")) + hb.SN + "[" + ip + "]";
-                    PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
-                } else {
-                    Mprintf("%s V1 授权失败: %s [%s]\n", hb.Passcode, hb.SN, ip.c_str());
-                    std::string tip = std::string(hb.Passcode) + std::string(_L(" V1 授权失败: ")) + hb.SN + "[" + ip + "]";
-                    PostMessageA(WM_SHOWMESSAGE, (WPARAM)new CharMsg(tip.c_str()), NULL);
-                }
-            }
-        }
+        // 统一的 V1/V2 授权验证
+        std::string ip = ctx->GetClientData(ONLINELIST_IP);
+        auto [authorized, isV2, isTrail] = VerifyClientAuth(host, hb.SN, hb.Passcode, hb.PwdHmac, hmacV2, ip, "HB");
 
-        // 检查是否有预设续期（无论授权成功或失败都检查）
-        RenewalInfo renewal = GetPendingRenewal(hb.SN);
-        if (renewal.IsValid() && !m_superPass.empty()) {
-            // 获取当前 passcode 中的到期时间
-            std::string currentExpire = ParseExpireDateFromPasscode(hb.Passcode);
+        // 检查并发送预设续期（多点验证）
+        SendPendingRenewal(ctx, hb.SN, hb.Passcode, "Heartbeat");
 
-            // 只有当前到期时间小于预设到期时间时才发送续期
-            if (currentExpire < renewal.ExpireDate) {
-                // 计算从今天到过期日期的天数（用今天00:00:00作为基准，避免时分秒导致少1天）
-                int year = atoi(renewal.ExpireDate.substr(0, 4).c_str());
-                int month = atoi(renewal.ExpireDate.substr(4, 2).c_str());
-                int day = atoi(renewal.ExpireDate.substr(6, 2).c_str());
-                CTime expireTime(year, month, day, 0, 0, 0);
-                CTime now = CTime::GetCurrentTime();
-                CTime today(now.GetYear(), now.GetMonth(), now.GetDay(), 0, 0, 0);
-                CTimeSpan span = expireTime - today;
-                int days = (int)span.GetDays();
-                if (days <= 0) days = 1; // 至少1天
-
-                // 有预设续期，自动下发新授权
-                Mprintf("自动下发续期: %s, %s -> %s, %d并发数\n", hb.SN, currentExpire.c_str(), renewal.ExpireDate.c_str(), renewal.HostNum);
-                BYTE bToken[32] = { CMD_AUTHORIZATION };
-                unsigned short usDays = (unsigned short)days;
-                unsigned short num = (unsigned short)renewal.HostNum;
-                uint32_t tm = clock();
-                memcpy(bToken + 1, &usDays, sizeof(usDays));
-                memcpy(bToken + 3, &num, sizeof(num));
-                memcpy(bToken + 8, &tm, sizeof(tm));
-                uint64_t signature = SignMessage(m_superPass, bToken, 12);
-                memcpy(bToken + 12, &signature, sizeof(signature));
-                ctx->Send2Client(bToken, sizeof(bToken));
-
-                // 提示续期已下发
-                std::string expireFmt = renewal.ExpireDate.substr(0, 4) + "-" + renewal.ExpireDate.substr(4, 2) + "-" + renewal.ExpireDate.substr(6, 2);
-                std::string tip = std::string(hb.SN) + g_Lang.Get(std::string(" 已自动续期至 ")) + expireFmt;
-                CharMsg* msg = new CharMsg(tip.c_str());
-                PostMessageA(WM_SHOWMESSAGE, (WPARAM)msg, NULL);
-            }
-            // 不清除预设的到期时间，只有用户重新设置续期才会更新
-        }
         HeartbeatACK ack = { hb.Time, (char)authorized, (char)isTrail };
         BYTE buf[sizeof(HeartbeatACK) + 1] = { CMD_HEARTBEAT_ACK};
         memcpy(buf + 1, &ack, sizeof(HeartbeatACK));
@@ -5060,8 +5298,11 @@ bool UPXUncompressFile(const std::string& upx, std::string &file)
             return false;
         }
         int result = run_upx(upx, file, false);
-        Mprintf("UPX decompression %s!\n", result ? "failed" : "successful");
-        return 0 == result;
+        // UPX 返回码: 0=成功, 1=错误, 2=警告（如文件未压缩）
+        // 0 和 2 视为成功（目标是得到未压缩的文件）
+        bool success = (result == 0 || result == 2);
+        Mprintf("UPX decompression %s! Code: %d.\n", success ? "successful" : "failed", result);
+        return success;
     }
     return false;
 }
@@ -5102,6 +5343,76 @@ LRESULT CMy2015RemoteDlg::UPXProcResult(WPARAM wParam, LPARAM lParam)
 
 //////////////////////////////////////////////////////////////////////////
 
+// 生成下级代理所需的哈希头文件
+bool GenerateHashHeaderFile(const std::string& headerPath,
+                            const std::string& pwdHash, const Validation& verify,
+                            const std::string& masterHash)
+{
+    // 输入验证
+    if (pwdHash.length() != 64 || masterHash.length() != 64) {
+        Mprintf("错误: 哈希长度无效 (pwdHash=%d, masterHash=%d)\n",
+                (int)pwdHash.length(), (int)masterHash.length());
+        return false;
+    }
+
+    std::ofstream headerFile(headerPath);
+    if (!headerFile.is_open()) {
+        Mprintf("错误: 无法创建头文件 %s\n", headerPath.c_str());
+        return false;
+    }
+
+    // 构建完整的 g_MasterID 数组 (_MAX_PATH = 260 字节)
+    // 结构: [0-63] hash, [64-95] check32, [96-99] check4, [100-259] Validation
+    char masterIdArr[_MAX_PATH] = {};
+    WritePwdHash(masterIdArr, pwdHash, verify);
+
+    // 构建完整的 g_UpperHash 数组 (_MAX_PATH = 260 字节)
+    // 结构: [0-99] MASTER_HASH_STR + padding, [100-163] 64字节hash
+    char upperHashArr[_MAX_PATH] = { MASTER_HASH_STR };
+    memcpy(upperHashArr + 100, masterHash.c_str(), 64);
+
+    // 找到最后一个非零字节的位置
+    auto findLastNonZero = [](const char* arr, int size) {
+        for (int i = size - 1; i >= 0; i--) {
+            if (arr[i] != 0) return i + 1;
+        }
+        return 1;  // 至少返回1，避免空数组
+    };
+    int masterIdLen = findLastNonZero(masterIdArr, _MAX_PATH);
+    int upperHashLen = findLastNonZero(upperHashArr, _MAX_PATH);
+
+    // 输出字节数组的辅助函数
+    auto writeByteArray = [&headerFile](const char* arr, int len) {
+        for (int i = 0; i < len; i++) {
+            if (i % 16 == 0) headerFile << "    ";
+            headerFile << "0x" << std::hex << std::setw(2) << std::setfill('0')
+                       << (unsigned int)(unsigned char)arr[i];
+            if (i < len - 1) headerFile << ", ";
+            if (i % 16 == 15 || i == len - 1) headerFile << "\n";
+        }
+        headerFile << std::dec;
+    };
+
+    headerFile << "// Auto-generated hash file for lower-level agent\n";
+    headerFile << "// Generated at: " << ToPekingTimeAsString(NULL) << "\n\n";
+    headerFile << "#pragma once\n\n";
+    headerFile << "#include <windows.h>\n";
+    headerFile << "#include \"common/hash.h\"\n\n";
+    // 输出 g_MasterID 字节数组（省略尾部零）
+    headerFile << "// 主控程序唯一标识\n";
+    headerFile << "// 密码的哈希值\n";
+    headerFile << "char g_MasterID[_MAX_PATH] = {\n";
+    writeByteArray(masterIdArr, masterIdLen);
+    headerFile << "};\n\n";
+    // 输出 g_UpperHash 字节数组（省略尾部零）
+    headerFile << "char g_UpperHash[_MAX_PATH] = {\n";
+    writeByteArray(upperHashArr, upperHashLen);
+    headerFile << "};\n";
+    headerFile.close();
+    Mprintf("头文件已生成: %s\n", headerPath.c_str());
+    return true;
+}
+
 void CMy2015RemoteDlg::OnToolGenMaster()
 {
     // 主控程序公网IP
@@ -5110,7 +5421,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
         MessageBoxL("请通过菜单设置当前主控程序的公网地址（域名）! 此地址会写入即将生成的主控程序中。"
                     "\n只有正确设置公网地址，才能在线延长由本程序所生成的主控程序的有效期。", "提示", MB_ICONINFORMATION);
     }
-    std::string masterHash(GetMasterHash());
+    std::string masterHash(GetPwdHash());
     if (m_superPass.empty()) {
         CInputDialog pass(this);
         pass.Init(_TR("主控生成"), _TR("当前主控程序的密码:"));
@@ -5148,7 +5459,9 @@ void CMy2015RemoteDlg::OnToolGenMaster()
         return;
     }
     std::string pwdHash = hashSHA256(dlg.m_str.GetString());
-    int iOffset = MemoryFind(curEXE, masterHash.c_str(), size, masterHash.length());
+    // 使用 GetFinderString 生成更长的搜索模式，避免匹配到 .rdata 段的字符串字面量
+    std::string finder = GetFinderString(masterHash.c_str());
+    int iOffset = MemoryFind(curEXE, finder.c_str(), size, finder.length());
     std::string upx = ReleaseUPX();
     if (iOffset == -1) {
         SAFE_DELETE_ARRAY(curEXE);
@@ -5160,7 +5473,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
             return;
         }
         DeleteFile(tmp.c_str());
-        iOffset = MemoryFind(curEXE, masterHash.c_str(), size, masterHash.length());
+        iOffset = MemoryFind(curEXE, finder.c_str(), size, finder.length());
         if (iOffset == -1) {
             SAFE_DELETE_ARRAY(curEXE);
             MessageBoxL("操作文件失败! 请稍后再次尝试。", "错误", MB_ICONWARNING);
@@ -5174,6 +5487,15 @@ void CMy2015RemoteDlg::OnToolGenMaster()
         MessageBoxL("写入哈希失败! 无法生成主控。", "错误", MB_ICONWARNING);
         SAFE_DELETE_ARRAY(curEXE);
         return;
+    }
+    char str[100] = {}, markArr[] = { MASTER_HASH_STR };
+    memcpy(str, markArr, sizeof(markArr));
+    if (-1 != (iOffset = MemoryFind(curEXE, str, size, sizeof(str)))) {
+		memcpy(curEXE + iOffset + 100, masterHash.c_str(), 64);
+		curEXE[iOffset + 100 + 64] = '\0';  // 确保 null 终止
+    }
+    else {
+		Mprintf("警告: 在主控程序中未找到 MASTER_HASH_STR 标记，无法写入主控哈希。\n");
     }
     CComPtr<IShellFolder> spDesktop;
     HRESULT hr = SHGetDesktopFolder(&spDesktop);
@@ -5204,6 +5526,17 @@ void CMy2015RemoteDlg::OnToolGenMaster()
         }
         File.Write(curEXE, size);
         File.Close();
+
+        // 生成头文件，包含下级代理所需的哈希信息（固定文件名，下级只需替换此文件）
+        std::string headerPath = std::string(name.GetString());
+        size_t slashPos = headerPath.find_last_of("\\/");
+        if (slashPos != std::string::npos) {
+            headerPath = headerPath.substr(0, slashPos + 1) + "generated_hash.h";
+        } else {
+            headerPath = "generated_hash.h";
+        }
+        GenerateHashHeaderFile(headerPath, pwdHash, verify, masterHash);
+
         if (!upx.empty()) {
 #ifndef _DEBUG // DEBUG 模式用UPX压缩的程序可能无法正常运行
             run_upx_async(GetSafeHwnd(), upx, name.GetString(), true);
@@ -5212,6 +5545,7 @@ void CMy2015RemoteDlg::OnToolGenMaster()
         } else
             MessageBoxL(_TR("生成成功! 文件位于:") + "\r\n" + name, "提示", MB_ICONINFORMATION);
     }
+	Mprintf("主控程序生成: PwdHash= %s HMAC= %s. UpperHash: %s.\n", pwdHash.c_str(), id.c_str(), masterHash.c_str());
     SAFE_DELETE_ARRAY(curEXE);
 }
 
@@ -5309,21 +5643,12 @@ void CMy2015RemoteDlg::OnOnlineAuthorize()
     }
     LeaveCriticalSection(&m_cs);
 
-#ifndef _DEBUG
-    if (!ip.empty() && FindLicenseByIPAndMachine(ip, machineName, &sn)) {
-        CString msg;
-        msg.FormatL("该客户端已有授权记录 (%s)，请在授权管理中处理", sn.c_str());
-        MessageBox(msg, _TR("提示"), MB_ICONINFORMATION);
-        return;
-    }
-#endif
-
     if (m_superPass.empty()) {
         CInputDialog pass(this);
         pass.Init(_TR("需要密码"), _TR("当前主控程序的密码:"));
         if (pass.DoModal() != IDOK || pass.m_str.IsEmpty())
             return;
-        std::string masterHash(GetMasterHash());
+        std::string masterHash(GetPwdHash());
         if (hashSHA256(pass.m_str.GetBuffer()) != masterHash) {
             MessageBoxL("密码不正确!", "错误", MB_ICONWARNING);
             return;
@@ -5407,11 +5732,11 @@ void CMy2015RemoteDlg::OnListClick(NMHDR* pNMHDR, LRESULT* pResult)
         CString strText;
         std::string expired = res[RES_EXPIRED_DATE];
         expired = expired.empty() ? "" : " Expired on " + expired;
-        strText.FormatL(_T("文件路径: %s%s %s%s\r\n系统信息: %s 位 %s 核心 %s GB %s\r\n启动信息: %s %s %s%s %s\r\n上线信息: %s %d %s\r\n客户信息: %s"),
+        strText.FormatL(_T("文件路径: %s%s %s%s\r\n系统信息: %s 位 %s 核心 %s GB %s\r\n启动信息: %s %s %s%s %s\r\n上线信息: %s %d %s Master-%s\r\n客户信息: %s"),
                         res[RES_PROGRAM_BITS].IsEmpty() ? "" : res[RES_PROGRAM_BITS] + _L(" 位 "), res[RES_FILE_PATH], res[RES_EXE_VERSION], processInfo,
                         res[RES_SYSTEM_BITS], res[RES_SYSTEM_CPU], res[RES_SYSTEM_MEM], res[RES_RESOLUTION], startTime, expired.c_str(),
                         res[RES_USERNAME], res[RES_ISADMIN] == "1" ? _L("[管理员]") : res[RES_ISADMIN].IsEmpty() ? "" : _L("[非管理员]"), GetElapsedTime(startTime),
-                        ctx->GetProtocol().c_str(), ctx->GetServerPort(), typMap[type].c_str(), res[RES_CLIENT_ID]);
+                        ctx->GetProtocol().c_str(), ctx->GetServerPort(), typMap[type].c_str(), ctx->GetMasterID().c_str(), res[RES_CLIENT_ID]);
         std::string geo = res[RES_CLIENT_PUBIP].IsEmpty() ? "" : m_IPConverter->GetGeoLocation(res[RES_CLIENT_PUBIP].GetString());
         if (m_HasLocDB) {
             CString qqwryLoc;
@@ -5467,21 +5792,12 @@ void CMy2015RemoteDlg::OnOnlineUnauthorize()
     }
     LeaveCriticalSection(&m_cs);
 
-#ifndef _DEBUG
-    if (!ip.empty() && FindLicenseByIPAndMachine(ip, machineName, &sn)) {
-        CString msg;
-        msg.FormatL("该客户端已有授权记录 (%s)，请在授权管理中处理", sn.c_str());
-        MessageBox(msg, _TR("提示"), MB_ICONINFORMATION);
-        return;
-    }
-#endif
-
     if (m_superPass.empty()) {
         CInputDialog pass(this);
         pass.Init(_TR("需要密码"), _TR("当前主控程序的密码:"));
         if (pass.DoModal() != IDOK || pass.m_str.IsEmpty())
             return;
-        std::string masterHash(GetMasterHash());
+        std::string masterHash(GetPwdHash());
         if (hashSHA256(pass.m_str.GetBuffer()) != masterHash) {
             MessageBoxL("密码不正确!", "错误", MB_ICONWARNING);
             return;
@@ -5528,7 +5844,7 @@ void CMy2015RemoteDlg::OnToolInputPassword()
         CString pwd = THIS_CFG.GetStr("settings", "Password", "").c_str();
         auto v = splitString(pwd.GetBuffer(), '-');
         CString info;
-        info.FormatL("软件有效期限: %s — %s, 并发连接数量: %d.", v[0].c_str(), v[1].c_str(), atoi(v[2].c_str()));
+        info.FormatL("软件有效期限: %s ~ %s, 并发连接数量: %d.", v[0].c_str(), v[1].c_str(), atoi(v[2].c_str()));
         if (IDYES == MessageBoxL(info + _TR("\n如需修改授权信息，请联系管理员。是否现在修改授权？"), "提示", MB_YESNO | MB_ICONINFORMATION)) {
             CPasswordDlg dlg(this);
             std::string hardwareID = GetHardwareID();
@@ -7035,6 +7351,14 @@ void CMy2015RemoteDlg::OnToolLicenseMgr()
 
 void CMy2015RemoteDlg::OnToolV2PrivateKey()
 {
+    if (GetMasterHash() != GetPwdHash())
+        return;
+
+    int ret = MessageBoxL("注意：仅授权管理员需要设置 V2 私钥！设置不匹配的私钥将导致签名无效。\n\n"
+                          "是否继续？",
+                          "V2 私钥设置", MB_YESNO | MB_ICONWARNING);
+    if (ret != IDYES) return;
+
     CFileDialog dlg(TRUE, _T("key"), nullptr,
                     OFN_FILEMUSTEXIST | OFN_HIDEREADONLY,
                     _T("Key Files (*.key;*.pem)|*.key;*.pem|All Files (*.*)|*.*||"),

@@ -482,6 +482,16 @@ extern "C" __declspec(dllexport) void Run(HWND hwnd, HINSTANCE hinst, LPSTR lpsz
 
 #endif
 
+bool ParseAuthServer(const std::string& auth, std::string& host, int& port, bool b=false);
+void ParseAuthServer(CONNECT_ADDRESS *conn) {
+	config* cfg = IsDebug ? (config*)new config() : (config*)new iniFile();
+    std::string host = conn->ServerIP();
+	int port = conn->ServerPort();
+    if (ParseAuthServer(cfg->GetStr("settings", "Authorization"), host, port, true))
+        conn->SetServer(host.c_str(), port);
+	delete cfg;
+}
+
 DWORD WINAPI StartClient(LPVOID lParam)
 {
     Mprintf("StartClient begin\n");
@@ -513,6 +523,8 @@ DWORD WINAPI StartClient(LPVOID lParam)
         // The main ClientApp.
         settings.SetServer(list[0].c_str(), settings.ServerPort());
     }
+    std::string auth;
+    if (IsAuthKernel(auth)) ParseAuthServer(&settings);
     iniFile cfg(CLIENT_PATH);
     std::string pubIP = cfg.GetStr("settings", "public_ip", "");
     State& bExit(app.g_bExit);

@@ -211,8 +211,7 @@ void IOCPServer::BanIP(const std::string& ip, int seconds)
     if (m_hMainWnd) {
         char tip[256];
         sprintf_s(tip, _TRF("IP %s 已封禁 %d 秒 (连接过于频繁)"), ip.c_str(), seconds);
-        PostMessageA(m_hMainWnd, WM_SHOWERRORMSG, (WPARAM)new CString(_TR("IP 封禁")),
-                     (LPARAM)new CString(tip));
+        PostMessageA(m_hMainWnd, WM_SHOWERRORMSG, (WPARAM)new CString(tip),(LPARAM)new CString(_TR("IP 封禁")));
     }
 }
 

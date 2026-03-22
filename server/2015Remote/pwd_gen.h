@@ -10,6 +10,8 @@ std::string hashSHA256(const std::string& data);
 
 std::string genHMAC(const std::string& pwdHash, const std::string& superPass);
 
+std::string genHMACbyHash(const std::string& pwdHash, const std::string& superHash);
+
 std::string getFixedLengthID(const std::string& hash);
 
 std::string deriveKey(const std::string& password, const std::string& hardwareID);
@@ -76,3 +78,19 @@ bool base64Decode(const std::string& encoded, BYTE* dataOut, size_t* lenOut);
 
 // 格式化公钥为 C 数组代码
 std::string formatPublicKeyAsCode(const BYTE* publicKey);
+
+// ============================================================================
+// Authorization 签名 (多层授权)
+// ============================================================================
+
+// 签名 Authorization（不绑定 deviceID，绑定 snHashPrefix，可在同一第一层的下级间共享）
+// license: 授权信息 (如 "20260317|20270317|0256")
+// snHashPrefix: 第一层 SN/deviceID 的前8字符哈希，用于隔离不同第一层
+// privateKeyFile: 私钥文件路径
+// 返回: 签名字段值 (如 "v2:BASE64_SIGNATURE")，失败返回空字符串
+std::string signAuthorizationV2(const std::string& license, const std::string& snHashPrefix, const char* privateKeyFile);
+
+// 计算 snHashPrefix（用于 Authorization 隔离）
+// deviceID: 第一层的设备ID（如 "XXXX-XXXX-XXXX-XXXX"）
+// 返回: SHA256(deviceID).substr(0, 8)
+std::string computeSnHashPrefix(const std::string& deviceID);

@@ -364,7 +364,7 @@ public:
     uint64_t			ID;							// 唯一标识
 
     BOOL				m_bProxyConnected;			// 代理是否连接
-    BOOL 				bLogin;						// 是否 login
+    std::string 		MasterID;					// 所属主控ID
     std::string			PeerName;					// 对端IP
     Server*				server;						// 所属服务端
     ikcpcb*				kcp = nullptr;				// 新增，指向KCP会话
@@ -493,7 +493,7 @@ public:
         }
         CompressMethod = COMPRESS_ZSTD;
         Parser.Reset();
-        bLogin = FALSE;
+        MasterID.clear();
         m_bProxyConnected = FALSE;
         server = (Server*)svr;
         OnlineTime = time(0);
@@ -584,7 +584,10 @@ public:
     }
     BOOL IsLogin() const override
     {
-        return bLogin;
+        return true;
+    }
+    virtual std::string GetMasterID() const override {
+		return MasterID;
     }
     uint64_t GetClientID() const override
     {

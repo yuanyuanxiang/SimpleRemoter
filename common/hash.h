@@ -45,3 +45,5 @@ the software, and reserves the right to refuse or revoke authorization if improp
 // 因此，对于想破除程序授权限制的行为，建议基于v1.1.1版本，甚至使用无需授权的版本（如能满足需求）.
 // 当然这些早期版本没有包含问题修复和新的功能.
 #define MASTER_HASH "61f04dd637a74ee34493fc1025de2c131022536da751c29e3ff4e9024d8eec43"
+
+#define MASTER_HASH_STR "MASTER_HASH"

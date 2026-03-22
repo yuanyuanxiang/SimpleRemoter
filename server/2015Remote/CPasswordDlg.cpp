@@ -9,19 +9,39 @@
 #include "2015Remote.h"
 #include "common/skCrypter.h"
 #include "2015RemoteDlg.h"
+#include "generated_hash.h"
+
+// 外部函数声明
+extern std::vector<std::string> splitString(const std::string& str, char delimiter);
+extern std::string GetFirstMasterIP(const std::string& master);
 
 // CPasswordDlg 对话框
 
 IMPLEMENT_DYNAMIC(CPasswordDlg, CDialogEx)
 
-// 主控程序唯一标识
-// 密码的哈希值
-char g_MasterID[_MAX_PATH] = {  "61f04dd637a74ee34493fc1025de2c131022536da751c29e3ff4e9024d8eec43" };
+void WriteHash(const char* pwdHash, const char* upperHash) {
+    if (strlen(pwdHash) == 0 || strlen(upperHash) == 0) {
+        return;
+    }
+    memcpy(g_UpperHash + 100, upperHash, 64);
+    std::string id = genHMACbyHash(pwdHash, upperHash);
+    Validation verify(365, "", 0, id.c_str());
+    WritePwdHash(g_MasterID, pwdHash, verify);
+}
+
+std::string getUpperHash()
+{
+    return std::string(g_UpperHash + 100);
+}
+
+std::string GetUpperHash()
+{
+    return std::string(g_UpperHash + 100).empty() ? GetMasterHash() : g_UpperHash + 100;
+}
 
 std::string GetPwdHash()
 {
-    auto id = std::string(g_MasterID).substr(0, 64);
-    return id;
+    return std::string(g_MasterID, 64);
 }
 
 const Validation * GetValidation(int offset)
@@ -73,7 +93,8 @@ std::string GetLicensesPath()
 
 // 保存授权信息到 INI 文件
 bool SaveLicenseInfo(const std::string& deviceID, const std::string& passcode,
-                     const std::string& hmac, const std::string& remark)
+                     const std::string& hmac, const std::string& remark,
+                     const std::string& authorization)
 {
     std::string iniPath = GetLicensesPath();
     config cfg(iniPath);
@@ -84,6 +105,12 @@ bool SaveLicenseInfo(const std::string& deviceID, const std::string& passcode,
     cfg.SetStr(deviceID, "HMAC", hmac);
     cfg.SetStr(deviceID, "Remark", remark);
     cfg.SetStr(deviceID, "Status", LICENSE_STATUS_ACTIVE);  // 默认状态为有效
+
+    // 保存 Authorization（多层授权）
+    // 注意：authorization 参数传入时已经是混淆后的格式，直接保存
+    if (!authorization.empty()) {
+        cfg.SetStr(deviceID, "Authorization", authorization);
+    }
 
     // 保存创建时间
     SYSTEMTIME st;
@@ -305,6 +332,17 @@ bool IsLicenseRevoked(const std::string& deviceID)
 #pragma comment(lib, "lib/shrink.lib")
 #endif
 
+std::string GetFinderString(const char* buf)
+{
+    char output32[100] = {};
+	memcpy(output32, buf, 64);
+    if (GetPwdHash() == GetMasterHash()) {
+		return std::string(output32, 100);
+    }
+    shrink64to32(buf, output32+64);
+    return std::string(output32, 96);
+}
+
 bool WritePwdHash(char* target, const std::string & pwdHash, const Validation& verify)
 {
     char output32[33], output4[5];
@@ -331,8 +369,14 @@ bool IsPwdHashValid(const char* hash)
     char output32[33], output4[5];
     shrink64to32(pwdHash.c_str(), output32);
     shrink32to4(output32, output4);
-    if (memcmp(output32, s1.c_str(), 32) || memcmp(output4, s2.c_str(), 4))
+    if (memcmp(output32, s1.c_str(), 32) || memcmp(output4, s2.c_str(), 4)) {
+        // 哈希校验失败，尝试离线校验 Authorization
+        std::string authObf = THIS_CFG.GetStr("settings", "Authorization", "");
+        if (!authObf.empty() && TcpClient::IsAuthorizationValid(authObf)) {
+            return true;  // Authorization 签名有效
+        }
         return false;
+    }
 
     return true;
 }
@@ -363,6 +407,8 @@ void CPasswordDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_COMBO_BIND, m_ComboBinding);
     DDX_Control(pDX, IDC_EDIT_PASSCODE_HMAC, m_EditPasscodeHmac);
     DDX_Text(pDX, IDC_EDIT_PASSCODE_HMAC, m_sPasscodeHmac);
+    DDX_Control(pDX, IDC_EDIT_ROOT_CERT, m_EditRootCert);
+    DDX_Text(pDX, IDC_EDIT_ROOT_CERT, m_sRootCert);
     DDX_CBIndex(pDX, IDC_COMBO_BIND, m_nBindType);
 }
 
@@ -380,6 +426,7 @@ BOOL CPasswordDlg::OnInitDialog()
     SetDlgItemText(IDC_STATIC_PASSWORD_TOKEN, _TR("授权口令:"));
     SetDlgItemText(IDC_STATIC_PASSWORD_METHOD, _TR("授权方式:"));
     SetDlgItemText(IDC_STATIC_PASSWORD_VERIFY, _TR("验 证 码:"));
+    SetDlgItemText(IDC_STATIC_ROOT_CERT, _TR("根 凭 证:"));
 
     // 设置对话框标题和控件文本（解决英语系统乱码问题）
     SetWindowText(_TR("口令"));
@@ -394,6 +441,13 @@ BOOL CPasswordDlg::OnInitDialog()
     m_ComboBinding.InsertStringL(1, "主控IP或域名信息");
     m_ComboBinding.SetCurSel(m_nBindType);
 
+    // 加载已保存的根凭证
+    std::string savedAuth = THIS_CFG.GetStr("settings", "Authorization", "");
+    if (!savedAuth.empty()) {
+        m_sRootCert = savedAuth.c_str();
+        m_EditRootCert.SetWindowText(m_sRootCert);
+    }
+
     return TRUE;  // return TRUE unless you set the focus to a control
     // 异常: OCX 属性页应返回 FALSE
 }
@@ -406,10 +460,10 @@ void CPasswordDlg::OnCbnSelchangeComboBind()
     m_EditDeviceID.SetWindowTextA(m_sDeviceID);
     auto master = THIS_CFG.GetStr("settings", "master", "");
     if (m_nBindType == 1) {
-        MessageBoxL("请确认是否正确设置公网地址（IP或域名）？\r\n"
+        MessageBoxL(_L("请确认是否正确设置公网地址（IP或域名）？\r\n"
                     "绑定IP后主控只能使用指定IP，绑定域名后\r\n"
-                    "主控只能使用指定域名。当前公网地址: \r\n"
-                    + CString(master.empty() ? "未设置" : master.c_str()), "提示", MB_OK | MB_ICONWARNING);
+                    "主控只能使用指定域名。当前公网地址: \r\n")+
+                    + CString(master.empty() ? _L("未设置") : master.c_str()), "提示", MB_OK | MB_ICONWARNING);
     }
 }
 
@@ -418,7 +472,13 @@ void CPasswordDlg::OnOK()
     UpdateData(TRUE);
     if (!m_sDeviceID.IsEmpty()) {
         THIS_CFG.SetInt("settings", "BindType", m_nBindType);
+        THIS_CFG.SetStr("settings", "SN", m_sDeviceID.GetString());  // 切换绑定方式时同步保存 SN
         THIS_CFG.SetStr("settings", "PwdHmac", m_sPasscodeHmac.GetString());
+
+        // 保存根凭证（可选，用于多层授权）
+        if (!m_sRootCert.IsEmpty()) {
+            THIS_CFG.SetStr("settings", "Authorization", m_sRootCert.GetString());
+        }
     }
 
     __super::OnOK();
@@ -468,8 +528,10 @@ void CPwdGenDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Text(pDX, IDC_EDIT_HOSTNUM, m_nHostNum);
     DDV_MinMaxInt(pDX, m_nHostNum, 2, 10000);
     DDX_Control(pDX, IDC_EDIT_HMAC, m_EditHMAC);
+    DDX_Control(pDX, IDC_EDIT_AUTHORIZATION, m_EditAuthorization);
     DDX_Control(pDX, IDC_BUTTON_SAVE_LICENSE, m_BtnSaveLicense);
     DDX_Text(pDX, IDC_EDIT_HMAC, m_sHMAC);
+    DDX_Text(pDX, IDC_EDIT_AUTHORIZATION, m_sAuthorization);
     DDX_Control(pDX, IDC_COMBO_VERSION, m_ComboVersion);
     DDX_Control(pDX, IDC_EDIT_PRIVATEKEY, m_EditPrivateKey);
     DDX_Control(pDX, IDC_BUTTON_BROWSE_KEY, m_BtnBrowseKey);
@@ -524,6 +586,48 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
         pwdHmacStr = std::to_string(pwdHmac);
         m_sHMAC = pwdHmacStr.c_str();
         m_EditHMAC.SetWindowTextA(m_sHMAC);
+
+        // 多层授权：检查是否有 Authorization + master（公网地址）
+        std::string storedAuthObf = THIS_CFG.GetStr("settings", "Authorization", "");
+        std::string storedAuth = TcpClient::DeobfuscateAuthorization(storedAuthObf);  // 还原明文
+        std::string masterIP = GetFirstMasterIP(THIS_CFG.GetStr("settings", "master", ""));
+        int masterPort = THIS_CFG.Get1Int("settings", "ghost", ';', 6543);
+        std::string hmacServer = masterIP.empty() ? "" : masterIP + ":" + std::to_string(masterPort);
+        if (!storedAuth.empty() && !hmacServer.empty()) {
+            auto authParts = splitString(storedAuth, '|');
+            std::string fullAuth;
+            if (authParts.size() == 5) {
+                // V2 格式（5段）：第一层给第二层
+                // 验证 snHashPrefix 匹配（使用 SN/deviceID）
+                std::string storedPrefix = authParts[3];
+                std::string mySN = THIS_CFG.GetStr("settings", "SN", "");
+                std::string expectedPrefix = computeSnHashPrefix(mySN);
+                if (storedPrefix == expectedPrefix) {
+                    // 组装完整 Authorization (V1 格式 6段)
+                    fullAuth = authParts[0] + "|" + authParts[1] + "|" + authParts[2] + "|" + authParts[3] + "|" + hmacServer + "|" + authParts[4];
+                    Mprintf("V1 生成包含 Authorization: %s\n", m_sDeviceID.GetString());
+                } else {
+                    // snHashPrefix 不匹配，不能使用这个 Authorization
+                    Mprintf("V1 Authorization snHashPrefix 不匹配: 期望 %s, 存储 %s\n", expectedPrefix.c_str(), storedPrefix.c_str());
+                }
+            } else if (authParts.size() == 6) {
+                // V1 格式（6段）：第二层及以下给下级
+                // 替换 hmacServer 为自己的地址
+                fullAuth = authParts[0] + "|" + authParts[1] + "|" + authParts[2] + "|" + authParts[3] + "|" + hmacServer + "|" + authParts[5];
+                Mprintf("V1 转发 Authorization: %s\n", m_sDeviceID.GetString());
+            }
+
+            if (!fullAuth.empty()) {
+                m_sAuthorization = TcpClient::ObfuscateAuthorization(fullAuth).c_str();
+                m_EditAuthorization.SetWindowText(m_sAuthorization);
+            } else {
+                m_sAuthorization.Empty();
+                m_EditAuthorization.SetWindowText(_T(""));
+            }
+        } else {
+            m_sAuthorization.Empty();
+            m_EditAuthorization.SetWindowText(_T(""));
+        }
     } else {
         // V2 (ECDSA) 模式
         if (m_sPrivateKeyPath.IsEmpty()) {
@@ -557,8 +661,24 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
         m_sHMAC = pwdHmacStr.c_str();
         m_EditHMAC.SetWindowTextA(pwdHmacStr.c_str());
 
-        // 保存 V2 私钥路径到配置（供续期使用）
-        THIS_CFG.SetStr("settings", "V2PrivateKey", m_sPrivateKeyPath.GetString());
+        // V2 模式：生成 Authorization（使用 deviceID 计算 snHashPrefix）
+        // 从 fixedKey 提取 license: "20260317-20270317-0256-..." → "20260317|20270317|0256"
+        std::string license = strBeginDate.GetString() + std::string("|") +
+                              strEndDate.GetString() + "|" + hostNum.GetString();
+        std::string snHashPrefix = computeSnHashPrefix(m_sDeviceID.GetString());
+        std::string authSig = signAuthorizationV2(license, snHashPrefix, m_sPrivateKeyPath.GetString());
+        if (!authSig.empty()) {
+            // Authorization 格式（V2，5段）: startDate|endDate|hostNum|snHashPrefix|signature
+            std::string auth = license + "|" + snHashPrefix + "|" + authSig;
+            m_sAuthorization = TcpClient::ObfuscateAuthorization(auth).c_str();  // 混淆后显示
+            m_EditAuthorization.SetWindowText(m_sAuthorization);
+            GetDlgItem(IDC_STATIC_AUTHORIZATION)->ShowWindow(SW_SHOW);
+            GetDlgItem(IDC_EDIT_AUTHORIZATION)->ShowWindow(SW_SHOW);
+            Mprintf("V2 生成 Authorization: %s (snHashPrefix=%s)\n", m_sDeviceID.GetString(), snHashPrefix.c_str());
+        } else {
+            m_sAuthorization.Empty();
+            m_EditAuthorization.SetWindowText(_T(""));
+        }
     }
 
     // 公共部分：判断是否为本机授权
@@ -566,13 +686,20 @@ void CPwdGenDlg::OnBnClickedButtonGenkey()
     std::string hashedID = hashSHA256(hardwareID);
     std::string deviceID = getFixedLengthID(hashedID);
     m_bIsLocalDevice = (deviceID == m_sDeviceID.GetString());
+    bool isSuperAdmin = GetUpperHash()==GetPwdHash();
 
-    if (m_bIsLocalDevice) { // 授权的是当前主控程序
+    if (m_bIsLocalDevice && isSuperAdmin) {
+        // 给自己授权，自动保存
         auto settings = "settings", pwdKey = "Password";
         THIS_CFG.SetStr(settings, pwdKey, fixedKey.c_str());
         THIS_CFG.SetStr("settings", "SN", deviceID);
         THIS_CFG.SetStr(settings, "HMAC", hmacV1);
         THIS_CFG.SetStr(settings, "PwdHmac", pwdHmacStr);
+        m_BtnSaveLicense.EnableWindow(FALSE);
+    } else if (m_bIsLocalDevice && !isSuperAdmin) {
+        // 没有权限给自己生成授权
+        MessageBoxL("您无法给自己授权！\n生成的授权信息仅供参考，不会自动保存。",
+                    "提示", MB_OK | MB_ICONWARNING);
         m_BtnSaveLicense.EnableWindow(FALSE);
     } else {
         m_BtnSaveLicense.EnableWindow(TRUE);
@@ -595,6 +722,7 @@ BOOL CPwdGenDlg::OnInitDialog()
     SetDlgItemText(IDC_STATIC_KEYGEN_CONN, _TR("连接数:"));
     SetDlgItemText(IDC_STATIC_KEYGEN_TOKEN, _TR("口  令:"));
     SetDlgItemText(IDC_STATIC_KEYGEN_HMAC_2373, _TR("HMAC:"));
+    GetDlgItem(IDC_STATIC_KEYGEN_VERSION)->EnableWindow(GetUpperHash() == GetPwdHash());
 
     // TODO:  在此添加额外的初始化
     m_hIcon = LoadIcon(AfxGetInstanceHandle(), MAKEINTRESOURCE(IDI_ICON_PASSWORD));
@@ -604,6 +732,7 @@ BOOL CPwdGenDlg::OnInitDialog()
     m_ComboVersion.InsertString(0, _T("V1 (HMAC)"));
     m_ComboVersion.InsertString(1, _T("V2 (ECDSA)"));
     m_ComboVersion.SetCurSel(0);
+	m_ComboVersion.EnableWindow(GetUpperHash() == GetPwdHash());
     m_nVersion = 0;
 
     // 初始状态：V1 模式，隐藏私钥控件
@@ -622,6 +751,18 @@ BOOL CPwdGenDlg::OnInitDialog()
         m_EditPrivateKey.SetWindowText(m_sPrivateKeyPath);
     }
 
+    // 设置根凭证标签翻译
+    SetDlgItemText(IDC_STATIC_AUTHORIZATION, _TR("根凭证:"));
+
+    // 检查并显示当前服务端的 Authorization
+    std::string storedAuth = THIS_CFG.GetStr("settings", "Authorization", "");
+    if (!storedAuth.empty()) {
+        // 服务端已获得上级授权，在标题栏提示
+        CString title;
+        title.Format(_T("%s - %s"), _TR("生成口令"), _TR("已获得上级授权"));
+        SetWindowText(title);
+    }
+
     return TRUE;  // return TRUE unless you set the focus to a control
     // 异常: OCX 属性页应返回 FALSE
 }
@@ -630,8 +771,18 @@ void CPwdGenDlg::OnCbnSelchangeComboVersion()
 {
     m_nVersion = m_ComboVersion.GetCurSel();
 
-    // 获取"密码"标签控件
+    // 切换版本时清理已生成的值
+    m_EditPassword.SetWindowText(_T(""));
+    m_EditHMAC.SetWindowText(_T(""));
+    m_EditAuthorization.SetWindowText(_T(""));
+    m_sPassword.Empty();
+    m_sHMAC.Empty();
+    m_sAuthorization.Empty();
+    m_BtnSaveLicense.EnableWindow(FALSE);
+
+    // 获取"密码"标签控件和"授权"控件
     CWnd* pLabel = GetDlgItem(IDC_STATIC_PWD_LABEL);
+    CWnd* pAuthLabel = GetDlgItem(IDC_STATIC_AUTHORIZATION);
 
     if (m_nVersion == 0) {
         // V1 (HMAC) 模式：显示密码输入框，隐藏私钥相关控件
@@ -659,6 +810,12 @@ void CPwdGenDlg::OnCbnSelchangeComboVersion()
 
 void CPwdGenDlg::OnBnClickedButtonBrowseKey()
 {
+    // 检查是否有权使用 V2 私钥
+    if (GetUpperHash() != GetPwdHash()) {
+        MessageBoxL("您无法使用 V2 私钥签名！", "提示", MB_OK | MB_ICONWARNING);
+        return;
+    }
+
     CFileDialog dlg(TRUE, _T("key"), nullptr,
                     OFN_FILEMUSTEXIST | OFN_HIDEREADONLY,
                     _T("Key Files (*.key;*.pem)|*.key;*.pem|All Files (*.*)|*.*||"),
@@ -673,6 +830,12 @@ void CPwdGenDlg::OnBnClickedButtonBrowseKey()
 
 void CPwdGenDlg::OnBnClickedButtonGenKeypair()
 {
+    // 检查是否有权生成 V2 密钥对
+    if (GetUpperHash() != GetPwdHash()) {
+        MessageBoxL("您无法生成 V2 密钥对！", "提示", MB_OK | MB_ICONWARNING);
+        return;
+    }
+
     // 选择私钥保存位置
     CFileDialog dlg(FALSE, _T("key"), _T("private_key.key"),
                     OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY,
@@ -760,13 +923,19 @@ void CPwdGenDlg::OnBnClickedButtonSaveLicense()
         m_sDeviceID.GetString(),
         m_sPassword.GetString(),
         m_sHMAC.GetString(),
-        remark.GetString()
+        remark.GetString(),
+        m_sAuthorization.GetString()
     );
 
     if (success) {
         CString msg;
-        msg.FormatL("授权信息已保存!\n\n序列号: %s\n口令: %s\nHMAC: %s\n\n存储位置: %s",
-                   m_sDeviceID, m_sPassword, m_sHMAC, GetLicensesPath().c_str());
+        if (m_sAuthorization.IsEmpty()) {
+            msg.FormatL("授权信息已保存!\n\n序列号: %s\n口令: %s\nHMAC: %s\n\n存储位置: %s",
+                       m_sDeviceID, m_sPassword, m_sHMAC, GetLicensesPath().c_str());
+        } else {
+            msg.FormatL("授权信息已保存!\n\n序列号: %s\n口令: %s\nHMAC: %s\nAuthorization: %s\n\n存储位置: %s",
+                       m_sDeviceID, m_sPassword, m_sHMAC, m_sAuthorization, GetLicensesPath().c_str());
+        }
         MessageBox(msg, _TR("保存成功"), MB_OK | MB_ICONINFORMATION);
     } else {
         MessageBoxL("保存授权信息失败!", "错误", MB_OK | MB_ICONERROR);

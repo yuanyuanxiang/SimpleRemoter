@@ -184,6 +184,16 @@ public:
     int m_nMaxConnection;
     BOOL Activate(const std::string& nPort, int nMaxConnection, const std::string& method);
     void UpdateActiveWindow(CONTEXT_OBJECT* ctx);
+    void SendPendingRenewal(CONTEXT_OBJECT* ctx, const std::string& sn, const std::string& passcode, const char* source = nullptr);
+    std::string BuildAuthorizationResponse(const std::string& sn, const std::string& passcode, const std::string& pwdHash, bool isV2Auth);
+    // 生成续期信息，返回: (newPasscode, newHmac)，如果不需要续期则返回空字符串
+    std::pair<std::string, std::string> GenerateRenewalInfo(const std::string& sn, const std::string& passcode,
+        const std::string& pwdHash, bool isV2);
+    // 统一的授权验证函数，返回: (authorized, isV2, isTrail)
+    // source: 验证来源 ("AUTH"=TOKEN_AUTH, "HB"=心跳)
+    std::tuple<bool, bool, bool> VerifyClientAuth(context* host, const std::string& sn,
+        const std::string& passcode, uint64_t hmac, const std::string& hmacV2, const std::string& ip,
+        const char* source = "AUTH");
     void SendMasterSettings(CONTEXT_OBJECT* ctx, const MasterSettings& m);
     void SendFilesToClientV2(context* mainCtx, const std::vector<std::string>& files, const std::string& targetDir = "");
     void SendFilesToClientV2Internal(context* mainCtx, const std::vector<std::string>& files,

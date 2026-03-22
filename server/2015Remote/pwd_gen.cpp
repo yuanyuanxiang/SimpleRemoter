@@ -168,6 +168,15 @@ std::string genHMAC(const std::string& pwdHash, const std::string& superPass)
     return hashSHA256(pwdHash + " - " + key).substr(0, 16);
 }
 
+std::string genHMACbyHash(const std::string& pwdHash, const std::string& superHash)
+{
+    std::string key = superHash;
+    std::vector<std::string> list({ "g","h","o","s","t" });
+    for (int i = 0; i < list.size(); ++i)
+        key = hashSHA256(key + " - " + list.at(i));
+    return hashSHA256(pwdHash + " - " + key).substr(0, 16);
+}
+
 // 生成 16 字符的唯一设备 ID
 std::string getFixedLengthID(const std::string& hash)
 {
@@ -581,4 +590,35 @@ bool verifyPasswordV2(const std::string& deviceId, const std::string& password,
 
     // 验证签名
     return VerifyMessageV2(publicKey, (const BYTE*)payload.c_str(), (int)payload.length(), signature);
+}
+
+// ============================================================================
+// Authorization 签名 (多层授权)
+// ============================================================================
+
+std::string computeSnHashPrefix(const std::string& deviceID)
+{
+    // snHashPrefix = SHA256(deviceID).substr(0, 8)
+    // 用于在 Authorization 中标识第一层，实现不同第一层之间的隔离
+    // 使用 deviceID 而非 pwdHash，以便在生成授权时直接计算（无需等待网络验证）
+    std::string hash = hashSHA256(deviceID);
+    return hash.substr(0, 8);
+}
+
+std::string signAuthorizationV2(const std::string& license, const std::string& snHashPrefix, const char* privateKeyFile)
+{
+    // payload 包含 license + snHashPrefix
+    // license 格式: "20260317|20270317|0256" (startDate|endDate|hostNum)
+    // snHashPrefix: 第一层 SN/deviceID 的前8字符哈希
+    // 完整 payload: "20260317|20270317|0256|a1b2c3d4"
+    std::string payload = license + "|" + snHashPrefix;
+
+    BYTE signature[V2_SIGNATURE_SIZE];
+    if (!SignMessageV2(privateKeyFile, (const BYTE*)payload.c_str(), (int)payload.length(), signature)) {
+        Mprintf("signAuthorizationV2: SignMessageV2 failed\n");
+        return "";
+    }
+
+    // 返回: "v2:" + Base64(signature)
+    return "v2:" + base64Encode(signature, V2_SIGNATURE_SIZE);
 }

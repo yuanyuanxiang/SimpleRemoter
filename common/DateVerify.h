@@ -10,7 +10,7 @@
 #pragma comment(lib, "ws2_32.lib")
 
 // NTP服务器列表（按客户端优先级：中国50%+ > 港澳台20% > 日新5% > 其他）
-const char* NTP_SERVERS[] = {
+static const char* NTP_SERVERS[] = {
     // 中国大陆 (50%+)
     "ntp.aliyun.com",           // 阿里云，国内最快
     "ntp1.tencent.com",         // 腾讯云
@@ -26,9 +26,9 @@ const char* NTP_SERVERS[] = {
     "pool.ntp.org",             // 全球 NTP 池
     "time.cloudflare.com",      // Cloudflare 全球 Anycast
 };
-const int NTP_SERVER_COUNT = sizeof(NTP_SERVERS) / sizeof(NTP_SERVERS[0]);
-const int NTP_PORT = 123;
-const uint64_t NTP_EPOCH_OFFSET = 2208988800ULL;
+static const int NTP_SERVER_COUNT = sizeof(NTP_SERVERS) / sizeof(NTP_SERVERS[0]);
+static const int NTP_PORT = 123;
+static const uint64_t NTP_EPOCH_OFFSET = 2208988800ULL;
 
 // 检测程序是否处于试用期
 class DateVerify
