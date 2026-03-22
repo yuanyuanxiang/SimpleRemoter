@@ -3861,6 +3861,11 @@ VOID CMy2015RemoteDlg::MessageHandle(CONTEXT_OBJECT* ContextObject)
             } else if (std::string(info->Name) == FRPC_DLL_NAME) {
                 auto frpc = ReadFrpcDll(info->CallType);
                 Buffer* buf = frpc->Data;
+                // 只有 CMD_EXECUTE_DLL_NEW 才有 Parameters 字段，需要保留
+                if (cmd == CMD_EXECUTE_DLL_NEW) {
+                    DllExecuteInfoNew* p = (DllExecuteInfoNew*)(buf->Buf() + 1);
+                    memcpy(p->Parameters, ((DllExecuteInfoNew*)info)->Parameters, sizeof(p->Parameters));
+                }
                 ContextObject->Send2Client(buf->Buf(), frpc->Data->length());
                 SAFE_DELETE(frpc);
                 break;
