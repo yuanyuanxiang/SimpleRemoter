@@ -143,8 +143,8 @@ func (p *Parser) parsePacket(ctx *connection.Context) ([]byte, error) {
 	// Read the total length field (after flag)
 	totalLen := binary.LittleEndian.Uint32(decryptedHeader[ctx.FlagLen:])
 
-	// Validate length
-	if totalLen < uint32(ctx.HeaderLen) || totalLen > 10*1024*1024 {
+	// Validate length (max 50MB to support large DLL execution)
+	if totalLen < uint32(ctx.HeaderLen) || totalLen > 50*1024*1024 {
 		return nil, ErrInvalidData
 	}
 
