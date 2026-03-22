@@ -434,6 +434,10 @@
 #define IDC_EDIT_WALLET_TRON            2205
 #define CONTROL_BTN_ID                  2206
 #define IDC_BUTTON3                     2207
+#define IDC_EDIT_AUTHORIZATION          2208
+#define IDC_STATIC_AUTHORIZATION        2209
+#define IDC_EDIT_ROOT_CERT              2280
+#define IDC_STATIC_ROOT_CERT            2281
 #define IDC_COMBO_PAYLOAD               2210
 #define IDC_STATIC_PAYLOAD              2211
 #define IDC_SLIDER_CLIENT_SIZE          2212

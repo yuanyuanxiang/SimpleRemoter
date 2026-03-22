@@ -44,6 +44,7 @@ public:
     virtual void SetLastHeartbeat(uint64_t time) = 0;
     virtual uint64_t GetLastHeartbeat() = 0;
     virtual void CancelIO() = 0;
+	virtual std::string GetMasterID() const = 0;
 public:
     virtual ~context() {}
     virtual void Destroy() {}

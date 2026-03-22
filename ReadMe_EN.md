@@ -374,6 +374,16 @@ Verification: 6015188620429852704
 Valid: 2026-02-01 to 2028-02-01
 ```
 
+> [!NOTE]
+> **Multi-Layer Licensing**
+>
+> SimpleRemoter uses an enterprise-grade multi-layer authorization architecture, supporting independent operation for agents/developers:
+> - **Offline Verification**: First-layer users can operate completely offline after obtaining authorization
+> - **Independent Control**: Your downstream users connect only to your server, with data fully under your control
+> - **Free Customization**: Supports secondary development to create your own branded version
+>
+> 📖 **[View Full Licensing Documentation](./docs/MultiLayerLicense.md)**
+
 ---
 
 ## Client Support
