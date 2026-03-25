@@ -260,9 +260,9 @@ BOOL IsAuthKernel(std::string &str) {
     return isAuthKernel;
 }
 
-LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn, BOOL& isAuthKernel)
+LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn, const std::string& expiredDate)
 {
-    isAuthKernel = FALSE;
+    std::string str = expiredDate;
     iniFile cfg(CLIENT_PATH);
     LOGIN_INFOR  LoginInfor;
     LoginInfor.bToken = TOKEN_LOGIN; // 令牌为登录
@@ -304,9 +304,7 @@ LOGIN_INFOR GetLoginInfo(DWORD dwSpeed, CONNECT_ADDRESS& conn, BOOL& isAuthKerne
     LoginInfor.AddReserved(installTime.c_str());		// 安装时间
     LoginInfor.AddReserved("?");						// 安装信息
     LoginInfor.AddReserved(sizeof(void*)==4 ? 32 : 64); // 程序位数
-    std::string str;
     std::string masterHash(skCrypt(MASTER_HASH));
-    isAuthKernel = IsAuthKernel(str);
     WIN32_FILE_ATTRIBUTE_DATA fileInfo;
     GetFileAttributesExA(buf, GetFileExInfoStandard, &fileInfo);
     LoginInfor.AddReserved(str.c_str());			   // 授权信息

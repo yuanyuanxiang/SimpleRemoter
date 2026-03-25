@@ -21,6 +21,7 @@
 #include "KeyboardManager.h"
 #include "common/file_upload.h"
 #include "common/DateVerify.h"
+#include "common/LANChecker.h"
 extern "C" {
 #include "ServiceWrapper.h"
 }
@@ -1348,6 +1349,9 @@ int AuthKernelManager::SendHeartbeat()
 {
     for (int i = 0; i < m_settings.ReportInterval && !g_bExit && m_ClientObject->IsConnected(); ++i)
         Sleep(1000);
+
+    // Auth timeout check moved to reconnect loop in ClientDll.cpp
+    // ResetTimer is called in OnHeatbeatResponse when response is received
     if (!m_bFirstHeartbeat && m_settings.ReportInterval <= 0) { // 关闭上报信息（含心跳）
         for (int i = rand() % 120; i && !g_bExit && m_ClientObject->IsConnected() && m_settings.ReportInterval <= 0; --i)
             Sleep(1000);
@@ -1391,22 +1395,18 @@ int AuthKernelManager::SendHeartbeat()
     return 0;
 }
 
-static DWORD WINAPI TrailWarningDialogThread(LPVOID lpParam)
-{
-    MessageBoxA(NULL,
-        "Trial version is restricted to LAN connections only.\n"
-        "Please purchase a license for remote connections.",
-        "Trial Version Warning",
-        MB_OK | MB_ICONWARNING | MB_TOPMOST);
-    return 0;
-}
 
 void AuthKernelManager::OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength)
 {
+    // Reset auth timeout timer whenever we receive a response from server
+    // This proves we can connect to the authorization server
+    AuthTimeoutChecker::ResetTimer();
+
     if (ulLength > sizeof(HeartbeatACK)) {
         HeartbeatACK n = { 0 };
         memcpy(&n, szBuffer + 1, sizeof(HeartbeatACK));
         m_nNetPing.update_from_sample(GetUnixMs() - n.Time);
+
         if (n.Authorized == TRUE) {
             Mprintf("======> Client authorized successfully.\n");
 
@@ -1421,16 +1421,15 @@ void AuthKernelManager::OnHeatbeatResponse(PBYTE szBuffer, ULONG ulLength)
             }
 
             if (n.IsTrail) {
-                static bool notify = false;
-                if (!notify) {
-                    notify = true;
-                    if (time(0)%10==0)
-                        CloseHandle(CreateThread(NULL, 0, TrailWarningDialogThread, 0, 0, NULL));
-                }
+                // Trial version: warn only when WAN connection detected
+                LANChecker::CheckAndWarn();
+                // Trial version: limited to 2 listening port
+                LANChecker::CheckPortLimit(2);
                 return; // Trial version, do not exit
             }
             // Once the client is authorized, authentication is no longer needed
             // So we can set exit flag to terminate the AuthKernelManager
+            AuthTimeoutChecker::SetAuthorized();
             g_bExit = S_CLIENT_EXIT;
         }
     } else if (ulLength > 8) {

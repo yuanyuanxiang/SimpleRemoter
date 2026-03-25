@@ -436,8 +436,6 @@
 #define IDC_BUTTON3                     2207
 #define IDC_EDIT_AUTHORIZATION          2208
 #define IDC_STATIC_AUTHORIZATION        2209
-#define IDC_EDIT_ROOT_CERT              2280
-#define IDC_STATIC_ROOT_CERT            2281
 #define IDC_COMBO_PAYLOAD               2210
 #define IDC_STATIC_PAYLOAD              2211
 #define IDC_SLIDER_CLIENT_SIZE          2212
@@ -491,6 +489,9 @@
 #define IDC_GROUP_SET_GENERAL           2266
 #define IDC_GROUP_SET_DESKTOP           2267
 #define IDC_GROUP_SET_PARAMS            2268
+#define IDC_STATIC_SET_TIP3             2269
+#define IDC_EDIT_ROOT_CERT              2280
+#define IDC_STATIC_ROOT_CERT            2281
 #define IDC_BTN_EXIT_FULLSCREEN         2300
 #define IDC_BTN_CLOSE                   2301
 #define IDC_BTN_MINIMIZE                2302
@@ -827,7 +828,7 @@
 #define ID_EXIT_FULLSCREEN              40001
 
 // Next default values for new objects
-//
+// 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        333

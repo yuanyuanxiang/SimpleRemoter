@@ -24,7 +24,7 @@ CSettingDlg::CSettingDlg(CMy2015RemoteDlg* pParent)
     , m_sUdpOption(_T("UDP"))
     , m_nFrpPort(7000)
     , m_sFrpToken(_T(""))
-    , m_nFileServerPort(0)
+    , m_nFileServerPort(-1)
 {
     g_2015RemoteDlg = pParent;
 }
@@ -66,7 +66,7 @@ void CSettingDlg::DoDataExchange(CDataExchange* pDX)
     DDX_Control(pDX, IDC_COMBO_VIDEO_WALL, m_ComboVideoWall);
     DDX_Control(pDX, IDC_EDIT_FILESERVER_PORT, m_EditFileServerPort);
     DDX_Text(pDX, IDC_EDIT_FILESERVER_PORT, m_nFileServerPort);
-    DDV_MinMaxInt(pDX, m_nFileServerPort, 1, 65535);
+    DDV_MinMaxInt(pDX, m_nFileServerPort, -1, 65535);
 }
 
 BEGIN_MESSAGE_MAP(CSettingDlg, CDialog)
@@ -91,7 +91,8 @@ BOOL CSettingDlg::OnInitDialog()
     SetDlgItemText(IDC_STATIC_SET_LISTEN_PORT, _TR("监听端口:"));
     SetDlgItemText(IDC_STATIC_SET_MAX_CONN, _TR("最大连接数:"));
     SetDlgItemText(IDC_STATIC_SET_TIP1, _TR("操作提示: 1.监听端口支持填写多个，用英文分号分隔；程序同时监听TCP和UDP，且支持基于UDP的KCP；"));
-    SetDlgItemText(IDC_STATIC_SET_TIP2, _TR("操作提示: 2.如果被控端跨网、地区或国家，务必设置公网IP；勾选FRP反向代理并设置服务端口和 token。"));
+    SetDlgItemText(IDC_STATIC_SET_TIP2, _TR("操作提示: 2.如果被控端跨网、地区或国家，务必设置公网IP；勾选FRP反向代理并设置服务端口和 token；"));
+    SetDlgItemText(IDC_STATIC_SET_TIP3, _TR("操作提示: 3.如果以下载的方式提供上线载荷 (如图片)，必须设置下载端口，受管机器上线时会下载载荷。"));
     SetDlgItemText(IDC_STATIC_SET_SCREEN_CAP, _TR("屏幕截图方法:"));
     SetDlgItemText(IDC_STATIC_SET_IMG_COMP, _TR("图像压缩方法:"));
     SetDlgItemText(IDC_STATIC_SET_REPORT_INT, _TR("上报间隔:"));
@@ -192,7 +193,7 @@ BOOL CSettingDlg::OnInitDialog()
 #endif
     m_nFrpPort = THIS_CFG.GetInt("frp", "server_port", 7000);
     m_sFrpToken = THIS_CFG.GetStr("frp", "token").c_str();
-    m_nFileServerPort = THIS_CFG.GetInt("settings", "FileSvrPort", 80);
+    m_nFileServerPort = THIS_CFG.GetInt("settings", "FileSvrPort", -1);
 
     int size = THIS_CFG.GetInt("settings", "VideoWallSize");
     m_ComboVideoWall.InsertStringL(0, "无");
