@@ -4177,10 +4177,9 @@ void CMy2015RemoteDlg::RemoveFromHostList(context* ctx)
 
 LRESULT CMy2015RemoteDlg::OnUserOfflineMsg(WPARAM wParam, LPARAM lParam)
 {
-    auto host = FindHost((int)lParam);
-
-    // 加入待处理队列，由定时器批量更新 UI（减少闪烁）
+    // Fix race condition: acquire lock before FindHost to prevent use-after-free
     EnterCriticalSection(&m_cs);
+    auto host = FindHostNoLock((int)lParam);
     if (host) {
         RemoveFromHostList(host);
         // 从待上线队列中移除（防止访问已释放的 context）
@@ -4571,9 +4570,9 @@ void CMy2015RemoteDlg::UpdateActiveWindow(CONTEXT_OBJECT* ctx)
 }
 
 // 根据套接字端口寻找对应的在线主机, 返回在线主机 context
-context* CMy2015RemoteDlg::FindHost(int port)
+context* CMy2015RemoteDlg::FindHostNoLock(int port)
 {
-    CLock L(m_cs);
+    // caller must hold m_cs lock
     for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
         if ((*i)->GetPort() == port) {
             return *i;
@@ -4582,16 +4581,28 @@ context* CMy2015RemoteDlg::FindHost(int port)
     return NULL;
 }
 
-// 根据ID寻找对应的在线主机, 返回在线主机 context
-context* CMy2015RemoteDlg::FindHost(uint64_t id)
+context* CMy2015RemoteDlg::FindHost(int port)
 {
     CLock L(m_cs);
+    return FindHostNoLock(port);
+}
+
+// 根据ID寻找对应的在线主机, 返回在线主机 context
+context* CMy2015RemoteDlg::FindHostNoLock(uint64_t id)
+{
+    // caller must hold m_cs lock
     for (auto i = m_HostList.begin(); i != m_HostList.end(); ++i) {
         if ((*i)->GetClientID() == id) {
             return *i;
         }
     }
     return NULL;
+}
+
+context* CMy2015RemoteDlg::FindHost(uint64_t id)
+{
+    CLock L(m_cs);
+    return FindHostNoLock(id);
 }
 
 void CMy2015RemoteDlg::SendMasterSettings(CONTEXT_OBJECT* ctx, const MasterSettings& m)
