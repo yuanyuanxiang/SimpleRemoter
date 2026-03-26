@@ -26,6 +26,7 @@
 #include "InputDlg.h"
 #include "CPasswordDlg.h"
 #include "pwd_gen.h"
+#include "CrashReport.h"
 #include "common/location.h"
 #include <proxy/ProxyMapDlg.h>
 #include "common/DateVerify.h"
@@ -71,6 +72,7 @@
 #define TIMER_CLEAR_BALLOON 3
 #define TIMER_HEARTBEAT_CHECK 4
 #define TIMER_REFRESH_LIST 5
+#define TIMER_STATUSBAR_UPDATE 6
 #define TODO_NOTICE MessageBoxL("This feature has not been implemented!\nPlease contact: 962914132@qq.com", "提示", MB_ICONINFORMATION);
 #define TINY_DLL_NAME "TinyRun.dll"
 #define FRPC_DLL_NAME "Frpc.dll"
@@ -170,7 +172,9 @@ static bool ShouldLogAuth(const std::string& sn, bool success) {
 }
 
 static UINT Indicators[] = {
-    IDR_STATUSBAR_STRING
+    IDR_STATUSBAR_STRING,
+    IDR_STATUSBAR_RUNTIME,
+    IDR_STATUSBAR_EXPIRE
 };
 
 std::string EventName()
@@ -1351,9 +1355,9 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
     THIS_CFG.SetStr("settings", "Version", VERSION_STR);
 
     UPDATE_SPLASH(16, "正在启动下载服务...");
-	auto fileSvrPort = THIS_CFG.GetInt("settings", "FileSvrPort", 10086);
-    m_FileServer = new FileDownloadServer(fileSvrPort);
-    if (!m_FileServer->Start()) {
+	auto fileSvrPort = THIS_CFG.GetInt("settings", "FileSvrPort", -1);
+    m_FileServer = fileSvrPort > 0  ? new FileDownloadServer(fileSvrPort) : nullptr;
+    if (m_FileServer && !m_FileServer->Start()) {
         THIS_APP->MessageBox(_TR("下载服务启动失败，可能是端口被占用了。"), _TR("提示"), MB_ICONINFORMATION);
     }
 
@@ -1593,6 +1597,27 @@ BOOL CMy2015RemoteDlg::OnInitDialog()
 #endif
     SetTimer(TIMER_HEARTBEAT_CHECK, 30 * 1000, NULL);
     SetTimer(TIMER_REFRESH_LIST, 1000, NULL);
+
+    // 初始化状态栏统计
+    m_ullStartTime = GetTickCount64();
+    if (!pwd.empty()) {
+        std::string expireDate = ParseExpireDateFromPasscode(pwd);
+        m_strExpireDate = expireDate.c_str();
+    }
+    // 重新计算状态栏分区宽度（OnSize在加载授权前已调用过）
+    if (m_StatusBar.GetSafeHwnd() && !m_strExpireDate.IsEmpty()) {
+        CRect rc;
+        GetClientRect(&rc);
+        int cx = rc.Width();
+        int paneExpire = 180;
+        int paneRuntime = 140;
+        int paneMsg = cx - paneRuntime - paneExpire - 20;
+        m_StatusBar.SetPaneInfo(0, m_StatusBar.GetItemID(0), SBPS_STRETCH, paneMsg);
+        m_StatusBar.SetPaneInfo(1, m_StatusBar.GetItemID(1), SBPS_NORMAL, paneRuntime);
+        m_StatusBar.SetPaneInfo(2, m_StatusBar.GetItemID(2), SBPS_NORMAL, paneExpire);
+    }
+    SetTimer(TIMER_STATUSBAR_UPDATE, 60 * 1000, NULL);  // 每分钟更新
+    UpdateStatusBarStats();  // 立即更新一次
 
     UPDATE_SPLASH(85, "正在启动FRP代理...");
     InitFrpClients();
@@ -1956,7 +1981,13 @@ void CMy2015RemoteDlg::OnSize(UINT nType, int cx, int cy)
         Rect.right=cx;
         Rect.bottom=cy;
         m_StatusBar.MoveWindow(Rect);
-        m_StatusBar.SetPaneInfo(0, m_StatusBar.GetItemID(0),SBPS_POPOUT, cx-10);
+        // 3个分区：消息(自动拉伸)、运行统计(140px)、到期时间(180px)
+        int paneExpire = m_strExpireDate.IsEmpty() ? 0 : 180;  // 无到期信息时隐藏
+        int paneRuntime = 140;
+        int paneMsg = cx - paneRuntime - paneExpire - 20;
+        m_StatusBar.SetPaneInfo(0, m_StatusBar.GetItemID(0), SBPS_STRETCH, paneMsg);
+        m_StatusBar.SetPaneInfo(1, m_StatusBar.GetItemID(1), SBPS_NORMAL, paneRuntime);
+        m_StatusBar.SetPaneInfo(2, m_StatusBar.GetItemID(2), SBPS_NORMAL, paneExpire);
     }
 
     if(m_ToolBar.m_hWnd!=NULL) {                //工具条
@@ -2121,6 +2152,9 @@ void CMy2015RemoteDlg::OnTimer(UINT_PTR nIDEvent)
             m_DirtyClients.clear();
         }
     }
+    if (nIDEvent == TIMER_STATUSBAR_UPDATE) {
+        UpdateStatusBarStats();
+    }
 
     __super::OnTimer(nIDEvent);
 }
@@ -2161,6 +2195,111 @@ void CMy2015RemoteDlg::CheckHeartbeat()
         ContextObject->CancelIO();
         // 使用延迟队列删除，由定时器统一处理刷新
         m_PendingOffline.push_back(port);
+    }
+}
+
+// 更新状态栏统计信息（MTBF/运行时长、到期时间）
+void CMy2015RemoteDlg::UpdateStatusBarStats()
+{
+    if (!m_StatusBar.GetSafeHwnd())
+        return;
+
+    CString strRuntime, strExpire;
+
+    // === 分区1：运行统计 ===
+    if (m_runNormal == 1) {
+        // 普通模式：显示程序运行时长
+        ULONGLONG uptime = GetTickCount64() - m_ullStartTime;
+        ULONGLONG seconds = uptime / 1000;
+        ULONGLONG minutes = seconds / 60;
+        ULONGLONG hours = minutes / 60;
+        ULONGLONG days = hours / 24;
+        hours %= 24;
+        minutes %= 60;
+
+        CString strTime;
+        if (days > 0)
+            strTime.Format(_T("%llud %lluh"), days, hours);
+        else if (hours > 0)
+            strTime.Format(_T("%lluh %llum"), hours, minutes);
+        else
+            strTime.Format(_T("%llum"), minutes);
+        strRuntime = _TR("运行:") + CString(_T(" ")) + strTime;
+    } else {
+        // 服务模式：显示 MTBF 统计
+        int crashCount = THIS_CFG.GetInt(CFG_CRASH_SECTION, CFG_CRASH_COUNT, 0);
+        int startCount = THIS_CFG.GetInt(CFG_CRASH_SECTION, CFG_CRASH_STARTS, 0);
+        std::string totalStr = THIS_CFG.GetStr(CFG_CRASH_SECTION, CFG_CRASH_TOTAL_RUN_MS, "0");
+        ULONGLONG totalRunMs = _strtoui64(totalStr.c_str(), NULL, 10);
+
+        // 加上当前会话的运行时间
+        totalRunMs += (GetTickCount64() - m_ullStartTime);
+
+        if (crashCount > 0) {
+            // 有崩溃记录：显示 MTBF 和失败率
+            ULONGLONG mtbfMs = totalRunMs / crashCount;
+            ULONGLONG mtbfHours = mtbfMs / (1000 * 60 * 60);
+            ULONGLONG mtbfDays = mtbfHours / 24;
+            mtbfHours %= 24;
+
+            double failRate = (startCount > 0) ? (double)crashCount / startCount * 100.0 : 0;
+
+            if (mtbfDays > 0)
+                strRuntime.Format(_T("MTBF: %llud%lluh | %.1f%%"), mtbfDays, mtbfHours, failRate);
+            else
+                strRuntime.Format(_T("MTBF: %lluh | %.1f%%"), mtbfHours, failRate);
+        } else {
+            // 无崩溃记录：显示累计运行时间
+            ULONGLONG hours = totalRunMs / (1000 * 60 * 60);
+            ULONGLONG days = hours / 24;
+            hours %= 24;
+
+            CString strTime;
+            if (days > 0)
+                strTime.Format(_T("%llud%lluh"), days, hours);
+            else
+                strTime.Format(_T("%lluh"), hours);
+            strRuntime = _TR("运行:") + CString(_T(" ")) + strTime + _T(" ") + _TR("(无崩溃)");
+        }
+    }
+    m_StatusBar.SetPaneText(1, strRuntime);
+
+    // === 分区2：到期时间 ===
+    if (!m_strExpireDate.IsEmpty()) {
+        // 解析到期日期 (YYYYMMDD)
+        int year = _ttoi(m_strExpireDate.Left(4));
+        int month = _ttoi(m_strExpireDate.Mid(4, 2));
+        int day = _ttoi(m_strExpireDate.Mid(6, 2));
+
+        // 计算剩余天数
+        SYSTEMTIME stExpire = {0}, stNow = {0};
+        stExpire.wYear = (WORD)year;
+        stExpire.wMonth = (WORD)month;
+        stExpire.wDay = (WORD)day;
+        GetLocalTime(&stNow);
+
+        FILETIME ftExpire, ftNow;
+        SystemTimeToFileTime(&stExpire, &ftExpire);
+        SystemTimeToFileTime(&stNow, &ftNow);
+
+        ULARGE_INTEGER uliExpire, uliNow;
+        uliExpire.LowPart = ftExpire.dwLowDateTime;
+        uliExpire.HighPart = ftExpire.dwHighDateTime;
+        uliNow.LowPart = ftNow.dwLowDateTime;
+        uliNow.HighPart = ftNow.dwHighDateTime;
+
+        // FILETIME 单位是 100ns，转换为天数
+        LONGLONG diffDays = (LONGLONG)(uliExpire.QuadPart - uliNow.QuadPart) / (10000000LL * 60 * 60 * 24);
+
+        if (diffDays < 0) {
+            strExpire = _TR("已过期");
+        } else {
+            CString strDate, strDays;
+            strDate.Format(_T("%04d-%02d-%02d"), year, month, day);
+            strDays.Format(_T("(%lld"), diffDays);
+            strExpire = _TR("到期:") + CString(_T(" ")) + strDate + _T(" ") + strDays + _TR("天") + _T(")");
+        }
+        m_StatusBar.SetPaneText(2, strExpire);
     }
 }
 

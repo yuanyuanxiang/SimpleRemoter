@@ -10,6 +10,8 @@
 #define IDD_MY2015REMOTE_DIALOG         102
 #define IDR_STATUSBAR_STRING            102
 #define IDR_STATUSBAR_PROCESS           103
+#define IDR_STATUSBAR_RUNTIME           104
+#define IDR_STATUSBAR_EXPIRE            105
 #define IDR_MAINFRAME                   128
 #define IDR_MENU_LIST_ONLINE            129
 #define IDB_BITMAP_ONLINE               130

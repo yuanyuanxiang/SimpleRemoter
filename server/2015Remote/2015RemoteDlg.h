@@ -237,6 +237,9 @@ public:
     void RemoveFromHostList(context* ctx);  // 从 m_HostList 中移除并更新索引
 
     CStatusBar m_StatusBar;          //状态条
+    ULONGLONG m_ullStartTime = 0;    // 程序启动时间 (GetTickCount64)
+    CString m_strExpireDate;         // 到期日期 (YYYYMMDD)，空表示无授权
+    void UpdateStatusBarStats();     // 更新状态栏统计信息
     CTrueColorToolBar m_ToolBar;
     CGridDialog * m_gridDlg = NULL;
     std::vector<DllInfo*> m_DllList;
