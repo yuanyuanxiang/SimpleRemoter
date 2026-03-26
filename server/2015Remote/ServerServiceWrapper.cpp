@@ -1,6 +1,7 @@
 ﻿#include "stdafx.h"
 #include "ServerServiceWrapper.h"
 #include "ServerSessionMonitor.h"
+#include "CrashReport.h"
 #include <stdio.h>
 #include <winsvc.h>
 #include "2015Remote.h"
@@ -13,6 +14,118 @@ static HANDLE g_StopEvent = INVALID_HANDLE_VALUE;
 // 前向声明
 static void WINAPI ServiceMain(DWORD argc, LPTSTR* argv);
 static void WINAPI ServiceCtrlHandler(DWORD ctrlCode);
+
+// 代理启动回调：记录启动次数
+static void OnAgentStart(DWORD processId, DWORD sessionId)
+{
+    // 递增启动次数
+    int startCount = THIS_CFG.GetInt(CFG_CRASH_SECTION, CFG_CRASH_STARTS, 0) + 1;
+    THIS_CFG.SetInt(CFG_CRASH_SECTION, CFG_CRASH_STARTS, startCount);
+
+    char buf[128];
+    sprintf_s(buf, sizeof(buf), "Agent started: PID=%d, Session=%d, totalStarts=%d",
+              (int)processId, (int)sessionId, startCount);
+    Mprintf(buf);
+}
+
+// 代理退出回调：累计运行时间（用于 MTBF 计算）
+static void OnAgentExit(DWORD exitCode, ULONGLONG runtimeMs)
+{
+    // 累加总运行时间
+    // 注意：使用字符串存储 64 位整数，避免 GetInt/SetInt 的 32 位限制
+    char totalStr[32];
+    ULONGLONG totalRuntime = 0;
+    std::string storedTotal = THIS_CFG.GetStr(CFG_CRASH_SECTION, CFG_CRASH_TOTAL_RUN_MS, "0");
+    totalRuntime = _strtoui64(storedTotal.c_str(), NULL, 10);
+    totalRuntime += runtimeMs;
+    sprintf_s(totalStr, sizeof(totalStr), "%llu", totalRuntime);
+    THIS_CFG.SetStr(CFG_CRASH_SECTION, CFG_CRASH_TOTAL_RUN_MS, totalStr);
+
+    // 格式化运行时间
+    char runtimeStr[64];
+    FormatRuntime(totalRuntime, runtimeStr, sizeof(runtimeStr));
+
+    // 计算 MTBF（如果有崩溃记录）
+    int crashCount = THIS_CFG.GetInt(CFG_CRASH_SECTION, CFG_CRASH_COUNT, 0);
+    int startCount = THIS_CFG.GetInt(CFG_CRASH_SECTION, CFG_CRASH_STARTS, 0);
+
+    char buf[256];
+    if (crashCount > 0) {
+        ULONGLONG mtbf = CalculateMTBF(totalRuntime, crashCount);
+        char mtbfStr[64];
+        FormatRuntime(mtbf, mtbfStr, sizeof(mtbfStr));
+        double failureRate = CalculateFailureRate(crashCount, startCount);
+        sprintf_s(buf, sizeof(buf),
+            "Agent exited: code=0x%08X, runtime=%llums, totalRuntime=%s, MTBF=%s, failureRate=%.2f%%",
+            exitCode, runtimeMs, runtimeStr, mtbfStr, failureRate * 100);
+    } else {
+        sprintf_s(buf, sizeof(buf),
+            "Agent exited: code=0x%08X, runtime=%llums, totalRuntime=%s (no crashes yet)",
+            exitCode, runtimeMs, runtimeStr);
+    }
+    Mprintf(buf);
+}
+
+// 崩溃统计回调：记录崩溃次数、时间和退出代码
+static void OnAgentCrash(DWORD exitCode, ULONGLONG runtimeMs)
+{
+    // 递增总崩溃次数
+    int totalCrashes = THIS_CFG.GetInt(CFG_CRASH_SECTION, CFG_CRASH_COUNT, 0) + 1;
+    THIS_CFG.SetInt(CFG_CRASH_SECTION, CFG_CRASH_COUNT, totalCrashes);
+
+    // 记录最后崩溃时间
+    char timeStr[32];
+    SYSTEMTIME st;
+    GetLocalTime(&st);
+    sprintf_s(timeStr, sizeof(timeStr), "%04d-%02d-%02d %02d:%02d:%02d",
+              st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+    THIS_CFG.SetStr(CFG_CRASH_SECTION, CFG_CRASH_LAST_TIME, timeStr);
+
+    // 记录退出代码
+    char exitCodeStr[64];
+    const char* desc = GetExitCodeDescription(exitCode);
+    if (desc) {
+        sprintf_s(exitCodeStr, sizeof(exitCodeStr), "0x%08X (%s)", exitCode, desc);
+    } else {
+        sprintf_s(exitCodeStr, sizeof(exitCodeStr), "0x%08X", exitCode);
+    }
+    THIS_CFG.SetStr(CFG_CRASH_SECTION, CFG_CRASH_LAST_CODE, exitCodeStr);
+
+    // 记录运行时间（毫秒）- 使用字符串存储 64 位值
+    char runtimeStr[32];
+    sprintf_s(runtimeStr, sizeof(runtimeStr), "%llu", runtimeMs);
+    THIS_CFG.SetStr(CFG_CRASH_SECTION, CFG_CRASH_LAST_RUN_MS, runtimeStr);
+
+    char buf[256];
+    sprintf_s(buf, sizeof(buf), "Agent crash recorded: total=%d, time=%s, exitCode=%s, runtime=%llums",
+              totalCrashes, timeStr, exitCodeStr, runtimeMs);
+    Mprintf(buf);
+}
+
+// 崩溃窗口状态变化回调：持久化崩溃窗口状态
+static void OnCrashWindowChange(int crashCount, ULONGLONG firstCrashTime)
+{
+    THIS_CFG.SetInt(CFG_CRASH_SECTION, CFG_CRASH_WIN_COUNT, crashCount);
+
+    // 使用字符串存储 64 位时间戳
+    char timeStr[32];
+    sprintf_s(timeStr, sizeof(timeStr), "%llu", firstCrashTime);
+    THIS_CFG.SetStr(CFG_CRASH_SECTION, CFG_CRASH_WIN_START, timeStr);
+
+    char buf[128];
+    sprintf_s(buf, sizeof(buf), "Crash window state saved: count=%d, startTime=%llu", crashCount, firstCrashTime);
+    Mprintf(buf);
+}
+
+// 崩溃保护回调：写入保护标志
+static void OnAgentCrashProtection(void)
+{
+    THIS_CFG.SetInt(CFG_CRASH_SECTION, CFG_CRASH_PROTECTED, 1);
+    // 清除崩溃窗口状态（保护已触发，不需要再保持窗口状态）
+    THIS_CFG.SetInt(CFG_CRASH_SECTION, CFG_CRASH_WIN_COUNT, 0);
+    THIS_CFG.SetStr(CFG_CRASH_SECTION, CFG_CRASH_WIN_START, "0");
+    Mprintf("Crash protection flag written to config");
+}
 
 BOOL ServerService_CheckStatus(BOOL* registered, BOOL* running,
                                char* exePath, size_t exePathSize)
@@ -290,6 +403,37 @@ DWORD WINAPI ServerService_WorkerThread(LPVOID lpParam)
     ServerSessionMonitor monitor;
     ServerSessionMonitor_Init(&monitor);
     monitor.runAsUser = (runNormal == 2);
+
+    // 从配置恢复崩溃窗口状态
+    int savedCrashCount = THIS_CFG.GetInt(CFG_CRASH_SECTION, CFG_CRASH_WIN_COUNT, 0);
+    std::string savedStartStr = THIS_CFG.GetStr(CFG_CRASH_SECTION, CFG_CRASH_WIN_START, "0");
+    ULONGLONG savedFirstCrashTime = _strtoui64(savedStartStr.c_str(), NULL, 10);
+    ULONGLONG now = GetTickCount64();
+
+    if (savedCrashCount > 0 && savedFirstCrashTime > 0) {
+        // 检查是否仍在窗口期内
+        // 注意：GetTickCount64() 在系统重启后会重置，所以如果 savedFirstCrashTime > now，说明系统重启过
+        if (savedFirstCrashTime <= now && (now - savedFirstCrashTime) <= CRASH_WINDOW_MS) {
+            // 仍在窗口期内，恢复状态
+            monitor.crashCount = savedCrashCount;
+            monitor.firstCrashTime = savedFirstCrashTime;
+            sprintf_s(buf, sizeof(buf), "Crash window state restored: count=%d, elapsed=%llums",
+                      savedCrashCount, now - savedFirstCrashTime);
+            Mprintf(buf);
+        } else {
+            // 窗口期已过或系统重启，清除状态
+            THIS_CFG.SetInt(CFG_CRASH_SECTION, CFG_CRASH_WIN_COUNT, 0);
+            THIS_CFG.SetStr(CFG_CRASH_SECTION, CFG_CRASH_WIN_START, "0");
+            Mprintf("Crash window expired or system rebooted, state cleared");
+        }
+    }
+
+    // 设置回调函数
+    monitor.onAgentStart = OnAgentStart;
+    monitor.onAgentExit = OnAgentExit;
+    monitor.onCrash = OnAgentCrash;
+    monitor.onCrashWindowChange = OnCrashWindowChange;
+    monitor.onCrashProtection = OnAgentCrashProtection;
 
     if (!ServerSessionMonitor_Start(&monitor)) {
         Mprintf("ERROR: Failed to start session monitor");

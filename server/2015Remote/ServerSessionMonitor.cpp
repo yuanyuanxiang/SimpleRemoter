@@ -23,6 +23,57 @@ static void AgentArray_Free(ServerAgentProcessArray* arr);
 static BOOL AgentArray_Add(ServerAgentProcessArray* arr, const ServerAgentProcessInfo* info);
 static void AgentArray_RemoveAt(ServerAgentProcessArray* arr, size_t index);
 
+// 崩溃保护辅助函数
+static void HandleFastCrash(ServerSessionMonitor* self, DWORD exitCode, ULONGLONG runtime);
+
+// 处理快速崩溃
+static void HandleFastCrash(ServerSessionMonitor* self, DWORD exitCode, ULONGLONG runtime)
+{
+    char buf[256];
+    ULONGLONG now = GetTickCount64();
+
+    sprintf_s(buf, sizeof(buf), "Fast crash detected: exitCode=0x%08X, runtime=%llu ms", exitCode, runtime);
+    Mprintf(buf);
+
+    // 调用崩溃统计回调（每次崩溃都记录）
+    if (self->onCrash) {
+        self->onCrash(exitCode, runtime);
+    }
+
+    // 检查是否在窗口期内
+    if (self->crashCount == 0 || (now - self->firstCrashTime) > CRASH_WINDOW_MS) {
+        // 开始新的窗口期
+        self->crashCount = 1;
+        self->firstCrashTime = now;
+        sprintf_s(buf, sizeof(buf), "Crash window started, count: %d", self->crashCount);
+        Mprintf(buf);
+    } else {
+        // 在窗口期内，增加计数
+        self->crashCount++;
+        sprintf_s(buf, sizeof(buf), "Crash count increased to: %d (threshold: %d)",
+                  self->crashCount, CRASH_THRESHOLD);
+        Mprintf(buf);
+
+        if (self->crashCount >= CRASH_THRESHOLD) {
+            // 触发崩溃保护
+            self->crashProtected = TRUE;
+            sprintf_s(buf, sizeof(buf),
+                "CRASH PROTECTION TRIGGERED: Agent crashed %d times within %d seconds.",
+                CRASH_THRESHOLD, CRASH_WINDOW_MS / 1000);
+            Mprintf(buf);
+            // 调用崩溃保护回调
+            if (self->onCrashProtection) {
+                self->onCrashProtection();
+            }
+        }
+    }
+
+    // 调用崩溃窗口状态变化回调（用于持久化）
+    if (self->onCrashWindowChange) {
+        self->onCrashWindowChange(self->crashCount, self->firstCrashTime);
+    }
+}
+
 // ============================================
 // 动态数组实现
 // ============================================
@@ -87,6 +138,16 @@ void ServerSessionMonitor_Init(ServerSessionMonitor* self)
     self->runAsUser = FALSE;  // 默认以SYSTEM身份运行
     InitializeCriticalSection(&self->csProcessList);
     AgentArray_Init(&self->agentProcesses);
+    // 崩溃保护初始化
+    self->crashCount = 0;
+    self->firstCrashTime = 0;
+    self->crashProtected = FALSE;
+    // 回调初始化
+    self->onAgentStart = NULL;
+    self->onAgentExit = NULL;
+    self->onCrash = NULL;
+    self->onCrashWindowChange = NULL;
+    self->onCrashProtection = NULL;
 }
 
 void ServerSessionMonitor_Cleanup(ServerSessionMonitor* self)
@@ -195,15 +256,22 @@ static void MonitorLoop(ServerSessionMonitor* self)
 
                     // 检查GUI是否在该会话中运行
                     if (!IsGuiRunningInSession(self, sessionId)) {
-                        sprintf_s(buf, sizeof(buf), "GUI not running in session %d, launching...", (int)sessionId);
-                        Mprintf(buf);
-
-                        if (LaunchGuiInSession(self, sessionId)) {
-                            Mprintf("GUI launched successfully");
-                            // 给程序一些时间启动
-                            Sleep(2000);
+                        // 检查是否触发了崩溃保护
+                        if (self->crashProtected) {
+                            if (loopCount % 5 == 1) {
+                                Mprintf("Crash protection active - agent auto-restart disabled");
+                            }
                         } else {
-                            Mprintf("Failed to launch GUI");
+                            sprintf_s(buf, sizeof(buf), "GUI not running in session %d, launching...", (int)sessionId);
+                            Mprintf(buf);
+
+                            if (LaunchGuiInSession(self, sessionId)) {
+                                Mprintf("GUI launched successfully");
+                                // 给程序一些时间启动
+                                Sleep(2000);
+                            } else {
+                                Mprintf("Failed to launch GUI");
+                            }
                         }
                     }
 
@@ -352,9 +420,21 @@ static void CleanupDeadProcesses(ServerSessionMonitor* self)
         if (GetExitCodeProcess(info->hProcess, &exitCode)) {
             if (exitCode != STILL_ACTIVE) {
                 // 进程已退出
-                sprintf_s(buf, sizeof(buf), "GUI PID=%d exited with code %d, cleaning up",
-                          (int)info->processId, (int)exitCode);
+                ULONGLONG runtime = GetTickCount64() - info->launchTime;
+                sprintf_s(buf, sizeof(buf), "GUI PID=%d exited with code %d after %llu ms, cleaning up",
+                          (int)info->processId, (int)exitCode, runtime);
                 Mprintf(buf);
+
+                // 调用退出回调（用于统计累计运行时间，每次退出都记录）
+                if (self->onAgentExit) {
+                    self->onAgentExit(exitCode, runtime);
+                }
+
+                // 检测快速崩溃（启动后短时间内异常退出）
+                // 只有 exitCode != 0 才视为崩溃，正常退出(0)不计入
+                if (exitCode != 0 && runtime < FAST_CRASH_TIME_MS && !self->crashProtected) {
+                    HandleFastCrash(self, exitCode, runtime);
+                }
 
                 SAFE_CLOSE_HANDLE(info->hProcess);
                 AgentArray_RemoveAt(&self->agentProcesses, i);
@@ -362,9 +442,21 @@ static void CleanupDeadProcesses(ServerSessionMonitor* self)
             }
         } else {
             // 无法获取退出代码，可能进程已不存在
-            sprintf_s(buf, sizeof(buf), "Cannot query GUI PID=%d, removing from list",
-                      (int)info->processId);
+            ULONGLONG runtime = GetTickCount64() - info->launchTime;
+            sprintf_s(buf, sizeof(buf), "Cannot query GUI PID=%d (runtime %llu ms), removing from list",
+                      (int)info->processId, runtime);
             Mprintf(buf);
+
+            // 调用退出回调（用于统计累计运行时间）
+            if (self->onAgentExit) {
+                self->onAgentExit(0xFFFFFFFF, runtime);
+            }
+
+            // 无法获取退出代码时也检测快速崩溃（保守处理）
+            // 使用特殊值 0xFFFFFFFF 表示未知退出代码
+            if (runtime < FAST_CRASH_TIME_MS && !self->crashProtected) {
+                HandleFastCrash(self, 0xFFFFFFFF, runtime);
+            }
 
             SAFE_CLOSE_HANDLE(info->hProcess);
             AgentArray_RemoveAt(&self->agentProcesses, i);
@@ -527,8 +619,14 @@ static BOOL LaunchGuiInSession(ServerSessionMonitor* self, DWORD sessionId)
         info.processId = pi.dwProcessId;
         info.sessionId = sessionId;
         info.hProcess = pi.hProcess;  // 不关闭句柄，留着后面终止
+        info.launchTime = GetTickCount64();  // 记录启动时间
         AgentArray_Add(&self->agentProcesses, &info);
         LeaveCriticalSection(&self->csProcessList);
+
+        // 调用启动回调（用于统计启动次数）
+        if (self->onAgentStart) {
+            self->onAgentStart(pi.dwProcessId, sessionId);
+        }
 
         SAFE_CLOSE_HANDLE(pi.hThread);  // 线程句柄可以关闭
     } else {

@@ -19,6 +19,7 @@
 #include "IOCPUDPServer.h"
 #include "ServerServiceWrapper.h"
 #include "common/SafeString.h"
+#include "CrashReport.h"
 #pragma comment(lib, "Dbghelp.lib")
 
 // Check if CPU supports AVX2 instruction set
@@ -417,6 +418,37 @@ BOOL CMy2015RemoteApp::InitInstance()
 	CString cmdLine = ::GetCommandLine();
     Mprintf("启动运行: %s\n", cmdLine);
 
+    // 防止用户频繁点击导致多实例启动冲突
+    // 服务进程、安装/卸载命令不需要互斥量检查（由 SCM 管理）
+    // 代理模式和普通模式使用相同互斥量（TCP 监听，只能运行一个）
+#ifndef _DEBUG
+    {
+        CString cmdLineLower = cmdLine;
+        cmdLineLower.MakeLower();
+
+        // 以下命令跳过互斥量检查：
+        // - 服务进程和安装/卸载命令（由 SCM 管理）
+        // - 压缩/解压命令（独立功能，不启动主程序）
+        BOOL skipMutex = (cmdLineLower.Find(_T("-service")) != -1) ||
+                         (cmdLineLower.Find(_T("-install")) != -1) ||
+                         (cmdLineLower.Find(_T("-uninstall")) != -1) ||
+                         (cmdLineLower.Find(_T("-zsta")) != -1);
+
+        if (!skipMutex) {
+            std::string masterHash(GetMasterHash());
+            std::string mu = GetPwdHash()==masterHash ? "MASTER.EXE" : "YAMA.EXE";
+            m_Mutex = CreateMutex(NULL, FALSE, mu.c_str());
+            if (ERROR_ALREADY_EXISTS == GetLastError()) {
+                SAFE_CLOSE_HANDLE(m_Mutex);
+                m_Mutex = NULL;
+                // 不弹框，静默退出，避免用户频繁点击时弹出多个对话框
+                Mprintf("[InitInstance] 一个主控程序已经在运行，静默退出。\n");
+                return FALSE;
+            }
+        }
+    }
+#endif
+
     // 安装安全字符串 handler，避免 _s 函数参数无效时崩溃且无 dump
     InstallSafeStringHandler();
 
@@ -434,6 +466,27 @@ BOOL CMy2015RemoteApp::InitInstance()
     }
 
     BOOL runNormal = THIS_CFG.GetInt("settings", "RunNormal", 0);
+
+    // 检查代理崩溃保护标志（只在代理模式下检查）
+    // 如果服务检测到代理连续崩溃，会设置此标志
+    {
+        CString cmdLineLower = cmdLine;
+        cmdLineLower.MakeLower();
+        BOOL isAgentMode = (cmdLineLower.Find(_T("-agent")) != -1);
+
+        if (isAgentMode && THIS_CFG.GetInt(CFG_CRASH_SECTION, CFG_CRASH_PROTECTED, 0) == 1) {
+            // 清除崩溃保护标志
+            THIS_CFG.SetInt(CFG_CRASH_SECTION, CFG_CRASH_PROTECTED, 0);
+            // 切换到正常模式
+            THIS_CFG.SetInt("settings", "RunNormal", 1);
+            runNormal = 1;
+            Mprintf("[InitInstance] 检测到代理崩溃保护标志，切换到正常运行模式。\n");
+            MessageBoxL("检测到代理程序连续崩溃，已自动切换到正常运行模式。\n\n"
+                        "如需重新启用服务模式，请在设置中手动切换。",
+                        "崩溃保护", MB_ICONWARNING);
+        }
+    }
+
     char curFile[MAX_PATH] = { 0 };
     GetModuleFileNameA(NULL, curFile, MAX_PATH);
     if (runNormal != 1 && !IsRunningAsAdmin() && LaunchAsAdmin(curFile, "runas")) {
@@ -446,22 +499,6 @@ BOOL CMy2015RemoteApp::InitInstance()
         Mprintf("[InitInstance] 服务命令已处理，退出。\n");
         return FALSE;  // 服务命令已处理，退出
     }
-
-    std::string masterHash(GetMasterHash());
-    std::string mu = GetPwdHash()==masterHash ? "MASTER.EXE" : "YAMA.EXE";
-#ifndef _DEBUG
-    {
-        m_Mutex = CreateMutex(NULL, FALSE, mu.c_str());
-        if (ERROR_ALREADY_EXISTS == GetLastError()) {
-            SAFE_CLOSE_HANDLE(m_Mutex);
-            m_Mutex = NULL;
-            MessageBoxL("一个主控程序已经在运行，请检查任务管理器。",
-                        "提示", MB_ICONINFORMATION);
-            Mprintf("[InitInstance] 一个主控程序已经在运行，退出。");
-            return FALSE;
-        }
-    }
-#endif
 
     Mprintf("[InitInstance] 主控程序启动运行。\n");
     SetUnhandledExceptionFilter(&whenbuged);
