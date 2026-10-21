@@ -3,7 +3,7 @@ module github.com/yuanyuanxiang/SimpleRemoter/server/go
 go 1.24.5
 
 require (
-	github.com/klauspost/compress v1.18.2
+	github.com/klauspost/compress v1.18.7
 	github.com/rs/zerolog v1.34.0
 	golang.org/x/text v0.32.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
